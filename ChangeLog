@@ -1,3 +1,7 @@
+2003-10-16  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* stumpwm.lisp (stumpwm): call set-default-bindings
+
 2003-10-13  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* stumpwm-user.lisp (shell-command): use *shell-program*

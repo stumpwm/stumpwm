@@ -64,6 +64,8 @@
 	;; Initialize all the screens
 	(setf *screen-list* (mapcar #'init-screen (xlib:display-roots *display*)))
 	(mapcar #'process-existing-windows *screen-list*)
+	;; Setup our keys. FIXME: should this be in the hook?
+	(set-default-bindings)
 	(run-hook *start-hook*)
 	;; Let's manage.
 	(stumpwm-internal-loop))
