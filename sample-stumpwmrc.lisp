@@ -9,7 +9,7 @@
 (define-stumpwm-command "colon1" (screen (initial :rest nil))
   (let ((cmd (read-one-line screen ": " initial)))
     (when cmd
-      (interactive-command cmd))))
+      (interactive-command cmd screen))))
 
 ;; Read some doc
 (set-key-binding #\d '() "exec gv")
@@ -22,10 +22,10 @@
 
 ;; Web jump (works for Google and Imdb)
 (defmacro make-web-jump (name prefix)
-  `(define-stumpwm-command ,name (screen (search :rest ,(concatenate name " search: ")))
-     (run-shell-command
-	   (concatenate 'string ,prefix
-			(substitute #\+ #\Space search)))))
+  `(define-stumpwm-command ,name (screen (search :rest ,(concatenate 'string name " search: ")))
+     (declare (ignorable screen))
+     (substitute #\+ #\Space search)
+     (run-shell-command (concatenate 'string ,prefix search))))
 
 (make-web-jump "google" "firefox http://www.google.fr/search?q=")
 (make-web-jump "imdb" "firefox http://www.imdb.com/find?q=")
