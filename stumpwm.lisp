@@ -257,6 +257,11 @@ managed."
 
 (defun init-screen (screen-number)
   "Given a screen number, returns a screen structure with initialized members"
+  ;; Listen for the window manager events on the root window
+  (setf (xlib:window-event-mask (xlib:screen-root screen-number))
+	'(:substructure-redirect
+	  :substructure-notify
+	  :property-change))
   (let* ((white (xlib:screen-white-pixel screen-number))
 	 (black (xlib:screen-black-pixel screen-number))
 	 (input-window (xlib:create-window :parent (xlib:screen-root screen-number)
@@ -293,11 +298,6 @@ managed."
 					     :event-mask '())))
     ;; Map the key window and select key press events on it
     (xlib:map-window key-window)
-    ;; Listen for the window manager events on the root window
-    (setf (xlib:window-event-mask (xlib:screen-root screen-number))
-	  '(:substructure-redirect
-	    :substructure-notify
-	    :property-change))
     ;; Create our screen structure
     (make-screen :number screen-number
 		 :frame-tree (list (make-frame 
@@ -317,10 +317,20 @@ managed."
 (defun init-atoms ()
   (setf +wm-delete-window+ (xlib:find-atom *display* 'WM_DELETE_WINDOW)))
 
+(defun error-handler (display error-key &rest key-vals &key asynchronous &allow-other-keys)
+  "Handle X errors"
+  (case error-key
+    (:access-error
+     (pprint '(another window manager is running)))
+    (t
+     (pprint (list 'error error-key key-vals)))))
+
 ;; (stumpwm "" :display 0)
 (defun stumpwm (host &key display protocol)
   "Start the stump window manager."
   (setf *display* (xlib:open-display host :display display :protocol protocol))
+  ;; set our input handler
+  (setf (xlib:display-error-handler *display*) #'error-handler)
   ;; In the event of an error, we always need to close the display
   (unwind-protect
       (progn

@@ -1,5 +1,10 @@
 2003-09-18  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* stumpwm.lisp (init-screen): select events on the root window
+	first.
+	(error-handler): new function
+	(stumpwm): set the display's error handler
+
 	* stumpwm-input.lisp (keycode->string): use keysym->character.
 	(read-one-line): renamed from read-line. Callers updated.
 
