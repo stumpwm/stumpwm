@@ -1,5 +1,9 @@
 2003-10-13  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* stumpwm-user.lisp (shell-command): use *shell-program*
+
+	* stumpwm-primitives.lisp (*shell-program*): new defvar
+
 	* stumpwm.lisp (stumpwm): run *start-hook*
 
 	* stumpwm-user.lisp (set-key-binding): rename from set-key.

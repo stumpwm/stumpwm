@@ -142,4 +142,4 @@
 
 (defun shell-command (screen)
   (let ((cmd (read-one-line screen "/bin/sh -c ")))
-    (port:run-prog "/bin/sh" :args (list "-c" cmd) :wait nil)))
+    (port:run-prog *shell-program* :args (list "-c" cmd) :wait nil)))

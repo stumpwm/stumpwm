@@ -68,6 +68,9 @@
 (defvar *prefix-modifiers* '(:control)
   "The modifier list for the prefix key")
 
+(defvar *shell-program* "/bin/sh"
+  "The shell program used by SHELL-COMMAND.")
+
 (defvar *window-format-fn* 'default-window-format
 		   "The function called when printing a window list. It is passed the
 screen and window. It should return a string.")
