@@ -75,7 +75,7 @@
 (defvar *font-name* "9x15bold"
   "The name of the font to use when stumpwm displays messages.")
 
-(defvar *prefix-key* (char->keysym #\t)
+(defvar *prefix-key* #\t
   "The key to use as the prefix key")
 
 (defvar *prefix-modifiers* '(:control)
@@ -94,7 +94,7 @@ screen and window. It should return a string.")
   (mods nil :type list)
   (fn nil :type function))
 
-(defparameter *key-bindings* (make-hash-table)
+(defparameter *key-bindings* (make-hash-table :test 'equal)
   "An alist of keysym function pairs.")
 
 ;; FIXME: This variable is set only once but it needs to be set after

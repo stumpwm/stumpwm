@@ -77,6 +77,11 @@
 (defun window-number (screen win)
   (gethash :number (gethash win (screen-window-hash screen))))
 
+(defun set-window-number (screen win num)
+  (setf (gethash :number (gethash win (screen-window-hash screen))) num))
+
+(defsetf window-number set-window-number)
+
 (defun window-frame (screen win)
   (gethash :frame (gethash win (screen-window-hash screen))))
 
@@ -227,7 +232,7 @@ than the root window's width and height."
     (list x y width height inc-x inc-y)))
 
 (defun grab-keys-on-window (win)
-  (xlib:grab-key win (xlib:keysym->keycodes *display* *prefix-key*)
+  (xlib:grab-key win (xlib:keysym->keycodes *display* (char->keysym *prefix-key*))
 		 :modifiers *prefix-modifiers* :owner-p t
 		 :sync-pointer-p nil :sync-keyboard-p nil))
 
@@ -787,6 +792,19 @@ focus of a window."
 		 :frame-window frame-window
 		 :focus-window focus-window)))
 
+;;; keyboard helper functions
+
+(defun send-fake-key (win ch mods)
+  "Send a fake key event to win. ch is the character and mods is a
+list of modifier symbols."
+  (xlib:send-event win :key-press '(:key-press)
+		   :display *display*
+		   :root (xlib:drawable-root win)
+		   :window win
+		   :code (xlib:keysym->keycodes *display* (char->keysym ch))
+		   :state (apply #'xlib:make-state-mask mods)))
+
+
 ;;; Pointer helper functions
 
 (defun grab-pointer (screen)
@@ -932,7 +950,7 @@ focus of a window."
 (defun handle-command-key (screen code state)
   "Find the command mapped to the (code state) and executed it."
   (let* ((key (keycode->character code (xlib:make-state-keys state)))
-	 (fn (gethash key *key-bindings*)))
+	 (fn (gethash (list key (remove :shift (xlib:make-state-keys state))) *key-bindings*)))
     (pprint (list key state))
     ;(pprint (cook-keycode code state))
     (pprint fn)

@@ -28,7 +28,7 @@
 
 (defun keycode->character (code mods)
   (let ((idx (if (member :shift mods) 1 0)))
-  (xlib:keysym->character *display* (xlib:keycode->keysym *display* code idx) 0)))
+    (xlib:keysym->character *display* (xlib:keycode->keysym *display* code idx) 0)))
 
 ;;; line and key reading functions
 
