@@ -63,10 +63,21 @@
      (xlib:process-event *display* :handler #'handle-event :timeout nil))))
 
 
-;; (stumpwm "" :display 0)
-(defun stumpwm (host &key display protocol)
+(defun parse-display-string (display)
+  "Parse an X11 DISPLAY string and return the host and display from it."
+  (let* ((colon (position #\: display))
+	 (host (subseq display 0 colon))
+	 (rest (subseq display (1+ colon)))
+	 (dot (position #\. rest))
+	 (num (parse-integer (subseq rest 0 dot))))
+    (values host num)))
+
+;; Usage: (stumpwm)
+(defun stumpwm (&optional (display-str nil) &key protocol)
   "Start the stump window manager."
-  (setf *display* (xlib:open-display host :display display :protocol protocol))
+  (multiple-value-bind (host display) (parse-display-string (or display-str
+								(port:getenv "DISPLAY")))
+    (setf *display* (xlib:open-display host :display display :protocol protocol)))
   ;; set our input handler
   (setf (xlib:display-error-handler *display*) #'error-handler)
   ;; In the event of an error, we always need to close the display

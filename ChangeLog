@@ -1,5 +1,9 @@
 2004-10-08  Shawn Betts  <katia_dilkina@verizon.net>
 
+	* stumpwm.lisp (parse-display-string): new function
+	(stumpwm): take an optional display string as an argument and
+	parse it. If it is nil then use the DISPLAY environment variable.
+
 	* core.lisp (send-client-message): new function
 	(window-name): use coerce to turn it into a string
 	(window-class): new function
