@@ -120,16 +120,16 @@ buffer. Returns a new modified input buffer."
 pressed. Return 'done when the use has signalled the finish of his
 input (pressing Return), nil otherwise."
 	      (cond ((eq (xlib:keycode->keysym *display* code 0)
-			 (xlib:keysym #\Return))
+			 (char->keysym #\Return))
 		     (values inp 'done))
 		    ((eq (xlib:keycode->keysym *display* code 0)
-			 (xlib:keysym #\Backspace))
+			 (char->keysym #\Backspace))
 		     (if (cdr inp)
 			 (rplacd (last inp 2) '())
 		       (setf inp nil))
 		     (values inp nil))
 		    ((and (eq (xlib:keycode->keysym *display* code 0)
-			      (xlib:keysym #\g))
+			      (char->keysym #\g))
 			  (member :control (xlib:make-state-keys state)))
 		     (values inp 'abort))
 		    (t (let* ((mods (xlib:make-state-keys state))
@@ -193,7 +193,9 @@ input (pressing Return), nil otherwise."
 
 (defun keycode->string (code state)
   (concatenate 'string (mod->string state)
-	       (ext:keysym-preferred-name (xlib:keycode->keysym *display* code 0))))
+	       (string (keysym->character *display*
+					  (xlib:keycode->keysym *display* code 0)
+					  state))))
   
 (defun cook-keycode (code state)
   (values (xlib:keycode->keysym *display* code 0) (x11mod->stumpmod state)))

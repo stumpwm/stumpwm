@@ -1,7 +1,10 @@
 2003-09-18  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* stumpwm-input.lisp (keycode->string): use keysym->character.
+
 	* stumpwm.lisp (handle-unmap-notify): remove the window's entry in
 	screen-window-table.
+	(char->keysym): new function. All xlib:keysym callers use this.
 
 	* stumpwm-input.lisp (read-key-handle-event): return a (code . state) pair.
 	(read-key): new function
