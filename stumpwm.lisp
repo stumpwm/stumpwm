@@ -112,7 +112,7 @@ screen and window. It should return a string.")
 	(cons (char->keysym #\7) (lambda (s) (select-window-number s 7)))
 	(cons (char->keysym #\8) (lambda (s) (select-window-number s 8)))
 	(cons (char->keysym #\9) (lambda (s) (select-window-number s 9))))
-		"An alist of keysym function pairs.")
+  "An alist of keysym function pairs.")
 
 ;; FIXME: This variable is set only once but it needs to be set after
 ;; the display is opened. So should it have +'s around it even though

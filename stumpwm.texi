@@ -1,0 +1,154 @@
+\input texinfo   @c -*-texinfo-*-
+@c %**start of header
+@setfilename stumpwm.info
+@settitle stumpwm manual
+@setchapternewpage odd
+@c %**end of header
+
+@dircategory X11
+@direntry
+* stumpwm: (stumpwm).       A Common Lisp window manager
+@end direntry
+
+@ifinfo
+This is the Stump Window Manager user manual.
+
+Copyright @copyright{} 2000, 2001 Shawn Betts
+
+Permission is granted to make and distribute verbatim
+copies of this manual provided the copyright notice and
+this permission notice are preserved on all copies.
+
+@ignore
+Permission is granted to process this file through TeX
+and print the results, provided the printed document
+carries a copying permission notice identical to this
+one except for the removal of this paragraph (this
+paragraph not being relevant to the printed manual).
+
+@end ignore
+Permission is granted to copy and distribute modified
+versions of this manual under the conditions for
+verbatim copying, provided also that the sections
+entitled ``Copying'' and ``GNU General Public License''
+are included exactly as in the original, and provided
+that the entire resulting derived work is distributed
+under the terms of a permission notice identical to this
+one.
+
+Permission is granted to copy and distribute
+translations of this manual into another language,
+under the above conditions for modified versions,
+except that this permission notice may be stated in a
+translation approved by the Free Software Foundation.
+@end ifinfo
+
+@titlepage
+@sp 10
+@titlefont{The Stump Window Manager}
+@author Shawn Betts
+
+@page
+@vskip 0pt plus 1filll
+Copyright @copyright{} 2000, 2001 Shawn Betts
+
+Permission is granted to make and distribute verbatim
+copies of this manual provided the copyright notice and
+this permission notice are preserved on all copies.
+
+Permission is granted to copy and distribute modified
+versions of this manual under the conditions for
+verbatim copying, provided also that the sections
+entitled ``Copying'' and ``GNU General Public License''
+are included exactly as in the original, and provided
+that the entire resulting derived work is distributed
+under the terms of a permission notice identical to this
+one.
+
+Permission is granted to copy and distribute
+translations of this manual into another language,
+under the above conditions for modified versions,
+except that this permission notice may be stated in a
+translation approved by the Free Software Foundation.
+@end titlepage
+
+@node Top, Contact the Stumpwm developers, (dir), (dir)
+
+@ifinfo
+This document explains how to use The Stump Window Manager.
+@end ifinfo
+
+@menu
+* Contact the Stumpwm developers::  
+* Usage::                       
+* Hooks::                       
+@end menu
+
+@node Contact the Stumpwm developers, Usage, Top, Top
+@chapter Contact the Stumpwm developers
+The Stumpwm home page is @url{http://www.nongnu.org/stumpwm}.
+
+You can reach Shawn Betts at @email{sabetts@@vcn.bc.ca}.
+
+The Stumpwm mailing list is @email{stumpwm-devel@@nongnu.org} which
+you can subscribe to at @url{http://mail.nongnu.org/mailman/listinfo/stumpwm-devel}.
+
+@node Usage, Hooks, Contact the Stumpwm developers, Top
+@chapter Usage
+Stumpwm is controlled entirely by keystrokes and lisp commands. It
+mimics GNU Screen's keyboard handling. Stumpwm's prefix key is
+@kbd{C-t}. The following commands are currently available:
+
+@table @kbd
+@item C-t n
+go to the next window in the window list
+
+@item C-t p
+@itemx C-t Space
+go to the next window in the window list
+
+@item C-t '
+Go to a window by name
+
+@item C-t g
+Abort the current command. This is useful if you accidentally hit @kbd{C-t}
+
+@item C-t t
+Switch to the last window to have focus.
+
+@item C-t w
+List all the windows
+
+@item C-t b
+Banish the pointer to the bottom corner of the screen
+
+@item C-t 0-9
+Select a window by number
+@end table
+
+@node Hooks,  , Usage, Top
+@chapter Hooks
+Stumpwm exports a number of hooks you can use to add
+customizations. The following hooks are available:
+
+@table @var
+@item *map-window-hook*
+A hook called whenever a window is mapped.
+
+@item *unmap-window-hook*
+A hook called whenever a window is withdrawn.
+
+@item *new-window-hook*
+A hook called whenever a window is created.
+
+@item *destroy-window-hook*
+A hook called whenever a window is destroyed.
+
+@item *focus-window-hook*
+A hook called when a window is given focus.
+
+@item *unfocus-window-hook*
+A hook called when a window loses focus.
+@end table
+
+@bye
