@@ -1,3 +1,8 @@
+2003-11-15  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* stumpwm.asd (:stumpwm): update system description to reflect new
+	file names.
+
 2003-10-16  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* stumpwm.lisp (stumpwm-internal-loop): handle a timer. Call

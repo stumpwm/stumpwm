@@ -13,12 +13,12 @@
   :description "A tiling, keyboard driven window manager" 
   :depends-on (:cmucl-clx :port)
   :components ((:file "package")
-	       (:file "stumpwm-primitives" :depends-on ("package"))
-	       (:file "stumpwm-input" :depends-on ("stumpwm-primitives"))
-	       (:file "stumpwm-core" :depends-on ("stumpwm-primitives"
-						  "stumpwm-input"))
-	       (:file "stumpwm-user" :depends-on ("stumpwm-primitives"
-						  "stumpwm-core"
-						  "stumpwm-input"))
-	       (:file "stumpwm" :depends-on  ("stumpwm-primitives"
-					      "stumpwm-core"))))
+	       (:file "primitives" :depends-on ("package"))
+	       (:file "input" :depends-on ("primitives"))
+	       (:file "core" :depends-on ("primitives"
+						  "input"))
+	       (:file "user" :depends-on ("primitives"
+						  "core"
+						  "input"))
+	       (:file "stumpwm" :depends-on  ("primitives"
+					      "core"))))
