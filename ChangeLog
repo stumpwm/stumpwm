@@ -34,6 +34,7 @@
 	("number"): new stumpwm command
 	("reload"): likewise
 	(set-default-bindings): bind keys to stumpwm commands
+	("abort"): new stumpwm command
 
 	* stumpwm.lisp (load-rc-file): change ~/.stumpwmrc path to be more portable.
 	(error-handler): use format for debugging output

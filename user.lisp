@@ -387,6 +387,9 @@ aborted."
   (asdf:operate 'asdf:load-op :stumpwm)
   (echo-string screen "Reloading StumpWM...Done."))
 
+;; Trivial function
+(define-stumpwm-command "abort" (screen))
+
 (defun set-default-bindings ()
   "Put the default bindings in the key-bindings hash table."
   (set-key-binding #\c '() "xterm")
