@@ -37,25 +37,22 @@ Installation
 Boot up a common lisp interpreter (I use CMUCL most of the time, but
 I've tested it with SBCL as well). 
 
-You'll need to load the CLX module for you lisp implementation. With a
-Debian system running CMUCL, I type:
+Since stumpwm has an ASDF package, load asdf (it's probably already
+loaded) and run:
 
-(require 'cmucl-clx)
+(asdf:operate 'asdf:load-op 'stumpwm)
 
-Under SBCL I installed the CLX package and use
+Right now the irritating :cmucl-clx name for clx in debian messes
+everything up. so if you're not using debian (or you aren't using
+cmucl in debian) then you need to change the dependency in stumpwm.asd
+from :cmucl-clx to :clx.
 
-(require 'clx)
-
-It may already be loaded.
-
-Next, load stumpwm.lisp, stumpwm-input.lisp, and
-stumpwm-user.lisp. For most configurations you should be able to type
-the following:
+For most configurations you should be able to type the following:
 
 (stumpwm:stumpwm "" :display 0)
 
-The first argument is the host to connect to.
-
-If you have problems post to the mailing list.
+The first argument is the host to connect to. If you have problems
+post to the mailing list.
 
 - Shawn
+

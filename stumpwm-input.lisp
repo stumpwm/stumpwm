@@ -22,7 +22,7 @@
 ;; This file handles input stuff
 ;;
 ;; Code:
-(in-package #:stumpwm)
+(in-package :stumpwm)
 
 ;;; Utility key conversion functions
 

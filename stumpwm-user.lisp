@@ -24,7 +24,7 @@
 ;;
 ;; Code:
 
-(in-package #:stumpwm)
+(in-package :stumpwm)
 
 (defun set-key (keysym fn)
   "Bind keysym to the function FN."
