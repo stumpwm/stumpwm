@@ -429,4 +429,5 @@ aborted."
   (set-key-binding #\f '() "fselect")
   (set-key-binding #\t '() "meta")
   (set-key-binding #\N '(:control) "number")
-  (set-key-binding #\: '() "colon"))
+  (set-key-binding #\; '() "colon")
+  (set-key-binding #\; '() "eval"))
