@@ -1,0 +1,12 @@
+-*- outline -*-
+
+This file documents user visible changes between versions of StumpWM
+
+* Changes since 0.0.3
+
+** Frame support
+StumpWM now sports basic frame support. No resizing yet.
+
+* Changes since 0.0.2
+
+* Changes since 0.0.1
