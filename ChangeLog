@@ -1,5 +1,7 @@
 2004-02-29  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* core.lisp (split-frame): don't give the new frame a window
+
 	* Added frame support.
 
 2003-11-15  Shawn Betts  <sabetts@vcn.bc.ca>

@@ -625,19 +625,14 @@ one. Alters frame-data for the frames affected."
 	(screen-mapped-windows screen)))
 
 (defun split-frame (screen how-fn)
-  (let* ((frame (frame-data screen (screen-current-frame screen)))
-	 (w (first (find-if-not (lambda (w) (eq (window-frame screen w) (frame-number frame)))
-				(screen-mapped-windows screen)))))
+  (let* ((frame (frame-data screen (screen-current-frame screen))))
     (multiple-value-bind (f1 f2) (funcall how-fn frame)
       (setf (gethash (frame-number f1) (screen-frame-hash screen)) f1
 	    (gethash (frame-number f2) (screen-frame-hash screen)) f2
 	    (screen-frame-tree screen) (replace-frame-in-tree (screen-frame-tree screen)
 							      (frame-number frame)
 							      (frame-number f1)
-							      (frame-number f2))
-	    (frame-window f2) w)
-      (when w
-	(setf (window-frame screen w) (frame-number f2)))
+							      (frame-number f2)))
       (sync-frame-windows screen (frame-number f1))
       (sync-frame-windows screen (frame-number f2)))))
     
