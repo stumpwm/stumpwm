@@ -55,7 +55,10 @@
   (xlib:unmap-window (screen-input-window screen)))
 
 (defun read-key-handle-event (&rest event-slots &key display event-key &allow-other-keys)
+  (declare (ignorable display))
   (labels ((key-press (&rest event-slots &key root code state &allow-other-keys)
+		      (declare (ignorable event-slots))
+		      (declare (ignorable root))
 		      (cons code state)))
     (case event-key
       (:key-release
@@ -64,7 +67,7 @@
        (apply #'key-press event-slots))
       (t nil))))
 
-(defun read-key (screen)
+(defun read-key ()
   "Return a dotted pair (code . state) key."
   (do ((ret nil (xlib:process-event *display* :handler #'read-key-handle-event :timeout nil)))
       ((consp ret) ret)))
@@ -73,7 +76,7 @@
   "Read a line of input through stumpwm and return it."
   (labels ((key-loop ()
 	     (let (input)
-	       (do ((key (read-key screen) (read-key screen)))
+	       (do ((key (read-key) (read-key)))
 		   (nil)
 		 (multiple-value-bind (inp ret) (process-input screen prompt input
 							       (car key) (cdr key))

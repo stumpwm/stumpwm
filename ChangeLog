@@ -1,5 +1,11 @@
 2003-09-22  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* stumpwm-input.lisp (read-key): remove screen argument. All
+	callers updated.
+	(read-key-handle-event): declare display as ignorable.
+	(read-key-handle-event): in key-press, declare event-slots and
+	root as ignorable.
+
 	* stumpwm.lisp (*window-format-fn*): bound to
 	default-window-format
 	(*key-binding-alist*): bind #\a to echo-date

@@ -759,7 +759,7 @@ focus of a window."
 			:sync-keyboard-p nil :sync-pointer-p nil)
     (pprint '(awaiting command key))
     ;; Listen for key
-    (let ((key (do ((k (read-key screen) (read-key screen)))
+    (let ((key (do ((k (read-key) (read-key)))
 		   ((not (is-modifier (xlib:keycode->keysym *display* (car k) 0))) k))))
       (pprint '(handling command))
       ;; We've read our key, so we can release the keyboard.
