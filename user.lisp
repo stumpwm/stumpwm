@@ -136,10 +136,9 @@
 (define-stumpwm-command "time" (screen)
   (echo-date screen))
 
-(defun select-window (screen)
+(defun select-window (screen query)
   "Read input from the user and go to the selected window."
-    (let ((query (read-one-line screen "Select: "))
-	  match)
+    (let (match)
       (labels ((match (win)
 		      (let* ((wname (window-name win))
 			     (end (min (length wname) (length query))))
@@ -150,7 +149,7 @@
 	  (focus-window match)))))
 
 (define-stumpwm-command "select" (screen (win :string "Select: "))
-  (select-window screen))
+  (select-window screen win))
 
 (defun select-window-number (screen num)
   (labels ((match (win)

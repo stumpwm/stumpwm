@@ -36,6 +36,8 @@
 	(set-default-bindings): bind keys to stumpwm commands
 	("abort"): new stumpwm command
 	(set-default-bindings): bind ; to colon and : to eval.
+	(select-window): don't read a line from the user. Get it as the
+	second arg. All callers updated.
 
 	* stumpwm.lisp (load-rc-file): change ~/.stumpwmrc path to be more portable.
 	(error-handler): use format for debugging output
