@@ -1,3 +1,13 @@
+2004-04-15  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* core.lisp (process-new-window): set the window state to normal
+	(process-existing-windows): don't process internal windows
+	(process-existing-windows): print the name of the window being
+	processed
+	(internal-window-p): new function
+	(init-screen): grab the prefix key on the focus window. don't
+	listen for any events on the focus-window.
+
 2004-02-29  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* core.lisp (split-frame): don't give the new frame a window

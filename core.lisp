@@ -162,7 +162,8 @@ managed."
   (setf (xlib:window-event-mask win) '(:structure-notify
 				       :property-change
 				       :colormap-change
-				       :focus-change)))
+				       :focus-change))
+  (set-window-state win 'normal))
 
 (defun process-existing-windows (screen)
   "Windows present when stumpwm starts up must be absorbed by stumpwm."
@@ -171,11 +172,12 @@ managed."
       (let ((map-state (xlib:window-map-state win))
 	    (wm-state (window-state win)))
 	;; Don't process override-redirect windows.
-	(unless (eq (xlib:window-override-redirect win) :on)
+	(unless (or (eq (xlib:window-override-redirect win) :on)
+		    (internal-window-p screen win))
 	  (if (or (eql map-state :viewable)
 		  (eql wm-state +iconic-state+))
 	      (progn
-		(pprint (list 'processing win))
+		(pprint (list 'processing (window-name win) win))
 		(process-new-window win)
 		;; Pretend it's been mapped
 		(absorb-mapped-window screen win))))))))
@@ -299,7 +301,7 @@ give the last accessed window focus."
   (push window (screen-mapped-windows screen)))
 
 (defun no-focus (screen)
-  "don't focus any window (but still read keyboard events."
+  "don't focus any window but still read keyboard events."
   (pprint 'no-focus)
   (xlib:set-input-focus *display* (screen-focus-window screen) :POINTER-ROOT))
 
@@ -661,6 +663,10 @@ windows used to draw the numbers in. The caller must destroy them."
 
 ;;; Screen functions
 
+(defun internal-window-p (screen win)
+  "Return t if win is a window used by stumpwm"
+  (or (xlib:window-equal (screen-focus-window screen) win)))
+
 (defun screen-current-window (screen)
   (frame-window (frame-data screen (screen-current-frame screen))))
 
@@ -747,8 +753,7 @@ focus of a window."
 						      screen-number)
 					   :event-mask '(:key-press)))
 	 (focus-window (xlib:create-window :parent (xlib:screen-root screen-number)
-					   :x 0 :y 0 :width 0 :height 0
-					   :event-mask '(:key-press)))
+					   :x 0 :y 0 :width 1 :height 1))
 	 (frame-window (xlib:create-window :parent (xlib:screen-root screen-number)
 					   :x 0 :y 0 :width 1 :height 1
 					   :background white
@@ -768,6 +773,7 @@ focus of a window."
     ;; Create our screen structure
     ;; The focus window is mapped at all times
     (xlib:map-window focus-window)
+    (grab-keys-on-window focus-window)
     (make-screen :number screen-number
 		 :frame-tree 0
 		 :frame-hash (make-frame-hash (xlib:screen-width screen-number)

@@ -124,6 +124,16 @@ Banish the pointer to the bottom corner of the screen
 
 @item C-t 0-9
 Select a window by number
+
+@item C-t f
+Select a frame by number
+
+@item C-t s
+Split current frame vertically
+
+@item C-t S
+Split current frame horizontally
+
 @end table
 
 @node Hooks,  , Usage, Top
