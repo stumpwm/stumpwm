@@ -1,3 +1,23 @@
+2004-10-08  Shawn Betts  <katia_dilkina@verizon.net>
+
+	* core.lisp (send-client-message): new function
+	(window-name): use coerce to turn it into a string
+	(window-class): new function
+	(maximize-window): use multiple-value-bind to bind variables to
+	the hints returned by geometry-hints
+	(geometry-hints): return the hints using #'values
+	(focus-window): send a wm-take-focus client message
+	(delete-window): use send-client-message to send the delete window
+	client message
+
+	* primitives.lisp (+wm-take-focus+): new atom
+	(*editor-bindings*): properly initialize it to nil
+
+	* stumpwm.lisp (init-atoms): initialize +wm-take-focus+
+
+	* user.lisp (focus-frame-sibling): Only give focus to the sibling
+	if one exists.
+
 2004-04-15  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* core.lisp (process-new-window): set the window state to normal

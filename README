@@ -12,8 +12,8 @@ customizable lisp based systems.
 Installation
 ------------
 
-Boot up a common lisp interpreter (I use CMUCL most of the time, but
-I've tested it with SBCL as well). 
+Boot up a common lisp implementation (I use CMUCL most of the time,
+but I've tested it with SBCL as well).
 
 Since stumpwm has an ASDF package, load asdf (it's probably already
 loaded) and run:

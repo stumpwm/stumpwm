@@ -103,18 +103,21 @@ screen and window. It should return a string.")
 (defvar +wm-delete-window+ nil
   "The atom used to delete a window.")
 
+(defvar +wm-take-focus+ nil
+  "The WM_TAKE_FOCUS atom")
+
 ;; Window states
 (defconstant +withdrawn-state+ 0)
 (defconstant +normal-state+ 1)
 (defconstant +iconic-state+ 3)  
 
-;; Message window constants
+;; Message window variables
 (defvar *message-window-padding* 5)
 
 ;; line editor
-(defvar *editor-bindings* 
-  "A list of key-bindings for line editing."
-  nil)
+(defvar *editor-bindings* nil
+  "A list of key-bindings for line editing.")
+
 
 (defstruct frame
   (number nil :type integer)

@@ -32,7 +32,8 @@
 ;;; Main
 
 (defun init-atoms ()
-  (setf +wm-delete-window+ (xlib:find-atom *display* 'WM_DELETE_WINDOW)))
+  (setf +wm-delete-window+ (xlib:find-atom *display* 'WM_DELETE_WINDOW)
+	+wm-take-focus+ (xlib:find-atom *display* 'WM_TAKE_FOCUS)))
 
 (defun error-handler (display error-key &rest key-vals &key asynchronous &allow-other-keys)
   "Handle X errors"

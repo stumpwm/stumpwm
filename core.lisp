@@ -46,6 +46,15 @@
 
 ;;; Window functions
 
+(defun send-client-message (window type &rest data)
+  "Send a client message to a client's window."
+  (xlib:send-event window
+		   :client-message nil
+		   :window window
+		   :type type
+		   :format 32
+		   :data data))
+
 (defun default-window-format (screen w)
   "The default function called to format a window for display in the window list."
   (format nil "~D~C~A"
@@ -72,7 +81,10 @@
   (find-screen (xlib:drawable-root w)))
 
 (defun window-name (win)
-  (concatenate 'string (mapcar #'code-char (xlib:get-property win :WM_NAME))))
+  (coerce (mapcar #'code-char (xlib:get-property win :WM_NAME)) 'string))
+
+(defun window-class (win)
+  (coerce (mapcar #'code-char (xlib:get-property win :WM_CLASS)) 'string))
 
 (defun window-number (screen win)
   (gethash :number (gethash win (screen-window-hash screen))))
@@ -134,25 +146,20 @@
   
 (defun maximize-window (win)
   "Maximize the window."
-  (let* ((screen (window-screen win))
-	 (hints (geometry-hints screen win))
-	 (x (first hints))
-	 (y (second hints))
-	 (width (third hints))
-	 (height (fourth hints))
-	 (inc-x (fifth hints))
-	 (inc-y (sixth hints)))
-    ;; Move the window
-    (setf (xlib:drawable-x win) x
-	  (xlib:drawable-y win) y)
-    ;; Resize the window
-    (setf (xlib:drawable-width win)
-	  (+ (xlib:drawable-width win)
-	     (* inc-x (truncate (/ (- width (xlib:drawable-width win)) inc-x))))
-	  (xlib:drawable-height win)
-	  (+ (xlib:drawable-height win)
-	     (* inc-y (truncate (/ (- height (xlib:drawable-height win)) inc-y)))))
-    (xlib:display-force-output *display*)))
+  (let ((screen (window-screen win)))
+    (multiple-value-bind (x y width height inc-x inc-y)
+	(geometry-hints screen win)
+      ;; Move the window
+      (setf (xlib:drawable-x win) x
+	    (xlib:drawable-y win) y)
+      ;; Resize the window
+      (setf (xlib:drawable-width win)
+	    (+ (xlib:drawable-width win)
+	       (* inc-x (truncate (/ (- width (xlib:drawable-width win)) inc-x))))
+	    (xlib:drawable-height win)
+	    (+ (xlib:drawable-height win)
+	       (* inc-y (truncate (/ (- height (xlib:drawable-height win)) inc-y)))))
+      (xlib:display-force-output *display*))))
 
 (defun find-free-window-number (screen)
   "Return a free window number for SCREEN."
@@ -227,9 +234,9 @@ than the root window's width and height."
       (setf inc-x hints-inc-x))
     (when hints-inc-y
       (setf inc-y hints-inc-y))
-    ;; Now return our findings as a list
-    ;; FIXME: use values
-    (list x y width height inc-x inc-y)))
+    ;; Now return our findings
+    (values x y width height inc-x inc-y)))
+
 
 (defun grab-keys-on-window (win)
   (xlib:grab-key win (xlib:keysym->keycodes *display* (char->keysym *prefix-key*))
@@ -318,6 +325,7 @@ maximized, and given focus."
     ;(setf (xlib:window-priority master-window) :top-if)
     (setf (xlib:window-priority window) :top-if)
     (xlib:set-input-focus *display* window :POINTER-ROOT)
+    (send-client-message window :WM_PROTOCOLS +wm-take-focus+)
     ;; Move the window to the head of the mapped-windows list
     (move-window-to-head screen window)
     ;; If another window was focused, then call the unfocus hook for
@@ -340,12 +348,7 @@ maximized, and given focus."
 (defun delete-window (window)
   "Send a delete event to the window."
   (pprint '(delete window))
-  (xlib:send-event window
-		   :client-message nil
-		   :window window
-		   :type :WM_PROTOCOLS
-		   :format 32
-		   :data (list +wm-delete-window+)))
+  (send-client-message window :WM_PROTOCOLS +wm-delete-window+))
 
 
 ;;; Message printing functions 
@@ -382,6 +385,7 @@ maximized, and given focus."
 	  (xlib:window-priority win) :above)
     ;; Clear the window
     (xlib:clear-area win)))
+
 
 (defun invert-rect (screen win x y width height)
   "invert the color in the rectangular area. Used for highlighting text."
@@ -697,7 +701,7 @@ windows used to draw the numbers in. The caller must destroy them."
     (xlib:draw-image-glyphs win gcontext 0 (xlib:font-ascent font) string)))
 	 
 (defun echo-string-list (screen strings &optional highlight)
-  "draw each string in l in the screen's message window. HIGHLIGHT is
+  "Draw each string in l in the screen's message window. HIGHLIGHT is
 the nth entry to highlight."
   (let* ((height (+ (xlib:font-descent (screen-font screen))
 		    (xlib:font-ascent (screen-font screen))))
@@ -889,11 +893,11 @@ list of modifier symbols."
       (xlib:display-force-output *display*)
       ;; After honouring the request, maximize it
       (when (member window (screen-mapped-windows screen))
-	(maximize-window window)
 	;; The ICCCM says with have to send a fake configure-notify if
 	;; the window is moved but not resized.
 	(unless (or (logbitp 2 value-mask) (logbitp 3 value-mask))
 	  (send-configuration-notify window))
+ 	(maximize-window window)
 	;; Finally, grant the stack-mode change (if it's mapped)
 	(when (has-stackmode value-mask)
 	  (case stack-mode

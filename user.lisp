@@ -115,8 +115,8 @@
   "Print a list of the windows to the screen."
   (let* ((wins (sort-windows screen))
 	 (highlight (position (screen-current-window screen) wins :test #'xlib:window-equal))
-	(names (mapcar (lambda (w)
-			 (funcall *window-format-fn* screen w)) wins)))
+	 (names (mapcar (lambda (w)
+			  (funcall *window-format-fn* screen w)) wins)))
     (if (null wins)
 	(echo-string screen "No Managed Windows")
       (echo-string-list screen names highlight))))
@@ -203,10 +203,9 @@
 
 (defun focus-frame-sibling (screen)
   (let* ((sib (sibling (screen-frame-tree screen)
-		      (screen-current-frame screen)))
-
-oeutnh(l (tree-accum-fn sib (lambda (x y) x) (lambda (x) x))))
-    (focus-frame screen l)))
+		      (screen-current-frame screen))))
+    (when sib
+      (focus-frame screen (tree-accum-fn sib (lambda (x y) x) (lambda (x) x))))))
 
 (defun focus-frame-by-number (screen)
   (let* ((wins (draw-frame-numbers screen))
