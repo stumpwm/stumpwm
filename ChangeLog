@@ -1,0 +1,67 @@
+2003-07-21  Shawn Betts  <sabetts@sfu.ca>
+
+	* stumpwm.lisp (#:stumpwm): change package name from stump.
+	(stumpwm): change name from stump
+	(stumpwm-internal-loop): change name from stump-internal-loop.
+
+	* stumpwm-user.lisp: define everything in package #:stumpwm
+
+2003-06-12  Shawn Betts  <sabetts@sfu.ca>
+
+	* stumpwm-user.lisp (set-key): new function
+	(focus-next-window): moved from stumpwm.lisp
+	(focus-prev-window): likewise
+	(focus-forward): likewise
+	(banish-pointer): likewise
+	(delete-current-window): likewise
+	(echo-windows): likewise
+	(focus-forward): call focus-window
+	(delete-current-window): call delete-window.
+
+	* stumpwm.lisp (*map-window-hook*): new hook
+	(*unmap-window-hook*): likewise
+	(*new-window-hook*): likewise
+	(*destroy-window-hook*): likewise
+	(*focus-window-hook*): likewise
+	(*unfocus-window-hook*): likewise
+	(screen-height): new function
+	(screen-width): likewise
+	(window-name): likewise
+	(focus-window): likewise
+	(current-screen): likewise
+	(warp-pointer): likewise
+	(echo-window-list): call window-name
+	(delete-window): likewise
+
+2003-06-11  Shawn Betts  <sabetts@sfu.ca>
+
+	* stumpwm.lisp (*message-window-padding*): new variable.
+	(init-screen): fix bug assigning white to the black pixel.
+	(stump): wrap everything after opening the X display in an
+	unwind-protect.
+	(stump-internal-loop): remove unwind-protect code.
+	(setup-message-window): renamed from resize-message-window. clear
+	the window. properly calculate location. use
+	(handle-map-request): maximize the window before mapping it.
+
+	*message-window-padding*.
+	(invert-rect): new function
+	(echo-window-list): highlight the current window
+	(geometry-hints): return x and y. handle transient windows by
+	centering them with their current size attributes.
+	(maximize-window): get the position from geometry-hints as well.
+	(handle-configure-request): use a single setf to honour request.
+
+
+2003-06-10  Shawn Betts  <sabetts@sfu.ca>
+
+	* stumpwm.lisp (#:stump): export stump
+	(init-screen): create the message window with a black background.
+	(handle-key-press): force output before handling the key.
+	(create-message-window-gcontext): new function
+	(max-width): likewise
+	(resize-message-window): likewise
+	(echo-window-list): likewise
+	(echo-windows): call echo-window-list
+	(echo-window-list): pass the correct list to resize-message-window
+
