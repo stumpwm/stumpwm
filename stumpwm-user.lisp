@@ -76,16 +76,16 @@
 
 (defun select-window (screen)
   "Read input from the user and go to the selected window."
-    (let ((query (read-line screen))
+    (let ((query (read-one-line screen))
 	  match)
       (labels ((match (win)
 		      (let* ((wname (window-name win))
 			     (end (min (length wname) (length query))))
 			(string-equal wname query :end1 end :end2 end))))
 	(unless (null query)
-	  (setf match (find-if #'match (screen-mapped-windows screen)))
-	  (when match
-	    (focus-window match))))))
+	  (setf match (find-if #'match (screen-mapped-windows screen))))
+	(when match
+	  (focus-window match)))))
 
 (defun select-window-number (screen num)
   (labels ((match (win)

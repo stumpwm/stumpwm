@@ -37,6 +37,10 @@
 
 ;;; Hooks
 
+(defun char->keysym (ch)
+  "Convert a char to a keysym"
+  (first (xlib:character->keysyms ch)))
+
 (defvar *map-window-hook* '()
   "A hook called whenever a window is mapped.")
 
@@ -63,7 +67,7 @@
 (defvar *font-name* "9x15bold"
   "The name of the font to use when stumpwm displays messages.")
 
-(defvar *prefix-key* (xlib:keysym #\t)
+(defvar *prefix-key* (char->keysym #\t)
   "The key to use as the prefix key")
 
 (defvar *prefix-modifiers* '(:control)
@@ -88,10 +92,6 @@ screen and window. It should return a string.")
   (key nil :type xlib:keysym)
   (mods nil :type list)
   (fn nil :type function))
-
-(defun char->keysym (ch)
-  "Convert a char to a keysym"
-  (first (xlib:character->keysyms ch)))
 
 (defparameter *key-binding-alist*
   (list (cons (char->keysym #\n) 'focus-next-window)

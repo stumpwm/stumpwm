@@ -34,10 +34,10 @@ But why wait? We have it all already.
 Installation
 ------------
 
-Boot up a common lisp interpreter. I use CMUCL but I'm sure SBCL or
-Clisp will work as well. Load stumpwm.lisp, stumpwm-input.lisp, and
-stumpwm-user.lisp. For most configurations you should be able to type
-the following:
+Boot up a common lisp interpreter (I use CMUCL most of the time, but
+I've tested it with SBCL as well). Load stumpwm.lisp,
+stumpwm-input.lisp, and stumpwm-user.lisp. For most configurations you
+should be able to type the following:
 
 (stumpwm:stumpwm "" :display 0)
 

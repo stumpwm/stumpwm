@@ -1,6 +1,7 @@
 2003-09-18  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* stumpwm-input.lisp (keycode->string): use keysym->character.
+	(read-one-line): renamed from read-line. Callers updated.
 
 	* stumpwm.lisp (handle-unmap-notify): remove the window's entry in
 	screen-window-table.

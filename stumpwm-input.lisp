@@ -73,8 +73,8 @@
   (do ((ret nil (xlib:process-event *display* :handler #'read-key-handle-event :timeout nil)))
       ((consp ret) ret)))
 
-(defun read-line (screen)
-  "Read a line of input through rp and return it."
+(defun read-one-line (screen)
+  "Read a line of input through stumpwm and return it."
     (labels ((key-loop ()
 		(let (input)
 		  (do ((key (read-key screen) (read-key screen)))
