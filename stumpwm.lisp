@@ -76,6 +76,8 @@
 	;; Initialize all the screens
 	(setf *screen-list* (mapcar #'init-screen (xlib:display-roots *display*)))
 	(mapc #'process-existing-windows *screen-list*)
+	;; Give the first screen's frame focus
+	(focus-frame (first *screen-list*) (screen-current-frame (first *screen-list*)))
 	;; Setup our keys. FIXME: should this be in the hook?
 	(set-default-bindings)
 	(run-hook *start-hook*)

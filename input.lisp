@@ -94,6 +94,15 @@
 	;; Return the input bucket as a string
 	(concatenate 'string input)))))
 
+(defun read-one-char (screen)
+  "Read a single character."
+  (grab-keyboard screen)
+  (prog1
+      (let ((k (do ((k (read-key) (read-key)))
+		     ((not (is-modifier (xlib:keycode->keysym *display* (car k) 0))) k))))
+	(keycode->character (car k) (xlib:make-state-keys (cdr k))))
+    (ungrab-keyboard)))
+
 (defun draw-input-bucket (screen prompt input)
   "Draw to the screen's input window the contents of input."
   (let* ((gcontext (create-message-window-gcontext screen))
@@ -162,7 +171,7 @@ input (pressing Return), nil otherwise."
     (setf (modifiers-meta (screen-modifiers screen)) nil)
     (setf (modifiers-hyper (screen-modifiers screen)) nil)
     (setf (modifiers-super (screen-modifiers screen)) nil)
-    (loop for mod in (:mod1 :mod2 :mod3 :mod4 :mod5)
+    (loop for mod in '(:mod1 :mod2 :mod3 :mod4 :mod5)
 	  for code in (cdddr mods)
 	  do (let ((key (xlib:keycode->keysym *display* code 0)))
 	       (cond ((or (eql key :left-meta) (eql key :right-meta))
@@ -175,34 +184,34 @@ input (pressing Return), nil otherwise."
 		      (setf (modifiers-alt (screen-modifiers screen)) mod)))))
     ;; If alt is defined but meta isn't set meta to alt and clear alt
     (when (and (modifiers-alt (screen-modifiers screen))
-	       (null modifiers-meta (screen-modifiers screen)))
+	       (null (modifiers-meta (screen-modifiers screen))))
       (setf (modifiers-meta (screen-modifiers screen)) (modifiers-alt (screen-modifiers screen)))
       (setf (modifiers-alt (screen-modifiers screen)) nil))))
 	
-(defun x11mod->stumpmod (screen state)
-  (let ((mod nil))
-    (when (member state (modifiers-alt (screen-modifiers screen)))
-      (push :alt mod))
-    (when (member state (modifiers-meta (screen-modifiers screen)))
-      (push :meta mod))
-    (when (member state (modifiers-hyper (screen-modifiers screen)))
-      (push :hyper mod))
-    (when (member state (modifiers-super (screen-modifiers screen)))
-      (push :super mod))
-    (when (member state :control)
-      (push :control mod))
-    mod))
+;; (defun x11mod->stumpmod (screen state)
+;;   (let ((mod nil))
+;;     (when (member state (modifiers-alt (screen-modifiers screen)))
+;;       (push :alt mod))
+;;     (when (member state (modifiers-meta (screen-modifiers screen)))
+;;       (push :meta mod))
+;;     (when (member state (modifiers-hyper (screen-modifiers screen)))
+;;       (push :hyper mod))
+;;     (when (member state (modifiers-super (screen-modifiers screen)))
+;;       (push :super mod))
+;;     (when (member state :control)
+;;       (push :control mod))
+;;     mod))
 
 (defun mod->string (state)
   "Convert a stump modifier list to a string"
   (let ((alist '((:alt . "A-") (:meta . "M-") (:hyper . "H-") (:super . "S-"))))
     (apply #'concatenate 'string (mapcar (lambda (x) (cdr (assoc x alist))) state))))
 
-(defun keycode->string (code state)
-  (concatenate 'string (mod->string state)
-	       (string (keysym->character *display*
-					  (xlib:keycode->keysym *display* code 0)
-					  state))))
+;; (defun keycode->string (code state)
+;;   (concatenate 'string (mod->string state)
+;; 	       (string (keysym->character *display*
+;; 					  (xlib:keycode->keysym *display* code 0)
+;; 					  state))))
   
-(defun cook-keycode (code state)
-  (values (xlib:keycode->keysym *display* code 0) (x11mod->stumpmod state)))
+;; (defun cook-keycode (code state)
+;;   (values (xlib:keycode->keysym *display* code 0) (x11mod->stumpmod state)))

@@ -42,34 +42,44 @@
   (set-key-binding #\t 'other-window)
   (set-key-binding #\! 'shell-command)
   (set-key-binding #\g (lambda (s))) ; abort
-  (set-key-binding #\0 (lambda (s) (select-window-number s 0)))
-  (set-key-binding #\1 (lambda (s) (select-window-number s 1)))
-  (set-key-binding #\2 (lambda (s) (select-window-number s 2)))
-  (set-key-binding #\3 (lambda (s) (select-window-number s 3)))
-  (set-key-binding #\4 (lambda (s) (select-window-number s 4)))
-  (set-key-binding #\5 (lambda (s) (select-window-number s 5)))
-  (set-key-binding #\6 (lambda (s) (select-window-number s 6)))
-  (set-key-binding #\7 (lambda (s) (select-window-number s 7)))
-  (set-key-binding #\8 (lambda (s) (select-window-number s 8)))
-  (set-key-binding #\9 (lambda (s) (select-window-number s 9))))
+  (set-key-binding #\0 (lambda (s) (pull-window-by-number s 0)))
+  (set-key-binding #\1 (lambda (s) (pull-window-by-number s 1)))
+  (set-key-binding #\2 (lambda (s) (pull-window-by-number s 2)))
+  (set-key-binding #\3 (lambda (s) (pull-window-by-number s 3)))
+  (set-key-binding #\4 (lambda (s) (pull-window-by-number s 4)))
+  (set-key-binding #\5 (lambda (s) (pull-window-by-number s 5)))
+  (set-key-binding #\6 (lambda (s) (pull-window-by-number s 6)))
+  (set-key-binding #\7 (lambda (s) (pull-window-by-number s 7)))
+  (set-key-binding #\8 (lambda (s) (pull-window-by-number s 8)))
+  (set-key-binding #\9 (lambda (s) (pull-window-by-number s 9)))
+  (set-key-binding #\r 'remove-split)
+  (set-key-binding #\s 'horiz-split-frame)
+  (set-key-binding #\S 'vert-split-frame)
+  (set-key-binding #\o 'focus-frame-sibling)
+  (set-key-binding #\f 'focus-frame-by-number)
+  (set-key-binding #\: 'eval-line))
 
 (defun focus-next-window (screen)
-  (focus-forward (sort-windows screen)))
+  (focus-forward screen (frame-sort-windows screen
+					    (frame-data screen
+							(screen-current-frame screen)))))
 
 (defun focus-prev-window (screen)
-  (focus-forward (reverse (sort-windows screen))))
+  (focus-forward screen
+		 (reverse
+		  (frame-sort-windows screen
+				      (frame-data screen
+						  (screen-current-frame screen))))))
 
 ;; In the future, this window will raise the window into the current
 ;; frame.
-(defun focus-forward (window-list)
+(defun focus-forward (screen window-list)
  "Set the focus to the next item in window-list from the focused window."
   ;; The window with focus is the "current" window, so find it in the
   ;; list and give that window focus
   (let* ((w (xlib:input-focus *display*))
 	 (wins (member w window-list))
 	 nw)
-    ;; This is a catch in case something *BAD* happened. The focused
-    ;; window *SHOULD* be in the mapped window list.
     (print w)
     (print window-list)
     (print wins)
@@ -80,7 +90,7 @@
 		 (car window-list)
 	       ;; Otherwise, focus the next one in the list.
 	       (cadr wins)))
-    (focus-window nw)))
+    (frame-raise-window screen (window-frame screen nw) nw)))
 
 (defun delete-current-window (screen)
   "Send a delete event to the current window."
@@ -136,13 +146,85 @@
 		  (= (window-number screen win) num)))
     (let ((win (find-if #'match (screen-mapped-windows screen))))
       (when win
-	(focus-window win)))))
+	(frame-raise-window screen (window-frame screen win) win)))))
 
 (defun other-window (screen)
-  (when (second (screen-mapped-windows screen))
-    (focus-window (second (screen-mapped-windows screen)))))
+  (let* ((f (frame-data screen (screen-current-frame screen)))
+	 (wins (frame-windows screen f))
+	 (win (second wins)))
+  (when win
+    (frame-raise-window screen (window-frame screen win) win))))
 
 (defun shell-command (screen)
   (let ((cmd (read-one-line screen "/bin/sh -c ")))
     (unless (null cmd)
       (port:run-prog *shell-program* :args (list "-c" cmd) :wait nil))))
+
+(defun horiz-split-frame (screen)
+  (split-frame screen (lambda (f) (split-frame-h screen f))))
+
+(defun vert-split-frame (screen)
+  (split-frame screen (lambda (f) (split-frame-v screen f))))
+
+(defun remove-split (screen)
+  (let* ((s (sibling (screen-frame-tree screen)
+		    (screen-current-frame screen)))
+	 ;; grab a leaf from the sibling
+	 (l (tree-accum-fn s (lambda (x y) x) (lambda (x) x))))
+    ;; Only remove the current frame if it has a sibling
+    (pprint s)
+    (when s
+      (pprint l)
+      ;; Move the windows from the removed frame to it's sibling
+      (migrate-frame-windows screen (screen-current-frame screen) l)
+      ;; If the frame has no window, give it the current window of
+      ;; the current frame.
+      (unless (frame-window (frame-data screen l))
+	(setf (frame-window (frame-data screen l))
+	      (frame-window (frame-data screen
+					(screen-current-frame screen)))))
+      ;; Unsplit
+      (setf (screen-frame-tree screen)
+	    (remove-frame screen
+			  (screen-frame-tree screen)
+			  (screen-current-frame screen)))
+      ;; update the current frame and sync it's windows
+      (setf (screen-current-frame screen) l)
+      (sync-frame-windows screen l)
+      (frame-raise-window screen l (frame-window (frame-data screen l))))))
+
+(defun focus-frame-sibling (screen)
+  (let* ((sib (sibling (screen-frame-tree screen)
+		      (screen-current-frame screen)))
+
+oeutnh(l (tree-accum-fn sib (lambda (x y) x) (lambda (x) x))))
+    (focus-frame screen l)))
+
+(defun focus-frame-by-number (screen)
+  (let* ((wins (draw-frame-numbers screen))
+	 (ch (read-one-char screen))
+	 (num (read-from-string (string ch))))
+    (pprint (list 'read ch num))
+    (when (and (char>= ch #\0)
+	       (char<= ch #\9))
+      (when (member num (mapcar-hash (lambda (f) (frame-number f)) (screen-frame-hash screen)))
+	(focus-frame screen num)))
+    (mapc #'xlib:destroy-window wins)))
+
+(defun eval-line (screen)
+  (let ((cmd (read-one-line screen ": ")))
+    (unless (null cmd)
+      (echo-string screen
+		   (handler-case (prin1-to-string (eval (read-from-string cmd)))
+                     (error (c)
+		       (format nil "~A" c)))))))
+
+(defun pull-window-by-number (screen n)
+  "Pull window N from another frame into the current frame and focus it."
+  (labels ((match (win)
+		  (= (window-number screen win) n)))
+    (let ((win (find-if #'match (screen-mapped-windows screen))))
+      (when win
+	(setf (window-frame screen win) (screen-current-frame screen))
+	(sync-frame-windows screen (screen-current-frame screen))
+	(frame-raise-window screen (screen-current-frame screen) win)))))

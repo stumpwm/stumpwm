@@ -117,8 +117,8 @@ screen and window. It should return a string.")
   nil)
 
 (defstruct frame
-  number
-  x
+  (number nil :type integer)
+  x 
   y
   width
   height
@@ -134,18 +134,20 @@ screen and window. It should return a string.")
 (defstruct screen
   number
   frame-tree
+  frame-hash
   ;; 
   modifiers
   font
   current-frame
-  current-window
   ;; A list of all mapped windows. Used for navigating windows.
   mapped-windows
   ;; A hash table for stumpwm properties on any absorbed windows.
-  window-table
+  window-hash
   message-window
   input-window
-  frame-window)
+  frame-window
+  ;; The window that gets focus when no window has focus
+  focus-window)
 
 (defvar *screen-list* '()
   "List of screens")
@@ -203,3 +205,18 @@ calls fn on the value for the key hash-key, not the pair."
 		       (char->keysym :right-super)
 		       (char->keysym :left-hyper)
 		       (char->keysym :right-hyper))))
+
+(defun find-free-number (l)
+  "Return a number that is not in the list l."
+  (let* ((nums (sort l #'<))
+	 (new-num (loop for n from 0 to (or (car (last nums)) 0)
+			for i in nums
+			when (/= n i)
+			do (return n))))
+    (pprint nums)
+    (if new-num
+	new-num
+      ;; there was no space between the numbers, so use the last + 1
+      (if (car (last nums))
+	  (1+ (car (last nums)))
+	0))))
