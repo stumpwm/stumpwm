@@ -1,3 +1,9 @@
+2004-10-10  Shawn Betts  <katia_dilkina@verizon.net>
+
+	* stumpwm.lisp (load-rc-file): new function
+	(stumpwm): echo a welcome message. Load the rc file and display
+	any errors that occurred while loading it.
+
 2004-10-08  Shawn Betts  <katia_dilkina@verizon.net>
 
 	* stumpwm.lisp (parse-display-string): new function

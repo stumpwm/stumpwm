@@ -31,6 +31,24 @@
 
 ;;; Main
 
+(defun load-rc-file ()
+  "Load the user's .stumpwmrc file or the system wide one if that
+doesn't exist. Returns a values list: whether the file loaded (t if no
+rc files exist), the error if it didn't, and the rc file that was
+loaded."
+  (let* ((user-rc (probe-file (format nil "~A/.stumpwmrc"
+				    (or (port:getenv "HOME")
+					(error "$HOME not set!?")))))
+					 
+	 (etc-rc (probe-file #p"/etc/stumpwmrc"))
+	 (rc (or user-rc etc-rc)))
+    (if rc
+	;; TODO: Should we compile the file before we load it?
+	(handler-case (load rc)
+		      (error (c) (values nil (format nil "~A" c) rc))
+		      (:no-error (&rest args) (values t nil rc)))
+      (values t nil nil))))
+    
 (defun init-atoms ()
   (setf +wm-delete-window+ (xlib:find-atom *display* 'WM_DELETE_WINDOW)
 	+wm-take-focus+ (xlib:find-atom *display* 'WM_TAKE_FOCUS)))
@@ -92,6 +110,11 @@
 	(focus-frame (first *screen-list*) (screen-current-frame (first *screen-list*)))
 	;; Setup our keys. FIXME: should this be in the hook?
 	(set-default-bindings)
+	(echo-string (first *screen-list*) "Welcome to The Stump Window Manager!")
+	(multiple-value-bind (success err rc) (load-rc-file)
+	  (unless success
+	    (echo-string (first *screen-list*)
+			 (format "Error loading ~A: ~A" rc err))))
 	(run-hook *start-hook*)
 	;; Let's manage.
 	(stumpwm-internal-loop))
