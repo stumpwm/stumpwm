@@ -1,3 +1,8 @@
+2003-09-13  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* stumpwm.lisp (geometry-hints): truncate the values where
+	division is used.
+
 2003-07-21  Shawn Betts  <sabetts@sfu.ca>
 
 	* stumpwm.lisp (#:stumpwm): change package name from stump.

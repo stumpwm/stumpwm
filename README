@@ -1,0 +1,47 @@
+The Stump Window Manager
+------------------------
+
+Stumpwm is a window manager written entirely in Common Lisp. It
+attempts to be highly customizable while relying entirely on the
+keyboard for input. You will not find buttons, icons, title bars, tool
+bars, or of the other conventional GUI widgets. 
+
+These design decisions reflect the growing popularity of productive,
+customizable lisp based systems. As the software world careens
+recklessly foward one thing is clear: "new" programming languages and
+data formats are coming closer and closer to lisp. In the end,
+everyone will be writing lisp in one form or another. The current
+trends shown by Big Software is to use XML for all data formats. It
+won't be long before we have XML interpreters, XML data being
+interpreted as functions:
+
+<math>
+<operator>plus</operator>
+<operand>4</operand>
+<operand>5</operand>
+</math>
+
+I predict within 2 years Big Software will announce the Next Big
+Thing: XML++. An Object Oriented language with all the advantages of
+the superior XML data format coupled with modern advancements in
+Server side Web based technologies. XML Code and XML Data will be
+almost interchangeable, except for some tweaky markup which will be
+justified by the need for more aggressive innovative content creation
+services.
+
+But why wait? We have it all already.
+
+Installation
+------------
+
+Boot up a common lisp interpreter. I use CMUCL but I'm sure SBCL or
+Clisp will work as well. Load stumpwm.lisp and stumpwm-user.lisp. For
+most configurations you should be able to type the following:
+
+(stumpwm:stumpwm "" :display 0)
+
+The first argument is the host to connect to.
+
+If you have problems post to the mailing list.
+
+- Shawn
