@@ -32,23 +32,19 @@
 
 ;;; line and key reading functions
 
-(defun setup-input-window (screen)
+(defun setup-input-window (screen prompt)
   "Set the input window up to read input"
   (let* ((height (+ (xlib:font-descent (screen-font screen))
 		    (xlib:font-ascent (screen-font screen))))
-	 (screen-width (xlib:drawable-width (xlib:screen-root (screen-number screen))))
 	 (win (screen-input-window screen)))
     (pprint '(setup input window))
     ;; Window dimensions
     (xlib:map-window win)
     (setf (xlib:window-priority win) :above)
     (setf (xlib:drawable-y win) 0
-	  (xlib:drawable-height win) height
-	  (xlib:drawable-x win) (- screen-width
-				   100
-				   (* (xlib:drawable-border-width win) 2)
-				   (* *message-window-padding* 2))
-	  (xlib:drawable-width win) (+ 100 (* *message-window-padding* 2)))
+	  (xlib:drawable-height win) height)
+    ;; Draw the prompt
+    (draw-input-bucket screen prompt "")
     ;; Ready to recieve input
     (xlib:grab-keyboard (screen-input-window screen) :owner-p nil
 			:sync-keyboard-p nil :sync-pointer-p nil)))
@@ -73,35 +69,38 @@
   (do ((ret nil (xlib:process-event *display* :handler #'read-key-handle-event :timeout nil)))
       ((consp ret) ret)))
 
-(defun read-one-line (screen)
+(defun read-one-line (screen prompt)
   "Read a line of input through stumpwm and return it."
-    (labels ((key-loop ()
-		(let (input)
-		  (do ((key (read-key screen) (read-key screen)))
-		      (nil)
-		    (multiple-value-bind (inp ret) (process-input screen input (car key) (cdr key))
-		      (setf input inp)
-		      (case ret
-			('done
-			 (return (values input 'done)))
-			('abort
-			 (return (values input 'abort)))))))))
-      (setup-input-window screen)
-      (multiple-value-bind (input ret) (key-loop)
-	(shutdown-input-window screen)
-	(unless (eq ret 'abort)
-	  ;; Return the input bucket as a string
-	  (concatenate 'string input)))))
+  (labels ((key-loop ()
+	     (let (input)
+	       (do ((key (read-key screen) (read-key screen)))
+		   (nil)
+		 (multiple-value-bind (inp ret) (process-input screen prompt input
+							       (car key) (cdr key))
+		   (setf input inp)
+		   (case ret
+		     ('done
+		      (return (values input 'done)))
+		     ('abort
+		      (return (values input 'abort)))))))))
+    (setup-input-window screen prompt)
+    (multiple-value-bind (input ret) (key-loop)
+      (shutdown-input-window screen)
+      (unless (eq ret 'abort)
+	;; Return the input bucket as a string
+	(concatenate 'string input)))))
 
-(defun draw-input-bucket (screen input)
+(defun draw-input-bucket (screen prompt input)
   "Draw to the screen's input window the contents of input."
-  (let ((gcontext (create-message-window-gcontext screen))
-	(win (screen-input-window screen))
-	(width (max 100 (xlib:text-width (screen-font screen) input)))
+  (let* ((gcontext (create-message-window-gcontext screen))
+	 (win (screen-input-window screen))
+	 (prompt-width (xlib:text-width (screen-font screen) prompt))
+	 (width (+ prompt-width
+		   (max 100 (xlib:text-width (screen-font screen) input))))
 	(screen-width (xlib:drawable-width (xlib:screen-root (screen-number screen)))))
-    (xlib:clear-area win :x
-		     (+ *message-window-padding*
-			(xlib:text-width (screen-font screen) input)))
+    (xlib:clear-area win :x (+ *message-window-padding*
+			       prompt-width
+			       (xlib:text-width (screen-font screen) input)))
     (xlib:with-state (win)
 		     (setf (xlib:drawable-x win) (- screen-width width
 						    (* (xlib:drawable-border-width win) 2)
@@ -110,9 +109,13 @@
     (xlib:draw-image-glyphs win gcontext
 			    *message-window-padding*
 			    (xlib:font-ascent (screen-font screen))
+			    prompt)
+    (xlib:draw-image-glyphs win gcontext
+			    (+ *message-window-padding* prompt-width)
+			    (xlib:font-ascent (screen-font screen))
 			    input)))
 
-(defun process-input (screen input code state)
+(defun process-input (screen prompt input code state)
   "Process the key (code and state), given the current input
 buffer. Returns a new modified input buffer."
   (labels ((process-key (inp code state)
@@ -144,7 +147,7 @@ input (pressing Return), nil otherwise."
 	 ('abort
 	  (values inp 'abort))
 	 (t
-	  (draw-input-bucket screen inp)
+	  (draw-input-bucket screen prompt inp)
 	  (values inp t))))))
 
 ;;;;; UNUSED

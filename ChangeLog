@@ -1,5 +1,15 @@
 2003-09-18  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* stumpwm-user.lisp (select-window): pass a prompt to
+	read-one-line.
+
+	* stumpwm-input.lisp (setup-input-window): add prompt
+	argument. call draw-input-bucket.
+	(read-one-line): add prompt argument.
+	(process-input): likewise
+	(draw-input-bucket): add prompt argument. Draw the prompt.
+
+
 	* stumpwm.lisp (init-screen): select events on the root window
 	first.
 	(error-handler): new function

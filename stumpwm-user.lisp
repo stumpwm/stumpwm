@@ -76,7 +76,7 @@
 
 (defun select-window (screen)
   "Read input from the user and go to the selected window."
-    (let ((query (read-one-line screen))
+    (let ((query (read-one-line screen "Select: "))
 	  match)
       (labels ((match (win)
 		      (let* ((wname (window-name win))
