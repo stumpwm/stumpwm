@@ -430,4 +430,4 @@ aborted."
   (set-key-binding #\t '() "meta")
   (set-key-binding #\N '(:control) "number")
   (set-key-binding #\; '() "colon")
-  (set-key-binding #\; '() "eval"))
+  (set-key-binding #\: '() "eval"))
