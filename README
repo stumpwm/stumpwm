@@ -4,7 +4,7 @@ The Stump Window Manager
 Stumpwm is a window manager written entirely in Common Lisp. It
 attempts to be highly customizable while relying entirely on the
 keyboard for input. You will not find buttons, icons, title bars, tool
-bars, or of the other conventional GUI widgets. 
+bars, or any of the other conventional GUI widgets. 
 
 These design decisions reflect the growing popularity of productive,
 customizable lisp based systems. As the software world careens
