@@ -585,8 +585,8 @@ focus of a window."
 
 (defun handle-command-key (screen code state)
   "Find the command mapped to the (code state) and executed it."
-  (let* ((key (xlib:keycode->keysym *display* code 0))
-	 (fn (assoc key *key-binding-alist*)))
+  (let* ((key (keycode->character code (xlib:make-state-keys state)))
+	 (fn (gethash key *key-bindings*)))
     (pprint (list key state))
     ;(pprint (cook-keycode code state))
     (pprint fn)
@@ -594,7 +594,7 @@ focus of a window."
 	(pprint '(no match))
       (progn
 	(pprint '(found it))
-	(funcall (cdr fn) screen)))))
+	(funcall fn screen)))))
 
 (define-stump-event-handler :key-press (code state window root)
   (declare (ignorable window))

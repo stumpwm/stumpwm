@@ -63,7 +63,8 @@
 	(init-atoms)
 	;; Initialize all the screens
 	(setf *screen-list* (mapcar #'init-screen (xlib:display-roots *display*)))
-	;; Process existing windows on each screen
 	(mapcar #'process-existing-windows *screen-list*)
+	(run-hook *start-hook*)
+	;; Let's manage.
 	(stumpwm-internal-loop))
     (xlib:close-display *display*)))

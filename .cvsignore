@@ -1,3 +1,4 @@
+*.fasl
 *.x86f
 stumpwm.info
 

@@ -51,6 +51,9 @@
 (defvar *unfocus-window-hook* '()
   "A hook called when a window loses focus.")
 
+(defvar *start-hook* '()
+  "A hook called when stumpwm starts.")
+
 ;; Data types and globals used by stumpwm
 
 (defvar *display* nil
@@ -75,26 +78,7 @@ screen and window. It should return a string.")
   (mods nil :type list)
   (fn nil :type function))
 
-(defparameter *key-binding-alist*
-  (list (cons (char->keysym #\n) 'focus-next-window)
-	(cons (char->keysym #\p) 'focus-prev-window)
-	(cons (char->keysym #\w) 'echo-windows)
-	(cons (char->keysym #\k) 'delete-current-window)
-	(cons (char->keysym #\b) 'banish-pointer)
-	(cons (char->keysym #\a) 'echo-date)
-	(cons (char->keysym #\') 'select-window)
-	(cons (char->keysym #\t) 'other-window)
-	(cons (char->keysym #\g) (lambda (s))) ; abort
-	(cons (char->keysym #\0) (lambda (s) (select-window-number s 0)))
-	(cons (char->keysym #\1) (lambda (s) (select-window-number s 1)))
-	(cons (char->keysym #\2) (lambda (s) (select-window-number s 2)))
-	(cons (char->keysym #\3) (lambda (s) (select-window-number s 3)))
-	(cons (char->keysym #\4) (lambda (s) (select-window-number s 4)))
-	(cons (char->keysym #\5) (lambda (s) (select-window-number s 5)))
-	(cons (char->keysym #\6) (lambda (s) (select-window-number s 6)))
-	(cons (char->keysym #\7) (lambda (s) (select-window-number s 7)))
-	(cons (char->keysym #\8) (lambda (s) (select-window-number s 8)))
-	(cons (char->keysym #\9) (lambda (s) (select-window-number s 9))))
+(defparameter *key-bindings* (make-hash-table)
   "An alist of keysym function pairs.")
 
 ;; FIXME: This variable is set only once but it needs to be set after

@@ -1,3 +1,19 @@
+2003-10-13  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* stumpwm.lisp (stumpwm): run *start-hook*
+
+	* stumpwm-user.lisp (set-key-binding): rename from set-key.
+	(set-default-bindings): new function
+	(shell-command): likewise
+
+	* stumpwm-primitives.lisp (*start-hook*): new hook
+	(*key-bindings*): rename from key-binding-alist. init to an empty
+	hash table. All callers updated.
+
+	* stumpwm-core.lisp (handle-command-key): use keycode->character.
+
+	* stumpwm.asd (:stumpwm): add "package" dependency for "stumpwm-primitives"
+
 2003-10-12  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* stumpwm.asd: Create an ASDF package.

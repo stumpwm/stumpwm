@@ -26,9 +26,32 @@
 
 (in-package :stumpwm)
 
-(defun set-key (keysym fn)
-  "Bind keysym to the function FN."
-  (push (cons keysym fn) *key-binding-alist*))
+(defun set-key-binding (key fn)
+  "Bind KEY to the function FN."
+  (setf (gethash key *key-bindings*) fn))
+
+(defun set-default-bindings ()
+  "Put the default bindings in the key-bindings hash table."
+  (set-key-binding #\n 'focus-next-window)
+  (set-key-binding #\p 'focus-prev-window)
+  (set-key-binding #\w 'echo-windows)
+  (set-key-binding #\k 'delete-current-window)
+  (set-key-binding #\b 'banish-pointer)
+  (set-key-binding #\a 'echo-date)
+  (set-key-binding #\' 'select-window)
+  (set-key-binding #\t 'other-window)
+  (set-key-binding #\! 'shell-command)
+  (set-key-binding #\g (lambda (s))) ; abort
+  (set-key-binding #\0 (lambda (s) (select-window-number s 0)))
+  (set-key-binding #\1 (lambda (s) (select-window-number s 1)))
+  (set-key-binding #\2 (lambda (s) (select-window-number s 2)))
+  (set-key-binding #\3 (lambda (s) (select-window-number s 3)))
+  (set-key-binding #\4 (lambda (s) (select-window-number s 4)))
+  (set-key-binding #\5 (lambda (s) (select-window-number s 5)))
+  (set-key-binding #\6 (lambda (s) (select-window-number s 6)))
+  (set-key-binding #\7 (lambda (s) (select-window-number s 7)))
+  (set-key-binding #\8 (lambda (s) (select-window-number s 8)))
+  (set-key-binding #\9 (lambda (s) (select-window-number s 9))))
 
 (defun focus-next-window (screen)
   (focus-forward screen (sort-windows screen)))
@@ -116,3 +139,7 @@
 (defun other-window (screen)
   (when (second (screen-mapped-windows screen))
     (focus-window (second (screen-mapped-windows screen)))))
+
+(defun shell-command (screen)
+  (let ((cmd (read-one-line screen "/bin/sh -c ")))
+    (port:run-prog "/bin/sh" :args (list "-c" cmd) :wait nil)))

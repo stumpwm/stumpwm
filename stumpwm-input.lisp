@@ -59,6 +59,7 @@
   (labels ((key-press (&rest event-slots &key root code state &allow-other-keys)
 		      (declare (ignorable event-slots))
 		      (declare (ignorable root))
+		      ;; FIXME: don't use a cons
 		      (cons code state)))
     (case event-key
       (:key-release
