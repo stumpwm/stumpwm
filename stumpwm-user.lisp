@@ -31,10 +31,10 @@
   (push (cons keysym fn) *key-binding-alist*))
 
 (defun focus-next-window (screen)
-  (focus-forward screen (screen-mapped-windows screen)))
+  (focus-forward screen (sort-windows screen)))
 
 (defun focus-prev-window (screen)
-  (focus-forward screen (reverse (screen-mapped-windows screen))))
+  (focus-forward screen (reverse (sort-windows screen))))
 
 ;; In the future, this window will raise the window into the current
 ;; frame.
@@ -50,7 +50,7 @@
     (print w)
     (print window-list)
     (print wins)
-    (assert wins)
+    ;;(assert wins)
     (setf nw (if (null (cdr wins))
 		 ;; If the last window in the list is focused, then
 		 ;; focus the first one.
@@ -72,16 +72,28 @@
 
 (defun echo-windows (screen)
   "Print a list of the windows to the screen."
-  (echo-window-list screen (screen-mapped-windows screen)))
+  (echo-window-list screen (sort-windows screen)))
 
 (defun select-window (screen)
   "Read input from the user and go to the selected window."
     (let ((query (read-line screen))
 	  match)
       (labels ((match (win)
-		      (let* ((wname (concatenate 'string (mapcar #'code-char (window-name win))))
+		      (let* ((wname (window-name win))
 			     (end (min (length wname) (length query))))
 			(string-equal wname query :end1 end :end2 end))))
-	(setf match (find-if #'match (screen-mapped-windows screen)))
-	(when match
-	  (focus-window match)))))
+	(unless (null query)
+	  (setf match (find-if #'match (screen-mapped-windows screen)))
+	  (when match
+	    (focus-window match))))))
+
+(defun select-window-number (screen num)
+  (labels ((match (win)
+		  (= (window-number screen win) num)))
+    (setf match (find-if #'match (screen-mapped-windows screen)))
+    (when match
+      (focus-window match))))
+
+(defun other-window (screen)
+  (when (second (screen-mapped-windows screen))
+    (focus-window (second (screen-mapped-windows screen)))))

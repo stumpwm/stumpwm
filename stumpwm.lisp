@@ -19,9 +19,9 @@
 
 ;; Commentary:
 ;;
-;; To start stumpwm, load this file and stumpwm-user.lisp and evaluate:
-;; (stumpwm:stumpwm "" :display 0) This is assuming you want to connect to
-;; display 0.
+;; To start stumpwm, load this file stumpwm-input.lisp and
+;; stumpwm-user.lisp and evaluate: (stumpwm:stumpwm "" :display 0)
+;; This is assuming you want to connect to display 0.
 ;;
 ;; Code:
 
@@ -68,19 +68,46 @@
 (defvar *prefix-modifiers* '(:control)
   "The modifier list for the prefix key")
 
+(defvar *window-format-fn*
+  (lambda (screen w)
+    (format nil "~D~C~A"
+	    (window-number screen w)
+	    (cond ((xlib:window-equal w (screen-current-window screen))
+		   #\*)
+		  ((and (xlib:window-p (second (screen-mapped-windows screen)))
+			(xlib:window-equal w (second (screen-mapped-windows screen))))
+		   #\+)
+		  (t #\-))
+	    (window-name w)))
+		   "The function called when printing a window list. It is passed the
+screen and window. It should return a string.")
+
 (defstruct key-binding
   "A structure to map from a keystroke to a command."
   (key nil :type xlib:keysym)
   (mods nil :type list)
   (fn nil :type function))
 
-(defparameter *key-binding-alist* (list (cons (xlib:keysym #\n) 'focus-next-window)
-					(cons (xlib:keysym #\p) 'focus-prev-window)
-					(cons (xlib:keysym #\w) 'echo-windows)
-					(cons (xlib:keysym #\k) 'delete-current-window)
-					(cons (xlib:keysym #\b) 'banish-pointer)
-					(cons (xlib:keysym #\') 'select-window))
-  "An alist of keysym function pairs.")
+(defparameter *key-binding-alist*
+  (list (cons (xlib:keysym #\n) 'focus-next-window)
+	(cons (xlib:keysym #\p) 'focus-prev-window)
+	(cons (xlib:keysym #\w) 'echo-windows)
+	(cons (xlib:keysym #\k) 'delete-current-window)
+	(cons (xlib:keysym #\b) 'banish-pointer)
+	(cons (xlib:keysym #\') 'select-window)
+	(cons (xlib:keysym #\t) 'other-window)
+	(cons (xlib:keysym #\g) (lambda (s))) ; abort
+	(cons (xlib:keysym #\0) (lambda (s) (select-window-number s 0)))
+	(cons (xlib:keysym #\1) (lambda (s) (select-window-number s 1)))
+	(cons (xlib:keysym #\2) (lambda (s) (select-window-number s 2)))
+	(cons (xlib:keysym #\3) (lambda (s) (select-window-number s 3)))
+	(cons (xlib:keysym #\4) (lambda (s) (select-window-number s 4)))
+	(cons (xlib:keysym #\5) (lambda (s) (select-window-number s 5)))
+	(cons (xlib:keysym #\6) (lambda (s) (select-window-number s 6)))
+	(cons (xlib:keysym #\7) (lambda (s) (select-window-number s 7)))
+	(cons (xlib:keysym #\8) (lambda (s) (select-window-number s 8)))
+	(cons (xlib:keysym #\9) (lambda (s) (select-window-number s 9))))
+		"An alist of keysym function pairs.")
 
 ;; FIXME: This variable is set only once but it needs to be set after
 ;; the display is opened. So should it have +'s around it even though
@@ -132,10 +159,6 @@
   key-window
   message-window
   input-window
-  ;; This bucket stores keys pressed while the user types into the
-  ;; input window. When the user presses enter the input bucket is
-  ;; processed and emptied.
-  input-bucket
   frame-window)
 
 (defvar *screen-list* '()
@@ -145,6 +168,19 @@
 (defun conc1 (list arg)
   "Append arg to the end of list"
   (nconc list (list arg)))
+
+(defun sort1 (list sort-fn)
+  "Return a sorted copy of list."
+  (let ((copy (copy-list list)))
+    (sort copy sort-fn)))
+
+(defun mapcar-hash (fn hash)
+  "Just like maphash except it accumulates the result in a list and
+calls fn on the value for the key hash-key, not the pair."
+  (let ((accum nil))
+    (labels ((mapfn (key val) (push (funcall fn val) accum)))
+      (maphash #'mapfn hash))
+    accum))
 
 ;; Screen helper functions
 
@@ -171,7 +207,17 @@
   (find-screen (xlib:drawable-root w)))
 
 (defun window-name (win)
-  (xlib:get-property win :WM_NAME))
+  (concatenate 'string (mapcar #'code-char (xlib:get-property win :WM_NAME))))
+
+(defun window-number (screen win)
+  (gethash :number (gethash win (screen-window-table screen))))
+
+(defun sort-windows (screen)
+  "Return a copy of the screen's window list sorted by number."
+  (sort1 (screen-mapped-windows screen)
+	 (lambda (a b)
+	   (< (window-number screen a)
+	      (window-number screen b)))))
 
 (defun process-new-window (win)
   "When a new window is created (or when we are scanning initial
@@ -261,7 +307,6 @@ managed."
 		 :key-window key-window
 		 :message-window message-window
 		 :input-window input-window
-		 :input-bucket '()
 		 :frame-window frame-window)))
 
 (defun init-atoms ()
@@ -449,8 +494,11 @@ than the root window's width and height."
 (defun handle-map-request (w)
   (let ((screen (window-screen w)))
     ;; Add the window to our mapped window list.
-    (setf (screen-mapped-windows screen)
-	  (adjoin w (screen-mapped-windows screen)))
+    (add-window screen w)
+    ;; Create the window-table entry, adding it's number
+    (let ((num (find-free-window-number screen w)))
+      (setf (gethash w (screen-window-table screen)) (make-hash-table))
+      (setf (gethash :number (gethash w (screen-window-table screen))) num))
     ;; Maximize the window
     (maximize-window w)
     ;; Map the window
@@ -470,6 +518,8 @@ than the root window's width and height."
   ;; Remove the window from the list of mapped windows.
   (setf (screen-mapped-windows screen)
 	(delete win (screen-mapped-windows screen)))
+  ;; Clean up the window's entry in screen-window-table
+  (remhash win (screen-window-table screen))
   ;; Run the unmap hook on the window
   (run-hook-with-args *unmap-window-hook* win)
   ;; If the current window was unmapped, then switch to another
@@ -542,21 +592,23 @@ than the root window's width and height."
   (xlib:ungrab-pointer *display*))
 
 (defun handle-key-press (screen window code state)
-  (if (xlib:window-equal window (screen-key-window screen))
-      (progn
-	(unless (is-modifier (xlib:keycode->keysym *display* code 0))
-	  (print "Handling command")
-	  ;; We've read our key, so we can release the keyboard.
-	  (ungrab-pointer)
-	  (xlib:ungrab-keyboard *display*)
-	  (xlib:display-force-output *display*)
-	  (handle-command-key screen code state)))
-    ;; Otherwise, grab the keyboard and wait for the next key press event.
-    (progn 
-      (grab-pointer screen)
-      (xlib:grab-keyboard (screen-key-window screen) :owner-p nil
-			  :sync-keyboard-p nil :sync-pointer-p nil)
-      (print "Awaiting command key"))))
+  ;; Unmap the message window if it is mapped
+  (unless (eq (xlib:window-map-state (screen-message-window screen)) :unmapped)
+    (xlib:unmap-window (screen-message-window screen)))
+  ;; grab the keyboard
+  (grab-pointer screen)
+  (xlib:grab-keyboard (screen-key-window screen) :owner-p nil
+		      :sync-keyboard-p nil :sync-pointer-p nil)
+  (print "Awaiting command key")
+  ;; Listen for key
+  (let ((key (do ((k (read-key screen) (read-key screen)))
+		 ((not (is-modifier (xlib:keycode->keysym *display* (car k) 0))) k))))
+    (print "Handling command")
+    ;; We've read our key, so we can release the keyboard.
+    (ungrab-pointer)
+    (xlib:ungrab-keyboard *display*)
+    (xlib:display-force-output *display*)
+    (handle-command-key screen (car key) (cdr key))))
 
 
 ;;; Window management functions 
@@ -587,12 +639,44 @@ than the root window's width and height."
 
 ;;; Navigation
 
+(defun find-free-window-number (screen window)
+  (let* ((nums (sort (mapcar-hash (lambda (val) (gethash :number val))
+				  (screen-window-table screen))
+		     #'<))
+	 (new-num (loop for n on nums
+			when (and (numberp (second n))
+				  (numberp (first n))
+				  (not (= (second n) (1+ (first n)))))
+			do (return (1+ (first n))))))
+    (pprint nums)
+    (if new-num
+	new-num
+      ;; there was no space between the numbers, so use the last + 1
+      (if (car (last nums))
+	  (1+ (car (last nums)))
+	0))))
+
+	  
+
+(defun add-window (screen window)
+  "add window to the head of the mapped-windows list."
+  ;(assert (not (member window (screen-mapped-windows screen))))
+  (push window (screen-mapped-windows screen)))
+  
+(defun move-window-to-head (screen window)
+  "Move window to the head of the mapped-windows list."
+  ;(assert (member window (screen-mapped-windows screen)))
+  (setf (screen-mapped-windows screen) (delete window (screen-mapped-windows screen)))
+  (push window (screen-mapped-windows screen)))
+
 (defun focus-window (window)
   "Give the window focus. This means the window will be visible,
 maximized, and given focus."
   (let ((screen (window-screen window)))
     (setf (xlib:window-priority window) :above)
     (xlib:set-input-focus *display* window :pointer-root)
+    ;; Move the window to the head of the mapped-windows list
+    (move-window-to-head screen window)
     ;; If another window was focused, then call the unfocus hook for
     ;; it.
     (when (screen-current-window screen)
@@ -609,8 +693,8 @@ window has focus. If no window has focus it is the screen that last
 focus of a window."
   (let* ((win (xlib:input-focus *display*))
 	 (screen (member-if (lambda (s)
-			      (or (window-equal win (screen-current-window s))
-				  (window-equal win (screen-key-window s))))
+			      (or (xlib:window-equal win (screen-current-window s))
+				  (xlib:window-equal win (screen-key-window s))))
 			    *screen-list*)))
     ;; We MUST be able to figure out the current screen by this method
     (assert screen)
@@ -664,7 +748,8 @@ focus of a window."
   "Print each window in l to the screen and highlight the current window."
   (let* ((height (+ (xlib:font-descent (screen-font screen))
 		    (xlib:font-ascent (screen-font screen))))
-	 (names (mapcar #'window-name l))
+	 (names (mapcar (lambda (w)
+			  (funcall *window-format-fn* screen w)) l))
 	 (gcontext (create-message-window-gcontext screen))
 	 (message-win (screen-message-window screen)))
     (setup-message-window screen names)

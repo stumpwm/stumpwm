@@ -24,31 +24,13 @@
 ;; Code:
 (in-package #:stumpwm)
 
-(defun read-key-handle-event (&rest event-slots &key display event-key &allow-other-keys)
-  (labels ((key-press (&rest event-slots &key root code state &allow-other-keys)
-		      (let ((screen (find-screen root)))
-			(pprint '(key press handle))
-			(read-input screen code state))))
-    (case event-key
-      (:key-release
-       t)
-      (:key-press
-       (apply #'key-press event-slots))
-      (t nil))))
+;;; Utility key conversion functions
 
-(defun read-line (screen)
-  "Read a line of input through rp and return it"
-  (pprint '(setup input window))
-  (setup-input-window screen)
-  ;; Read all the keys
-  (pprint '(read keystrokes))
-  (do ((ret nil (xlib:process-event *display* :handler #'read-key-handle-event :timeout nil)))
-      ((eq ret 'done))
-    (pprint ret))
-  (pprint '(shutdown input window))
-  (shutdown-input-window screen)
-  ;; Return the input bucket as a string
-  (concatenate 'string (screen-input-bucket screen)))
+(defun keycode->character (code mods)
+  (let ((idx (if (member :shift mods) 1 0)))
+  (xlib:keysym->character *display* (xlib:keycode->keysym *display* code idx) 0)))
+
+;;; line and key reading functions
 
 (defun setup-input-window (screen)
   "Set the input window up to read input"
@@ -56,6 +38,7 @@
 		    (xlib:font-ascent (screen-font screen))))
 	 (screen-width (xlib:drawable-width (xlib:screen-root (screen-number screen))))
 	 (win (screen-input-window screen)))
+    (pprint '(setup input window))
     ;; Window dimensions
     (xlib:map-window win)
     (setf (xlib:window-priority win) :above)
@@ -66,15 +49,105 @@
 				   (* (xlib:drawable-border-width win) 2)
 				   (* *message-window-padding* 2))
 	  (xlib:drawable-width win) (+ 100 (* *message-window-padding* 2)))
-    ;; empty the bucket
-    (setf (screen-input-bucket screen) '())
     ;; Ready to recieve input
     (xlib:grab-keyboard (screen-input-window screen) :owner-p nil
 			:sync-keyboard-p nil :sync-pointer-p nil)))
 
 (defun shutdown-input-window (screen)
+  (pprint '(shutdown input window))
   (xlib:ungrab-keyboard *display*)
   (xlib:unmap-window (screen-input-window screen)))
+
+(defun read-key-handle-event (&rest event-slots &key display event-key &allow-other-keys)
+  (labels ((key-press (&rest event-slots &key root code state &allow-other-keys)
+		      (cons code state)))
+    (case event-key
+      (:key-release
+       't)
+      (:key-press
+       (apply #'key-press event-slots))
+      (t nil))))
+
+(defun read-key (screen)
+  "Return a dotted pair (code . state) key."
+  (do ((ret nil (xlib:process-event *display* :handler #'read-key-handle-event :timeout nil)))
+      ((consp ret) ret)))
+
+(defun read-line (screen)
+  "Read a line of input through rp and return it."
+    (labels ((key-loop ()
+		(let (input)
+		  (do ((key (read-key screen) (read-key screen)))
+		      (nil)
+		    (multiple-value-bind (inp ret) (process-input screen input (car key) (cdr key))
+		      (setf input inp)
+		      (case ret
+			('done
+			 (return (values input 'done)))
+			('abort
+			 (return (values input 'abort)))))))))
+      (setup-input-window screen)
+      (multiple-value-bind (input ret) (key-loop)
+	(shutdown-input-window screen)
+	(unless (eq ret 'abort)
+	  ;; Return the input bucket as a string
+	  (concatenate 'string input)))))
+
+(defun draw-input-bucket (screen input)
+  "Draw to the screen's input window the contents of input."
+  (let ((gcontext (create-message-window-gcontext screen))
+	(win (screen-input-window screen))
+	(width (max 100 (xlib:text-width (screen-font screen) input)))
+	(screen-width (xlib:drawable-width (xlib:screen-root (screen-number screen)))))
+    (xlib:clear-area win :x
+		     (+ *message-window-padding*
+			(xlib:text-width (screen-font screen) input)))
+    (xlib:with-state (win)
+		     (setf (xlib:drawable-x win) (- screen-width width
+						    (* (xlib:drawable-border-width win) 2)
+						    (* *message-window-padding* 2))
+			   (xlib:drawable-width win) (+ width (* *message-window-padding* 2))))
+    (xlib:draw-image-glyphs win gcontext
+			    *message-window-padding*
+			    (xlib:font-ascent (screen-font screen))
+			    input)))
+
+(defun process-input (screen input code state)
+  "Process the key (code and state), given the current input
+buffer. Returns a new modified input buffer."
+  (labels ((process-key (inp code state)
+	      "Call the appropriate function based on the key
+pressed. Return 'done when the use has signalled the finish of his
+input (pressing Return), nil otherwise."
+	      (cond ((eq (xlib:keycode->keysym *display* code 0)
+			 (xlib:keysym #\Return))
+		     (values inp 'done))
+		    ((eq (xlib:keycode->keysym *display* code 0)
+			 (xlib:keysym #\Backspace))
+		     (if (cdr inp)
+			 (rplacd (last inp 2) '())
+		       (setf inp nil))
+		     (values inp nil))
+		    ((and (eq (xlib:keycode->keysym *display* code 0)
+			      (xlib:keysym #\g))
+			  (member :control (xlib:make-state-keys state)))
+		     (values inp 'abort))
+		    (t (let* ((mods (xlib:make-state-keys state))
+			      (ch (keycode->character code mods)))
+			 (if (and (characterp ch) (char>= ch #\Space) (char<= ch #\~))
+			     (setf inp (conc1 inp ch)))
+			 (values inp nil))))))
+    (multiple-value-bind (inp ret) (process-key input code state)
+      (case ret
+	('done
+	  (values inp 'done))
+	 ('abort
+	  (values inp 'abort))
+	 (t
+	  (draw-input-bucket screen inp)
+	  (values inp t))))))
+
+;;;;; UNUSED
 
 (defun update-modifier-map (screen)
   (let ((mods (xlib:modifier-mapping *display*)))
@@ -124,41 +197,3 @@
   
 (defun cook-keycode (code state)
   (values (xlib:keycode->keysym *display* code 0) (x11mod->stumpmod state)))
-
-(defun keycode->character (code mods)
-  (let ((idx (if (member :shift mods) 1 0)))
-  (xlib:keysym->character *display* (xlib:keycode->keysym *display* code idx) 0)))
-
-(defun handle-key (screen code state)
-  "Call the appropriate function based on the key pressed. Return
-'done when the use has signalled the finish of his input (pressing
-Return), nil otherwise."
-  (if (eq (xlib:keycode->keysym *display* code 0)
-	  (xlib:keysym #\Return))
-      'done
-    (let* ((mods (xlib:make-state-keys state))
-	   (ch (keycode->character code mods)))
-      (print "state:")
-      (print mods)
-      (if (and (characterp ch) (char>= ch #\Space) (char<= ch #\~))
-	  (setf (screen-input-bucket screen)
-		(conc1 (screen-input-bucket screen) ch)))
-      nil)))
-    
-
-(defun read-input (screen code state)
-  "Read a key into the screen's input bucket."
-  (print "read-input")
-  (if (eq 'done (handle-key screen code state))
-      ;; Return 'done
-      'done
-    (let ((gcontext (create-message-window-gcontext screen))
-	  (key (xlib:keysym->character *display* (xlib:keycode->keysym *display* code 0) state)))
-      (xlib:clear-area (screen-input-window screen))
-      (print (screen-input-bucket screen))
-      (xlib:draw-image-glyphs (screen-input-window screen) gcontext
-			      *message-window-padding*
-			      (xlib:font-ascent (screen-font screen))
-			      (screen-input-bucket screen))
-    ;; Return true
-      t)))

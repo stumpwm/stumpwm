@@ -1,3 +1,42 @@
+2003-09-18  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* stumpwm.lisp (handle-unmap-notify): remove the window's entry in
+	screen-window-table.
+
+	* stumpwm-input.lisp (read-key-handle-event): return a (code . state) pair.
+	(read-key): new function
+	(read-line): likewise
+	(draw-input-bucket): likewise
+	(process-input): likewise
+	(handle-key): remove function
+	(read-input): remove function
+
+	* stumpwm-user.lisp (focus-next-window): call sort-windows
+	(focus-prev-window): likewise
+	(echo-windows): likewise
+	(select-window): don't search for a match if the user input was
+	().
+	(select-window-number): new function
+	(other-window): likewise
+
+	* stumpwm.lisp (*window-format-fn*): new global
+	(*key-binding-alist*): add commands on #\g, #\0-9, #\t, and #\'.
+	(screen): remove input-bucket slot
+	(sort1): new function
+	(mapcar-hash): likewise
+	(window-name): return the name as a string.
+	(window-number): new function
+	(sort-windows): likewise
+	(handle-map-request): create the window-table hash table for the
+	new window.
+	(handle-key-press): call read-key.
+	(find-free-window-number): new function
+	(add-window): likewise
+	(move-window-to-head): likewise
+	(current-screen): call xlib:window-equal.
+	(echo-window-list): use *window-format-fn* to format the window
+	strings.
+
 2003-09-17  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* stumpwm.lisp (*key-binding-alist*): add select-window
