@@ -94,17 +94,20 @@ loaded."
 (defun stumpwm (&optional (display-str nil) &key protocol)
   "Start the stump window manager."
   (multiple-value-bind (host display) (parse-display-string (or display-str
-								(port:getenv "DISPLAY")))
+								(port:getenv "DISPLAY")
+								":0"))
     (setf *display* (xlib:open-display host :display display :protocol protocol)))
-  ;; set our input handler
-  (setf (xlib:display-error-handler *display*) #'error-handler)
   ;; In the event of an error, we always need to close the display
   (unwind-protect
       (progn
 	;; Initialize the necessary atoms
 	(init-atoms)
 	;; Initialize all the screens
-	(setf *screen-list* (mapcar #'init-screen (xlib:display-roots *display*)))
+	(handler-case
+	 (setf *screen-list* (mapcar #'init-screen (xlib:display-roots *display*)))
+	 (xlib:access-error (c)
+           (declare (ignorable c))
+           (return-from stumpwm (princ "Another window manager is running."))))
 	(mapc #'process-existing-windows *screen-list*)
 	;; Give the first screen's frame focus
 	(focus-frame (first *screen-list*) (screen-current-frame (first *screen-list*)))

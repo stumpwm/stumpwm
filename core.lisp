@@ -320,35 +320,37 @@ give the last accessed window focus."
 (defun focus-window (window)
   "Give the window focus. This means the window will be visible,
 maximized, and given focus."
-  (let ((screen (window-screen window)))
-    ;(master-window (window-master window)))
-    ;(setf (xlib:window-priority master-window) :top-if)
-    (setf (xlib:window-priority window) :top-if)
-    (xlib:set-input-focus *display* window :POINTER-ROOT)
-    (send-client-message window :WM_PROTOCOLS +wm-take-focus+)
-    ;; Move the window to the head of the mapped-windows list
-    (move-window-to-head screen window)
-    ;; If another window was focused, then call the unfocus hook for
-    ;; it.
-    (when (screen-current-window screen)
-      (run-hook-with-args *unfocus-window-hook* (screen-current-window screen)))
-      ;(hide-window (screen-current-window screen)))
-;;     (when (not (xlib:window-equal (frame-window (frame-data screen
-;; 							    (screen-current-frame screen)))
-;; 				  window))
-;;       (setf (frame-window (frame-data screen (screen-current-frame screen))) window)
-;;       ;; We only need to maximize the windo if it used to be in a
-;;       ;; different frame.
-;;       (if (not (eq (window-frame screen window)
-;; 		   (screen-current-frame screen)))
-;; 	  (maximize-window window)))
-    ;(unhide-window window)
-    (run-hook-with-args *focus-window-hook* window)))
+  (handler-case
+   (let ((screen (window-screen window)))
+     (setf (xlib:window-priority window) :top-if)
+     (xlib:set-input-focus *display* window :POINTER-ROOT)
+     ;;(send-client-message window :WM_PROTOCOLS +wm-take-focus+))
 
+     ;; Move the window to the head of the mapped-windows list
+     (move-window-to-head screen window)
+     ;; If another window was focused, then call the unfocus hook for
+     ;; it.
+     (when (screen-current-window screen)
+       (run-hook-with-args *unfocus-window-hook* (screen-current-window screen)))
+     (run-hook-with-args *focus-window-hook* window))
+   (xlib:drawable-error (c)
+     ;; This is generally the error we get when attempting to focus
+     ;; a window that's been destroyed. Give a warning and ignore
+     ;; it. It will be taken care of in the unmap and destroy events
+     ;; we'll be getting shortly.
+     (declare (ignorable c))
+     (warn "drawable-error in focus-window"))))
+
+    
 (defun delete-window (window)
   "Send a delete event to the window."
   (pprint '(delete window))
   (send-client-message window :WM_PROTOCOLS +wm-delete-window+))
+
+(defun kill-window (window)
+  "Kill the client associated with window."
+  (pprint '(kill client))
+  (xlib:kill-client *display* (xlib:window-id window)))
 
 
 ;;; Message printing functions 

@@ -1,5 +1,20 @@
 2004-10-10  Shawn Betts  <katia_dilkina@verizon.net>
 
+	* user.lisp (set-default-bindings): add a binding for
+	kill-current-window.
+	(focus-forward): only focus the window, nw, if it is non-null.
+	(kill-current-window): new function
+
+	* stumpwm.lisp (stumpwm): if the display string isn't provided and
+	there's no DISPLAY env var then use :0 when opening the display.
+	(stumpwm): don't set an error handler.
+	(stumpwm): catch the xlib error telling us another window manager
+	is running and return from the function.
+
+	* core.lisp (focus-window): wrap the function in a handler-case to
+	catch drawable-error.
+	(kill-window): new function
+
 	* stumpwm.lisp (load-rc-file): new function
 	(stumpwm): echo a welcome message. Load the rc file and display
 	any errors that occurred while loading it.

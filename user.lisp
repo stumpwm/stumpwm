@@ -40,6 +40,7 @@
   (set-key-binding #\w '(:control) 'echo-windows)
   (set-key-binding #\k '() 'delete-current-window)
   (set-key-binding #\k '(:control) 'delete-current-window)
+  (set-key-binding #\K '() 'kill-current-window)
   (set-key-binding #\b '() 'banish-pointer)
   (set-key-binding #\b '(:control) 'banish-pointer)
   (set-key-binding #\a '() 'echo-date)
@@ -98,12 +99,18 @@
 		 (car window-list)
 	       ;; Otherwise, focus the next one in the list.
 	       (cadr wins)))
-    (frame-raise-window screen (window-frame screen nw) nw)))
+    (when nw
+      (frame-raise-window screen (window-frame screen nw) nw))))
 
 (defun delete-current-window (screen)
   "Send a delete event to the current window."
   (when (screen-current-window screen)
     (delete-window (screen-current-window screen))))
+
+(defun kill-current-window (screen)
+  "Kill the client of the current window."
+  (when (screen-current-window screen)
+    (kill-window (screen-current-window screen))))
 
 (defun banish-pointer (screen)
   "Move the pointer to the lower right corner of the screen"
