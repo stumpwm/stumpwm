@@ -47,6 +47,9 @@ everything up. so if you're not using debian (or you aren't using
 cmucl in debian) then you need to change the dependency in stumpwm.asd
 from :cmucl-clx to :clx.
 
+You need the CLOCC ports package from http://clocc.sf.net. If you
+don't have it installed, the above will fail.
+
 For most configurations you should be able to type the following:
 
 (stumpwm:stumpwm "" :display 0)
