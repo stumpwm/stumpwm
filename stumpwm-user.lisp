@@ -72,7 +72,26 @@
 
 (defun echo-windows (screen)
   "Print a list of the windows to the screen."
-  (echo-window-list screen (sort-windows screen)))
+  (let* ((wins (sort-windows screen))
+	 (highlight (position (screen-current-window screen) wins :test #'xlib:window-equal))
+	(names (mapcar (lambda (w)
+			 (funcall *window-format-fn* screen w)) wins)))
+    (echo-string-list screen names highlight)))
+
+(defun echo-date (screen)
+  "Print the output of the 'date' command to the screen."
+  (let* ((month-names
+	  #("Jan" "Feb" "Mar" "Apr" "May" "Jun" "Jul" "Aug" "Sep" "Oct" "Nov" "Dec"))
+	 (day-names
+	  #("Mon" "Tue" "Wed" "Thu" "Fri" "Sat" "Sun"))
+	 (date-string (multiple-value-bind (sec min hour dom mon year dow)
+			 (get-decoded-time)
+		       (format nil "~A ~A ~A ~A:~2,,,'0@A:~2,,,'0@A ~A"
+			       (aref day-names dow)
+			       (aref month-names (- mon 1))
+			       dom hour min sec year))))
+    (echo-string screen date-string)))
+
 
 (defun select-window (screen)
   "Read input from the user and go to the selected window."

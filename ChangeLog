@@ -1,3 +1,33 @@
+2003-09-22  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* stumpwm.lisp (*window-format-fn*): bound to
+	default-window-format
+	(*key-binding-alist*): bind #\a to echo-date
+	(mapcar-hash): declare key as ignorable in lambda fn
+	(default-window-format): new function
+	(find-free-window-number): remove window parameter
+	(process-existing-windows): call absorb-mapped-window. give the
+	first window in the mapped window list focus.
+	(echo-string-list): new function
+	(echo-window-list): remove
+	(echo-string): new function
+	(:configure-request): focus the window if a :bave stack-mode
+	request was made.
+	(:map-request): call absorb-mapped-window
+	(absorb-mapped-window): new function
+	(handle-events): remove function
+	(stumpwm-internal-loop): call xlib:process-event directly.
+	(error-handler): correctly detect another WM running and signal an
+	error.
+	(:destroy-notify): call remove-window.
+	(:unmap-notify): call remove-window
+	(remove-window): new function
+	(add-window): add a window-table entry and the window's new
+	number.
+
+	* stumpwm-user.lisp (echo-windows): call echo-string-list
+	(echo-date): new function.
+
 2003-09-18  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* stumpwm-user.lisp (select-window): pass a prompt to
