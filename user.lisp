@@ -54,14 +54,14 @@
   (set-key-binding #\9 (lambda (s) (select-window-number s 9))))
 
 (defun focus-next-window (screen)
-  (focus-forward screen (sort-windows screen)))
+  (focus-forward (sort-windows screen)))
 
 (defun focus-prev-window (screen)
-  (focus-forward screen (reverse (sort-windows screen))))
+  (focus-forward (reverse (sort-windows screen))))
 
 ;; In the future, this window will raise the window into the current
 ;; frame.
-(defun focus-forward (screen window-list)
+(defun focus-forward (window-list)
  "Set the focus to the next item in window-list from the focused window."
   ;; The window with focus is the "current" window, so find it in the
   ;; list and give that window focus
@@ -134,9 +134,9 @@
 (defun select-window-number (screen num)
   (labels ((match (win)
 		  (= (window-number screen win) num)))
-    (setf match (find-if #'match (screen-mapped-windows screen)))
-    (when match
-      (focus-window match))))
+    (let ((win (find-if #'match (screen-mapped-windows screen))))
+      (when win
+	(focus-window win)))))
 
 (defun other-window (screen)
   (when (second (screen-mapped-windows screen))
@@ -144,4 +144,5 @@
 
 (defun shell-command (screen)
   (let ((cmd (read-one-line screen "/bin/sh -c ")))
-    (port:run-prog *shell-program* :args (list "-c" cmd) :wait nil)))
+    (unless (null cmd)
+      (port:run-prog *shell-program* :args (list "-c" cmd) :wait nil))))

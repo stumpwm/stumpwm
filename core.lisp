@@ -37,7 +37,7 @@
     (xlib:drawable-width root)))
 
 (defun find-screen (root)
-  "Return the screen containing the root window"
+  "Return the screen containing the root window."
   (find-if (lambda (s)
 	     (eql (xlib:screen-root (screen-number s))
 		  root))
@@ -57,6 +57,15 @@
 		 #\+)
 		(t #\-))
 	  (window-name w)))
+
+(defun window-master (window)
+  "Find the window's master window (the one it's been reparented to)."
+  (multiple-value-bind (children parent) (xlib:query-tree window)
+   (declare (ignore children))
+   (if (xlib:window-equal (xlib:drawable-root window) parent)
+       window 
+     (window-master parent))))
+
 
 (defun window-screen (w)
   "Return the screen associated with window w."
@@ -236,11 +245,27 @@ than the root window's width and height."
     (setf (gethash window (screen-window-table screen)) (make-hash-table))
     (setf (gethash :number (gethash window (screen-window-table screen))) num)))
 
+(defun reparent-window (screen window)
+  (let ((master-window (xlib:create-window
+			:parent (xlib:screen-root (screen-number screen))
+			:x (xlib:drawable-x window)
+			:y (xlib:drawable-y window)
+			:width (xlib:drawable-width window)
+			:height (xlib:drawable-height window)
+			:background (xlib:screen-white-pixel (screen-number screen))
+			:border-width 5
+			:event-mask (xlib:make-event-mask
+				     :substructure-notify))))
+    (xlib:reparent-window window master-window 2 2)
+    (xlib:map-window master-window)
+    (xlib:map-subwindows master-window)))
+
 (defun absorb-mapped-window (screen window)
   "Add the window to the screen's mapped window list and process it as
 needed."
   (add-window screen window)
   (maximize-window window)
+  ;(reparent-window screen window)
   (xlib:map-window window)
   (grab-keys-on-window window)
   ;; Run the map window hook on it
@@ -272,9 +297,10 @@ give the last accessed window focus."
 (defun focus-window (window)
   "Give the window focus. This means the window will be visible,
 maximized, and given focus."
-  (let ((screen (window-screen window)))
-    (setf (xlib:window-priority window) :above)
-    (xlib:set-input-focus *display* window :pointer-root)
+  (let ((screen (window-screen window))
+	(master-window (window-master window)))
+    (setf (xlib:window-priority master-window) :top-if)
+    (xlib:set-input-focus *display* window :POINTER-ROOT)
     ;; Move the window to the head of the mapped-windows list
     (move-window-to-head screen window)
     ;; If another window was focused, then call the unfocus hook for
@@ -380,22 +406,16 @@ the nth entry to highlight."
   "Print msg to SCREEN's message window."
   (echo-string-list screen (list msg)))
 
-;; FIXME: This doesn't quite work yet because when no window is
-;; focused the root window has focus, not the key window. Just gotta
-;; write that code somewhere.
 (defun current-screen ()
   "Return the current screen. The current screen is the screen whose
-window has focus. If no window has focus it is the screen that last
+window has focus. If no window has focus it is the screen that last had
 focus of a window."
   (let* ((win (xlib:input-focus *display*))
-	 (screen (member-if (lambda (s)
-			      (or (xlib:window-equal win (screen-current-window s))
-				  (xlib:screen-root (screen-number s))))
-			    *screen-list*)))
+	 (screen (window-screen win)))
     ;; We MUST be able to figure out the current screen by this method
     (assert screen)
     ;; Return the current screen
-    (car screen)))
+    screen))
 
 (defun init-screen (screen-number)
   "Given a screen number, returns a screen structure with initialized members"
@@ -548,6 +568,7 @@ focus of a window."
 (define-stump-event-handler :map-request (parent window)
   (declare (ignorable parent))
   (let ((screen (window-screen window)))
+    (process-new-window window)
     (absorb-mapped-window screen window)
     ;; Give it focus
     (focus-window window)))
@@ -556,14 +577,11 @@ focus of a window."
   (declare (ignorable configure-p))
   (unless (or send-event-p
 	      (xlib:window-equal window event-window))
-    ;; There are two kinds of unmap notify events:
-    ;; the straight up ones where event-window and
-    ;; window are the same, and substructure unmap
-    ;; events when the event-window is the parent
-    ;; of window. Since the parent of all stumpwm
-    ;; windows is the root window, use it to find
-    ;; the screen.
-    (let ((screen (find-screen event-window)))
+    ;; There are two kinds of unmap notify events: the straight up
+    ;; ones where event-window and window are the same, and
+    ;; substructure unmap events when the event-window is the parent
+    ;; of window. So use event-window to find the screen.
+    (let ((screen (window-screen event-window)))
       (remove-window screen window))))
 
 
@@ -574,9 +592,9 @@ focus of a window."
   (declare (ignorable x))
   (declare (ignorable y))
   (declare (ignorable parent))
-  (unless override-redirect-p
-    (process-new-window window)
-    (run-hook-with-args *new-window-hook* window)))
+  (unless override-redirect-p))
+;    (process-new-window window)
+;    (run-hook-with-args *new-window-hook* window)))
 
 
 (define-stump-event-handler :destroy-notify (send-event-p event-window window)
@@ -584,11 +602,13 @@ focus of a window."
 	      (xlib:window-equal event-window window))
     ;; Ignore structure destroy notifies and only
     ;; use substructure destroy notifiers. This way
-    ;; event-window is the root window.
-    (let ((screen (find-screen event-window)))
+    ;; event-window is the window's parent.
+    (let ((screen (window-screen event-window)))
       ;; In some cases, we get a destroy notify before an unmap
       ;; notify, so simulate an unmap notify (for now).
       (remove-window screen window)
+      ;; Destroy the master window
+      (xlib:destroy-window event-window)
       (run-hook-with-args *destroy-window-hook* window))))
 
 (defun handle-command-key (screen code state)
