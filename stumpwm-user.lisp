@@ -73,3 +73,15 @@
 (defun echo-windows (screen)
   "Print a list of the windows to the screen."
   (echo-window-list screen (screen-mapped-windows screen)))
+
+(defun select-window (screen)
+  "Read input from the user and go to the selected window."
+    (let ((query (read-line screen))
+	  match)
+      (labels ((match (win)
+		      (let* ((wname (concatenate 'string (mapcar #'code-char (window-name win))))
+			     (end (min (length wname) (length query))))
+			(string-equal wname query :end1 end :end2 end))))
+	(setf match (find-if #'match (screen-mapped-windows screen)))
+	(when match
+	  (focus-window match)))))

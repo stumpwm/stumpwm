@@ -68,11 +68,18 @@
 (defvar *prefix-modifiers* '(:control)
   "The modifier list for the prefix key")
 
-(defvar *key-binding-alist* (list (cons (xlib:keysym #\n) 'focus-next-window)
-				  (cons (xlib:keysym #\p) 'focus-prev-window)
-				  (cons (xlib:keysym #\w) 'echo-windows)
-				  (cons (xlib:keysym #\k) 'delete-current-window)
-				  (cons (xlib:keysym #\b) 'banish-pointer))
+(defstruct key-binding
+  "A structure to map from a keystroke to a command."
+  (key nil :type xlib:keysym)
+  (mods nil :type list)
+  (fn nil :type function))
+
+(defparameter *key-binding-alist* (list (cons (xlib:keysym #\n) 'focus-next-window)
+					(cons (xlib:keysym #\p) 'focus-prev-window)
+					(cons (xlib:keysym #\w) 'echo-windows)
+					(cons (xlib:keysym #\k) 'delete-current-window)
+					(cons (xlib:keysym #\b) 'banish-pointer)
+					(cons (xlib:keysym #\') 'select-window))
   "An alist of keysym function pairs.")
 
 ;; FIXME: This variable is set only once but it needs to be set after
@@ -89,6 +96,11 @@
 ;; Message window constants
 (defvar *message-window-padding* 5)
 
+;; line editor
+(defvar *editor-bindings* 
+  "A list of key-bindings for line editing."
+  nil)
+
 (defstruct frame
   number
   x
@@ -97,9 +109,19 @@
   height
   window)
 
+(defstruct modifiers
+  (meta nil)
+  (alt nil)
+  (hyper nil)
+  (super nil))
+  
+
 (defstruct screen
   number
   frame-tree
+  ;; 
+  modifiers
+  font
   current-frame
   current-window
   ;; A list of all mapped windows. Used for navigating windows.
@@ -110,10 +132,19 @@
   key-window
   message-window
   input-window
+  ;; This bucket stores keys pressed while the user types into the
+  ;; input window. When the user presses enter the input bucket is
+  ;; processed and emptied.
+  input-bucket
   frame-window)
 
 (defvar *screen-list* '()
   "List of screens")
+
+;; Misc. utility functions
+(defun conc1 (list arg)
+  "Append arg to the end of list"
+  (nconc list (list arg)))
 
 ;; Screen helper functions
 
@@ -179,9 +210,9 @@ managed."
 	 (black (xlib:screen-black-pixel screen-number))
 	 (input-window (xlib:create-window :parent (xlib:screen-root screen-number)
 					   :x 0 :y 0 :width 20 :height 20
-					   :background white
+					   :background black
 					   :border white
-					   :border-width 0
+					   :border-width 1
 					   :colormap (xlib:screen-default-colormap
 						      screen-number)
 					   :event-mask '(:key-press)))
@@ -224,11 +255,13 @@ managed."
 				    :y 0
 				    :width (xlib:screen-width screen-number)
 				    :height (xlib:screen-height screen-number)))
+		 :font (xlib:open-font *display* *font-name*)
 		 :current-frame 0
 		 :window-table (make-hash-table)
 		 :key-window key-window
 		 :message-window message-window
 		 :input-window input-window
+		 :input-bucket '()
 		 :frame-window frame-window)))
 
 (defun init-atoms ()
@@ -256,65 +289,70 @@ managed."
 
 
 ;; Event handler functions
+(defparameter *event-fn-table* (make-hash-table)
+  "A hash of event types to functions")
+
+(defmacro define-stump-event-handler (event keys &body body)
+  (let ((fn-name (gensym)))
+  `(labels ((,fn-name (&rest event-slots &key ,@keys &allow-other-keys)
+		      (declare (ignorable event-slots))
+		      ,@body))
+     (setf (gethash ,event *event-fn-table*) #',fn-name))))
+
+
+(define-stump-event-handler :map-notify (event-window window override-redirect-p)
+  (unless (eql event-window window)
+    (handle-map-notify window)))
+
+(define-stump-event-handler :configure-request (stack-mode parent window above-sibling x y width height border-width value-mask)
+  (pprint value-mask)
+  (handle-configure-request window x y width height border-width stack-mode value-mask))
+
+(define-stump-event-handler :map-request (parent window)
+  (handle-map-request window))
+
+(define-stump-event-handler :unmap-notify (send-event-p event-window window configure-p)
+  (unless (or send-event-p
+	      (xlib:window-equal window event-window))
+    ;; There are two kinds of unmap notify events:
+    ;; the straight up ones where event-window and
+    ;; window are the same, and substructure unmap
+    ;; events when the event-window is the parent
+    ;; of window. Since the parent of all stumpwm
+    ;; windows is the root window, use it to find
+    ;; the screen.
+    (handle-unmap-notify (find-screen event-window) window)))
+
+(define-stump-event-handler :create-notify (parent window x y width height border-width override-redirect-p)
+  (handle-create-notify window x y width height border-width override-redirect-p))
+
+(define-stump-event-handler :destroy-notify (send-event-p event-window window)
+  (unless (or send-event-p
+	      (xlib:window-equal event-window window))
+    ;; Ignore structure destroy notifies and only
+    ;; use substructure destroy notifiers. This way
+    ;; event-window is the root window.
+    (handle-destroy-notify (find-screen event-window) window)))
+
+(define-stump-event-handler :key-press (code state window root)
+  (let ((screen (find-screen root)))
+;;     (if (xlib:window-equal (screen-input-window screen) window)
+;; 	;; It's from our input window
+;; 	(read-input screen code state)
+      ;; It's a command
+      (handle-key-press screen window code state)))
+
+(defun handle-event (&rest event-slots &key display event-key &allow-other-keys)
+  (pprint (list 'handling 'event event-key))
+  (let ((eventfn (gethash event-key *event-fn-table*)))
+    (when eventfn
+      (apply eventfn event-slots))
+    t))
 
 (defun handle-events (display)
   "Reads any events from the queue and processes them."
-					;  (loop
-  (xlib:event-case (display :discard-p t :force-output-p t)
-		   (:configure-request 
-		    (window x y width height border-width value-mask)
-		    (print "Configure request")
-		    (handle-configure-request window x y width height border-width value-mask)
-		    nil)
-		   (:map-request 
-		    (window)
-		    (print "Map request")
-		    (handle-map-request window)
-		    nil)
-		   (:map-notify
-		    (window event-window)
-		    (unless (eql event-window window)
-		      (print "map notify")
-		      (handle-map-notify window))
-		    nil)
-		   (:unmap-notify
-		    (window event-window send-event-p)
-		    (unless (or send-event-p
-				(xlib:window-equal window event-window))
-		      (print "Unmap notify")
-		      ;; There are two kinds of unmap notify events:
-		      ;; the straight up ones where event-window and
-		      ;; window are the same, and substructure unmap
-		      ;; events when the event-window is the parent
-		      ;; of window. Since the parent of all stumpwm
-		      ;; windows is the root window, use it to find
-		      ;; the screen.
-		      (handle-unmap-notify (find-screen event-window) window))
-		    nil)
-		   (:create-notify
-		    (window x y width height border-width override-redirect-p)
-		    (print "Create notify")
-		    (handle-create-notify window x y width height border-width override-redirect-p)
-		    nil)
-		   (:destroy-notify
-		    (event-window window send-event-p)
-		    (unless (or send-event-p
-				(xlib:window-equal event-window window))
-		      ;; Ignore structure destroy notifies and only
-		      ;; use substructure destroy notifiers. This way
-		      ;; event-window is the root window.
-		      (print "Destroy notify")
-		      (handle-destroy-notify (find-screen event-window) window))
-		    nil)
-		   (:key-press
-		    (root window state code)
-		    (print "Key press event")
-		    (print window)
-		    (print state)
-		    (print code)
-		    (print "---")
-		    (handle-key-press (find-screen root) window code state)
-		    nil)))
+  (loop
+   (xlib:process-event *display* :handler #'handle-event :timeout 5)))
 
 (defun geometry-hints (screen win)
   "Return hints for max width and height and increment hints. These
@@ -377,18 +415,34 @@ than the root window's width and height."
 	     (* inc-y (truncate (/ (- height (xlib:drawable-height win)) inc-y)))))
     (xlib:display-force-output *display*)))
 
-(defun handle-configure-request (w x y width height border-width value-mask)
-  (let ((screen (window-screen w)))
-    (xlib:with-state (w)
-		     (setf (xlib:drawable-x w) x
-			   (xlib:drawable-y w) y
-			   (xlib:drawable-height w) height
-			   (xlib:drawable-width w) width
-			   (xlib:drawable-border-width w) border-width)
-
-		     ;; After honouring the request, maximize it
-		     (when (member w (screen-mapped-windows screen))
-		       (maximize-window w)))))
+(defun handle-configure-request (w x y width height border-width stack-mode value-mask)
+  (labels ((has-x (mask) (= 1 (logand mask 1)))
+	   (has-y (mask) (= 2 (logand mask 2)))
+	   (has-w (mask) (= 4 (logand mask 4)))
+	   (has-h (mask) (= 8 (logand mask 8)))
+	   (has-bw (mask) (= 16 (logand mask 16)))
+    	   (has-stackmode (mask) (= 64 (logand mask 64))))
+    (let ((screen (window-screen w)))
+      (xlib:with-state (w)
+		       (pprint value-mask)
+		       (when (has-x value-mask)
+			 (pprint 'x)
+			 (setf (xlib:drawable-x w) x))
+		       (when (has-y value-mask)
+			 (pprint 'y)
+			 (setf (xlib:drawable-y w) y))
+		       (when (has-h value-mask)
+			 (pprint 'h)
+			 (setf (xlib:drawable-height w) height))
+		       (when (has-w value-mask)
+			 (pprint 'w)
+			 (setf (xlib:drawable-width w) width))
+		       (when (has-bw value-mask)
+			 (pprint 'bw)
+			 (setf (xlib:drawable-border-width w) border-width))
+		       ;; After honouring the request, maximize it
+		       (when (member w (screen-mapped-windows screen))
+			 (maximize-window w))))))
 
 ;; FIXME: I think some of this code should be put in the map hook
 ;; instead of hardcoded.
@@ -565,10 +619,10 @@ focus of a window."
 
 ;;; Echoing strings
 
-(defun create-message-window-gcontext (screen font)
+(defun create-message-window-gcontext (screen)
   "Create a graphic context suitable for printing characters."
   (xlib:create-gcontext :drawable (screen-message-window screen)
-			:font font
+			:font (screen-font screen)
 			:foreground
 			(xlib:screen-white-pixel (screen-number screen))
 			:background
@@ -579,11 +633,11 @@ focus of a window."
   (loop for i in l
 	maximize (xlib:text-width font i)))
 
-(defun setup-message-window (screen font l)
+(defun setup-message-window (screen l)
   (let ((height (* (length l)
-		   (+ (xlib:font-ascent font)
-		      (xlib:font-descent font))))
-	(width (max-width font l))
+		   (+ (xlib:font-ascent (screen-font screen))
+		      (xlib:font-descent (screen-font screen)))))
+	(width (max-width (screen-font screen) l))
 	(screen-width (xlib:drawable-width (xlib:screen-root (screen-number screen))))
 	(win (screen-message-window screen)))
     ;; Now that we know the dimensions, raise and resize it.
@@ -608,13 +662,12 @@ focus of a window."
 
 (defun echo-window-list (screen l)
   "Print each window in l to the screen and highlight the current window."
-  (let* ((font (xlib:open-font *display* *font-name*))
-	 (height (+ (xlib:font-descent font)
-		    (xlib:font-ascent font)))
+  (let* ((height (+ (xlib:font-descent (screen-font screen))
+		    (xlib:font-ascent (screen-font screen))))
 	 (names (mapcar #'window-name l))
-	 (gcontext (create-message-window-gcontext screen font))
+	 (gcontext (create-message-window-gcontext screen))
 	 (message-win (screen-message-window screen)))
-    (setup-message-window screen font names)
+    (setup-message-window screen names)
     ;; Loop through each window and print its name. If we come across
     ;; the current window, then highlight it.
     (loop for win in l
@@ -624,7 +677,7 @@ focus of a window."
 	  do (xlib:draw-image-glyphs message-win gcontext
 				     *message-window-padding*
 				     (+ (* i height)
-					(xlib:font-ascent font))
+					(xlib:font-ascent (screen-font screen)))
 				     name)
 	  when (xlib:window-equal (screen-current-window screen) win)
 	  do (invert-rect screen message-win

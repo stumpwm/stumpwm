@@ -1,3 +1,48 @@
+2003-09-17  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* stumpwm.lisp (*key-binding-alist*): add select-window
+	(key-binding): new structure
+	(*editor-bindings*): new global
+	(modifiers): new structure
+	(screen): add input-bucket, modifiers and font slots
+	(conc1): new function
+	(init-screen): set the input-window's background to black, border
+	to white and border-width to 1.
+	(init-screen): init font and input-bucket
+	(*event-fn-table*): new global
+	(define-stump-event-handler): new macro
+	(:map-notify): new event handler
+	(:configure-request): likewise
+	(:map-request): likewise
+	(:unmap-notify): likewise
+	(:create-notify): likewise
+	(:destroy-notify): likewise
+	(:key-press): likewise
+	(handle-event): new function
+	(handle-events): use xlib:process-event and handle-event to
+	process events.
+	(handle-configure-request): check the value-mask before setting
+	the attribute. New function argument, stack-mode.
+	(create-message-window-gcontext): remove font function
+	argument. Use screen-font instead.
+	(setup-message-window): likewise
+	(echo-window-list): likewise
+
+	* stumpwm-user.lisp (select-window): new function
+
+	* stumpwm-input.lisp (read-key-handle-event): new function
+	(read-line): likewise
+	(setup-input-window): likewise
+	(shutdown-input-window): likewise
+	(update-modifier-map): likewise
+	(x11mod->stumpmod): likewise
+	(mod->string): likewise
+	(keycode->string): likewise
+	(cook-keycode): likewise
+	(keycode->character): likewise
+	(handle-key): likewise
+	(read-input): likewise
+
 2003-09-13  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* stumpwm.lisp (geometry-hints): truncate the values where
