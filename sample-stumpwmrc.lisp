@@ -4,25 +4,34 @@
 
 (in-package :stumpwm)
 
-;; Read some doc
-(set-key-binding #\d '() (lambda (s) (run-command-string "gv")))
-;; Browse somewhere
-(set-key-binding #\b '() (partial-command "" "firefox http://www."))
-;; Ssh somewhere
-(set-key-binding #\s '(:control) (partial-command "" "xterm -e ssh "))
-;; Lock screen
-(set-key-binding #\l '(:control) (lambda (s) (run-command-string "xlock")))
+;; prompt the user for an interactive command. The first arg is an
+;; optional initial contents.
+(define-stumpwm-command "colon1" (screen (initial :rest nil))
+  (let ((cmd (read-one-line screen ": " initial)))
+    (when cmd
+      (interactive-command cmd))))
 
-;; Web search (works for Google and Imdb)
-(defun make-web-search (prompt prefix)
-  #'(lambda (s)
-      (let ((search (read-one-line s prompt)))
-	(unless (null search)
-	  (run-command-string 
-	   (concatenate 'string prefix
-			(substitute #\+ #\Space search)))))))
-(set-key-binding #\g '() (make-web-search "Google search: " "firefox http://www.google.fr/search?q="))
-(set-key-binding #\i '() (make-web-search "IMDB search: " "firefox http://www.imdb.com/find?q="))
+;; Read some doc
+(set-key-binding #\d '() "exec gv")
+;; Browse somewhere
+(set-key-binding #\b '() "colon1 exec firefox http://www.")
+;; Ssh somewhere
+(set-key-binding #\s '(:control) "colon1 exec xterm -e ssh ")
+;; Lock screen
+(set-key-binding #\l '(:control) "exec xlock")
+
+;; Web jump (works for Google and Imdb)
+(defmacro make-web-jump (name prefix)
+  `(define-stumpwm-command ,name (screen (search :rest ,(concatenate name " search: ")))
+     (run-shell-command
+	   (concatenate 'string ,prefix
+			(substitute #\+ #\Space search)))))
+
+(make-web-jump "google" "firefox http://www.google.fr/search?q=")
+(make-web-jump "imdb" "firefox http://www.imdb.com/find?q=")
+
+(set-key-binding #\g '() "google")
+(set-key-binding #\i '() "imdb")
 
 ;; Message window font
 (setf *font-name* "-xos4-terminus-medium-r-normal--14-140-72-72-c-80-iso8859-15")

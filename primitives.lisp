@@ -94,7 +94,7 @@ screen and window. It should return a string.")
   (mods nil :type list)
   (fn nil :type function))
 
-(defparameter *key-bindings* (make-hash-table :test 'equal)
+(defvar *key-bindings* (make-hash-table :test 'equal)
   "An alist of keysym function pairs.")
 
 ;; FIXME: This variable is set only once but it needs to be set after
@@ -215,7 +215,7 @@ calls fn on the value for the key hash-key, not the pair."
 			for i in nums
 			when (/= n i)
 			do (return n))))
-    (pprint nums)
+    (format t "Free number: ~S~%" nums)
     (if new-num
 	new-num
       ;; there was no space between the numbers, so use the last + 1

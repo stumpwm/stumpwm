@@ -1,3 +1,62 @@
+2004-11-30  Shawn Betts  <katia_dilkina@verizon.net>
+
+	* user.lisp (command): new defstruct
+	(*command-hash*): new defvar
+	(define-stumpwm-command): new macro
+	(set-key-binding): change 3rd arg to cmd
+	("next"): new stumpwm command
+	("prev"): likewise
+	("delete"): likewise
+	("kill"): likewise
+	("banish"): likewise
+	("windows"): likewise
+	("select"): likewise
+	(shell-command): remove function
+	("other"): new stumpwm command
+	(run-shell-command): new function
+	("exec"): new stumpwm command
+	("hsplit"): likewise
+	("vsplit"): likewise
+	(remove-split): use format for debugging output
+	("remove"): new stumpwm command
+	("sibling"): likewise
+	(choose-frame-by-number): new function
+	("fselect"): new stumpwm command
+	(eval-line): take the expression to eval as the second arg
+	("eval"): new stumpwm command
+	(split-by-one-space): new function
+	(parse-and-run-command): likewise
+	(interactive-command): new function
+	("colon"): new stumpwm command
+	("pull"): likewise
+	("meta"): likewise
+	(renumber): take the new number as arg #2
+	("number"): new stumpwm command
+	("reload"): likewise
+	(set-default-bindings): bind keys to stumpwm commands
+
+	* stumpwm.lisp (load-rc-file): change ~/.stumpwmrc path to be more portable.
+	(error-handler): use format for debugging output
+
+	* primitives.lisp (*key-bindings*): change to defvar.
+	(find-free-number): use format for debugging output
+
+	* input.lisp (setup-input-window): use format for debugging output
+	(shutdown-input-window): likewise
+
+	* core.lisp (process-existing-windows): use format for debugging output
+	(no-focus): likewise
+	(delete-window): likewise
+	(kill-window): likewise
+	(focus-frame): likewise
+	(sync-frame-windows): likewise
+	(draw-frame-numbers): likewise
+	(:configure-request): likewise
+	(handle-command-key): likewise
+	(:key-press): likewise
+	(handle-event): likewise
+	(echo-string-list): force output
+
 2004-11-12  Shawn Betts  <katia_dilkina@verizon.net>
 
 	* primitives.lisp (screen): remove frame-hash. all dependant code

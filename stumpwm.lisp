@@ -36,10 +36,7 @@
 doesn't exist. Returns a values list: whether the file loaded (t if no
 rc files exist), the error if it didn't, and the rc file that was
 loaded."
-  (let* ((user-rc (probe-file (format nil "~A/.stumpwmrc"
-				    (or (port:getenv "HOME")
-					(error "$HOME not set!?")))))
-					 
+  (let* ((user-rc (probe-file "home:.stumpwmrc"))
 	 (etc-rc (probe-file #p"/etc/stumpwmrc"))
 	 (rc (or user-rc etc-rc)))
     (if rc
@@ -62,7 +59,7 @@ loaded."
     ('xlib:access-error
      (error "Another window manager is running."))
     (t
-     (pprint (list 'error error-key key-vals)))))
+     (format t "Error ~S ~S~%" error-key key-vals))))
 
 (defun stumpwm-internal-loop ()
   "The internal loop that waits for events and handles them."
@@ -111,13 +108,14 @@ loaded."
 	(mapc #'process-existing-windows *screen-list*)
 	;; Give the first screen's frame focus
 	(focus-frame (first *screen-list*) (screen-current-frame (first *screen-list*)))
-	;; Setup our keys. FIXME: should this be in the hook?
+	;; Setup the default key bindings. FIXME: should this be in the hook?
 	(set-default-bindings)
 	(echo-string (first *screen-list*) "Welcome to The Stump Window Manager!")
+	;; Load rc file
 	(multiple-value-bind (success err rc) (load-rc-file)
 	  (unless success
 	    (echo-string (first *screen-list*)
-			 (format "Error loading ~A: ~A" rc err))))
+			 (format nil "Error loading ~A: ~A" rc err))))
 	(run-hook *start-hook*)
 	;; Let's manage.
 	(stumpwm-internal-loop))

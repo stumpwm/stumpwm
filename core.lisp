@@ -56,7 +56,7 @@
 		   :data data))
 
 (defun default-window-format (screen w)
-  "The default function called to format a window for display in the window list."
+  "Return a formatted string"
   (format nil "~D~C~A"
 	  (window-number screen w)
 	  (cond ((xlib:window-equal w (screen-current-window screen))
@@ -189,7 +189,7 @@ managed."
 	  (if (or (eql map-state :viewable)
 		  (eql wm-state +iconic-state+))
 	      (progn
-		(pprint (list 'processing (window-name win) win))
+		(format t "Processing ~S ~S~%" (window-name win) win)
 		(process-new-window win)
 		;; Pretend it's been mapped
 		(absorb-mapped-window screen win))))))))
@@ -313,7 +313,7 @@ give the last accessed window focus."
 
 (defun no-focus (screen)
   "don't focus any window but still read keyboard events."
-  (pprint 'no-focus)
+  (format t "no-focus~%")
   (xlib:set-input-focus *display* (screen-focus-window screen) :POINTER-ROOT))
 
 (defun focus-window (window)
@@ -343,12 +343,12 @@ maximized, and given focus."
     
 (defun delete-window (window)
   "Send a delete event to the window."
-  (pprint '(delete window))
+  (format t "Delete window~%")
   (send-client-message window :WM_PROTOCOLS 213))
 
 (defun kill-window (window)
   "Kill the client associated with window."
-  (pprint '(kill client))
+  (format t "Kill client~%")
   (xlib:kill-client *display* (xlib:window-id window)))
 
 
@@ -409,7 +409,7 @@ maximized, and given focus."
 (defun focus-frame (screen f)
   (let ((w (frame-window f)))
     (setf (screen-current-frame screen) f)
-    (pprint f)
+    (format t "~S~%" f)
     (if w
 	(focus-window w)
       (no-focus screen))))
@@ -610,7 +610,7 @@ one."
   "synchronize windows attached to FRAME."
   (mapc (lambda (w)
 	  (when (eq (window-frame screen w) frame)
-	    (pprint '(maximizing w))
+	    (format t "maximizing ~S~%" w)
 	    (maximize-window w)))
 	(screen-mapped-windows screen)))
 
@@ -645,7 +645,7 @@ windows used to draw the numbers in. The caller must destroy them."
 				   (xlib:screen-black-pixel (screen-number screen))
 				   (format nil "~A" (frame-number f)))
 		   (xlib:display-force-output *display*)
-		   (pprint (list 'mapped (frame-number f)))
+		   (format t "mapped ~S~%" (frame-number f))
 		   w))
 	       (screen-frames screen)))
 	    
@@ -702,6 +702,7 @@ the nth entry to highlight."
 			  0 (* i height)
 			  (xlib:drawable-width message-win)
 			  height)))
+  (xlib:display-force-output *display*)
   ;; Set a timer to hide the message after a number of seconds
   (reset-timeout))
 
@@ -842,7 +843,7 @@ list of modifier symbols."
   (declare (ignorable above-sibling))
   (declare (ignorable parent))
   (declare (ignorable stack-mode))
-  (pprint value-mask)
+  (format t "~S~%" value-mask)
   (handler-case
    (labels ((has-x (mask) (= 1 (logand mask 1)))
 	    (has-y (mask) (= 2 (logand mask 2)))
@@ -852,21 +853,21 @@ list of modifier symbols."
 	    (has-stackmode (mask) (= 64 (logand mask 64))))
      (let ((screen (window-screen window)))
        (xlib:with-state (window)
-			(pprint value-mask)
+			(format t "~S~%" value-mask)
 			(when (has-x value-mask)
-			  (pprint 'x)
+			  (format t "x~%")
 			  (setf (xlib:drawable-x window) x))
 			(when (has-y value-mask)
-			  (pprint 'y)
+			  (format t "x~%")
 			  (setf (xlib:drawable-y window) y))
 			(when (has-h value-mask)
-			  (pprint 'h)
+			  (format t "h~%")
 			  (setf (xlib:drawable-height window) height))
 			(when (has-w value-mask)
-			  (pprint 'w)
+			  (format t "w~%")
 			  (setf (xlib:drawable-width window) width))
 			(when (has-bw value-mask)
-			  (pprint 'bw)
+			  (format t "bw~%")
 			  (setf (xlib:drawable-border-width window) border-width)))
        ;; TODO: are we ICCCM compliant?
        ;; Make sure that goes to the client
@@ -938,15 +939,14 @@ list of modifier symbols."
 (defun handle-command-key (screen code state)
   "Find the command mapped to the (code state) and executed it."
   (let* ((key (keycode->character code (xlib:make-state-keys state)))
-	 (fn (gethash (list key (remove :shift (xlib:make-state-keys state))) *key-bindings*)))
-    (pprint (list key state))
-    ;(pprint (cook-keycode code state))
-    (pprint fn)
-    (if (null fn)
-	(pprint '(no match))
+	 (cmd (gethash (list key (remove :shift (xlib:make-state-keys state))) *key-bindings*)))
+    (format t "key-press: ~S ~S~%" key state)
+    (format t "~S~%" cmd)
+    (if (null cmd)
+	(format t "no match.~%")
       (progn
-	(pprint '(found it))
-	(funcall fn screen)))))
+	(format t "found it.~%")
+	(interactive-command cmd screen)))))
 
 (define-stump-event-handler :key-press (code state window root)
   (declare (ignorable window))
@@ -959,11 +959,11 @@ list of modifier symbols."
     ;; grab the keyboard
     (grab-pointer screen)
     (grab-keyboard screen)
-    (pprint '(awaiting command key))
+    (format t "Awaiting command key~%")
     ;; Listen for key
     (let ((key (do ((k (read-key) (read-key)))
 		   ((not (is-modifier (xlib:keycode->keysym *display* (car k) 0))) k))))
-      (pprint '(handling command))
+      (format t "Handling Command~%")
       ;; We've read our key, so we can release the keyboard.
       (ungrab-pointer)
       (ungrab-keyboard)
@@ -972,7 +972,7 @@ list of modifier symbols."
 
 (defun handle-event (&rest event-slots &key display event-key &allow-other-keys)
   (declare (ignorable display))
-  (pprint (list 'handling 'event event-key))
+  (format t "Handling event ~S~%" event-key)
   (let ((eventfn (gethash event-key *event-fn-table*)))
     (when eventfn
       (apply eventfn event-slots))
