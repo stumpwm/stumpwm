@@ -70,15 +70,13 @@
 
 (defun focus-next-window (screen)
   (focus-forward screen (frame-sort-windows screen
-					    (frame-data screen
-							(screen-current-frame screen)))))
+					    (screen-current-frame screen))))
 
 (defun focus-prev-window (screen)
   (focus-forward screen
 		 (reverse
 		  (frame-sort-windows screen
-				      (frame-data screen
-						  (screen-current-frame screen))))))
+				      (screen-current-frame screen)))))
 
 ;; In the future, this window will raise the window into the current
 ;; frame.
@@ -164,7 +162,7 @@
 	(frame-raise-window screen (window-frame screen win) win)))))
 
 (defun other-window (screen)
-  (let* ((f (frame-data screen (screen-current-frame screen)))
+  (let* ((f (screen-current-frame screen))
 	 (wins (frame-windows screen f))
 	 (win (second wins)))
   (when win
@@ -194,10 +192,9 @@
       (migrate-frame-windows screen (screen-current-frame screen) l)
       ;; If the frame has no window, give it the current window of
       ;; the current frame.
-      (unless (frame-window (frame-data screen l))
-	(setf (frame-window (frame-data screen l))
-	      (frame-window (frame-data screen
-					(screen-current-frame screen)))))
+      (unless (frame-window l)
+	(setf (frame-window l)
+	      (frame-window (screen-current-frame screen))))
       ;; Unsplit
       (setf (screen-frame-tree screen)
 	    (remove-frame screen
@@ -206,13 +203,13 @@
       ;; update the current frame and sync it's windows
       (setf (screen-current-frame screen) l)
       (sync-frame-windows screen l)
-      (frame-raise-window screen l (frame-window (frame-data screen l))))))
+      (frame-raise-window screen l (frame-window l)))))
 
 (defun focus-frame-sibling (screen)
   (let* ((sib (sibling (screen-frame-tree screen)
 		      (screen-current-frame screen))))
     (when sib
-      (focus-frame screen (tree-accum-fn sib (lambda (x y) x) (lambda (x) x))))))
+      (focus-frame screen (tree-accum-fn sib (lambda (x y) x) 'identity)))))
 
 (defun focus-frame-by-number (screen)
   (let* ((wins (draw-frame-numbers screen))
@@ -221,8 +218,10 @@
     (pprint (list 'read ch num))
     (when (and (char>= ch #\0)
 	       (char<= ch #\9))
-      (when (member num (mapcar-hash (lambda (f) (frame-number f)) (screen-frame-hash screen)))
-	(focus-frame screen num)))
+      (let ((f (find-if (lambda (x)
+			  (= num (frame-number x)))
+			(screen-frames screen))))
+	(when f	(focus-frame screen f))))
     (mapc #'xlib:destroy-window wins)))
 
 (defun eval-line (screen)

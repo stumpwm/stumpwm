@@ -1,3 +1,8 @@
+2004-11-12  Shawn Betts  <katia_dilkina@verizon.net>
+
+	* primitives.lisp (screen): remove frame-hash. all dependant code
+	updated.
+
 2004-10-10  Shawn Betts  <katia_dilkina@verizon.net>
 
 	* user.lisp (set-default-bindings): add a binding for

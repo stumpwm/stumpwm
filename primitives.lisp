@@ -136,9 +136,8 @@ screen and window. It should return a string.")
 
 (defstruct screen
   number
+  ;; From this frame tree a list of frames can be gathered
   frame-tree
-  frame-hash
-  ;; 
   modifiers
   font
   current-frame

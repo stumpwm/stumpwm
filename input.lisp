@@ -32,7 +32,7 @@
 
 ;;; line and key reading functions
 
-(defun setup-input-window (screen prompt)
+(defun setup-input-window (screen prompt input)
   "Set the input window up to read input"
   (let* ((height (+ (xlib:font-descent (screen-font screen))
 		    (xlib:font-ascent (screen-font screen))))
@@ -44,7 +44,7 @@
     (setf (xlib:drawable-y win) 0
 	  (xlib:drawable-height win) height)
     ;; Draw the prompt
-    (draw-input-bucket screen prompt "")
+    (draw-input-bucket screen prompt input)
     ;; Ready to recieve input
     (xlib:grab-keyboard (screen-input-window screen) :owner-p nil
 			:sync-keyboard-p nil :sync-pointer-p nil)))
@@ -73,10 +73,10 @@
   (do ((ret nil (xlib:process-event *display* :handler #'read-key-handle-event :timeout nil)))
       ((consp ret) ret)))
 
-(defun read-one-line (screen prompt)
+(defun read-one-line (screen prompt &optional (initial-input ""))
   "Read a line of input through stumpwm and return it."
   (labels ((key-loop ()
-	     (let (input)
+	     (let ((input (coerce initial-input 'list)))
 	       (do ((key (read-key) (read-key)))
 		   (nil)
 		 (multiple-value-bind (inp ret) (process-input screen prompt input
@@ -87,7 +87,7 @@
 		      (return (values input 'done)))
 		     ('abort
 		      (return (values input 'abort)))))))))
-    (setup-input-window screen prompt)
+    (setup-input-window screen prompt initial-input)
     (multiple-value-bind (input ret) (key-loop)
       (shutdown-input-window screen)
       (unless (eq ret 'abort)

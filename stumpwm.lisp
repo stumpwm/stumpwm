@@ -50,8 +50,8 @@ loaded."
       (values t nil nil))))
     
 (defun init-atoms ()
-  (setf +wm-delete-window+ (xlib:find-atom *display* 'WM_DELETE_WINDOW)
-	+wm-take-focus+ (xlib:find-atom *display* 'WM_TAKE_FOCUS)))
+  (setf +wm-delete-window+ (xlib:find-atom *display* "WM_DELETE_WINDOW")
+	+wm-take-focus+ (xlib:find-atom *display* "WM_TAKE_FOCUS")))
 
 (defun error-handler (display error-key &rest key-vals &key asynchronous &allow-other-keys)
   "Handle X errors"
@@ -100,14 +100,14 @@ loaded."
   ;; In the event of an error, we always need to close the display
   (unwind-protect
       (progn
-	;; Initialize the necessary atoms
-	(init-atoms)
 	;; Initialize all the screens
 	(handler-case
 	 (setf *screen-list* (mapcar #'init-screen (xlib:display-roots *display*)))
 	 (xlib:access-error (c)
            (declare (ignorable c))
            (return-from stumpwm (princ "Another window manager is running."))))
+	;; Initialize the necessary atoms
+	(init-atoms)
 	(mapc #'process-existing-windows *screen-list*)
 	;; Give the first screen's frame focus
 	(focus-frame (first *screen-list*) (screen-current-frame (first *screen-list*)))
