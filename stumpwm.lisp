@@ -46,9 +46,21 @@
      (pprint (list 'error error-key key-vals)))))
 
 (defun stumpwm-internal-loop ()
-  "The internal loop that waits for events and handles them"
+  "The internal loop that waits for events and handles them."
   (loop
-   (xlib:process-event *display* :handler #'handle-event :timeout 5)))
+   (if (> *timeout* 0)
+       (progn
+	 (let ((time-before (get-universal-time)))
+	   (xlib:process-event *display* :handler #'handle-event :timeout *timeout*)
+	   (let ((time-left (- *timeout* (- (get-universal-time) time-before))))
+	     (if (<= time-left 0)
+		 (progn
+		   (unmap-all-message-windows)
+		   (setf *timeout* 0))
+	       (setf *timeout* time-left)))))
+     ;; Otherwise, simply wait for an event
+     (xlib:process-event *display* :handler #'handle-event :timeout nil))))
+
 
 ;; (stumpwm "" :display 0)
 (defun stumpwm (host &key display protocol)
@@ -63,7 +75,7 @@
 	(init-atoms)
 	;; Initialize all the screens
 	(setf *screen-list* (mapcar #'init-screen (xlib:display-roots *display*)))
-	(mapcar #'process-existing-windows *screen-list*)
+	(mapc #'process-existing-windows *screen-list*)
 	;; Setup our keys. FIXME: should this be in the hook?
 	(set-default-bindings)
 	(run-hook *start-hook*)

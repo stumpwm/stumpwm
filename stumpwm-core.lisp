@@ -165,9 +165,8 @@ managed."
     (dolist (win children)
       (let ((map-state (xlib:window-map-state win))
 	    (wm-state (window-state win)))
-	;; Don't process our key window or override-redirect windows.
-	(unless (or (xlib:window-equal win (screen-key-window screen))
-		    (eq (xlib:window-override-redirect win) :on))
+	;; Don't process override-redirect windows.
+	(unless (eq (xlib:window-override-redirect win) :on)
 	  (if (or (eql map-state :viewable)
 		  (eql wm-state +iconic-state+))
 	      (progn
@@ -344,6 +343,14 @@ maximized, and given focus."
 
 ;;; Screen functions
 
+(defun unmap-message-window (screen)
+  "Unmap the screen's message window, if it is mapped."
+  (unless (eq (xlib:window-map-state (screen-message-window screen)) :unmapped)
+    (xlib:unmap-window (screen-message-window screen))))
+
+(defun unmap-all-message-windows ()
+  (mapc #'unmap-message-window *screen-list*))
+
 (defun echo-string-list (screen strings &optional highlight)
   "draw each string in l in the screen's message window. HIGHLIGHT is
 the nth entry to highlight."
@@ -365,7 +372,9 @@ the nth entry to highlight."
 	  do (invert-rect screen message-win
 			  0 (* i height)
 			  (xlib:drawable-width message-win)
-			  height))))
+			  height)))
+  ;; Set a timer to hide the message after a number of seconds
+  (reset-timeout))
 
 (defun echo-string (screen msg)
   "Print msg to SCREEN's message window."
@@ -381,7 +390,7 @@ focus of a window."
   (let* ((win (xlib:input-focus *display*))
 	 (screen (member-if (lambda (s)
 			      (or (xlib:window-equal win (screen-current-window s))
-				  (xlib:window-equal win (screen-key-window s))))
+				  (xlib:screen-root (screen-number s))))
 			    *screen-list*)))
     ;; We MUST be able to figure out the current screen by this method
     (assert screen)
@@ -396,6 +405,9 @@ focus of a window."
 	  :substructure-notify
 	  :property-change))
   (xlib:display-force-output *display*)
+  ;; Grab the prefix key for the root window
+  (grab-keys-on-window (xlib:screen-root screen-number))
+  ;; Initialize the screen structure
   (let* ((white (xlib:screen-white-pixel screen-number))
 	 (black (xlib:screen-black-pixel screen-number))
 	 (input-window (xlib:create-window :parent (xlib:screen-root screen-number)
@@ -406,14 +418,6 @@ focus of a window."
 					   :colormap (xlib:screen-default-colormap
 						      screen-number)
 					   :event-mask '(:key-press)))
-	 (key-window (xlib:create-window :parent (xlib:screen-root screen-number)
-					 :x 0 :y 0 :width 1 :height 1
-					 :background white
-					 :border white
-					 :border-width 0
-					 :colormap (xlib:screen-default-colormap
-						    screen-number)
-					 :event-mask '(:key-press)))
 	 (frame-window (xlib:create-window :parent (xlib:screen-root screen-number)
 					   :x 0 :y 0 :width 1 :height 1
 					   :background white
@@ -430,8 +434,6 @@ focus of a window."
 					     :colormap (xlib:screen-default-colormap
 							screen-number)
 					     :event-mask '())))
-    ;; Map the key window and select key press events on it
-    (xlib:map-window key-window)
     ;; Create our screen structure
     (make-screen :number screen-number
 		 :frame-tree (list (make-frame 
@@ -443,7 +445,6 @@ focus of a window."
 		 :font (xlib:open-font *display* *font-name*)
 		 :current-frame 0
 		 :window-table (make-hash-table)
-		 :key-window key-window
 		 :message-window message-window
 		 :input-window input-window
 		 :frame-window frame-window)))
@@ -462,12 +463,19 @@ focus of a window."
 					   :mask-char 65
 					   :foreground black
 					   :background white)))
-    (xlib:grab-pointer (screen-key-window screen) nil :owner-p nil
+    (xlib:grab-pointer (xlib:screen-root (screen-number screen)) nil :owner-p nil
 		       :cursor cursor)))
 
 (defun ungrab-pointer ()
   "Remove the grab on the cursor and restore the cursor shape."
   (xlib:ungrab-pointer *display*))
+
+(defun grab-keyboard (screen)
+  (xlib:grab-keyboard (xlib:screen-root (screen-number screen)) :owner-p nil
+		      :sync-keyboard-p nil :sync-pointer-p nil))
+
+(defun ungrab-keyboard ()
+  (xlib:ungrab-keyboard *display*))
 
 (defun warp-pointer (screen x y)
   "Move the pointer to the specified location."
@@ -603,13 +611,10 @@ focus of a window."
   (declare (ignorable code))
   (declare (ignorable state))
   (let ((screen (find-screen root)))
-    ;; Unmap the message window if it is mapped
-    (unless (eq (xlib:window-map-state (screen-message-window screen)) :unmapped)
-      (xlib:unmap-window (screen-message-window screen)))
+    (unmap-message-window screen)
     ;; grab the keyboard
     (grab-pointer screen)
-    (xlib:grab-keyboard (screen-key-window screen) :owner-p nil
-			:sync-keyboard-p nil :sync-pointer-p nil)
+    (grab-keyboard screen)
     (pprint '(awaiting command key))
     ;; Listen for key
     (let ((key (do ((k (read-key) (read-key)))
@@ -617,7 +622,7 @@ focus of a window."
       (pprint '(handling command))
       ;; We've read our key, so we can release the keyboard.
       (ungrab-pointer)
-      (xlib:ungrab-keyboard *display*)
+      (ungrab-keyboard)
       (xlib:display-force-output *display*)
       (handle-command-key screen (car key) (cdr key)))))
 

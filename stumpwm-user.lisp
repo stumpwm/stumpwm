@@ -99,7 +99,9 @@
 	 (highlight (position (screen-current-window screen) wins :test #'xlib:window-equal))
 	(names (mapcar (lambda (w)
 			 (funcall *window-format-fn* screen w)) wins)))
-    (echo-string-list screen names highlight)))
+    (if (null wins)
+	(echo-string screen "No Managed Windows")
+      (echo-string-list screen names highlight))))
 
 (defun echo-date (screen)
   "Print the output of the 'date' command to the screen."

@@ -1,5 +1,27 @@
 2003-10-16  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* stumpwm.lisp (stumpwm-internal-loop): handle a timer. Call
+	unmap-all-message-windows when the timer times out.
+
+	* stumpwm-user.lisp (echo-windows): echo a message when there are
+	no managed windows.
+
+	* stumpwm-primitives.lisp (*timeout-wait*): new variable
+	(*timeout*): likewise
+	(reset-timeout): new function
+	(screen): remove key-window slot. All dependant code removed.
+
+	* stumpwm-core.lisp (unmap-message-window): new function
+	(unmap-all-message-windows): likewise
+	(echo-string-list): call reset-timeout
+	(current-screen): check the screen's root window for focus.
+	(init-screen): grab the prefix key on the root window
+	(grab-keyboard): new function
+	(ungrab-keyboard): likewise
+	(:key-press): call unmap-message-window
+	(:key-press): call grab-keyboard
+	(:key-press): call ungrab-keyboard
+
 	* stumpwm.lisp (stumpwm): call set-default-bindings
 
 2003-10-13  Shawn Betts  <sabetts@vcn.bc.ca>

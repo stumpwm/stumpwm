@@ -31,6 +31,19 @@
   (first (xlib:character->keysyms ch)))
 
 
+;;; Message Timer
+
+(defvar *timeout-wait* 5
+  "The amount of time a timeout takes.")
+
+;; Internal variable. When this variable is >0 then a timeout will
+;; occur in that many seconds.
+(defvar *timeout* 0)
+
+(defun reset-timeout ()
+  "Set the timer to timeout in *timeout-wait* seconds."
+  (setf *timeout* *timeout-wait*))
+
 ;;; Hooks
 
 (defvar *map-window-hook* '()
@@ -130,8 +143,6 @@ screen and window. It should return a string.")
   mapped-windows
   ;; A hash table for stumpwm properties on any absorbed windows.
   window-table
-  ;; Windows for various input and output
-  key-window
   message-window
   input-window
   frame-window)
