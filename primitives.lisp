@@ -275,3 +275,21 @@ Useful for re-using the &REST arg after removing some options."
   #+sbcl (sb-ext:posix-getenv var)
   #-(or allegro clisp cmu gcl lispworks lucid mcl sbcl scl)
   (error 'not-implemented :proc (list 'getenv var)))
+
+(defun (setf getenv) (val var)
+  "Set an environment variable."
+  #+allegro (setf (sys::getenv (string var)) (string val))
+  #+clisp (setf (ext:getenv (string var)) (string val))
+  #+(or cmu scl)
+  (let ((cell (assoc (string var) ext:*environment-list* :test #'equalp
+                     :key #'string)))
+    (if cell
+        (setf (cdr cell) (string val))
+        (push (cons (intern (string var) "KEYWORD") (string val))
+              ext:*environment-list*)))
+  #+gcl (si:setenv (string var) (string val))
+  #+lispworks (setf (lw:environment-variable (string var)) (string val))
+  #+lucid (setf (lcl:environment-variable (string var)) (string val))
+  #-(or allegro clisp cmu gcl lispworks lucid sbcl scl)
+  (error 'not-implemented :proc (list '(setf getenv) var)))
+

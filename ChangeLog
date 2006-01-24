@@ -1,5 +1,9 @@
 2006-01-23  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* stumpwm.lisp (stumpwm): set the display env. variable
+
+	* primitives.lisp (setf getenv): new function
+
 	* user.lisp (run-shell-command): call our own run-prog function
 
 	* stumpwm.lisp (stumpwm): call our own getenv function
