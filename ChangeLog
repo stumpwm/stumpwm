@@ -8,7 +8,7 @@
 	(run-prog): likewise
 	(getenv): likewise
 
-2004-11-30  Shawn Betts  <katia_dilkina@verizon.net>
+2004-11-30  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp (command): new defstruct
 	(*command-hash*): new defvar
@@ -71,12 +71,12 @@
 	(handle-event): likewise
 	(echo-string-list): force output
 
-2004-11-12  Shawn Betts  <katia_dilkina@verizon.net>
+2004-11-12  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* primitives.lisp (screen): remove frame-hash. all dependant code
 	updated.
 
-2004-10-10  Shawn Betts  <katia_dilkina@verizon.net>
+2004-10-10  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp (set-default-bindings): add a binding for
 	kill-current-window.
@@ -97,7 +97,7 @@
 	(stumpwm): echo a welcome message. Load the rc file and display
 	any errors that occurred while loading it.
 
-2004-10-08  Shawn Betts  <katia_dilkina@verizon.net>
+2004-10-08  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* stumpwm.lisp (parse-display-string): new function
 	(stumpwm): take an optional display string as an argument and
