@@ -91,7 +91,7 @@ loaded."
 (defun stumpwm (&optional (display-str nil) &key protocol)
   "Start the stump window manager."
   (multiple-value-bind (host display) (parse-display-string (or display-str
-								(port:getenv "DISPLAY")
+								(getenv "DISPLAY")
 								":0"))
     (setf *display* (xlib:open-display host :display display :protocol protocol)))
   ;; In the event of an error, we always need to close the display

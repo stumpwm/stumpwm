@@ -132,8 +132,11 @@ screen and window. It should return a string.")
   (alt nil)
   (hyper nil)
   (super nil))
-  
 
+(defstruct key
+  (ch nil :type character)
+  (mods nil :type modifiers))
+  
 (defstruct screen
   number
   ;; From this frame tree a list of frames can be gathered
@@ -222,3 +225,53 @@ calls fn on the value for the key hash-key, not the pair."
       (if (car (last nums))
 	  (1+ (car (last nums)))
 	0))))
+
+
+(defun remove-plist (plist &rest keys)
+  "Remove the keys from the plist.
+Useful for re-using the &REST arg after removing some options."
+  (do (copy rest)
+      ((null (setq rest (nth-value 2 (get-properties plist keys))))
+       (nreconc copy plist))
+    (do () ((eq plist rest))
+      (push (pop plist) copy)
+      (push (pop plist) copy))
+    (setq plist (cddr plist))))
+
+(defun run-prog (prog &rest opts &key args (wait t) &allow-other-keys)
+  "Common interface to shell. Does not return anything useful."
+  #+gcl (declare (ignore wait))
+  (setq opts (remove-plist opts :args :wait))
+  #+allegro (apply #'excl:run-shell-command (apply #'vector prog prog args)
+                   :wait wait opts)
+  #+(and clisp      lisp=cl)
+  (apply #'ext:run-program prog :arguments args :wait wait opts)
+  #+(and clisp (not lisp=cl))
+  (if wait
+      (apply #'lisp:run-program prog :arguments args opts)
+      (lisp:shell (format nil "~a~{ '~a'~} &" prog args)))
+  #+cmu (apply #'ext:run-program prog args :wait wait opts)
+  #+gcl (apply #'si:run-process prog args)
+  #+liquid (apply #'lcl:run-program prog args)
+  #+lispworks (apply #'sys::call-system
+                     (format nil "~a~{ '~a'~}~@[ &~]" prog args (not wait))
+                     opts)
+  #+lucid (apply #'lcl:run-program prog :wait wait :arguments args opts)
+  #+sbcl (apply #'sb-ext:run-program prog args :wait wait opts)
+  #-(or allegro clisp cmu gcl liquid lispworks lucid sbcl)
+  (error 'not-implemented :proc (list 'run-prog prog opts)))
+
+(defun getenv (var)
+  "Return the value of the environment variable."
+  #+allegro (sys::getenv (string var))
+  #+clisp (ext:getenv (string var))
+  #+(or cmu scl)
+  (cdr (assoc (string var) ext:*environment-list* :test #'equalp
+              :key #'string))
+  #+gcl (si:getenv (string var))
+  #+lispworks (lw:environment-variable (string var))
+  #+lucid (lcl:environment-variable (string var))
+  #+mcl (ccl::getenv var)
+  #+sbcl (sb-ext:posix-getenv var)
+  #-(or allegro clisp cmu gcl lispworks lucid mcl sbcl scl)
+  (error 'not-implemented :proc (list 'getenv var)))

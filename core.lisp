@@ -155,7 +155,7 @@
       ;; Resize the window
       (setf (xlib:drawable-width win)
 	    (+ (xlib:drawable-width win)
-	       (* inc-x (truncate (/ (- width (xlib:drawable-width win)) inc-x))))
+ 	       (* inc-x (truncate (/ (- width (xlib:drawable-width win)) inc-x))))
 	    (xlib:drawable-height win)
 	    (+ (xlib:drawable-height win)
 	       (* inc-y (truncate (/ (- height (xlib:drawable-height win)) inc-y)))))
@@ -344,7 +344,7 @@ maximized, and given focus."
 (defun delete-window (window)
   "Send a delete event to the window."
   (format t "Delete window~%")
-  (send-client-message window :WM_PROTOCOLS 213))
+  (send-client-message window :WM_PROTOCOLS +wm-delete-window+))
 
 (defun kill-window (window)
   "Kill the client associated with window."

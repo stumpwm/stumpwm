@@ -4,6 +4,9 @@
   (:use :cl :asdf))
 (in-package :stumpwm-system)
 
+;;(require :clx)
+;;(require :gray-streams)
+
 (defsystem :stumpwm
   :name "StumpWM"
   :author "Shawn Betts <sabetts@vcn.bc.ca>"
@@ -11,7 +14,6 @@
   :maintainer "Shawn Betts <sabetts@vcn.bc.ca>"
 ;  :license "GNU General Public License"
   :description "A tiling, keyboard driven window manager" 
-  :depends-on (:cmucl-clx :port)
   :components ((:file "package")
 	       (:file "primitives" :depends-on ("package"))
 	       (:file "input" :depends-on ("primitives"))

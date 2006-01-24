@@ -169,7 +169,7 @@
   (other-window screen))
 
 (defun run-shell-command (cmd)
-  (port:run-prog *shell-program* :args (list "-c" cmd) :wait nil))
+  (run-prog *shell-program* :args (list "-c" cmd) :wait nil))
 
 (define-stumpwm-command "exec" (screen (cmd :rest "/bin/sh -c "))
   (run-shell-command cmd))
@@ -214,6 +214,9 @@
 
 (define-stumpwm-command "remove" (screen)
   (remove-split screen))
+
+(define-stumpwm-command "only" (screen)
+  ())
 
 (defun focus-frame-sibling (screen)
   (let* ((sib (sibling (screen-frame-tree screen)
@@ -388,6 +391,8 @@ aborted."
 
 ;; Trivial function
 (define-stumpwm-command "abort" (screen))
+
+;;(define-stumpwm-command "escape"
 
 (defun set-default-bindings ()
   "Put the default bindings in the key-bindings hash table."

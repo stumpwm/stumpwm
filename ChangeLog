@@ -1,3 +1,13 @@
+2006-01-23  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* user.lisp (run-shell-command): call our own run-prog function
+
+	* stumpwm.lisp (stumpwm): call our own getenv function
+
+	* primitives.lisp (remove-plist): new function
+	(run-prog): likewise
+	(getenv): likewise
+
 2004-11-30  Shawn Betts  <katia_dilkina@verizon.net>
 
 	* user.lisp (command): new defstruct
