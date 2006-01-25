@@ -268,19 +268,19 @@ string between them."
 specifications then execute it. Returns a string or nil if user
 aborted."
   (macrolet ((skip-spaces (string-list)
-               ;; A nice'n'gross side-effect loop
-               `(do ((s #1=(car ,string-list) #1#))
-		    ((or (null s)
-			 (string/= s "")) ,string-list)
-		  (pop ,string-list)))
+			  ;; A nice'n'gross side-effect loop
+			  `(do ((s #1=(car ,string-list) #1#))
+			       ((or (null s)
+				    (string/= s "")) ,string-list)
+			     (pop ,string-list)))
 	     (pop-or-read (l prompt scrn)
-               `(or (pop ,l)
-		    ;; If prompt is nil, then the argument is
-		    ;; considered optional.
- 		    (unless (null prompt)
-		      (or (read-one-line ,scrn ,prompt)
-			  ;; read-one-line returns nil when the user aborts
-			  (throw 'error "Abort."))))))
+			  `(or (pop ,l)
+			       ;; If prompt is nil, then the argument is
+			       ;; considered optional.
+			       (unless (null ,prompt)
+				 (or (read-one-line ,scrn ,prompt)
+				     ;; read-one-line returns nil when the user aborts
+				     (throw 'error "Abort."))))))
     (let (str cmd arg-specs args)
       ;; Catch parse errors
       (catch 'error
@@ -302,8 +302,9 @@ aborted."
 			       (skip-spaces str)
 			       (case type
 				 (:number 
-				  (parse-integer 
-				   (pop-or-read str prompt screen)))
+				  (let ((n (pop-or-read str prompt screen)))
+				    (when n
+				      (parse-integer n))))
 				 (:string 
 				  (pop-or-read str prompt screen))
 				 (:frame

@@ -1,3 +1,25 @@
+2006-01-25  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* user.lisp (parse-and-run-command): fix macro expansion bug. only
+	parse-integer when the argument is a string.
+
+	* stumpwm.lisp (init-atoms): init +wm-state+ and +wm-protocols+
+
+	* stumpwm.asd (:stumpwm): add kmap
+
+	* primitives.lisp (+wm-state+): new var
+	(+wm-protocols+): likewise
+	(split-string): new function
+
+	* input.lisp (*input-keymap*): new var
+	(read-one-line): make input a string
+	(code-state->key): new function
+	(input-delete-char): likewise
+	(input-submit): likewise
+	(input-abort): likewise
+	(input-self-insert): likewise
+	(process-input): use keymaps to find key actions
+
 2006-01-23  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* stumpwm.lisp (stumpwm): set the display env. variable

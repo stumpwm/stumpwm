@@ -4,7 +4,7 @@
   (:use :cl :asdf))
 (in-package :stumpwm-system)
 
-;;(require :clx)
+(ignore-errors (require :clx))
 ;;(require :gray-streams)
 
 (defsystem :stumpwm
@@ -12,15 +12,17 @@
   :author "Shawn Betts <sabetts@vcn.bc.ca>"
   :version "0.0.3"
   :maintainer "Shawn Betts <sabetts@vcn.bc.ca>"
-;  :license "GNU General Public License"
+  ;; :license "GNU General Public License"
   :description "A tiling, keyboard driven window manager" 
   :components ((:file "package")
 	       (:file "primitives" :depends-on ("package"))
-	       (:file "input" :depends-on ("primitives"))
+	       (:file "kmap" :depends-on ("primitives"))
+	       (:file "input" :depends-on ("primitives" 
+					   "kmap"))
 	       (:file "core" :depends-on ("primitives"
-						  "input"))
+					  "input"))
 	       (:file "user" :depends-on ("primitives"
-						  "core"
-						  "input"))
+					  "core"
+					  "input"))
 	       (:file "stumpwm" :depends-on  ("primitives"
 					      "core"))))

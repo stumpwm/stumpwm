@@ -128,6 +128,9 @@
 ;  (xlib:unmap-window window)
 ;  (xlib:set
 
+;; (defun window-hidden-p (window)
+;;  (let (
+
 ;; Stolen from Eclipse
 (defun send-configuration-notify (window)
   "Send a synthetic configure notify event to the given window (ICCCM 4.1.5)"

@@ -48,7 +48,9 @@ loaded."
     
 (defun init-atoms ()
   (setf +wm-delete-window+ (xlib:find-atom *display* "WM_DELETE_WINDOW")
-	+wm-take-focus+ (xlib:find-atom *display* "WM_TAKE_FOCUS")))
+	+wm-take-focus+ (xlib:find-atom *display* "WM_TAKE_FOCUS")
+	+wm-state+ (xlib:find-atom *display* "WM_STATE")
+	+wm-protocols+ (xlib:find-atom *display* "WM_PROTOCOLS")))
 
 (defun error-handler (display error-key &rest key-vals &key asynchronous &allow-other-keys)
   "Handle X errors"

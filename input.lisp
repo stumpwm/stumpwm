@@ -24,6 +24,14 @@
 ;; Code:
 (in-package :stumpwm)
 
+(defvar *input-keymap* 
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd (string #\Backspace)) 'input-delete-char)
+    (define-key map (kbd (string #\Return)) 'input-submit)
+    (define-key map (kbd "C-g") 'input-abort)
+    (define-key map t 'input-self-insert)
+    map))
+
 ;;; Utility key conversion functions
 
 (defun keycode->character (code mods)
@@ -74,32 +82,27 @@
       ((consp ret) ret)))
 
 (defun read-one-line (screen prompt &optional (initial-input ""))
-  "Read a line of input through stumpwm and return it."
+  "Read a line of input through stumpwm and return it. returns nil if the user aborted."
   (labels ((key-loop ()
-	     (let ((input (coerce initial-input 'list)))
-	       (do ((key (read-key) (read-key)))
-		   (nil)
-		 (multiple-value-bind (inp ret) (process-input screen prompt input
-							       (car key) (cdr key))
-		   (setf input inp)
-		   (case ret
-		     ('done
-		      (return (values input 'done)))
-		     ('abort
-		      (return (values input 'abort)))))))))
+	     (let ((input (make-array (length initial-input) :element-type 'character :initial-contents initial-input :adjustable t :fill-pointer 0))
+		   done)
+	       (loop for key = (read-key) then (read-key)
+		     when (not (is-modifier (xlib:keycode->keysym *display* (car key) 0)))
+		     do (multiple-value-setq (input done) (process-input screen prompt input (car key) (cdr key)))
+		     when done
+		     return input))))
     (setup-input-window screen prompt initial-input)
-    (multiple-value-bind (input ret) (key-loop)
-      (shutdown-input-window screen)
-      (unless (eq ret 'abort)
-	;; Return the input bucket as a string
-	(concatenate 'string input)))))
+    (catch 'abort
+      (unwind-protect
+	  (key-loop)
+	(shutdown-input-window screen)))))
 
 (defun read-one-char (screen)
   "Read a single character."
   (grab-keyboard screen)
   (prog1
       (let ((k (do ((k (read-key) (read-key)))
-		     ((not (is-modifier (xlib:keycode->keysym *display* (car k) 0))) k))))
+		   ((not (is-modifier (xlib:keycode->keysym *display* (car k) 0))) k))))
 	(keycode->character (car k) (xlib:make-state-keys (cdr k))))
     (ungrab-keyboard)))
 
@@ -128,40 +131,60 @@
 			    (xlib:font-ascent (screen-font screen))
 			    input)))
 
+(defun code-state->key (code state)
+  (let* ((mods (xlib:make-state-keys state))
+	 (sym (xlib:keycode->keysym *display* code 0))
+	 (upcase-sym (xlib:keycode->keysym *display* code 1))
+	 ;; make sure there is such a keysym
+	 (char (and sym upcase-sym
+		    (xlib:keysym->character *display* (if (find :shift mods) upcase-sym sym)))))
+    (when char
+      (make-key :char char :control (and (find :control mods) t) :shift (and (find :shift mods)
+									     (eql sym upcase-sym))))))
+
+(defun input-delete-char (input key)
+  (when (> (fill-pointer input) 0)
+    (decf (fill-pointer input)))
+  input)
+
+(defun input-submit (input key)
+  (values input :done))
+
+(defun input-abort (input key)
+  (throw 'abort nil))
+
+(defun input-self-insert (input key)
+  (if (key-mods-p key)
+      (values input :error)
+    (progn
+      (vector-push-extend (key-char key) input)
+      input)))
+
 (defun process-input (screen prompt input code state)
   "Process the key (code and state), given the current input
 buffer. Returns a new modified input buffer."
   (labels ((process-key (inp code state)
-	      "Call the appropriate function based on the key
+			"Call the appropriate function based on the key
 pressed. Return 'done when the use has signalled the finish of his
 input (pressing Return), nil otherwise."
-	      (cond ((eq (xlib:keycode->keysym *display* code 0)
-			 (char->keysym #\Return))
-		     (values inp 'done))
-		    ((eq (xlib:keycode->keysym *display* code 0)
-			 (char->keysym #\Backspace))
-		     (if (cdr inp)
-			 (rplacd (last inp 2) '())
-		       (setf inp nil))
-		     (values inp nil))
-		    ((and (eq (xlib:keycode->keysym *display* code 0)
-			      (char->keysym #\g))
-			  (member :control (xlib:make-state-keys state)))
-		     (values inp 'abort))
-		    (t (let* ((mods (xlib:make-state-keys state))
-			      (ch (keycode->character code mods)))
-			 (if (and (characterp ch) (char>= ch #\Space) (char<= ch #\~))
-			     (setf inp (conc1 inp ch)))
-			 (values inp nil))))))
+			(let* ((key (code-state->key code state))
+			       (command (and key (lookup-key *input-keymap* key t))))
+			  (if command
+			      (funcall command inp key)
+			    (values inp :error)))))
     (multiple-value-bind (inp ret) (process-key input code state)
       (case ret
-	('done
-	  (values inp 'done))
-	 ('abort
-	  (values inp 'abort))
-	 (t
-	  (draw-input-bucket screen prompt inp)
-	  (values inp t))))))
+	(:done
+	 (values inp :done))
+	(:abort
+	 (throw :abort t))
+	(:error
+	 ;; FIXME draw inverted text
+	 (draw-input-bucket screen prompt inp)
+	 inp)
+	(t
+	 (draw-input-bucket screen prompt inp)
+	 inp)))))
 
 ;;;;; UNUSED
 
