@@ -1,9 +1,13 @@
 2006-01-26  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* primitives.lisp (*window-formatters*): add %i formatter
+
 	* core.lisp (fmt-window-status): new function
 	(default-window-format): remove function
 	(window-number): do not require the screen. all callers updated.
 	(set-window-number): likewise
+	(window-class): properly extract the resource class
+	(window-res-name): new function
 
 	* user.lisp (echo-windows): take a format arg. call format-expand
 	to format the window list.

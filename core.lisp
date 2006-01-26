@@ -81,7 +81,12 @@
   (coerce (mapcar #'code-char (xlib:get-property win :WM_NAME)) 'string))
 
 (defun window-class (win)
-  (coerce (mapcar #'code-char (xlib:get-property win :WM_CLASS)) 'string))
+  ;; FIXME: This is arguable more work than is needed
+  (second (split-string (coerce (mapcar #'code-char (xlib:get-property win :WM_CLASS)) 'string) (string #\Null))))
+
+(defun window-res-name (win)
+  ;; FIXME: This is arguable more work than is needed
+  (first (split-string (coerce (mapcar #'code-char (xlib:get-property win :WM_CLASS)) 'string) (string #\Null))))
 
 (defun window-number (win)
   (let ((screen (window-screen win)))
