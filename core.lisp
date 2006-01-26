@@ -208,35 +208,51 @@ than the root window's width and height."
   (let* ((f (window-frame screen win))
 	 (x (frame-x f))
 	 (y (frame-y f))
-	 (width (- (frame-width f) (* 2 (xlib:drawable-border-width win))))
-	 (height (- (frame-height f)
+	 (fwidth (- (frame-width f) (* 2 (xlib:drawable-border-width win))))
+	 (fheight (- (frame-height f)
 		    (* 2 (xlib:drawable-border-width win))))
+	 (width fwidth)
+	 (height fheight)
 	 (inc-x 1)
 	 (inc-y 1)
 	 (hints (xlib:wm-normal-hints win))
 	 (hints-width (xlib:wm-size-hints-max-width hints))
 	 (hints-height (xlib:wm-size-hints-max-height hints))
 	 (hints-inc-x (xlib:wm-size-hints-width-inc hints))
-	 (hints-inc-y (xlib:wm-size-hints-height-inc hints)))
+	 (hints-inc-y (xlib:wm-size-hints-height-inc hints))
+	 (hints-min-aspect (xlib:wm-size-hints-min-aspect hints))
+	 (hints-max-aspect (xlib:wm-size-hints-max-aspect hints))
+	 center)
+    (cond
     ;; Adjust the defaults if the window is a transient_for window.
-    (when (xlib:get-property win :WM_TRANSIENT_FOR)
-      (setf x (+ x (truncate (- width (xlib:drawable-width win)) 2))
-	    y (+ y (truncate (- height (xlib:drawable-height win)) 2))
+     ((xlib:get-property win :WM_TRANSIENT_FOR)
+      (setf center t
 	    width (min (xlib:drawable-width win) width)
 	    height (min (xlib:drawable-height win) height)))
-    ;; Update our defaults if the window has the hints
-    (when (and hints-width
-	       (< hints-width width))
-      (setf x (+ x (truncate (- width (xlib:drawable-width win)) 2))
-	    width hints-width))
-    (when (and hints-height
-	       (< hints-height height))
-      (setf y (+ y (truncate (- width (xlib:drawable-height win)) 2))
-	    height hints-height))
+     ((and hints-min-aspect hints-max-aspect)
+      (let ((ratio (/ width height)))
+	(cond ((< ratio hints-min-aspect)
+	       (setf height (truncate width hints-min-aspect)))
+	      ((> ratio hints-max-aspect)
+	       (setf width  (truncate (* height hints-max-aspect)))))
+	(setf center t)))
+     ;; Update our defaults if the window has the hints
+     ((or hints-width hints-height)
+      (when (and hints-width
+		 (< hints-width width))
+	(setf width hints-width))
+      (when (and hints-height
+		 (< hints-height height))
+	(setf height hints-height))
+      (setf center t)))
     (when hints-inc-x
       (setf inc-x hints-inc-x))
     (when hints-inc-y
       (setf inc-y hints-inc-y))
+    ;; center if needed
+    (when center
+      (setf x (+ x (truncate (- fwidth width) 2))
+	    y (+ y (truncate (- fheight height) 2))))
     ;; Now return our findings
     (values x y width height inc-x inc-y)))
 
