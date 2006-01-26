@@ -1,5 +1,7 @@
 2006-01-26  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* primitives.lisp (dformat): new function
+
 	* core.lisp (geometry-hints): correctly center maxsize and transient windows.
 	(geometry-hints): honour aspect hints
 
