@@ -24,13 +24,28 @@
 ;; Code:
 (in-package :stumpwm)
 
+(defstruct input-line
+  string position history history-bk)
+
 (defvar *input-keymap* 
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd (string #\Backspace)) 'input-delete-char)
+    (define-key map (kbd (string #\Backspace)) 'input-delete-backward-char)
+    (define-key map (kbd "C-d") 'input-delete-forward-char)
+    (define-key map (kbd "C-f") 'input-forward-char)
+    (define-key map (kbd "C-b") 'input-backward-char)
+    (define-key map (kbd "C-a") 'input-move-beginning-of-line)
+    (define-key map (kbd "C-e") 'input-move-end-of-line)
+    (define-key map (kbd "C-k") 'input-kill-line)
+    (define-key map (kbd "C-u") 'input-kill-to-beginning)
+    (define-key map (kbd "C-p") 'input-history-back)
+    (define-key map (kbd "C-n") 'input-history-forward)
     (define-key map (kbd (string #\Return)) 'input-submit)
     (define-key map (kbd "C-g") 'input-abort)
     (define-key map t 'input-self-insert)
     map))
+
+(defvar *input-history* nil
+  "History for the input line.")
 
 ;;; Utility key conversion functions
 
@@ -81,21 +96,26 @@
   (do ((ret nil (xlib:process-event *display* :handler #'read-key-handle-event :timeout nil)))
       ((consp ret) ret)))
 
+(defun make-input-string (initial-input)
+  (make-array (length initial-input) :element-type 'character :initial-contents initial-input
+	      :adjustable t :fill-pointer t))
+  
 (defun read-one-line (screen prompt &optional (initial-input ""))
   "Read a line of input through stumpwm and return it. returns nil if the user aborted."
-  (labels ((key-loop ()
-	     (let ((input (make-array (length initial-input) :element-type 'character :initial-contents initial-input :adjustable t :fill-pointer 0))
-		   done)
-	       (loop for key = (read-key) then (read-key)
-		     when (not (is-modifier (xlib:keycode->keysym *display* (car key) 0)))
-		     do (multiple-value-setq (input done) (process-input screen prompt input (car key) (cdr key)))
-		     when done
-		     return input))))
-    (setup-input-window screen prompt initial-input)
-    (catch 'abort
-      (unwind-protect
-	  (key-loop)
-	(shutdown-input-window screen)))))
+  (let ((input (make-input-line :string (make-input-string initial-input)
+				:position (length initial-input)
+				:history -1)))
+    (labels ((key-loop ()
+		       (let (done)
+			 (loop for key = (read-key) then (read-key)
+			       when (not (is-modifier (xlib:keycode->keysym *display* (car key) 0)))
+			       when (process-input screen prompt input (car key) (cdr key))
+			       return (input-line-string input)))))
+      (setup-input-window screen prompt input)
+      (catch 'abort
+	(unwind-protect
+	    (key-loop)
+	  (shutdown-input-window screen))))))
 
 (defun read-one-char (screen)
   "Read a single character."
@@ -106,17 +126,20 @@
 	(keycode->character (car k) (xlib:make-state-keys (cdr k))))
     (ungrab-keyboard)))
 
-(defun draw-input-bucket (screen prompt input)
+(defun draw-input-bucket (screen prompt input &optional errorp)
   "Draw to the screen's input window the contents of input."
   (let* ((gcontext (create-message-window-gcontext screen))
+	 (cursor-context (create-inverse-gcontext screen))
 	 (win (screen-input-window screen))
 	 (prompt-width (xlib:text-width (screen-font screen) prompt))
+	 (string (input-line-string input))
+	 (pos (input-line-position input))
 	 (width (+ prompt-width
-		   (max 100 (xlib:text-width (screen-font screen) input))))
+		   (max 100 (xlib:text-width (screen-font screen) string))))
 	(screen-width (xlib:drawable-width (xlib:screen-root (screen-number screen)))))
     (xlib:clear-area win :x (+ *message-window-padding*
 			       prompt-width
-			       (xlib:text-width (screen-font screen) input)))
+			       (xlib:text-width (screen-font screen) string)))
     (xlib:with-state (win)
 		     (setf (xlib:drawable-x win) (- screen-width width
 						    (* (xlib:drawable-border-width win) 2)
@@ -129,7 +152,28 @@
     (xlib:draw-image-glyphs win gcontext
 			    (+ *message-window-padding* prompt-width)
 			    (xlib:font-ascent (screen-font screen))
-			    input)))
+			    string)
+    ;; draw a block cursor
+    (xlib:draw-rectangle win cursor-context
+			 (+ *message-window-padding*
+			    prompt-width
+			    (xlib:text-width (screen-font screen) (subseq string 0 pos)))
+			 0
+			 (xlib:text-width (screen-font screen) (if (>= pos (length string))
+								   " "
+								 (string (char string pos))))
+			 (+ (xlib:font-descent (screen-font screen))
+			    (xlib:font-ascent (screen-font screen)))
+			 t)
+    ;; draw the error 
+    (when errorp
+      (xlib:draw-rectangle win cursor-context 1 1 (xlib:drawable-width win) (xlib:drawable-height win) t)
+      (xlib:display-force-output *display*)
+      ;; FIXME: there's no usleep
+      (loop with time = (get-internal-run-time)
+	    until (> (- (get-internal-run-time) time) 50))
+      (xlib:draw-rectangle win cursor-context 1 1 (xlib:drawable-width win) (xlib:drawable-height win) t)
+      )))
 
 (defun code-state->key (code state)
   (let* ((mods (xlib:make-state-keys state))
@@ -142,49 +186,118 @@
       (make-key :char char :control (and (find :control mods) t) :shift (and (find :shift mods)
 									     (eql sym upcase-sym))))))
 
-(defun input-delete-char (input key)
-  (when (> (fill-pointer input) 0)
-    (decf (fill-pointer input)))
-  input)
+(defun input-delete-backward-char (input key)
+  (let ((pos (input-line-position input)))
+    (cond ((or (<= (length (input-line-string input)) 0)
+	       (<= pos 0))
+	   :error)
+	  (t
+	   (replace (input-line-string input) (input-line-string input)
+		    :start2 pos :start1 (1- pos))
+	   (decf (fill-pointer (input-line-string input)))
+	   (decf (input-line-position input))))))
+
+(defun input-delete-forward-char (input key)
+  (let ((pos (input-line-position input)))
+    (cond ((>= pos
+	       (length (input-line-string input)))
+	   :error)
+	  (t
+	   (replace (input-line-string input) (input-line-string input)
+		    :start1 pos :start2 (1+ pos))
+	   (decf (fill-pointer (input-line-string input)))))))
+
+(defun input-forward-char (input key)
+  (incf (input-line-position input))
+  (when (> (input-line-position input)
+	   (length (input-line-string input)))
+    (setf (input-line-position input) (length (input-line-string input)))))
+
+(defun input-backward-char (input key)
+  (decf (input-line-position input))
+  (when (< (input-line-position input) 0)
+    (setf (input-line-position input) 0)))
+
+(defun input-move-beginning-of-line (input key)
+  (setf (input-line-position input) 0))
+
+(defun input-move-end-of-line (input key)
+  (setf (input-line-position input) (length (input-line-string input))))
+
+(defun input-kill-line (input key)
+  (setf (fill-pointer (input-line-string input)) (input-line-position input)))
+
+(defun input-kill-to-beginning (input key)
+  (replace (input-line-string input) (input-line-string input)
+	   :start2 (input-line-position input) :start1 0)
+  (decf (fill-pointer (input-line-string input)) (input-line-position input))
+  (setf (input-line-position input) 0))
+
+(defun input-history-back (input key)
+  (when (= (input-line-history input) -1)
+    (setf (input-line-history-bk input) (input-line-string input)))
+  (incf (input-line-history input))
+  (if (>= (input-line-history input)
+	  (length *input-history*))
+      (progn
+	(decf (input-line-history input))
+	:error)
+    (setf (input-line-string input) (make-input-string (elt *input-history* (input-line-history input)))
+	  (input-line-position input) (length (input-line-string input)))))
+
+(defun input-history-forward (input key)
+  (decf (input-line-history input))
+  (cond ((< (input-line-history input) -1)
+	 (incf (input-line-history input))
+	 :error)
+	((= (input-line-history input) -1)
+	 (setf (input-line-string input) (input-line-history-bk input)
+	       (input-line-position input) (length (input-line-string input))))
+	(t
+	 (setf (input-line-string input) (make-input-string (elt *input-history* (input-line-history input)))
+	       (input-line-position input) (length (input-line-string input))))))
 
 (defun input-submit (input key)
-  (values input :done))
+  :done)
 
 (defun input-abort (input key)
   (throw 'abort nil))
 
 (defun input-self-insert (input key)
   (if (key-mods-p key)
-      (values input :error)
+      :error
     (progn
-      (vector-push-extend (key-char key) input)
-      input)))
+      (vector-push-extend #\_ (input-line-string input))
+      (replace (input-line-string input) (input-line-string input)
+	       :start2 (input-line-position input) :start1 (1+ (input-line-position input)))
+      (setf (char (input-line-string input) (input-line-position input)) (key-char key))
+      (incf (input-line-position input)))))
 
 (defun process-input (screen prompt input code state)
   "Process the key (code and state), given the current input
 buffer. Returns a new modified input buffer."
-  (labels ((process-key (inp code state)
+  (labels ((process-key (code state)
 			"Call the appropriate function based on the key
 pressed. Return 'done when the use has signalled the finish of his
 input (pressing Return), nil otherwise."
 			(let* ((key (code-state->key code state))
 			       (command (and key (lookup-key *input-keymap* key t))))
 			  (if command
-			      (funcall command inp key)
-			    (values inp :error)))))
-    (multiple-value-bind (inp ret) (process-key input code state)
-      (case ret
-	(:done
-	 (values inp :done))
-	(:abort
-	 (throw :abort t))
-	(:error
-	 ;; FIXME draw inverted text
-	 (draw-input-bucket screen prompt inp)
-	 inp)
-	(t
-	 (draw-input-bucket screen prompt inp)
-	 inp)))))
+			      (funcall command input key)
+			    :error))))
+    (case (process-key code state)
+      (:done 
+       (push (input-line-string input) *input-history*)
+       :done)
+      (:abort
+       (throw :abort t))
+      (:error
+       ;; FIXME draw inverted text
+       (draw-input-bucket screen prompt input t)
+       nil)
+      (t
+       (draw-input-bucket screen prompt input)
+       nil))))
 
 ;;;;; UNUSED
 

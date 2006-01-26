@@ -357,15 +357,26 @@ maximized, and given focus."
 
 ;;; Message printing functions 
 
+;; FIXME: the colors should be customizable
 (defun create-message-window-gcontext (screen)
   "Create a graphic context suitable for printing characters."
   (xlib:create-gcontext :drawable (screen-message-window screen)
 			:font (screen-font screen)
 			:foreground
 			(xlib:screen-white-pixel (screen-number screen))
-			:background
-			(xlib:screen-black-pixel (screen-number screen))))
+;; 			:background
+;; 			(xlib:screen-black-pixel (screen-number screen))
+			))
 
+(defun create-inverse-gcontext (screen)
+  "Create a graphic context suitable for inverting regions."
+  (xlib:create-gcontext :drawable (screen-message-window screen)
+			:font (screen-font screen)
+			;; I found 13 by trial and error.
+			:function 13
+			:foreground (logxor (xlib:screen-black-pixel (screen-number screen))
+					    (xlib:screen-white-pixel (screen-number screen)))))
+  
 (defun max-width (font l)
   "Return the width of the longest string in L using FONT."
   (loop for i in l

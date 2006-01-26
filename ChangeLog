@@ -1,3 +1,29 @@
+2006-01-26  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* input.lisp (input-line): new defstruct
+	(*input-keymap*): new keybindings
+	(*input-history*): new var
+	(make-input-string): new function
+	(read-one-line): use the input-line structure
+	(draw-input-bucket): likewise. draw a cursor position. flash briefly on error.
+	(input-delete-backward-char): new function
+	(input-delete-char): remove function
+	(input-delete-forward-char): new function
+	(input-forward-char): likewise
+	(input-backward-char): likewise
+	(input-move-beginning-of-line): likewise
+	(input-move-end-of-line): likewise
+	(input-kill-line): likewise
+	(input-kill-to-beginning): likewise
+	(input-history-back): likewise
+	(input-history-forward): likewise
+	(input-submit): just return :done
+	(input-self-insert): use input-line structure.
+	(process-input): likewise
+
+	* core.lisp (create-message-window-gcontext): only supply the foreground color.
+	(create-inverse-gcontext): new function
+
 2006-01-25  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp (parse-and-run-command): fix macro expansion bug. only
