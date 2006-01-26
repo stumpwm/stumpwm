@@ -103,18 +103,18 @@
 (define-stumpwm-command "banish" (screen)
   (banish-pointer screen))
 
-(defun echo-windows (screen)
+(defun echo-windows (screen fmt)
   "Print a list of the windows to the screen."
   (let* ((wins (sort-windows screen))
 	 (highlight (position (screen-current-window screen) wins :test #'xlib:window-equal))
 	 (names (mapcar (lambda (w)
-			  (funcall *window-format-fn* screen w)) wins)))
+			  (format-expand *window-formatters* fmt w)) wins)))
     (if (null wins)
 	(echo-string screen "No Managed Windows")
       (echo-string-list screen names highlight))))
 
 (define-stumpwm-command "windows" (screen)
-  (echo-windows screen))
+  (echo-windows screen *window-format*))
 
 (defun echo-date (screen)
   "Print the output of the 'date' command to the screen."
@@ -150,7 +150,7 @@
 
 (defun select-window-number (screen num)
   (labels ((match (win)
-		  (= (window-number screen win) num)))
+		  (= (window-number win) num)))
     (let ((win (find-if #'match (screen-mapped-windows screen))))
       (when win
 	(frame-raise-window screen (window-frame screen win) win)))))
@@ -346,7 +346,7 @@ aborted."
 (defun pull-window-by-number (screen n)
   "Pull window N from another frame into the current frame and focus it."
   (labels ((match (win)
-		  (= (window-number screen win) n)))
+		  (= (window-number win) n)))
     (let ((win (find-if #'match (screen-mapped-windows screen))))
       (when win
 	(setf (window-frame screen win) (screen-current-frame screen))
@@ -365,18 +365,18 @@ aborted."
 
 (defun renumber (screen nt)
   "Renumber the current window"
-  (let ((nf (window-number screen (screen-current-window screen)))
+  (let ((nf (window-number (screen-current-window screen)))
 	(win (find-if #'(lambda (win)
-			  (= (window-number screen win) nt))
+			  (= (window-number win) nt))
 		      (screen-mapped-windows screen))))
     ;; Is it already taken?
     (if win
 	(progn
 	  ;; swap the window numbers
-	  (setf (window-number screen win) nf)
-	  (setf (window-number screen (screen-current-window screen)) nt))
+	  (setf (window-number win) nf)
+	  (setf (window-number (screen-current-window screen)) nt))
       ;; Just give the window the number
-      (setf (window-number screen (screen-current-window screen)) nt)))
+      (setf (window-number (screen-current-window screen)) nt)))
   (echo-string screen "Number expected"))
 
 (define-stumpwm-command "number" (screen (n :number "Number: "))

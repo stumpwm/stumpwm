@@ -55,17 +55,14 @@
 		   :format 32
 		   :data data))
 
-(defun default-window-format (screen w)
-  "Return a formatted string"
-  (format nil "~D~C~A"
-	  (window-number screen w)
-	  (cond ((xlib:window-equal w (screen-current-window screen))
-		 #\*)
-		((and (xlib:window-p (second (screen-mapped-windows screen)))
-		      (xlib:window-equal w (second (screen-mapped-windows screen))))
-		 #\+)
-		(t #\-))
-	  (window-name w)))
+(defun fmt-window-status (window)
+  (let ((screen (window-screen window)))
+    (cond ((xlib:window-equal window (screen-current-window screen))
+	   #\*)
+	  ((and (xlib:window-p (second (screen-mapped-windows screen)))
+		(xlib:window-equal window (second (screen-mapped-windows screen))))
+	   #\+)
+	  (t #\-))))
 
 (defun window-master (window)
   "Find the window's master window (the one it's been reparented to)."
@@ -86,11 +83,13 @@
 (defun window-class (win)
   (coerce (mapcar #'code-char (xlib:get-property win :WM_CLASS)) 'string))
 
-(defun window-number (screen win)
-  (gethash :number (gethash win (screen-window-hash screen))))
+(defun window-number (win)
+  (let ((screen (window-screen win)))
+    (gethash :number (gethash win (screen-window-hash screen)))))
 
-(defun set-window-number (screen win num)
-  (setf (gethash :number (gethash win (screen-window-hash screen))) num))
+(defun set-window-number (win num)
+  (let ((screen (window-screen win)))
+    (setf (gethash :number (gethash win (screen-window-hash screen))) num)))
 
 (defsetf window-number set-window-number)
 
@@ -107,8 +106,8 @@
   "Return a copy of the screen's window list sorted by number."
   (sort1 (screen-mapped-windows screen)
 	 (lambda (a b)
-	   (< (window-number screen a)
-	      (window-number screen b)))))
+	   (< (window-number a)
+	      (window-number b)))))
 
 (defun set-window-state (win state)
   "Set the state (iconic, normal, withdrawn) of a window."

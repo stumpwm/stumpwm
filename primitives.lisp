@@ -324,3 +324,41 @@ Modifies the match data; use `save-match-data' if necessary."
 ;;#+ignore
   (with-open-file (s #p"/tmp/stumplog" :direction :output :if-exists :append :if-does-not-exist :create)
     (apply 'format s fmt args)))
+
+;;; 
+;;; formatting routines
+
+(defun format-expand (fmt-alist fmt &rest args)
+  (let* ((chars (coerce fmt 'list))
+	 (output "")
+	 (cur chars))
+    ;; FIXME: this is horribly inneficient
+    (loop
+     (cond ((null cur)
+	    (return-from format-expand output))
+	   ((char= (car cur) #\%)
+	    (setf cur (cdr cur))
+	    (let ((fmt (cadr (assoc (car cur) fmt-alist :test 'char=))))
+	      (setf output (concatenate 'string output
+					(cond (fmt
+					       ;; it can return any type, not jut as string.
+					       (format nil "~a" (apply fmt args)))
+					      ((char= (car cur) #\%)
+					       (string #\%))
+					      (t
+					       (string #\%) (string (car cur)))))))
+	    (setf cur (cdr cur)))
+	   (t
+	    (setf output (concatenate 'string output (string (car cur)))
+		  cur (cdr cur)))))))
+
+(defvar *window-formatters* '((#\n window-number)
+			      (#\s fmt-window-status)
+			      (#\t window-name)
+			      (#\c window-class)
+			      ;;(#\i window-resource)
+			      )
+  "an alist containing format character format function pairs for formatting window lists.")
+
+(defvar *window-format* "%n%s%t"
+  "The format string for window lists.")

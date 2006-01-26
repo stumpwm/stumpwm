@@ -1,6 +1,17 @@
 2006-01-26  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* core.lisp (fmt-window-status): new function
+	(default-window-format): remove function
+	(window-number): do not require the screen. all callers updated.
+	(set-window-number): likewise
+
+	* user.lisp (echo-windows): take a format arg. call format-expand
+	to format the window list.
+
 	* primitives.lisp (dformat): new function
+	(format-expand): new function
+	(*window-formatters*): new variable
+	(*window-format*): likewise
 
 	* core.lisp (geometry-hints): correctly center maxsize and transient windows.
 	(geometry-hints): honour aspect hints
