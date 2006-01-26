@@ -192,7 +192,7 @@ managed."
 	  (if (or (eql map-state :viewable)
 		  (eql wm-state +iconic-state+))
 	      (progn
-		(format t "Processing ~S ~S~%" (window-name win) win)
+		(dformat "Processing ~S ~S~%" (window-name win) win)
 		(process-new-window win)
 		;; Pretend it's been mapped
 		(absorb-mapped-window screen win))))))))
@@ -332,7 +332,7 @@ give the last accessed window focus."
 
 (defun no-focus (screen)
   "don't focus any window but still read keyboard events."
-  (format t "no-focus~%")
+  (dformat "no-focus~%")
   (xlib:set-input-focus *display* (screen-focus-window screen) :POINTER-ROOT))
 
 (defun focus-window (window)
@@ -362,12 +362,12 @@ maximized, and given focus."
     
 (defun delete-window (window)
   "Send a delete event to the window."
-  (format t "Delete window~%")
+  (dformat "Delete window~%")
   (send-client-message window :WM_PROTOCOLS +wm-delete-window+))
 
 (defun kill-window (window)
   "Kill the client associated with window."
-  (format t "Kill client~%")
+  (dformat "Kill client~%")
   (xlib:kill-client *display* (xlib:window-id window)))
 
 
@@ -439,7 +439,7 @@ maximized, and given focus."
 (defun focus-frame (screen f)
   (let ((w (frame-window f)))
     (setf (screen-current-frame screen) f)
-    (format t "~S~%" f)
+    (dformat "~S~%" f)
     (if w
 	(focus-window w)
       (no-focus screen))))
@@ -640,7 +640,7 @@ one."
   "synchronize windows attached to FRAME."
   (mapc (lambda (w)
 	  (when (eq (window-frame screen w) frame)
-	    (format t "maximizing ~S~%" w)
+	    (dformat "maximizing ~S~%" w)
 	    (maximize-window w)))
 	(screen-mapped-windows screen)))
 
@@ -675,7 +675,7 @@ windows used to draw the numbers in. The caller must destroy them."
 				   (xlib:screen-black-pixel (screen-number screen))
 				   (format nil "~A" (frame-number f)))
 		   (xlib:display-force-output *display*)
-		   (format t "mapped ~S~%" (frame-number f))
+		   (dformat "mapped ~S~%" (frame-number f))
 		   w))
 	       (screen-frames screen)))
 	    
@@ -873,7 +873,7 @@ list of modifier symbols."
   (declare (ignorable above-sibling))
   (declare (ignorable parent))
   (declare (ignorable stack-mode))
-  (format t "~S~%" value-mask)
+  (dformat "~S~%" value-mask)
   (handler-case
    (labels ((has-x (mask) (= 1 (logand mask 1)))
 	    (has-y (mask) (= 2 (logand mask 2)))
@@ -883,21 +883,21 @@ list of modifier symbols."
 	    (has-stackmode (mask) (= 64 (logand mask 64))))
      (let ((screen (window-screen window)))
        (xlib:with-state (window)
-			(format t "~S~%" value-mask)
+			(dformat "~S~%" value-mask)
 			(when (has-x value-mask)
-			  (format t "x~%")
+			  (dformat "x~%")
 			  (setf (xlib:drawable-x window) x))
 			(when (has-y value-mask)
-			  (format t "x~%")
+			  (dformat "x~%")
 			  (setf (xlib:drawable-y window) y))
 			(when (has-h value-mask)
-			  (format t "h~%")
+			  (dformat "h~%")
 			  (setf (xlib:drawable-height window) height))
 			(when (has-w value-mask)
-			  (format t "w~%")
+			  (dformat "w~%")
 			  (setf (xlib:drawable-width window) width))
 			(when (has-bw value-mask)
-			  (format t "bw~%")
+			  (dformat "bw~%")
 			  (setf (xlib:drawable-border-width window) border-width)))
        ;; TODO: are we ICCCM compliant?
        ;; Make sure that goes to the client
@@ -970,12 +970,12 @@ list of modifier symbols."
   "Find the command mapped to the (code state) and executed it."
   (let* ((key (keycode->character code (xlib:make-state-keys state)))
 	 (cmd (gethash (list key (remove :shift (xlib:make-state-keys state))) *key-bindings*)))
-    (format t "key-press: ~S ~S~%" key state)
-    (format t "~S~%" cmd)
+    (dformat "key-press: ~S ~S~%" key state)
+    (dformat "~S~%" cmd)
     (if (null cmd)
-	(format t "no match.~%")
+	(dformat "no match.~%")
       (progn
-	(format t "found it.~%")
+	(dformat "found it.~%")
 	(interactive-command cmd screen)))))
 
 (define-stump-event-handler :key-press (code state window root)
@@ -989,11 +989,11 @@ list of modifier symbols."
     ;; grab the keyboard
     (grab-pointer screen)
     (grab-keyboard screen)
-    (format t "Awaiting command key~%")
+    (dformat "Awaiting command key~%")
     ;; Listen for key
     (let ((key (do ((k (read-key) (read-key)))
 		   ((not (is-modifier (xlib:keycode->keysym *display* (car k) 0))) k))))
-      (format t "Handling Command~%")
+      (dformat "Handling Command~%")
       ;; We've read our key, so we can release the keyboard.
       (ungrab-pointer)
       (ungrab-keyboard)
@@ -1002,7 +1002,7 @@ list of modifier symbols."
 
 (defun handle-event (&rest event-slots &key display event-key &allow-other-keys)
   (declare (ignorable display))
-  (format t "Handling event ~S~%" event-key)
+  (dformat "Handling event ~S~%" event-key)
   (let ((eventfn (gethash event-key *event-fn-table*)))
     (when eventfn
       (apply eventfn event-slots))

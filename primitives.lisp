@@ -138,10 +138,6 @@ screen and window. It should return a string.")
   (alt nil)
   (hyper nil)
   (super nil))
-
-(defstruct key
-  (ch nil :type character)
-  (mods nil :type modifiers))
   
 (defstruct screen
   number
@@ -224,7 +220,7 @@ calls fn on the value for the key hash-key, not the pair."
 			for i in nums
 			when (/= n i)
 			do (return n))))
-    (format t "Free number: ~S~%" nums)
+    (dformat "Free number: ~S~%" nums)
     (if new-num
 	new-num
       ;; there was no space between the numbers, so use the last + 1
@@ -323,3 +319,8 @@ Modifies the match data; use `save-match-data' if necessary."
 	    as j = (position-if #'sep string :start i)
 	    collect (subseq string i j)
 	    while j))))
+
+(defun dformat (fmt &rest args)
+;;#+ignore
+  (with-open-file (s #p"/tmp/stumplog" :direction :output :if-exists :append :if-does-not-exist :create)
+    (apply 'format s fmt args)))

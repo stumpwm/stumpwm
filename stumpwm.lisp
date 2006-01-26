@@ -61,7 +61,7 @@ loaded."
     ('xlib:access-error
      (error "Another window manager is running."))
     (t
-     (format t "Error ~S ~S~%" error-key key-vals))))
+     (dformat "Error ~S ~S~%" error-key key-vals))))
 
 (defun stumpwm-internal-loop ()
   "The internal loop that waits for events and handles them."

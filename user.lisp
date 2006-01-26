@@ -68,9 +68,6 @@
   (let* ((w (xlib:input-focus *display*))
 	 (wins (member w window-list))
 	 nw)
-    (print w)
-    (print window-list)
-    (print wins)
     ;;(assert wins)
     (setf nw (if (null (cdr wins))
 		 ;; If the last window in the list is focused, then
@@ -192,9 +189,9 @@
 	 ;; grab a leaf from the sibling
 	 (l (tree-accum-fn s (lambda (x y) x) (lambda (x) x))))
     ;; Only remove the current frame if it has a sibling
-    (format t "~S~%" s)
+    (dformat "~S~%" s)
     (when s
-      (format t "~S~%" l)
+      (dformat "~S~%" l)
       ;; Move the windows from the removed frame to it's sibling
       (migrate-frame-windows screen (screen-current-frame screen) l)
       ;; If the frame has no window, give it the current window of
@@ -233,7 +230,7 @@ select one. Returns the selected frame or nil if aborted."
   (let* ((wins (draw-frame-numbers screen))
 	 (ch (read-one-char screen))
 	 (num (read-from-string (string ch))))
-    (format t "read ~S ~S~%" ch num)
+    (dformat "read ~S ~S~%" ch num)
     (mapc #'xlib:destroy-window wins)
     (when (and (char>= ch #\0)
 	       (char<= ch #\9))
@@ -295,7 +292,7 @@ aborted."
 	;; Create a list of args to pass to the function. If str is
 	;; snarfed and we have more args, then prompt the user for a
 	;; value.
-	(format t "str: ~A~%" str)
+	(dformat "str: ~A~%" str)
 	(setf args (mapcar (lambda (spec)
 			     (let ((type (second spec))
 				   (prompt (third spec)))
@@ -329,7 +326,7 @@ aborted."
 			     arg-specs))
 	;; Did the whole string get parsed? (get rid of trailing
 	;; spaces)
-	(format t "arguments: ~S~%" args)
+	(dformat "arguments: ~S~%" args)
 	(unless (null (skip-spaces str))
 	  (throw 'error (format nil "Trailing garbage: ~{~A~^ ~}" str)))
 	;; Success
