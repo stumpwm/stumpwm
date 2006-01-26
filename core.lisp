@@ -220,19 +220,19 @@ than the root window's width and height."
 	 (hints-inc-y (xlib:wm-size-hints-height-inc hints)))
     ;; Adjust the defaults if the window is a transient_for window.
     (when (xlib:get-property win :WM_TRANSIENT_FOR)
-      (setf width (min (xlib:drawable-width win) width)
-	    height (min (xlib:drawable-height win) height)
-	    x (truncate (- (/ width 2)
-			   (/ (xlib:drawable-width win) 2)))
-	    y (truncate (- (/ height 2)
-			   (/ (xlib:drawable-height win) 2)))))
+      (setf x (+ x (truncate (- width (xlib:drawable-width win)) 2))
+	    y (+ y (truncate (- height (xlib:drawable-height win)) 2))
+	    width (min (xlib:drawable-width win) width)
+	    height (min (xlib:drawable-height win) height)))
     ;; Update our defaults if the window has the hints
     (when (and hints-width
 	       (< hints-width width))
-      (setf width hints-width))
+      (setf x (+ x (truncate (- width (xlib:drawable-width win)) 2))
+	    width hints-width))
     (when (and hints-height
 	       (< hints-height height))
-      (setf height hints-height))
+      (setf y (+ y (truncate (- width (xlib:drawable-height win)) 2))
+	    height hints-height))
     (when hints-inc-x
       (setf inc-x hints-inc-x))
     (when hints-inc-y

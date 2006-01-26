@@ -1,5 +1,7 @@
 2006-01-26  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* core.lisp (geometry-hints): correctly center maxsize and transient windows.
+
 	* input.lisp (input-line): new defstruct
 	(*input-keymap*): new keybindings
 	(*input-history*): new var
