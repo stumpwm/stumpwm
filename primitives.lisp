@@ -74,6 +74,9 @@ occur in that many seconds.")
 (defvar *start-hook* '()
   "A hook called when stumpwm starts.")
 
+(defvar *internal-loop-hook* '()
+  "A hook called inside stumpwm's inner loop.")
+
 ;; Data types and globals used by stumpwm
 
 (defvar *display* nil

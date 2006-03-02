@@ -66,6 +66,7 @@ loaded."
 (defun stumpwm-internal-loop ()
   "The internal loop that waits for events and handles them."
   (loop
+   (run-hook *internal-loop-hook*)
    (if (> *timeout* 0)
        (progn
 	 (let ((time-before (get-universal-time)))

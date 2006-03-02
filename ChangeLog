@@ -1,5 +1,9 @@
 2006-03-01  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* primitives.lisp (*internal-loop-hook*): new hook
+
+	* stumpwm.lisp (stumpwm-internal-loop): run the *internal-loop-hook* hook
+
 	* core.lisp (frame-raise-window): new argument focus. simply raise
 	the frame's window if focus is NIL.
 	(maximize-window): use floor instead of truncate.
