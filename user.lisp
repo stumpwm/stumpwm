@@ -143,7 +143,7 @@
 	(unless (null query)
 	  (setf match (find-if #'match (screen-mapped-windows screen))))
 	(when match
-	  (focus-window match)))))
+	  (frame-raise-window screen (window-frame screen match) match)))))
 
 (define-stumpwm-command "select" (screen (win :string "Select: "))
   (select-window screen win))
@@ -180,7 +180,7 @@
 
 (defun vert-split-frame (screen)
   (split-frame screen (lambda (f) (split-frame-v screen f)))
-  (show-frame-indicator))
+  (show-frame-indicator screen))
 
 (define-stumpwm-command "vsplit" (screen)
   (vert-split-frame screen))
@@ -188,7 +188,8 @@
 (defun remove-split (screen)
   (let* ((s (sibling (screen-frame-tree screen)
 		    (screen-current-frame screen)))
-	 ;; grab a leaf from the sibling
+	 ;; grab a leaf of the sibling. The sibling doesn't have to be
+	 ;; a frame.
 	 (l (tree-accum-fn s (lambda (x y) x) (lambda (x) x))))
     ;; Only remove the current frame if it has a sibling
     (dformat "~S~%" s)

@@ -1,5 +1,8 @@
 2006-03-01  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* user.lisp (vert-split-frame): call show-frame-indicator with screen
+	(select-window): raise the window in its frame.
+
 	* primitives.lisp (*internal-loop-hook*): new hook
 
 	* stumpwm.lisp (stumpwm-internal-loop): run the *internal-loop-hook* hook
