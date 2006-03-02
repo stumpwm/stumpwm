@@ -1,3 +1,10 @@
+2006-03-02  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* core.lisp (frame-raise-window): don't do anything if w is nil
+	(expand-frame): use ecase
+	(expand-tree): properly expand the tree to take up the space.
+	(join-subtrees): properly obtain AMOUNT.
+
 2006-03-01  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp (vert-split-frame): call show-frame-indicator with screen

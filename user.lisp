@@ -195,7 +195,7 @@
     (dformat "~S~%" s)
     (when s
       (dformat "~S~%" l)
-      ;; Move the windows from the removed frame to it's sibling
+      ;; Move the windows from the removed frame to its sibling
       (migrate-frame-windows screen (screen-current-frame screen) l)
       ;; If the frame has no window, give it the current window of
       ;; the current frame.
@@ -207,7 +207,7 @@
 	    (remove-frame screen
 			  (screen-frame-tree screen)
 			  (screen-current-frame screen)))
-      ;; update the current frame and sync it's windows
+      ;; update the current frame and sync its windows
       (setf (screen-current-frame screen) l)
       (sync-frame-windows screen l)
       (frame-raise-window screen l (frame-window l))
@@ -359,7 +359,7 @@ aborted."
 	(setf (window-frame screen win) (screen-current-frame screen))
 	(sync-frame-windows screen (screen-current-frame screen))
 	(frame-raise-window screen (screen-current-frame screen) win)
-	;; if win was focused in it's old frame then give the old
+	;; if win was focused in its old frame then give the old
 	;; frame the frame's last focused window.
 	(when (eq (frame-window f) win)
 	  (frame-raise-window screen f (first (frame-windows screen f)) nil))))))

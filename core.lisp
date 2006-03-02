@@ -436,11 +436,13 @@ maximized, and given focus."
 (defun frame-raise-window (s f w &optional (focus t))
   "Raise the window w in frame f in screen s. if FOCUS is
 T (default) then also focus the frame."
-  (assert (eq (window-frame s w) f))
-  (setf (frame-window f) w)
-  (if focus
-      (focus-frame s f)
-    (setf (xlib:window-priority w) :top-if)))
+  ;; nothing to do when W is nil
+  (when w
+    (assert (eq (window-frame s w) f))
+    (setf (frame-window f) w)
+    (if focus
+	(focus-frame s f)
+      (setf (xlib:window-priority w) :top-if))))
   
 (defun focus-frame (screen f)
   (let ((w (frame-window f)))
@@ -582,7 +584,7 @@ T (default) then also focus the frame."
   (= (tree-x screen (first tree)) (tree-x screen (second tree))))
 
 (defun expand-frame (f amount dir)
-  (case dir
+  (ecase dir
     ('left (decf (frame-x f) amount)
 	   (incf (frame-width f) amount))
     ('right (incf (frame-width f) amount))    
@@ -591,43 +593,53 @@ T (default) then also focus the frame."
     ('bottom (incf (frame-height f) amount))))
 
 (defun expand-tree (screen tree amount dir)
-  "expand the frames in tree by AMOUNT in DIR direction. DIR can be 'up 'down 'left 'right"
+  "expand the frames in tree by AMOUNT in DIR direction. DIR can be 'top 'bottom 'left 'right"
   (cond ((null tree) nil)
 	((atom tree)
-	 (let ((f tree))
-	   (expand-frame f amount dir)))
-	 (t (if (or (and (member dir '(left right))
-			 (tree-row-split screen tree))
-		    (and (member dir '(top bottom))
-			 (tree-column-split screen tree)))
-		    (progn
-		      (expand-tree screen (first tree) amount dir)
-		      (expand-tree screen (second tree) amount dir))
-		  (let ((n (truncate (/ amount 2))))
-		    (expand-tree screen (first tree) n dir)
-		    (expand-tree screen (second tree) (- amount n) dir))))))
+	 (expand-frame tree amount dir))
+	(t (if (or (and (member dir '(left right))
+			(tree-column-split screen tree))
+		   (and (member dir '(top bottom))
+			(tree-row-split screen tree)))
+	       (progn
+		 (expand-tree screen (first tree) amount dir)
+		 (expand-tree screen (second tree) amount dir))
+	     (let ((n (truncate amount 2)))
+	       (multiple-value-bind (a b) 
+		   (if (find dir '(left top))
+		       (values (first tree) (second tree))
+		     (values (second tree) (first tree)))
+		 ;; first expand it the full amount to take up the
+		 ;; space. then shrink it in the other direction by
+		 ;; half.
+		 (expand-tree screen a amount dir)
+		 (expand-tree screen a (- n) (if (eq dir 'left) 'right 'bottom))
+		 ;; the other side simple needs to be expanded half
+		 ;; the amount.
+		 (expand-tree screen b (- amount n) dir)))))))
 
 (defun join-subtrees (screen tree keep)
   "expand one of the children of tree to occupy the space of the other
 child. KEEP decides which child to keep. It can be 'LEFT or
 'RIGHT. Return the child that was kept."
-  (let ((child (if (eql keep 'left)
-		   (first tree)
-		 (second tree)))
-	dir amount)
-    (if (tree-row-split screen tree)
+  (multiple-value-bind (child other)
+      (if (eql keep 'left)
+	  (values (first tree) (second tree))
+	(values (second tree) (first tree)))
+    (let (dir amount)
+      (if (tree-row-split screen tree)
+	  (progn
+	    (setf amount (tree-width screen other))
+	    (if (eql keep 'left)
+		(setf dir 'right)
+	      (setf dir 'left)))
 	(progn
-	  (setf amount (tree-width screen child))
+	  (setf amount (tree-height screen other))
 	  (if (eql keep 'left)
-	      (setf dir 'right)
-	    (setf dir 'left)))
-      (progn
-	(setf amount (tree-height screen child))
-	(if (eql keep 'left)
-	    (setf dir 'bottom)
-	  (setf dir 'top))))
-    (expand-tree screen child amount dir)
-    child))
+	      (setf dir 'bottom)
+	    (setf dir 'top))))
+      (expand-tree screen child amount dir)
+      child)))
 
 (defun remove-frame (screen tree leaf)
   "Return a new tree with LEAF and it's sibling merged into
