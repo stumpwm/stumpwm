@@ -36,7 +36,7 @@
 doesn't exist. Returns a values list: whether the file loaded (t if no
 rc files exist), the error if it didn't, and the rc file that was
 loaded."
-  (let* ((user-rc (probe-file "home:.stumpwmrc"))
+  (let* ((user-rc (probe-file (merge-pathnames (user-homedir-pathname) #p".stumpwmrc")))
 	 (etc-rc (probe-file #p"/etc/stumpwmrc"))
 	 (rc (or user-rc etc-rc)))
     (if rc
@@ -73,6 +73,7 @@ loaded."
 	   (let ((time-left (- *timeout* (- (get-universal-time) time-before))))
 	     (if (<= time-left 0)
 		 (progn
+		   (unmap-all-frame-indicators)
 		   (unmap-all-message-windows)
 		   (setf *timeout* 0))
 	       (setf *timeout* time-left)))))

@@ -1,3 +1,33 @@
+2006-03-01  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* core.lisp (frame-raise-window): new argument focus. simply raise
+	the frame's window if focus is NIL.
+
+	* user.lisp (horiz-split-frame): call show-frame-indicator
+	(vert-split-frame): likewise
+	(remove-split): likewise
+	(focus-frame-sibling): likewise
+	("fselect"): likewise
+	(pull-window-by-number): give the old frame a new window if it's
+	focused window is being pulled.
+	(renumber): remove useless error message.
+
+	* stumpwm.lisp (load-rc-file): use user-homedir-pathname
+	(stumpwm-internal-loop): call unmap-all-frame-indicators
+
+	* primitives.lisp (*timeout-frame-indicator-wait*): new defun
+	(*timeout*): add doc string
+	(reset-timeout-for-frame-indicator): new defun
+	(font-height): likewise
+
+	* core.lisp (process-new-window): use +normal-state+
+	(split-frame-v): use frame-y for :y
+	(unmap-frame-indicator): new defun
+	(unmap-all-frame-indicators): likewise
+	(show-frame-indicator): likewise
+	(echo-in-window): use font-height
+	(init-screen): give frame-window a 1 pixel border
+
 2006-01-26  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* primitives.lisp (*window-formatters*): add %i formatter

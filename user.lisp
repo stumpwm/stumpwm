@@ -172,13 +172,15 @@
   (run-shell-command cmd))
 
 (defun horiz-split-frame (screen)
-  (split-frame screen (lambda (f) (split-frame-h screen f))))
+  (split-frame screen (lambda (f) (split-frame-h screen f)))
+  (show-frame-indicator screen))
 
 (define-stumpwm-command "hsplit" (screen)
   (horiz-split-frame screen))
 
 (defun vert-split-frame (screen)
-  (split-frame screen (lambda (f) (split-frame-v screen f))))
+  (split-frame screen (lambda (f) (split-frame-v screen f)))
+  (show-frame-indicator))
 
 (define-stumpwm-command "vsplit" (screen)
   (vert-split-frame screen))
@@ -207,19 +209,21 @@
       ;; update the current frame and sync it's windows
       (setf (screen-current-frame screen) l)
       (sync-frame-windows screen l)
-      (frame-raise-window screen l (frame-window l)))))
+      (frame-raise-window screen l (frame-window l))
+      (show-frame-indicator screen))))
 
 (define-stumpwm-command "remove" (screen)
   (remove-split screen))
 
 (define-stumpwm-command "only" (screen)
-  ())
+  (loop while (remove-split screen)))
 
 (defun focus-frame-sibling (screen)
   (let* ((sib (sibling (screen-frame-tree screen)
 		      (screen-current-frame screen))))
     (when sib
-      (focus-frame screen (tree-accum-fn sib (lambda (x y) x) 'identity)))))
+      (focus-frame screen (tree-accum-fn sib (lambda (x y) x) 'identity))
+      (show-frame-indicator screen))))
 
 (define-stumpwm-command "sibling" (screen)
   (focus-frame-sibling screen))
@@ -239,7 +243,8 @@ select one. Returns the selected frame or nil if aborted."
 	       (screen-frames screen)))))
 
 (define-stumpwm-command "fselect" (screen (f :frame))
-  (focus-frame screen f))
+  (focus-frame screen f)
+  (show-frame-indicator screen))
 
 (defun eval-line (screen cmd)
   (echo-string screen
@@ -347,11 +352,16 @@ aborted."
   "Pull window N from another frame into the current frame and focus it."
   (labels ((match (win)
 		  (= (window-number win) n)))
-    (let ((win (find-if #'match (screen-mapped-windows screen))))
+    (let* ((win (find-if #'match (screen-mapped-windows screen)))
+	   (f (window-frame screen win)))
       (when win
 	(setf (window-frame screen win) (screen-current-frame screen))
 	(sync-frame-windows screen (screen-current-frame screen))
-	(frame-raise-window screen (screen-current-frame screen) win)))))
+	(frame-raise-window screen (screen-current-frame screen) win)
+	;; if win was focused in it's old frame then give the old
+	;; frame the frame's last focused window.
+	(when (eq (frame-window f) win)
+	  (frame-raise-window screen f (first (frame-windows screen f)) nil))))))
 
 (define-stumpwm-command "pull" (screen (n :number "Pull: "))
   (pull-window-by-number screen n))
@@ -376,8 +386,7 @@ aborted."
 	  (setf (window-number win) nf)
 	  (setf (window-number (screen-current-window screen)) nt))
       ;; Just give the window the number
-      (setf (window-number (screen-current-window screen)) nt)))
-  (echo-string screen "Number expected"))
+      (setf (window-number (screen-current-window screen)) nt))))
 
 (define-stumpwm-command "number" (screen (n :number "Number: "))
   (renumber screen n))

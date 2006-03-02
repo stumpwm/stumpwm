@@ -36,13 +36,20 @@
 (defvar *timeout-wait* 5
   "The amount of time a timeout takes.")
 
-;; Internal variable. When this variable is >0 then a timeout will
-;; occur in that many seconds.
-(defvar *timeout* 0)
+(defvar *timeout-frame-indicator-wait* 1
+  "The amount of time a frame indicator timeout takes.")
+
+(defvar *timeout* 0
+  "Internal variable. When this variable is >0 then a timeout will
+occur in that many seconds.")
 
 (defun reset-timeout ()
   "Set the timer to timeout in *timeout-wait* seconds."
   (setf *timeout* *timeout-wait*))
+
+(defun reset-timeout-for-frame-indicator ()
+  "Set the timer to timeout in *timeout-frame-indicator-wait* seconds."
+  (setf *timeout* *timeout-frame-indicator-wait*))
 
 ;;; Hooks
 
@@ -361,3 +368,7 @@ Modifies the match data; use `save-match-data' if necessary."
 
 (defvar *window-format* "%n%s%t"
   "The format string for echoing the window list.")
+
+(defun font-height (font)
+  (+ (xlib:font-descent font)
+     (xlib:font-ascent font)))

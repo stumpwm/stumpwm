@@ -182,7 +182,7 @@ managed."
 				       :property-change
 				       :colormap-change
 				       :focus-change))
-  (set-window-state win 'normal))
+  (set-window-state win +normal-state+))
 
 (defun process-existing-windows (screen)
   "Windows present when stumpwm starts up must be absorbed by stumpwm."
@@ -433,13 +433,15 @@ maximized, and given focus."
 
 ;;; Frame functions
 
-(defun frame-raise-window (s f w)
-  "Raise the window w in frame f in screen s."
+(defun frame-raise-window (s f w &optional (focus t))
+  "Raise the window w in frame f in screen s. if FOCUS is
+T (default) then also focus the frame."
   (assert (eq (window-frame s w) f))
   (setf (frame-window f) w)
-  (focus-frame s f))
+  (if focus
+      (focus-frame s f)
+    (setf (xlib:window-priority w) :top-if)))
   
-
 (defun focus-frame (screen f)
   (let ((w (frame-window f)))
     (setf (screen-current-frame screen) f)
@@ -502,7 +504,7 @@ maximized, and given focus."
 			 :window (frame-window p)))
 	 (f2 (make-frame :number (find-free-frame-number screen)
 			 :x (frame-x p)
-			 :y (+ (frame-x p) h)
+			 :y (+ (frame-y p) h)
 			 :width w
 			 :height h
 			 :window nil)))
@@ -701,9 +703,31 @@ windows used to draw the numbers in. The caller must destroy them."
 (defun unmap-all-message-windows ()
   (mapc #'unmap-message-window *screen-list*))
 
+(defun unmap-frame-indicator (screen)
+  (unless (eq (xlib:window-map-state (screen-frame-window screen)) :unmapped)
+    (xlib:unmap-window (screen-frame-window screen))))
+
+(defun unmap-all-frame-indicators ()
+  (mapc #'unmap-frame-indicator *screen-list*))
+
+(defun show-frame-indicator (screen)
+  (let* ((w (screen-frame-window screen))
+	 (s "Current Frame")
+	 (height (font-height (screen-font screen)))
+	 (width (xlib:text-width (screen-font screen) s)))
+    (xlib:map-window w)
+    (setf (xlib:drawable-x w) (+ (frame-x (screen-current-frame screen)) (truncate (- (frame-width (screen-current-frame screen)) width) 2))
+	  (xlib:drawable-y w) (+ (frame-y (screen-current-frame screen)) (truncate (- (frame-height (screen-current-frame screen)) height) 2))
+	  (xlib:window-priority w) :above)
+    (echo-in-window w (screen-font screen)
+		    (xlib:screen-white-pixel (screen-number screen))
+		    (xlib:screen-black-pixel (screen-number screen))
+		    s)
+    (xlib:display-force-output *display*)
+    (reset-timeout-for-frame-indicator)))
+
 (defun echo-in-window (win font fg bg string)
-  (let* ((height (+ (xlib:font-descent font)
-		    (xlib:font-ascent font)))
+  (let* ((height (font-height font))
 	 (gcontext (xlib:create-gcontext :drawable win
 					 :font font
 					 :foreground fg
@@ -782,7 +806,7 @@ focus of a window."
 					   :x 0 :y 0 :width 1 :height 1
 					   :background white
 					   :border white
-					   :border-width 0
+					   :border-width 1
 					   :colormap (xlib:screen-default-colormap
 						      screen-number)
 					   :event-mask '()))
