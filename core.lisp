@@ -613,7 +613,11 @@ T (default) then also focus the frame."
 		 ;; space. then shrink it in the other direction by
 		 ;; half.
 		 (expand-tree screen a amount dir)
-		 (expand-tree screen a (- n) (if (eq dir 'left) 'right 'bottom))
+		 (expand-tree screen a (- n) (ecase dir
+					       ('left 'right)
+					       ('right 'left)
+					       ('top 'bottom)
+					       ('bottom 'top)))
 		 ;; the other side simple needs to be expanded half
 		 ;; the amount.
 		 (expand-tree screen b (- amount n) dir)))))))

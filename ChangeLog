@@ -4,6 +4,7 @@
 	(expand-frame): use ecase
 	(expand-tree): properly expand the tree to take up the space.
 	(join-subtrees): properly obtain AMOUNT.
+	(expand-tree): make it work for expand to the 'right and 'bottom
 
 2006-03-01  Shawn Betts  <sabetts@vcn.bc.ca>
 
