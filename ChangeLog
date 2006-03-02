@@ -2,6 +2,7 @@
 
 	* core.lisp (frame-raise-window): new argument focus. simply raise
 	the frame's window if focus is NIL.
+	(maximize-window): use floor instead of truncate.
 
 	* user.lisp (horiz-split-frame): call show-frame-indicator
 	(vert-split-frame): likewise

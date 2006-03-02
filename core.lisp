@@ -162,10 +162,10 @@
       ;; Resize the window
       (setf (xlib:drawable-width win)
 	    (+ (xlib:drawable-width win)
- 	       (* inc-x (truncate (/ (- width (xlib:drawable-width win)) inc-x))))
+ 	       (* inc-x (floor (/ (- width (xlib:drawable-width win)) inc-x))))
 	    (xlib:drawable-height win)
 	    (+ (xlib:drawable-height win)
-	       (* inc-y (truncate (/ (- height (xlib:drawable-height win)) inc-y)))))
+	       (* inc-y (floor (/ (- height (xlib:drawable-height win)) inc-y)))))
       (xlib:display-force-output *display*))))
 
 (defun find-free-window-number (screen)
