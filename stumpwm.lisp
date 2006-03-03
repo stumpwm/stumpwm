@@ -69,15 +69,17 @@ loaded."
    (run-hook *internal-loop-hook*)
    (if (> *timeout* 0)
        (progn
-	 (let ((time-before (get-universal-time)))
-	   (xlib:process-event *display* :handler #'handle-event :timeout *timeout*)
-	   (let ((time-left (- *timeout* (- (get-universal-time) time-before))))
-	     (if (<= time-left 0)
-		 (progn
-		   (unmap-all-frame-indicators)
-		   (unmap-all-message-windows)
-		   (setf *timeout* 0))
-	       (setf *timeout* time-left)))))
+	 (let* ((time-before (get-universal-time))
+		(nevents (xlib:event-listen *display* *timeout*))
+		(time-left  (- *timeout* (- (get-universal-time) time-before))))
+	   (if (<= time-left 0)
+	       (progn
+		 (unmap-all-frame-indicators)
+		 (unmap-all-message-windows)
+		 (setf *timeout* 0))
+	     (setf *timeout* time-left))
+	   (when nevents
+	     (xlib:process-event *display* :handler #'handle-event))))
      ;; Otherwise, simply wait for an event
      (xlib:process-event *display* :handler #'handle-event :timeout nil))))
 
