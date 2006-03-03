@@ -183,8 +183,8 @@
 	 (char (and sym upcase-sym
 		    (xlib:keysym->character *display* (if (find :shift mods) upcase-sym sym)))))
     (when char
-      (make-key :char char :control (and (find :control mods) t) :shift (and (find :shift mods)
-									     (eql sym upcase-sym))))))
+      (make-key :char (char-code char) :control (and (find :control mods) t) :shift (and (find :shift mods)
+											 (eql sym upcase-sym))))))
 
 (defun input-delete-backward-char (input key)
   (let ((pos (input-line-position input)))
@@ -270,7 +270,7 @@
       (vector-push-extend #\_ (input-line-string input))
       (replace (input-line-string input) (input-line-string input)
 	       :start2 (input-line-position input) :start1 (1+ (input-line-position input)))
-      (setf (char (input-line-string input) (input-line-position input)) (key-char key))
+      (setf (char (input-line-string input) (input-line-position input)) (code-char (key-char key)))
       (incf (input-line-position input)))))
 
 (defun process-input (screen prompt input code state)

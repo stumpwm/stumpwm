@@ -72,10 +72,10 @@ for passing as the last argument to (apply #'make-key ...)"
 				 (t (signal 'kbd-parse))))))
 
 (defun parse-char-name (string)
-  "Return the character whose name is STRING."
+  "Return the char-code of the char whose name is STRING."
   (or (name-char string)
       (and (= (length string) 1)
-	   (char string 0))))
+	   (char-code (char string 0)))))
 
 (defun parse-key (string)
   "Parse STRING and return a key structure."
@@ -109,7 +109,8 @@ saving keyboard macros ***(see `insert-kbd-macro')."
 	       (when (key-hyper key) "H-")))
 
 (defun print-key (key)
-  (format nil "~a~a" (print-mods key) (or (char-name (key-char key)) (key-char key))))
+  (let ((ch (code-char (key-char key))))
+    (format nil "~a~a" (print-mods key) (or (char-name ch) ch))))
 
 (defun define-key (map key command)
   (setf (gethash key map) command))

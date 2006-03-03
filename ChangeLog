@@ -1,3 +1,13 @@
+2006-03-03  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* user.lisp (*root-map*): bind "c" to "exec xterm". bind "other" to C-t
+
+	* kmap.lisp (parse-char-name): return the char-code
+
+	* input.lisp (code-state->key): store char as a char-code. all callers updated.
+
+	* core.lisp (:key-press): make sure cmd isn't nil
+
 2006-03-02  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* core.lisp (ungrab-keys-on-window): pass :any correctly.

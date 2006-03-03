@@ -263,7 +263,7 @@ than the root window's width and height."
 
 (defun grab-keys-on-window (win)
   (labels ((grabit (w key)
-		   (xlib:grab-key w (xlib:keysym->keycodes *display* (char->keysym (key-char key)))
+		   (xlib:grab-key w (xlib:keysym->keycodes *display* (char->keysym (code-char (key-char key))))
 				  :modifiers (x11-mods key) :owner-p t
 				  :sync-pointer-p nil :sync-keyboard-p nil)))
     (maphash (lambda (k v)
@@ -1025,10 +1025,10 @@ list of modifier symbols."
 (defun handle-keymap (screen kmap)
   "Find the command mapped to the (code state) and return it."
   ;; a symbol is assumed to have a hashtable as a value.
+  (dformat "Awaiting key ~a~%" kmap)
   (when (symbolp kmap)
     (setf kmap (symbol-value kmap)))
   (check-type kmap hash-table)
-  (dformat "Awaiting key~%")
   (let* ((code-state (do ((k (read-key) (read-key)))
 			 ((not (is-modifier (xlib:keycode->keysym *display* (car k) 0))) k)))
 	 (code (car code-state))
@@ -1049,21 +1049,22 @@ list of modifier symbols."
 	 (cmd (lookup-key *top-map* key)))
     (unmap-message-window screen)
     (dformat "key-press-top: ~S ~S~%" key cmd)
-    (typecase cmd
-      ((or hash-table symbol)
-       ;; grab the keyboard
-       (grab-pointer screen)
-       (grab-keyboard screen)
-       (let ((cmd (handle-keymap screen cmd)))
-       ;; We've read our key(s), so we can release the keyboard.
-	 (ungrab-pointer)
-	 (ungrab-keyboard)
-	 (when cmd
-	   (interactive-command cmd screen))))
-      (string
-       (interactive-command cmd screen))
-      ;; not found
-      (t ))))
+    (when cmd
+      (typecase cmd
+	((or hash-table symbol)
+	 ;; grab the keyboard
+	 (grab-pointer screen)
+	 (grab-keyboard screen)
+	 (let ((cmd (handle-keymap screen cmd)))
+	   ;; We've read our key(s), so we can release the keyboard.
+	   (ungrab-pointer)
+	   (ungrab-keyboard)
+	   (when cmd
+	     (interactive-command cmd screen))))
+	(string
+	 (interactive-command cmd screen))
+	;; not found
+	(t )))))
 
 (defun handle-event (&rest event-slots &key display event-key &allow-other-keys)
   (declare (ignorable display))
