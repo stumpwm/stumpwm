@@ -97,16 +97,7 @@ occur in that many seconds.")
 (defvar *window-format-fn* 'default-window-format
 		   "The function called when printing a window list. It is passed the
 screen and window. It should return a string.")
-
-(defstruct key-binding
-  "A structure to map from a keystroke to a command."
-  (key nil :type xlib:keysym)
-  (mods nil :type list)
-  (fn nil :type function))
-
-(defvar *key-bindings* (make-hash-table :test 'equal)
-  "An alist of keysym function pairs.")
-
+    
 ;; FIXME: This variable is set only once but it needs to be set after
 ;; the display is opened. So should it have +'s around it even though
 ;; it's defined as a variable?

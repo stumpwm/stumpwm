@@ -114,8 +114,6 @@ loaded."
 	(mapc #'process-existing-windows *screen-list*)
 	;; Give the first screen's frame focus
 	(focus-frame (first *screen-list*) (screen-current-frame (first *screen-list*)))
-	;; Setup the default key bindings. FIXME: should this be in the hook?
-	(set-default-bindings)
         ;; Set the DISPLAY-environment-variable properly. This is
         ;; necessary if Stumpwm is running from a Lisp in another
         ;; X-display.

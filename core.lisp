@@ -262,12 +262,24 @@ than the root window's width and height."
 
 
 (defun grab-keys-on-window (win)
-  (xlib:grab-key win (xlib:keysym->keycodes *display* (char->keysym *prefix-key*))
-		 :modifiers *prefix-modifiers* :owner-p t
-		 :sync-pointer-p nil :sync-keyboard-p nil))
+  (labels ((grabit (w key)
+		   (xlib:grab-key w (xlib:keysym->keycodes *display* (char->keysym (key-char key)))
+				  :modifiers (x11-mods key) :owner-p t
+				  :sync-pointer-p nil :sync-keyboard-p nil)))
+    (maphash (lambda (k v)
+	       (declare (ignore v))
+	       (grabit win k))
+	     *top-map*)))
 
 (defun ungrab-keys-on-window (win)
-  (xlib:ungrab-key win :any :modifiers '(:any)))
+  (xlib:ungrab-key win :any :modifiers :any))
+
+(defun sync-keys ()
+  "Any time *top-map* is modified this must be called"
+  (loop for i in *screen-list*
+	do (loop for j in (screen-mapped-windows i)
+		 do (ungrab-keys-on-window j)
+		 do (grab-keys-on-window j))))
 
 (defun add-window (screen window)
   "add window to the head of the mapped-windows list."
@@ -1010,39 +1022,48 @@ list of modifier symbols."
       ;(xlib:destroy-window event-window)
       (run-hook-with-args *destroy-window-hook* window))))
 
-(defun handle-command-key (screen code state)
-  "Find the command mapped to the (code state) and executed it."
-  (let* ((key (keycode->character code (xlib:make-state-keys state)))
-	 (cmd (gethash (list key (remove :shift (xlib:make-state-keys state))) *key-bindings*)))
-    (dformat "key-press: ~S ~S~%" key state)
-    (dformat "~S~%" cmd)
-    (if (null cmd)
-	(dformat "no match.~%")
-      (progn
-	(dformat "found it.~%")
-	(interactive-command cmd screen)))))
+(defun handle-keymap (screen kmap)
+  "Find the command mapped to the (code state) and return it."
+  ;; a symbol is assumed to have a hashtable as a value.
+  (when (symbolp kmap)
+    (setf kmap (symbol-value kmap)))
+  (check-type kmap hash-table)
+  (dformat "Awaiting key~%")
+  (let* ((code-state (do ((k (read-key) (read-key)))
+			 ((not (is-modifier (xlib:keycode->keysym *display* (car k) 0))) k)))
+	 (code (car code-state))
+	 (state (cdr code-state))
+	 (key (code-state->key code state))
+	 (cmd (lookup-key kmap key)))
+    (dformat "key-press: ~S ~S ~S~%" key state cmd)
+    (when cmd
+      (typecase cmd
+	((or hash-table symbol)
+	 (handle-keymap screen cmd))
+	(string cmd)))))
 
 (define-stump-event-handler :key-press (code state window root)
   (declare (ignorable window))
-  ;; FIXME: maybe we should verify that code and state are what we
-  ;; expect them to be (C-t).
-  (declare (ignorable code))
-  (declare (ignorable state))
-  (let ((screen (find-screen root)))
+  (let* ((screen (find-screen root))
+	 (key (code-state->key code state))
+	 (cmd (lookup-key *top-map* key)))
     (unmap-message-window screen)
-    ;; grab the keyboard
-    (grab-pointer screen)
-    (grab-keyboard screen)
-    (dformat "Awaiting command key~%")
-    ;; Listen for key
-    (let ((key (do ((k (read-key) (read-key)))
-		   ((not (is-modifier (xlib:keycode->keysym *display* (car k) 0))) k))))
-      (dformat "Handling Command~%")
-      ;; We've read our key, so we can release the keyboard.
-      (ungrab-pointer)
-      (ungrab-keyboard)
-      (xlib:display-force-output *display*)
-      (handle-command-key screen (car key) (cdr key)))))
+    (dformat "key-press-top: ~S ~S~%" key cmd)
+    (typecase cmd
+      ((or hash-table symbol)
+       ;; grab the keyboard
+       (grab-pointer screen)
+       (grab-keyboard screen)
+       (let ((cmd (handle-keymap screen cmd)))
+       ;; We've read our key(s), so we can release the keyboard.
+	 (ungrab-pointer)
+	 (ungrab-keyboard)
+	 (when cmd
+	   (interactive-command cmd screen))))
+      (string
+       (interactive-command cmd screen))
+      ;; not found
+      (t ))))
 
 (defun handle-event (&rest event-slots &key display event-key &allow-other-keys)
   (declare (ignorable display))

@@ -44,6 +44,13 @@
       (key-hyper key)
       (key-super key)))
 
+(defun x11-mods (key)
+  ;; FIXME: we need full mod support.
+  (apply 'xlib:make-state-mask
+	 (append
+	  (when (key-shift key) '(:shift))
+	  (when (key-control key) '(:control)))))
+
 (define-condition kbd-parse ()
   () (:documentation "Raised when a kbd string failed to parse."))
 

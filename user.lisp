@@ -26,6 +26,57 @@
 
 (in-package :stumpwm)
 
+(defvar *root-map*
+  (let ((m (make-sparse-keymap)))
+    (define-key m (kbd "c") "xterm")
+    (define-key m (kbd "e") "exec emacs")
+    (define-key m (kbd "n") "next")
+    (define-key m (kbd "C-n") "next")
+    (define-key m (kbd " ") "next")
+    (define-key m (kbd "p") "prev")
+    (define-key m (kbd "C-p") "prev")
+    (define-key m (kbd "w") "windows")
+    (define-key m (kbd "C-w") "windows")
+    (define-key m (kbd "k") "delete")
+    (define-key m (kbd "C-k") "delete")
+    (define-key m (kbd "K") "kill")
+    (define-key m (kbd "b") "banish")
+    (define-key m (kbd "C-b") "banish")
+    (define-key m (kbd "a") "time")
+    (define-key m (kbd "C-a") "time")
+    (define-key m (kbd "'") "select")
+    (define-key m (kbd "t") "other")
+    (define-key m (kbd "!") "exec")
+    (define-key m (kbd "g") "abort")
+    (define-key m (kbd "0") "pull 0")
+    (define-key m (kbd "1") "pull 1")
+    (define-key m (kbd "2") "pull 2")
+    (define-key m (kbd "3") "pull 3")
+    (define-key m (kbd "4") "pull 4")
+    (define-key m (kbd "5") "pull 5")
+    (define-key m (kbd "6") "pull 6")
+    (define-key m (kbd "7") "pull 7")
+    (define-key m (kbd "8") "pull 8")
+    (define-key m (kbd "9") "pull 9")
+    (define-key m (kbd "r") "remove")
+    (define-key m (kbd "s") "hsplit")
+    (define-key m (kbd "S") "vsplit")
+    (define-key m (kbd "o") "sibling")
+    (define-key m (kbd "f") "fselect")
+    (define-key m (kbd "F") "curframe")
+    (define-key m (kbd "t") "meta")
+    ;;(define-key m (kbd "C-N") "number")
+    (define-key m (kbd ";") "colon")
+    (define-key m (kbd ":") "eval")
+    m)
+  "The default bindings that hang off the prefix key.")
+
+(defvar *top-map*
+  (let ((m (make-sparse-keymap)))
+    (define-key m (kbd "C-t") '*root-map*)
+    m)
+  "Top level bindings.")
+
 (defstruct command
   name args fn)
 
@@ -38,10 +89,6 @@
 		       :args ',args
 		       :fn (lambda (,screen ,@(mapcar 'first args))
 			      ,@body))))
-
-(defun set-key-binding (key mod cmd)
-  "Bind KEY to the function FN."
-  (setf (gethash (list key mod) *key-bindings*) cmd))
 
 (defun focus-next-window (screen)
   (focus-forward screen (frame-sort-windows screen
@@ -219,6 +266,9 @@
 (define-stumpwm-command "only" (screen)
   (loop while (remove-split screen)))
 
+(define-stumpwm-command "curframe" (screen)
+  (show-frame-indicator screen))
+
 (defun focus-frame-sibling (screen)
   (let* ((sib (sibling (screen-frame-tree screen)
 		      (screen-current-frame screen))))
@@ -255,6 +305,9 @@ select one. Returns the selected frame or nil if aborted."
 
 (define-stumpwm-command "eval" (screen (cmd :rest "Eval: "))
   (eval-line screen cmd))
+
+(define-stumpwm-command "echo" (screen (s :rest "Echo: "))
+  (echo-string screen s))
 
 ;; Simple command & arg parsing
 (defun split-by-one-space (string)
@@ -401,45 +454,3 @@ aborted."
 (define-stumpwm-command "abort" (screen))
 
 ;;(define-stumpwm-command "escape"
-
-(defun set-default-bindings ()
-  "Put the default bindings in the key-bindings hash table."
-  (set-key-binding #\c '() "xterm")
-  (set-key-binding #\e '() "exec emacs")
-  (set-key-binding #\n '() "next")
-  (set-key-binding #\n '(:control) "next")
-  (set-key-binding #\Space '() "next")
-  (set-key-binding #\p '() "prev")
-  (set-key-binding #\p '(:control) "prev")
-  (set-key-binding #\w '() "windows")
-  (set-key-binding #\w '(:control) "windows")
-  (set-key-binding #\k '() "delete")
-  (set-key-binding #\k '(:control) "delete")
-  (set-key-binding #\K '() "kill")
-  (set-key-binding #\b '() "banish")
-  (set-key-binding #\b '(:control) "banish")
-  (set-key-binding #\a '() "time")
-  (set-key-binding #\a '(:control) "time")
-  (set-key-binding #\' '() "select")
-  (set-key-binding #\t '(:control) "other")
-  (set-key-binding #\! '() "exec")
-  (set-key-binding #\g '(:control) "abort")
-  (set-key-binding #\0 '() "pull 0")
-  (set-key-binding #\1 '() "pull 1")
-  (set-key-binding #\2 '() "pull 2")
-  (set-key-binding #\3 '() "pull 3")
-  (set-key-binding #\4 '() "pull 4")
-  (set-key-binding #\5 '() "pull 5")
-  (set-key-binding #\6 '() "pull 6")
-  (set-key-binding #\7 '() "pull 7")
-  (set-key-binding #\8 '() "pull 8")
-  (set-key-binding #\9 '() "pull 9")
-  (set-key-binding #\r '() "remove")
-  (set-key-binding #\s '() "hsplit")
-  (set-key-binding #\S '() "vsplit")
-  (set-key-binding #\o '() "sibling")
-  (set-key-binding #\f '() "fselect")
-  (set-key-binding #\t '() "meta")
-  (set-key-binding #\N '(:control) "number")
-  (set-key-binding #\; '() "colon")
-  (set-key-binding #\: '() "eval"))

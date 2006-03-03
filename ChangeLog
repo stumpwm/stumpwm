@@ -1,5 +1,25 @@
 2006-03-02  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* core.lisp (ungrab-keys-on-window): pass :any correctly.
+	(grab-keys-on-window): grab all keybindings in *top-map*
+	(sync-keys): new defun
+	(handle-keymap): new defun
+	(handle-command-key): remove defun
+	(:key-press): lookup key event in *top-map* and execute matching command.
+
+	* kmap.lisp (x11-mods): new defun
+
+	* primitives.lisp (key-binding): remove defstruct
+	(*key-bindings*): remove defvar
+
+	* stumpwm.lisp (stumpwm): do not call set-key-binding
+
+	* user.lisp (*root-map*): new key map
+	(set-key-binding): remove defun
+	("curframe"): new command
+	("echo"): likewise
+	(set-default-bindings): remove defun
+
 	* stumpwm.lisp (stumpwm-internal-loop): listen for events and process them when they come in.
 
 	* core.lisp (frame-raise-window): don't do anything if w is nil
