@@ -254,9 +254,11 @@
 	    (remove-frame screen
 			  (screen-frame-tree screen)
 			  (screen-current-frame screen)))
-      ;; update the current frame and sync its windows
+      ;; update the current frame and sync all windows
       (setf (screen-current-frame screen) l)
-      (sync-frame-windows screen l)
+      (tree-iterate (screen-frame-tree screen)
+		    (lambda (leaf)
+		      (sync-frame-windows screen leaf)))
       (frame-raise-window screen l (frame-window l))
       (show-frame-indicator screen))))
 
@@ -296,6 +298,12 @@ select one. Returns the selected frame or nil if aborted."
 (define-stumpwm-command "fselect" (screen (f :frame))
   (focus-frame screen f)
   (show-frame-indicator screen))
+
+(define-stumpwm-command "resize" (screen (w :number "+ Width: ")
+                                         (h :number "+ Height: "))
+  (let ((f (screen-current-frame screen)))
+    (resize-frame screen f w 'width)
+    (resize-frame screen f h 'height)))
 
 (defun eval-line (screen cmd)
   (echo-string screen

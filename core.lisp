@@ -572,6 +572,14 @@ T (default) then also focus the frame."
 		    (tree-accum-fn (first tree) acc fn)
 		    (tree-accum-fn (second tree) acc fn)))))
 
+(defun tree-iterate (tree fn)
+  "Call FN on every leaf in TREE"
+  (cond ((null tree) nil)
+	((atom tree)
+	 (funcall fn tree))
+	(t (tree-iterate (first tree) fn)
+           (tree-iterate (second tree) fn))))
+
 (defun tree-x (screen tree)
   (tree-accum-fn tree #'min (lambda (f)
 			      (frame-x f))))
@@ -642,20 +650,14 @@ child. KEEP decides which child to keep. It can be 'LEFT or
       (if (eql keep 'left)
 	  (values (first tree) (second tree))
 	(values (second tree) (first tree)))
-    (let (dir amount)
-      (if (tree-row-split screen tree)
-	  (progn
-	    (setf amount (tree-width screen other))
-	    (if (eql keep 'left)
-		(setf dir 'right)
-	      (setf dir 'left)))
-	(progn
-	  (setf amount (tree-height screen other))
-	  (if (eql keep 'left)
-	      (setf dir 'bottom)
-	    (setf dir 'top))))
-      (expand-tree screen child amount dir)
-      child)))
+    (if (tree-row-split screen tree)
+	(expand-tree screen child 
+		     (tree-width screen other)
+		     (if (eql keep 'left) 'right 'left))
+      (expand-tree screen child 
+		   (tree-height screen other)
+		   (if (eql keep 'left) 'bottom 'top)))
+    child))
 
 (defun remove-frame (screen tree leaf)
   "Return a new tree with LEAF and it's sibling merged into
@@ -677,6 +679,61 @@ one."
 	    (dformat "maximizing ~S~%" w)
 	    (maximize-window w)))
 	(screen-mapped-windows screen)))
+
+(defun depth-first-search (tree elt &key (test #'eq))
+  "If ELT is in TREE return the branches from ELT up to and including TREE"
+  (if (atom tree)
+      (funcall test tree elt)
+    (labels ((find-path (acc)
+			(let ((current (car acc)))
+			  (cond ((atom current)
+				 (when (funcall test elt current)
+				   (throw 'found (cdr acc))))
+				(t (find-path (cons (first current) acc))
+				   (find-path (cons (second current) acc)))))))
+      (catch 'found (find-path (list tree))))))
+
+(defun spree-root-branch (tree pred t-frame)
+  "Find the first parent branch of T-FRAME in TREE for which PRED no longer is T"
+  (let ((path (depth-first-search tree t-frame)))
+    ;; path is the path of branches traversed to reach T-FRAME
+    (when path
+      (loop for branch in path while (funcall pred branch)
+	    finally (return branch)))))
+
+(defun resize-frame (screen frame amount dim)
+  "Resize FRAME by AMOUNT in DIM dimension, DIM can be either 'width or 'height"
+  (let ((tree (screen-frame-tree screen)))
+    ;; if FRAME is taking up the whole DIM or if AMOUNT = 0, do nothing
+    (unless (or (zerop amount)
+                (case dim
+                  ('width  (eq (screen-width screen)  (frame-width frame)))
+                  ('height (eq (screen-height screen) (frame-height frame)))))
+      (let* ((split-pred (ecase dim
+                           ('width   #'tree-column-split)
+                           ('height  #'tree-row-split)))
+             (a-branch (spree-root-branch tree
+                                          (lambda (b)
+                                            (funcall split-pred screen b))
+                                          frame)))
+        (multiple-value-bind (a b)
+            (if (depth-first-search (first a-branch) frame)
+                (values (first a-branch) (second a-branch))
+	      (values (second a-branch) (first a-branch)))
+          (let ((dir (ecase dim
+                       ('width (if (< (tree-x screen a) (tree-x screen b))
+                                   'right 'left))
+                       ('height (if (< (tree-y screen a) (tree-y screen b))
+                                    'bottom 'top)))))
+            (expand-tree screen a amount dir)
+            (expand-tree screen b (- amount) (ecase dir
+                                               ('left 'right)
+                                               ('right 'left)
+                                               ('top 'bottom)
+                                               ('bottom 'top)))
+            (tree-iterate a-branch
+                          (lambda (leaf)
+                            (sync-frame-windows screen leaf)))))))))
 
 (defun split-frame (screen how-fn)
   (let* ((frame (screen-current-frame screen)))
