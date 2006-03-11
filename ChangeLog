@@ -1,3 +1,15 @@
+2006-03-10  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* user.lisp (remove-split): sync all frames
+	("resize"): new command
+	(*root-map*): bind "Space" not " "
+
+	* core.lisp (tree-iterate): new function
+	(join-subtrees): tighten up code
+	(depth-first-search): new function
+	(spree-root-branch): likewise
+	(resize-frame): likewise
+
 2006-03-03  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp (*root-map*): bind "c" to "exec xterm". bind "other" to C-t

@@ -32,7 +32,7 @@
     (define-key m (kbd "e") "exec emacs")
     (define-key m (kbd "n") "next")
     (define-key m (kbd "C-n") "next")
-    (define-key m (kbd " ") "next")
+    (define-key m (kbd "Space") "next")
     (define-key m (kbd "p") "prev")
     (define-key m (kbd "C-p") "prev")
     (define-key m (kbd "w") "windows")
