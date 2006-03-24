@@ -26,6 +26,13 @@
 
 (in-package :stumpwm)
 
+;; This is here to avoid warnings
+(defvar *top-map* 
+  (let ((m (make-sparse-keymap)))
+    (define-key m (kbd "C-t") '*root-map*)
+    m)
+  "Top level bindings.")
+
 ;; Screen helper functions
 
 (defun screen-height (screen)
@@ -372,7 +379,7 @@ maximized, and given focus."
      ;; a window that's been destroyed. Give a warning and ignore
      ;; it. It will be taken care of in the unmap and destroy events
      ;; we'll be getting shortly.
-     (declare (ignorable c))
+     (declare (ignore c))
      (warn "drawable-error in focus-window"))))
 
     
@@ -543,8 +550,8 @@ T (default) then also focus the frame."
 
 (defun replace-frame-in-tree (tree f f1 f2)
   (funcall-on-leaf tree f (lambda (f)
+                            (declare (ignore f))
 			    (list f1 f2))))
-
 
 (defun sibling (tree leaf)
   "Return the sibling of LEAF in TREE."
@@ -580,28 +587,25 @@ T (default) then also focus the frame."
 	(t (tree-iterate (first tree) fn)
            (tree-iterate (second tree) fn))))
 
-(defun tree-x (screen tree)
-  (tree-accum-fn tree #'min (lambda (f)
-			      (frame-x f))))
-(defun tree-y (screen tree)
-  (tree-accum-fn tree #'min (lambda (f)
-				(frame-y f))))
+(defun tree-x (tree)
+  (tree-accum-fn tree 'min 'frame-x))
 
-(defun tree-width (screen tree)
-  (tree-accum-fn tree #'+ (lambda (f)
-			      (frame-width f))))
+(defun tree-y (tree)
+  (tree-accum-fn tree 'min 'frame-y))
 
-(defun tree-height (screen tree)
-  (tree-accum-fn tree #'+ (lambda (f)
-			    (frame-height f))))
+(defun tree-width (tree)
+  (tree-accum-fn tree '+ 'frame-width))
 
-(defun tree-row-split (screen tree)
+(defun tree-height (tree)
+  (tree-accum-fn tree '+ 'frame-height))
+
+(defun tree-row-split (tree)
   "Return t if the children of tree are stacked vertically"
-  (= (tree-y screen (first tree)) (tree-y screen (second tree))))
+  (= (tree-y (first tree)) (tree-y (second tree))))
 
-(defun tree-column-split (screen tree)
+(defun tree-column-split (tree)
   "Return t if the children of tree are side-by-side"
-  (= (tree-x screen (first tree)) (tree-x screen (second tree))))
+  (= (tree-x (first tree)) (tree-x (second tree))))
 
 (defun expand-frame (f amount dir)
   (ecase dir
@@ -612,18 +616,18 @@ T (default) then also focus the frame."
 	  (incf (frame-height f) amount))
     ('bottom (incf (frame-height f) amount))))
 
-(defun expand-tree (screen tree amount dir)
+(defun expand-tree (tree amount dir)
   "expand the frames in tree by AMOUNT in DIR direction. DIR can be 'top 'bottom 'left 'right"
   (cond ((null tree) nil)
 	((atom tree)
 	 (expand-frame tree amount dir))
 	(t (if (or (and (member dir '(left right))
-			(tree-column-split screen tree))
+			(tree-column-split tree))
 		   (and (member dir '(top bottom))
-			(tree-row-split screen tree)))
+			(tree-row-split tree)))
 	       (progn
-		 (expand-tree screen (first tree) amount dir)
-		 (expand-tree screen (second tree) amount dir))
+		 (expand-tree (first tree) amount dir)
+		 (expand-tree (second tree) amount dir))
 	     (let ((n (truncate amount 2)))
 	       (multiple-value-bind (a b) 
 		   (if (find dir '(left top))
@@ -632,17 +636,17 @@ T (default) then also focus the frame."
 		 ;; first expand it the full amount to take up the
 		 ;; space. then shrink it in the other direction by
 		 ;; half.
-		 (expand-tree screen a amount dir)
-		 (expand-tree screen a (- n) (ecase dir
+		 (expand-tree a amount dir)
+		 (expand-tree a (- n) (ecase dir
 					       ('left 'right)
 					       ('right 'left)
 					       ('top 'bottom)
 					       ('bottom 'top)))
 		 ;; the other side simple needs to be expanded half
 		 ;; the amount.
-		 (expand-tree screen b (- amount n) dir)))))))
+		 (expand-tree b n dir)))))))
 
-(defun join-subtrees (screen tree keep)
+(defun join-subtrees (tree keep)
   "expand one of the children of tree to occupy the space of the other
 child. KEEP decides which child to keep. It can be 'LEFT or
 'RIGHT. Return the child that was kept."
@@ -650,27 +654,27 @@ child. KEEP decides which child to keep. It can be 'LEFT or
       (if (eql keep 'left)
 	  (values (first tree) (second tree))
 	(values (second tree) (first tree)))
-    (if (tree-row-split screen tree)
-	(expand-tree screen child 
-		     (tree-width screen other)
+    (if (tree-row-split tree)
+	(expand-tree child
+		     (tree-width other)
 		     (if (eql keep 'left) 'right 'left))
-      (expand-tree screen child 
-		   (tree-height screen other)
+      (expand-tree child
+		   (tree-height other)
 		   (if (eql keep 'left) 'bottom 'top)))
     child))
 
-(defun remove-frame (screen tree leaf)
+(defun remove-frame (tree leaf)
   "Return a new tree with LEAF and it's sibling merged into
 one."
   (cond ((atom tree) tree)
 	((and (atom (first tree))
 	      (eq (first tree) leaf))
-	 (join-subtrees screen tree 'right))
+	 (join-subtrees tree 'right))
 	((and (atom (second tree))
 	      (eq (second tree) leaf))
-	 (join-subtrees screen tree 'left))
-	(t (list (remove-frame screen (first tree) leaf)
-		 (remove-frame screen (second tree) leaf)))))
+	 (join-subtrees tree 'left))
+	(t (list (remove-frame (first tree) leaf)
+		 (remove-frame (second tree) leaf)))))
 
 (defun sync-frame-windows (screen frame)
   "synchronize windows attached to FRAME."
@@ -702,38 +706,50 @@ one."
 	    finally (return branch)))))
 
 (defun resize-frame (screen frame amount dim)
-  "Resize FRAME by AMOUNT in DIM dimension, DIM can be either 'width or 'height"
-  (let ((tree (screen-frame-tree screen)))
-    ;; if FRAME is taking up the whole DIM or if AMOUNT = 0, do nothing
+  (labels ((most (tree cmp key &optional (filter (constantly t)))
+	     (let ((flat-tree-yes-list-that-is-right (tree-accum-fn tree #'nconc #'list)))
+	       (reduce (lambda (elt current-most-elt)
+			 (let ((elt-val (funcall key elt)))
+			   (if (and (funcall filter elt-val)
+				    (or (not current-most-elt)
+					(funcall cmp elt-val (funcall key current-most-elt))))
+			       elt current-most-elt)))
+		       flat-tree-yes-list-that-is-right
+		       :from-end t
+		       :initial-value nil))))
     (unless (or (zerop amount)
-                (case dim
+		(ecase dim
                   ('width  (eq (screen-width screen)  (frame-width frame)))
                   ('height (eq (screen-height screen) (frame-height frame)))))
-      (let* ((split-pred (ecase dim
-                           ('width   #'tree-column-split)
-                           ('height  #'tree-row-split)))
-             (a-branch (spree-root-branch tree
-                                          (lambda (b)
-                                            (funcall split-pred screen b))
-                                          frame)))
-        (multiple-value-bind (a b)
-            (if (depth-first-search (first a-branch) frame)
-                (values (first a-branch) (second a-branch))
-	      (values (second a-branch) (first a-branch)))
-          (let ((dir (ecase dim
-                       ('width (if (< (tree-x screen a) (tree-x screen b))
-                                   'right 'left))
-                       ('height (if (< (tree-y screen a) (tree-y screen b))
-                                    'bottom 'top)))))
-            (expand-tree screen a amount dir)
-            (expand-tree screen b (- amount) (ecase dir
-                                               ('left 'right)
-                                               ('right 'left)
-                                               ('top 'bottom)
-                                               ('bottom 'top)))
-            (tree-iterate a-branch
-                          (lambda (leaf)
-                            (sync-frame-windows screen leaf)))))))))
+      (let ((tree (screen-frame-tree screen)))
+	(multiple-value-bind (p-fun directions cmp filter split-pred)
+	    (flet ((dd (key a b)
+		     (if (eq (funcall key (most tree #'> key))
+			     (funcall key frame))
+			 (values (cons a b) #'> #'minusp)
+			 (values (cons b a) #'< #'plusp))))
+	      (ecase dim
+		('width
+		 (multiple-value-call #'values
+		   #'frame-x (dd #'frame-x 'left 'right) #'tree-column-split))
+		('height
+		 (multiple-value-call #'values
+		   #'frame-y (dd #'frame-y 'top 'bottom) #'tree-row-split))))
+	  (let* ((frame-pos (funcall p-fun frame))
+		 (other-frame (most tree cmp
+				    (lambda (f)
+				      (- (funcall p-fun f) frame-pos))
+				    filter))
+		 (a-branch (spree-root-branch tree split-pred frame))
+		 (b-branch (spree-root-branch tree split-pred other-frame))
+		 (a (if (depth-first-search (first a-branch) frame)
+			(first a-branch) (second a-branch)))
+		 (b (if (depth-first-search (first b-branch) other-frame)
+			(first b-branch) (second b-branch))))
+	    (expand-tree a amount (car directions))
+	    (expand-tree b (- amount) (cdr directions))
+	    (tree-iterate a (lambda (l) (sync-frame-windows screen l)))
+	    (tree-iterate b (lambda (l) (sync-frame-windows screen l)))))))))
 
 (defun split-frame (screen how-fn)
   (let* ((frame (screen-current-frame screen)))
@@ -973,7 +989,7 @@ list of modifier symbols."
 (defmacro define-stump-event-handler (event keys &body body)
   (let ((fn-name (gensym)))
   `(labels ((,fn-name (&rest event-slots &key ,@keys &allow-other-keys)
-		      (declare (ignorable event-slots))
+		      (declare (ignore event-slots))
 		      ,@body))
      (setf (gethash ,event *event-fn-table*) #',fn-name))))
 
@@ -983,9 +999,7 @@ list of modifier symbols."
 
 (define-stump-event-handler :configure-request (stack-mode parent window above-sibling x y width height border-width value-mask)
   ;; Grant the configure request but then maximize the window after the granting.
-  (declare (ignorable above-sibling))
-  (declare (ignorable parent))
-  (declare (ignorable stack-mode))
+  (declare (ignore above-sibling parent))
   (dformat "~S~%" value-mask)
   (handler-case
    (labels ((has-x (mask) (= 1 (logand mask 1)))
@@ -1030,11 +1044,11 @@ list of modifier symbols."
 		(frame-raise-window screen f window))))))))
    (xlib:drawable-error (c)
      ;; guess it left before we could do anything
-     (declare (ignorable c))
+     (declare (ignore c))
      (warn "drawable-error in configure-request"))))
 
 (define-stump-event-handler :map-request (parent window)
-  (declare (ignorable parent))
+  (declare (ignore parent))
   (let ((screen (window-screen window)))
     (process-new-window window)
     (absorb-mapped-window screen window)
@@ -1042,7 +1056,7 @@ list of modifier symbols."
     (frame-raise-window screen (window-frame screen window) window)))
 
 (define-stump-event-handler :unmap-notify (send-event-p event-window window configure-p)
-  (declare (ignorable configure-p))
+  (declare (ignore configure-p))
   (unless (or send-event-p
 	      (xlib:window-equal window event-window))
     ;; There are two kinds of unmap notify events: the straight up
@@ -1054,12 +1068,7 @@ list of modifier symbols."
 
 
 (define-stump-event-handler :create-notify (parent window x y width height border-width override-redirect-p)
-  (declare (ignorable border-width))
-  (declare (ignorable width))
-  (declare (ignorable height))
-  (declare (ignorable x))
-  (declare (ignorable y))
-  (declare (ignorable parent))
+  (declare (ignore border-width width height window x y parent))
   (unless override-redirect-p))
 ;    (process-new-window window)
 ;    (run-hook-with-args *new-window-hook* window)))
@@ -1100,7 +1109,7 @@ list of modifier symbols."
 	(string cmd)))))
 
 (define-stump-event-handler :key-press (code state window root)
-  (declare (ignorable window))
+  (declare (ignore window))
   (let* ((screen (find-screen root))
 	 (key (code-state->key code state))
 	 (cmd (lookup-key *top-map* key)))
@@ -1124,7 +1133,7 @@ list of modifier symbols."
 	(t )))))
 
 (defun handle-event (&rest event-slots &key display event-key &allow-other-keys)
-  (declare (ignorable display))
+  (declare (ignore display))
   (dformat "Handling event ~S~%" event-key)
   (let ((eventfn (gethash event-key *event-fn-table*)))
     (when eventfn

@@ -71,12 +71,6 @@
     m)
   "The default bindings that hang off the prefix key.")
 
-(defvar *top-map*
-  (let ((m (make-sparse-keymap)))
-    (define-key m (kbd "C-t") '*root-map*)
-    m)
-  "Top level bindings.")
-
 (defstruct command
   name args fn)
 
@@ -216,6 +210,7 @@
   (run-prog *shell-program* :args (list "-c" cmd) :wait nil))
 
 (define-stumpwm-command "exec" (screen (cmd :rest "/bin/sh -c "))
+  (declare (ignore screen))
   (run-shell-command cmd))
 
 (defun horiz-split-frame (screen)
@@ -237,7 +232,11 @@
 		    (screen-current-frame screen)))
 	 ;; grab a leaf of the sibling. The sibling doesn't have to be
 	 ;; a frame.
-	 (l (tree-accum-fn s (lambda (x y) x) (lambda (x) x))))
+	 (l (tree-accum-fn s
+                           (lambda (x y)
+                             (declare (ignore y))
+                             x)
+                           #'identity)))
     ;; Only remove the current frame if it has a sibling
     (dformat "~S~%" s)
     (when s
@@ -251,8 +250,7 @@
 	      (frame-window (screen-current-frame screen))))
       ;; Unsplit
       (setf (screen-frame-tree screen)
-	    (remove-frame screen
-			  (screen-frame-tree screen)
+	    (remove-frame (screen-frame-tree screen)
 			  (screen-current-frame screen)))
       ;; update the current frame and sync all windows
       (setf (screen-current-frame screen) l)
@@ -275,7 +273,11 @@
   (let* ((sib (sibling (screen-frame-tree screen)
 		      (screen-current-frame screen))))
     (when sib
-      (focus-frame screen (tree-accum-fn sib (lambda (x y) x) 'identity))
+      (focus-frame screen (tree-accum-fn sib
+                                         (lambda (x y)
+                                           (declare (ignore y))
+                                           x)
+                                         'identity))
       (show-frame-indicator screen))))
 
 (define-stumpwm-command "sibling" (screen)
@@ -459,6 +461,7 @@ aborted."
   (echo-string screen "Reloading StumpWM...Done."))
 
 ;; Trivial function
-(define-stumpwm-command "abort" (screen))
+(define-stumpwm-command "abort" (screen)
+  (declare (ignore screen)))
 
 ;;(define-stumpwm-command "escape"

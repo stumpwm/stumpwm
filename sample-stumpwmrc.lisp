@@ -23,7 +23,7 @@
 ;; Web jump (works for Google and Imdb)
 (defmacro make-web-jump (name prefix)
   `(define-stumpwm-command ,name (screen (search :rest ,(concatenate 'string name " search: ")))
-     (declare (ignorable screen))
+     (declare (ignore screen))
      (substitute #\+ #\Space search)
      (run-shell-command (concatenate 'string ,prefix search))))
 

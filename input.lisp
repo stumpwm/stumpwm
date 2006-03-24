@@ -78,10 +78,9 @@
   (xlib:unmap-window (screen-input-window screen)))
 
 (defun read-key-handle-event (&rest event-slots &key display event-key &allow-other-keys)
-  (declare (ignorable display))
+  (declare (ignore display))
   (labels ((key-press (&rest event-slots &key root code state &allow-other-keys)
-		      (declare (ignorable event-slots))
-		      (declare (ignorable root))
+		      (declare (ignore event-slots root))
 		      ;; FIXME: don't use a cons
 		      (cons code state)))
     (case event-key
@@ -106,15 +105,14 @@
 				:position (length initial-input)
 				:history -1)))
     (labels ((key-loop ()
-		       (let (done)
-			 (loop for key = (read-key) then (read-key)
-			       when (not (is-modifier (xlib:keycode->keysym *display* (car key) 0)))
-			       when (process-input screen prompt input (car key) (cdr key))
-			       return (input-line-string input)))))
+	       (loop for key = (read-key) then (read-key)
+		  when (not (is-modifier (xlib:keycode->keysym *display* (car key) 0)))
+		  when (process-input screen prompt input (car key) (cdr key))
+		  return (input-line-string input))))
       (setup-input-window screen prompt input)
       (catch 'abort
 	(unwind-protect
-	    (key-loop)
+	     (key-loop)
 	  (shutdown-input-window screen))))))
 
 (defun read-one-char (screen)
@@ -187,6 +185,7 @@
 											 (eql sym upcase-sym))))))
 
 (defun input-delete-backward-char (input key)
+  (declare (ignore key))
   (let ((pos (input-line-position input)))
     (cond ((or (<= (length (input-line-string input)) 0)
 	       (<= pos 0))
@@ -198,6 +197,7 @@
 	   (decf (input-line-position input))))))
 
 (defun input-delete-forward-char (input key)
+  (declare (ignore key))
   (let ((pos (input-line-position input)))
     (cond ((>= pos
 	       (length (input-line-string input)))
@@ -208,32 +208,39 @@
 	   (decf (fill-pointer (input-line-string input)))))))
 
 (defun input-forward-char (input key)
+  (declare (ignore key))
   (incf (input-line-position input))
   (when (> (input-line-position input)
 	   (length (input-line-string input)))
     (setf (input-line-position input) (length (input-line-string input)))))
 
 (defun input-backward-char (input key)
+  (declare (ignore key))
   (decf (input-line-position input))
   (when (< (input-line-position input) 0)
     (setf (input-line-position input) 0)))
 
 (defun input-move-beginning-of-line (input key)
+  (declare (ignore key))
   (setf (input-line-position input) 0))
 
 (defun input-move-end-of-line (input key)
+  (declare (ignore key))
   (setf (input-line-position input) (length (input-line-string input))))
 
 (defun input-kill-line (input key)
+  (declare (ignore key))
   (setf (fill-pointer (input-line-string input)) (input-line-position input)))
 
 (defun input-kill-to-beginning (input key)
+  (declare (ignore key))
   (replace (input-line-string input) (input-line-string input)
 	   :start2 (input-line-position input) :start1 0)
   (decf (fill-pointer (input-line-string input)) (input-line-position input))
   (setf (input-line-position input) 0))
 
 (defun input-history-back (input key)
+  (declare (ignore key))
   (when (= (input-line-history input) -1)
     (setf (input-line-history-bk input) (input-line-string input)))
   (incf (input-line-history input))
@@ -246,6 +253,7 @@
 	  (input-line-position input) (length (input-line-string input)))))
 
 (defun input-history-forward (input key)
+  (declare (ignore key))
   (decf (input-line-history input))
   (cond ((< (input-line-history input) -1)
 	 (incf (input-line-history input))
@@ -258,9 +266,11 @@
 	       (input-line-position input) (length (input-line-string input))))))
 
 (defun input-submit (input key)
+  (declare (ignore input key))
   :done)
 
 (defun input-abort (input key)
+  (declare (ignore input key))
   (throw 'abort nil))
 
 (defun input-self-insert (input key)

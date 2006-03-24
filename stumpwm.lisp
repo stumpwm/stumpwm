@@ -43,7 +43,7 @@ loaded."
 	;; TODO: Should we compile the file before we load it?
 	(handler-case (load rc)
 		      (error (c) (values nil (format nil "~A" c) rc))
-		      (:no-error (&rest args) (values t nil rc)))
+		      (:no-error (&rest args) (declare (ignore args)) (values t nil rc)))
       (values t nil nil))))
     
 (defun init-atoms ()
@@ -54,9 +54,7 @@ loaded."
 
 (defun error-handler (display error-key &rest key-vals &key asynchronous &allow-other-keys)
   "Handle X errors"
-  (declare (ignorable display))
-  (declare (ignorable key-vals))
-  (declare (ignorable asynchronous))
+  (declare (ignore display asynchronous))
   (case error-key
     ('xlib:access-error
      (error "Another window manager is running."))
@@ -94,7 +92,7 @@ loaded."
     (values host num)))
 
 ;; Usage: (stumpwm)
-(defun stumpwm (&optional (display-str nil) &key protocol)
+(defun stumpwm (&optional (display-str nil) protocol)
   "Start the stump window manager."
   (multiple-value-bind (host display) (parse-display-string (or display-str
 								(getenv "DISPLAY")
@@ -107,7 +105,7 @@ loaded."
 	(handler-case
 	 (setf *screen-list* (mapcar #'init-screen (xlib:display-roots *display*)))
 	 (xlib:access-error (c)
-           (declare (ignorable c))
+           (declare (ignore c))
            (return-from stumpwm (princ "Another window manager is running."))))
 	;; Initialize the necessary atoms
 	(init-atoms)

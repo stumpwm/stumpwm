@@ -191,7 +191,7 @@ screen and window. It should return a string.")
 calls fn on the value for the key hash-key, not the pair."
   (let ((accum nil))
     (labels ((mapfn (key val)
-	       (declare (ignorable key))
+	       (declare (ignore key))
 	       (push (funcall fn val) accum)))
       (maphash #'mapfn hash))
     accum))
