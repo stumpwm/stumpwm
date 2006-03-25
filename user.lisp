@@ -200,8 +200,9 @@
   (let* ((f (screen-current-frame screen))
 	 (wins (frame-windows screen f))
 	 (win (second wins)))
-  (when win
-    (frame-raise-window screen (window-frame screen win) win))))
+  (if win
+      (frame-raise-window screen (window-frame screen win) win)
+      (echo-string screen "No other window."))))
 
 (define-stumpwm-command "other" (screen)
   (other-window screen))

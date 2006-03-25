@@ -2,6 +2,7 @@
 
 	* user.lisp (*root-map*): bind C-g to abort, not g.
 	(send-meta-key): don't send a key if there's no current window
+	(other-window): display an error message when no other window can be selected
 
 	* core.lisp (handle-keymap): accept a code and state. read the
 	next key when its a keymap. return the key sequence for the
