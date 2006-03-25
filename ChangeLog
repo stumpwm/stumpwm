@@ -18,7 +18,6 @@
 	(expand-tree): likewise
 	(join-subtrees): likewise
 	(remove-frame): likewise
-	(resize-frame): unknown changes
 
 2006-03-10  Shawn Betts  <sabetts@vcn.bc.ca>
 

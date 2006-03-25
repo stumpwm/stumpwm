@@ -706,50 +706,38 @@ one."
 	    finally (return branch)))))
 
 (defun resize-frame (screen frame amount dim)
-  (labels ((most (tree cmp key &optional (filter (constantly t)))
-	     (let ((flat-tree-yes-list-that-is-right (tree-accum-fn tree #'nconc #'list)))
-	       (reduce (lambda (elt current-most-elt)
-			 (let ((elt-val (funcall key elt)))
-			   (if (and (funcall filter elt-val)
-				    (or (not current-most-elt)
-					(funcall cmp elt-val (funcall key current-most-elt))))
-			       elt current-most-elt)))
-		       flat-tree-yes-list-that-is-right
-		       :from-end t
-		       :initial-value nil))))
+  "Resize FRAME by AMOUNT in DIM dimension, DIM can be either 'width or 'height"
+  (let ((tree (screen-frame-tree screen)))
+    ;; if FRAME is taking up the whole DIM or if AMOUNT = 0, do nothing
     (unless (or (zerop amount)
-		(ecase dim
+                (case dim
                   ('width  (eq (screen-width screen)  (frame-width frame)))
                   ('height (eq (screen-height screen) (frame-height frame)))))
-      (let ((tree (screen-frame-tree screen)))
-	(multiple-value-bind (p-fun directions cmp filter split-pred)
-	    (flet ((dd (key a b)
-		     (if (eq (funcall key (most tree #'> key))
-			     (funcall key frame))
-			 (values (cons a b) #'> #'minusp)
-			 (values (cons b a) #'< #'plusp))))
-	      (ecase dim
-		('width
-		 (multiple-value-call #'values
-		   #'frame-x (dd #'frame-x 'left 'right) #'tree-column-split))
-		('height
-		 (multiple-value-call #'values
-		   #'frame-y (dd #'frame-y 'top 'bottom) #'tree-row-split))))
-	  (let* ((frame-pos (funcall p-fun frame))
-		 (other-frame (most tree cmp
-				    (lambda (f)
-				      (- (funcall p-fun f) frame-pos))
-				    filter))
-		 (a-branch (spree-root-branch tree split-pred frame))
-		 (b-branch (spree-root-branch tree split-pred other-frame))
-		 (a (if (depth-first-search (first a-branch) frame)
-			(first a-branch) (second a-branch)))
-		 (b (if (depth-first-search (first b-branch) other-frame)
-			(first b-branch) (second b-branch))))
-	    (expand-tree a amount (car directions))
-	    (expand-tree b (- amount) (cdr directions))
-	    (tree-iterate a (lambda (l) (sync-frame-windows screen l)))
-	    (tree-iterate b (lambda (l) (sync-frame-windows screen l)))))))))
+      (let* ((split-pred (ecase dim
+                           ('width   #'tree-column-split)
+                           ('height  #'tree-row-split)))
+             (a-branch (spree-root-branch tree
+                                          (lambda (b)
+                                            (funcall split-pred screen b))
+                                          frame)))
+        (multiple-value-bind (a b)
+            (if (depth-first-search (first a-branch) frame)
+                (values (first a-branch) (second a-branch))
+	      (values (second a-branch) (first a-branch)))
+          (let ((dir (ecase dim
+                       ('width (if (< (tree-x screen a) (tree-x screen b))
+                                   'right 'left))
+                       ('height (if (< (tree-y screen a) (tree-y screen b))
+                                    'bottom 'top)))))
+            (expand-tree screen a amount dir)
+            (expand-tree screen b (- amount) (ecase dir
+                                               ('left 'right)
+                                               ('right 'left)
+                                               ('top 'bottom)
+                                               ('bottom 'top)))
+            (tree-iterate a-branch
+                          (lambda (leaf)
+                            (sync-frame-windows screen leaf)))))))))
 
 (defun split-frame (screen how-fn)
   (let* ((frame (screen-current-frame screen)))
