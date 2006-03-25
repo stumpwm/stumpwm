@@ -1,3 +1,25 @@
+2006-03-25  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* stumpwm.lisp (stumpwm): give display-str a default value.
+
+2006-03-24  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* stumpwm.lisp (stumpwm): remove &key
+
+	* input.lisp (read-one-line): remove done var
+
+	* core.lisp (*top-map*): moved from user.lisp
+	(tree-x): dont accept a screen arg. all callers updated.
+	(tree-y): likewise
+	(tree-width): likewise
+	(tree-height): likewise
+	(tree-row-split): likewise
+	(tree-column-split): likewise
+	(expand-tree): likewise
+	(join-subtrees): likewise
+	(remove-frame): likewise
+	(resize-frame): unknown changes
+
 2006-03-10  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp (remove-split): sync all frames
