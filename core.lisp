@@ -1076,49 +1076,49 @@ list of modifier symbols."
       ;(xlib:destroy-window event-window)
       (run-hook-with-args *destroy-window-hook* window))))
 
-(defun handle-keymap (screen kmap)
+(defun handle-keymap (kmap code state key-seq)
   "Find the command mapped to the (code state) and return it."
   ;; a symbol is assumed to have a hashtable as a value.
   (dformat "Awaiting key ~a~%" kmap)
   (when (symbolp kmap)
     (setf kmap (symbol-value kmap)))
   (check-type kmap hash-table)
-  (let* ((code-state (do ((k (read-key) (read-key)))
-			 ((not (is-modifier (xlib:keycode->keysym *display* (car k) 0))) k)))
-	 (code (car code-state))
-	 (state (cdr code-state))
-	 (key (code-state->key code state))
-	 (cmd (lookup-key kmap key)))
+  (let* ((key (code-state->key code state))
+	 (cmd (lookup-key kmap key))
+	 (key-seq (cons key key-seq)))
     (dformat "key-press: ~S ~S ~S~%" key state cmd)
-    (when cmd
-      (typecase cmd
-	((or hash-table symbol)
-	 (handle-keymap screen cmd))
-	(string cmd)))))
+    (if cmd
+	(etypecase cmd
+	  ((or hash-table symbol)
+	   (let* ((code-state (do ((k (read-key) (read-key)))
+				  ((not (is-modifier (xlib:keycode->keysym *display* (car k) 0))) k)))
+		  (code (car code-state))
+		  (state (cdr code-state)))
+	     (handle-keymap cmd code state key-seq)))
+	  (string (values cmd key-seq)))
+	(values nil key-seq))))
 
 (define-stump-event-handler :key-press (code state window root)
   (declare (ignore window))
-  (let* ((screen (find-screen root))
-	 (key (code-state->key code state))
-	 (cmd (lookup-key *top-map* key)))
-    (unmap-message-window screen)
-    (dformat "key-press-top: ~S ~S~%" key cmd)
-    (when cmd
-      (typecase cmd
-	((or hash-table symbol)
-	 ;; grab the keyboard
-	 (grab-pointer screen)
-	 (grab-keyboard screen)
-	 (let ((cmd (handle-keymap screen cmd)))
-	   ;; We've read our key(s), so we can release the keyboard.
-	   (ungrab-pointer)
-	   (ungrab-keyboard)
-	   (when cmd
-	     (interactive-command cmd screen))))
-	(string
-	 (interactive-command cmd screen))
-	;; not found
-	(t )))))
+  ;; modifiers can sneak in with a race condition. so avoid that.
+  (unless (is-modifier (xlib:keycode->keysym *display* code 0))
+    (labels ((get-cmd (screen code state)
+	       (unwind-protect
+		    (progn
+		      (grab-pointer screen)
+		      (grab-keyboard screen)
+		      (handle-keymap *top-map* code state nil))
+		 (ungrab-pointer)
+		 (ungrab-keyboard)
+		 ;; this force output is crucial. Without it weird
+		 ;; things happen if an error happens later on.
+		 (xlib:display-force-output *display*))))
+      (let* ((screen (find-screen root)))
+	(unmap-message-window screen)
+	(multiple-value-bind (cmd key-seq) (get-cmd screen code state)
+	  (if cmd
+	      (interactive-command cmd screen)
+	      (echo-string screen (format nil "~{~a ~}not bound." (mapcar 'print-key (nreverse key-seq))))))))))
 
 (defun handle-event (&rest event-slots &key display event-key &allow-other-keys)
   (declare (ignore display))

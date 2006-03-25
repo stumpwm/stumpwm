@@ -1,5 +1,14 @@
 2006-03-25  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* user.lisp (*root-map*): bind C-g to abort, not g.
+
+	* core.lisp (handle-keymap): accept a code and state. read the
+	next key when its a keymap. return the key sequence for the
+	command.
+	(:key-press): call display-force-output after ungrabbing the
+	pointer and keyboard. do not lookup the command. print the key
+	sequence if no command was found.
+
 	* stumpwm.lisp (stumpwm): give display-str a default value.
 
 2006-03-24  Shawn Betts  <sabetts@vcn.bc.ca>

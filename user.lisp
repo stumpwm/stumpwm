@@ -47,7 +47,7 @@
     (define-key m (kbd "'") "select")
     (define-key m (kbd "C-t") "other")
     (define-key m (kbd "!") "exec")
-    (define-key m (kbd "g") "abort")
+    (define-key m (kbd "C-g") "abort")
     (define-key m (kbd "0") "pull 0")
     (define-key m (kbd "1") "pull 1")
     (define-key m (kbd "2") "pull 2")
