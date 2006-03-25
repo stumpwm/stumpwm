@@ -1,6 +1,7 @@
 2006-03-25  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp (*root-map*): bind C-g to abort, not g.
+	(send-meta-key): don't send a key if there's no current window
 
 	* core.lisp (handle-keymap): accept a code and state. read the
 	next key when its a keymap. return the key sequence for the

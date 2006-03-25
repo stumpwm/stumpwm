@@ -432,7 +432,8 @@ aborted."
 
 (defun send-meta-key (screen)
   "Send the prefix key"
-  (send-fake-key (screen-current-window screen) *prefix-key* *prefix-modifiers*))
+  (when (screen-current-window screen)
+    (send-fake-key (screen-current-window screen) *prefix-key* *prefix-modifiers*)))
 
 (define-stumpwm-command "meta" (screen)
   (send-meta-key screen))
