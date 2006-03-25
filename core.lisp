@@ -718,19 +718,19 @@ one."
                            ('height  #'tree-row-split)))
              (a-branch (spree-root-branch tree
                                           (lambda (b)
-                                            (funcall split-pred screen b))
+                                            (funcall split-pred b))
                                           frame)))
         (multiple-value-bind (a b)
             (if (depth-first-search (first a-branch) frame)
                 (values (first a-branch) (second a-branch))
 	      (values (second a-branch) (first a-branch)))
           (let ((dir (ecase dim
-                       ('width (if (< (tree-x screen a) (tree-x screen b))
+                       ('width (if (< (tree-x a) (tree-x b))
                                    'right 'left))
-                       ('height (if (< (tree-y screen a) (tree-y screen b))
+                       ('height (if (< (tree-y a) (tree-y b))
                                     'bottom 'top)))))
-            (expand-tree screen a amount dir)
-            (expand-tree screen b (- amount) (ecase dir
+            (expand-tree a amount dir)
+            (expand-tree b (- amount) (ecase dir
                                                ('left 'right)
                                                ('right 'left)
                                                ('top 'bottom)
