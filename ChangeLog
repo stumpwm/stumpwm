@@ -1,5 +1,7 @@
 2006-03-25  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* core.lisp (frame-raise-window): handle the case when w is nil.
+
 	* stumpwm.lisp (stumpwm-internal-loop): flush output after processing events.
 
 	* input.lisp (code-state->key): use #\Null if no keysym to char mapping exists.

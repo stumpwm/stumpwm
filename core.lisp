@@ -456,12 +456,15 @@ maximized, and given focus."
   "Raise the window w in frame f in screen s. if FOCUS is
 T (default) then also focus the frame."
   ;; nothing to do when W is nil
-  (when w
-    (assert (eq (window-frame s w) f))
-    (setf (frame-window f) w)
-    (if focus
-	(focus-frame s f)
-      (setf (xlib:window-priority w) :top-if))))
+  (if w
+      (progn
+	(assert (eq (window-frame s w) f))
+	(setf (frame-window f) w)
+	(if focus
+	    (focus-frame s f)
+	    (setf (xlib:window-priority w) :top-if)))
+      ;; empty the frame
+      (setf (frame-window f) nil)))
   
 (defun focus-frame (screen f)
   (let ((w (frame-window f)))
