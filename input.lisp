@@ -178,8 +178,11 @@
 	 (sym (xlib:keycode->keysym *display* code 0))
 	 (upcase-sym (xlib:keycode->keysym *display* code 1))
 	 ;; make sure there is such a keysym
-	 (char (and sym upcase-sym
-		    (xlib:keysym->character *display* (if (find :shift mods) upcase-sym sym)))))
+	 (char (or (and sym upcase-sym
+			(xlib:keysym->character *display* (if (find :shift mods) upcase-sym sym)))
+		   ;; some keysyms aren't mapped to characters (why not?)
+		   ;; so use this in that case.
+		   #\Null)))
     (when char
       (make-key :char (char-code char) :control (and (find :control mods) t) :shift (and (find :shift mods)
 											 (eql sym upcase-sym))))))

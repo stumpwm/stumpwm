@@ -1,5 +1,7 @@
 2006-03-25  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* input.lisp (code-state->key): use #\Null if no keysym to char mapping exists.
+
 	* user.lisp (*root-map*): bind C-g to abort, not g.
 	(send-meta-key): don't send a key if there's no current window
 	(other-window): display an error message when no other window can be selected
