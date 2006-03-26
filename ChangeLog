@@ -1,5 +1,7 @@
 2006-03-25  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* stumpwm.lisp (stumpwm-internal-loop): flush output after processing events.
+
 	* input.lisp (code-state->key): use #\Null if no keysym to char mapping exists.
 
 	* user.lisp (*root-map*): bind C-g to abort, not g.

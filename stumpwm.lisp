@@ -79,8 +79,10 @@ loaded."
 	   (when nevents
 	     (xlib:process-event *display* :handler #'handle-event))))
      ;; Otherwise, simply wait for an event
-     (xlib:process-event *display* :handler #'handle-event :timeout nil))))
-
+     (xlib:process-event *display* :handler #'handle-event :timeout nil))
+     ;; flush any pending output. You'd think process-event would, but
+     ;; it seems not.
+     (xlib:display-force-output *display*)))
 
 (defun parse-display-string (display)
   "Parse an X11 DISPLAY string and return the host and display from it."
