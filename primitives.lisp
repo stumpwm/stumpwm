@@ -94,9 +94,14 @@ occur in that many seconds.")
 (defvar *shell-program* "/bin/sh"
   "The shell program used by SHELL-COMMAND.")
 
-(defvar *window-format-fn* 'default-window-format
-		   "The function called when printing a window list. It is passed the
-screen and window. It should return a string.")
+(defvar *maxsize-border-width* 1
+  "The default border width for maxsize windows.")
+
+(defvar *transient-border-width* 1
+  "The default border width for transient windows.")
+
+(defvar *normal-border-width* 0
+  "The default border width for normal windows.")
     
 ;; FIXME: This variable is set only once but it needs to be set after
 ;; the display is opened. So should it have +'s around it even though
@@ -117,6 +122,12 @@ screen and window. It should return a string.")
 (defconstant +withdrawn-state+ 0)
 (defconstant +normal-state+ 1)
 (defconstant +iconic-state+ 3)  
+
+(defvar *window-events* '(:structure-notify
+			  :property-change
+			  :colormap-change
+			  :focus-change)
+  "The events to listen for on managed windows.")
 
 ;; Message window variables
 (defvar *message-window-padding* 5)

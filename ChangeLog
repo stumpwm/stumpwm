@@ -1,3 +1,32 @@
+2006-03-25  Shawn Betts  <sabetts@shitbender.gagrod>
+
+	* stumpwm.lisp (stumpwm): use ' not #' in mapc.
+
+	* primitives.lisp (*window-format-fn*): remove defvar
+	(*maxsize-border-width*): new defvar
+	(*transient-border-width*): likewise
+	(*normal-border-width*): likewise
+	(*window-events*): likewise
+
+	* core.lisp (window-border-width): new function
+	(setf window-border-width): likewise
+	(default-border-width-for-type): likewise
+	(unhide-window): likewise
+	(hide-window): likewise
+	(window-type): likewise
+	(process-new-window): use *window-events*
+	(process-existing-windows): hide all absorbed windows
+	(absorb-mapped-window): give window a default border width
+	(focus-window): properly get the currently focused window. dont do
+	anything if its already focused. hide the currently focused
+	window.
+	(define-stump-event-handler): catch drawable-error's.
+	(:configure-request): don't use parent or above-sibling args
+	(:map-request): dont use parent arg
+	(:unmap-notify): dont use configure-p arg. ignore the proper event type.
+	(:create-notify): dont use parent window x y width height or border-width args
+	(:key-press): dont use window args
+
 2006-03-25  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* core.lisp (frame-raise-window): handle the case when w is nil.

@@ -87,6 +87,19 @@
 (defun window-name (win)
   (coerce (mapcar #'code-char (xlib:get-property win :WM_NAME)) 'string))
 
+;; some handy wrappers
+(defun window-border-width (win)
+  (xlib:drawable-border-width win))
+
+(defun (setf window-border-width) (width win)
+  (setf (xlib:drawable-border-width win) width))
+
+(defun default-border-width-for-type (type)
+  (ecase type
+    (:normal *normal-border-width*)
+    (:maxsize *maxsize-border-width*)
+    (:transient *transient-border-width*)))
+
 (defun window-class (win)
   ;; FIXME: This is arguable more work than is needed
   (second (split-string (coerce (mapcar #'code-char (xlib:get-property win :WM_CLASS)) 'string) (string #\Null))))
@@ -135,12 +148,28 @@
 
 (defsetf window-state set-window-state)
 
-;(defun hide-window (window)
-;  (xlib:unmap-window window)
-;  (xlib:set
+(defun window-hidden-p (window)
+  (eql (window-state window) +iconic-state+))
 
-;; (defun window-hidden-p (window)
-;;  (let (
+(defun unhide-window (window)
+  (xlib:map-window window)
+  (setf (window-state window) +normal-state+))
+
+(defun hide-window (window)
+  (setf (window-state window) +iconic-state+
+	(xlib:window-event-mask window) (remove :structure-notify *window-events*))
+  (xlib:unmap-window window)
+  (setf (xlib:window-event-mask window) *window-events*))
+
+(defun window-type (win)
+  "Return one of :maxsize, :transient, or :normal."
+  (or (and (xlib:get-property win :WM_TRANSIENT_FOR)
+	   :transient)
+      (and (let ((hints (xlib:wm-normal-hints win)))
+	     (or (xlib:wm-size-hints-max-width hints)
+		 (xlib:wm-size-hints-max-height hints)))
+	   :maxsize)
+      :normal))
 
 ;; Stolen from Eclipse
 (defun send-configuration-notify (window)
@@ -185,10 +214,7 @@
 windows), this function dresses the window up and gets it ready to be
 managed."
   ;; Listen for events
-  (setf (xlib:window-event-mask win) '(:structure-notify
-				       :property-change
-				       :colormap-change
-				       :focus-change))
+  (setf (xlib:window-event-mask win) *window-events*)
   (set-window-state win +normal-state+))
 
 (defun process-existing-windows (screen)
@@ -206,11 +232,10 @@ managed."
 		(dformat "Processing ~S ~S~%" (window-name win) win)
 		(process-new-window win)
 		;; Pretend it's been mapped
-		(absorb-mapped-window screen win))))))))
-;;     ;; Once we've processed them, we need to give one of them focus.
-;;     ;; FIXME: what if there aren't any windows?
-;;     (when (screen-mapped-windows screen)
-;;       (focus-window (first (screen-mapped-windows screen))))))
+		(absorb-mapped-window screen win)))))))
+  ;; Once processing them, hide them all. Later one will be mapped and
+  ;; focused.
+  (mapcar 'hide-window (screen-mapped-windows screen)))
 
 (defun geometry-hints (screen win)
   "Return hints for max width and height and increment hints. These
@@ -300,7 +325,6 @@ than the root window's width and height."
     (setf (frame-window (screen-current-frame screen))
 	  window)))
     
-
 (defun reparent-window (screen window)
   (let ((master-window (xlib:create-window
 			:parent (xlib:screen-root (screen-number screen))
@@ -320,6 +344,8 @@ than the root window's width and height."
   "Add the window to the screen's mapped window list and process it as
 needed."
   (add-window screen window)
+  ;; give it a default border width
+  (setf (window-border-width window) (default-border-width-for-type (window-type window)))
   (maximize-window window)
   ;(reparent-window screen window)
   (xlib:map-window window)
@@ -361,27 +387,30 @@ give the last accessed window focus."
 (defun focus-window (window)
   "Give the window focus. This means the window will be visible,
 maximized, and given focus."
-  (handler-case
-   (let ((screen (window-screen window)))
-     (setf (xlib:window-priority window) :top-if)
-     (xlib:set-input-focus *display* window :POINTER-ROOT)
-     ;;(send-client-message window :WM_PROTOCOLS +wm-take-focus+))
+  (let* ((screen (window-screen window))
+	 (cw (find (xlib:input-focus *display*) (screen-mapped-windows screen)
+		   :test 'xlib:window-equal)))
+    ;; If window to focus is already focused then our work is done.
+    (unless (xlib:window-equal window cw)
+      ;; deiconize it if needed
+      (when (window-hidden-p window)
+	(unhide-window window))
+      (setf (xlib:window-priority window) :top-if)
+      (xlib:set-input-focus *display* window :POINTER-ROOT)
+      ;;(send-client-message window :WM_PROTOCOLS +wm-take-focus+))
 
-     ;; Move the window to the head of the mapped-windows list
-     (move-window-to-head screen window)
-     ;; If another window was focused, then call the unfocus hook for
-     ;; it.
-     (when (screen-current-window screen)
-       (run-hook-with-args *unfocus-window-hook* (screen-current-window screen)))
-     (run-hook-with-args *focus-window-hook* window))
-   (xlib:drawable-error (c)
-     ;; This is generally the error we get when attempting to focus
-     ;; a window that's been destroyed. Give a warning and ignore
-     ;; it. It will be taken care of in the unmap and destroy events
-     ;; we'll be getting shortly.
-     (declare (ignore c))
-     (warn "drawable-error in focus-window"))))
-
+      ;; Move the window to the head of the mapped-windows list
+      (move-window-to-head screen window)
+      ;; If another window was focused, then call the unfocus hook for
+      ;; it.
+      (when cw
+	;; iconize the previous window if it was in the same frame and
+	;; is a :normal window
+	(when (and (eql (window-frame screen cw) (window-frame screen window))
+		   (eq (window-type window) :normal))
+	  (hide-window cw))
+	(run-hook-with-args *unfocus-window-hook* cw))
+      (run-hook-with-args *focus-window-hook* window))))
     
 (defun delete-window (window)
   "Send a delete event to the window."
@@ -978,19 +1007,29 @@ list of modifier symbols."
   "A hash of event types to functions")
 
 (defmacro define-stump-event-handler (event keys &body body)
-  (let ((fn-name (gensym)))
-  `(labels ((,fn-name (&rest event-slots &key ,@keys &allow-other-keys)
-		      (declare (ignore event-slots))
-		      ,@body))
+  (let ((fn-name (gensym))
+	(c (gensym))
+	(event-slots (gensym)))
+  `(labels ((,fn-name (&rest ,event-slots &key ,@keys &allow-other-keys)
+		      (declare (ignore ,event-slots))
+		      (handler-case (progn ,@body)
+			(xlib:drawable-error (,c)
+			  ;; This is generally the error we get when
+			  ;; attempting to focus a window that's been
+			  ;; destroyed. Give a warning and ignore
+			  ;; it. It will be taken care of in the unmap
+			  ;; and destroy events we'll be getting
+			  ;; shortly.
+			  (declare (ignore ,c))
+			  (warn "drawable-error in event handling")))))
      (setf (gethash ,event *event-fn-table*) #',fn-name))))
 
 
 ;(define-stump-event-handler :map-notify (event-window window override-redirect-p)
 ;  )
 
-(define-stump-event-handler :configure-request (stack-mode parent window above-sibling x y width height border-width value-mask)
+(define-stump-event-handler :configure-request (stack-mode #|parent|# window #|above-sibling|# x y width height border-width value-mask)
   ;; Grant the configure request but then maximize the window after the granting.
-  (declare (ignore above-sibling parent))
   (dformat "~S~%" value-mask)
   (handler-case
    (labels ((has-x (mask) (= 1 (logand mask 1)))
@@ -1038,18 +1077,16 @@ list of modifier symbols."
      (declare (ignore c))
      (warn "drawable-error in configure-request"))))
 
-(define-stump-event-handler :map-request (parent window)
-  (declare (ignore parent))
+(define-stump-event-handler :map-request (#|parent|# window)
   (let ((screen (window-screen window)))
     (process-new-window window)
     (absorb-mapped-window screen window)
     ;; Give it focus
     (frame-raise-window screen (window-frame screen window) window)))
 
-(define-stump-event-handler :unmap-notify (send-event-p event-window window configure-p)
-  (declare (ignore configure-p))
-  (unless (or send-event-p
-	      (xlib:window-equal window event-window))
+(define-stump-event-handler :unmap-notify (send-event-p event-window window #|configure-p|#)
+  (unless (and (not send-event-p)
+	       (not (xlib:window-equal window event-window)))
     ;; There are two kinds of unmap notify events: the straight up
     ;; ones where event-window and window are the same, and
     ;; substructure unmap events when the event-window is the parent
@@ -1057,9 +1094,7 @@ list of modifier symbols."
     (let ((screen (window-screen event-window)))
       (remove-window screen window))))
 
-
-(define-stump-event-handler :create-notify (parent window x y width height border-width override-redirect-p)
-  (declare (ignore border-width width height window x y parent))
+(define-stump-event-handler :create-notify (#|parent window x y width height border-width|# override-redirect-p)
   (unless override-redirect-p))
 ;    (process-new-window window)
 ;    (run-hook-with-args *new-window-hook* window)))
@@ -1101,8 +1136,7 @@ list of modifier symbols."
 	  (string (values cmd key-seq)))
 	(values nil key-seq))))
 
-(define-stump-event-handler :key-press (code state window root)
-  (declare (ignore window))
+(define-stump-event-handler :key-press (code state #|window|# root)
   ;; modifiers can sneak in with a race condition. so avoid that.
   (unless (is-modifier (xlib:keycode->keysym *display* code 0))
     (labels ((get-cmd (screen code state)

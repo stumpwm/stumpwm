@@ -109,7 +109,7 @@ loaded."
            (return-from stumpwm (princ "Another window manager is running."))))
 	;; Initialize the necessary atoms
 	(init-atoms)
-	(mapc #'process-existing-windows *screen-list*)
+	(mapc 'process-existing-windows *screen-list*)
 	;; Give the first screen's frame focus
 	(focus-frame (first *screen-list*) (screen-current-frame (first *screen-list*)))
         ;; Set the DISPLAY-environment-variable properly. This is
