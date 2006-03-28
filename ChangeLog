@@ -1,3 +1,9 @@
+2006-03-28  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* primitives.lisp (dformat): ignore debug output
+
+	* core.lisp (:map-request): don't absorb already managed windows
+
 2006-03-25  Shawn Betts  <sabetts@shitbender.gagrod>
 
 	* stumpwm.lisp (stumpwm): use ' not #' in mapc.

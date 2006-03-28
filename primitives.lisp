@@ -333,7 +333,7 @@ Modifies the match data; use `save-match-data' if necessary."
 	    while j))))
 
 (defun dformat (fmt &rest args)
-;;#+ignore
+#+ignore
   (with-open-file (s #p"/tmp/stumplog" :direction :output :if-exists :append :if-does-not-exist :create)
     (apply 'format s fmt args)))
 

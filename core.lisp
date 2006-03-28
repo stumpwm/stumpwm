@@ -1075,14 +1075,18 @@ list of modifier symbols."
    (xlib:drawable-error (c)
      ;; guess it left before we could do anything
      (declare (ignore c))
-     (warn "drawable-error in configure-request"))))
+     ;; (warn "drawable-error in configure-request")
+     )))
 
-(define-stump-event-handler :map-request (#|parent|# window)
-  (let ((screen (window-screen window)))
-    (process-new-window window)
-    (absorb-mapped-window screen window)
-    ;; Give it focus
-    (frame-raise-window screen (window-frame screen window) window)))
+(define-stump-event-handler :map-request (#|parent|# send-event-p window)
+  (unless send-event-p
+    (let ((screen (window-screen window)))
+      ;; only absorb it if it's not already managed (it could be iconic)
+      (unless (find window (screen-mapped-windows screen) :test 'xlib:window-equal)
+	(process-new-window window)
+	(absorb-mapped-window screen window))
+      ;; Give it focus
+      (frame-raise-window screen (window-frame screen window) window))))
 
 (define-stump-event-handler :unmap-notify (send-event-p event-window window #|configure-p|#)
   (unless (and (not send-event-p)
