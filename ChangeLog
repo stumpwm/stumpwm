@@ -1,5 +1,10 @@
 2006-03-28  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* user.lisp (choose-frame-by-number): call draw-frame-outlines
+
+	* core.lisp (draw-frame-outlines): new function
+	(clear-frame-outlines): likewise
+
 	* user.lisp (pull-window-by-number): get the window's frame after
 	it's confirmed the window isn't nil.
 

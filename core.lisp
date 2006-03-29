@@ -795,6 +795,26 @@ one."
       (sync-frame-windows screen f1)
       (sync-frame-windows screen f2))))
     
+(defun draw-frame-outlines (screen)
+  "Draw an outline around all frames in SCREEN."
+  (let ((gc (xlib:create-gcontext :drawable (xlib:screen-root (screen-number screen))
+				  :font (screen-font screen)
+				  :foreground
+				  (xlib:screen-white-pixel (screen-number screen))
+				  :background
+				  (xlib:screen-black-pixel (screen-number screen))
+				  :line-style :dash)))
+    (mapc (lambda (f)
+	    (xlib:draw-line (xlib:screen-root (screen-number screen)) gc
+			    (frame-x f) (frame-y f) (frame-width f) 0 t)
+	    (xlib:draw-line (xlib:screen-root (screen-number screen)) gc
+			    (frame-x f) (frame-y f) 0 (frame-height f) t))
+	  (screen-frames screen))))
+
+(defun clear-frame-outlines (screen)
+  "Clear the outlines drawn with DRAW-FRAME-OUTLINES."
+  (xlib:clear-area (xlib:screen-root (screen-number screen))))
+
 (defun draw-frame-numbers (screen)
   "Draw the number of each frame in its corner. Return the list of
 windows used to draw the numbers in. The caller must destroy them."

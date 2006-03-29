@@ -287,11 +287,14 @@
 (defun choose-frame-by-number (screen)
   "show a number in the corner of each frame and wait for the user to
 select one. Returns the selected frame or nil if aborted."
-  (let* ((wins (draw-frame-numbers screen))
+  (let* ((wins (progn
+		 (draw-frame-outlines screen)
+		 (draw-frame-numbers screen)))
 	 (ch (read-one-char screen))
 	 (num (read-from-string (string ch))))
     (dformat "read ~S ~S~%" ch num)
     (mapc #'xlib:destroy-window wins)
+    (clear-frame-outlines screen)
     (when (and (char>= ch #\0)
 	       (char<= ch #\9))
       (find-if (lambda (x)
