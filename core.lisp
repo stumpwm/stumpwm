@@ -87,6 +87,12 @@
 (defun window-name (win)
   (coerce (mapcar #'code-char (xlib:get-property win :WM_NAME)) 'string))
 
+(defun raise-window (win)
+  "Map the window if needed and bring it to the top of the stack. Does not affect focus."
+  (when (window-hidden-p win)
+    (unhide-window win))
+  (setf (xlib:window-priority win) :top-if))
+
 ;; some handy wrappers
 (defun window-border-width (win)
   (xlib:drawable-border-width win))
@@ -384,6 +390,12 @@ give the last accessed window focus."
   (dformat "no-focus~%")
   (xlib:set-input-focus *display* (screen-focus-window screen) :POINTER-ROOT))
 
+(defun maybe-hide-window (screen window new-window)
+  "Hide WINDOW depending on what kind of window NEW-WINDOW is."
+  (when (and (eql (window-frame screen window) (window-frame screen new-window))
+	     (eq (window-type new-window) :normal))
+    (hide-window window)))
+
 (defun focus-window (window)
   "Give the window focus. This means the window will be visible,
 maximized, and given focus."
@@ -392,10 +404,7 @@ maximized, and given focus."
 		   :test 'xlib:window-equal)))
     ;; If window to focus is already focused then our work is done.
     (unless (xlib:window-equal window cw)
-      ;; deiconize it if needed
-      (when (window-hidden-p window)
-	(unhide-window window))
-      (setf (xlib:window-priority window) :top-if)
+      (raise-window window)
       (xlib:set-input-focus *display* window :POINTER-ROOT)
       ;;(send-client-message window :WM_PROTOCOLS +wm-take-focus+))
 
@@ -406,9 +415,7 @@ maximized, and given focus."
       (when cw
 	;; iconize the previous window if it was in the same frame and
 	;; is a :normal window
-	(when (and (eql (window-frame screen cw) (window-frame screen window))
-		   (eq (window-type window) :normal))
-	  (hide-window cw))
+	(maybe-hide-window screen cw window)
 	(run-hook-with-args *unfocus-window-hook* cw))
       (run-hook-with-args *focus-window-hook* window))))
     
@@ -486,12 +493,16 @@ maximized, and given focus."
 T (default) then also focus the frame."
   ;; nothing to do when W is nil
   (if w
-      (progn
+      (let ((oldw (frame-window f)))
 	(assert (eq (window-frame s w) f))
 	(setf (frame-window f) w)
 	(if focus
 	    (focus-frame s f)
-	    (setf (xlib:window-priority w) :top-if)))
+	    (unless (xlib:window-equal oldw w)
+	      ;; The old one might need to be hidden
+	      (when oldw
+		(maybe-hide-window s oldw w))
+	      (raise-window w))))
       ;; empty the frame
       (setf (frame-window f) nil)))
   
@@ -1021,7 +1032,8 @@ list of modifier symbols."
 			  ;; and destroy events we'll be getting
 			  ;; shortly.
 			  (declare (ignore ,c))
-			  (warn "drawable-error in event handling")))))
+			  ;; (warn "drawable-error in event handling")
+			  ))))
      (setf (gethash ,event *event-fn-table*) #',fn-name))))
 
 
@@ -1075,7 +1087,7 @@ list of modifier symbols."
    (xlib:drawable-error (c)
      ;; guess it left before we could do anything
      (declare (ignore c))
-     ;; (warn "drawable-error in configure-request")
+     (warn "drawable-error in configure-request")
      )))
 
 (define-stump-event-handler :map-request (#|parent|# send-event-p window)

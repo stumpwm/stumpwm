@@ -1,5 +1,13 @@
 2006-03-28  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* user.lisp (pull-window-by-number): get the window's frame after
+	it's confirmed the window isn't nil.
+
+	* core.lisp (raise-window): new function
+	(maybe-hide-window): likewise
+	(focus-window): call raise-window and maybe-hide-window
+	(frame-raise-window): call maybe-hide-window and raise-window
+
 	* primitives.lisp (dformat): ignore debug output
 
 	* core.lisp (:map-request): don't absorb already managed windows
