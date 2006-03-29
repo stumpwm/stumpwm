@@ -136,6 +136,9 @@ occur in that many seconds.")
 (defvar *editor-bindings* nil
   "A list of key-bindings for line editing.")
 
+(defvar *foreground-color* "White")
+(defvar *background-color* "Black")
+(defvar *border-color* "White")
 
 (defstruct frame
   (number nil :type integer)

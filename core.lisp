@@ -338,7 +338,7 @@ than the root window's width and height."
 			:y (xlib:drawable-y window)
 			:width (xlib:drawable-width window)
 			:height (xlib:drawable-height window)
-			:background (xlib:screen-white-pixel (screen-number screen))
+			:background (get-bg-color-pixel screen)
 			:border-width 5
 			:event-mask (xlib:make-event-mask
 				     :substructure-notify))))
@@ -432,26 +432,26 @@ maximized, and given focus."
 
 ;;; Message printing functions 
 
+(defun get-color-pixel (screen color)
+  (xlib:alloc-color (xlib:screen-default-colormap (screen-number screen)) color))
+
+(defun get-fg-color-pixel (screen)
+  (get-color-pixel screen *foreground-color*))
+
+(defun get-bg-color-pixel (screen)
+  (get-color-pixel screen *background-color*))
+
+(defun get-border-color-pixel (screen)
+  (get-color-pixel screen *border-color*))
+
 ;; FIXME: the colors should be customizable
 (defun create-message-window-gcontext (screen)
   "Create a graphic context suitable for printing characters."
   (xlib:create-gcontext :drawable (screen-message-window screen)
 			:font (screen-font screen)
-			:foreground
-			(xlib:screen-white-pixel (screen-number screen))
-;; 			:background
-;; 			(xlib:screen-black-pixel (screen-number screen))
-			))
+			:foreground (get-fg-color-pixel screen)
+			:background (get-bg-color-pixel screen)))
 
-(defun create-inverse-gcontext (screen)
-  "Create a graphic context suitable for inverting regions."
-  (xlib:create-gcontext :drawable (screen-message-window screen)
-			:font (screen-font screen)
-			;; I found 13 by trial and error.
-			:function 13
-			:foreground (logxor (xlib:screen-black-pixel (screen-number screen))
-					    (xlib:screen-white-pixel (screen-number screen)))))
-  
 (defun max-width (font l)
   "Return the width of the longest string in L using FONT."
   (loop for i in l
@@ -476,13 +476,13 @@ maximized, and given focus."
     ;; Clear the window
     (xlib:clear-area win)))
 
-
 (defun invert-rect (screen win x y width height)
   "invert the color in the rectangular area. Used for highlighting text."
   (let ((gcontext (xlib:create-gcontext :drawable win
-					:foreground
-					(xlib:screen-white-pixel (screen-number screen))
+					:foreground (get-fg-color-pixel screen)
 					:function boole-xor)))
+    (xlib:draw-rectangle win gcontext x y width height t)
+    (setf (xlib:gcontext-foreground gcontext) (get-bg-color-pixel screen))
     (xlib:draw-rectangle win gcontext x y width height t)))
 
 
@@ -799,10 +799,8 @@ one."
   "Draw an outline around all frames in SCREEN."
   (let ((gc (xlib:create-gcontext :drawable (xlib:screen-root (screen-number screen))
 				  :font (screen-font screen)
-				  :foreground
-				  (xlib:screen-white-pixel (screen-number screen))
-				  :background
-				  (xlib:screen-black-pixel (screen-number screen))
+				  :foreground (get-fg-color-pixel screen)
+				  :background (get-bg-color-pixel screen)
 				  :line-style :dash)))
     (mapc (lambda (f)
 	    (xlib:draw-line (xlib:screen-root (screen-number screen)) gc
@@ -822,15 +820,15 @@ windows used to draw the numbers in. The caller must destroy them."
 		 (let ((w (xlib:create-window
 			   :parent (xlib:screen-root (screen-number screen))
 			   :x (frame-x f) :y (frame-y f) :width 1 :height 1
-			   :background (xlib:screen-white-pixel (screen-number screen))
-			   :border (xlib:screen-white-pixel (screen-number screen))
+			   :background (get-fg-color-pixel screen)
+			   :border (get-border-color-pixel screen)
 			   :border-width 1
 			   :event-mask '())))
 		   (xlib:map-window w)
 		   (setf (xlib:window-priority w) :above)
 		   (echo-in-window w (screen-font screen)
-				   (xlib:screen-white-pixel (screen-number screen))
-				   (xlib:screen-black-pixel (screen-number screen))
+				   (get-fg-color-pixel screen)
+				   (get-bg-color-pixel screen)
 				   (format nil "~A" (frame-number f)))
 		   (xlib:display-force-output *display*)
 		   (dformat "mapped ~S~%" (frame-number f))
@@ -839,6 +837,17 @@ windows used to draw the numbers in. The caller must destroy them."
 	    
 
 ;;; Screen functions
+
+(defun update-colors-for-screen (screen)
+  (dolist (i (list (screen-message-window screen)
+		   (screen-frame-window screen)
+		   (screen-input-window screen)))
+    (setf (xlib:window-border i) (get-border-color-pixel screen)
+	  (xlib:window-background i) (get-bg-color-pixel screen))))
+
+(defun update-colors-all-screens ()
+  "After setting the fg, bg, or border colors. call this to sync any existing windows."
+  (mapc 'update-colors-for-screen *screen-list*))
 
 (defun internal-window-p (screen win)
   "Return t if win is a window used by stumpwm"
@@ -872,8 +881,8 @@ windows used to draw the numbers in. The caller must destroy them."
 	  (xlib:drawable-y w) (+ (frame-y (screen-current-frame screen)) (truncate (- (frame-height (screen-current-frame screen)) height) 2))
 	  (xlib:window-priority w) :above)
     (echo-in-window w (screen-font screen)
-		    (xlib:screen-white-pixel (screen-number screen))
-		    (xlib:screen-black-pixel (screen-number screen))
+		    (get-fg-color-pixel screen)
+		    (get-bg-color-pixel screen)
 		    s)
     (xlib:display-force-output *display*)
     (reset-timeout-for-frame-indicator)))
@@ -942,12 +951,13 @@ focus of a window."
   ;; Grab the prefix key for the root window
   (grab-keys-on-window (xlib:screen-root screen-number))
   ;; Initialize the screen structure
-  (let* ((white (xlib:screen-white-pixel screen-number))
-	 (black (xlib:screen-black-pixel screen-number))
+  (let* ((fg (xlib:alloc-color (xlib:screen-default-colormap screen-number) *foreground-color*))
+	 (bg (xlib:alloc-color (xlib:screen-default-colormap screen-number) *background-color*))
+	 (border (xlib:alloc-color (xlib:screen-default-colormap screen-number) *border-color*))
 	 (input-window (xlib:create-window :parent (xlib:screen-root screen-number)
 					   :x 0 :y 0 :width 20 :height 20
-					   :background black
-					   :border white
+					   :background bg
+					   :border border
 					   :border-width 1
 					   :colormap (xlib:screen-default-colormap
 						      screen-number)
@@ -956,16 +966,16 @@ focus of a window."
 					   :x 0 :y 0 :width 1 :height 1))
 	 (frame-window (xlib:create-window :parent (xlib:screen-root screen-number)
 					   :x 0 :y 0 :width 1 :height 1
-					   :background white
-					   :border white
+					   :background fg
+					   :border border
 					   :border-width 1
 					   :colormap (xlib:screen-default-colormap
 						      screen-number)
 					   :event-mask '()))
 	 (message-window (xlib:create-window :parent (xlib:screen-root screen-number)
 					     :x 0 :y 0 :width 1 :height 1
-					     :background black
-					     :border white
+					     :background bg
+					     :border border
 					     :border-width 1
 					     :colormap (xlib:screen-default-colormap
 							screen-number)

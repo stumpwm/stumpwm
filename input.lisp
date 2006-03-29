@@ -127,7 +127,6 @@
 (defun draw-input-bucket (screen prompt input &optional errorp)
   "Draw to the screen's input window the contents of input."
   (let* ((gcontext (create-message-window-gcontext screen))
-	 (cursor-context (create-inverse-gcontext screen))
 	 (win (screen-input-window screen))
 	 (prompt-width (xlib:text-width (screen-font screen) prompt))
 	 (string (input-line-string input))
@@ -152,26 +151,24 @@
 			    (xlib:font-ascent (screen-font screen))
 			    string)
     ;; draw a block cursor
-    (xlib:draw-rectangle win cursor-context
-			 (+ *message-window-padding*
-			    prompt-width
-			    (xlib:text-width (screen-font screen) (subseq string 0 pos)))
-			 0
-			 (xlib:text-width (screen-font screen) (if (>= pos (length string))
-								   " "
-								 (string (char string pos))))
-			 (+ (xlib:font-descent (screen-font screen))
-			    (xlib:font-ascent (screen-font screen)))
-			 t)
+    (invert-rect screen win 
+		 (+ *message-window-padding*
+		    prompt-width
+		    (xlib:text-width (screen-font screen) (subseq string 0 pos)))
+		 0
+		 (xlib:text-width (screen-font screen) (if (>= pos (length string))
+							   " "
+							   (string (char string pos))))
+		 (+ (xlib:font-descent (screen-font screen))
+		    (xlib:font-ascent (screen-font screen))))
     ;; draw the error 
     (when errorp
-      (xlib:draw-rectangle win cursor-context 1 1 (xlib:drawable-width win) (xlib:drawable-height win) t)
+      (invert-rect screen win 0 0 (xlib:drawable-width win) (xlib:drawable-height win))
       (xlib:display-force-output *display*)
       ;; FIXME: there's no usleep
       (loop with time = (get-internal-run-time)
 	    until (> (- (get-internal-run-time) time) 50))
-      (xlib:draw-rectangle win cursor-context 1 1 (xlib:drawable-width win) (xlib:drawable-height win) t)
-      )))
+      (invert-rect screen win 0 0 (xlib:drawable-width win) (xlib:drawable-height win)))))
 
 (defun code-state->key (code state)
   (let* ((mods (xlib:make-state-keys state))

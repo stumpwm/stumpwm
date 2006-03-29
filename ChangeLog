@@ -1,3 +1,28 @@
+2006-03-29  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* primitives.lisp (*foreground-color*): new defvar
+	(*background-color*): likewise
+	(*border-color*): likewise
+
+	* input.lisp (draw-input-bucket): use invert-rect
+
+	* core.lisp (reparent-window): use get-bg-color-pixel
+	(get-color-pixel): new function
+	(get-fg-color-pixel): likewise
+	(get-bg-color-pixel): likewise
+	(get-border-color-pixel): likewise
+	(create-message-window-gcontext): use get-bg-color-pixel and
+	get-fg-color-pixel
+	(draw-frame-outlines): likewise
+	(draw-frame-numbers): likewise
+	(show-frame-indicator): likewise
+	(create-inverse-gcontext): remove function
+	(invert-rect): properly invert the colors
+	(update-colors-for-screen): new function
+	(update-colors-all-screens): likewise
+	(init-screen): use *foreground-color* *background-color* and
+	*border-color* for window colors
+
 2006-03-28  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp (choose-frame-by-number): call draw-frame-outlines
