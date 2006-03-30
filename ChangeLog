@@ -1,3 +1,7 @@
+2006-03-30  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* primitives.lisp (run-prog): dont warn on sbcl.
+
 2006-03-29  Andreas Scholta <andreas.scholta@gmail.com>
 
 	* primitives.lisp (getenv): use SB-POSIX:GETENV. Wrap VAR in
