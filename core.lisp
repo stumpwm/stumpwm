@@ -172,8 +172,8 @@
   (or (and (xlib:get-property win :WM_TRANSIENT_FOR)
 	   :transient)
       (and (let ((hints (xlib:wm-normal-hints win)))
-	     (or (xlib:wm-size-hints-max-width hints)
-		 (xlib:wm-size-hints-max-height hints)))
+	     (and hints (or (xlib:wm-size-hints-max-width hints)
+			    (xlib:wm-size-hints-max-height hints))))
 	   :maxsize)
       :normal))
 
@@ -258,12 +258,12 @@ than the root window's width and height."
 	 (inc-x 1)
 	 (inc-y 1)
 	 (hints (xlib:wm-normal-hints win))
-	 (hints-width (xlib:wm-size-hints-max-width hints))
-	 (hints-height (xlib:wm-size-hints-max-height hints))
-	 (hints-inc-x (xlib:wm-size-hints-width-inc hints))
-	 (hints-inc-y (xlib:wm-size-hints-height-inc hints))
-	 (hints-min-aspect (xlib:wm-size-hints-min-aspect hints))
-	 (hints-max-aspect (xlib:wm-size-hints-max-aspect hints))
+	 (hints-width (and hints (xlib:wm-size-hints-max-width hints)))
+	 (hints-height (and hints (xlib:wm-size-hints-max-height hints)))
+	 (hints-inc-x (and hints (xlib:wm-size-hints-width-inc hints)))
+	 (hints-inc-y (and hints (xlib:wm-size-hints-height-inc hints)))
+	 (hints-min-aspect (and hints (xlib:wm-size-hints-min-aspect hints)))
+	 (hints-max-aspect (and hints (xlib:wm-size-hints-max-aspect hints)))
 	 center)
     (cond
     ;; Adjust the defaults if the window is a transient_for window.
@@ -1049,23 +1049,11 @@ list of modifier symbols."
 
 (defmacro define-stump-event-handler (event keys &body body)
   (let ((fn-name (gensym))
-	(c (gensym))
 	(event-slots (gensym)))
   `(labels ((,fn-name (&rest ,event-slots &key ,@keys &allow-other-keys)
-		      (declare (ignore ,event-slots))
-		      (handler-case (progn ,@body)
-			(xlib:drawable-error (,c)
-			  ;; This is generally the error we get when
-			  ;; attempting to focus a window that's been
-			  ;; destroyed. Give a warning and ignore
-			  ;; it. It will be taken care of in the unmap
-			  ;; and destroy events we'll be getting
-			  ;; shortly.
-			  (declare (ignore ,c))
-			  ;; (warn "drawable-error in event handling")
-			  ))))
+	      (declare (ignore ,event-slots))
+	      ,@body))
      (setf (gethash ,event *event-fn-table*) #',fn-name))))
-
 
 ;(define-stump-event-handler :map-notify (event-window window override-redirect-p)
 ;  )
@@ -1073,52 +1061,46 @@ list of modifier symbols."
 (define-stump-event-handler :configure-request (stack-mode #|parent|# window #|above-sibling|# x y width height border-width value-mask)
   ;; Grant the configure request but then maximize the window after the granting.
   (dformat "~S~%" value-mask)
-  (handler-case
-   (labels ((has-x (mask) (= 1 (logand mask 1)))
-	    (has-y (mask) (= 2 (logand mask 2)))
-	    (has-w (mask) (= 4 (logand mask 4)))
-	    (has-h (mask) (= 8 (logand mask 8)))
-	    (has-bw (mask) (= 16 (logand mask 16)))
-	    (has-stackmode (mask) (= 64 (logand mask 64))))
-     (let ((screen (window-screen window)))
-       (xlib:with-state (window)
-			(dformat "~S~%" value-mask)
-			(when (has-x value-mask)
-			  (dformat "x~%")
-			  (setf (xlib:drawable-x window) x))
-			(when (has-y value-mask)
-			  (dformat "x~%")
-			  (setf (xlib:drawable-y window) y))
-			(when (has-h value-mask)
-			  (dformat "h~%")
-			  (setf (xlib:drawable-height window) height))
-			(when (has-w value-mask)
-			  (dformat "w~%")
-			  (setf (xlib:drawable-width window) width))
-			(when (has-bw value-mask)
-			  (dformat "bw~%")
-			  (setf (xlib:drawable-border-width window) border-width)))
-       ;; TODO: are we ICCCM compliant?
-       ;; Make sure that goes to the client
-       (xlib:display-force-output *display*)
-       ;; After honouring the request, maximize it
-       (when (member window (screen-mapped-windows screen))
-	 ;; The ICCCM says with have to send a fake configure-notify if
-	 ;; the window is moved but not resized.
-	 (unless (or (logbitp 2 value-mask) (logbitp 3 value-mask))
-	   (send-configuration-notify window))
-	 (maximize-window window)
-	 ;; Finally, grant the stack-mode change (if it's mapped)
-	 (when (has-stackmode value-mask)
-	   (case stack-mode
-	     (:above
-	      (let ((f (window-frame screen window)))
-		(frame-raise-window screen f window))))))))
-   (xlib:drawable-error (c)
-     ;; guess it left before we could do anything
-     (declare (ignore c))
-     (warn "drawable-error in configure-request")
-     )))
+  (labels ((has-x (mask) (= 1 (logand mask 1)))
+	   (has-y (mask) (= 2 (logand mask 2)))
+	   (has-w (mask) (= 4 (logand mask 4)))
+	   (has-h (mask) (= 8 (logand mask 8)))
+	   (has-bw (mask) (= 16 (logand mask 16)))
+	   (has-stackmode (mask) (= 64 (logand mask 64))))
+    (let ((screen (window-screen window)))
+      (xlib:with-state (window)
+	(dformat "~S~%" value-mask)
+	(when (has-x value-mask)
+	  (dformat "x~%")
+	  (setf (xlib:drawable-x window) x))
+	(when (has-y value-mask)
+	  (dformat "x~%")
+	  (setf (xlib:drawable-y window) y))
+	(when (has-h value-mask)
+	  (dformat "h~%")
+	  (setf (xlib:drawable-height window) height))
+	(when (has-w value-mask)
+	  (dformat "w~%")
+	  (setf (xlib:drawable-width window) width))
+	(when (has-bw value-mask)
+	  (dformat "bw~%")
+	  (setf (xlib:drawable-border-width window) border-width)))
+      ;; TODO: are we ICCCM compliant?
+      ;; Make sure that goes to the client
+      (xlib:display-force-output *display*)
+      ;; After honouring the request, maximize it
+      (when (member window (screen-mapped-windows screen))
+	;; The ICCCM says with have to send a fake configure-notify if
+	;; the window is moved but not resized.
+	(unless (or (logbitp 2 value-mask) (logbitp 3 value-mask))
+	  (send-configuration-notify window))
+	(maximize-window window)
+	;; Finally, grant the stack-mode change (if it's mapped)
+	(when (has-stackmode value-mask)
+	  (case stack-mode
+	    (:above
+	     (let ((f (window-frame screen window)))
+	       (frame-raise-window screen f window)))))))))
 
 (define-stump-event-handler :map-request (#|parent|# send-event-p window)
   (unless send-event-p
@@ -1208,5 +1190,13 @@ list of modifier symbols."
   (dformat "Handling event ~S~%" event-key)
   (let ((eventfn (gethash event-key *event-fn-table*)))
     (when eventfn
-      (apply eventfn event-slots))
+      (handler-case (apply eventfn event-slots)
+	((or xlib:drawable-error xlib:window-error) (c)
+	  ;; This is generally the error we get when
+	  ;; attempting to focus a window that's been
+	  ;; destroyed. Give a warning and ignore
+	  ;; it. It will be taken care of in the unmap
+	  ;; and destroy events we'll be getting
+	  ;; shortly.
+	  (warn "Caught ~s in ~s event handler.~%" c event-key))))
     t))

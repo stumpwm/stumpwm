@@ -1,5 +1,11 @@
 2006-03-29  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* core.lisp (window-type): check if hints is nil
+	(geometry-hints): likewise
+	(define-stump-event-handler): dont catch any errors
+	(:configure-request): likewise
+	(handle-event): catch drawable-error and window-error errors.
+
 	* primitives.lisp (*foreground-color*): new defvar
 	(*background-color*): likewise
 	(*border-color*): likewise
