@@ -115,8 +115,7 @@ loaded."
         ;; Set the DISPLAY-environment-variable properly. This is
         ;; necessary if Stumpwm is running from a Lisp in another
         ;; X-display.
-	;; SBCL doesn't have a setenv.
-        #-sbcl(setf (getenv "DISPLAY") display-str)
+	(setf (getenv "DISPLAY") display-str)
 	(echo-string (first *screen-list*) "Welcome to The Stump Window Manager!")
 	;; Load rc file
 	(multiple-value-bind (success err rc) (load-rc-file)

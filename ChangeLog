@@ -1,3 +1,11 @@
+2006-03-29  Andreas Scholta <andreas.scholta@gmail.com>
+
+	* primitives.lisp (getenv): use SB-POSIX:GETENV. Wrap VAR in
+	STRING.
+	(setf getenv): use SB-POSIX:PUTENV for sbcl.
+
+	* stumpwm.lisp (stumpwm): set the DISPLAY var on sbcl.
+
 2006-03-29  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* core.lisp (window-type): check if hints is nil

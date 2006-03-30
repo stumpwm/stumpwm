@@ -275,7 +275,7 @@ Useful for re-using the &REST arg after removing some options."
                      opts)
   #+lucid (apply #'lcl:run-program prog :wait wait :arguments args opts)
   #+sbcl (apply #'sb-ext:run-program prog args :wait wait opts)
-  #-(or allegro clisp cmu gcl liquid lispworks lucid sbcl)
+  #-(or allegro clisp cmu gcl liquid lispworks lucid)
   (error 'not-implemented :proc (list 'run-prog prog opts)))
 
 (defun getenv (var)
@@ -289,7 +289,7 @@ Useful for re-using the &REST arg after removing some options."
   #+lispworks (lw:environment-variable (string var))
   #+lucid (lcl:environment-variable (string var))
   #+mcl (ccl::getenv var)
-  #+sbcl (sb-ext:posix-getenv var)
+  #+sbcl (sb-posix:getenv (string var))
   #-(or allegro clisp cmu gcl lispworks lucid mcl sbcl scl)
   (error 'not-implemented :proc (list 'getenv var)))
 
@@ -307,6 +307,7 @@ Useful for re-using the &REST arg after removing some options."
   #+gcl (si:setenv (string var) (string val))
   #+lispworks (setf (lw:environment-variable (string var)) (string val))
   #+lucid (setf (lcl:environment-variable (string var)) (string val))
+  #+sbcl (sb-posix:putenv (format nil "~A=~A" (string var) (string val)))
   #-(or allegro clisp cmu gcl lispworks lucid sbcl scl)
   (error 'not-implemented :proc (list '(setf getenv) var)))
 
