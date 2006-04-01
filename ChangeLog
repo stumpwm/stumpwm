@@ -1,3 +1,7 @@
+2006-04-01  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* core.lisp (grab-keys-on-window): grab the keyboard synchronously.
+
 2006-03-30  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* primitives.lisp (run-prog): dont warn on sbcl.

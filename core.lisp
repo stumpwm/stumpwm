@@ -303,7 +303,7 @@ than the root window's width and height."
   (labels ((grabit (w key)
 		   (xlib:grab-key w (xlib:keysym->keycodes *display* (char->keysym (code-char (key-char key))))
 				  :modifiers (x11-mods key) :owner-p t
-				  :sync-pointer-p nil :sync-keyboard-p nil)))
+				  :sync-pointer-p nil :sync-keyboard-p t)))
     (maphash (lambda (k v)
 	       (declare (ignore v))
 	       (grabit win k))
