@@ -399,25 +399,32 @@ give the last accessed window focus."
 (defun focus-window (window)
   "Give the window focus. This means the window will be visible,
 maximized, and given focus."
-  (let* ((screen (window-screen window))
-	 (cw (find (xlib:input-focus *display*) (screen-mapped-windows screen)
-		   :test 'xlib:window-equal)))
-    ;; If window to focus is already focused then our work is done.
-    (unless (xlib:window-equal window cw)
-      (raise-window window)
-      (xlib:set-input-focus *display* window :POINTER-ROOT)
-      ;;(send-client-message window :WM_PROTOCOLS +wm-take-focus+))
+  (handler-case
+      (let* ((screen (window-screen window))
+	     (cw (find (xlib:input-focus *display*) (screen-mapped-windows screen)
+		       :test 'xlib:window-equal)))
+	;; If window to focus is already focused then our work is done.
+	(unless (xlib:window-equal window cw)
+	  (raise-window window)
+	  (xlib:set-input-focus *display* window :POINTER-ROOT)
+	  ;;(send-client-message window :WM_PROTOCOLS +wm-take-focus+))
 
-      ;; Move the window to the head of the mapped-windows list
-      (move-window-to-head screen window)
-      ;; If another window was focused, then call the unfocus hook for
-      ;; it.
-      (when cw
-	;; iconize the previous window if it was in the same frame and
-	;; is a :normal window
-	(maybe-hide-window screen cw window)
-	(run-hook-with-args *unfocus-window-hook* cw))
-      (run-hook-with-args *focus-window-hook* window))))
+	  ;; Move the window to the head of the mapped-windows list
+	  (move-window-to-head screen window)
+	  ;; If another window was focused, then call the unfocus hook for
+	  ;; it.
+	  (when cw
+	    ;; iconize the previous window if it was in the same frame and
+	    ;; is a :normal window
+	    (maybe-hide-window screen cw window)
+	    (run-hook-with-args *unfocus-window-hook* cw))
+	  (run-hook-with-args *focus-window-hook* window))
+	;; A nonlocal exit could leave stumpwm in an inconsistent
+	;; state. So make sure that doesn't happen.
+	(xlib:display-finish-output *display*))
+    ((or xlib:match-error xlib:window-error xlib:drawable-error) (c)
+      ;; ignore the error for now.
+      (declare (ignore c)))))
     
 (defun delete-window (window)
   "Send a delete event to the window."
@@ -432,17 +439,39 @@ maximized, and given focus."
 
 ;;; Message printing functions 
 
+(defun set-fg-color (color)
+  (dolist (i *screen-list*)
+    (setf (screen-fg-color i) color))
+  (update-colors-all-screens))
+
+(defun set-bg-color (color)
+  (dolist (i *screen-list*)
+    (setf (screen-bg-color i) color))
+  (update-colors-all-screens))
+
+(defun set-border-color (color)
+  (dolist (i *screen-list*)
+    (setf (screen-border-color i) color))
+  (update-colors-all-screens))
+
+(defun set-font (font)
+  (let ((fobj (xlib:open-font *display* font)))
+    ;; if the font doesn't exist, we need to know now.
+    (xlib:display-finish-output *display*)
+    (dolist (i *screen-list*)
+      (setf (screen-font i) fobj))))
+
 (defun get-color-pixel (screen color)
   (xlib:alloc-color (xlib:screen-default-colormap (screen-number screen)) color))
 
 (defun get-fg-color-pixel (screen)
-  (get-color-pixel screen *foreground-color*))
+  (get-color-pixel screen (screen-fg-color screen)))
 
 (defun get-bg-color-pixel (screen)
-  (get-color-pixel screen *background-color*))
+  (get-color-pixel screen (screen-bg-color screen)))
 
 (defun get-border-color-pixel (screen)
-  (get-color-pixel screen *border-color*))
+  (get-color-pixel screen (screen-border-color screen)))
 
 ;; FIXME: the colors should be customizable
 (defun create-message-window-gcontext (screen)
@@ -951,9 +980,9 @@ focus of a window."
   ;; Grab the prefix key for the root window
   (grab-keys-on-window (xlib:screen-root screen-number))
   ;; Initialize the screen structure
-  (let* ((fg (xlib:alloc-color (xlib:screen-default-colormap screen-number) *foreground-color*))
-	 (bg (xlib:alloc-color (xlib:screen-default-colormap screen-number) *background-color*))
-	 (border (xlib:alloc-color (xlib:screen-default-colormap screen-number) *border-color*))
+  (let* ((fg (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-foreground-color+))
+	 (bg (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-background-color+))
+	 (border (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-border-color+))
 	 (input-window (xlib:create-window :parent (xlib:screen-root screen-number)
 					   :x 0 :y 0 :width 20 :height 20
 					   :background bg
@@ -988,7 +1017,10 @@ focus of a window."
     (grab-keys-on-window focus-window)
     (make-screen :number screen-number
 		 :frame-tree initial-frame
-		 :font (xlib:open-font *display* *font-name*)
+		 :font (xlib:open-font *display* +default-font-name+)
+		 :fg-color +default-foreground-color+
+		 :bg-color +default-background-color+
+		 :border-color +default-border-color+
 		 :current-frame initial-frame
 		 :window-hash (make-hash-table)
 		 :message-window message-window

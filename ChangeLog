@@ -1,3 +1,39 @@
+2006-04-06  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* user.lisp (*root-map*): add bindings for C-c and C-e
+
+	* stumpwm.lisp (stumpwm-internal-loop): catch errors and handle
+	them according to *top-level-error-action*.
+	(stumpwm): echo startup string after rc file is loaded
+
+	* stumpwm.asd: attempt to require :cmucl-clx
+
+	* sample-stumpwmrc.lisp: bring up to date
+
+	* primitives.lisp (*font-name*): remove defvar
+	(*foreground-color*): likewise
+	(*background-color*): likewise
+	(*border-color*): likewise
+	(+default-foreground-color+): new constant
+	(+default-background-color+): likewise
+	(+default-border-color+): likewise
+	(+default-font-name+): likewise
+	(*top-level-error-action*): new defvar
+	(screen): new slots border-color, fg-color, bg-color
+
+	* core.lisp (focus-window): catch match-error, window-error, and
+	drawable-errors.
+	(set-fg-color): new function
+	(set-bg-color): likewise
+	(set-border-color): likewise
+	(set-font): likewise
+	(get-fg-color-pixel): use screen's fg-color slot
+	(get-bg-color-pixel): use screen's bg-color slot
+	(get-border-color-pixel): use screen's border-color slot
+	(init-screen): use +default-foreground-color+,
+	+default-background-color+ +default-border-color+.
+	(init-screen): init screen's fg-color, bg-color, border-color and font slots
+
 2006-04-01  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* core.lisp (grab-keys-on-window): grab the keyboard synchronously.

@@ -12,13 +12,13 @@
       (interactive-command cmd screen))))
 
 ;; Read some doc
-(set-key-binding #\d '() "exec gv")
+(define-key *root-map* (kbd "d") "exec gv")
 ;; Browse somewhere
-(set-key-binding #\b '() "colon1 exec firefox http://www.")
+(define-key *root-map* (kbd "b") "colon1 exec firefox http://www.")
 ;; Ssh somewhere
-(set-key-binding #\s '(:control) "colon1 exec xterm -e ssh ")
+(define-key *root-map* (kbd "C-s") "colon1 exec xterm -e ssh ")
 ;; Lock screen
-(set-key-binding #\l '(:control) "exec xlock")
+(define-key *root-map* (kbd "C-l") "exec xlock")
 
 ;; Web jump (works for Google and Imdb)
 (defmacro make-web-jump (name prefix)
@@ -30,8 +30,8 @@
 (make-web-jump "google" "firefox http://www.google.fr/search?q=")
 (make-web-jump "imdb" "firefox http://www.imdb.com/find?q=")
 
-(set-key-binding #\g '() "google")
-(set-key-binding #\i '() "imdb")
+(define-key *root-map* (kbd "g") "google")
+(define-key *root-map* (kbd "i") "imdb")
 
 ;; Message window font
 (setf *font-name* "-xos4-terminus-medium-r-normal--14-140-72-72-c-80-iso8859-15")

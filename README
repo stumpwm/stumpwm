@@ -12,28 +12,19 @@ customizable lisp based systems.
 Installation
 ------------
 
-Boot up a common lisp implementation (I use CMUCL most of the time,
-but I've tested it with SBCL as well).
+Boot up a common lisp implementation. I test it regularily with sbcl
+and clisp.
 
 Since stumpwm has an ASDF package, load asdf (it's probably already
 loaded) and run:
 
 (asdf:operate 'asdf:load-op 'stumpwm)
 
-Right now the irritating :cmucl-clx name for clx in debian messes
-everything up. so if you're not using debian (or you aren't using
-cmucl in debian) then you need to change the dependency in stumpwm.asd
-from :cmucl-clx to :clx.
-
-You need the CLOCC ports package from http://clocc.sf.net. If you
-don't have it installed, the above will fail.
-
 For most configurations you should be able to type the following:
 
-(stumpwm:stumpwm "" :display 0)
+(stumpwm:stumpwm)
 
-The first argument is the host to connect to. If you have problems
-post to the mailing list.
+stumpwm takes an optional argument, the DISPLAY string.
 
 - Shawn
 

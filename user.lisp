@@ -29,7 +29,9 @@
 (defvar *root-map*
   (let ((m (make-sparse-keymap)))
     (define-key m (kbd "c") "exec xterm")
+    (define-key m (kbd "C-c") "exec xterm")
     (define-key m (kbd "e") "exec emacs")
+    (define-key m (kbd "C-e") "exec emacs")
     (define-key m (kbd "n") "next")
     (define-key m (kbd "C-n") "next")
     (define-key m (kbd "Space") "next")

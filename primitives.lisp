@@ -82,9 +82,6 @@ occur in that many seconds.")
 (defvar *display* nil
   "The display for the X server")
 
-(defvar *font-name* "9x15bold"
-  "The name of the font to use when stumpwm displays messages.")
-
 (defvar *prefix-key* #\t
   "The key to use as the prefix key")
 
@@ -136,9 +133,22 @@ occur in that many seconds.")
 (defvar *editor-bindings* nil
   "A list of key-bindings for line editing.")
 
-(defvar *foreground-color* "White")
-(defvar *background-color* "Black")
-(defvar *border-color* "White")
+;; default values. use the set-* functions to change them
+(defconstant +default-foreground-color+ "White")
+(defconstant +default-background-color+ "Black")
+(defconstant +default-border-color+ "White")
+(defconstant +default-font-name+ "9x15bold")
+
+(defvar *top-level-error-action* :message
+  "If an error is encountered at the top level, in
+STUMPWM-INTERNAL-LOOP, then this variable decides what action
+shall be taken. By default it will print a message to the screen
+and to *standard-output*. 
+
+Valid values are :message, :break. :break will break to the
+debugger. This can be problematic because if the user hit's a
+mapped key the ENTIRE keyboard will be frozen and you will have
+to login remotely to regain control.")
 
 (defstruct frame
   (number nil :type integer)
@@ -159,6 +169,9 @@ occur in that many seconds.")
   ;; From this frame tree a list of frames can be gathered
   frame-tree
   modifiers
+  border-color
+  fg-color
+  bg-color
   font
   current-frame
   ;; A list of all mapped windows. Used for navigating windows.

@@ -64,25 +64,34 @@ loaded."
 (defun stumpwm-internal-loop ()
   "The internal loop that waits for events and handles them."
   (loop
-   (run-hook *internal-loop-hook*)
-   (if (> *timeout* 0)
-       (progn
-	 (let* ((time-before (get-universal-time))
-		(nevents (xlib:event-listen *display* *timeout*))
-		(time-left  (- *timeout* (- (get-universal-time) time-before))))
-	   (if (<= time-left 0)
+     (run-hook *internal-loop-hook*)
+     (handler-case 
+	 (progn
+	   (if (> *timeout* 0)
 	       (progn
-		 (unmap-all-frame-indicators)
-		 (unmap-all-message-windows)
-		 (setf *timeout* 0))
-	     (setf *timeout* time-left))
-	   (when nevents
-	     (xlib:process-event *display* :handler #'handle-event))))
-     ;; Otherwise, simply wait for an event
-     (xlib:process-event *display* :handler #'handle-event :timeout nil))
-     ;; flush any pending output. You'd think process-event would, but
-     ;; it seems not.
-     (xlib:display-force-output *display*)))
+		 (let* ((time-before (get-universal-time))
+			(nevents (xlib:event-listen *display* *timeout*))
+			(time-left  (- *timeout* (- (get-universal-time) time-before))))
+		   (if (<= time-left 0)
+		       (progn
+			 (unmap-all-frame-indicators)
+			 (unmap-all-message-windows)
+			 (setf *timeout* 0))
+		       (setf *timeout* time-left))
+		   (when nevents
+		     (xlib:process-event *display* :handler #'handle-event))))
+	       ;; Otherwise, simply wait for an event
+	       (xlib:process-event *display* :handler #'handle-event :timeout nil))
+	   ;; flush any pending output. You'd think process-event would, but
+	   ;; it seems not.
+	   (xlib:display-finish-output *display*))
+       (error (c)
+	 (ecase *top-level-error-action*
+	   (:message
+	    (let ((s (format nil "~&Caught ~s at the top level. Please report this." c)))
+	      (write-line s)
+	      (echo-string (current-screen) s)))
+	   (:break (invoke-debugger c)))))))
 
 (defun parse-display-string (display)
   "Parse an X11 DISPLAY string and return the host and display from it."
@@ -116,12 +125,12 @@ loaded."
         ;; necessary if Stumpwm is running from a Lisp in another
         ;; X-display.
 	(setf (getenv "DISPLAY") display-str)
-	(echo-string (first *screen-list*) "Welcome to The Stump Window Manager!")
 	;; Load rc file
 	(multiple-value-bind (success err rc) (load-rc-file)
 	  (unless success
 	    (echo-string (first *screen-list*)
 			 (format nil "Error loading ~A: ~A" rc err))))
+	(echo-string (first *screen-list*) "Welcome to The Stump Window Manager!")
 	(run-hook *start-hook*)
 	;; Let's manage.
 	(stumpwm-internal-loop))

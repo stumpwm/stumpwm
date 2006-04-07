@@ -4,6 +4,7 @@
   (:use :cl :asdf))
 (in-package :stumpwm-system)
 
+(ignore-errors (require :cmucl-clx))
 (ignore-errors (require :clx))
 ;;(require :gray-streams)
 
