@@ -1,3 +1,10 @@
+2006-04-07  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* primitives.lisp (+default-foreground-color+): change to defparameter
+	(+default-background-color+): likewise
+	(+default-border-color+): likewise
+	(+default-font-name+): likewise
+
 2006-04-06  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp (*root-map*): add bindings for C-c and C-e
