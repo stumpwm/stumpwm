@@ -133,11 +133,11 @@ occur in that many seconds.")
 (defvar *editor-bindings* nil
   "A list of key-bindings for line editing.")
 
-;; default values. use the set-* functions to change them
-(defconstant +default-foreground-color+ "White")
-(defconstant +default-background-color+ "Black")
-(defconstant +default-border-color+ "White")
-(defconstant +default-font-name+ "9x15bold")
+;; default values. use the set-* functions to these attributes
+(defparameter +default-foreground-color+ "White")
+(defparameter +default-background-color+ "Black")
+(defparameter +default-border-color+ "White")
+(defparameter +default-font-name+ "9x15bold")
 
 (defvar *top-level-error-action* :message
   "If an error is encountered at the top level, in
