@@ -27,7 +27,7 @@
 (defstruct input-line
   string position history history-bk)
 
-(defvar *input-keymap* 
+(defvar *input-map* 
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd (string #\Backspace)) 'input-delete-backward-char)
     (define-key map (kbd "C-d") 'input-delete-forward-char)
@@ -291,7 +291,7 @@ buffer. Returns a new modified input buffer."
 pressed. Return 'done when the use has signalled the finish of his
 input (pressing Return), nil otherwise."
 			(let* ((key (code-state->key code state))
-			       (command (and key (lookup-key *input-keymap* key t))))
+			       (command (and key (lookup-key *input-map* key t))))
 			  (if command
 			      (funcall command input key)
 			    :error))))

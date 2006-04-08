@@ -471,4 +471,12 @@ aborted."
 (define-stumpwm-command "abort" (screen)
   (declare (ignore screen)))
 
+(defun set-prefix-key (key)
+  "Change the stumpwm prefix key to KEY."
+  (dolist (i (lookup-command *top-map* '*root-map*))
+    (undefine-key *top-map* i))
+  (define-key *top-map* key '*root-map*)
+  (sync-keys))
+
+
 ;;(define-stumpwm-command "escape"

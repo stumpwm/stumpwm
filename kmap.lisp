@@ -31,6 +31,15 @@
 (defun make-sparse-keymap ()
   (make-hash-table :test 'equalp))
 
+(defun lookup-command (keymap command)
+  "Return a list of keys that are bound to command"
+  (let (acc)
+    (maphash (lambda (k v)
+	       (when (equal command v)
+		 (push k acc)))
+	     keymap)
+    acc))
+
 (defun lookup-key (keymap key &optional accept-default)
   (or (gethash key keymap)
       (and accept-default
@@ -114,3 +123,6 @@ saving keyboard macros ***(see `insert-kbd-macro')."
 
 (defun define-key (map key command)
   (setf (gethash key map) command))
+
+(defun undefine-key (map key)
+  (remhash key map))

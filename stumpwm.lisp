@@ -42,7 +42,7 @@ loaded."
     (if rc
 	;; TODO: Should we compile the file before we load it?
 	(handler-case (load rc)
-		      (error (c) (values nil (format nil "~A" c) rc))
+		      (error (c) (values nil (format nil "~s" c) rc))
 		      (:no-error (&rest args) (declare (ignore args)) (values t nil rc)))
       (values t nil nil))))
     
@@ -127,10 +127,10 @@ loaded."
 	(setf (getenv "DISPLAY") display-str)
 	;; Load rc file
 	(multiple-value-bind (success err rc) (load-rc-file)
-	  (unless success
-	    (echo-string (first *screen-list*)
-			 (format nil "Error loading ~A: ~A" rc err))))
-	(echo-string (first *screen-list*) "Welcome to The Stump Window Manager!")
+	  (echo-string (current-screen)
+		       (if success
+			   "Welcome to The Stump Window Manager!"
+			   (format nil "Error loading ~A: ~A" rc err))))
 	(run-hook *start-hook*)
 	;; Let's manage.
 	(stumpwm-internal-loop))

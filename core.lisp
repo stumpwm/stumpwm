@@ -310,14 +310,15 @@ than the root window's width and height."
 	     *top-map*)))
 
 (defun ungrab-keys-on-window (win)
-  (xlib:ungrab-key win :any :modifiers :any))
+  (xlib:ungrab-key win :any))
 
 (defun sync-keys ()
   "Any time *top-map* is modified this must be called"
   (loop for i in *screen-list*
 	do (loop for j in (screen-mapped-windows i)
 		 do (ungrab-keys-on-window j)
-		 do (grab-keys-on-window j))))
+		 do (grab-keys-on-window j)))
+  (xlib:display-finish-output *display*))
 
 (defun add-window (screen window)
   "add window to the head of the mapped-windows list."

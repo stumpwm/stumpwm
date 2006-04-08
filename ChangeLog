@@ -1,7 +1,22 @@
 2006-04-07  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* user.lisp (set-prefix-key): new function
+
+	* stumpwm.lisp (load-rc-file): use ~s to report the error. not ~a.
+	(stumpwm): when the rc file fails to load, report the error
+	instead of showing a welcome message.
+
+	* package.lisp (:stumpwm): export some functions
+
+	* kmap.lisp (lookup-command): new function
+	(undefine-key): likewise
+
+	* input.lisp (*input-map*): rename from *input-keymap*. callers updated.
+
 	* core.lisp (:key-press): unmap the message window after reading
 	the key sequence.
+	(ungrab-keys-on-window): dont pass a value for :modifiers to ungrab-key
+	(sync-keys): call display-finish-output
 
 	* primitives.lisp (+default-foreground-color+): change to defparameter
 	(+default-background-color+): likewise
