@@ -1,5 +1,8 @@
 2006-04-07  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* core.lisp (:key-press): unmap the message window after reading
+	the key sequence.
+
 	* primitives.lisp (+default-foreground-color+): change to defparameter
 	(+default-background-color+): likewise
 	(+default-border-color+): likewise

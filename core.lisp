@@ -1211,8 +1211,8 @@ list of modifier symbols."
 		 ;; things happen if an error happens later on.
 		 (xlib:display-force-output *display*))))
       (let* ((screen (find-screen root)))
-	(unmap-message-window screen)
 	(multiple-value-bind (cmd key-seq) (get-cmd screen code state)
+	  (unmap-message-window screen)
 	  (if cmd
 	      (interactive-command cmd screen)
 	      (echo-string screen (format nil "~{~a ~}not bound." (mapcar 'print-key (nreverse key-seq))))))))))
