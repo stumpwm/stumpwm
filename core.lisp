@@ -212,7 +212,7 @@
 
 (defun find-free-window-number (screen)
   "Return a free window number for SCREEN."
-  (find-free-number (mapcar-hash (lambda (val) (gethash :number val))
+  (find-free-number (mapcar-hash (lambda (key val) (declare (ignore key)) (gethash :number val))
 				 (screen-window-hash screen))))
 
 (defun process-new-window (win)

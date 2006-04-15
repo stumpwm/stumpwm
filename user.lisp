@@ -67,7 +67,7 @@
     (define-key m (kbd "f") "fselect")
     (define-key m (kbd "F") "curframe")
     (define-key m (kbd "t") "meta C-t")
-    ;;(define-key m (kbd "C-N") "number")
+    (define-key m (kbd "C-N") "number")
     (define-key m (kbd ";") "colon")
     (define-key m (kbd ":") "eval")
     m)
@@ -471,6 +471,12 @@ aborted."
   (echo-string screen "Reloading StumpWM...")
   (asdf:operate 'asdf:load-op :stumpwm)
   (echo-string screen "Reloading StumpWM...Done."))
+
+(defun display-keybinding (screen kmap)
+  (echo-string-list screen (mapcar-hash #'(lambda (k v) (format nil "~A -> ~A" (print-key k) v)) kmap)))
+
+(define-stumpwm-command "help" (screen)
+  (display-keybinding screen *root-map*))
 
 ;; Trivial function
 (define-stumpwm-command "abort" (screen)

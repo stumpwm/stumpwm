@@ -1,7 +1,12 @@
 2006-04-14  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* user.lisp (*root-map*): bind C-N to "number"
+	(display-keybinding): new function
+	("help"): new command
+	
 	* primitives.lisp (*prefix-key*): remove defvar
 	(*prefix-modifiers*): likewise
+	(mapcar-hash): pass the fn both the key and value. callers updated.
 
 	* core.lisp (init-screen): dont grab any keys on the root window
 	(init-screen): list for :key-press events on the focus window

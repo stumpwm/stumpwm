@@ -208,12 +208,10 @@ to login remotely to regain control.")
     (sort copy sort-fn)))
 
 (defun mapcar-hash (fn hash)
-  "Just like maphash except it accumulates the result in a list and
-calls fn on the value for the key hash-key, not the pair."
+  "Just like maphash except it accumulates the result in a list."
   (let ((accum nil))
     (labels ((mapfn (key val)
-	       (declare (ignore key))
-	       (push (funcall fn val) accum)))
+               (push (funcall fn key val) accum)))
       (maphash #'mapfn hash))
     accum))
 
