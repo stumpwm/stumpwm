@@ -310,15 +310,16 @@ than the root window's width and height."
 	     *top-map*)))
 
 (defun ungrab-keys-on-window (win)
-  (xlib:ungrab-key win :any))
+  (xlib:ungrab-key win :any :modifiers :any))
 
 (defun sync-keys ()
   "Any time *top-map* is modified this must be called"
   (loop for i in *screen-list*
-	do (loop for j in (screen-mapped-windows i)
-		 do (ungrab-keys-on-window j)
-		 do (grab-keys-on-window j)))
-  (xlib:display-finish-output *display*))
+     do (loop for j in (screen-mapped-windows i)
+	   do (ungrab-keys-on-window j))
+     do (xlib:display-finish-output *display*)
+     do (loop for j in (screen-mapped-windows i)
+	   do (grab-keys-on-window j))))
 
 (defun add-window (screen window)
   "add window to the head of the mapped-windows list."
@@ -977,9 +978,7 @@ focus of a window."
 	'(:substructure-redirect
 	  :substructure-notify
 	  :property-change))
-  (xlib:display-force-output *display*)
-  ;; Grab the prefix key for the root window
-  (grab-keys-on-window (xlib:screen-root screen-number))
+  (xlib:display-force-output *display*) 
   ;; Initialize the screen structure
   (let* ((fg (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-foreground-color+))
 	 (bg (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-background-color+))
@@ -993,7 +992,8 @@ focus of a window."
 						      screen-number)
 					   :event-mask '(:key-press)))
 	 (focus-window (xlib:create-window :parent (xlib:screen-root screen-number)
-					   :x 0 :y 0 :width 1 :height 1))
+					   :x 0 :y 0 :width 1 :height 1
+					   :event-mask '(:key-press)))
 	 (frame-window (xlib:create-window :parent (xlib:screen-root screen-number)
 					   :x 0 :y 0 :width 1 :height 1
 					   :background fg
@@ -1015,7 +1015,6 @@ focus of a window."
     ;; Create our screen structure
     ;; The focus window is mapped at all times
     (xlib:map-window focus-window)
-    (grab-keys-on-window focus-window)
     (make-screen :number screen-number
 		 :frame-tree initial-frame
 		 :font (xlib:open-font *display* +default-font-name+)
@@ -1031,15 +1030,15 @@ focus of a window."
 
 ;;; keyboard helper functions
 
-(defun send-fake-key (win ch mods)
+(defun send-fake-key (win key)
   "Send a fake key event to win. ch is the character and mods is a
 list of modifier symbols."
   (xlib:send-event win :key-press '(:key-press)
 		   :display *display*
 		   :root (xlib:drawable-root win)
 		   :window win
-		   :code (xlib:keysym->keycodes *display* (char->keysym ch))
-		   :state (apply #'xlib:make-state-mask mods)))
+		   :code (xlib:keysym->keycodes *display* (char->keysym (code-char (key-char key))))
+		   :state (x11-mods key)))
 
 
 ;;; Pointer helper functions

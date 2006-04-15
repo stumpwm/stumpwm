@@ -82,12 +82,6 @@ occur in that many seconds.")
 (defvar *display* nil
   "The display for the X server")
 
-(defvar *prefix-key* #\t
-  "The key to use as the prefix key")
-
-(defvar *prefix-modifiers* '(:control)
-  "The modifier list for the prefix key")
-
 (defvar *shell-program* "/bin/sh"
   "The shell program used by SHELL-COMMAND.")
 

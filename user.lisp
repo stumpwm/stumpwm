@@ -66,7 +66,7 @@
     (define-key m (kbd "o") "sibling")
     (define-key m (kbd "f") "fselect")
     (define-key m (kbd "F") "curframe")
-    (define-key m (kbd "t") "meta")
+    (define-key m (kbd "t") "meta C-t")
     ;;(define-key m (kbd "C-N") "number")
     (define-key m (kbd ";") "colon")
     (define-key m (kbd ":") "eval")
@@ -266,8 +266,9 @@
 (define-stumpwm-command "remove" (screen)
   (remove-split screen))
 
-(define-stumpwm-command "only" (screen)
-  (loop while (remove-split screen)))
+;; (define-stumpwm-command "only" (screen)
+;;   (let ((frames (tree-accum-fn 'append 'identity)))
+;;     (
 
 (define-stumpwm-command "curframe" (screen)
   (show-frame-indicator screen))
@@ -379,6 +380,10 @@ aborted."
 				      (parse-integer n))))
 				 (:string 
 				  (pop-or-read str prompt screen))
+				 (:key
+				  (let ((s (pop-or-read str prompt screen)))
+				    (when s
+				      (kbd s))))
 				 (:frame
 				  (let ((arg (pop str)))
 				    (if arg
@@ -436,13 +441,13 @@ aborted."
 (define-stumpwm-command "pull" (screen (n :number "Pull: "))
   (pull-window-by-number screen n))
 
-(defun send-meta-key (screen)
+(defun send-meta-key (screen key)
   "Send the prefix key"
   (when (screen-current-window screen)
-    (send-fake-key (screen-current-window screen) *prefix-key* *prefix-modifiers*)))
+    (send-fake-key (screen-current-window screen) key)))
 
-(define-stumpwm-command "meta" (screen)
-  (send-meta-key screen))
+(define-stumpwm-command "meta" (screen (key :key "Key: "))
+  (send-meta-key screen key))
 
 (defun renumber (screen nt)
   "Renumber the current window"
@@ -473,10 +478,19 @@ aborted."
 
 (defun set-prefix-key (key)
   "Change the stumpwm prefix key to KEY."
-  (dolist (i (lookup-command *top-map* '*root-map*))
-    (undefine-key *top-map* i))
-  (define-key *top-map* key '*root-map*)
-  (sync-keys))
+  (let (prefix)
+    (dolist (i (lookup-command *top-map* '*root-map*))
+      (setf prefix i)
+      (undefine-key *top-map* i))
+    (define-key *top-map* key '*root-map*)
+    (let* ((meta (make-key :char (key-char key)))
+	   (old-cmd (concatenate 'string "meta " (print-key prefix)))
+	   (cmd (concatenate 'string "meta " (print-key key))))
+      (dolist (i (lookup-command *root-map* old-cmd))
+	(undefine-key *root-map* i))
+      (define-key *root-map* meta cmd))
+    (define-key *root-map* key "other")
+    (sync-keys)))
 
 
 ;;(define-stumpwm-command "escape"

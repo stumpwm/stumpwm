@@ -1,5 +1,24 @@
 2006-04-14  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* primitives.lisp (*prefix-key*): remove defvar
+	(*prefix-modifiers*): likewise
+
+	* core.lisp (init-screen): dont grab any keys on the root window
+	(init-screen): list for :key-press events on the focus window
+	(init-screen): don't grab any keys on the focus window
+
+	* user.lisp (*root-map*): bind "t" to "meta t"
+	(parse-and-run-command): parse keys
+	(send-meta-key): take a key as argument
+	("meta"): likewise
+	(set-prefix-key): change the meta and other bindings
+
+	* stumpwm.asd: require sb-posix for sbcl
+
+	* core.lisp (ungrab-keys-on-window): specify :any for :modifiers
+	(sync-keys): sync with the xserver after ungrabbing keys on a windows.
+	(send-fake-key): accept a key structure as an argument
+
 	* kmap.lisp (parse-char-name): Return the char-code of the
 	name-char.
 

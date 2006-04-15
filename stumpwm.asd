@@ -8,6 +8,8 @@
 (ignore-errors (require :clx))
 ;;(require :gray-streams)
 
+#+sbcl (require 'sb-posix)
+
 (defsystem :stumpwm
   :name "StumpWM"
   :author "Shawn Betts <sabetts@vcn.bc.ca>"
