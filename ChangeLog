@@ -1,3 +1,8 @@
+2006-04-14  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* kmap.lisp (parse-char-name): Return the char-code of the
+	name-char.
+
 2006-04-07  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp (set-prefix-key): new function

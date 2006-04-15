@@ -82,9 +82,11 @@ for passing as the last argument to (apply #'make-key ...)"
 
 (defun parse-char-name (string)
   "Return the char-code of the char whose name is STRING."
-  (or (name-char string)
-      (and (= (length string) 1)
-	   (char-code (char string 0)))))
+  (let ((ch (name-char string)))
+    (if ch
+	(char-code ch)
+	(and (= (length string) 1)
+	     (char-code (char string 0))))))
 
 (defun parse-key (string)
   "Parse STRING and return a key structure."
