@@ -488,22 +488,35 @@ maximized, and given focus."
   (loop for i in l
 	maximize (xlib:text-width font i)))
 
+(defun setup-win-gravity (screen win gravity)
+  "Position the x, y of the window according to its gravity."
+  (let ((w (xlib:drawable-width win))
+	(h (xlib:drawable-height win))
+	(screen-width (xlib:drawable-width (xlib:screen-root (screen-number screen))))
+	(screen-height (xlib:drawable-height (xlib:screen-root (screen-number screen)))))
+    (let ((x (case gravity
+	       ((:top-left :bottom-left) 0)
+	       (:center (truncate (- screen-width w (* (xlib:drawable-border-width win) 2)) 2))
+	       (t (- screen-width w (* (xlib:drawable-border-width win) 2)))))
+	  (y (case gravity
+	       ((:bottom-right :bottom-left) (- screen-height h (* (xlib:drawable-border-width win) 2)))
+	       (:center (truncate (- screen-height h (* (xlib:drawable-border-width win) 2)) 2))
+	       (t 0))))
+      (setf (xlib:drawable-y win) y
+	    (xlib:drawable-x win) x))))
+
 (defun setup-message-window (screen l)
   (let ((height (* (length l)
 		   (+ (xlib:font-ascent (screen-font screen))
 		      (xlib:font-descent (screen-font screen)))))
 	(width (max-width (screen-font screen) l))
-	(screen-width (xlib:drawable-width (xlib:screen-root (screen-number screen))))
 	(win (screen-message-window screen)))
     ;; Now that we know the dimensions, raise and resize it.
     (xlib:map-window (screen-message-window screen))
-    (setf (xlib:drawable-y win) 0
-	  (xlib:drawable-height win) height
-	  (xlib:drawable-x win) (- screen-width width
-				   (* (xlib:drawable-border-width win) 2)
-				   (* *message-window-padding* 2))
+    (setf (xlib:drawable-height win) height
 	  (xlib:drawable-width win) (+ width (* *message-window-padding* 2))
 	  (xlib:window-priority win) :above)
+    (setup-win-gravity screen win *message-window-gravity*)
     ;; Clear the window
     (xlib:clear-area win)))
 

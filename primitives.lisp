@@ -123,9 +123,16 @@ occur in that many seconds.")
 ;; Message window variables
 (defvar *message-window-padding* 5)
 
+(defvar *message-window-gravity* :top-right
+  "Message window gravity. One of :top-left, :top-right, :bottom-left,
+:bottom-right or :center.")
+
 ;; line editor
 (defvar *editor-bindings* nil
   "A list of key-bindings for line editing.")
+
+(defvar *input-window-gravity* :top-right
+  "input window gravity. see *message-window-gravity*.")
 
 ;; default values. use the set-* functions to these attributes
 (defparameter +default-foreground-color+ "White")

@@ -1,5 +1,16 @@
 2006-04-14  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* user.lisp (*root-map*): bind C-h to "help"
+
+	* primitives.lisp (*message-window-gravity*): new defvar
+	(*input-window-gravity*): likewise
+
+	* input.lisp (setup-input-window): dont set the drawable-y
+	(draw-input-bucket): use setup-win-gravity
+
+	* core.lisp (setup-win-gravity): new function
+	(setup-message-window): use setup-win-gravity
+
 	* user.lisp (*root-map*): bind C-N to "number"
 	(display-keybinding): new function
 	("help"): new command

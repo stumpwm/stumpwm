@@ -70,6 +70,7 @@
     (define-key m (kbd "C-N") "number")
     (define-key m (kbd ";") "colon")
     (define-key m (kbd ":") "eval")
+    (define-key m (kbd "C-h") "help")
     m)
   "The default bindings that hang off the prefix key.")
 

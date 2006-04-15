@@ -63,8 +63,7 @@
     (dformat "Setup input window~%")
     ;; Window dimensions
     (xlib:map-window win)
-    (setf (xlib:window-priority win) :above)
-    (setf (xlib:drawable-y win) 0
+    (setf (xlib:window-priority win) :above
 	  (xlib:drawable-height win) height)
     ;; Draw the prompt
     (draw-input-bucket screen prompt input)
@@ -132,16 +131,13 @@
 	 (string (input-line-string input))
 	 (pos (input-line-position input))
 	 (width (+ prompt-width
-		   (max 100 (xlib:text-width (screen-font screen) string))))
-	(screen-width (xlib:drawable-width (xlib:screen-root (screen-number screen)))))
+		   (max 100 (xlib:text-width (screen-font screen) string)))))
     (xlib:clear-area win :x (+ *message-window-padding*
 			       prompt-width
 			       (xlib:text-width (screen-font screen) string)))
     (xlib:with-state (win)
-		     (setf (xlib:drawable-x win) (- screen-width width
-						    (* (xlib:drawable-border-width win) 2)
-						    (* *message-window-padding* 2))
-			   (xlib:drawable-width win) (+ width (* *message-window-padding* 2))))
+		     (setf (xlib:drawable-width win) (+ width (* *message-window-padding* 2)))
+		     (setup-win-gravity screen win *input-window-gravity*))
     (xlib:draw-image-glyphs win gcontext
 			    *message-window-padding*
 			    (xlib:font-ascent (screen-font screen))
