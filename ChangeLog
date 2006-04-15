@@ -1,3 +1,9 @@
+2006-04-15  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* core.lisp (sync-keys): sync keys on the screen-focus-window.
+	(init-screen): don't listen for :key-press events on
+	focus-window. grab the keys on the focus-window.
+
 2006-04-14  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp (*root-map*): bind C-h to "help"

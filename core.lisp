@@ -315,11 +315,14 @@ than the root window's width and height."
 (defun sync-keys ()
   "Any time *top-map* is modified this must be called"
   (loop for i in *screen-list*
+     do (ungrab-keys-on-window (screen-focus-window i))
      do (loop for j in (screen-mapped-windows i)
 	   do (ungrab-keys-on-window j))
      do (xlib:display-finish-output *display*)
      do (loop for j in (screen-mapped-windows i)
-	   do (grab-keys-on-window j))))
+	   do (grab-keys-on-window j))
+     do (grab-keys-on-window (screen-focus-window i)))
+  (xlib:display-finish-output *display*))
 
 (defun add-window (screen window)
   "add window to the head of the mapped-windows list."
@@ -1005,8 +1008,7 @@ focus of a window."
 						      screen-number)
 					   :event-mask '(:key-press)))
 	 (focus-window (xlib:create-window :parent (xlib:screen-root screen-number)
-					   :x 0 :y 0 :width 1 :height 1
-					   :event-mask '(:key-press)))
+					   :x 0 :y 0 :width 1 :height 1))
 	 (frame-window (xlib:create-window :parent (xlib:screen-root screen-number)
 					   :x 0 :y 0 :width 1 :height 1
 					   :background fg
@@ -1028,6 +1030,7 @@ focus of a window."
     ;; Create our screen structure
     ;; The focus window is mapped at all times
     (xlib:map-window focus-window)
+    (grab-keys-on-window focus-window)
     (make-screen :number screen-number
 		 :frame-tree initial-frame
 		 :font (xlib:open-font *display* +default-font-name+)
