@@ -1256,7 +1256,7 @@ chunks."
 			(cmd (map 'string 'code-char (nbutlast (cdr data)))))
 		   (declare (ignore interactive-p))
 		   (interactive-command cmd (current-screen))
-		   (xlib:change-property win :rp_command_result "0TODO" :string 8 :transform 'char-code)
+		   (xlib:change-property win :rp_command_result (map 'list 'char-code "0TODO") :string 8)
 		   (xlib:display-finish-output *display*)))
 	       bytes-after)))
     (loop while (> (one-cmd) 0))))

@@ -1,5 +1,7 @@
 2006-04-16  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* core.lisp (handle-rp-commands): convert the response string using map.
+
 	* primitives.lisp (format-expand): unknown % formatters are printed verbatim.
 
 	* core.lisp (window-name): call xlib:wm-name
