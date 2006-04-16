@@ -85,7 +85,7 @@
   (find-screen (xlib:drawable-root w)))
 
 (defun window-name (win)
-  (xlib:get-property win :WM_NAME :transform 'code-char :result-type 'string))
+  (xlib:wm-name win))
 
 (defun raise-window (win)
   "Map the window if needed and bring it to the top of the stack. Does not affect focus."
@@ -107,12 +107,14 @@
     (:transient *transient-border-width*)))
 
 (defun window-class (win)
-  ;; FIXME: This is arguable more work than is needed
-  (second (split-string (xlib:get-property win :WM_CLASS :transform 'code-char :result-type 'string) (string #\Null))))
+  (multiple-value-bind (res class) (xlib:get-wm-class win)
+    (declare (ignore res))
+    class))
 
 (defun window-res-name (win)
-  ;; FIXME: This is arguable more work than is needed
-  (first (split-string (xlib:get-property win :WM_CLASS :transform 'code-char :result-type 'string) (string #\Null))))
+  (multiple-value-bind (res class) (xlib:get-wm-class win)
+    (declare (ignore class))
+    res))
 
 (defun window-number (win)
   (let ((screen (window-screen win)))
@@ -1255,8 +1257,8 @@ chunks."
 		   (declare (ignore interactive-p))
 		   (interactive-command cmd (current-screen))
 		   (xlib:change-property win :rp_command_result "0TODO" :string 8 :transform 'char-code)
-		   (xlib:display-finish-output *display*)
-		   bytes-after)))))
+		   (xlib:display-finish-output *display*)))
+	       bytes-after)))
     (loop while (> (one-cmd) 0))))
 
 (define-stump-event-handler :property-notify (window atom state)

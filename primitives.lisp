@@ -379,7 +379,7 @@ Modifies the match data; use `save-match-data' if necessary."
 					      ((char= (car cur) #\%)
 					       (string #\%))
 					      (t
-					       (string #\%) (string (car cur)))))))
+					       (concatenate 'string (string #\%) (string (car cur))))))))
 	    (setf cur (cdr cur)))
 	   (t
 	    (setf output (concatenate 'string output (string (car cur)))
