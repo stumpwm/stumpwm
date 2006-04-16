@@ -1,5 +1,12 @@
 2006-04-16  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* primitives.lisp (format-expand): unknown % formatters are printed verbatim.
+
+	* core.lisp (window-name): call xlib:wm-name
+	(window-class): call xlib:get-wm-class
+	(window-res-name): likewise
+	(handle-rp-commands): always return the bytes-after
+
 	* user.lisp (parse-and-run-command): print the input as part of the error.
 
 	* stumpwm.lisp (init-atoms): just set +wm-delete-window+. use
