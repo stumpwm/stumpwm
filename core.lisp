@@ -85,7 +85,7 @@
   (find-screen (xlib:drawable-root w)))
 
 (defun window-name (win)
-  (coerce (mapcar #'code-char (xlib:get-property win :WM_NAME)) 'string))
+  (xlib:get-property win :WM_NAME :transform 'code-char :result-type 'string))
 
 (defun raise-window (win)
   "Map the window if needed and bring it to the top of the stack. Does not affect focus."
@@ -108,11 +108,11 @@
 
 (defun window-class (win)
   ;; FIXME: This is arguable more work than is needed
-  (second (split-string (coerce (mapcar #'code-char (xlib:get-property win :WM_CLASS)) 'string) (string #\Null))))
+  (second (split-string (xlib:get-property win :WM_CLASS :transform 'code-char :result-type 'string) (string #\Null))))
 
 (defun window-res-name (win)
   ;; FIXME: This is arguable more work than is needed
-  (first (split-string (coerce (mapcar #'code-char (xlib:get-property win :WM_CLASS)) 'string) (string #\Null))))
+  (first (split-string (xlib:get-property win :WM_CLASS :transform 'code-char :result-type 'string) (string #\Null))))
 
 (defun window-number (win)
   (let ((screen (window-screen win)))
@@ -1233,6 +1233,42 @@ list of modifier symbols."
 	      (interactive-command cmd screen)
 	      (echo-string screen (format nil "~{~a ~}not bound." (mapcar 'print-key (nreverse key-seq))))))))))
 
+(defun bytes-to-window (bytes)
+  "A sick hack to assemble 4 bytes into a 32 bit number. This is
+because ratpoison sends the rp_command_request window in 8 byte
+chunks."
+  (+ (first bytes)
+     (ash (second bytes) 8)
+     (ash (third bytes) 16)
+     (ash (fourth bytes) 24)))
+
+(defun handle-rp-commands (root)
+  "Handle a ratpoison style command request."
+  (labels ((one-cmd ()
+	     (multiple-value-bind (win type format bytes-after) (xlib:get-property root :rp_command_request :end 4 :delete-p t)
+	       (declare (ignore type format))
+	       (setf win (xlib::lookup-window *display* (bytes-to-window win)))
+	       (when (xlib:window-p win)
+		 (let* ((data (xlib:get-property win :rp_command))
+			(interactive-p (car data))
+			(cmd (map 'string 'code-char (nbutlast (cdr data)))))
+		   (declare (ignore interactive-p))
+		   (interactive-command cmd (current-screen))
+		   (xlib:change-property win :rp_command_result "0TODO" :string 8 :transform 'char-code)
+		   (xlib:display-finish-output *display*)
+		   bytes-after)))))
+    (loop while (> (one-cmd) 0))))
+
+(define-stump-event-handler :property-notify (window atom state)
+  (let* ((screen (window-screen window))
+	 (root (xlib:screen-root (screen-number screen))))
+    ;;(format t "property notify ~s ~s ~s~%" window atom state)
+    (case atom
+      (:rp_command_request 
+       (when (and (eq state :new-value)
+		  (xlib:window-equal window root))
+	 (handle-rp-commands root))))))
+
 (defun handle-event (&rest event-slots &key display event-key &allow-other-keys)
   (declare (ignore display))
   (dformat "Handling event ~S~%" event-key)
@@ -1246,5 +1282,7 @@ list of modifier symbols."
 	  ;; it. It will be taken care of in the unmap
 	  ;; and destroy events we'll be getting
 	  ;; shortly.
-	  (warn "Caught ~s in ~s event handler.~%" c event-key))))
+	  ;; (warn "Caught ~s in ~s event handler.~%" c event-key)
+	  (declare (ignore c))
+	 )))
     t))

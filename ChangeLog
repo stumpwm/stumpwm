@@ -1,3 +1,22 @@
+2006-04-16  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* user.lisp (parse-and-run-command): print the input as part of the error.
+
+	* stumpwm.lisp (init-atoms): just set +wm-delete-window+. use
+	xlib:intern-atom.
+
+	* primitives.lisp (remove-hook): new macro
+	(dformat): ignore the args
+
+	* core.lisp (window-name): use get-property to convert the
+	property value to a string.
+	(window-class): likewise
+	(window-res-name): likewise
+	(bytes-to-window): new function
+	(handle-rp-commands): likewise
+	(:property-notify): new event handler
+	(handle-event): don't warn about the error.
+
 2006-04-15  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* core.lisp (sync-keys): sync keys on the screen-focus-window.

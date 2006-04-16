@@ -1,4 +1,4 @@
-#!/usr/bin/env clisp
+#!/usr/local/bin/clisp -M /home/sabetts/opt/lib/clisp/clx.mem -m 4MB
 
 ;; Here's a script that runs stumpwm. You can put it in your path and
 ;; run it as a regular program.

@@ -203,6 +203,10 @@ to login remotely to regain control.")
   "Add a function to a hook."
   `(setf ,hook (adjoin ,fn ,hook)))
 
+(defmacro remove-hook (hook fn)
+  "Remove a function from a hook."
+  `(setf ,hook (remove ,fn ,hook)))
+
 ;; Misc. utility functions
 
 (defun conc1 (list arg)
@@ -349,6 +353,7 @@ Modifies the match data; use `save-match-data' if necessary."
 	    while j))))
 
 (defun dformat (fmt &rest args)
+  (declare (ignore fmt args))
 #+ignore
   (with-open-file (s #p"/tmp/stumplog" :direction :output :if-exists :append :if-does-not-exist :create)
     (apply 'format s fmt args)))

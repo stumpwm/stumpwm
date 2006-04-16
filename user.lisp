@@ -365,7 +365,7 @@ aborted."
 	(setf cmd (gethash (pop str) *command-hash*))
 	(if cmd
 	    (setf arg-specs (command-args cmd))
-	  (throw 'error "Command not found."))
+	  (throw 'error (format nil "Command '~a' not found." input)))
 	;; Create a list of args to pass to the function. If str is
 	;; snarfed and we have more args, then prompt the user for a
 	;; value.
