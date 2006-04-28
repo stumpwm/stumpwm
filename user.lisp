@@ -499,5 +499,8 @@ aborted."
     (define-key *root-map* key "other")
     (sync-keys)))
 
+(define-stumpwm-command "quit" (screen)
+  (declare (ignore screen))
+  (throw :quit nil))
 
 ;;(define-stumpwm-command "escape"
