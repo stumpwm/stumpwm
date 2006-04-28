@@ -398,9 +398,11 @@ give the last accessed window focus."
   (xlib:set-input-focus *display* (screen-focus-window screen) :POINTER-ROOT))
 
 (defun maybe-hide-window (screen window new-window)
-  "Hide WINDOW depending on what kind of window NEW-WINDOW is."
-  (when (and (eql (window-frame screen window) (window-frame screen new-window))
-	     (eq (window-type new-window) :normal))
+  "Hide WINDOW depending on what kind of window NEW-WINDOW is. if
+NEW-WINDOW is nil then the window is being hidden."
+  (when (or (null new-window)
+	    (and (eql (window-frame screen window) (window-frame screen new-window))
+	     (eq (window-type new-window) :normal)))
     (hide-window window)))
 
 (defun focus-window (window)
@@ -541,19 +543,16 @@ maximized, and given focus."
   "Raise the window w in frame f in screen s. if FOCUS is
 T (default) then also focus the frame."
   ;; nothing to do when W is nil
-  (if w
-      (let ((oldw (frame-window f)))
-	(assert (eq (window-frame s w) f))
-	(setf (frame-window f) w)
-	(if focus
-	    (focus-frame s f)
-	    (unless (xlib:window-equal oldw w)
-	      ;; The old one might need to be hidden
-	      (when oldw
-		(maybe-hide-window s oldw w))
-	      (raise-window w))))
-      ;; empty the frame
-      (setf (frame-window f) nil)))
+  (let ((oldw (frame-window f)))
+    (setf (frame-window f) w)
+    (when focus
+      (focus-frame s f))
+    ;; The old one might need to be hidden
+    (unless (and w (xlib:window-equal oldw w))
+      (when oldw
+	(maybe-hide-window s oldw w))
+      (when w
+	(raise-window w)))))
   
 (defun focus-frame (screen f)
   (let ((w (frame-window f)))

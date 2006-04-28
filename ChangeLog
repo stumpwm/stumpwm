@@ -1,3 +1,19 @@
+2006-04-28  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* user.lisp (*root-map*): bind - to fclear
+	(other-window): choose the right window when the frame is empty
+	(clear-frame): new function
+	("fclear"): new command
+
+	* core.lisp (maybe-hide-window): hide the window if new-window is nil
+	(frame-raise-window): if w is nil clear the frame
+
+2006-04-27  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* user.lisp ("quit"): new command
+
+	* stumpwm.lisp (stumpwm-internal-loop): catch a :quit tag
+
 2006-04-16  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* core.lisp (handle-rp-commands): convert the response string using map.

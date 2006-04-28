@@ -71,6 +71,7 @@
     (define-key m (kbd ";") "colon")
     (define-key m (kbd ":") "eval")
     (define-key m (kbd "C-h") "help")
+    (define-key m (kbd "-") "fclear")
     m)
   "The default bindings that hang off the prefix key.")
 
@@ -202,7 +203,10 @@
 (defun other-window (screen)
   (let* ((f (screen-current-frame screen))
 	 (wins (frame-windows screen f))
-	 (win (second wins)))
+	 ;; the frame could be empty
+	 (win (if (frame-window f)
+		  (second wins)
+		  (first wins))))
   (if win
       (frame-raise-window screen (window-frame screen win) win)
       (echo-string screen "No other window."))))
@@ -502,5 +506,12 @@ aborted."
 (define-stumpwm-command "quit" (screen)
   (declare (ignore screen))
   (throw :quit nil))
+
+(defun clear-frame (frame screen)
+  "Clear the given frame."
+  (frame-raise-window screen frame nil (eq (screen-current-frame screen) frame)))
+
+(define-stumpwm-command "fclear" (screen)
+  (clear-frame (screen-current-frame screen) screen))
 
 ;;(define-stumpwm-command "escape"
