@@ -1,3 +1,10 @@
+2006-04-29  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* core.lisp (set-fg-color): return nil if the color doesn't exist.
+	(set-bg-color): likewise
+	(set-border-color): likewise
+	(color-exists-p): new function
+
 2006-04-28  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp (*root-map*): bind - to fclear

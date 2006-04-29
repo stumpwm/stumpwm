@@ -448,20 +448,32 @@ maximized, and given focus."
 
 ;;; Message printing functions 
 
+(defun color-exists-p (color)
+  (handler-case
+      (loop for i in *screen-list*
+	 always (xlib:lookup-color (xlib:screen-default-colormap (screen-number i)) color))
+    (xlib:name-error (c) (declare (ignore c)) nil)))
+
 (defun set-fg-color (color)
-  (dolist (i *screen-list*)
-    (setf (screen-fg-color i) color))
-  (update-colors-all-screens))
+  (when (color-exists-p color)
+    (dolist (i *screen-list*)
+      (setf (screen-fg-color i) color))
+    (update-colors-all-screens)
+    t))
 
 (defun set-bg-color (color)
-  (dolist (i *screen-list*)
-    (setf (screen-bg-color i) color))
-  (update-colors-all-screens))
+  (when (color-exists-p color)
+    (dolist (i *screen-list*)
+      (setf (screen-bg-color i) color))
+    (update-colors-all-screens)
+    t))
 
 (defun set-border-color (color)
-  (dolist (i *screen-list*)
-    (setf (screen-border-color i) color))
-  (update-colors-all-screens))
+  (when (color-exists-p color)
+    (dolist (i *screen-list*)
+      (setf (screen-border-color i) color))
+    (update-colors-all-screens)
+    t))
 
 (defun set-font (font)
   (let ((fobj (xlib:open-font *display* font)))
