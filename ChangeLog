@@ -1,5 +1,8 @@
 2006-04-29  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* core.lisp (font-exists-p): new function
+	(set-font): verify that the font exists first
+
 	* package.lisp (:stumpwm): export #:set-border-color
 
 	* core.lisp (set-fg-color): return nil if the color doesn't exist.

@@ -454,6 +454,14 @@ maximized, and given focus."
 	 always (xlib:lookup-color (xlib:screen-default-colormap (screen-number i)) color))
     (xlib:name-error (c) (declare (ignore c)) nil)))
 
+(defun font-exists-p (font-name)
+  (handler-case
+      (progn 
+	(xlib:close-font (prog1 (xlib:open-font *display* font-name)
+			   (xlib:display-finish-output *display*)))
+	t)
+    (xlib:name-error (c) (declare (ignore c)) nil)))
+
 (defun set-fg-color (color)
   (when (color-exists-p color)
     (dolist (i *screen-list*)
@@ -476,11 +484,12 @@ maximized, and given focus."
     t))
 
 (defun set-font (font)
-  (let ((fobj (xlib:open-font *display* font)))
-    ;; if the font doesn't exist, we need to know now.
-    (xlib:display-finish-output *display*)
-    (dolist (i *screen-list*)
-      (setf (screen-font i) fobj))))
+  (when (font-exists-p font)
+    (let ((fobj (xlib:open-font *display* font)))
+      (dolist (i *screen-list*)
+	(xlib:close-font (screen-font i))
+	(setf (screen-font i) fobj)))
+    t))
 
 (defun get-color-pixel (screen color)
   (xlib:alloc-color (xlib:screen-default-colormap (screen-number screen)) color))
