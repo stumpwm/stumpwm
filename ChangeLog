@@ -1,5 +1,7 @@
 2006-04-29  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* package.lisp (:stumpwm): export #:set-border-color
+
 	* core.lisp (set-fg-color): return nil if the color doesn't exist.
 	(set-bg-color): likewise
 	(set-border-color): likewise
