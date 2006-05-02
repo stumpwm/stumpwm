@@ -1,3 +1,8 @@
+2006-05-02  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* user.lisp (pull-window-by-number): set the pulled window's
+	frame's window to null before raising the frame's new window.
+
 2006-04-29  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* core.lisp (font-exists-p): new function

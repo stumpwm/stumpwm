@@ -430,18 +430,18 @@ aborted."
 
 (defun pull-window-by-number (screen n)
   "Pull window N from another frame into the current frame and focus it."
-  (labels ((match (win)
-	     (= (window-number win) n)))
-    (let ((win (find-if #'match (screen-mapped-windows screen))))
-      (when win
-	(let ((f (window-frame screen win)))
-	  (setf (window-frame screen win) (screen-current-frame screen))
-	  (sync-frame-windows screen (screen-current-frame screen))
-	  (frame-raise-window screen (screen-current-frame screen) win)
-	  ;; if win was focused in its old frame then give the old
-	  ;; frame the frame's last focused window.
-	  (when (eq (frame-window f) win)
-	    (frame-raise-window screen f (first (frame-windows screen f)) nil)))))))
+  (let ((win (find n (screen-mapped-windows screen) :key 'window-number :test '=)))
+    (when win
+      (let ((f (window-frame screen win)))
+	(setf (window-frame screen win) (screen-current-frame screen))
+	(sync-frame-windows screen (screen-current-frame screen))
+	(frame-raise-window screen (screen-current-frame screen) win)
+	;; if win was focused in its old frame then give the old
+	;; frame the frame's last focused window.
+	(when (eq (frame-window f) win)
+	  ;; the current value is no longer valid.
+	  (setf (frame-window f) nil)
+	  (frame-raise-window screen f (first (frame-windows screen f)) nil))))))
 
 (define-stumpwm-command "pull" (screen (n :number "Pull: "))
   (pull-window-by-number screen n))
