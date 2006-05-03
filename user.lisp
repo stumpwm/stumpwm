@@ -72,6 +72,7 @@
     (define-key m (kbd ":") "eval")
     (define-key m (kbd "C-h") "help")
     (define-key m (kbd "-") "fclear")
+    (define-key m (kbd "Q") "only")
     m)
   "The default bindings that hang off the prefix key.")
 
@@ -271,9 +272,17 @@
 (define-stumpwm-command "remove" (screen)
   (remove-split screen))
 
-;; (define-stumpwm-command "only" (screen)
-;;   (let ((frames (tree-accum-fn 'append 'identity)))
-;;     (
+(define-stumpwm-command "only" (screen)
+  (let ((frame (make-initial-frame (xlib:screen-width (screen-number screen))
+				   (xlib:screen-height (screen-number screen))))
+	(win (frame-window (screen-current-frame screen))))
+    (mapc (lambda (w)
+	    (setf (window-frame screen w) frame))
+	  (screen-mapped-windows screen))
+    (setf (frame-window frame) win
+	  (screen-frame-tree screen) frame
+	  (screen-current-frame screen) frame)
+    (sync-frame-windows screen (screen-current-frame screen))))
 
 (define-stumpwm-command "curframe" (screen)
   (show-frame-indicator screen))

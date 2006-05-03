@@ -2,6 +2,8 @@
 
 	* user.lisp (pull-window-by-number): set the pulled window's
 	frame's window to null before raising the frame's new window.
+	("only"): new command
+	(*root-map*): bind "Q" to "only"
 
 2006-04-29  Shawn Betts  <sabetts@vcn.bc.ca>
 
