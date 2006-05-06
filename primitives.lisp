@@ -28,7 +28,7 @@
 
 (defun char->keysym (ch)
   "Convert a char to a keysym"
-  (first (xlib:character->keysyms ch)))
+  (keysym-name->keysym (string ch)))
 
 
 ;;; Message Timer
@@ -228,21 +228,16 @@ to login remotely to regain control.")
 
 (defun is-modifier (keysym)
   "Return t if keycode is a modifier"
-  (member keysym (list (char->keysym :character-set-switch)
-		       (char->keysym :left-shift)
-		       (char->keysym :right-shift)
-		       (char->keysym :left-control)
-		       (char->keysym :right-control)
-		       (char->keysym :caps-lock)
-		       (char->keysym :shift-lock)
-		       (char->keysym :left-meta)
-		       (char->keysym :right-meta)
-		       (char->keysym :left-alt)
-		       (char->keysym :right-alt)
-		       (char->keysym :left-super)
-		       (char->keysym :right-super)
-		       (char->keysym :left-hyper)
-		       (char->keysym :right-hyper))))
+  ;; FIXME: should these be in a customizable variable?
+  (let ((mods '("Mode_switch"
+		"Shift_L" "Shift_R"
+		"Control_L" "Control_R"
+		"Caps_Lock" "Shift_Lock" 
+		"Meta_L" "Meta_R"
+		"Alt_L" "Alt_R"
+		"Super_L" "Super_R"
+		"Hyper_L" "Hyper_R")))
+    (member keysym (mapcar #'keysym-name->keysym mods))))
 
 (defun find-free-number (l)
   "Return a number that is not in the list l."

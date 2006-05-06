@@ -303,9 +303,9 @@ than the root window's width and height."
 
 (defun grab-keys-on-window (win)
   (labels ((grabit (w key)
-		   (xlib:grab-key w (xlib:keysym->keycodes *display* (char->keysym (code-char (key-char key))))
-				  :modifiers (x11-mods key) :owner-p t
-				  :sync-pointer-p nil :sync-keyboard-p t)))
+	     (xlib:grab-key w (xlib:keysym->keycodes *display* (key-keysym key))
+			    :modifiers (x11-mods key) :owner-p t
+			    :sync-pointer-p nil :sync-keyboard-p t)))
     (maphash (lambda (k v)
 	       (declare (ignore v))
 	       (grabit win k))
@@ -1075,7 +1075,7 @@ list of modifier symbols."
 		   :display *display*
 		   :root (xlib:drawable-root win)
 		   :window win
-		   :code (xlib:keysym->keycodes *display* (char->keysym (code-char (key-char key))))
+		   :code (xlib:keysym->keycodes *display* (key-keysym key))
 		   :state (x11-mods key)))
 
 

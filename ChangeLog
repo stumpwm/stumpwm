@@ -1,3 +1,21 @@
+2006-05-06  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* input.lisp (*input-map*): use DEL to refer to the backspace
+	key. New binding, Delete. use RET to refer to the return key.
+	(input-self-insert): report an error if the keysym is not associated with a character
+
+	* user.lisp (*root-map*): use SPC to refer to the space key
+
+	* stumpwm.asd (:stumpwm): add keysyms and keytrans files and dependancies
+
+	* primitives.lisp (char->keysym): call keysym-name->keysym
+	(is-modifier): use keysym names
+
+	* kmap.lisp (key): replace char slot with keysym. all callers updated.
+	(parse-char-name): remove function
+	(parse-key): call stumpwm-name->keysym 
+	(print-key): call keysym->keysym-name
+
 2006-05-02  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp (pull-window-by-number): set the pulled window's

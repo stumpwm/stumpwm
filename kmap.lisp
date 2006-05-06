@@ -26,7 +26,7 @@
 (in-package stumpwm)
 
 (defstruct key
-  char shift control meta alt hyper super)
+  keysym shift control meta alt hyper super)
 
 (defun make-sparse-keymap ()
   (make-hash-table :test 'equalp))
@@ -80,24 +80,16 @@ for passing as the last argument to (apply #'make-key ...)"
 				 (#\S (list :shift t))
 				 (t (signal 'kbd-parse))))))
 
-(defun parse-char-name (string)
-  "Return the char-code of the char whose name is STRING."
-  (let ((ch (name-char string)))
-    (if ch
-	(char-code ch)
-	(and (= (length string) 1)
-	     (char-code (char string 0))))))
-
 (defun parse-key (string)
   "Parse STRING and return a key structure."
   ;; FIXME: we want to return NIL when we get a kbd-parse error
   ;;(ignore-errors
-    (let* ((p (when (> (length string) 2)
-		(position #\- string :from-end t :end (- (length string) 1))))
-	   (mods (parse-mods string (if p (1+ p) 0)))
-	   (ch (parse-char-name (subseq string (if p (1+ p) 0)))))
-      (and ch
-	   (apply 'make-key :char ch mods))))
+  (let* ((p (when (> (length string) 2)
+	      (position #\- string :from-end t :end (- (length string) 1))))
+	 (mods (parse-mods string (if p (1+ p) 0)))
+	 (keysym (stumpwm-name->keysym (subseq string (if p (1+ p) 0)))))
+    (and keysym
+	 (apply 'make-key :keysym keysym mods))))
   
 (defun parse-key-seq (keys)
   "KEYS is a key sequence. Parse it and return the list of keys."
@@ -120,8 +112,9 @@ saving keyboard macros ***(see `insert-kbd-macro')."
 	       (when (key-hyper key) "H-")))
 
 (defun print-key (key)
-  (let ((ch (code-char (key-char key))))
-    (format nil "~a~a" (print-mods key) (or (char-name ch) ch))))
+  (format nil "~a~a"
+	  (print-mods key)
+	  (keysym->keysym-name (key-keysym key))))
 
 (defun define-key (map key command)
   (setf (gethash key map) command))

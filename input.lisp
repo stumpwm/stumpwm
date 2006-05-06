@@ -29,8 +29,9 @@
 
 (defvar *input-map* 
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd (string #\Backspace)) 'input-delete-backward-char)
+    (define-key map (kbd "DEL") 'input-delete-backward-char)
     (define-key map (kbd "C-d") 'input-delete-forward-char)
+    (define-key map (kbd "Delete") 'input-delete-forward-char)
     (define-key map (kbd "C-f") 'input-forward-char)
     (define-key map (kbd "C-b") 'input-backward-char)
     (define-key map (kbd "C-a") 'input-move-beginning-of-line)
@@ -39,7 +40,7 @@
     (define-key map (kbd "C-u") 'input-kill-to-beginning)
     (define-key map (kbd "C-p") 'input-history-back)
     (define-key map (kbd "C-n") 'input-history-forward)
-    (define-key map (kbd (string #\Return)) 'input-submit)
+    (define-key map (kbd "RET") 'input-submit)
     (define-key map (kbd "C-g") 'input-abort)
     (define-key map t 'input-self-insert)
     map))
@@ -167,18 +168,18 @@
       (invert-rect screen win 0 0 (xlib:drawable-width win) (xlib:drawable-height win)))))
 
 (defun code-state->key (code state)
-  (let* ((mods (xlib:make-state-keys state))
-	 (sym (xlib:keycode->keysym *display* code 0))
-	 (upcase-sym (xlib:keycode->keysym *display* code 1))
-	 ;; make sure there is such a keysym
-	 (char (or (and sym upcase-sym
-			(xlib:keysym->character *display* (if (find :shift mods) upcase-sym sym)))
-		   ;; some keysyms aren't mapped to characters (why not?)
-		   ;; so use this in that case.
-		   #\Null)))
-    (when char
-      (make-key :char (char-code char) :control (and (find :control mods) t) :shift (and (find :shift mods)
-											 (eql sym upcase-sym))))))
+  (let* ((mods    (xlib:make-state-keys state))
+	 (sym     (xlib:keycode->keysym *display* code 0))
+	 (upsym   (xlib:keycode->keysym *display* code 1))
+	 (shift-p (and (find :shift mods) t)))
+    ;; If a keysym has a shift modifier, then use the uppercase keysym
+    ;; and remove remove the shift modifier.
+    (make-key :keysym (if (and shift-p (not (eql sym upsym)))
+			  upsym
+			  sym)
+	      :control (and (find :control mods) t)
+	      :shift (and shift-p (eql sym upsym)))))
+
 
 (defun input-delete-backward-char (input key)
   (declare (ignore key))
@@ -270,14 +271,16 @@
   (throw 'abort nil))
 
 (defun input-self-insert (input key)
-  (if (key-mods-p key)
-      :error
-    (progn
-      (vector-push-extend #\_ (input-line-string input))
-      (replace (input-line-string input) (input-line-string input)
-	       :start2 (input-line-position input) :start1 (1+ (input-line-position input)))
-      (setf (char (input-line-string input) (input-line-position input)) (code-char (key-char key)))
-      (incf (input-line-position input)))))
+  (let ((char (xlib:keysym->character *display* (key-keysym key))))
+    (if (or (key-mods-p key) (null char))
+	:error
+	(progn
+	  (vector-push-extend #\_ (input-line-string input))
+	  (replace (input-line-string input) (input-line-string input)
+		   :start2 (input-line-position input) :start1 (1+ (input-line-position input)))
+	  (setf (char (input-line-string input) (input-line-position input)) char)
+	  (incf (input-line-position input))))))
+
 
 (defun process-input (screen prompt input code state)
   "Process the key (code and state), given the current input
