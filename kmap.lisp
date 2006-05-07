@@ -114,7 +114,7 @@ saving keyboard macros ***(see `insert-kbd-macro')."
 (defun print-key (key)
   (format nil "~a~a"
 	  (print-mods key)
-	  (keysym->keysym-name (key-keysym key))))
+	  (keysym->stumpwm-name (key-keysym key))))
 
 (defun define-key (map key command)
   (setf (gethash key map) command))

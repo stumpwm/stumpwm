@@ -1,3 +1,10 @@
+2006-05-07  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* kmap.lisp (print-key): call keysym->stumpwm-name
+
+	* keytrans.lisp (keysym-name->stumpwm-name): new function
+	(keysym->stumpwm-name): likewise
+
 2006-05-06  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* input.lisp (*input-map*): use DEL to refer to the backspace

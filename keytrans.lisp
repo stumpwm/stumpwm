@@ -41,12 +41,26 @@ names."
     (declare (ignore present-p))
     value))
 
+(defun keysym-name->stumpwm-name (keysym-name)
+  (maphash (lambda (k v)
+	     (when (equal v keysym-name)
+	       (return-from keysym-name->stumpwm-name k)))
+	   *stumpwm-name->keysym-name-translations*))
+
 (defun stumpwm-name->keysym (stumpwm-name)
   "Return the keysym corresponding to STUMPWM-NAME.
 If no mapping for STUMPWM-NAME exists, then fallback by calling
-NAME-KEYSYM."
+KEYSYM-NAME->KEYSYM."
   (let ((keysym-name (stumpwm-name->keysym-name stumpwm-name)))
     (keysym-name->keysym (or keysym-name stumpwm-name))))
+
+(defun keysym->stumpwm-name (keysym)
+  "Return the stumpwm key name corresponding to KEYSYM.
+If no mapping for the stumpwm key name exists, then fall back by
+calling KEYSYM->KEYSYM-NAME."
+  (let ((keysym-name (keysym->keysym-name keysym)))
+    (or (keysym-name->stumpwm-name keysym-name)
+	keysym-name)))
 
 (define-keysym-name "RET" "Return")
 (define-keysym-name "ESC" "Escape")
