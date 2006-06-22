@@ -124,6 +124,7 @@ loaded."
            (return-from stumpwm (princ "Another window manager is running."))))
 	;; Initialize the necessary atoms
 	(init-atoms)
+        (update-modifier-map)
 	(mapc 'process-existing-windows *screen-list*)
 	;; Give the first screen's frame focus
 	(focus-frame (first *screen-list*) (screen-current-frame (first *screen-list*)))

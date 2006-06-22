@@ -1291,6 +1291,10 @@ chunks."
 		  (xlib:window-equal window root))
 	 (handle-rp-commands root))))))
 
+(define-stump-event-handler :mapping-notify (start count)
+  (declare (ignore start count))
+  (update-modifier-map))
+
 (defun handle-event (&rest event-slots &key display event-key &allow-other-keys)
   (declare (ignore display))
   (dformat "Handling event ~S~%" event-key)

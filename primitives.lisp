@@ -165,11 +165,16 @@ to login remotely to regain control.")
   (hyper nil)
   (super nil))
   
+(defvar *all-modifiers* nil
+  "A list of all keycodes that are considered modifiers")
+
+(defvar *modifiers* nil
+  "A mapping from modifier type to x11 modifier.")
+
 (defstruct screen
   number
   ;; From this frame tree a list of frames can be gathered
   frame-tree
-  modifiers
   border-color
   fg-color
   bg-color
@@ -228,7 +233,7 @@ to login remotely to regain control.")
 
 (defun is-modifier (keysym)
   "Return t if keycode is a modifier"
-  ;; FIXME: should these be in a customizable variable?
+  ;; FIXME: This should depend on all the codes returned by ALL-MODIFIER-CODES
   (let ((mods '("Mode_switch"
 		"Shift_L" "Shift_R"
 		"Control_L" "Control_R"

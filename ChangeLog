@@ -1,3 +1,20 @@
+2006-06-22  sabetts  <sabetts@446IG5.PSY.cmu.edu>
+
+	* stumpwm.lisp (stumpwm): call update-modifier-map
+
+	* primitives.lisp (*all-modifiers*): new global
+	(*modifiers*): likewise
+	(screen): remove modifiers slot
+
+	* kmap.lisp (x11-mods): handle meta alt syper and super modifiers
+
+	* input.lisp (code-state->key): handle meta alt syper and super modifiers
+	(all-modifier-codes): new function
+	(get-modifier-map): new function
+	(update-modifier-map): call all-modifier-codes and get-modifier-map
+
+	* core.lisp (:mapping-notify): new event handler
+
 2006-05-07  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* kmap.lisp (print-key): call keysym->stumpwm-name

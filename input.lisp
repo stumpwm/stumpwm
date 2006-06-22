@@ -178,8 +178,11 @@
 			  upsym
 			  sym)
 	      :control (and (find :control mods) t)
-	      :shift (and shift-p (eql sym upsym)))))
-
+	      :shift (and shift-p (eql sym upsym))
+              :meta (and (intersection mods (modifiers-meta *modifiers*)) t)
+              :alt (and (intersection mods (modifiers-alt *modifiers*)) t)
+              :hyper (and (intersection mods (modifiers-hyper *modifiers*)) t)
+              :super (and (intersection mods (modifiers-super *modifiers*)) t))))
 
 (defun input-delete-backward-char (input key)
   (declare (ignore key))
@@ -308,30 +311,52 @@ input (pressing Return), nil otherwise."
        (draw-input-bucket screen prompt input)
        nil))))
 
-;;;;; UNUSED
+(defun all-modifier-codes ()
+  (multiple-value-bind
+        (shift-codes lock-codes control-codes mod1-codes mod2-codes mod3-codes mod4-codes mod5-codes)
+      (xlib:modifier-mapping *display*)
+    (append shift-codes
+            lock-codes
+            control-codes
+            mod1-codes
+            mod2-codes
+            mod3-codes
+            mod4-codes
+            mod5-codes)))
 
-(defun update-modifier-map (screen)
-  (let ((mods (xlib:modifier-mapping *display*)))
-    (setf (modifiers-alt (screen-modifiers screen)) nil)
-    (setf (modifiers-meta (screen-modifiers screen)) nil)
-    (setf (modifiers-hyper (screen-modifiers screen)) nil)
-    (setf (modifiers-super (screen-modifiers screen)) nil)
-    (loop for mod in '(:mod1 :mod2 :mod3 :mod4 :mod5)
-	  for code in (cdddr mods)
-	  do (let ((key (xlib:keycode->keysym *display* code 0)))
-	       (cond ((or (eql key :left-meta) (eql key :right-meta))
-		      (setf (modifiers-meta (screen-modifiers screen)) mod))
-		     ((or (eql key :left-alt) (eql key :right-alt))
-		      (setf (modifiers-alt (screen-modifiers screen)) mod))
-		     ((or (eql key :left-super) (eql key :right-super))
-		      (setf (modifiers-alt (screen-modifiers screen)) mod))
-		     ((or (eql key :left-hyper) (eql key :right-hyper))
-		      (setf (modifiers-alt (screen-modifiers screen)) mod)))))
-    ;; If alt is defined but meta isn't set meta to alt and clear alt
-    (when (and (modifiers-alt (screen-modifiers screen))
-	       (null (modifiers-meta (screen-modifiers screen))))
-      (setf (modifiers-meta (screen-modifiers screen)) (modifiers-alt (screen-modifiers screen)))
-      (setf (modifiers-alt (screen-modifiers screen)) nil))))
+(defun get-modifier-map ()
+  (labels ((find-mod (mod codes)
+             (find (xlib:keysym->keycodes *display* (keysym-name->keysym mod)) codes)))
+    (let ((modifiers (make-modifiers)))
+      (multiple-value-bind 
+            (shift-codes lock-codes control-codes mod1-codes mod2-codes mod3-codes mod4-codes mod5-codes)
+          (xlib:modifier-mapping *display*)
+        (declare (ignore shift-codes lock-codes control-codes))
+        (loop for mod in '(:mod-1 :mod-2 :mod-3 :mod-4 :mod-5)
+           for codes in (list mod1-codes mod2-codes mod3-codes mod4-codes mod5-codes)
+           do 
+           (cond ((or (find-mod "Meta_L" codes)
+                      (find-mod "Meta_R" codes))
+                  (push mod (modifiers-meta modifiers)))
+                 ((or (find-mod "Alt_L" codes)
+                      (find-mod "Alt_R" codes))
+                  (push mod (modifiers-alt modifiers)))
+                 ((or (find-mod "Super_L" codes)
+                      (find-mod "Super_R" codes))
+                  (push mod (modifiers-super modifiers)))
+                 ((or (find-mod "Hyper_L" codes)
+                      (find-mod "Hyper_R" codes))
+                  (push mod (modifiers-hyper modifiers)))))
+        ;; If alt is defined but meta isn't set meta to alt and clear alt
+        (when (and (modifiers-alt modifiers)
+                   (null (modifiers-meta modifiers)))
+          (setf (modifiers-meta modifiers) (modifiers-alt modifiers)
+                (modifiers-alt modifiers) nil))
+        modifiers))))
+
+(defun update-modifier-map ()
+  (setf *modifiers* (get-modifier-map)
+        *all-modifiers* (all-modifier-codes)))
 	
 ;; (defun x11mod->stumpmod (screen state)
 ;;   (let ((mod nil))
