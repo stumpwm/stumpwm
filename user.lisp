@@ -73,6 +73,10 @@
     (define-key m (kbd "C-h") "help")
     (define-key m (kbd "-") "fclear")
     (define-key m (kbd "Q") "only")
+    (define-key m (kbd "Up") "move-focus up")
+    (define-key m (kbd "Down") "move-focus down")
+    (define-key m (kbd "Left") "move-focus left")
+    (define-key m (kbd "Right") "move-focus right")
     m)
   "The default bindings that hang off the prefix key.")
 
@@ -522,5 +526,61 @@ aborted."
 
 (define-stumpwm-command "fclear" (screen)
   (clear-frame (screen-current-frame screen) screen))
+
+(defun find-closest-frame (ref-frame framelist closeness-func lower-bound-func
+			   upper-bound-func)
+  (loop for f in framelist
+     with r = nil
+     do (when (and
+	       ;; Frame is on the side that we want.
+	       (<= 0 (funcall closeness-func f))
+	       ;; Frame is within the bounds set by the reference frame.
+	       (or (<= (funcall lower-bound-func ref-frame)
+		       (funcall lower-bound-func f)
+		       (funcall upper-bound-func ref-frame))
+		   (<= (funcall lower-bound-func ref-frame)
+		       (funcall upper-bound-func f)
+		       (funcall upper-bound-func ref-frame))
+		   (<= (funcall lower-bound-func f)
+		       (funcall lower-bound-func ref-frame)
+		       (funcall upper-bound-func f)))
+	       ;; Frame is closer to the reference and the origin than the
+	       ;; previous match
+	       (or (null r)
+		   (< (funcall closeness-func f) (funcall closeness-func r))
+		   (and (= (funcall closeness-func f) (funcall closeness-func r))
+			(< (funcall lower-bound-func f) (funcall lower-bound-func r)))))
+	  (setf r f))
+     finally (return r)))
+
+(define-stumpwm-command "move-focus" (screen (dir :string "Direction: "))
+  (destructuring-bind (perp-coord perp-span parall-coord parall-span)
+      (cond
+	((or (string= dir "left") (string= dir "right"))
+	 (list #'frame-y #'frame-height #'frame-x #'frame-width))
+	((or (string= dir "up") (string= dir "down"))
+	 (list #'frame-x #'frame-width #'frame-y #'frame-height))
+	(t
+	 (echo-string "Valid directions: up, down, left, right")
+	 '(nil nil nil nil)))
+    (when perp-coord
+      (let ((new-frame (find-closest-frame
+			(screen-current-frame screen)
+			(screen-frames screen)
+			(if (or (string= dir "left") (string= dir "up"))
+			    (lambda (f)
+			      (- (funcall parall-coord (screen-current-frame screen))
+				 (funcall parall-coord f) (funcall parall-span f)))
+			    (lambda (f)
+			      (- (funcall parall-coord f)
+				 (funcall parall-coord (screen-current-frame screen))
+				 (funcall parall-span (screen-current-frame screen)))))
+			perp-coord
+			(lambda (f)
+			  (+ (funcall perp-coord f) (funcall perp-span
+							     f))))))
+	(when new-frame
+	  (focus-frame screen new-frame))
+	(show-frame-indicator screen)))))
 
 ;;(define-stumpwm-command "escape"

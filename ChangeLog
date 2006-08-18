@@ -1,4 +1,10 @@
-2006-06-22  sabetts  <sabetts@446IG5.PSY.cmu.edu>
+2006-08-17  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* user.lisp (*root-map*): bind up, down, left, right to move focus in the corresponding direction.
+	(find-closest-frame): new function
+	("move-focus"): new command
+
+2006-06-22  sabetts  <sabetts@vcn.bc.ca>
 
 	* stumpwm.lisp (stumpwm): call update-modifier-map
 
