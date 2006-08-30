@@ -281,11 +281,14 @@
 				   (xlib:screen-height (screen-number screen))))
 	(win (frame-window (screen-current-frame screen))))
     (mapc (lambda (w)
+	    ;; windows in other frames disappear
+	    (unless (eq (window-frame screen w) (screen-current-frame screen))
+	      (hide-window w))
 	    (setf (window-frame screen w) frame))
 	  (screen-mapped-windows screen))
     (setf (frame-window frame) win
-	  (screen-frame-tree screen) frame
-	  (screen-current-frame screen) frame)
+	  (screen-frame-tree screen) frame)
+    (focus-frame screen frame)
     (sync-frame-windows screen (screen-current-frame screen))))
 
 (define-stumpwm-command "curframe" (screen)
@@ -316,11 +319,10 @@ select one. Returns the selected frame or nil if aborted."
     (dformat "read ~S ~S~%" ch num)
     (mapc #'xlib:destroy-window wins)
     (clear-frame-outlines screen)
-    (when (and (char>= ch #\0)
-	       (char<= ch #\9))
-      (find-if (lambda (x)
-		 (= num (frame-number x)))
-	       (screen-frames screen)))))
+    (find ch (screen-frames screen)
+	  :test 'char=
+	  :key 'get-frame-number-translation)))
+
 
 (define-stumpwm-command "fselect" (screen (f :frame))
   (focus-frame screen f)
@@ -405,13 +407,13 @@ aborted."
 				 (:frame
 				  (let ((arg (pop str)))
 				    (if arg
-					(let ((num (parse-integer arg)))
-					  (or (find-if (lambda (x)
-							 (= num (frame-number x)))
-						       (screen-frames screen))
-					      (throw 'error "Frame not found.")))
-				      (or (choose-frame-by-number screen)
-					  (throw 'error "Abort.")))))
+					(or (find arg (screen-frames screen)
+						  :key (lambda (f)
+							 (string (get-frame-number-translation f)))
+						  :test 'string=)
+					    (throw 'error "Frame not found."))
+					(or (choose-frame-by-number screen)
+					    (throw 'error "Abort.")))))
 				  (:rest
 				      (if (null str)
 					  (when prompt

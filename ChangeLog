@@ -1,3 +1,17 @@
+2006-08-30  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* user.lisp ("only"): hide windows not in the focused frame.
+	(choose-frame-by-number): use get-frame-number-translation to
+	search for a matching frame
+	(parse-and-run-command): likewise
+
+	* primitives.lisp (*focus-frame-hook*): new hook
+	(*frame-number-map*): new global variable
+	(get-frame-number-translation): new function
+
+	* core.lisp (focus-frame): call *focus-frame-hook* hooks
+	(draw-frame-numbers): use get-frame-number-translation for the frame's "id"
+
 2006-08-17  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp (*root-map*): bind up, down, left, right to move focus in the corresponding direction.

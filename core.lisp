@@ -576,12 +576,14 @@ T (default) then also focus the frame."
 	(raise-window w)))))
   
 (defun focus-frame (screen f)
-  (let ((w (frame-window f)))
+  (let ((w (frame-window f))
+	(last (screen-current-frame screen)))
     (setf (screen-current-frame screen) f)
     (dformat "~S~%" f)
     (if w
 	(focus-window w)
-      (no-focus screen))))
+      (no-focus screen))
+    (run-hook-with-args *focus-frame-hook* f last)))
 
 (defun frame-windows (screen f)
   (remove-if-not (lambda (w) (eq (window-frame screen w) f))
@@ -898,7 +900,7 @@ windows used to draw the numbers in. The caller must destroy them."
 		   (echo-in-window w (screen-font screen)
 				   (get-fg-color-pixel screen)
 				   (get-bg-color-pixel screen)
-				   (format nil "~A" (frame-number f)))
+				   (string (get-frame-number-translation f)))
 		   (xlib:display-force-output *display*)
 		   (dformat "mapped ~S~%" (frame-number f))
 		   w))

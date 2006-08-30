@@ -77,6 +77,11 @@ occur in that many seconds.")
 (defvar *internal-loop-hook* '()
   "A hook called inside stumpwm's inner loop.")
 
+(defvar *focus-frame-hook* '()
+  "A hook called when a frame is given focus. The hook functions
+  are called with 2 arguments: the current frame and the last
+  frame.")
+
 ;; Data types and globals used by stumpwm
 
 (defvar *display* nil
@@ -158,6 +163,24 @@ to login remotely to regain control.")
   width
   height
   window)
+
+(defvar *frame-number-map* nil
+  "Set this to a string to remap the regular frame numbers to more convenient keys.
+For instance,
+
+\"hutenosa\"
+
+would map frame 0 to 7 to be selectable by hitting the
+appropriate homerow key on a dvorak keyboard. Currently only
+single char keys are supported.")
+
+(defun get-frame-number-translation (frame)
+  "Given a frame return its number translation using *frame-number-map* as a char."
+  (let ((num (frame-number frame)))
+    (or (and (< num (length *frame-number-map*))
+	     (char *frame-number-map* num))
+	;; translate the frame number to a char. FIXME: it loops after 9
+	(char (prin1-to-string num) 0))))
 
 (defstruct modifiers
   (meta nil)
