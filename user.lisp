@@ -64,6 +64,7 @@
     (define-key m (kbd "s") "hsplit")
     (define-key m (kbd "S") "vsplit")
     (define-key m (kbd "o") "sibling")
+    (define-key m (kbd "TAB") "sibling")
     (define-key m (kbd "f") "fselect")
     (define-key m (kbd "F") "curframe")
     (define-key m (kbd "t") "meta C-t")
@@ -563,7 +564,7 @@ aborted."
 	((or (string= dir "up") (string= dir "down"))
 	 (list #'frame-x #'frame-width #'frame-y #'frame-height))
 	(t
-	 (echo-string "Valid directions: up, down, left, right")
+	 (echo-string screen "Valid directions: up, down, left, right")
 	 '(nil nil nil nil)))
     (when perp-coord
       (let ((new-frame (find-closest-frame
@@ -584,5 +585,51 @@ aborted."
 	(when new-frame
 	  (focus-frame screen new-frame))
 	(show-frame-indicator screen)))))
+
+(defun run-or-raise (screen cmd &key class instance title)
+  "If any of class, title, or instance are set and a matching window can
+be found, select it.  Otherwise simply run cmd."
+  (labels ((win-app-info (win)
+	     (list (window-class win)
+		   (window-res-name win)
+		   (window-name win)))
+	   ;; Raise the window win and select its frame.  For now, it
+	   ;; does not select the screen.
+	   (goto-win (win)
+	     (let* ((screen (window-screen win))
+		    (frame (window-frame screen win)))
+	       ;; Select screen?
+	       (frame-raise-window screen frame win)
+	       (focus-frame screen frame)))
+	   ;; Compare two lists of strings representing window
+	   ;; attributes.  If an element is nil it matches anything.
+	   ;; Doesn't handle lists of different lengths: extra
+	   ;; elements in one list will be ignored.
+	   (app-info-cmp (match1 match2)
+	     (or (not match1)
+		 (not match2)
+		 (let ((a (car match1))
+		       (b (car match2)))
+		   (and
+		    (or (not a)
+			(not b)
+			(string= a b))
+		    (app-info-cmp (cdr match1) (cdr match2)))))))
+    (let ((win
+	   ;; If no qualifiers are set don't bother looking for a match.
+	   (and (or class instance title)
+		(find (list class instance title)
+		      (screen-mapped-windows screen)
+		      :key #'win-app-info
+		      :test #'app-info-cmp))))
+      (if win
+	  (goto-win win)
+	  (run-shell-command cmd)))))
+
+(define-stumpwm-command "shell" (screen)
+  (run-or-raise screen "myterm -title '*shell*'" :title "*shell*"))
+
+(define-stumpwm-command "web" (screen)
+  (run-or-raise screen "firefox" :class "mozilla-firefox"))
 
 ;;(define-stumpwm-command "escape"

@@ -723,12 +723,12 @@ T (default) then also focus the frame."
 
 (defun expand-frame (f amount dir)
   (ecase dir
-    ('left (decf (frame-x f) amount)
-	   (incf (frame-width f) amount))
-    ('right (incf (frame-width f) amount))    
-    ('top (decf (frame-y f) amount)
-	  (incf (frame-height f) amount))
-    ('bottom (incf (frame-height f) amount))))
+    (left (decf (frame-x f) amount)
+	  (incf (frame-width f) amount))
+    (right (incf (frame-width f) amount))    
+    (top (decf (frame-y f) amount)
+	 (incf (frame-height f) amount))
+    (bottom (incf (frame-height f) amount))))
 
 (defun expand-tree (tree amount dir)
   "expand the frames in tree by AMOUNT in DIR direction. DIR can be 'top 'bottom 'left 'right"
@@ -752,10 +752,10 @@ T (default) then also focus the frame."
 		 ;; half.
 		 (expand-tree a amount dir)
 		 (expand-tree a (- n) (ecase dir
-					       ('left 'right)
-					       ('right 'left)
-					       ('top 'bottom)
-					       ('bottom 'top)))
+					       (left 'right)
+					       (right 'left)
+					       (top 'bottom)
+					       (bottom 'top)))
 		 ;; the other side simple needs to be expanded half
 		 ;; the amount.
 		 (expand-tree b n dir)))))))
@@ -825,11 +825,11 @@ one."
     ;; if FRAME is taking up the whole DIM or if AMOUNT = 0, do nothing
     (unless (or (zerop amount)
                 (case dim
-                  ('width  (eq (screen-width screen)  (frame-width frame)))
-                  ('height (eq (screen-height screen) (frame-height frame)))))
+                  (width  (eq (screen-width screen)  (frame-width frame)))
+                  (height (eq (screen-height screen) (frame-height frame)))))
       (let* ((split-pred (ecase dim
-                           ('width   #'tree-column-split)
-                           ('height  #'tree-row-split)))
+                           (width   #'tree-column-split)
+                           (height  #'tree-row-split)))
              (a-branch (spree-root-branch tree
                                           (lambda (b)
                                             (funcall split-pred b))
@@ -837,18 +837,18 @@ one."
         (multiple-value-bind (a b)
             (if (depth-first-search (first a-branch) frame)
                 (values (first a-branch) (second a-branch))
-	      (values (second a-branch) (first a-branch)))
+		(values (second a-branch) (first a-branch)))
           (let ((dir (ecase dim
-                       ('width (if (< (tree-x a) (tree-x b))
-                                   'right 'left))
-                       ('height (if (< (tree-y a) (tree-y b))
-                                    'bottom 'top)))))
+                       (width (if (< (tree-x a) (tree-x b))
+				  'right 'left))
+                       (height (if (< (tree-y a) (tree-y b))
+				   'bottom 'top)))))
             (expand-tree a amount dir)
             (expand-tree b (- amount) (ecase dir
-                                               ('left 'right)
-                                               ('right 'left)
-                                               ('top 'bottom)
-                                               ('bottom 'top)))
+					(left 'right)
+					(right 'left)
+					(top 'bottom)
+					(bottom 'top)))
             (tree-iterate a-branch
                           (lambda (leaf)
                             (sync-frame-windows screen leaf)))))))))

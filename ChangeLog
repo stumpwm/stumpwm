@@ -1,3 +1,13 @@
+2006-09-26  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* core.lisp (expand-frame): dont quote symbols in ecase
+	(expand-tree): likewise
+	(resize-frame): likewise
+
+	* user.lisp (run-or-raise): new function
+	("shell"): new command
+	("web"): new command
+
 2006-08-30  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp ("only"): hide windows not in the focused frame.
