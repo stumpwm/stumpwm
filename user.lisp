@@ -627,7 +627,7 @@ be found, select it.  Otherwise simply run cmd."
 	  (run-shell-command cmd)))))
 
 (define-stumpwm-command "shell" (screen)
-  (run-or-raise screen "myterm -title '*shell*'" :title "*shell*"))
+  (run-or-raise screen "xterm -title '*shell*'" :title "*shell*"))
 
 (define-stumpwm-command "web" (screen)
   (run-or-raise screen "firefox" :class "mozilla-firefox"))

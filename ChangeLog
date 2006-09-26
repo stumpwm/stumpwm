@@ -1,5 +1,7 @@
 2006-09-26  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* user.lisp ("shell"): use xterm
+
 	* core.lisp (expand-frame): dont quote symbols in ecase
 	(expand-tree): likewise
 	(resize-frame): likewise
