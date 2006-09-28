@@ -1,3 +1,9 @@
+2006-09-27  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* sample-stumpwmrc.lisp: add example of changing prefix key.
+
+	* user.lisp (set-prefix-key): verify the KEY's type.
+
 2006-09-26  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp ("shell"): use xterm

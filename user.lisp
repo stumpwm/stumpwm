@@ -338,8 +338,8 @@ select one. Returns the selected frame or nil if aborted."
 (defun eval-line (screen cmd)
   (echo-string screen
 	       (handler-case (prin1-to-string (eval (read-from-string cmd)))
-			     (error (c)
-				    (format nil "~A" c)))))
+		 (error (c)
+		   (format nil "~A" c)))))
 
 (define-stumpwm-command "eval" (screen (cmd :rest "Eval: "))
   (eval-line screen cmd))
@@ -505,6 +505,7 @@ aborted."
 
 (defun set-prefix-key (key)
   "Change the stumpwm prefix key to KEY."
+  (check-type key key)
   (let (prefix)
     (dolist (i (lookup-command *top-map* '*root-map*))
       (setf prefix i)

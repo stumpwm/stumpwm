@@ -4,6 +4,9 @@
 
 (in-package :stumpwm)
 
+;; change the prefix key to something else
+(set-prefix-key (kbd "C-z"))
+
 ;; prompt the user for an interactive command. The first arg is an
 ;; optional initial contents.
 (define-stumpwm-command "colon1" (screen (initial :rest nil))
