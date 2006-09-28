@@ -25,5 +25,6 @@
 	       (:file "input" :depends-on ("primitives" "kmap"))
 	       (:file "core" :depends-on ("primitives" "input"))
 	       (:file "user" :depends-on ("primitives" "core" "input"))
-	       (:file "stumpwm" :depends-on  ("primitives" "core"))))
+	       (:file "stumpwm" :depends-on  ("primitives" "core"))
+	       (:file "version" :depends-on ("user"))))
 

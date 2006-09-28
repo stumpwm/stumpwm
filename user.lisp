@@ -78,6 +78,7 @@
     (define-key m (kbd "Down") "move-focus down")
     (define-key m (kbd "Left") "move-focus left")
     (define-key m (kbd "Right") "move-focus right")
+    (define-key m (kbd "v") "version")
     m)
   "The default bindings that hang off the prefix key.")
 
