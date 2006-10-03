@@ -306,14 +306,14 @@ Useful for re-using the &REST arg after removing some options."
   (if wait
       (apply #'lisp:run-program prog :arguments args opts)
       (lisp:shell (format nil "~a~{ '~a'~} &" prog args)))
-  #+cmu (apply #'ext:run-program prog args :input t :output t :wait wait opts)
+  #+cmu (apply #'ext:run-program prog args :input t :output t :error t :wait wait opts)
   #+gcl (apply #'si:run-process prog args)
   #+liquid (apply #'lcl:run-program prog args)
   #+lispworks (apply #'sys::call-system
                      (format nil "~a~{ '~a'~}~@[ &~]" prog args (not wait))
                      opts)
   #+lucid (apply #'lcl:run-program prog :wait wait :arguments args opts)
-  #+sbcl (apply #'sb-ext:run-program prog args :input t :output t :wait wait opts)
+  #+sbcl (apply #'sb-ext:run-program prog args :input t :output t :error t :wait wait opts)
   #-(or allegro clisp cmu gcl liquid lispworks lucid sbcl)
   (error 'not-implemented :proc (list 'run-prog prog opts)))
 

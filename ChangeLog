@@ -3,6 +3,7 @@
 	* primitives.lisp (run-prog): for sbcl and cmucl let the
 	subprocess inherit the stdout and stdin streams of the current
 	process.
+	(run-prog): for sbcl and cmucl also inherit stderr
 
 2006-09-28  Shawn Betts  <sabetts@vcn.bc.ca>
 
