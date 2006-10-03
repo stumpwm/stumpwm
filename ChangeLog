@@ -1,3 +1,19 @@
+2006-10-03  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* primitives.lisp (run-prog): for sbcl and cmucl let the
+	subprocess inherit the stdout and stdin streams of the current
+	process.
+
+2006-09-28  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* version.lisp (*version*): new defvar
+	(echo-version): new function
+	("version"): new command
+
+	* user.lisp (*root-map*): bind v to version
+
+	* stumpwm.asd (:stumpwm): add version.lisp
+
 2006-09-27  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* sample-stumpwmrc.lisp: add example of changing prefix key.
