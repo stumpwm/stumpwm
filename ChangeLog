@@ -1,3 +1,7 @@
+2006-10-05  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* user.lisp (*root-map*): swap hsplit and vsplit bindings.
+
 2006-10-03  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* primitives.lisp (run-prog): for sbcl and cmucl let the
