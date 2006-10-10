@@ -1,3 +1,8 @@
+2006-10-09  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* input.lisp (*input-map*): add arrow key bindings
+	populate *input-map* with bindings when it's nil.
+
 2006-10-05  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* core.lisp (*top-map*): init to nil

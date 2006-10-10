@@ -27,23 +27,31 @@
 (defstruct input-line
   string position history history-bk)
 
-(defvar *input-map* 
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "DEL") 'input-delete-backward-char)
-    (define-key map (kbd "C-d") 'input-delete-forward-char)
-    (define-key map (kbd "Delete") 'input-delete-forward-char)
-    (define-key map (kbd "C-f") 'input-forward-char)
-    (define-key map (kbd "C-b") 'input-backward-char)
-    (define-key map (kbd "C-a") 'input-move-beginning-of-line)
-    (define-key map (kbd "C-e") 'input-move-end-of-line)
-    (define-key map (kbd "C-k") 'input-kill-line)
-    (define-key map (kbd "C-u") 'input-kill-to-beginning)
-    (define-key map (kbd "C-p") 'input-history-back)
-    (define-key map (kbd "C-n") 'input-history-forward)
-    (define-key map (kbd "RET") 'input-submit)
-    (define-key map (kbd "C-g") 'input-abort)
-    (define-key map t 'input-self-insert)
-    map))
+(defvar *input-map* nil
+  "Input window bindings")
+
+(when (null *input-map*)
+  (setf *input-map*
+	(let ((map (make-sparse-keymap)))
+	  (define-key map (kbd "DEL") 'input-delete-backward-char)
+	  (define-key map (kbd "C-d") 'input-delete-forward-char)
+	  (define-key map (kbd "Delete") 'input-delete-forward-char)
+	  (define-key map (kbd "C-f") 'input-forward-char)
+	  (define-key map (kbd "Right") 'input-forward-char)
+	  (define-key map (kbd "C-b") 'input-backward-char)
+	  (define-key map (kbd "Left") 'input-backward-char)
+	  (define-key map (kbd "C-a") 'input-move-beginning-of-line)
+	  (define-key map (kbd "C-e") 'input-move-end-of-line)
+	  (define-key map (kbd "C-k") 'input-kill-line)
+	  (define-key map (kbd "C-u") 'input-kill-to-beginning)
+	  (define-key map (kbd "C-p") 'input-history-back)
+	  (define-key map (kbd "Up") 'input-history-back)
+	  (define-key map (kbd "C-n") 'input-history-forward)
+	  (define-key map (kbd "Down") 'input-history-forward)
+	  (define-key map (kbd "RET") 'input-submit)
+	  (define-key map (kbd "C-g") 'input-abort)
+	  (define-key map t 'input-self-insert)
+	  map)))
 
 (defvar *input-history* nil
   "History for the input line.")
