@@ -1,19 +1,19 @@
-#!/usr/local/bin/clisp -M /home/sabetts/opt/lib/clisp/clx.mem -m 4MB
+#!/usr/local/bin/clisp -K full
 
-;; Here's a script that runs stumpwm. You can put it in your path and
-;; run it as a regular program.
+;; Here's a script that runs stumpwm using clisp. You can put it in
+;; your path and run it as a regular program.
+;;
+;; Add a symlink to stumpwm.asd into ~/.asdf-system/ (unless it is already visible to asdf).
+;; You must tell clisp where asdf.lisp is, below.
+;;
+;; If you want stumpwm to load on a specific display use the DISPLAY
+;; environment variable.
 
-;; asdf.lisp must be loaded and stumpwm.asd must be symlinked to
-;; a directory that is listed in asdf:*central-registry*.
-;;
-;; I have the following in my ~/.clisprc file:
-;;
-;; (load "~/cl/asdf.lisp")
-;; (push (merge-pathnames  #p".asdf-system/" (user-homedir-pathname)) asdf:*central-registry*)
-;;
-;; Then I add a symlink to stumpwm.asd into ~/.asdf-system/
+;; specify where asdf.lisp is.
+(load "/path/to/asdf.lisp")
+(push (merge-pathnames  #p".asdf-system/" (user-homedir-pathname)) asdf:*central-registry*)
 
-;; okay, apparently it doesn't load your rc file in "script" mode.
-(load "~/.clisprc")
+;; Note: The first time stumpwm is loaded it will be compiled. This
+;; could be the reason for the loading delay.
 (asdf:oos 'asdf:load-op :stumpwm)
 (stumpwm:stumpwm)

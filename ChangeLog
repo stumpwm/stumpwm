@@ -1,3 +1,9 @@
+2006-10-15  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* primitives.lisp (char->keysym): remove unused function
+
+	* input.lisp (is-modifier): moved from primitives.lisp
+
 2006-10-09  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* input.lisp (*input-map*): add arrow key bindings

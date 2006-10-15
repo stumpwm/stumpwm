@@ -9,8 +9,8 @@ bars, or any of the other conventional GUI widgets.
 These design decisions reflect the growing popularity of productive,
 customizable lisp based systems.
 
-Installation
-------------
+Start Stumpwm
+-------------
 
 Boot up a common lisp implementation. I test it regularily with sbcl
 and clisp.
@@ -24,7 +24,36 @@ For most configurations you should be able to type the following:
 
 (stumpwm:stumpwm)
 
-stumpwm takes an optional argument, the DISPLAY string.
+Note that you need to tell stumpwm where your X server is running
+either by passing the display string to stumpwm or by setting the
+DISPLAY environment variable. Stumpwm defaults to ":0". The X server
+must be running before you start stumpwm.
+
+This is the step-by-step method of loading stumpwm. The next section
+describes some convenient scripts that capture the above.
+
+Wrappers
+--------
+
+For convenience, there are 2 scripts that boot stumpwm:
+
+stumpwm.clisp
+stumpwm.sbcl
+
+Read the comments in the scripts. You may need to specify some load
+paths. Make sure they have the executable permission and you can use
+them as you would a regular program. Hopefully, it's as easy as
+throwing one of them in ~/.xinitrc.
+
+For other loading methods take a look at the stumpwm wiki: 
+
+http://stumpwm.elektrubadur.se/
+
+Questions?
+----------
+
+See http://stumpwm.nongnu.org/community.html for information on
+contacting me and other stumpwm users.
 
 - Shawn
 

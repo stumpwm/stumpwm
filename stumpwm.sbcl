@@ -1,0 +1,14 @@
+#!/usr/bin/env sbcl
+
+;; Here's a script that runs stumpwm using sbcl. You can put it in
+;; your path and run it as a regular program. Make sure you have a
+;; symlink of stumpwm.asd is your ~/.sbcl/systems/ directory or
+;; another directory in asdf:*central-registry* so asdf can find
+;; stumpwm.
+;;
+;; If you want stumpwm to load on a specific display use the DISPLAY
+;; environment variable.
+
+(require 'asdf)
+(require 'stumpwm)
+(stumpwm:stumpwm)

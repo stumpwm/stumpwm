@@ -56,7 +56,20 @@
 (defvar *input-history* nil
   "History for the input line.")
 
-;;; Utility key conversion functions
+;;; keysym functions
+
+(defun is-modifier (keysym)
+  "Return t if keycode is a modifier"
+  ;; FIXME: This should depend on all the codes returned by ALL-MODIFIER-CODES
+  (let ((mods '("Mode_switch"
+		"Shift_L" "Shift_R"
+		"Control_L" "Control_R"
+		"Caps_Lock" "Shift_Lock" 
+		"Meta_L" "Meta_R"
+		"Alt_L" "Alt_R"
+		"Super_L" "Super_R"
+		"Hyper_L" "Hyper_R")))
+    (member keysym (mapcar #'keysym-name->keysym mods))))
 
 (defun keycode->character (code mods)
   (let ((idx (if (member :shift mods) 1 0)))
