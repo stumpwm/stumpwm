@@ -169,6 +169,12 @@
 	(echo-string screen "No Managed Windows")
       (echo-string-list screen names highlight))))
 
+(defun fmt-screen-window-list (screen)
+  "Using *window-format*, return a 1 line list of the windows, space seperated."
+  (format nil "~{~a~^ ~}" 
+	  (mapcar (lambda (w)
+		    (format-expand *window-formatters* *window-format* w)) (sort-windows screen))))
+
 (define-stumpwm-command "windows" (screen)
   (echo-windows screen *window-format*))
 
@@ -283,8 +289,8 @@
   (remove-split screen))
 
 (define-stumpwm-command "only" (screen)
-  (let ((frame (make-initial-frame (xlib:screen-width (screen-number screen))
-				   (xlib:screen-height (screen-number screen))))
+  (let ((frame (make-initial-frame (screen-x screen) (screen-y screen)
+				   (screen-width screen) (screen-height screen)))
 	(win (frame-window (screen-current-frame screen))))
     (mapc (lambda (w)
 	    ;; windows in other frames disappear
@@ -443,6 +449,9 @@ aborted."
   (let ((result (handler-case (parse-and-run-command cmd screen)
 			      (error (c)
 				     (format nil "~A" c)))))
+    ;; interactive commands update the modeline
+    (when (screen-mode-line screen)
+      (redraw-mode-line-for (screen-mode-line screen) screen))
     (when (stringp result)
       (echo-string screen result))))
 

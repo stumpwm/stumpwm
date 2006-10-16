@@ -39,9 +39,23 @@
 
 ;; Screen helper functions
 
+(defun screen-x (screen)
+  (declare (ignore screen))
+  0)
+
+(defun screen-y (screen)
+  (let ((ml (screen-mode-line screen)))
+    (if ml
+	(xlib:drawable-height (mode-line-window ml))
+	0)))
+
 (defun screen-height (screen)
-  (let ((root (xlib:screen-root (screen-number screen))))
-    (xlib:drawable-height root)))
+  (let ((root (xlib:screen-root (screen-number screen)))
+	(ml (screen-mode-line screen)))
+    (- (xlib:drawable-height root)
+       (or (and ml
+		(xlib:drawable-height (mode-line-window ml)))
+		0))))
 
 (defun screen-width (screen)
   (let ((root (xlib:screen-root (screen-number screen))))
@@ -597,11 +611,11 @@ T (default) then also focus the frame."
   (remove-if-not (lambda (w) (eq (window-frame screen w) f))
 		 (sort-windows screen)))
 
-(defun make-initial-frame (w h)
+(defun make-initial-frame (x y w h)
   "Used to create an initial frame hash for a screen."
   (make-frame :number 0
-	      :x 0
-	      :y 0
+	      :x x
+	      :y y
 	      :width w
 	      :height h
 	      :window nil))
@@ -802,6 +816,12 @@ one."
 	    (maximize-window w)))
 	(screen-mapped-windows screen)))
 
+(defun sync-all-frame-windows (screen)
+  (let ((tree (screen-frame-tree screen)))
+    (tree-iterate tree
+		  (lambda (f)
+		    (sync-frame-windows screen f)))))
+
 (defun depth-first-search (tree elt &key (test #'eq))
   "If ELT is in TREE return the branches from ELT up to and including TREE"
   (if (atom tree)
@@ -822,6 +842,32 @@ one."
     (when path
       (loop for branch in path while (funcall pred branch)
 	    finally (return branch)))))
+
+(defun offset-frames (screen x y)
+  "move the screen's frames around."
+  (let ((tree (screen-frame-tree screen)))
+    (tree-iterate tree (lambda (frame)
+			 (incf (frame-x frame) x)
+			 (incf (frame-y frame) y)))))
+
+(defun grow-tree (tree dx dy)
+  "grow the tree by a dx and dy pixels."
+  (cond ((null tree) nil)
+	((atom tree)
+	 (incf (frame-width tree) dx)
+	 (incf (frame-height tree) dy)
+	 )
+	(t (if (tree-row-split tree)
+	       (progn
+		 (grow-tree (first tree) (truncate dx 2) dy)
+		 (grow-tree (first tree) (- (truncate dx 2) dx) dy))
+	       (progn
+		 (grow-tree (second tree) dx (truncate dy 2))
+		 (grow-tree (second tree) dx (- (truncate dy 2) dy)))))))
+
+(defun grow-frames (screen dx dy)
+  (let ((tree (screen-frame-tree screen)))
+    (grow-tree tree dx dy)))
 
 (defun resize-frame (screen frame amount dim)
   "Resize FRAME by AMOUNT in DIM dimension, DIM can be either 'width or 'height"
@@ -912,6 +958,9 @@ windows used to draw the numbers in. The caller must destroy them."
 	    
 
 ;;; Screen functions
+
+(defun screen-root (screen)
+  (xlib:screen-root (screen-number screen)))
 
 (defun update-colors-for-screen (screen)
   (dolist (i (list (screen-message-window screen)
@@ -1053,7 +1102,8 @@ focus of a window."
 					     :colormap (xlib:screen-default-colormap
 							screen-number)
 					     :event-mask '()))
-	 (initial-frame (make-initial-frame (xlib:screen-width screen-number)
+	 (initial-frame (make-initial-frame 0 0
+					    (xlib:screen-width screen-number)
 					    (xlib:screen-height screen-number))))
     ;; Create our screen structure
     ;; The focus window is mapped at all times

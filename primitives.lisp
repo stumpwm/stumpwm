@@ -207,7 +207,9 @@ single char keys are supported.")
   input-window
   frame-window
   ;; The window that gets focus when no window has focus
-  focus-window)
+  focus-window
+  ;; a bar along the top or bottom that displays anything you want.
+  mode-line)
 
 (defvar *screen-list* '()
   "List of screens")
