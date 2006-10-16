@@ -1,5 +1,9 @@
 2006-10-15  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* input.lisp (input-forward-word): new function
+	(input-backward-word): likewise
+	*input-map*: bind input-forward-word and input-backward-word
+
 	* user.lisp (fmt-screen-window-list): new function
 	("only"): use screen-x screen-y screen-width and screen-height
 	(interactive-command): update the modeline 
