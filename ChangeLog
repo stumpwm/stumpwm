@@ -1,5 +1,23 @@
 2006-10-15  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* user.lisp (fmt-screen-window-list): new function
+	("only"): use screen-x screen-y screen-width and screen-height
+	(interactive-command): update the modeline 
+
+	* stumpwm.asd (:stumpwm): add mode-line
+
+	* primitives.lisp (screen): add mode-line
+
+	* core.lisp (screen-x): new function
+	(screen-y): likewise
+	(screen-height): adjust the screenheight for the modeline
+	(make-initial-frame): take an x and y as well. all callers updated.
+	(sync-all-frame-windows): new function
+	(offset-frames): likewise
+	(grow-tree): likewise
+	(grow-frames): likewise
+	(screen-root): likewise
+
 	* primitives.lisp (char->keysym): remove unused function
 
 	* input.lisp (is-modifier): moved from primitives.lisp
