@@ -72,7 +72,8 @@ loaded."
   ;; we don't the whole X server could be locked.
   (labels ((ungrab (condition hook)
 	     (declare (ignore condition hook))
-	     (ungrab-keyboard)))
+	     (ungrab-keyboard)
+	     (xlib:display-force-output *display*)))
     (let ((*debugger-hook* #'ungrab))
       (catch :quit
 	(loop
