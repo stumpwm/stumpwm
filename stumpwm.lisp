@@ -68,36 +68,42 @@ loaded."
 
 (defun stumpwm-internal-loop ()
   "The internal loop that waits for events and handles them."
-  (catch :quit
-    (loop
-       (run-hook *internal-loop-hook*)
-       (handler-case 
-	   (progn
-	     (if (> *timeout* 0)
-		 (progn
-		   (let* ((time-before (get-universal-time))
-			  (nevents (xlib:event-listen *display* *timeout*))
-			  (time-left  (- *timeout* (- (get-universal-time) time-before))))
-		     (if (<= time-left 0)
-			 (progn
-			   (unmap-all-frame-indicators)
-			   (unmap-all-message-windows)
-			   (setf *timeout* 0))
-			 (setf *timeout* time-left))
-		     (when nevents
-		       (xlib:process-event *display* :handler #'handle-event))))
-		 ;; Otherwise, simply wait for an event
-		 (xlib:process-event *display* :handler #'handle-event :timeout nil))
-	     ;; flush any pending output. You'd think process-event would, but
-	     ;; it seems not.
-	     (xlib:display-finish-output *display*))
-	 (error (c)
-	   (ecase *top-level-error-action*
-	     (:message
-	      (let ((s (format nil "~&Caught ~s at the top level. Please report this." c)))
-		(write-line s)
-		(echo-string (current-screen) s)))
-	     (:break (invoke-debugger c))))))))
+  ;; before entering the interactive debugger, ungrab the keyboard. If
+  ;; we don't the whole X server could be locked.
+  (labels ((ungrab (condition hook)
+	     (declare (ignore condition hook))
+	     (ungrab-keyboard)))
+    (let ((*debugger-hook* #'ungrab))
+      (catch :quit
+	(loop
+	   (run-hook *internal-loop-hook*)
+	   (handler-case 
+	       (progn
+		 (if (> *timeout* 0)
+		     (progn
+		       (let* ((time-before (get-universal-time))
+			      (nevents (xlib:event-listen *display* *timeout*))
+			      (time-left  (- *timeout* (- (get-universal-time) time-before))))
+			 (if (<= time-left 0)
+			     (progn
+			       (unmap-all-frame-indicators)
+			       (unmap-all-message-windows)
+			       (setf *timeout* 0))
+			     (setf *timeout* time-left))
+			 (when nevents
+			   (xlib:process-event *display* :handler #'handle-event))))
+		     ;; Otherwise, simply wait for an event
+		     (xlib:process-event *display* :handler #'handle-event :timeout nil))
+		 ;; flush any pending output. You'd think process-event would, but
+		 ;; it seems not.
+		 (xlib:display-finish-output *display*))
+	     (error (c)
+	       (ecase *top-level-error-action*
+		 (:message
+		  (let ((s (format nil "~&Caught ~s at the top level. Please report this." c)))
+		    (write-line s)
+		    (echo-string (current-screen) s)))
+		 (:break (invoke-debugger c))))))))))
 
 (defun parse-display-string (display)
   "Parse an X11 DISPLAY string and return the host and display from it."
