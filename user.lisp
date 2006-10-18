@@ -231,9 +231,6 @@
 (define-stumpwm-command "other" (screen)
   (other-window screen))
 
-(defun run-shell-command (cmd)
-  (run-prog *shell-program* :args (list "-c" cmd) :wait nil))
-
 (define-stumpwm-command "exec" (screen (cmd :rest "/bin/sh -c "))
   (declare (ignore screen))
   (run-shell-command cmd))
