@@ -233,13 +233,13 @@
 (defun input-forward-word (input key)
   (declare (ignore key))
   (let* ((p1 (position-if 'alphanumericp (input-line-string input) :start (input-line-position input)))
-	 (p2 (and p1 (position-if (complement 'alphanumericp) (input-line-string input) :start p1))))
+	 (p2 (and p1 (position-if-not 'alphanumericp (input-line-string input) :start p1))))
     (setf (input-line-position input) (or p2 (length (input-line-string input))))))
 
 (defun input-backward-word (input key)
   (declare (ignore key))
   (let* ((p1 (position-if 'alphanumericp (input-line-string input) :end (input-line-position input) :from-end t))
-	 (p2 (and p1 (position-if (complement 'alphanumericp) (input-line-string input) :end p1 :from-end t))))
+	 (p2 (and p1 (position-if-not 'alphanumericp (input-line-string input) :end p1 :from-end t))))
     (setf (input-line-position input) (or (and p2 (1+ p2))
 					  0))))
 
