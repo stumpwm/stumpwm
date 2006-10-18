@@ -1,5 +1,9 @@
 2006-10-17  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* user.lisp (run-shell-command): allow output to be collected.
+
+	* primitives.lisp (run-prog-collect-output): new function
+
 	* input.lisp (input-forward-word): use position-if-not
 	(input-backward-word): likewise
 

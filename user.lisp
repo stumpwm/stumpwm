@@ -231,6 +231,15 @@
 (define-stumpwm-command "other" (screen)
   (other-window screen))
 
+(defun run-shell-command (cmd &optional collect-output-p)
+  "Run a shell command in the background or wait for it to finish
+and collect the output if COLLECT-OUTPUT-P is T. Warning! if
+COLLECT-OUTPUT-P is stumpwm will hang until your command
+returns..which could be forever if you're not careful."
+  (if collect-output-p
+      (run-prog-collect-output *shell-program* "-c" cmd)
+      (run-prog *shell-program* :args (list "-c" cmd) :wait nil)))
+
 (define-stumpwm-command "exec" (screen (cmd :rest "/bin/sh -c "))
   (declare (ignore screen))
   (run-shell-command cmd))

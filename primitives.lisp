@@ -302,23 +302,21 @@ Useful for re-using the &REST arg after removing some options."
   #-(or allegro clisp cmu gcl liquid lispworks lucid sbcl)
   (error 'not-implemented :proc (list 'run-prog prog opts)))
 
-(defun run-prog-collect-output (cmd)
+(defun run-prog-collect-output (prog &rest args)
   "run a command and read its output."
   #+allegro (with-output-to-string (s) 
               (excl:run-shell-command (format nil "~a~{ ~a~}" prog args)
                                       :output s :wait t))
-  #+clisp (with-output-to-string (s) (ext:run-program prog :arguments args :wait t :output s))
+  ;; FIXME: this is a dumb hack but I don't care right now.
+  #+clisp (with-output-to-string (s)
+	    (let ((out (ext:run-program prog :arguments args :wait t :output :stream)))
+	      (loop for i = (read-char out nil out)
+		 until (eq i out)
+		 do (write-char i s))))
   #+cmu (with-output-to-string (s) (ext:run-program prog args :output s :error t :wait t))
-  #+sbcl (with-output-to-string (s) (sb-ext:run-program prog args :output s :error t :wait nil))
+  #+sbcl (with-output-to-string (s) (sb-ext:run-program prog args :output s :error t :wait t))
   #-(or allegro clisp cmu sbcl)
   (error 'not-implemented :proc (list 'pipe-input prog args)))
-
-(defun run-shell-command (cmd &optional collect-output-p)
-  "Run a shell command in the background or wait for it to finish
-and collect the output if COLLECT-OUTPUT-P is T."
-  (if collect-output-p
-      (run-prog-collect-output *shell-program* :args (list "-c" cmd))
-      (run-prog *shell-program* :args (list "-c" cmd) :wait nil)))
 
 (defun getenv (var)
   "Return the value of the environment variable."
