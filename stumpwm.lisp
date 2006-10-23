@@ -48,7 +48,7 @@ loaded."
     
 (defun init-atoms ()
   (setf +wm-delete-window+ (xlib:intern-atom *display* "WM_DELETE_WINDOW")
-;; 	+wm-take-focus+ (xlib:find-atom *display* "WM_TAKE_FOCUS")
+	+wm-take-focus+ (xlib:intern-atom *display* "WM_TAKE_FOCUS")
 ;; 	+wm-state+ (xlib:find-atom *display* "WM_STATE")
 ;; 	+wm-protocols+ (xlib:find-atom *display* "WM_PROTOCOLS")
 ;; 	+rp-command+ (xlib:intern-atom *display* "RP_COMMAND")
@@ -72,8 +72,10 @@ loaded."
   ;; we don't the whole X server could be locked.
   (labels ((ungrab (condition hook)
 	     (declare (ignore condition hook))
+	     (dformat "Error! Ungrabbing keyboard.~%")
+	     ;;#+clisp (ext:show-stack 1 100 (sys::the-frame))
 	     (ungrab-keyboard)
-	     (xlib:display-force-output *display*)))
+	     (xlib:display-finish-output *display*)))
     (let ((*debugger-hook* #'ungrab))
       (catch :quit
 	(loop
@@ -101,7 +103,7 @@ loaded."
 	     (error (c)
 	       (ecase *top-level-error-action*
 		 (:message
-		  (let ((s (format nil "~&Caught ~s at the top level. Please report this." c)))
+		  (let ((s (format nil "~&Caught ~a at the top level. Please report this." c)))
 		    (write-line s)
 		    (echo-string (current-screen) s)))
 		 (:break (invoke-debugger c))))))))))

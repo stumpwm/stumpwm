@@ -68,7 +68,7 @@
 	  (define-key m (kbd "r") "remove")
 	  (define-key m (kbd "s") "vsplit")
 	  (define-key m (kbd "S") "hsplit")
-	  (define-key m (kbd "o") "sibling")
+	  (define-key m (kbd "o") "fnext")
 	  (define-key m (kbd "TAB") "sibling")
 	  (define-key m (kbd "f") "fselect")
 	  (define-key m (kbd "F") "curframe")
@@ -132,7 +132,7 @@
 	       ;; Otherwise, focus the next one in the list.
 	       (cadr wins)))
     (when nw
-      (frame-raise-window screen (window-frame screen nw) nw))))
+      (frame-raise-window screen (window-frame nw) nw))))
 
 (defun delete-current-window (screen)
   "Send a delete event to the current window."
@@ -205,7 +205,7 @@
 	(unless (null query)
 	  (setf match (find-if #'match (screen-mapped-windows screen))))
 	(when match
-	  (frame-raise-window screen (window-frame screen match) match)))))
+	  (frame-raise-window screen (window-frame match) match)))))
 
 (define-stumpwm-command "select" (screen (win :string "Select: "))
   (select-window screen win))
@@ -215,7 +215,7 @@
 		  (= (window-number win) num)))
     (let ((win (find-if #'match (screen-mapped-windows screen))))
       (when win
-	(frame-raise-window screen (window-frame screen win) win)))))
+	(frame-raise-window screen (window-frame win) win)))))
 
 (defun other-window (screen)
   (let* ((f (screen-current-frame screen))
@@ -225,7 +225,7 @@
 		  (second wins)
 		  (first wins))))
   (if win
-      (frame-raise-window screen (window-frame screen win) win)
+      (frame-raise-window screen (window-frame win) win)
       (echo-string screen "No other window."))))
 
 (define-stumpwm-command "other" (screen)
@@ -246,6 +246,9 @@ returns..which could be forever if you're not careful."
 
 (defun horiz-split-frame (screen)
   (split-frame screen (lambda (f) (split-frame-h screen f)))
+  (let ((f (screen-current-frame screen)))
+    (when (frame-window f)
+      (update-window-border screen (frame-window f))))
   (show-frame-indicator screen))
 
 (define-stumpwm-command "hsplit" (screen)
@@ -253,6 +256,9 @@ returns..which could be forever if you're not careful."
 
 (defun vert-split-frame (screen)
   (split-frame screen (lambda (f) (split-frame-v screen f)))
+  (let ((f (screen-current-frame screen)))
+    (when (frame-window f)
+      (update-window-border screen (frame-window f))))
   (show-frame-indicator screen))
 
 (define-stumpwm-command "vsplit" (screen)
@@ -289,6 +295,8 @@ returns..which could be forever if you're not careful."
 		    (lambda (leaf)
 		      (sync-frame-windows screen leaf)))
       (frame-raise-window screen l (frame-window l))
+      (when (frame-window l)
+	(update-window-border screen (frame-window l)))
       (show-frame-indicator screen))))
 
 (define-stumpwm-command "remove" (screen)
@@ -300,13 +308,15 @@ returns..which could be forever if you're not careful."
 	(win (frame-window (screen-current-frame screen))))
     (mapc (lambda (w)
 	    ;; windows in other frames disappear
-	    (unless (eq (window-frame screen w) (screen-current-frame screen))
+	    (unless (eq (window-frame w) (screen-current-frame screen))
 	      (hide-window w))
-	    (setf (window-frame screen w) frame))
+	    (setf (window-frame w) frame))
 	  (screen-mapped-windows screen))
     (setf (frame-window frame) win
 	  (screen-frame-tree screen) frame)
     (focus-frame screen frame)
+    (when (frame-window frame)
+      (update-window-border screen (frame-window frame)))
     (sync-frame-windows screen (screen-current-frame screen))))
 
 (define-stumpwm-command "curframe" (screen)
@@ -322,6 +332,26 @@ returns..which could be forever if you're not careful."
                                            x)
                                          'identity))
       (show-frame-indicator screen))))
+
+(defun focus-frame-after (screen frames)
+  "Given a list of frames focus the next one in the list after
+the current frame."
+  (let ((rest (cdr (member (screen-current-frame screen) frames :test 'eq))))
+    (focus-frame screen
+		 (if (null rest)
+		     (car frames)
+		     (car rest)))))
+
+(defun focus-next-frame (screen)
+  (focus-frame-after screen (screen-frames screen))
+  (show-frame-indicator screen))
+
+(defun focus-prev-frame (screen)
+  (focus-frame-after screen (nreverse (screen-frames screen)))
+  (show-frame-indicator screen))
+
+(define-stumpwm-command "fnext" (screen)
+  (focus-next-frame screen))
 
 (define-stumpwm-command "sibling" (screen)
   (focus-frame-sibling screen))
@@ -468,8 +498,8 @@ aborted."
   "Pull window N from another frame into the current frame and focus it."
   (let ((win (find n (screen-mapped-windows screen) :key 'window-number :test '=)))
     (when win
-      (let ((f (window-frame screen win)))
-	(setf (window-frame screen win) (screen-current-frame screen))
+      (let ((f (window-frame win)))
+	(setf (window-frame win) (screen-current-frame screen))
 	(sync-frame-windows screen (screen-current-frame screen))
 	(frame-raise-window screen (screen-current-frame screen) win)
 	;; if win was focused in its old frame then give the old
@@ -618,7 +648,7 @@ be found, select it.  Otherwise simply run cmd."
 	   ;; does not select the screen.
 	   (goto-win (win)
 	     (let* ((screen (window-screen win))
-		    (frame (window-frame screen win)))
+		    (frame (window-frame win)))
 	       ;; Select screen?
 	       (frame-raise-window screen frame win)
 	       (focus-frame screen frame)))

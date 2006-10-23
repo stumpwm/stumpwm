@@ -53,9 +53,8 @@
   (let ((root (xlib:screen-root (screen-number screen)))
 	(ml (screen-mode-line screen)))
     (- (xlib:drawable-height root)
-       (or (and ml
-		(xlib:drawable-height (mode-line-window ml)))
-		0))))
+       (or (and ml (true-height (mode-line-window ml)))
+	   0))))
 
 (defun screen-width (screen)
   (let ((root (xlib:screen-root (screen-number screen))))
@@ -64,12 +63,25 @@
 (defun find-screen (root)
   "Return the screen containing the root window."
   (find-if (lambda (s)
-	     (eql (xlib:screen-root (screen-number s))
-		  root))
+	     (xlib:window-equal (xlib:screen-root (screen-number s)) root))
 	   *screen-list*))
 
 
 ;;; Window functions
+
+(defun update-window-border (screen window)
+  ;; give it a colored border but only if there are more than 1 frames.
+  (setf (xlib:window-border (window-parent window)) 
+	(if (and (> (length (screen-frames screen)) 1)
+		 (eq (xlib:input-focus *display*) window))
+	    (get-color-pixel screen *focus-color*)
+	    (get-color-pixel screen *unfocus-color*))))
+
+(defun true-height (drawable)
+  (+ (xlib:drawable-height drawable) (* (xlib:drawable-border-width drawable) 2)))
+
+(defun true-width (drawable)
+  (+ (xlib:drawable-width drawable) (* (xlib:drawable-border-width drawable))))
 
 (defun send-client-message (window type &rest data)
   "Send a client message to a client's window."
@@ -101,6 +113,13 @@
 (defun window-screen (w)
   "Return the screen associated with window w."
   (find-screen (xlib:drawable-root w)))
+
+(defun window-screen-safe (w)
+  "Find the screen in a way that doesn't make requests about the
+window to the x server."
+  (loop for i in *screen-list* do
+     (when (find w (screen-mapped-windows i) :test 'xlib:window-equal)
+       (return i))))
 
 (defun window-name (win)
   (xlib:wm-name win))
@@ -134,24 +153,20 @@
     (declare (ignore class))
     res))
 
-(defun window-number (win)
-  (let ((screen (window-screen win)))
-    (gethash :number (gethash win (screen-window-hash screen)))))
+(defmacro def-window-attr (attr)
+  (let ((win (gensym))
+	(val (gensym))
+	(screen (gensym)))
+    `(progn
+       (defun ,(intern (format nil "WINDOW-~a" attr)) (,win &optional (,screen (window-screen ,win)))
+	 (gethash ,attr (gethash ,win (screen-window-hash ,screen))))
+       (defun (setf ,(intern (format nil "WINDOW-~a" attr))) (,val ,win &optional (,screen (window-screen ,win)))
+	 (setf (gethash ,attr (gethash ,win (screen-window-hash ,screen))) ,val)))))
 
-(defun set-window-number (win num)
-  (let ((screen (window-screen win)))
-    (setf (gethash :number (gethash win (screen-window-hash screen))) num)))
-
-(defsetf window-number set-window-number)
-
-(defun window-frame (screen win)
-  (gethash :frame (gethash win (screen-window-hash screen))))
-
-(defun set-window-frame (screen win frame)
-  (setf (gethash :frame (gethash win (screen-window-hash screen)))
-	frame))
-
-(defsetf window-frame set-window-frame)
+(def-window-attr :number)
+(def-window-attr :frame)
+(def-window-attr :parent)
+(def-window-attr :unmap-ignores)
 
 (defun sort-windows (screen)
   "Return a copy of the screen's window list sorted by number."
@@ -178,14 +193,15 @@
   (eql (window-state window) +iconic-state+))
 
 (defun unhide-window (window)
-  (xlib:map-window window)
+  (xlib:map-window (window-parent window))
+  (xlib:map-subwindows (window-parent window))
   (setf (window-state window) +normal-state+))
 
 (defun hide-window (window)
-  (setf (window-state window) +iconic-state+
-	(xlib:window-event-mask window) (remove :structure-notify *window-events*))
-  (xlib:unmap-window window)
-  (setf (xlib:window-event-mask window) *window-events*))
+  (dformat "hide window: ~a~%" (window-name window))
+  (setf (window-state window) +iconic-state+)
+  ;;(incf (window-unmap-ignores window))
+  (xlib:unmap-window (window-parent window)))
 
 (defun window-type (win)
   "Return one of :maxsize, :transient, or :normal."
@@ -213,66 +229,17 @@
 		     :height (xlib:drawable-height window)
 		     :propagate-p nil)))
   
-(defun maximize-window (win)
-  "Maximize the window."
-  (let ((screen (window-screen win)))
-    (multiple-value-bind (x y width height inc-x inc-y)
-	(geometry-hints screen win)
-      ;; Move the window
-      (setf (xlib:drawable-x win) x
-	    (xlib:drawable-y win) y)
-      ;; Resize the window
-      (setf (xlib:drawable-width win)
-	    (+ (xlib:drawable-width win)
- 	       (* inc-x (floor (/ (- width (xlib:drawable-width win)) inc-x))))
-	    (xlib:drawable-height win)
-	    (+ (xlib:drawable-height win)
-	       (* inc-y (floor (/ (- height (xlib:drawable-height win)) inc-y)))))
-      (xlib:display-force-output *display*))))
-
-(defun find-free-window-number (screen)
-  "Return a free window number for SCREEN."
-  (find-free-number (mapcar-hash (lambda (key val) (declare (ignore key)) (gethash :number val))
-				 (screen-window-hash screen))))
-
-(defun process-new-window (win)
-  "When a new window is created (or when we are scanning initial
-windows), this function dresses the window up and gets it ready to be
-managed."
-  ;; Listen for events
-  (setf (xlib:window-event-mask win) *window-events*)
-  (set-window-state win +normal-state+))
-
-(defun process-existing-windows (screen)
-  "Windows present when stumpwm starts up must be absorbed by stumpwm."
-  (let ((children (xlib:query-tree (xlib:screen-root (screen-number screen)))))
-    (dolist (win children)
-      (let ((map-state (xlib:window-map-state win))
-	    (wm-state (window-state win)))
-	;; Don't process override-redirect windows.
-	(unless (or (eq (xlib:window-override-redirect win) :on)
-		    (internal-window-p screen win))
-	  (if (or (eql map-state :viewable)
-		  (eql wm-state +iconic-state+))
-	      (progn
-		(dformat "Processing ~S ~S~%" (window-name win) win)
-		(process-new-window win)
-		;; Pretend it's been mapped
-		(absorb-mapped-window screen win)))))))
-  ;; Once processing them, hide them all. Later one will be mapped and
-  ;; focused.
-  (mapcar 'hide-window (screen-mapped-windows screen)))
-
 (defun geometry-hints (screen win)
   "Return hints for max width and height and increment hints. These
 hints have been modified to always be defined and never be greater
 than the root window's width and height."
-  (let* ((f (window-frame screen win))
+  (declare (ignore screen))
+  (let* ((f (window-frame win))
 	 (x (frame-x f))
 	 (y (frame-y f))
-	 (fwidth (- (frame-width f) (* 2 (xlib:drawable-border-width win))))
+	 (fwidth (- (frame-width f) (* 2 (xlib:drawable-border-width (window-parent win)))))
 	 (fheight (- (frame-height f)
-		    (* 2 (xlib:drawable-border-width win))))
+		    (* 2 (xlib:drawable-border-width (window-parent win)))))
 	 (width fwidth)
 	 (height fheight)
 	 (inc-x 1)
@@ -316,8 +283,74 @@ than the root window's width and height."
       (setf x (+ x (truncate (- fwidth width) 2))
 	    y (+ y (truncate (- fheight height) 2))))
     ;; Now return our findings
-    (values x y width height inc-x inc-y)))
+    (values x y width height inc-x inc-y center)))
 
+(defun maximize-window (win)
+  "Maximize the window."
+  (let ((screen (window-screen win)))
+    (multiple-value-bind (x y width height inc-x inc-y stick)
+	(geometry-hints screen win)
+      ;; Move the parent window
+      (setf (xlib:drawable-x (window-parent win)) x
+	    (xlib:drawable-y (window-parent win)) y)
+      ;; Resize the window
+      (setf (xlib:drawable-width win)
+	    (+ (xlib:drawable-width win)
+ 	       (* inc-x (floor (/ (- width (xlib:drawable-width win)) inc-x))))
+	    (xlib:drawable-height win)
+	    (+ (xlib:drawable-height win)
+	       (* inc-y (floor (/ (- height (xlib:drawable-height win)) inc-y)))))
+      ;; the parent window should stick to the size of the window
+      ;; unless it isn't being maximized to fill the frame.
+      (if stick
+	  (setf (xlib:drawable-width (window-parent win)) (true-width win)
+		(xlib:drawable-height (window-parent win)) (true-height win))
+	  (let ((frame (window-frame win)))
+	    (setf (xlib:drawable-width (window-parent win)) (- (frame-width frame) 
+							       (* 2 (xlib:drawable-border-width (window-parent win))))
+		  (xlib:drawable-height (window-parent win)) (- (frame-height frame)
+								(* 2 (xlib:drawable-border-width (window-parent win)))))))
+      (xlib:display-force-output *display*))))
+
+(defun find-free-window-number (screen)
+  "Return a free window number for SCREEN."
+  (find-free-number (mapcar 'window-number (screen-mapped-windows screen))))
+
+(defun reparent-window (screen window)
+  (let ((master-window (xlib:create-window
+			:parent (xlib:screen-root (screen-number screen))
+			:x (xlib:drawable-x window)
+			:y (xlib:drawable-y window)
+			:width (xlib:drawable-width window)
+			:height (xlib:drawable-height window)
+			:background (get-bg-color-pixel screen)
+			:border (get-color-pixel screen *unfocus-color*)
+			:border-width (default-border-width-for-type (window-type window))
+			:event-mask *window-parent-events*)))
+    (unless (eq (xlib:window-map-state window) :unmapped)
+      (incf (window-unmap-ignores window screen)))
+    (xlib:reparent-window window master-window 0 0)
+    (xlib:add-to-save-set window)
+    (setf (window-parent window) master-window)))
+
+(defun process-existing-windows (screen)
+  "Windows present when stumpwm starts up must be absorbed by stumpwm."
+  (let ((children (xlib:query-tree (xlib:screen-root (screen-number screen)))))
+    (dolist (win children)
+      (let ((map-state (xlib:window-map-state win))
+	    (wm-state (window-state win)))
+	;; Don't process override-redirect windows.
+	(unless (or (eq (xlib:window-override-redirect win) :on)
+		    (internal-window-p screen win))
+	  (if (or (eql map-state :viewable)
+		  (eql wm-state +iconic-state+))
+	      (progn
+		(dformat "Processing ~S ~S~%" (window-name win) win)
+		(process-mapped-window screen win)))))))
+  ;; Once processing them, hide them all. Later one will be mapped and
+  ;; focused.
+  (mapcar 'hide-window (screen-mapped-windows screen))
+)
 
 (defun grab-keys-on-window (win)
   (labels ((grabit (w key)
@@ -346,40 +379,26 @@ than the root window's width and height."
 
 (defun add-window (screen window)
   "add window to the head of the mapped-windows list."
-  ;(assert (not (member window (screen-mapped-windows screen))))
-  (push window (screen-mapped-windows screen))
-  ;; Create the window-table entry, adding it's number
-  (let ((num (find-free-window-number screen)))
-    (setf (gethash window (screen-window-hash screen)) (make-hash-table))
-    (setf (gethash :number (gethash window (screen-window-hash screen))) num)
-    (setf (window-frame screen window) (screen-current-frame screen))
-    (setf (frame-window (screen-current-frame screen))
-	  window)))
-    
-(defun reparent-window (screen window)
-  (let ((master-window (xlib:create-window
-			:parent (xlib:screen-root (screen-number screen))
-			:x (xlib:drawable-x window)
-			:y (xlib:drawable-y window)
-			:width (xlib:drawable-width window)
-			:height (xlib:drawable-height window)
-			:background (get-bg-color-pixel screen)
-			:border-width 5
-			:event-mask (xlib:make-event-mask
-				     :substructure-notify))))
-    (xlib:reparent-window window master-window 2 2)
-    (xlib:map-window master-window)
-    (xlib:map-subwindows master-window)))
+  ;; give it a number, put it in a frame
+  (setf (gethash window (screen-window-hash screen)) (make-hash-table)
+	(window-number window) (find-free-window-number screen)
+	(window-frame window) (screen-current-frame screen)
+	(window-unmap-ignores window) 0
+	(frame-window (screen-current-frame screen)) window)
+  (push window (screen-mapped-windows screen)))
 
-(defun absorb-mapped-window (screen window)
+(defun process-mapped-window (screen window)
   "Add the window to the screen's mapped window list and process it as
 needed."
+  (setf (xlib:window-event-mask window) *window-events*)
   (add-window screen window)
-  ;; give it a default border width
-  (setf (window-border-width window) (default-border-width-for-type (window-type window)))
+  ;; windows always have border width 0. Their parents provide the
+  ;; border.
+  (setf (window-border-width window) 0)
+  (reparent-window screen window)
+  (xlib:map-window (window-parent window))
   (maximize-window window)
-  ;(reparent-window screen window)
-  (xlib:map-window window)
+  (xlib:map-subwindows (window-parent window))
   (grab-keys-on-window window)
   ;; Run the map window hook on it
   (run-hook-with-args *map-window-hook* window))
@@ -387,22 +406,29 @@ needed."
 (defun remove-window (screen window)
   "Remove the window from the list of mapped windows and, possibly,
 give the last accessed window focus."
+  ;; This function cannot request info about WINDOW from the xserver
   ;; Remove the window from the list of mapped windows.
-  (when (member window (screen-mapped-windows screen))
-    (setf (screen-mapped-windows screen)
-	  (delete window (screen-mapped-windows screen)))
-    (let ((f (window-frame screen window)))
+  (dformat "remove window ~a~%" screen)
+  (when (find window (screen-mapped-windows screen) :test 'xlib:window-equal)
+    (let ((f (window-frame window screen)))
+      (dformat "destroying parent window~%")
+      (xlib:destroy-window (window-parent window screen))
+      (dformat "destroyed.~%")
+      (xlib:display-finish-output *display*)
       ;; Clean up the window's entry in screen-window-hash
+      (setf (screen-mapped-windows screen)
+	    (delete window (screen-mapped-windows screen) :test 'xlib:window-equal))
       (remhash window (screen-window-hash screen))
       ;; remove it from it's frame structures
       (when (xlib:window-equal (frame-window f) window)
 	(setf (frame-window f) (first (frame-windows screen f))))
       ;; Run the unmap hook on the window
+      (unwind-protect
       (run-hook-with-args *unmap-window-hook* window)
       ;; If the current window was removed, then refocus the frame it
       ;; was in, since it has a new current window
       (when (eq (screen-current-frame screen) f)
-	(focus-frame screen f)))))
+	(focus-frame screen f))))))
   
 (defun move-window-to-head (screen window)
   "Move window to the head of the mapped-windows list."
@@ -413,13 +439,18 @@ give the last accessed window focus."
 (defun no-focus (screen)
   "don't focus any window but still read keyboard events."
   (dformat "no-focus~%")
-  (xlib:set-input-focus *display* (screen-focus-window screen) :POINTER-ROOT))
+  (let ((cw (find (xlib:input-focus *display*) (screen-mapped-windows screen)
+		  :test 'xlib:window-equal)))
+    (xlib:set-input-focus *display* (screen-focus-window screen) :POINTER-ROOT)
+    (when cw
+      (setf (xlib:window-border (window-parent cw)) (get-color-pixel screen *unfocus-color*)))))
 
 (defun maybe-hide-window (screen window new-window)
   "Hide WINDOW depending on what kind of window NEW-WINDOW is. if
 NEW-WINDOW is nil then the window is being hidden."
+  (declare (ignore screen))
   (when (or (null new-window)
-	    (and (eql (window-frame screen window) (window-frame screen new-window))
+	    (and (eql (window-frame window) (window-frame new-window))
 	     (eq (window-type new-window) :normal)))
     (hide-window window)))
 
@@ -434,8 +465,10 @@ maximized, and given focus."
 	(unless (xlib:window-equal window cw)
 	  (raise-window window)
 	  (xlib:set-input-focus *display* window :POINTER-ROOT)
-	  ;;(send-client-message window :WM_PROTOCOLS +wm-take-focus+))
-
+	  ;;(send-client-message window :WM_PROTOCOLS +wm-take-focus+)
+	  (update-window-border screen window)
+	  (when cw
+	    (update-window-border screen cw))
 	  ;; Move the window to the head of the mapped-windows list
 	  (move-window-to-head screen window)
 	  ;; If another window was focused, then call the unfocus hook for
@@ -604,11 +637,11 @@ T (default) then also focus the frame."
     (run-hook-with-args *focus-frame-hook* f last)))
 
 (defun frame-windows (screen f)
-  (remove-if-not (lambda (w) (eq (window-frame screen w) f))
+  (remove-if-not (lambda (w) (eq (window-frame w) f))
 		 (screen-mapped-windows screen)))
 
 (defun frame-sort-windows (screen f)
-  (remove-if-not (lambda (w) (eq (window-frame screen w) f))
+  (remove-if-not (lambda (w) (eq (window-frame w) f))
 		 (sort-windows screen)))
 
 (defun make-initial-frame (x y w h)
@@ -698,8 +731,8 @@ T (default) then also focus the frame."
 (defun migrate-frame-windows (screen src dest)
   "Migrate all windows in SRC frame to DEST frame."
   (mapc (lambda (w)
-	  (when (eq (window-frame screen w) src)
-	    (setf (window-frame screen w) dest)))
+	  (when (eq (window-frame w) src)
+	    (setf (window-frame w) dest)))
 	(screen-mapped-windows screen)))
 
 (defun tree-accum-fn (tree acc fn)
@@ -811,7 +844,7 @@ one."
 (defun sync-frame-windows (screen frame)
   "synchronize windows attached to FRAME."
   (mapc (lambda (w)
-	  (when (eq (window-frame screen w) frame)
+	  (when (eq (window-frame w) frame)
 	    (dformat "maximizing ~S~%" w)
 	    (maximize-window w)))
 	(screen-mapped-windows screen)))
@@ -849,25 +882,6 @@ one."
     (tree-iterate tree (lambda (frame)
 			 (incf (frame-x frame) x)
 			 (incf (frame-y frame) y)))))
-
-(defun grow-tree (tree dx dy)
-  "grow the tree by a dx and dy pixels."
-  (cond ((null tree) nil)
-	((atom tree)
-	 (incf (frame-width tree) dx)
-	 (incf (frame-height tree) dy)
-	 )
-	(t (if (tree-row-split tree)
-	       (progn
-		 (grow-tree (first tree) (truncate dx 2) dy)
-		 (grow-tree (first tree) (- (truncate dx 2) dx) dy))
-	       (progn
-		 (grow-tree (second tree) dx (truncate dy 2))
-		 (grow-tree (second tree) dx (- (truncate dy 2) dy)))))))
-
-(defun grow-frames (screen dx dy)
-  (let ((tree (screen-frame-tree screen)))
-    (grow-tree tree dx dy)))
 
 (defun resize-frame (screen frame amount dim)
   "Resize FRAME by AMOUNT in DIM dimension, DIM can be either 'width or 'height"
@@ -975,7 +989,10 @@ windows used to draw the numbers in. The caller must destroy them."
 
 (defun internal-window-p (screen win)
   "Return t if win is a window used by stumpwm"
-  (or (xlib:window-equal (screen-focus-window screen) win)))
+  (or (xlib:window-equal (screen-message-window screen) win)
+      (xlib:window-equal (screen-input-window screen) win)
+      (xlib:window-equal (screen-frame-window screen) win)
+      (xlib:window-equal (screen-focus-window screen) win)))
 
 (defun screen-current-window (screen)
   (frame-window (screen-current-frame screen)))
@@ -1051,7 +1068,7 @@ the nth entry to highlight."
 
 (defun echo-string (screen msg)
   "Print msg to SCREEN's message window."
-  (echo-string-list screen (list msg)))
+  (echo-string-list screen (split-string msg (string #\Newline))))
 
 (defun current-screen ()
   "Return the current screen. The current screen is the screen whose
@@ -1186,7 +1203,7 @@ list of modifier symbols."
 
 (define-stump-event-handler :configure-request (stack-mode #|parent|# window #|above-sibling|# x y width height border-width value-mask)
   ;; Grant the configure request but then maximize the window after the granting.
-  (dformat "~S~%" value-mask)
+  (dformat "CONFIGURE REQUEST ~S~%" value-mask)
   (labels ((has-x (mask) (= 1 (logand mask 1)))
 	   (has-y (mask) (= 2 (logand mask 2)))
 	   (has-w (mask) (= 4 (logand mask 4)))
@@ -1225,7 +1242,7 @@ list of modifier symbols."
 	(when (has-stackmode value-mask)
 	  (case stack-mode
 	    (:above
-	     (let ((f (window-frame screen window)))
+	     (let ((f (window-frame window)))
 	       (frame-raise-window screen f window)))))))))
 
 (define-stump-event-handler :map-request (#|parent|# send-event-p window)
@@ -1233,24 +1250,31 @@ list of modifier symbols."
     (let ((screen (window-screen window)))
       ;; only absorb it if it's not already managed (it could be iconic)
       (unless (find window (screen-mapped-windows screen) :test 'xlib:window-equal)
-	(process-new-window window)
-	(absorb-mapped-window screen window))
+	(process-mapped-window screen window))
       ;; Give it focus
-      (frame-raise-window screen (window-frame screen window) window))))
+      (frame-raise-window screen (window-frame window) window))))
 
 (define-stump-event-handler :unmap-notify (send-event-p event-window window #|configure-p|#)
-  (unless (and (not send-event-p)
-	       (not (xlib:window-equal window event-window)))
-    ;; There are two kinds of unmap notify events: the straight up
-    ;; ones where event-window and window are the same, and
-    ;; substructure unmap events when the event-window is the parent
-    ;; of window. So use event-window to find the screen.
-    (let ((screen (window-screen event-window)))
-      (remove-window screen window))))
+  ;; There are two kinds of unmap notify events: the straight up
+  ;; ones where event-window and window are the same, and
+  ;; substructure unmap events when the event-window is the parent
+  ;; of window. So use event-window to find the screen.
+  (unless (or send-event-p
+	      (not (xlib:window-equal event-window window)))
+    (let ((screen (window-screen-safe window)))
+      ;; if we can't find the screen then there's nothing we need to
+      ;; do.
+      (when screen
+	(if (plusp (window-unmap-ignores window screen))
+	    (progn
+	      (dformat "decrement ignores! ~d~%" (window-unmap-ignores window screen))
+	      (decf (window-unmap-ignores window screen)))
+	    (remove-window screen window))))))
 
-(define-stump-event-handler :create-notify (#|parent window x y width height border-width|# override-redirect-p)
-  (unless override-redirect-p))
-;    (process-new-window window)
+;;(define-stump-event-handler :create-notify (#|window parent x y width height border-width|# override-redirect-p))
+  ;; (unless (or override-redirect-p
+;; 	      (internal-window-p (window-screen window) window))
+;;    (process-new-window (window-screen window) window))
 ;    (run-hook-with-args *new-window-hook* window)))
 
 
@@ -1260,10 +1284,11 @@ list of modifier symbols."
     ;; Ignore structure destroy notifies and only
     ;; use substructure destroy notifiers. This way
     ;; event-window is the window's parent.
-    (let ((screen (window-screen event-window)))
+    (let ((screen (window-screen-safe event-window)))
       ;; In some cases, we get a destroy notify before an unmap
       ;; notify, so simulate an unmap notify (for now).
-      (remove-window screen window)
+      (when screen
+	(remove-window screen window))
       ;; Destroy the master window
       ;(xlib:destroy-window event-window)
       (run-hook-with-args *destroy-window-hook* window))))

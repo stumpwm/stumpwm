@@ -92,8 +92,14 @@ occur in that many seconds.")
 (defvar *transient-border-width* 1
   "The default border width for transient windows.")
 
-(defvar *normal-border-width* 0
+(defvar *normal-border-width* 1
   "The default border width for normal windows.")
+
+(defvar *focus-color* "DarkGreen"
+  "The color a window's border becomes when it is focused")
+
+(defvar *unfocus-color* "Black"
+  "The border color of an unfocused window")
     
 ;; FIXME: This variable is set only once but it needs to be set after
 ;; the display is opened. So should it have +'s around it even though
@@ -120,6 +126,10 @@ occur in that many seconds.")
 			  :colormap-change
 			  :focus-change)
   "The events to listen for on managed windows.")
+
+(defvar *window-parent-events* '(:substructure-notify
+				 :substructure-redirect)
+  "The events to listen for on managed windows' parents.")
 
 ;; Message window variables
 (defvar *message-window-padding* 5)
@@ -368,19 +378,21 @@ Modifies the match data; use `save-match-data' if necessary."
   ;; FIXME: This let is here because movitz doesn't 'lend optional'
   (let ((seps separators))
     (labels ((sep (c)
-		  (find c seps :test #'char=)))
+	       (find c seps :test #'char=)))
       (loop for i = (position-if (complement #'sep) string) 
-	    then (position-if (complement #'sep) string :start j)
-	    while i
-	    as j = (position-if #'sep string :start i)
-	    collect (subseq string i j)
-	    while j))))
+	 then (position-if (complement #'sep) string :start j)
+	 as j = (position-if #'sep string :start (or i 0))
+	 while i
+	 collect (subseq string i j)
+	 while j))))
 
 (defun dformat (fmt &rest args)
   (declare (ignore fmt args))
-#+ignore
-  (with-open-file (s #p"/tmp/stumplog" :direction :output :if-exists :append :if-does-not-exist :create)
-    (apply 'format s fmt args)))
+  ;;(with-open-file (s #p"/tmp/stumplog" :direction :output :if-exists :append :if-does-not-exist :create)
+;;     (multiple-value-bind (sec m h) (decode-universal-time (get-universal-time))
+;;       (format t "~d:~d:~d" h m sec))
+;;     (apply 'format t fmt args)
+    )
 
 ;;; 
 ;;; formatting routines

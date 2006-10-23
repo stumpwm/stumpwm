@@ -1,3 +1,72 @@
+2006-10-23  Shawn Betts  <sabetts@shitbender.gagrod>
+
+	* user.lisp (*root-map*): bind "o" to fnext
+	(horiz-split-frame): update window border color
+	(vert-split-frame): likewise
+	(remove-split): likewise
+	("only"): likewise
+	(focus-frame-after): new function
+	(focus-next-frame): likewise
+	(focus-prev-frame): likewise
+	("fnext"): new command
+
+	* stumpwm.lisp (init-atoms): intern wm_take_focus atom
+	(stumpwm-internal-loop): produce debug output when ungrab is called
+	(stumpwm-internal-loop): format error with ~a
+
+	* primitives.lisp (*normal-border-width*): set to 1
+	(*focus-color*): new global variable
+	(*unfocus-color*): likewise
+	(*window-parent-events*): likewise
+
+	* mode-line.lisp (mode-line): new slot, position
+	(*mode-line-border-width*): new global variable
+	(*mode-line-pad-x*): likewise
+	(*mode-line-pad-y*): likewise
+	(*mode-line-background-color*): likewise
+	(*mode-line-foreground-color*): likewise
+	(*mode-line-border-color*): likewise
+	(*screen-mode-line-format*): likewise
+	(make-mode-line-window): set border color and width
+	(resize-mode-line-for): new function
+	(mode-line-format-elt): new method
+	(mode-line-format-elt): handle new list cases
+	(mode-line-format-string): just call mode-line-format-elt on
+	mode-line-format
+	(make-mode-line-gc): set the foreground according to mode-line colors
+	(make-screen-mode-line): set position slot
+	(redraw-mode-line-for): dont resize window
+	(toggle-mode-line): new function
+	("mode-line"): call toggle-mode-line
+
+	* core.lisp (screen-height): use true-height
+	(find-screen): use xlib:window-equal
+	(update-window-border): new function
+	(true-height): likewise
+	(true-width): likewise
+	(window-screen-safe): likewise
+	(def-window-attr): new macro
+	(:number): replace window-number and set-window-number
+	(:frame): replace window-frame and set-window-frame
+	(:parent): new window attribute
+	(:unmap-ignores): likewise
+	(unhide-window): map window's parent
+	(hide-window): unmap window's parent
+	(geometry-hints): adjust for window's parent border window
+	(reparent-window): new defun
+	(add-window): init window-unmap-ignores
+	(process-mapped-window): rename from absorb-mapped-window
+	(process-mapped-window): reparent window
+	(remove-window): delete window parent
+	(focus-window): update windows' border color
+	(grow-tree): remove function
+	(grow-frames): likewise
+	(internal-window-p): add input frame and focus windows.
+	(echo-string): handle newlines
+	(:unmap-notify): don't unmap if window-unmap-ignores is > 0
+	(:destroy-notify): remove the window only if the window's screen
+	can be found
+
 2006-10-17  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp (run-shell-command): allow output to be collected.
