@@ -293,6 +293,9 @@ than the root window's width and height."
       ;; Move the parent window
       (setf (xlib:drawable-x (window-parent win)) x
 	    (xlib:drawable-y (window-parent win)) y)
+      ;; Make sure the window is seated at the upperleft of its parent
+      (setf (xlib:drawable-x win) 0
+	    (xlib:drawable-y win) 0)
       ;; Resize the window
       (setf (xlib:drawable-width win)
 	    (+ (xlib:drawable-width win)
@@ -451,7 +454,7 @@ NEW-WINDOW is nil then the window is being hidden."
   (declare (ignore screen))
   (when (or (null new-window)
 	    (and (eql (window-frame window) (window-frame new-window))
-	     (eq (window-type new-window) :normal)))
+		 (eq (window-type new-window) :normal)))
     (hide-window window)))
 
 (defun focus-window (window)

@@ -125,7 +125,8 @@ A string is printed verbatim in the mode line except for
     (symbol
      (mode-line-format-elt
       (case (first elt)
-	(:eval (eval (second elt)))
+	;; FIXME: silently failing is probably not the best idea.
+	(:eval (ignore-errors (eval (second elt))))
 	(t (and (boundp (first elt))
 		(symbol-value (first elt))
 		(second elt))))))))

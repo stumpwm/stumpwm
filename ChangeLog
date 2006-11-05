@@ -1,3 +1,13 @@
+2006-11-05  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* core.lisp (maximize-window): set the window's position to 0,0
+
+	* mode-line.lisp (mode-line-format-elt): ignore errors when calling eval.
+
+2006-10-23  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* mode-line.lisp (mode-line-format-elt): ignore errors for :eval
+
 2006-10-23  Shawn Betts  <sabetts@shitbender.gagrod>
 
 	* user.lisp (*root-map*): bind "o" to fnext
