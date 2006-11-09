@@ -1,3 +1,7 @@
+2006-11-09  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* core.lisp (:mapping-notify): update clx's key mappings
+
 2006-11-05  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* core.lisp (maximize-window): set the window's position to 0,0

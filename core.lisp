@@ -1375,9 +1375,12 @@ chunks."
 		  (xlib:window-equal window root))
 	 (handle-rp-commands root))))))
 
-(define-stump-event-handler :mapping-notify (start count)
-  (declare (ignore start count))
-  (update-modifier-map))
+(define-stump-event-handler :mapping-notify (request start count)
+  ;; We could be a bit more intelligent about when to update the
+  ;; modifier map, but I don't think it really matters.
+  (xlib:mapping-notify *display* request start count)
+  (update-modifier-map)
+  (sync-keys))
 
 (defun handle-event (&rest event-slots &key display event-key &allow-other-keys)
   (declare (ignore display))
