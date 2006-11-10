@@ -1,3 +1,7 @@
+2006-11-10  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* stumpwm.lisp (stumpwm): work around sbcl's putenv bug
+
 2006-11-09  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* core.lisp (:mapping-notify): update clx's key mappings

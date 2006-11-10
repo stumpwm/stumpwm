@@ -140,7 +140,9 @@ loaded."
         ;; Set the DISPLAY-environment-variable properly. This is
         ;; necessary if Stumpwm is running from a Lisp in another
         ;; X-display.
-	(setf (getenv "DISPLAY") display-str)
+	;; XXX: check to see if its defined to work around a bug in sbcl's putenv.
+	(unless (getenv "DISPLAY")
+	  (setf (getenv "DISPLAY") display-str))
 	;; Load rc file
 	(multiple-value-bind (success err rc) (load-rc-file)
 	  (echo-string (current-screen)
