@@ -159,6 +159,13 @@
 (define-stumpwm-command "banish" (screen)
   (banish-pointer screen))
 
+(define-stumpwm-command "ratwarp" (screen (x :number "X: ") (y :number "Y: "))
+  (warp-pointer screen x y))
+
+(define-stumpwm-command "ratrelwarp" (screen (dx :number "Delta X: ") (dy :number "Delta Y: "))
+  (declare (ignore screen))
+  (warp-pointer-relative dx dy))
+
 (defun echo-windows (screen fmt)
   "Print a list of the windows to the screen."
   (let* ((wins (sort-windows screen))

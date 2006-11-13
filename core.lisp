@@ -1187,6 +1187,10 @@ list of modifier symbols."
   (let ((root (xlib:screen-root (screen-number screen))))
     (xlib:warp-pointer root x y)))
 
+(defun warp-pointer-relative (dx dy)
+  "Move the pointer by DX and DY relative to the current location."
+  (xlib:warp-pointer-relative *display* dx dy))
+
 
 ;; Event handler functions
 

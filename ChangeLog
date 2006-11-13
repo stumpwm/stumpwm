@@ -1,3 +1,10 @@
+2006-11-13  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* user.lisp ("ratwarp"): new command
+	("ratrelwarp"): likewise
+
+	* core.lisp (warp-pointer-relative): new function
+
 2006-11-10  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* stumpwm.lisp (stumpwm): work around sbcl's putenv bug
