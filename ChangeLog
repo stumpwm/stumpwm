@@ -2,6 +2,7 @@
 
 	* user.lisp ("ratwarp"): new command
 	("ratrelwarp"): likewise
+	("loadrc"): new command
 
 	* core.lisp (warp-pointer-relative): new function
 

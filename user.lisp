@@ -550,6 +550,13 @@ aborted."
   (asdf:operate 'asdf:load-op :stumpwm)
   (echo-string screen "Reloading StumpWM...Done."))
 
+(define-stumpwm-command "loadrc" (screen)
+  (multiple-value-bind (success err rc) (load-rc-file)
+    (echo-string (current-screen)
+		 (if success
+		     "RC File loaded successfully."
+		     (format nil "Error loading ~A: ~A" rc err)))))
+
 (defun display-keybinding (screen kmap)
   (echo-string-list screen (mapcar-hash #'(lambda (k v) (format nil "~A -> ~A" (print-key k) v)) kmap)))
 
