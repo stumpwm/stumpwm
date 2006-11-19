@@ -1,5 +1,27 @@
 2006-11-19  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* primitives.lisp (*x-selection*): new global variable
+
+	* input.lisp (input-handle-key-press-event): new function
+	(input-handle-selection-event): likewise
+	(read-key-handle-event): call input-handle-key-press-event
+	(read-key-or-selection-handle-event): new function
+	(read-key-or-selection): likewise
+	(read-one-line): call read-key-or-selection. handle selection
+	strings.
+	(input-kill-line): call set-x-selection
+	(input-kill-to-beginning): likewise
+	(input-insert-string): new function
+	(input-insert-char): likewise
+	(input-self-insert): call input-insert-char
+	(input-yank-selection): new function
+
+	* core.lisp (:selection-request): new event handler
+	(:selection-clear): likewise
+	(export-selection): new function
+	(set-x-selection): likewise
+	(send-selection): likewise
+
 	* user.lisp ("escape"): new command
 
 2006-11-13  Shawn Betts  <sabetts@vcn.bc.ca>

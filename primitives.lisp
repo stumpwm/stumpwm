@@ -434,3 +434,7 @@ Modifies the match data; use `save-match-data' if necessary."
 (defun font-height (font)
   (+ (xlib:font-descent font)
      (xlib:font-ascent font)))
+
+(defvar *x-selection* nil
+  "This holds stumpwm's current selection. It is generally set
+when killing text in the input bar.")

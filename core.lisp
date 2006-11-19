@@ -1386,6 +1386,12 @@ chunks."
   (update-modifier-map)
   (sync-keys))
 
+(define-stump-event-handler :selection-request (requestor property selection target time)
+  (send-selection requestor property selection target time))
+
+(define-stump-event-handler :selection-clear ()
+  (setf *x-selection* nil))
+
 (defun handle-event (&rest event-slots &key display event-key &allow-other-keys)
   (declare (ignore display))
   (dformat "Handling event ~S~%" event-key)
@@ -1403,3 +1409,43 @@ chunks."
 	  (declare (ignore c))
 	 )))
     t))
+
+;;; Selection
+
+(defun export-selection ()
+  (let* ((screen (current-screen))
+	 (selwin (screen-focus-window (current-screen)))
+	 (root (xlib:screen-root (screen-number screen))))
+    (xlib:set-selection-owner *display* :primary selwin)
+    (unless (eq (xlib:selection-owner *display* :primary) selwin)
+      (error "Can't set selection owner"))
+    ;; also set the cut buffer for completeness
+    (xlib:change-property root :cut-buffer0 *x-selection* :string 8
+			  :mode :replace)))
+
+(defun set-x-selection (text)
+  (setf *x-selection* text)
+  (export-selection))
+
+(defun send-selection (requestor property selection target time)
+  (let ((keys (list)))
+    (cond 
+      ;; they're requesting what targets are available
+      ((eq target :targets)
+       (format t ":targets")
+       (xlib:change-property requestor property target (list :targets :string) 8 :mode :replace))
+      ;; send them a string
+      ((find target '(:string ))
+       (format t ":string")
+       (xlib:change-property requestor property *x-selection* :string 8 :mode :replace :transform #'xlib:char->card8))
+      ;; we don't know how to handle anything else
+      (t
+       (setf property nil)))
+    (xlib:send-event requestor :selection-notify nil
+		     :display *display*
+		     :window requestor
+		     :selection selection
+		     :property property
+		     :target target
+		     :time time)
+    (xlib:display-finish-output *display*)))

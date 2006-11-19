@@ -52,6 +52,7 @@
 	  (define-key map (kbd "Down") 'input-history-forward)
 	  (define-key map (kbd "RET") 'input-submit)
 	  (define-key map (kbd "C-g") 'input-abort)
+	  (define-key map (kbd "C-y") 'input-yank-selection)
 	  (define-key map t 'input-self-insert)
 	  map)))
 
@@ -100,23 +101,47 @@
   (xlib:ungrab-keyboard *display*)
   (xlib:unmap-window (screen-input-window screen)))
 
+(defun input-handle-key-press-event (&rest event-slots &key root code state &allow-other-keys)
+  (declare (ignore event-slots root))
+  ;; FIXME: don't use a cons
+  (cons code state))
+
+(defun input-handle-selection-event (&rest event-slots &key window selection property &allow-other-keys)
+  ;; FIXME: don't use a cons
+  (if property
+      (xlib:get-property window property :type :string :result-type 'string :transform #'xlib:card8->char :delete-p t)
+      ""))
+
 (defun read-key-handle-event (&rest event-slots &key display event-key &allow-other-keys)
   (declare (ignore display))
-  (labels ((key-press (&rest event-slots &key root code state &allow-other-keys)
-		      (declare (ignore event-slots root))
-		      ;; FIXME: don't use a cons
-		      (cons code state)))
     (case event-key
       (:key-release
        't)
       (:key-press
-       (apply #'key-press event-slots))
-      (t nil))))
+       (apply 'input-handle-key-press-event event-slots))
+      (t nil)))
+
+(defun read-key-or-selection-handle-event (&rest event-slots &key display event-key &allow-other-keys)
+  (declare (ignore display))
+    (case event-key
+      (:key-release
+       't)
+      (:key-press
+       (apply 'input-handle-key-press-event event-slots))
+      (:selection-notify
+       (apply 'input-handle-selection-event event-slots))
+      (t nil)))
 
 (defun read-key ()
   "Return a dotted pair (code . state) key."
   (do ((ret nil (xlib:process-event *display* :handler #'read-key-handle-event :timeout nil)))
       ((consp ret) ret)))
+
+(defun read-key-or-selection ()
+  (do ((ret nil (xlib:process-event *display* :handler #'read-key-or-selection-handle-event :timeout nil)))
+      ((or (stringp ret)
+	   (consp ret))
+       ret)))
 
 (defun make-input-string (initial-input)
   (make-array (length initial-input) :element-type 'character :initial-contents initial-input
@@ -128,10 +153,15 @@
 				:position (length initial-input)
 				:history -1)))
     (labels ((key-loop ()
-	       (loop for key = (read-key) then (read-key)
-		  when (not (is-modifier (xlib:keycode->keysym *display* (car key) 0)))
-		  when (process-input screen prompt input (car key) (cdr key))
-		  return (input-line-string input))))
+	       (loop for key = (read-key-or-selection) do
+		  (cond ((stringp key)
+			 ;; handle selection
+			 (input-insert-string input key)
+			 (draw-input-bucket screen prompt input))
+			;; skip modifiers
+			((is-modifier (xlib:keycode->keysym *display* (car key) 0)))
+			((process-input screen prompt input (car key) (cdr key))
+			 (return (input-line-string input)))))))
       (setup-input-window screen prompt input)
       (catch 'abort
 	(unwind-protect
@@ -266,10 +296,14 @@
 
 (defun input-kill-line (input key)
   (declare (ignore key))
+  (unless (= (input-line-position input) (length (input-line-string input)))
+    (set-x-selection (subseq (input-line-string input) (input-line-position input))))
   (setf (fill-pointer (input-line-string input)) (input-line-position input)))
 
 (defun input-kill-to-beginning (input key)
   (declare (ignore key))
+  (unless (= (input-line-position input) 0)
+    (set-x-selection (subseq (input-line-string input) 0 (input-line-position input))))
   (replace (input-line-string input) (input-line-string input)
 	   :start2 (input-line-position input) :start1 0)
   (decf (fill-pointer (input-line-string input)) (input-line-position input))
@@ -309,17 +343,31 @@
   (declare (ignore input key))
   (throw 'abort nil))
 
+(defun input-insert-string (input string)
+  (check-type string string)
+  ;; FIXME: obviously this is substandard
+  (map nil (lambda (c) (input-insert-char input c))
+       string))
+
+(defun input-insert-char (input char)
+  (vector-push-extend #\_ (input-line-string input))
+  (replace (input-line-string input) (input-line-string input)
+	   :start2 (input-line-position input) :start1 (1+ (input-line-position input)))
+  (setf (char (input-line-string input) (input-line-position input)) char)
+  (incf (input-line-position input)))
+
 (defun input-self-insert (input key)
   (let ((char (xlib:keysym->character *display* (key-keysym key))))
     (if (or (key-mods-p key) (null char))
 	:error
-	(progn
-	  (vector-push-extend #\_ (input-line-string input))
-	  (replace (input-line-string input) (input-line-string input)
-		   :start2 (input-line-position input) :start1 (1+ (input-line-position input)))
-	  (setf (char (input-line-string input) (input-line-position input)) char)
-	  (incf (input-line-position input))))))
+	(input-insert-char input char))))
 
+(defun input-yank-selection (input key)
+  (declare (ignore key))
+  ;; if we own the selection then just insert it.
+  (if *x-selection*
+      (input-insert-string input *x-selection*)
+      (xlib:convert-selection :primary :string (screen-input-window (current-screen)) :stumpwm-selection)))
 
 (defun process-input (screen prompt input code state)
   "Process the key (code and state), given the current input
