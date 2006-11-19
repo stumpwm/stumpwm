@@ -1,3 +1,7 @@
+2006-11-19  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* user.lisp ("escape"): new command
+
 2006-11-13  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp ("ratwarp"): new command

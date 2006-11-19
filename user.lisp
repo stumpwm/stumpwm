@@ -697,4 +697,6 @@ be found, select it.  Otherwise simply run cmd."
 (define-stumpwm-command "web" (screen)
   (run-or-raise screen "firefox" :class "mozilla-firefox"))
 
-;;(define-stumpwm-command "escape"
+(define-stumpwm-command "escape" (screen (key :string "Key: "))
+  (set-prefix-key (kbd key)))
+
