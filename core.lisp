@@ -1449,3 +1449,25 @@ chunks."
 		     :target target
 		     :time time)
     (xlib:display-finish-output *display*)))
+
+(defun get-x-selection (&optional timeout)
+  "Return the x selection no matter what client own it."
+  (labels ((wait-for-selection (&rest event-slots &key display event-key &allow-other-keys)
+	     (declare (ignore display))
+	     (when (eq event-key :selection-notify)
+	       (destructuring-bind (&key window property &allow-other-keys) event-slots
+	         (if property
+		     (xlib:get-property window property :type :string :result-type 'string :transform #'xlib:card8->char :delete-p t)
+		     "")))))
+    (if *x-selection*
+	*x-selection*
+	(progn
+	  (xlib:convert-selection :primary :string (screen-input-window (current-screen)) :stumpwm-selection)
+	  ;; Note: this may spend longer than timeout in this loop but it will eventually return.
+	  (let ((time (get-internal-real-time)))
+	    (loop for ret = (xlib:process-event *display* :handler #'wait-for-selection :timeout timeout :discard-p nil)
+	       when (or ret
+			(> (/ (- time (get-internal-real-time)) internal-time-units-per-second)
+			   timeout))
+	       ;; make sure we return a string
+	       return (or ret "")))))))
