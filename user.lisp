@@ -552,7 +552,7 @@ aborted."
 
 (define-stumpwm-command "loadrc" (screen)
   (multiple-value-bind (success err rc) (load-rc-file)
-    (echo-string (current-screen)
+    (echo-string screen
 		 (if success
 		     "RC File loaded successfully."
 		     (format nil "Error loading ~A: ~A" rc err)))))
@@ -698,5 +698,6 @@ be found, select it.  Otherwise simply run cmd."
   (run-or-raise screen "firefox" :class "mozilla-firefox"))
 
 (define-stumpwm-command "escape" (screen (key :string "Key: "))
+  (declare (ignore screen))
   (set-prefix-key (kbd key)))
 

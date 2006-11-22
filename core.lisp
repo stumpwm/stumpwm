@@ -39,6 +39,28 @@
 
 ;; Screen helper functions
 
+ 
+(defun translate-id (src src-start src-end font dst dst-start)
+  "A simple replacement for xlib:translate-default.  just the
+identity with a range check."
+  (let ((min (xlib:font-min-char font))
+	(max (xlib:font-max-char font)))
+    (decf src-end)
+    (if (stringp src)	   ; clx does this test so i guess it's needed
+	(loop for i from src-start to src-end
+	   for j from dst-start
+	   as c = (char-code (char src i))
+	   if (<= min c max) do (setf (aref dst j) c)
+	   else do (return i)
+	   finally (return i))
+	(loop for i from src-start to src-end
+	   for j from dst-start
+	   as c = (elt src i)
+	   as n = (if (characterp c) (char-code c) c)
+	   if (and (integerp n) (<= min n max)) do (setf (aref dst j) n)
+	   else do (return i)
+	   finally (return i)))))
+
 (defun screen-x (screen)
   (declare (ignore screen))
   0)
@@ -568,7 +590,7 @@ maximized, and given focus."
 (defun max-width (font l)
   "Return the width of the longest string in L using FONT."
   (loop for i in l
-	maximize (xlib:text-width font i)))
+	maximize (xlib:text-width font i :translate #'translate-id)))
 
 (defun setup-win-gravity (screen win gravity)
   "Position the x, y of the window according to its gravity."
@@ -1058,7 +1080,9 @@ the nth entry to highlight."
 				     *message-window-padding*
 				     (+ (* i height)
 					(xlib:font-ascent (screen-font screen)))
-				     s)
+				     s
+				     :translate #'translate-id
+				     :size 16)
 	  when (and highlight
 		    (= highlight i))
 	  do (invert-rect screen message-win
@@ -1428,27 +1452,24 @@ chunks."
   (export-selection))
 
 (defun send-selection (requestor property selection target time)
-  (let ((keys (list)))
-    (cond 
-      ;; they're requesting what targets are available
-      ((eq target :targets)
-       (format t ":targets")
-       (xlib:change-property requestor property target (list :targets :string) 8 :mode :replace))
-      ;; send them a string
-      ((find target '(:string ))
-       (format t ":string")
-       (xlib:change-property requestor property *x-selection* :string 8 :mode :replace :transform #'xlib:char->card8))
-      ;; we don't know how to handle anything else
-      (t
-       (setf property nil)))
-    (xlib:send-event requestor :selection-notify nil
-		     :display *display*
-		     :window requestor
-		     :selection selection
-		     :property property
-		     :target target
-		     :time time)
-    (xlib:display-finish-output *display*)))
+  (cond 
+    ;; they're requesting what targets are available
+    ((eq target :targets)
+     (xlib:change-property requestor property target (list :targets :string) 8 :mode :replace))
+    ;; send them a string
+    ((find target '(:string ))
+     (xlib:change-property requestor property *x-selection* :string 8 :mode :replace :transform #'xlib:char->card8))
+    ;; we don't know how to handle anything else
+    (t
+     (setf property nil)))
+  (xlib:send-event requestor :selection-notify nil
+		   :display *display*
+		   :window requestor
+		   :selection selection
+		   :property property
+		   :target target
+		   :time time)
+  (xlib:display-finish-output *display*))
 
 (defun get-x-selection (&optional timeout)
   "Return the x selection no matter what client own it."

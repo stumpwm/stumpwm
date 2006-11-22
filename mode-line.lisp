@@ -159,11 +159,14 @@ A string is printed verbatim in the mode line except for
 			    *mode-line-pad-x*
 			    (+ (xlib:font-ascent (xlib:gcontext-font (mode-line-gc ml)))
 			       *mode-line-pad-y*)
-			    string)
+			    string
+			    :translate #'translate-id
+			    :size 16)
     ;; Just clear what we need to. This reduces flicker.
     (xlib:clear-area (mode-line-window ml)
 		     :x (+ *mode-line-pad-x*
-			   (xlib:text-width (xlib:gcontext-font (mode-line-gc ml)) string)))))
+			   (xlib:text-width (xlib:gcontext-font (mode-line-gc ml)) string
+					    :translate #'translate-id)))))
 
 (defun toggle-mode-line (screen &optional (format '*screen-mode-line-format*))
   (if (screen-mode-line screen)

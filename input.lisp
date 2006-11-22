@@ -106,8 +106,8 @@
   ;; FIXME: don't use a cons
   (cons code state))
 
-(defun input-handle-selection-event (&rest event-slots &key window selection property &allow-other-keys)
-  ;; FIXME: don't use a cons
+(defun input-handle-selection-event (&key window selection property &allow-other-keys)
+  (declare (ignore selection))
   (if property
       (xlib:get-property window property :type :string :result-type 'string :transform #'xlib:card8->char :delete-p t)
       ""))
@@ -181,34 +181,39 @@
   "Draw to the screen's input window the contents of input."
   (let* ((gcontext (create-message-window-gcontext screen))
 	 (win (screen-input-window screen))
-	 (prompt-width (xlib:text-width (screen-font screen) prompt))
+	 (prompt-width (xlib:text-width (screen-font screen) prompt :translate #'translate-id))
 	 (string (input-line-string input))
 	 (pos (input-line-position input))
 	 (width (+ prompt-width
-		   (max 100 (xlib:text-width (screen-font screen) string)))))
+		   (max 100 (xlib:text-width (screen-font screen) string :translate #'translate-id)))))
     (xlib:clear-area win :x (+ *message-window-padding*
 			       prompt-width
-			       (xlib:text-width (screen-font screen) string)))
+			       (xlib:text-width (screen-font screen) string :translate #'translate-id)))
     (xlib:with-state (win)
 		     (setf (xlib:drawable-width win) (+ width (* *message-window-padding* 2)))
 		     (setup-win-gravity screen win *input-window-gravity*))
     (xlib:draw-image-glyphs win gcontext
 			    *message-window-padding*
 			    (xlib:font-ascent (screen-font screen))
-			    prompt)
+			    prompt
+			    :translate #'translate-id
+			    :size 16)
     (xlib:draw-image-glyphs win gcontext
 			    (+ *message-window-padding* prompt-width)
 			    (xlib:font-ascent (screen-font screen))
-			    string)
+			    string
+			    :translate #'translate-id
+			    :size 16)
     ;; draw a block cursor
     (invert-rect screen win 
 		 (+ *message-window-padding*
 		    prompt-width
-		    (xlib:text-width (screen-font screen) (subseq string 0 pos)))
+		    (xlib:text-width (screen-font screen) (subseq string 0 pos) :translate #'translate-id))
 		 0
 		 (xlib:text-width (screen-font screen) (if (>= pos (length string))
 							   " "
-							   (string (char string pos))))
+							   (string (char string pos)))
+				  :translate #'translate-id)
 		 (+ (xlib:font-descent (screen-font screen))
 		    (xlib:font-ascent (screen-font screen))))
     ;; draw the error 

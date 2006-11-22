@@ -1,3 +1,17 @@
+2006-11-21  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* user.lisp ("loadrc"): use the screen supplied to the function
+	("escape"): ignore screen
+
+	* input.lisp (input-handle-selection-event): ignore selection
+	(draw-input-bucket): use translate-id
+
+	* mode-line.lisp (redraw-mode-line-for): use translate-id
+
+	* core.lisp (translate-id): new function
+	(max-width): use translate-id
+	(echo-string-list): likewise
+
 2006-11-20  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* core.lisp (get-x-selection): new function
