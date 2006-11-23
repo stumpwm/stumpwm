@@ -171,6 +171,7 @@
 (defun read-one-char (screen)
   "Read a single character."
   (grab-keyboard screen)
+  ;; FIXME: should this be in an unwind-protect to ungrab the kbd?
   (prog1
       (let ((k (do ((k (read-key) (read-key)))
 		   ((not (is-modifier (xlib:keycode->keysym *display* (car k) 0))) k))))

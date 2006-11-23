@@ -1,3 +1,7 @@
+2006-11-22  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* package.lisp (:stumpwm): export a bunch of symbols
+
 2006-11-21  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp ("loadrc"): use the screen supplied to the function
