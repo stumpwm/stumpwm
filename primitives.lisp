@@ -438,3 +438,7 @@ Modifies the match data; use `save-match-data' if necessary."
 (defvar *x-selection* nil
   "This holds stumpwm's current selection. It is generally set
 when killing text in the input bar.")
+
+;; This is here to avoid warnings
+(defvar *top-map* nil
+  "Top level bindings.")

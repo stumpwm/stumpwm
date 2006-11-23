@@ -72,44 +72,138 @@ except that this permission notice may be stated in a
 translation approved by the Free Software Foundation.
 @end titlepage
 
-@node Top, Contact the Stumpwm developers, (dir), (dir)
+@node Top, Introduction, (dir), (dir)
 
 @ifinfo
 This document explains how to use The Stump Window Manager.
 @end ifinfo
 
 @menu
-* Contact the Stumpwm developers::  
+* Introduction::                
 * Key Bindings::                
+* Message and Input Bar::       
+* Windows::                     
+* Frames::                      
+* Mode-line::                   
+* Interacting With Unix::       
+* Interacting With X11::        
 * Miscellaneous Commands::      
 * Hooks::                       
-* Mode-line::                   
 * Command and Function Index::  
 * Variable Index::              
 
 @detailmenu
  --- The Detailed Node Listing ---
 
+Introduction
+
+* Starting StumpWM::            
+* Contact the Stumpwm developers::  
+
 Key Bindings
 
 * List of Default Keybindings::  
 * Binding Keys::                
 
+Message and Input Bar
+
+* Customizing The Bar::         
+* Using The Input Bar::         
+* Programming The Message Bar::  
+* Programming the Input Bar::   
+
+Windows
+
+* Customizing Window Appearance::  
+
 @end detailmenu
 @end menu
 
-@node Contact the Stumpwm developers, Key Bindings, Top, Top
-@chapter Contact the Stumpwm developers
-The Stumpwm home page is @url{http://www.nongnu.org/stumpwm}.
+@node Introduction, Key Bindings, Top, Top
+@chapter Introduction
+Stumpwm is an X11 window manager written entirely in Common Lisp. It's
+user interface goals are similar to ratpoison's but with an emphasis on
+customizability, completeness, and cushiness.
 
-You can reach Shawn Betts at @email{sabetts@@vcn.bc.ca}.
+@menu
+* Starting StumpWM::            
+* Contact the Stumpwm developers::  
+@end menu
+
+@node Starting StumpWM, Contact the Stumpwm developers, Introduction, Introduction
+@section Starting StumpWM
+There are a number of ways to start Stumpwm but possibly the most
+straight forward method is as follows. This assumes you have a copy of
+the stumpwm source code.
+
+@enumerate
+@item
+Install @emph{SBCL} and the @emph{portable-clx} package.
+
+@item
+in the file @file{~/.sbclrc} insert:
+
+@example
+;;; If the first user-processable command-line argument is a filename,
+;;; disable the debugger, load the file handling shebang-line and quit.
+(let ((script (and (second *posix-argv*)
+                   (probe-file (second *posix-argv*)))))
+  (when script
+    ;; Handle shebang-line
+    (set-dispatch-macro-character #\# #\!
+                                  (lambda (stream char arg)
+                                    (declare (ignore char arg))
+                                    (read-line stream)))
+    ;; Disable debugger
+    (setf *invoke-debugger-hook*
+          (lambda (condition hook)
+            (declare (ignore hook))
+            ;; Uncomment to get backtraces on errors
+            ;; (sb-debug:backtrace 20)
+            (format *error-output* "Error: ~A~%" condition)
+            (quit)))
+    (load script)
+    (quit)))
+@end example
+
+This allows sbcl to act as part of a command-line script.
+
+@item
+Create a symlink in @file{~/.sbcl/systems/} to point to the
+@file{stumpwm.asd} file, included in the stumpwm source. Now
+@emph{SBCL} knows how to load stumpwm.
+
+@item
+In your @file{~/.xinitrc} file include the line
+@command{/path/to/stumpwm.sbcl}. Remember to replace @samp{/path/to/}
+with the actual path. @command{stumpwm.sbcl} is included in the
+stumpwm source.
+
+@item
+Finally, start X windows with @command{startx}. Cross your fingers. It
+may take some time for @emph{SBCL} to finish compiling stumpwm. This
+only happens once. Subsequent start ups should be much
+faster. Eventually you should see a @samp{Welcome To the Stump Window Manager}
+message pop up. At this point, you have successfully started
+stumpwm.
+@end enumerate
+
+@node Contact the Stumpwm developers,  , Starting StumpWM, Introduction
+@section Contact the Stumpwm developers
+The Stumpwm home page is @url{http://stumpwm.nongnu.org/}.
+
+You can reach Shawn Betts at @email{sabetts at vcn.bc.ca}.
 
 The Stumpwm mailing list is @email{stumpwm-devel@@nongnu.org} which
-you can subscribe to at @url{http://mail.nongnu.org/mailman/listinfo/stumpwm-devel}.
+you can subscribe to at
+@url{http://mail.nongnu.org/mailman/listinfo/stumpwm-devel}. Posting
+is restricted to subscribers to keep spam out of the archives.
 
 The Stumpwm IRC channel can be found on Freenode at #stumpwm.
 
-@node Key Bindings, Miscellaneous Commands, Contact the Stumpwm developers, Top
+
+
+@node Key Bindings, Message and Input Bar, Introduction, Top
 @chapter Key Bindings
 Stumpwm is controlled entirely by keystrokes and Lisp commands. It
 mimics GNU Screen's keyboard handling. Stumpwm's default prefix key is
@@ -120,6 +214,11 @@ user.lisp.
 * List of Default Keybindings::  
 * Binding Keys::                
 @end menu
+
+
+@deffn {Command} escape @var{key}
+@end deffn
+
 
 @node List of Default Keybindings, Binding Keys, Key Bindings, Key Bindings
 @section List of Default Keybindings
@@ -245,59 +344,274 @@ Prints out the version of the running Stumpwm.
 @node Binding Keys,  , List of Default Keybindings, Key Bindings
 @section Binding Keys
 
+@defun define-key @var{keymap} @var{key} @var{command}
+@end defun
 
-@node Miscellaneous Commands, Hooks, Key Bindings, Top
-@chapter Miscellaneous Commands
-The following is a list of commands that don't really fit in any other
-section.
+@defun undefine-key @var{keymap} @var{key}
+@end defun
 
-@node Hooks, Mode-line, Miscellaneous Commands, Top
-@chapter Hooks
-Stumpwm exports a number of hooks you can use to add customizations;
-like hooks in Emacs, you add to a hook with the @code{add-hook}
-function. for example:
+@defun kbd @var{key-string}
+@end defun
 
-@example
-(stumpwm:add-hook 'stumpwm:*new-window-hook* 'my-new-window-custos)
-@end example
+@defun set-prefix-key @var{key}
+@end defun
 
-adds your @code{my-new-window-custos} function to the list of
-functions called when a new window appears.
+@defun make-sparse-keymap
+@end defun
 
-The following hooks are available:
+@defvar *root-map*
+@end defvar
 
-@defvr {Hook} *map-window-hook*
-A hook called whenever a window is mapped.
-@end defvr
+@defvar *top-map*
+@end defvar
 
-@defvr {Hook} *unmap-window-hook*
-A hook called whenever a window is withdrawn.
-@end defvr
+@node Message and Input Bar, Windows, Key Bindings, Top
+@chapter Message and Input Bar
 
-@defvr {Hook} *new-window-hook*
-A hook called whenever a window is created.
-@end defvr
 
-@defvr {Hook} *destroy-window-hook*
-A hook called whenever a window is destroyed.
-@end defvr
+@deffn {Command} echo @var{string}
+@end deffn
 
-@defvr {Hook} *focus-window-hook*
-A hook called when a window is given focus.
-@end defvr
+@deffn {Command} colon @var{command}
+@end deffn
 
-@defvr {Hook} *unfocus-window-hook*
-A hook called when a window loses focus.
-@end defvr
 
-@node Mode-line, Command and Function Index, Hooks, Top
+@menu
+* Customizing The Bar::         
+* Using The Input Bar::         
+* Programming The Message Bar::  
+* Programming the Input Bar::   
+@end menu
+
+@node Customizing The Bar, Using The Input Bar, Message and Input Bar, Message and Input Bar
+@section Customizing The Bar
+The bar's appearance and behavior can be modified with the following
+functions and variables.
+
+@defun set-fg-color
+@end defun
+
+@defun set-bg-color
+@end defun
+
+@defun set-border-color
+@end defun
+
+@defun set-font
+@end defun
+
+@defvar *message-window-padding*
+@end defvar
+
+@defvar *message-window-gravity*
+@end defvar
+
+@defvar *timeout-wait*
+@end defvar
+
+@defvar *input-window-gravity*
+@end defvar
+
+@node Using The Input Bar, Programming The Message Bar, Customizing The Bar, Message and Input Bar
+@section Using The Input Bar
+
+The following is a list of keybindings for the input bar.
+
+@table @kbd
+@item DEL
+delete-backward-char
+
+@item C-d
+delete-forward-char
+
+@item Delete
+delete-forward-char
+
+@item C-f
+forward-char
+
+@item Right
+forward-char
+
+@item M-f
+forward-word
+
+@item C-b
+backward-char
+
+@item Left
+backward-char
+
+@item M-b
+backward-word
+
+@item C-a
+move-beginning-of-line
+
+@item C-e
+move-end-of-line
+
+@item C-k
+kill-line
+
+@item C-u
+kill-to-beginning
+
+@item C-p
+history-back
+
+@item Up
+history-back
+
+@item C-n
+history-forward
+
+@item Down
+history-forward
+
+@item RET
+submit
+
+@item C-g
+abort
+
+@item C-y
+yank-selection
+@end table
+
+@node Programming The Message Bar, Programming the Input Bar, Using The Input Bar, Message and Input Bar
+@section Programming The Message Bar
+
+@defun echo-string
+@end defun
+
+@node Programming the Input Bar,  , Programming The Message Bar, Message and Input Bar
+@section Programming the Input Bar
+New input behavior can be added to the input bar by creating editing
+functions and binding them to keys in the @var{*input-map*} using
+@command{define-key}, just like other key bindings.
+
+An input function takes 2 arguments: the input structure and the key pressed.
+
+@defun read-one-line
+@end defun
+
+@defun read-one-char
+@end defun
+
+@defun input-insert-string
+@end defun
+
+@defun input-insert-char
+@end defun
+
+@defvar *input-map*
+@end defvar
+
+@node Windows, Frames, Message and Input Bar, Top
+@chapter Windows
+
+@deffn {Command} next
+@end deffn
+
+@deffn {Command} prev
+@end deffn
+
+@deffn {Command} delete
+@end deffn
+
+@deffn {Command} kill
+@end deffn
+
+@deffn {Command} windows
+@end deffn
+
+@deffn {Command} other
+@end deffn
+
+@deffn {Command} number @var{number}
+@end deffn
+
+@deffn {Command} meta @var{key}
+@end deffn
+
+@deffn {Command} select @var{string}
+@end deffn
+
+
+@menu
+* Customizing Window Appearance::  
+@end menu
+
+@node Customizing Window Appearance,  , Windows, Windows
+@section Customizing Window Appearance
+@defvar *maxsize-border-width*
+@end defvar
+
+@defvar *transient-border-width*
+@end defvar
+
+@defvar *normal-border-width*
+@end defvar
+
+@defvar *focus-color*
+@end defvar
+
+@defvar *unfocus-color*
+@end defvar
+
+@node Frames, Mode-line, Windows, Top
+@chapter Frames
+Frames contain windows. All windows exist within a frame.
+
+Those used to ratpoison will notice that this differs from ratpoison's
+window pool, where windows and frames are not so tightly connected.
+
+@deffn {Command} pull @var{window-number}
+@end deffn
+
+@deffn {Command} hsplit
+@end deffn
+
+@deffn {Command} vsplit
+@end deffn
+
+@deffn {Command} remove
+@end deffn
+
+@deffn {Command} only
+@end deffn
+
+@deffn {Command} curframe
+@end deffn
+
+@deffn {Command} fnext
+@end deffn
+
+@deffn {Command} sibling
+@end deffn
+
+@deffn {Command} fselect @var{frame-number}
+@end deffn
+
+@deffn {Command} resize @var{width} @var{height}
+@end deffn
+
+
+@deffn {Command} fclear
+@end deffn
+
+@deffn {Command} move-focus @var{direction}
+@end deffn
+
+@node Mode-line, Interacting With Unix, Frames, Top
 @chapter The Mode Line
 The mode line is a bar that runs across either the top or bottom of
 the screen and is used to display information. By default the
 mode line displays the list of windows, similar to the output C-t w
 produces.
 
-Toggle the mode line with the command @command{mode-line} or the lisp
+Toggle the mode line with the @command{mode-line} command or the lisp
 function @code{stumpwm:toggle-mode-line}. Each screen has it's own
 mode line. For example:
 
@@ -311,18 +625,20 @@ mode line. For example:
 
 The mode line is updated after ever stumpwm command.
 
-To display the current date on the modeline, one might do the
-following:
+To display the window list and the current date on the modeline, one
+might do the following:
 
 @example
 (setf stumpwm:*screen-mode-line-format*
-      (append stumpwm:*screen-mode-line-format*
-              (list " | "
-                    (:eval (stumpwm:run-shell-command "date" t)))))
+      (list "%w | "
+            (:eval (stumpwm:run-shell-command "date" t))))
 @end example
 
 @code{(stumpwm:run-shell-command "date" t)} runs the command
 @command{date} and returns its output as a string.
+
+@defun toggle-mode-line
+@end defun
 
 The following variables control the color, position, and size of the
 mode line.
@@ -355,11 +671,145 @@ The mode line foreground color.
 The mode line border color.
 @end defvar
 
+@node Interacting With Unix, Interacting With X11, Mode-line, Top
+@chapter Interacting With Unix
+
+
+@deffn {Command} exec @var{shell-command}
+@end deffn
+
+@deffn {Command} shell
+@end deffn
+
+@defun run-shell-command
+@end defun
+
+@defvar *shell-program*
+@end defvar
+
+@defun getenv
+@end defun
+
+@defun {(setf getenv)}
+@end defun
+
+@node Interacting With X11, Miscellaneous Commands, Interacting With Unix, Top
+@chapter Interacting With X11
+
+@defun set-x-selection
+@end defun
+
+@defun get-x-selection
+@end defun
+
+@node Miscellaneous Commands, Hooks, Interacting With X11, Top
+@chapter Miscellaneous Commands
+The following is a list of commands that don't really fit in any other
+section.
+
+
+@deffn {Command} banish
+@end deffn
+
+@deffn {Command} ratwarp @var{x} @var{y}
+@end deffn
+
+@deffn {Command} ratrelwarp @var{delta-x} @var{delta-y}
+@end deffn
+
+@deffn {Command} time
+@end deffn
+
+
+@deffn {Command} eval @var{s-expression}
+@end deffn
+
+@deffn {Command} reload
+@end deffn
+
+@deffn {Command} loadrc
+@end deffn
+
+@deffn {Command} help
+@end deffn
+
+@deffn {Command} abort
+@end deffn
+
+@deffn {Command} quit
+@end deffn
+
+
+@deffn {Command} web
+@end deffn
+
+
+@defun define-stumpwm-command
+@end defun
+
+@node Hooks, Command and Function Index, Miscellaneous Commands, Top
+@chapter Hooks
+Stumpwm exports a number of hooks you can use to add customizations;
+like hooks in Emacs, you add to a hook with the @code{add-hook}
+function. for example:
+
+@example
+(stumpwm:add-hook 'stumpwm:*new-window-hook* 'my-new-window-custos)
+@end example
+
+adds your @code{my-new-window-custos} function to the list of
+functions called when a new window appears.
+
+@defun add-hook
+@end defun
+
+@defun remove-hook
+@end defun
+
+The following hooks are available:
+
+@defvr {Hook} *map-window-hook*
+A hook called whenever a window is mapped.
+@end defvr
+
+@defvr {Hook} *unmap-window-hook*
+A hook called whenever a window is withdrawn.
+@end defvr
+
+@defvr {Hook} *new-window-hook*
+A hook called whenever a window is created.
+@end defvr
+
+@defvr {Hook} *destroy-window-hook*
+A hook called whenever a window is destroyed.
+@end defvr
+
+@defvr {Hook} *focus-window-hook*
+A hook called when a window is given focus.
+@end defvr
+
+@defvr {Hook} *unfocus-window-hook*
+A hook called when a window loses focus.
+@end defvr
+
+@defvr {Hook} *start-hook*
+A hook called when stumpwm starts.
+@end defvr
+
+@defvr {Hook} *internal-loop-hook*
+A hook called inside stumpwm's inner loop.
+@end defvr
+
+@defvr {Hook} *focus-frame-hook*
+A hook called when a frame is given focus. The hook functions are
+called with 2 arguments: the current frame and the last frame.
+@end defvr
+
 @c @node Command Index, Variable Index, Mode-line, Top
 @c @unnumbered Command Index
 @c @printindex cmd
 
-@node Command and Function Index, Variable Index, Mode-line, Top
+@node Command and Function Index, Variable Index, Hooks, Top
 @unnumbered Command and Function Index
 @printindex fn
 

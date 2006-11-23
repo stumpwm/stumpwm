@@ -130,7 +130,7 @@ loaded."
 	 (setf *screen-list* (mapcar #'init-screen (xlib:display-roots *display*)))
 	 (xlib:access-error (c)
            (declare (ignore c))
-           (return-from stumpwm (princ "Another window manager is running."))))
+           (return-from stumpwm (write-line "Another window manager is running."))))
 	;; Initialize the necessary atoms
 	(init-atoms)
         (update-modifier-map)

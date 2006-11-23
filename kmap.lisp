@@ -120,7 +120,10 @@ saving keyboard macros ***(see `insert-kbd-macro')."
 	  (keysym->stumpwm-name (key-keysym key))))
 
 (defun define-key (map key command)
-  (setf (gethash key map) command))
+  (setf (gethash key map) command)
+  ;; We need to tell the X server when changing the top-map bindings.
+  (when (eq map *top-map*)
+    (sync-keys)))
 
 (defun undefine-key (map key)
   (remhash key map))

@@ -26,10 +26,6 @@
 
 (in-package :stumpwm)
 
-;; This is here to avoid warnings
-(defvar *top-map* nil
-  "Top level bindings.")
-
 ;; Do it this way so its easier to wipe the map and get a clean one.
 (when (null *top-map*)
   (setf *top-map*

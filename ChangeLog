@@ -1,4 +1,10 @@
+2006-11-23  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* stumpwm.lisp (stumpwm): use write-line
+
 2006-11-22  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* kmap.lisp (define-key): call sync-keys when *top-map* is changed
 
 	* package.lisp (:stumpwm): export a bunch of symbols
 

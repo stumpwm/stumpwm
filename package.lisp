@@ -3,7 +3,6 @@
   (:export #:stumpwm
 	   #:*top-level-error-action*
 	   #:*screen-list*
-	   #:getenv
 	   #:split-string
 	   #:*version*
 	   ;; message bar
@@ -28,7 +27,6 @@
 	   #:undefine-key
 	   #:*root-map*
 	   #:*top-map*
-	   #:sync-keys
 	   #:kbd
 	   #:set-prefix-key
 	   #:make-sparse-keymap
@@ -63,6 +61,7 @@
 	   ;; shell
 	   #:run-shell-command
 	   #:*shell-program*
+	   #:getenv
 	   ;; selection
 	   #:set-x-selection
 	   #:get-x-selection
