@@ -1,5 +1,11 @@
 2006-11-23  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* user.lisp (*resize-map*): new global
+	(*resize-backup*): new global
+	("iresize"): new command
+	("abort-iresize"): likewise
+	("exit-iresize"): likewise
+
 	* primitives.lisp (window): new struct. used almost everywhere
 	xlib:windows were. dependant code updated.
 	(print-object frame): new method

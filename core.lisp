@@ -456,6 +456,7 @@ give the last accessed window focus."
   (dformat "no-focus~%")
   (let ((cw (screen-current-window screen)))
     (xlib:set-input-focus *display* (screen-focus-window screen) :POINTER-ROOT)
+    (setf (screen-focus screen) nil)
     (when cw
       (setf (xlib:window-border (window-parent cw)) (get-color-pixel screen *unfocus-color*)))))
 
@@ -658,6 +659,16 @@ T (default) then also focus the frame."
 	      :width w
 	      :height h
 	      :window nil))
+
+(defun copy-frame-tree (screen)
+  "Return a copy of the frame tree."
+  (labels ((copy (tree)
+	     (cond ((null tree) tree)
+		   ((typep tree 'frame)
+		    (copy-structure tree))
+		   (t 
+		    (mapcar 'copy-frame-tree tree)))))
+    (copy (screen-frame-tree screen))))
 
 (defun screen-frames (screen)
   (tree-accum-fn (screen-frame-tree screen) 'nconc 'list))
@@ -895,8 +906,8 @@ one."
     ;; if FRAME is taking up the whole DIM or if AMOUNT = 0, do nothing
     (unless (or (zerop amount)
                 (case dim
-                  (width  (eq (screen-width screen)  (frame-width frame)))
-                  (height (eq (screen-height screen) (frame-height frame)))))
+                  (width  (< (screen-width screen) (+ (frame-width frame) amount)))
+                  (height (< (screen-height screen) (+ (frame-height frame) amount)))))
       (let* ((split-pred (ecase dim
                            (width   #'tree-column-split)
                            (height  #'tree-row-split)))
@@ -1489,3 +1500,17 @@ chunks."
 			   timeout))
 	       ;; make sure we return a string
 	       return (or ret "")))))))
+
+;;; Top map push/popping
+
+(defvar *top-map-list* nil)
+
+(defun push-top-map (new-top)
+  (push *top-map* *top-map-list*)
+  (setf *top-map* new-top)
+  (sync-keys))
+
+(defun pop-top-map ()
+  (when *top-map-list*
+    (setf *top-map* (pop *top-map-list*))
+    (sync-keys)))

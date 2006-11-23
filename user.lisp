@@ -65,9 +65,10 @@
 	  (define-key m (kbd "7") "pull 7")
 	  (define-key m (kbd "8") "pull 8")
 	  (define-key m (kbd "9") "pull 9")
-	  (define-key m (kbd "r") "remove")
+	  (define-key m (kbd "R") "remove")
 	  (define-key m (kbd "s") "vsplit")
 	  (define-key m (kbd "S") "hsplit")
+	  (define-key m (kbd "r") "iresize")
 	  (define-key m (kbd "o") "fnext")
 	  (define-key m (kbd "TAB") "sibling")
 	  (define-key m (kbd "f") "fselect")
@@ -506,7 +507,10 @@ aborted."
 
 (define-stumpwm-command "colon" (screen (initial-input :optional "Initial Input: "))
   (let ((cmd (read-one-line screen ": " (or initial-input ""))))
-    (interactive-command cmd screen)))
+    (unless cmd
+      (throw 'error "Abort."))
+    (when (plusp (length cmd))
+      (interactive-command cmd screen))))
 
 (defun pull-window-by-number (screen n)
   "Pull window N from another frame into the current frame and focus it."
@@ -707,4 +711,59 @@ be found, select it.  Otherwise simply run cmd."
 (define-stumpwm-command "escape" (screen (key :string "Key: "))
   (declare (ignore screen))
   (set-prefix-key (kbd key)))
+
+;;; A resize minor mode. Something a bit better should probably be
+;;; written. But it's an interesting way of doing it.
+
+(defvar *resize-map* nil
+  "The keymap used for resizing a window")
+
+(defvar *resize-backup* nil)
+
+(when (null *resize-map*)
+  (setf *resize-map*
+	(let ((m (make-sparse-keymap)))
+	  (define-key m (kbd "Up") "resize 0 -10")
+	  (define-key m (kbd "C-p") "resize 0 -10")
+	  (define-key m (kbd "p") "resize 0 -10")
+	  (define-key m (kbd "k") "resize 0 -10")
+
+	  (define-key m (kbd "Down") "resize 0 10")
+	  (define-key m (kbd "C-n") "resize 0 10")
+	  (define-key m (kbd "n") "resize 0 10")
+	  (define-key m (kbd "j") "resize 0 10")
+
+	  (define-key m (kbd "Left") "resize -10 0")
+	  (define-key m (kbd "C-b") "resize -10 0")
+	  (define-key m (kbd "b") "resize -10 0")
+	  (define-key m (kbd "h") "resize -10 0")
+
+	  (define-key m (kbd "Right") "resize 10 0")
+	  (define-key m (kbd "C-f") "resize 10 0")
+	  (define-key m (kbd "f") "resize 10 0")
+	  (define-key m (kbd "l") "resize 10 0")
+	  (define-key m (kbd "RET") "exit-iresize")
+	  (define-key m (kbd "C-g") "abort-iresize")
+	  (define-key m (kbd "ESC") "abort-iresize")
+	  m)))
+
+(define-stumpwm-command "iresize" (screen)
+  (if (atom (screen-frame-tree screen))
+      (echo-string screen "There's only 1 frame!")
+      (progn
+	(echo-string screen "Resize Frame")
+	(push-top-map *resize-map*))
+      ;;   (setf *resize-backup* (copy-frame-tree screen))
+      ))
+
+(define-stumpwm-command "abort-iresize" (screen)
+  (echo-string screen "Abort resize")
+  ;; TODO: actually revert the frames
+  (pop-top-map))
+
+(define-stumpwm-command "exit-iresize" (screen) 
+ (echo-string screen "Resize Complete")
+  (pop-top-map))
+
+
 
