@@ -80,11 +80,25 @@ This document explains how to use The Stump Window Manager.
 
 @menu
 * Contact the Stumpwm developers::  
-* Usage::                       
+* Key Bindings::                
+* Miscellaneous Commands::      
 * Hooks::                       
+* Mode-line::                   
+* Command and Function Index::  
+* Variable Index::              
+
+@detailmenu
+ --- The Detailed Node Listing ---
+
+Key Bindings
+
+* List of Default Keybindings::  
+* Binding Keys::                
+
+@end detailmenu
 @end menu
 
-@node Contact the Stumpwm developers, Usage, Top, Top
+@node Contact the Stumpwm developers, Key Bindings, Top, Top
 @chapter Contact the Stumpwm developers
 The Stumpwm home page is @url{http://www.nongnu.org/stumpwm}.
 
@@ -93,34 +107,43 @@ You can reach Shawn Betts at @email{sabetts@@vcn.bc.ca}.
 The Stumpwm mailing list is @email{stumpwm-devel@@nongnu.org} which
 you can subscribe to at @url{http://mail.nongnu.org/mailman/listinfo/stumpwm-devel}.
 
-@node Usage, Hooks, Contact the Stumpwm developers, Top
-@chapter Usage
-Stumpwm is controlled entirely by keystrokes and lisp commands. It
-mimics GNU Screen's keyboard handling. Stumpwm's prefix key is
-@kbd{C-t}. The following commands are currently available:
+The Stumpwm IRC channel can be found on Freenode at #stumpwm.
+
+@node Key Bindings, Miscellaneous Commands, Contact the Stumpwm developers, Top
+@chapter Key Bindings
+Stumpwm is controlled entirely by keystrokes and Lisp commands. It
+mimics GNU Screen's keyboard handling. Stumpwm's default prefix key is
+@kbd{C-t}. The full list of Stumpwm commands can be found in
+user.lisp.
+
+@menu
+* List of Default Keybindings::  
+* Binding Keys::                
+@end menu
+
+@node List of Default Keybindings, Binding Keys, Key Bindings, Key Bindings
+@section List of Default Keybindings
+The following is a list of keybindings.
 
 @table @kbd
 @item C-t n
+@itemx C-t C-n
+@itemx C-t Space
 go to the next window in the window list
 
 @item C-t p
-@itemx C-t Space
-go to the next window in the window list
+@itemx C-t C-p
+Go to the previous window in the window list
 
 @item C-t '
 Go to a window by name
 
 @item C-t g
+@itemx C-t C-g
 Abort the current command. This is useful if you accidentally hit @kbd{C-t}
-
-@item C-t t
-Switch to the last window to have focus.
 
 @item C-t w
 List all the windows
-
-@item C-t b
-Banish the pointer to the bottom corner of the screen
 
 @item C-t 0-9
 Select a window by number
@@ -134,31 +157,214 @@ Split current frame vertically
 @item C-t S
 Split current frame horizontally
 
+@item C-t k
+@itemx C-t C-k
+Sends a kill message to the current frame and the running program.
+
+@item C-t K
+Kills the current frame and running program; like a kill -9.
+
+@item C-t c
+@itemx C-t C-c
+Run an X terminal; by default xterm
+
+@item C-t e
+@itemx C-t C-e
+Run Emacs 
+
+@item C-t t
+Sends a C-t to the frame; this is useful for applications like Firefox
+which make heavy use of C-t (in Firefox's case, for opening a new
+tab). This is similar to how GNU screen uses C-a a.
+
+@item C-t w
+@itemx C-t C-w
+Prints out a list of the windows, their number, and their name.
+
+@item C-t b
+@itemx C-t C-b
+Banish the mouse point to the lower right corner of the screen.
+
+@item C-t a
+@itemx C-t C-a
+Prints out to the infobox the current time and date, much like the Unix command 'date'.
+
+@item C-t C-t
+Switch to the last window to have focus. So, it switches to the other
+window, and if used again, it switches back to the
+original. 
+
+@item C-t !
+Like in Emacs, this prompts for a shell command to run via /bin/sh. It
+will not display any return values.
+
+@item C-t r
+If the screen is split into multiple frames, one split will be
+undone. If there is only one split, the effect will be the same as C-t Q.
+
+@item C-t o
+If the screen is split into multiple frames, focus shifts to the
+``next'' frame, where it cycles to the right and then down; analogous
+to C-x o in Emacs.
+
+@item C-t TAB
+
+@item C-t F
+Prints message ``Current Frame'' in the frame which has focus.
+
+@item C-t ;
+Opens the input box. Stumpwm commands can be run from here, and the
+input history moved through.
+
+@item C-t :
+Opens the input box, but all things typed in here will be sent to the
+Common Lisp interpreter where they will be ran as Lisp programs; thus,
+input should be valid Common Lisp.
+
+@item C-t C-h
+The help.
+
+@item C-t -
+Hides all frames and show the root window.
+
+@item C-t Q
+Removes all splits and maximizes the frame with focus.
+
+@item C-t Up
+@itemx C-t Down
+@itemx C-t Left
+@itemx C-t Right
+When the window is split into multiple frames, one can shift focus in
+a desired cardinal direction via the D-pad. Up will shift focus up, if
+possible, Down will shift downwards, etc.
+
+@item C-t v
+Prints out the version of the running Stumpwm.
 @end table
 
-@node Hooks,  , Usage, Top
+@node Binding Keys,  , List of Default Keybindings, Key Bindings
+@section Binding Keys
+
+
+@node Miscellaneous Commands, Hooks, Key Bindings, Top
+@chapter Miscellaneous Commands
+The following is a list of commands that don't really fit in any other
+section.
+
+@node Hooks, Mode-line, Miscellaneous Commands, Top
 @chapter Hooks
-Stumpwm exports a number of hooks you can use to add
-customizations. The following hooks are available:
+Stumpwm exports a number of hooks you can use to add customizations;
+like hooks in Emacs, you add to a hook with the @code{add-hook}
+function. for example:
 
-@table @var
-@item *map-window-hook*
+@example
+(stumpwm:add-hook 'stumpwm:*new-window-hook* 'my-new-window-custos)
+@end example
+
+adds your @code{my-new-window-custos} function to the list of
+functions called when a new window appears.
+
+The following hooks are available:
+
+@defvr {Hook} *map-window-hook*
 A hook called whenever a window is mapped.
+@end defvr
 
-@item *unmap-window-hook*
+@defvr {Hook} *unmap-window-hook*
 A hook called whenever a window is withdrawn.
+@end defvr
 
-@item *new-window-hook*
+@defvr {Hook} *new-window-hook*
 A hook called whenever a window is created.
+@end defvr
 
-@item *destroy-window-hook*
+@defvr {Hook} *destroy-window-hook*
 A hook called whenever a window is destroyed.
+@end defvr
 
-@item *focus-window-hook*
+@defvr {Hook} *focus-window-hook*
 A hook called when a window is given focus.
+@end defvr
 
-@item *unfocus-window-hook*
+@defvr {Hook} *unfocus-window-hook*
 A hook called when a window loses focus.
-@end table
+@end defvr
+
+@node Mode-line, Command and Function Index, Hooks, Top
+@chapter The Mode Line
+The mode line is a bar that runs across either the top or bottom of
+the screen and is used to display information. By default the
+mode line displays the list of windows, similar to the output C-t w
+produces.
+
+Toggle the mode line with the command @command{mode-line} or the lisp
+function @code{stumpwm:toggle-mode-line}. Each screen has it's own
+mode line. For example:
+
+@example
+;; turn on/off the mode line for the current screen only.
+(stumpwm:toggle-mode-line (current-screen))
+
+;; turn on/off the mode-line for all the screens
+(mapc 'stumpwm:toggle-mode-line stumpwm:*screen-list*)
+@end example
+
+The mode line is updated after ever stumpwm command.
+
+To display the current date on the modeline, one might do the
+following:
+
+@example
+(setf stumpwm:*screen-mode-line-format*
+      (append stumpwm:*screen-mode-line-format*
+              (list " | "
+                    (:eval (stumpwm:run-shell-command "date" t)))))
+@end example
+
+@code{(stumpwm:run-shell-command "date" t)} runs the command
+@command{date} and returns its output as a string.
+
+The following variables control the color, position, and size of the
+mode line.
+
+@defvar *mode-line-screen-position*
+Specifies where the mode line is displayed. Valid values are :top and :bottom.
+@end defvar
+
+@defvar *mode-line-border-width* 1
+Specifies How thick the mode line's border will be. Integer value.
+@end defvar
+
+@defvar *mode-line-pad-x* 
+Specifies the number of padding pixels between the text and the side of the mode line. Integer value.
+@end defvar
+
+@defvar *mode-line-pad-y* 
+The number of padding pixels between the modeline text and the top/bottom of the modeline? Integer value.
+@end defvar
+
+@defvar *mode-line-background-color* 
+The mode line background color.
+@end defvar
+
+@defvar *mode-line-foreground-color* 
+The mode line foreground color.
+@end defvar
+
+@defvar *mode-line-border-color* 
+The mode line border color.
+@end defvar
+
+@c @node Command Index, Variable Index, Mode-line, Top
+@c @unnumbered Command Index
+@c @printindex cmd
+
+@node Command and Function Index, Variable Index, Mode-line, Top
+@unnumbered Command and Function Index
+@printindex fn
+
+@node Variable Index,  , Command and Function Index, Top
+@unnumbered Variable Index
+@printindex vr
 
 @bye
