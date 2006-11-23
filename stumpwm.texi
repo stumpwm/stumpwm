@@ -121,7 +121,7 @@ Windows
 
 @node Introduction, Key Bindings, Top, Top
 @chapter Introduction
-Stumpwm is an X11 window manager written entirely in Common Lisp. It's
+Stumpwm is an X11 window manager written entirely in Common Lisp. Its
 user interface goals are similar to ratpoison's but with an emphasis on
 customizability, completeness, and cushiness.
 
@@ -612,7 +612,7 @@ mode line displays the list of windows, similar to the output C-t w
 produces.
 
 Toggle the mode line with the @command{mode-line} command or the lisp
-function @code{stumpwm:toggle-mode-line}. Each screen has it's own
+function @code{stumpwm:toggle-mode-line}. Each screen has its own
 mode line. For example:
 
 @example
