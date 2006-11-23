@@ -98,6 +98,7 @@ This document explains how to use The Stump Window Manager.
 Introduction
 
 * Starting StumpWM::            
+* Basic Usage::                 
 * Contact the Stumpwm developers::  
 
 Key Bindings
@@ -127,10 +128,11 @@ customizability, completeness, and cushiness.
 
 @menu
 * Starting StumpWM::            
+* Basic Usage::                 
 * Contact the Stumpwm developers::  
 @end menu
 
-@node Starting StumpWM, Contact the Stumpwm developers, Introduction, Introduction
+@node Starting StumpWM, Basic Usage, Introduction, Introduction
 @section Starting StumpWM
 There are a number of ways to start Stumpwm but possibly the most
 straight forward method is as follows. This assumes you have a copy of
@@ -188,7 +190,48 @@ message pop up. At this point, you have successfully started
 stumpwm.
 @end enumerate
 
-@node Contact the Stumpwm developers,  , Starting StumpWM, Introduction
+@node Basic Usage, Contact the Stumpwm developers, Starting StumpWM, Introduction
+@section Basic Usage
+Once you have stumpwm up and running, the first thing you might want
+to do is start @samp{emacs}. Type @kbd{C-t e}, or in other words
+@kbd{Control + t} followed by @kbd{e}. Now perhaps you want an
+@samp{xterm}. Type @kbd{C-t c}. Now You have some programs running.
+
+To see a list of windows Stumpwm is managing, type @kbd{C-t w}. The
+highlighted window is the one you're looking at right now. It's the
+focused window.
+
+All of Stumpwm's key are bound to commands, which can be executed not
+only by keys but also from the input bar. Type @kbd{C-t ;}. Now type
+@samp{time} and press return. Throughout this manual you'll find
+definitions for commands, functions, and variables. Any command you
+see in this manual can be executed from the input bar or bound to a
+key.
+
+At this point you probably want to switch back from your new
+@samp{xterm} to @samp{emacs}. Type @kbd{C-t C-t}. This runs the
+@command{other} command. Type it again and you're back to xterm.
+
+Perhaps you'd like to see @samp{emacs} and @samp{xterm}
+side-by-side. Type @kbd{C-t s}. You have now split the screen into 2
+@samp{frames}. For more information @xref{Frames}. To switch to the
+empty frame type @kbd{C-t TAB}. Now let's pull the xterm window into
+this empty frame. Type @kbd{C-t w} for a window listing. Find the
+@samp{xterm} window. See the number beside it? Type @kbd{C-t} followed
+by @samp{xterm}'s window number.
+
+Another common activity is browsing the interweb. Type @kbd{C-t !}.
+The input bar pops up again. You can now run a shell command.  Let's
+start a web browser. Type @samp{firefox} into the input bar and press
+return.
+
+Unfortunately, @samp{firefox} probably isn't wide enough because it's
+in one of the frames. Type @kbd{C-t Q} to remove all frames but the
+current one and resizes it to fit the screen.
+
+For a full list of key bindings, @xref{List of Default Keybindings}.
+
+@node Contact the Stumpwm developers,  , Basic Usage, Introduction
 @section Contact the Stumpwm developers
 The Stumpwm home page is @url{http://stumpwm.nongnu.org/}.
 
@@ -210,15 +253,19 @@ mimics GNU Screen's keyboard handling. Stumpwm's default prefix key is
 @kbd{C-t}. The full list of Stumpwm commands can be found in
 user.lisp.
 
+@deffn {Command} escape @var{key}
+Set the prefix key. Here's how you would change the prefix key to @kbd{C-z}.
+
+@example
+escape C-z
+@end example
+
+@end deffn
+
 @menu
 * List of Default Keybindings::  
 * Binding Keys::                
 @end menu
-
-
-@deffn {Command} escape @var{key}
-@end deffn
-
 
 @node List of Default Keybindings, Binding Keys, Key Bindings, Key Bindings
 @section List of Default Keybindings
