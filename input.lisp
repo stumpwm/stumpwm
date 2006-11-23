@@ -180,7 +180,7 @@
 
 (defun draw-input-bucket (screen prompt input &optional errorp)
   "Draw to the screen's input window the contents of input."
-  (let* ((gcontext (create-message-window-gcontext screen))
+  (let* ((gcontext (screen-message-gc screen))
 	 (win (screen-input-window screen))
 	 (prompt-width (xlib:text-width (screen-font screen) prompt :translate #'translate-id))
 	 (string (input-line-string input))

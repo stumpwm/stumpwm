@@ -162,6 +162,20 @@ debugger. This can be problematic because if the user hit's a
 mapped key the ENTIRE keyboard will be frozen and you will have
 to login remotely to regain control.")
 
+(defstruct window
+  xwin
+  screen
+  frame
+  number
+  parent
+  name
+  class
+  type
+  res
+  unmap-ignores
+  state
+  plist)
+
 (defstruct frame
   (number nil :type integer)
   x 
@@ -169,6 +183,13 @@ to login remotely to regain control.")
   width
   height
   window)
+
+(defmethod print-object ((object frame) stream)
+  (format stream "#S<frame ~d ~d ~d ~d>" 
+	  (frame-x object) (frame-y object) (frame-window object) (frame-height object)))
+
+(defmethod print-object ((object window) stream)
+  (format stream "#S<window ~s>" (window-name object)))
 
 (defvar *frame-number-map* nil
   "Set this to a string to remap the regular frame numbers to more convenient keys.
@@ -219,7 +240,16 @@ single char keys are supported.")
   ;; The window that gets focus when no window has focus
   focus-window
   ;; a bar along the top or bottom that displays anything you want.
-  mode-line)
+  mode-line
+  ;; graphic contexts
+  message-gc
+  ;; the window that has focus
+  focus
+  )
+
+
+(defmethod print-object ((object screen) stream)
+  (format stream "#S<screen ~s>" (screen-number object)))
 
 (defvar *screen-list* '()
   "List of screens")

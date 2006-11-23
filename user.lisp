@@ -121,7 +121,7 @@
  "Set the focus to the next item in window-list from the focused window."
   ;; The window with focus is the "current" window, so find it in the
   ;; list and give that window focus
-  (let* ((w (xlib:input-focus *display*))
+  (let* ((w (screen-current-window screen))
 	 (wins (member w window-list))
 	 nw)
     ;;(assert wins)
@@ -137,7 +137,7 @@
 (defun delete-current-window (screen)
   "Send a delete event to the current window."
   (when (screen-current-window screen)
-    (delete-window (screen-current-window screen))))
+    (xwin-delete (screen-current-window screen))))
 
 (define-stumpwm-command "delete" (screen)
   (delete-current-window screen))
@@ -145,7 +145,7 @@
 (defun kill-current-window (screen)
   "Kill the client of the current window."
   (when (screen-current-window screen)
-    (kill-window (screen-current-window screen))))
+    (xwin-kill (screen-current-window screen))))
 
 (define-stumpwm-command "kill" (screen)
   (kill-current-window screen))
@@ -169,7 +169,7 @@
 (defun echo-windows (screen fmt)
   "Print a list of the windows to the screen."
   (let* ((wins (sort-windows screen))
-	 (highlight (position (screen-current-window screen) wins :test #'xlib:window-equal))
+	 (highlight (position (screen-current-window screen) wins))
 	 (names (mapcar (lambda (w)
 			  (format-expand *window-formatters* fmt w)) wins)))
     (if (null wins)
@@ -255,7 +255,7 @@ returns..which could be forever if you're not careful."
   (split-frame screen (lambda (f) (split-frame-h screen f)))
   (let ((f (screen-current-frame screen)))
     (when (frame-window f)
-      (update-window-border screen (frame-window f))))
+      (update-window-border (frame-window f))))
   (show-frame-indicator screen))
 
 (define-stumpwm-command "hsplit" (screen)
@@ -265,7 +265,7 @@ returns..which could be forever if you're not careful."
   (split-frame screen (lambda (f) (split-frame-v screen f)))
   (let ((f (screen-current-frame screen)))
     (when (frame-window f)
-      (update-window-border screen (frame-window f))))
+      (update-window-border (frame-window f))))
   (show-frame-indicator screen))
 
 (define-stumpwm-command "vsplit" (screen)
@@ -303,7 +303,7 @@ returns..which could be forever if you're not careful."
 		      (sync-frame-windows screen leaf)))
       (frame-raise-window screen l (frame-window l))
       (when (frame-window l)
-	(update-window-border screen (frame-window l)))
+	(update-window-border (frame-window l)))
       (show-frame-indicator screen))))
 
 (define-stumpwm-command "remove" (screen)
@@ -323,7 +323,7 @@ returns..which could be forever if you're not careful."
 	  (screen-frame-tree screen) frame)
     (focus-frame screen frame)
     (when (frame-window frame)
-      (update-window-border screen (frame-window frame)))
+      (update-window-border (frame-window frame)))
     (sync-frame-windows screen (screen-current-frame screen))))
 
 (define-stumpwm-command "curframe" (screen)
@@ -331,7 +331,7 @@ returns..which could be forever if you're not careful."
 
 (defun focus-frame-sibling (screen)
   (let* ((sib (sibling (screen-frame-tree screen)
-		      (screen-current-frame screen))))
+		       (screen-current-frame screen))))
     (when sib
       (focus-frame screen (tree-accum-fn sib
                                          (lambda (x y)
@@ -470,14 +470,20 @@ aborted."
 					(or (choose-frame-by-number screen)
 					    (throw 'error "Abort.")))))
 				  (:rest
-				      (if (null str)
-					  (when prompt
-					    (or (read-one-line screen prompt)
-						(throw 'error "Abort.")))
-					(prog1
-					    (format nil "~{~A~^ ~}" str)
-					  (setf str nil))))
-				 (t (throw 'error "Bad argument type")))))
+				   (if (null str)
+				       (when prompt
+					 (or (read-one-line screen prompt)
+					     (throw 'error "Abort.")))
+				       (prog1
+					   (format nil "~{~A~^ ~}" str)
+					 (setf str nil))))
+				  ;; FIXME: for now this is an optional :rest argument
+				  (:optional
+				   (when str
+				     (prog1
+					 (format nil "~{~A~^ ~}" str)
+				       (setf str nil))))
+				  (t (throw 'error "Bad argument type")))))
 			     arg-specs))
 	;; Did the whole string get parsed? (get rid of trailing
 	;; spaces)
@@ -491,15 +497,16 @@ aborted."
   "exec cmd and echo the result."
   (let ((result (handler-case (parse-and-run-command cmd screen)
 			      (error (c)
-				     (format nil "~A" c)))))
+				     (format nil "Error In Command '~a': ~A" cmd c)))))
     ;; interactive commands update the modeline
     (when (screen-mode-line screen)
       (redraw-mode-line-for (screen-mode-line screen) screen))
     (when (stringp result)
       (echo-string screen result))))
 
-(define-stumpwm-command "colon" (screen (cmd :rest ": "))
-  (interactive-command cmd screen))
+(define-stumpwm-command "colon" (screen (initial-input :optional "Initial Input: "))
+  (let ((cmd (read-one-line screen ": " (or initial-input ""))))
+    (interactive-command cmd screen)))
 
 (defun pull-window-by-number (screen n)
   "Pull window N from another frame into the current frame and focus it."
@@ -656,7 +663,7 @@ aborted."
 be found, select it.  Otherwise simply run cmd."
   (labels ((win-app-info (win)
 	     (list (window-class win)
-		   (window-res-name win)
+		   (window-res win)
 		   (window-name win)))
 	   ;; Raise the window win and select its frame.  For now, it
 	   ;; does not select the screen.

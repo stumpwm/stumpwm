@@ -607,6 +607,13 @@ An input function takes 2 arguments: the input structure and the key pressed.
 @defvar *unfocus-color*
 @end defvar
 
+@node 
+@section Programming With Windows
+
+@defmac def-window-attr @var{attr}
+Create a new window attribute and corresponding get/set functions.
+@end defmac
+
 @node Frames, Mode-line, Windows, Top
 @chapter Frames
 Frames contain windows. All windows exist within a frame.

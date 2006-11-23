@@ -73,6 +73,7 @@
 	   #:*unfocus-color*
 	   #:*window-formatters*
 	   #:*window-format*
+	   #:def-window-attr
 	   ;; frames
 	   #:*frame-number-map*
 	   ))

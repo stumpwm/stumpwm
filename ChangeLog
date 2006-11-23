@@ -1,5 +1,32 @@
 2006-11-23  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* primitives.lisp (window): new struct
+	(print-object frame): new method
+	(print-object window): likewise
+	(screen): add message-gc and focus slots
+	(print-object screen): new method
+
+	* user.lisp (parse-and-run-command): new parameter, :optional
+	(interactive-command): print the command, in the case of an error
+	("colon"): make parameter the initial input and :optional
+
+	* input.lisp (draw-input-bucket): use the message-gc
+
+	* core.lisp (screen-height): use screen-root
+	(screen-width): likewise
+	(xwin-name): rename from window-name
+	(xwin-class): rename from window-class
+	(xwin-res-name): rename from window-res-name
+	(setf xwin-state): new function
+	(xwin-state): renamed from window-state
+	(xwin-type): renamed from window-type
+	(xwin-grab-keys): new function
+	(xwin-ungrab-keys): likewise
+	(xwin-delete): renamed from window-delete
+	(xwin-kill): renamed from window-kill
+	(find-window): new function
+	(update-colors-for-screen): update the message-gc
+
 	* stumpwm.lisp (stumpwm): use write-line
 
 2006-11-22  Shawn Betts  <sabetts@vcn.bc.ca>
