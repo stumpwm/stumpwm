@@ -1,5 +1,20 @@
 2006-11-23  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* primitives.lisp (window): add normal-hints slot
+
+	* user.lisp (kill-current-window): pass the xwin to xwin-kill
+
+	* core.lisp (send-client-message): pass the xwin to send-event
+	(xwin-screen): first try searching for the screen using the window
+	(xwin-send-configuration-notify): rename from send-configure-notify
+	(geometry-hints): use the window's cached normal-hints
+	(add-window): store wm-normal-hints
+	(remove-window): set the screen-focus to nil
+	(delete-window): rename from xwin-delete. callers updated.
+	(:configure-request): don't honour border-width requests
+	(update-window-properties): new function
+	(:property-notify): call update-window-properties to handle wm properties
+
 	* user.lisp (*resize-map*): new global
 	(*resize-backup*): new global
 	("iresize"): new command

@@ -105,7 +105,7 @@ identity with a range check."
   "Send a client message to a client's window."
   (xlib:send-event (window-xwin window)
 		   :client-message nil
-		   :window window
+		   :window (window-xwin window)
 		   :type type
 		   :format 32
 		   :data data))
@@ -121,7 +121,8 @@ identity with a range check."
 
 (defun xwin-screen (w)
   "Return the screen associated with window w."
-  (find-screen (xlib:drawable-root w)))
+  (or (find-screen w)
+      (find-screen (xlib:drawable-root w))))
 
 (defun xwin-name (win)
   (xlib:wm-name win))
@@ -212,19 +213,19 @@ identity with a range check."
       :normal))
 
 ;; Stolen from Eclipse
-(defun send-configuration-notify (window)
+(defun xwin-send-configuration-notify (xwin)
   "Send a synthetic configure notify event to the given window (ICCCM 4.1.5)"
   (multiple-value-bind (x y)
-      (xlib:translate-coordinates window 0 0 (xlib:drawable-root (window-xwin window)))
-    (xlib:send-event (window-xwin window)
+      (xlib:translate-coordinates xwin 0 0 (xlib:drawable-root xwin))
+    (xlib:send-event xwin
 		     :configure-notify
 		     (xlib:make-event-mask :structure-notify)
-		     :event-window (window-xwin window) :window (window-xwin window)
+		     :event-window xwin :window xwin
 		     :x x :y y
 		     :override-redirect-p nil
-		     :border-width (xlib:drawable-border-width (window-xwin window))
-		     :width (xlib:drawable-width (window-xwin window))
-		     :height (xlib:drawable-height (window-xwin window))
+		     :border-width (xlib:drawable-border-width xwin)
+		     :width (xlib:drawable-width xwin)
+		     :height (xlib:drawable-height xwin)
 		     :propagate-p nil)))
   
 (defun geometry-hints (win)
@@ -241,7 +242,7 @@ than the root window's width and height."
 	 (height fheight)
 	 (inc-x 1)
 	 (inc-y 1)
-	 (hints (xlib:wm-normal-hints (window-xwin win)))
+	 (hints (window-normal-hints win))
 	 (hints-width (and hints (xlib:wm-size-hints-max-width hints)))
 	 (hints-height (and hints (xlib:wm-size-hints-max-height hints)))
 	 (hints-inc-x (and hints (xlib:wm-size-hints-width-inc hints)))
@@ -391,6 +392,7 @@ than the root window's width and height."
 			     :class (xwin-class xwin)
 			     :res (xwin-res-name xwin)
 			     :type (xwin-type xwin)
+			     :normal-hints (xlib:wm-normal-hints xwin)
 			     :state +iconic-state+
 			     :screen screen
 			     :plist (make-hash-table)
@@ -443,6 +445,8 @@ give the last accessed window focus."
       ;; If the current window was removed, then refocus the frame it
       ;; was in, since it has a new current window
       (when (eq (screen-current-frame screen) f)
+	;; since the window doesn't exist, it doesn't have focus.
+	(setf (screen-focus screen) nil)
 	(focus-frame screen f)))))
   
 (defun move-window-to-head (screen window)
@@ -500,7 +504,7 @@ maximized, and given focus."
       ;; ignore the error for now.
       (declare (ignore c)))))
     
-(defun xwin-delete (window)
+(defun delete-window (window)
   "Send a delete event to the window."
   (dformat "Delete window~%")
   (send-client-message window :WM_PROTOCOLS +wm-delete-window+))
@@ -1255,7 +1259,7 @@ list of modifier symbols."
 	(dformat "x~%")
 	(setf (xlib:drawable-x window) x))
       (when (has-y value-mask)
-	(dformat "x~%")
+	(dformat "y~%")
 	(setf (xlib:drawable-y window) y))
       (when (has-h value-mask)
 	(dformat "h~%")
@@ -1263,14 +1267,15 @@ list of modifier symbols."
       (when (has-w value-mask)
 	(dformat "w~%")
 	(setf (xlib:drawable-width window) width))
-      (when (has-bw value-mask)
-	(dformat "bw~%")
-	(setf (xlib:drawable-border-width window) border-width)))
+;;       (when (has-bw value-mask)
+;; 	(dformat "bw~%")
+;; 	(setf (xlib:drawable-border-width window) border-width))
+      )
     ;; TODO: are we ICCCM compliant?
     ;; The ICCCM says with have to send a fake configure-notify if
     ;; the window is moved but not resized.
     (unless (or (logbitp 2 value-mask) (logbitp 3 value-mask))
-      (send-configuration-notify window))
+      (xwin-send-configuration-notify window))
     ;; Make sure that goes to the client
     (xlib:display-force-output *display*)
     ;; After honouring the request, maximize it
@@ -1401,15 +1406,35 @@ chunks."
 	       bytes-after)))
     (loop while (> (one-cmd) 0))))
 
+(defun update-window-properties (window atom)
+  (case atom
+    (:wm_name
+     (setf (window-name window) (xwin-name (window-xwin window))))
+    (:wm_normal_hints
+     (setf (window-normal-hints window) (xlib:wm-normal-hints (window-xwin window))
+	   (window-type window) (xwin-type (window-xwin window)))
+     (sync-frame-windows (window-screen window) (window-frame window)))
+    (:wm_hints)
+    (:wm_class
+     (setf (window-class window) (xwin-class (window-xwin window))
+	   (window-res window) (xwin-res-name (window-xwin window))))
+    (:wm_transient_for
+     (setf (window-type window) (xwin-type (window-xwin window)))
+     (sync-frame-windows (window-screen window) (window-frame window)))))
+
 (define-stump-event-handler :property-notify (window atom state)
   (let* ((screen (xwin-screen window))
 	 (root (screen-root screen)))
-    ;;(format t "property notify ~s ~s ~s~%" window atom state)
-    (case atom
+    (format t "property notify ~s ~s ~s~%" window atom state)
+    (case atom      
       (:rp_command_request 
        (when (and (eq state :new-value)
 		  (xlib:window-equal window root))
-	 (handle-rp-commands root))))))
+	 (handle-rp-commands root)))
+      (t
+       (let ((window (find-window window)))
+	 (when window
+	   (update-window-properties window atom)))))))
 
 (define-stump-event-handler :mapping-notify (request start count)
   ;; We could be a bit more intelligent about when to update the

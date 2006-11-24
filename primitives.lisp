@@ -174,6 +174,7 @@ to login remotely to regain control.")
   res
   unmap-ignores
   state
+  normal-hints
   plist)
 
 (defstruct frame

@@ -138,7 +138,7 @@
 (defun delete-current-window (screen)
   "Send a delete event to the current window."
   (when (screen-current-window screen)
-    (xwin-delete (screen-current-window screen))))
+    (delete-window (screen-current-window screen))))
 
 (define-stumpwm-command "delete" (screen)
   (delete-current-window screen))
@@ -146,7 +146,7 @@
 (defun kill-current-window (screen)
   "Kill the client of the current window."
   (when (screen-current-window screen)
-    (xwin-kill (screen-current-window screen))))
+    (xwin-kill (window-xwin (screen-current-window screen)))))
 
 (define-stumpwm-command "kill" (screen)
   (kill-current-window screen))
