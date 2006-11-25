@@ -747,7 +747,7 @@ might do the following:
 @example
 (setf stumpwm:*screen-mode-line-format*
       (list "%w | "
-            (:eval (stumpwm:run-shell-command "date" t))))
+            '(:eval (stumpwm:run-shell-command "date" t))))
 @end example
 
 @code{(stumpwm:run-shell-command "date" t)} runs the command
