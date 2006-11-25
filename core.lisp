@@ -173,6 +173,8 @@ identity with a range check."
       (setf (screen-groups screen) (remove group (screen-groups screen))))))
 
 (defun add-group (screen name)
+  (check-type screen screen)
+  (check-type name string)
   (let* ((initial-frame (make-initial-frame 
 			 (screen-x screen) (screen-y screen)
 			 (screen-width screen) (screen-height screen)))

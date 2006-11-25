@@ -1,5 +1,7 @@
 2006-11-25  Shawn Betts  <sabetts@shitbender.gagrod>
 
+	* core.lisp (add-group): check the arg types
+
 	* user.lisp (*group-map*): add bindings to move and kill groups
 	(parse-and-run-command): new option :group
 	(group-forward): call next-group
