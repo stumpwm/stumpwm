@@ -85,6 +85,7 @@ This document explains how to use The Stump Window Manager.
 * Windows::                     
 * Frames::                      
 * Mode-line::                   
+* Groups::                      
 * Interacting With Unix::       
 * Interacting With X11::        
 * Miscellaneous Commands::      
@@ -116,6 +117,7 @@ Message and Input Bar
 Windows
 
 * Customizing Window Appearance::  
+* Programming With Windows::    
 
 @end detailmenu
 @end menu
@@ -386,6 +388,54 @@ possible, Down will shift downwards, etc.
 
 @item C-t v
 Prints out the version of the running Stumpwm.
+
+@item C-t m
+@itemx C-t C-m
+Display the last message. Hitting this keybinding again displays the
+message before that, and so on.
+
+@item C-t G
+Display all groups and windows in each group. For more information @xref{Groups}.
+
+@item C-t F1
+@itemx C-t F2
+@itemx C-t F3
+@itemx C-t F4
+@itemx C-t F5
+@itemx C-t F6
+@itemx C-t F7
+@itemx C-t F9
+@itemx C-t F9
+@itemx C-t F10
+Jump to the corresponding group. @kbd{C-t F1} jumps to group 1 and so on.
+
+@item C-t g g
+Show the list of groups.
+
+@item C-t g c
+Create a new group.
+
+@item C-t g n
+@itemx C-t g C-n
+@itemx C-t g SPC
+@itemx C-t g C-SPC
+Go to the next group in the list.
+
+@item C-t g '
+Select a group by name or by number.
+
+@item C-t g 1
+@itemx C-t g 2
+@itemx C-t g 3
+@itemx C-t g 4
+@itemx C-t g 5
+@itemx C-t g 6
+@itemx C-t g 7
+@itemx C-t g 8
+@itemx C-t g 9
+@itemx C-t g 0
+Go to the corresonding group. @kbd{C-t g 1} jumps to group 1 and so on.
+
 @end table
 
 @node Binding Keys,  , List of Default Keybindings, Key Bindings
@@ -588,9 +638,10 @@ An input function takes 2 arguments: the input structure and the key pressed.
 
 @menu
 * Customizing Window Appearance::  
+* Programming With Windows::    
 @end menu
 
-@node Customizing Window Appearance,  , Windows, Windows
+@node Customizing Window Appearance, Programming With Windows, Windows, Windows
 @section Customizing Window Appearance
 @defvar *maxsize-border-width*
 @end defvar
@@ -607,7 +658,7 @@ An input function takes 2 arguments: the input structure and the key pressed.
 @defvar *unfocus-color*
 @end defvar
 
-@node 
+@node  Programming With Windows,  , Customizing Window Appearance, Windows
 @section Programming With Windows
 
 @defmac def-window-attr @var{attr}
@@ -658,7 +709,7 @@ window pool, where windows and frames are not so tightly connected.
 @deffn {Command} move-focus @var{direction}
 @end deffn
 
-@node Mode-line, Interacting With Unix, Frames, Top
+@node Mode-line, Groups, Frames, Top
 @chapter The Mode Line
 The mode line is a bar that runs across either the top or bottom of
 the screen and is used to display information. By default the
@@ -725,7 +776,34 @@ The mode line foreground color.
 The mode line border color.
 @end defvar
 
-@node Interacting With Unix, Interacting With X11, Mode-line, Top
+@node Groups, Interacting With Unix, Mode-line, Top
+@chapter Groups
+Groups in stumpwm are also known as virtual desktops or
+workspaces. Why not create a new term for it?
+
+@deffn {Command} gnew
+@end deffn
+
+@deffn {Command} gnewbg
+@end deffn
+
+@deffn {Command} gnext
+@end deffn
+
+@deffn {Command} gprev
+@end deffn
+
+@deffn {Command} groups
+@end deffn
+
+@deffn {Command} vgroups
+@end deffn
+
+@deffn {Command} gselect
+@end deffn
+
+
+@node Interacting With Unix, Interacting With X11, Groups, Top
 @chapter Interacting With Unix
 
 
