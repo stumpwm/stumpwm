@@ -479,6 +479,9 @@ aborted."
 				  (let ((s (pop-or-read str prompt screen)))
 				    (when s
 				      (kbd s))))
+				 (:group
+				  (find (pop-or-read str prompt screen)
+					(screen-groups screen) :test 'string= :key 'group-name))
 				 (:frame
 				  (let ((arg (pop str)))
 				    (if arg
@@ -817,6 +820,8 @@ be found, select it.  Otherwise simply run cmd."
 	  (define-key m (kbd "p") "gprev")
 	  (define-key m (kbd "C-p") "gprev")
 	  (define-key m (kbd "'") "gselect")
+	  (define-key m (kbd "m") "gmove")
+	  (define-key m (kbd "k") "gkill")
 	  (define-key m (kbd "1") "gselect 1")
 	  (define-key m (kbd "2") "gselect 2")
 	  (define-key m (kbd "3") "gselect 3")
@@ -830,14 +835,7 @@ be found, select it.  Otherwise simply run cmd."
 	  m)))
 
 (defun group-forward (current list)
-  (let* ((matches (member current list))
-	 ng)
-    (setf ng (if (null (cdr matches))
-		 ;; If the last one in the list is current, then
-		 ;; use the first one.
-		 (car list)
-	       ;; Otherwise, use the next one in the list.
-	       (cadr matches)))
+  (let ((ng (next-group current list)))
     (when ng
       (switch-to-group ng))))
 
@@ -894,3 +892,14 @@ be found, select it.  Otherwise simply run cmd."
 
 (define-stumpwm-command "gselect" ((query :rest "Select Group: "))
   (select-group (current-screen) query))
+
+(define-stumpwm-command "gmove" ((to-group :group "To Group: "))
+  (when (and to-group
+	     (screen-current-window (current-screen)))
+    (move-window-to-group (screen-current-window (current-screen)) to-group)))
+
+(define-stumpwm-command "gkill" ()
+  (let ((dead-group (screen-current-group (current-screen)))
+	(to-group (next-group (screen-current-group (current-screen)))))
+    (switch-to-group to-group)
+    (kill-group dead-group to-group)))

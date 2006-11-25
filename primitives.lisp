@@ -276,12 +276,16 @@ this var. Just call current-screen.")
 
 (defun run-hook-with-args (hook &rest args)
   "Call each function in HOOK and pass args to it" 
-  (dolist (fn hook)
-    (apply fn args)))
+  ;; FIXME: silently failing is bad
+  (ignore-errors
+    (dolist (fn hook)
+      (apply fn args))))
 
 (defun run-hook (hook)
   "Call each function in HOOK."
-  (run-hook-with-args hook))
+  ;; FIXME: silently failing is bad
+  (ignore-errors
+    (run-hook-with-args hook)))
 
 (defmacro add-hook (hook fn)
   "Add a function to a hook."

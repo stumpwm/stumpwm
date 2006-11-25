@@ -134,6 +134,44 @@ identity with a range check."
       (focus-frame new-group (tile-group-current-frame new-group))
       (show-frame-indicator new-group))))
 
+(defun move-window-to-group (window to-group)
+  (unless (eq (window-group window) to-group)
+    (let ((old-group (window-group window))
+	  (old-frame (window-frame window)))
+      (hide-window window)
+      ;; house keeping
+      (setf (group-windows (window-group window))
+	    (remove window (group-windows (window-group window))))
+      (setf (window-frame window) (tile-group-current-frame to-group)
+	    (window-group window) to-group
+	    (window-number window) (find-free-window-number to-group))
+      (push window (group-windows to-group))
+      (sync-frame-windows to-group (tile-group-current-frame to-group))
+      ;; maybe pick a new window for the old frame
+      (when (eq (frame-window old-frame) window)
+	(setf (frame-window old-frame) (first (frame-windows old-group old-frame)))
+	(focus-frame old-group old-frame)))))
+
+(defun next-group (current &optional (list (screen-groups (group-screen current))))
+  (let ((matches (member current list)))
+    (if (null (cdr matches))
+	;; If the last one in the list is current, then
+	;; use the first one.
+	(car list)
+	;; Otherwise, use the next one in the list.
+	(cadr matches))))
+
+(defun merge-groups (from-group to-group)
+  "Merge all windows in FROM-GROUP into TO-GROUP."
+  (dolist (window (group-windows from-group))
+    (move-window-to-group window to-group)))
+
+(defun kill-group (group to-group)
+  (when (> (length (screen-groups (group-screen group))) 1)
+    (let ((screen (group-screen group)))
+      (merge-groups group to-group)
+      (setf (screen-groups screen) (remove group (screen-groups screen))))))
+
 (defun add-group (screen name)
   (let* ((initial-frame (make-initial-frame 
 			 (screen-x screen) (screen-y screen)
@@ -149,6 +187,10 @@ identity with a range check."
 
 
 ;;; Window functions
+
+(defun window-in-current-group-p (window)
+  (eq (window-group window)
+      (screen-current-group (window-screen window))))
 
 (defun window-screen (window)
   (group-screen (window-group window)))
@@ -200,7 +242,8 @@ identity with a range check."
   "Map the window if needed and bring it to the top of the stack. Does not affect focus."
   (when (window-hidden-p win)
     (unhide-window win))
-  (setf (xlib:window-priority (window-xwin win)) :top-if))
+  (when (window-in-current-group-p win)
+    (setf (xlib:window-priority (window-xwin win)) :top-if)))
 
 ;; some handy wrappers
 
@@ -264,7 +307,8 @@ identity with a range check."
   (setf	(xwin-state xwin) +normal-state+))
 
 (defun unhide-window (window)
-  (xwin-unhide (window-xwin window) (window-parent window))
+  (when (window-in-current-group-p window)
+    (xwin-unhide (window-xwin window) (window-parent window)))
   (setf (window-state window) +normal-state+))
 
 (defun xwin-hide (xwin parent)
@@ -274,7 +318,8 @@ identity with a range check."
 (defun hide-window (window)
   (dformat "hide window: ~a~%" (window-name window))
   (setf (window-state window) +iconic-state+)
-  (xwin-hide (window-xwin window) (window-parent window)))
+  (when (window-in-current-group-p window)
+    (xwin-hide (window-xwin window) (window-parent window))))
 
 (defun xwin-type (win)
   "Return one of :maxsize, :transient, or :normal."
@@ -520,16 +565,15 @@ give the last accessed window focus."
     ;; remove it from it's frame structures
     (when (eq (frame-window f) window)
       (setf (frame-window f) (first (frame-windows group f))))
+    (when (window-in-current-group-p window)
+      ;; since the window doesn't exist, it doesn't have focus.
+      (setf (screen-focus screen) nil))
+    ;; If the current window was removed, then refocus the frame it
+    ;; was in, since it has a new current window
+    (when (eq (tile-group-current-frame group) f)
+      (focus-frame (window-group window) f))
     ;; Run the unmap hook on the window
-    (unwind-protect
-	 (run-hook-with-args *unmap-window-hook* window)
-      ;; If the current window was removed, then refocus the frame it
-      ;; was in, since it has a new current window
-      (when (and (eq (screen-current-group screen) group)
-		 (eq (tile-group-current-frame group) f))
-	;; since the window doesn't exist, it doesn't have focus.
-	(setf (screen-focus screen) nil)
-	(focus-frame (window-group window) f)))))
+    (run-hook-with-args *unmap-window-hook* window)))
   
 (defun move-window-to-head (group window)
   "Move window to the head of the group's window list."
@@ -537,12 +581,14 @@ give the last accessed window focus."
   (setf (group-windows group) (delete window (group-windows group)))
   (push window (group-windows group)))
 
-(defun no-focus (screen)
+(defun no-focus (group)
   "don't focus any window but still read keyboard events."
   (dformat "no-focus~%")
-  (let ((cw (screen-current-window screen)))
-    (xlib:set-input-focus *display* (screen-focus-window screen) :POINTER-ROOT)
-    (setf (screen-focus screen) nil)
+  (let* ((screen (group-screen group))
+	 (cw (group-current-window group)))
+    (when (eq group (screen-current-group screen))
+      (xlib:set-input-focus *display* (screen-focus-window screen) :POINTER-ROOT)
+      (setf (screen-focus screen) nil))
     (when cw
       (setf (xlib:window-border (window-parent cw)) (get-color-pixel screen *unfocus-color*)))))
 
@@ -564,8 +610,7 @@ maximized, and given focus."
 	;; If window to focus is already focused then our work is done.
 	(unless (eq window cw)
 	  (raise-window window)
-	  (xlib:set-input-focus *display* (window-xwin window) :POINTER-ROOT)
-	  (setf (screen-focus screen) window)
+	  (screen-set-focus screen window)
 	  ;;(send-client-message window :WM_PROTOCOLS +wm-take-focus+)
 	  (update-window-border window)
 	  (when cw
@@ -727,7 +772,7 @@ T (default) then also focus the frame."
     (dformat "~S~%" f)
     (if w
 	(focus-window w)
-      (no-focus (group-screen group)))
+      (no-focus group))
     (run-hook-with-args *focus-frame-hook* f last)))
 
 (defun frame-windows (group f)
@@ -1080,6 +1125,12 @@ windows used to draw the numbers in. The caller must destroy them."
 
 ;;; Screen functions
 
+(defun screen-set-focus (screen window)
+  (when (eq (window-group window)
+	    (screen-current-group screen))
+    (xlib:set-input-focus *display* (window-xwin window) :POINTER-ROOT)
+    (setf (screen-focus screen) window)))
+
 (defun screen-current-window (screen)
   (group-current-window (screen-current-group screen)))
 
@@ -1399,8 +1450,7 @@ list of modifier symbols."
       (when window
 	(maximize-window window)
 	;; Finally, grant the stack-mode change (if it's mapped)
-	(when (eq (screen-current-group (window-screen window))
-		  (window-group window))
+	(when (window-in-current-group-p window)
 	  (when (has-stackmode value-mask)
 	    (case stack-mode
 	      (:above
