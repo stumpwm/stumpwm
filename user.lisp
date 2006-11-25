@@ -849,11 +849,11 @@ be found, select it.  Otherwise simply run cmd."
 
 (define-stumpwm-command "gnext" ()
   (group-forward (screen-current-group (current-screen))
-		 (screen-groups (current-screen))))
+		 (sort-groups (current-screen))))
 
 (define-stumpwm-command "gprev" ()
   (group-forward (screen-current-group (current-screen))
-		 (reverse (screen-groups (current-screen)))))
+		 (reverse (sort-groups (current-screen)))))
 
 (defun echo-groups (screen fmt &optional verbose)
   "Print a list of the windows to the screen."

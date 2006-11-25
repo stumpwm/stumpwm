@@ -122,9 +122,11 @@ identity with a range check."
     (unless (eq new-group old-group)
       ;; restore the visible windows
       (dolist (w (group-windows old-group))
-	(xwin-hide (window-xwin w) (window-parent w)))
+	(when (eq (window-state w) +normal-state+)
+	  (xwin-hide (window-xwin w) (window-parent w))))
       (dolist (w (group-windows new-group))
-	(xwin-unhide (window-xwin w) (window-parent w)))
+	(when (eq (window-state w) +normal-state+)
+	  (xwin-unhide (window-xwin w) (window-parent w))))
       (setf (screen-current-group screen) new-group)
       (move-group-to-head screen new-group)
       ;; restore the focus

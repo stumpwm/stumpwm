@@ -1,6 +1,10 @@
 2006-11-25  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* user.lisp ("gnext"): sort the windows
+	("gprev"): likewise
+
 	* core.lisp (send-fake-key): use window-xwin
+	(switch-to-group): only hide/unhide windows tagged as visible
 
 	* primitives.lisp (*top-level-error-action*): default value is :abort
 
