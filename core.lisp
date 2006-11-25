@@ -1297,7 +1297,7 @@ focus of a window. *CURRENT-SCREEN* overrides this process."
 (defun send-fake-key (win key)
   "Send a fake key event to win. ch is the character and mods is a
 list of modifier symbols."
-  (xlib:send-event win :key-press '(:key-press)
+  (xlib:send-event (window-xwin win) :key-press '(:key-press)
 		   :display *display*
 		   :root (screen-root (window-screen win))
 		   :window (window-xwin win)

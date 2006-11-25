@@ -1,5 +1,7 @@
 2006-11-25  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* core.lisp (send-fake-key): use window-xwin
+
 	* primitives.lisp (*top-level-error-action*): default value is :abort
 
 	* stumpwm.lisp (stumpwm-internal-loop): handle the :abort value of *top-level-error-action*
