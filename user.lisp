@@ -85,6 +85,20 @@
 	  (define-key m (kbd "Left") "move-focus left")
 	  (define-key m (kbd "Right") "move-focus right")
 	  (define-key m (kbd "v") "version")
+	  (define-key m (kbd "m") "lastmsg")
+	  (define-key m (kbd "C-m") "lastmsg")
+	  (define-key m (kbd "G") "vgroups")
+	  (define-key m (kbd "g") '*groups-map*)
+	  (define-key m (kbd "F1") "gselect 1")
+	  (define-key m (kbd "F2") "gselect 2")
+	  (define-key m (kbd "F3") "gselect 3")
+	  (define-key m (kbd "F4") "gselect 4")
+	  (define-key m (kbd "F5") "gselect 5")
+	  (define-key m (kbd "F6") "gselect 6")
+	  (define-key m (kbd "F7") "gselect 7")
+	  (define-key m (kbd "F8") "gselect 8")
+	  (define-key m (kbd "F9") "gselect 9")
+	  (define-key m (kbd "F10") "gselect 10")
 	  m)))
 
 (defstruct command
@@ -93,36 +107,36 @@
 (defvar *command-hash* (make-hash-table :test 'equal)
   "A list of interactive stumpwm commands.")
 
-(defmacro define-stumpwm-command (name (screen &rest args) &body body)
+(defmacro define-stumpwm-command (name (&rest args) &body body)
   `(setf (gethash ,name *command-hash*)
 	 (make-command :name ,name
 		       :args ',args
-		       :fn (lambda (,screen ,@(mapcar 'first args))
+		       :fn (lambda (,@(mapcar 'first args))
 			      ,@body))))
 
-(defun focus-next-window (screen)
-  (focus-forward screen (frame-sort-windows screen
-					    (screen-current-frame screen))))
+(defun focus-next-window (group)
+  (focus-forward group (frame-sort-windows group
+					    (tile-group-current-frame group))))
 
-(defun focus-prev-window (screen)
-  (focus-forward screen
+(defun focus-prev-window (group)
+  (focus-forward group
 		 (reverse
-		  (frame-sort-windows screen
-				      (screen-current-frame screen)))))
+		  (frame-sort-windows group
+				      (tile-group-current-frame group)))))
 
-(define-stumpwm-command "next" (screen)
-  (focus-next-window screen))
+(define-stumpwm-command "next" ()
+  (focus-next-window (screen-current-group (current-screen))))
 
-(define-stumpwm-command "prev" (screen)
-  (focus-prev-window screen))
+(define-stumpwm-command "prev" ()
+  (focus-prev-window (screen-current-group (current-screen))))
 
 ;; In the future, this window will raise the window into the current
 ;; frame.
-(defun focus-forward (screen window-list)
+(defun focus-forward (group window-list)
  "Set the focus to the next item in window-list from the focused window."
   ;; The window with focus is the "current" window, so find it in the
   ;; list and give that window focus
-  (let* ((w (screen-current-window screen))
+  (let* ((w (group-current-window group))
 	 (wins (member w window-list))
 	 nw)
     ;;(assert wins)
@@ -133,60 +147,62 @@
 	       ;; Otherwise, focus the next one in the list.
 	       (cadr wins)))
     (when nw
-      (frame-raise-window screen (window-frame nw) nw))))
+      (frame-raise-window group (window-frame nw) nw))))
 
-(defun delete-current-window (screen)
+(defun delete-current-window ()
   "Send a delete event to the current window."
-  (when (screen-current-window screen)
-    (delete-window (screen-current-window screen))))
+  (let ((group (screen-current-group (current-screen))))
+    (when (group-current-window group)
+      (delete-window (group-current-window group)))))
 
-(define-stumpwm-command "delete" (screen)
-  (delete-current-window screen))
+(define-stumpwm-command "delete" ()
+  (delete-current-window))
 
-(defun kill-current-window (screen)
+(defun kill-current-window ()
   "Kill the client of the current window."
-  (when (screen-current-window screen)
-    (xwin-kill (window-xwin (screen-current-window screen)))))
+  (let ((group (screen-current-group (current-screen))))
+    (when (group-current-window group)
+      (xwin-kill (window-xwin (group-current-window group))))))
 
-(define-stumpwm-command "kill" (screen)
-  (kill-current-window screen))
+(define-stumpwm-command "kill" ()
+  (kill-current-window))
 
-(defun banish-pointer (screen)
+(defun banish-pointer ()
   "Move the pointer to the lower right corner of the screen"
-  (warp-pointer screen
-		(1- (screen-width screen))
-		(1- (screen-height screen))))
+  (let ((group (screen-current-group (current-screen))))
+    (warp-pointer (group-screen group)
+		  (1- (screen-width (current-screen)))
+		  (1- (screen-height (current-screen))))))
 
-(define-stumpwm-command "banish" (screen)
-  (banish-pointer screen))
+(define-stumpwm-command "banish" ()
+  (banish-pointer))
 
-(define-stumpwm-command "ratwarp" (screen (x :number "X: ") (y :number "Y: "))
-  (warp-pointer screen x y))
+(define-stumpwm-command "ratwarp" ((x :number "X: ") (y :number "Y: "))
+  (warp-pointer (current-screen) x y))
 
-(define-stumpwm-command "ratrelwarp" (screen (dx :number "Delta X: ") (dy :number "Delta Y: "))
-  (declare (ignore screen))
+(define-stumpwm-command "ratrelwarp" ((dx :number "Delta X: ") (dy :number "Delta Y: "))
   (warp-pointer-relative dx dy))
 
-(defun echo-windows (screen fmt)
+(defun echo-windows (group fmt)
   "Print a list of the windows to the screen."
-  (let* ((wins (sort-windows screen))
-	 (highlight (position (screen-current-window screen) wins))
+  (let* ((wins (sort-windows group))
+	 (highlight (position (group-current-window group) wins))
 	 (names (mapcar (lambda (w)
 			  (format-expand *window-formatters* fmt w)) wins)))
     (if (null wins)
-	(echo-string screen "No Managed Windows")
-      (echo-string-list screen names highlight))))
+	(echo-string (group-screen group) "No Managed Windows")
+      (echo-string-list (group-screen group) names highlight))))
 
-(defun fmt-screen-window-list (screen)
+(defun fmt-window-list (group)
   "Using *window-format*, return a 1 line list of the windows, space seperated."
   (format nil "~{~a~^ ~}" 
 	  (mapcar (lambda (w)
-		    (format-expand *window-formatters* *window-format* w)) (sort-windows screen))))
+		    (format-expand *window-formatters* *window-format* w)) (sort-windows group))))
 
-(define-stumpwm-command "windows" (screen)
-  (echo-windows screen *window-format*))
+(define-stumpwm-command "windows" ()
+  (echo-windows (screen-current-group (current-screen)) *window-format*))
 
-(defun echo-date (screen)
+(defun echo-date ()
   "Print the output of the 'date' command to the screen."
   (let* ((month-names
 	  #("Jan" "Feb" "Mar" "Apr" "May" "Jun" "Jul" "Aug" "Sep" "Oct" "Nov" "Dec"))
@@ -198,12 +214,12 @@
 			       (aref day-names dow)
 			       (aref month-names (- mon 1))
 			       dom hour min sec year))))
-    (echo-string screen date-string)))
+    (echo-string (current-screen) date-string)))
 
-(define-stumpwm-command "time" (screen)
-  (echo-date screen))
+(define-stumpwm-command "time" ()
+  (echo-date))
 
-(defun select-window (screen query)
+(defun select-window (group query)
   "Read input from the user and go to the selected window."
     (let (match)
       (labels ((match (win)
@@ -211,33 +227,33 @@
 			     (end (min (length wname) (length query))))
 			(string-equal wname query :end1 end :end2 end))))
 	(unless (null query)
-	  (setf match (find-if #'match (screen-mapped-windows screen))))
+	  (setf match (find-if #'match (group-windows group))))
 	(when match
-	  (frame-raise-window screen (window-frame match) match)))))
+	  (frame-raise-window group (window-frame match) match)))))
 
-(define-stumpwm-command "select" (screen (win :string "Select: "))
-  (select-window screen win))
+(define-stumpwm-command "select" ((win :string "Select: "))
+  (select-window (screen-current-group (current-screen)) win))
 
-(defun select-window-number (screen num)
+(defun select-window-number (group num)
   (labels ((match (win)
 		  (= (window-number win) num)))
-    (let ((win (find-if #'match (screen-mapped-windows screen))))
+    (let ((win (find-if #'match (group-windows group))))
       (when win
-	(frame-raise-window screen (window-frame win) win)))))
+	(frame-raise-window group (window-frame win) win)))))
 
-(defun other-window (screen)
-  (let* ((f (screen-current-frame screen))
-	 (wins (frame-windows screen f))
+(defun other-window (group)
+  (let* ((f (tile-group-current-frame group))
+	 (wins (frame-windows group f))
 	 ;; the frame could be empty
 	 (win (if (frame-window f)
 		  (second wins)
 		  (first wins))))
   (if win
-      (frame-raise-window screen (window-frame win) win)
-      (echo-string screen "No other window."))))
+      (frame-raise-window group (window-frame win) win)
+      (echo-string (group-screen group) "No other window."))))
 
-(define-stumpwm-command "other" (screen)
-  (other-window screen))
+(define-stumpwm-command "other" ()
+  (other-window (screen-current-group (current-screen))))
 
 (defun run-shell-command (cmd &optional collect-output-p)
   "Run a shell command in the background or wait for it to finish
@@ -248,33 +264,32 @@ returns..which could be forever if you're not careful."
       (run-prog-collect-output *shell-program* "-c" cmd)
       (run-prog *shell-program* :args (list "-c" cmd) :wait nil)))
 
-(define-stumpwm-command "exec" (screen (cmd :rest "/bin/sh -c "))
-  (declare (ignore screen))
+(define-stumpwm-command "exec" ((cmd :rest "/bin/sh -c "))
   (run-shell-command cmd))
 
-(defun horiz-split-frame (screen)
-  (split-frame screen (lambda (f) (split-frame-h screen f)))
-  (let ((f (screen-current-frame screen)))
+(defun horiz-split-frame (group)
+  (split-frame group (lambda (f) (split-frame-h group f)))
+  (let ((f (tile-group-current-frame group)))
     (when (frame-window f)
       (update-window-border (frame-window f))))
-  (show-frame-indicator screen))
+  (show-frame-indicator group))
 
-(define-stumpwm-command "hsplit" (screen)
-  (horiz-split-frame screen))
+(define-stumpwm-command "hsplit" ()
+  (horiz-split-frame (screen-current-group (current-screen))))
 
-(defun vert-split-frame (screen)
-  (split-frame screen (lambda (f) (split-frame-v screen f)))
-  (let ((f (screen-current-frame screen)))
+(defun vert-split-frame (group)
+  (split-frame group (lambda (f) (split-frame-v group f)))
+  (let ((f (tile-group-current-frame group)))
     (when (frame-window f)
       (update-window-border (frame-window f))))
-  (show-frame-indicator screen))
+  (show-frame-indicator group))
 
-(define-stumpwm-command "vsplit" (screen)
-  (vert-split-frame screen))
+(define-stumpwm-command "vsplit" ()
+  (vert-split-frame (screen-current-group (current-screen))))
 
-(defun remove-split (screen)
-  (let* ((s (sibling (screen-frame-tree screen)
-		    (screen-current-frame screen)))
+(defun remove-split (group)
+  (let* ((s (sibling (tile-group-frame-tree group)
+		    (tile-group-current-frame group)))
 	 ;; grab a leaf of the sibling. The sibling doesn't have to be
 	 ;; a frame.
 	 (l (tree-accum-fn s
@@ -287,108 +302,112 @@ returns..which could be forever if you're not careful."
     (when s
       (dformat "~S~%" l)
       ;; Move the windows from the removed frame to its sibling
-      (migrate-frame-windows screen (screen-current-frame screen) l)
+      (migrate-frame-windows group (tile-group-current-frame group) l)
       ;; If the frame has no window, give it the current window of
       ;; the current frame.
       (unless (frame-window l)
 	(setf (frame-window l)
-	      (frame-window (screen-current-frame screen))))
+	      (frame-window (tile-group-current-frame group))))
       ;; Unsplit
-      (setf (screen-frame-tree screen)
-	    (remove-frame (screen-frame-tree screen)
-			  (screen-current-frame screen)))
+      (setf (tile-group-frame-tree group)
+	    (remove-frame (tile-group-frame-tree group)
+			  (tile-group-current-frame group)))
       ;; update the current frame and sync all windows
-      (setf (screen-current-frame screen) l)
-      (tree-iterate (screen-frame-tree screen)
+      (setf (tile-group-current-frame group) l)
+      (tree-iterate (tile-group-frame-tree group)
 		    (lambda (leaf)
-		      (sync-frame-windows screen leaf)))
-      (frame-raise-window screen l (frame-window l))
+		      (sync-frame-windows group leaf)))
+      (frame-raise-window group l (frame-window l))
       (when (frame-window l)
 	(update-window-border (frame-window l)))
-      (show-frame-indicator screen))))
+      (show-frame-indicator group))))
 
-(define-stumpwm-command "remove" (screen)
-  (remove-split screen))
+(define-stumpwm-command "remove" ()
+  (remove-split (screen-current-group (current-screen))))
 
-(define-stumpwm-command "only" (screen)
-  (let ((frame (make-initial-frame (screen-x screen) (screen-y screen)
-				   (screen-width screen) (screen-height screen)))
-	(win (frame-window (screen-current-frame screen))))
+(define-stumpwm-command "only" ()
+  (let* ((screen (current-screen))
+	 (group (screen-current-group screen))
+	 (frame (make-initial-frame (screen-x screen) (screen-y screen)
+				    (screen-width screen) (screen-height screen)))
+	 (win (frame-window (tile-group-current-frame group))))
     (mapc (lambda (w)
 	    ;; windows in other frames disappear
-	    (unless (eq (window-frame w) (screen-current-frame screen))
+	    (unless (eq (window-frame w) (tile-group-current-frame group))
 	      (hide-window w))
 	    (setf (window-frame w) frame))
-	  (screen-mapped-windows screen))
+	  (group-windows group))
     (setf (frame-window frame) win
-	  (screen-frame-tree screen) frame)
-    (focus-frame screen frame)
+	  (tile-group-frame-tree group) frame)
+    (focus-frame group frame)
     (when (frame-window frame)
       (update-window-border (frame-window frame)))
-    (sync-frame-windows screen (screen-current-frame screen))))
+    (sync-frame-windows group (tile-group-current-frame group))))
 
-(define-stumpwm-command "curframe" (screen)
-  (show-frame-indicator screen))
+(define-stumpwm-command "curframe" ()
+  (show-frame-indicator (screen-current-group (current-screen))))
 
-(defun focus-frame-sibling (screen)
-  (let* ((sib (sibling (screen-frame-tree screen)
-		       (screen-current-frame screen))))
+(defun focus-frame-sibling (group)
+  (let* ((sib (sibling (tile-group-frame-tree group)
+		       (tile-group-current-frame group))))
     (when sib
-      (focus-frame screen (tree-accum-fn sib
+      (focus-frame group (tree-accum-fn sib
                                          (lambda (x y)
                                            (declare (ignore y))
                                            x)
                                          'identity))
-      (show-frame-indicator screen))))
+      (show-frame-indicator group))))
 
-(defun focus-frame-after (screen frames)
+(defun focus-frame-after (group frames)
   "Given a list of frames focus the next one in the list after
 the current frame."
-  (let ((rest (cdr (member (screen-current-frame screen) frames :test 'eq))))
-    (focus-frame screen
+  (let ((rest (cdr (member (tile-group-current-frame group) frames :test 'eq))))
+    (focus-frame group
 		 (if (null rest)
 		     (car frames)
 		     (car rest)))))
 
-(defun focus-next-frame (screen)
-  (focus-frame-after screen (screen-frames screen))
-  (show-frame-indicator screen))
+(defun focus-next-frame (group)
+  (focus-frame-after group (group-frames group))
+  (show-frame-indicator group))
 
-(defun focus-prev-frame (screen)
-  (focus-frame-after screen (nreverse (screen-frames screen)))
-  (show-frame-indicator screen))
+(defun focus-prev-frame (group)
+  (focus-frame-after group (nreverse (group-frames group)))
+  (show-frame-indicator group))
 
-(define-stumpwm-command "fnext" (screen)
-  (focus-next-frame screen))
+(define-stumpwm-command "fnext" ()
+  (focus-next-frame (screen-current-group (current-screen))))
 
-(define-stumpwm-command "sibling" (screen)
-  (focus-frame-sibling screen))
+(define-stumpwm-command "sibling" ()
+  (focus-frame-sibling (screen-current-group (current-screen))))
 
-(defun choose-frame-by-number (screen)
+(defun choose-frame-by-number (group)
   "show a number in the corner of each frame and wait for the user to
 select one. Returns the selected frame or nil if aborted."
   (let* ((wins (progn
-		 (draw-frame-outlines screen)
-		 (draw-frame-numbers screen)))
-	 (ch (read-one-char screen))
+		 (draw-frame-outlines group)
+		 (draw-frame-numbers group)))
+	 (ch (read-one-char (group-screen group)))
 	 (num (read-from-string (string ch))))
     (dformat "read ~S ~S~%" ch num)
     (mapc #'xlib:destroy-window wins)
-    (clear-frame-outlines screen)
-    (find ch (screen-frames screen)
+    (clear-frame-outlines group)
+    (find ch (group-frames group)
 	  :test 'char=
 	  :key 'get-frame-number-translation)))
 
 
-(define-stumpwm-command "fselect" (screen (f :frame))
-  (focus-frame screen f)
-  (show-frame-indicator screen))
+(define-stumpwm-command "fselect" ((f :frame))
+  (let ((group (screen-current-group (current-screen))))
+    (focus-frame group f)
+    (show-frame-indicator group)))
 
-(define-stumpwm-command "resize" (screen (w :number "+ Width: ")
-                                         (h :number "+ Height: "))
-  (let ((f (screen-current-frame screen)))
-    (resize-frame screen f w 'width)
-    (resize-frame screen f h 'height)))
+(define-stumpwm-command "resize" ((w :number "+ Width: ")
+				  (h :number "+ Height: "))
+  (let* ((group (screen-current-group (current-screen)))
+	 (f (tile-group-current-frame group)))
+    (resize-frame group f w 'width)
+    (resize-frame group f h 'height)))
 
 (defun eval-line (screen cmd)
   (echo-string screen
@@ -396,11 +415,11 @@ select one. Returns the selected frame or nil if aborted."
 		 (error (c)
 		   (format nil "~A" c)))))
 
-(define-stumpwm-command "eval" (screen (cmd :rest "Eval: "))
-  (eval-line screen cmd))
+(define-stumpwm-command "eval" ((cmd :rest "Eval: "))
+  (eval-line (current-screen) cmd))
 
-(define-stumpwm-command "echo" (screen (s :rest "Echo: "))
-  (echo-string screen s))
+(define-stumpwm-command "echo" ((s :rest "Echo: "))
+  (echo-string (current-screen) s))
 
 ;; Simple command & arg parsing
 (defun split-by-one-space (string)
@@ -463,12 +482,12 @@ aborted."
 				 (:frame
 				  (let ((arg (pop str)))
 				    (if arg
-					(or (find arg (screen-frames screen)
+					(or (find arg (group-frames (screen-current-group screen))
 						  :key (lambda (f)
 							 (string (get-frame-number-translation f)))
 						  :test 'string=)
 					    (throw 'error "Frame not found."))
-					(or (choose-frame-by-number screen)
+					(or (choose-frame-by-number (screen-current-group screen))
 					    (throw 'error "Abort.")))))
 				  (:rest
 				   (if (null str)
@@ -492,7 +511,9 @@ aborted."
 	(unless (null (skip-spaces str))
 	  (throw 'error (format nil "Trailing garbage: ~{~A~^ ~}" str)))
 	;; Success
-	(apply (command-fn cmd) screen args)))))
+	(prog1
+	    (apply (command-fn cmd) args)
+	  (setf *last-command* (command-name cmd)))))))
 
 (defun interactive-command (cmd screen)
   "exec cmd and echo the result."
@@ -505,78 +526,77 @@ aborted."
     (when (stringp result)
       (echo-string screen result))))
 
-(define-stumpwm-command "colon" (screen (initial-input :optional "Initial Input: "))
-  (let ((cmd (read-one-line screen ": " (or initial-input ""))))
+(define-stumpwm-command "colon" ((initial-input :optional "Initial Input: "))
+  (let ((cmd (read-one-line (current-screen) ": " (or initial-input ""))))
     (unless cmd
       (throw 'error "Abort."))
     (when (plusp (length cmd))
-      (interactive-command cmd screen))))
+      (interactive-command cmd (current-screen)))))
 
-(defun pull-window-by-number (screen n)
+(defun pull-window-by-number (group n)
   "Pull window N from another frame into the current frame and focus it."
-  (let ((win (find n (screen-mapped-windows screen) :key 'window-number :test '=)))
+  (let ((win (find n (group-windows group) :key 'window-number :test '=)))
     (when win
       (let ((f (window-frame win)))
-	(setf (window-frame win) (screen-current-frame screen))
-	(sync-frame-windows screen (screen-current-frame screen))
-	(frame-raise-window screen (screen-current-frame screen) win)
+	(setf (window-frame win) (tile-group-current-frame group))
+	(sync-frame-windows group (tile-group-current-frame group))
+	(frame-raise-window group (tile-group-current-frame group) win)
 	;; if win was focused in its old frame then give the old
 	;; frame the frame's last focused window.
 	(when (eq (frame-window f) win)
 	  ;; the current value is no longer valid.
 	  (setf (frame-window f) nil)
-	  (frame-raise-window screen f (first (frame-windows screen f)) nil))))))
+	  (frame-raise-window group f (first (frame-windows group f)) nil))))))
 
-(define-stumpwm-command "pull" (screen (n :number "Pull: "))
-  (pull-window-by-number screen n))
+(define-stumpwm-command "pull" ((n :number "Pull: "))
+  (pull-window-by-number (screen-current-group (current-screen)) n))
 
 (defun send-meta-key (screen key)
   "Send the prefix key"
   (when (screen-current-window screen)
     (send-fake-key (screen-current-window screen) key)))
 
-(define-stumpwm-command "meta" (screen (key :key "Key: "))
-  (send-meta-key screen key))
+(define-stumpwm-command "meta" ((key :key "Key: "))
+  (send-meta-key (current-screen) key))
 
-(defun renumber (screen nt)
+(defun renumber (group nt)
   "Renumber the current window"
-  (let ((nf (window-number (screen-current-window screen)))
+  (let ((nf (window-number (group-current-window group)))
 	(win (find-if #'(lambda (win)
 			  (= (window-number win) nt))
-		      (screen-mapped-windows screen))))
+		      (group-windows group))))
     ;; Is it already taken?
     (if win
 	(progn
 	  ;; swap the window numbers
 	  (setf (window-number win) nf)
-	  (setf (window-number (screen-current-window screen)) nt))
+	  (setf (window-number (group-current-window group)) nt))
       ;; Just give the window the number
-      (setf (window-number (screen-current-window screen)) nt))))
+      (setf (window-number (group-current-window group)) nt))))
 
-(define-stumpwm-command "number" (screen (n :number "Number: "))
-  (renumber screen n))
+(define-stumpwm-command "number" ((n :number "Number: "))
+  (renumber (screen-current-group (current-screen)) n))
 
-(define-stumpwm-command "reload" (screen)
-  (echo-string screen "Reloading StumpWM...")
+(define-stumpwm-command "reload" ()
+  (echo-string (current-screen) "Reloading StumpWM...")
   (asdf:operate 'asdf:load-op :stumpwm)
-  (echo-string screen "Reloading StumpWM...Done."))
+  (echo-string (current-screen) "Reloading StumpWM...Done."))
 
-(define-stumpwm-command "loadrc" (screen)
+(define-stumpwm-command "loadrc" ()
   (multiple-value-bind (success err rc) (load-rc-file)
-    (echo-string screen
+    (echo-string (current-screen)
 		 (if success
 		     "RC File loaded successfully."
 		     (format nil "Error loading ~A: ~A" rc err)))))
 
-(defun display-keybinding (screen kmap)
-  (echo-string-list screen (mapcar-hash #'(lambda (k v) (format nil "~A -> ~A" (print-key k) v)) kmap)))
+(defun display-keybinding (kmap)
+  (echo-string-list (current-screen) (mapcar-hash #'(lambda (k v) (format nil "~A -> ~A" (print-key k) v)) kmap)))
 
-(define-stumpwm-command "help" (screen)
-  (display-keybinding screen *root-map*))
+(define-stumpwm-command "help" ()
+  (display-keybinding *root-map*))
 
 ;; Trivial function
-(define-stumpwm-command "abort" (screen)
-  (declare (ignore screen)))
+(define-stumpwm-command "abort" ())
 
 (defun set-prefix-key (key)
   "Change the stumpwm prefix key to KEY."
@@ -595,16 +615,15 @@ aborted."
     (define-key *root-map* key "other")
     (sync-keys)))
 
-(define-stumpwm-command "quit" (screen)
-  (declare (ignore screen))
+(define-stumpwm-command "quit" ()
   (throw :quit nil))
 
-(defun clear-frame (frame screen)
+(defun clear-frame (frame group)
   "Clear the given frame."
-  (frame-raise-window screen frame nil (eq (screen-current-frame screen) frame)))
+  (frame-raise-window group frame nil (eq (tile-group-current-frame group) frame)))
 
-(define-stumpwm-command "fclear" (screen)
-  (clear-frame (screen-current-frame screen) screen))
+(define-stumpwm-command "fclear" ()
+  (clear-frame (tile-group-current-frame (screen-current-group (current-screen))) (screen-current-group (current-screen))))
 
 (defun find-closest-frame (ref-frame framelist closeness-func lower-bound-func
 			   upper-bound-func)
@@ -632,37 +651,38 @@ aborted."
 	  (setf r f))
      finally (return r)))
 
-(define-stumpwm-command "move-focus" (screen (dir :string "Direction: "))
-  (destructuring-bind (perp-coord perp-span parall-coord parall-span)
-      (cond
-	((or (string= dir "left") (string= dir "right"))
-	 (list #'frame-y #'frame-height #'frame-x #'frame-width))
-	((or (string= dir "up") (string= dir "down"))
-	 (list #'frame-x #'frame-width #'frame-y #'frame-height))
-	(t
-	 (echo-string screen "Valid directions: up, down, left, right")
-	 '(nil nil nil nil)))
-    (when perp-coord
-      (let ((new-frame (find-closest-frame
-			(screen-current-frame screen)
-			(screen-frames screen)
-			(if (or (string= dir "left") (string= dir "up"))
-			    (lambda (f)
-			      (- (funcall parall-coord (screen-current-frame screen))
-				 (funcall parall-coord f) (funcall parall-span f)))
-			    (lambda (f)
-			      (- (funcall parall-coord f)
-				 (funcall parall-coord (screen-current-frame screen))
-				 (funcall parall-span (screen-current-frame screen)))))
-			perp-coord
-			(lambda (f)
-			  (+ (funcall perp-coord f) (funcall perp-span
-							     f))))))
-	(when new-frame
-	  (focus-frame screen new-frame))
-	(show-frame-indicator screen)))))
+(define-stumpwm-command "move-focus" ((dir :string "Direction: "))
+  (let ((group (screen-current-group (current-screen))))
+    (destructuring-bind (perp-coord perp-span parall-coord parall-span)
+	(cond
+	  ((or (string= dir "left") (string= dir "right"))
+	   (list #'frame-y #'frame-height #'frame-x #'frame-width))
+	  ((or (string= dir "up") (string= dir "down"))
+	   (list #'frame-x #'frame-width #'frame-y #'frame-height))
+	  (t
+	   (echo-string (current-screen) "Valid directions: up, down, left, right")
+	   '(nil nil nil nil)))
+      (when perp-coord
+	(let ((new-frame (find-closest-frame
+			  (tile-group-current-frame group)
+			  (group-frames group)
+			  (if (or (string= dir "left") (string= dir "up"))
+			      (lambda (f)
+				(- (funcall parall-coord (tile-group-current-frame group))
+				   (funcall parall-coord f) (funcall parall-span f)))
+			      (lambda (f)
+				(- (funcall parall-coord f)
+				   (funcall parall-coord (tile-group-current-frame group))
+				   (funcall parall-span (tile-group-current-frame group)))))
+			  perp-coord
+			  (lambda (f)
+			    (+ (funcall perp-coord f) (funcall perp-span
+							       f))))))
+	  (when new-frame
+	    (focus-frame group new-frame))
+	  (show-frame-indicator group))))))
 
-(defun run-or-raise (screen cmd &key class instance title)
+(defun run-or-raise (cmd &key class instance title)
   "If any of class, title, or instance are set and a matching window can
 be found, select it.  Otherwise simply run cmd."
   (labels ((win-app-info (win)
@@ -672,11 +692,11 @@ be found, select it.  Otherwise simply run cmd."
 	   ;; Raise the window win and select its frame.  For now, it
 	   ;; does not select the screen.
 	   (goto-win (win)
-	     (let* ((screen (window-screen win))
+	     (let* ((group (window-group win))
 		    (frame (window-frame win)))
 	       ;; Select screen?
-	       (frame-raise-window screen frame win)
-	       (focus-frame screen frame)))
+	       (frame-raise-window group frame win)
+	       (focus-frame group frame)))
 	   ;; Compare two lists of strings representing window
 	   ;; attributes.  If an element is nil it matches anything.
 	   ;; Doesn't handle lists of different lengths: extra
@@ -695,22 +715,33 @@ be found, select it.  Otherwise simply run cmd."
 	   ;; If no qualifiers are set don't bother looking for a match.
 	   (and (or class instance title)
 		(find (list class instance title)
-		      (screen-mapped-windows screen)
+		      (group-windows (screen-current-group (current-screen)))
 		      :key #'win-app-info
 		      :test #'app-info-cmp))))
       (if win
 	  (goto-win win)
 	  (run-shell-command cmd)))))
 
-(define-stumpwm-command "shell" (screen)
-  (run-or-raise screen "xterm -title '*shell*'" :title "*shell*"))
+(define-stumpwm-command "shell" ()
+  (run-or-raise "xterm -title '*shell*'" :title "*shell*"))
 
-(define-stumpwm-command "web" (screen)
-  (run-or-raise screen "firefox" :class "mozilla-firefox"))
+(define-stumpwm-command "web" ()
+  (run-or-raise "firefox" :class "mozilla-firefox"))
 
-(define-stumpwm-command "escape" (screen (key :string "Key: "))
-  (declare (ignore screen))
+(define-stumpwm-command "escape" ((key :string "Key: "))
   (set-prefix-key (kbd key)))
+
+(defvar *lastmsg-nth* nil)
+
+(define-stumpwm-command "lastmsg" ()
+  ;; Allow the user to go back through the message history
+  (if (string= *last-command* "lastmsg")
+      (progn
+	(incf *lastmsg-nth*)
+	(if (>= *lastmsg-nth* (length (screen-last-msg (current-screen))))
+	    (setf *lastmsg-nth* 0)))
+      (setf *lastmsg-nth* 0))
+  (echo-nth-last-message (current-screen) *lastmsg-nth*))
 
 ;;; A resize minor mode. Something a bit better should probably be
 ;;; written. But it's an interesting way of doing it.
@@ -747,23 +778,119 @@ be found, select it.  Otherwise simply run cmd."
 	  (define-key m (kbd "ESC") "abort-iresize")
 	  m)))
 
-(define-stumpwm-command "iresize" (screen)
-  (if (atom (screen-frame-tree screen))
-      (echo-string screen "There's only 1 frame!")
+(define-stumpwm-command "iresize" ()
+  (if (atom (tile-group-frame-tree (screen-current-group (current-screen))))
+      (echo-string (current-screen) "There's only 1 frame!")
       (progn
-	(echo-string screen "Resize Frame")
+	(echo-string (current-screen) "Resize Frame")
 	(push-top-map *resize-map*))
       ;;   (setf *resize-backup* (copy-frame-tree screen))
       ))
 
-(define-stumpwm-command "abort-iresize" (screen)
-  (echo-string screen "Abort resize")
+(define-stumpwm-command "abort-iresize" ()
+  (echo-string (current-screen) "Abort resize")
   ;; TODO: actually revert the frames
   (pop-top-map))
 
-(define-stumpwm-command "exit-iresize" (screen) 
- (echo-string screen "Resize Complete")
+(define-stumpwm-command "exit-iresize" ()
+ (echo-string (current-screen) "Resize Complete")
   (pop-top-map))
 
+;;; group commands
 
+;; FIXME: groups are to screens exactly as windows are to
+;; groups. There is a lot of duplicate code that could be globbed
+;; together.
 
+(defvar *groups-map* nil
+  "The default group related bindings hang off this map.")
+
+(when (null *groups-map*)
+  (setf *groups-map*
+	(let ((m (make-sparse-keymap)))
+	  (define-key m (kbd "g") "groups")
+	  (define-key m (kbd "c") "gnew")
+	  (define-key m (kbd "n") "gnext")
+	  (define-key m (kbd "C-n") "gnext")
+	  (define-key m (kbd "SPC") "gnext")
+	  (define-key m (kbd "C-SPC") "gnext")
+	  (define-key m (kbd "p") "gprev")
+	  (define-key m (kbd "C-p") "gprev")
+	  (define-key m (kbd "'") "gselect")
+	  (define-key m (kbd "1") "gselect 1")
+	  (define-key m (kbd "2") "gselect 2")
+	  (define-key m (kbd "3") "gselect 3")
+	  (define-key m (kbd "4") "gselect 4")
+	  (define-key m (kbd "5") "gselect 5")
+	  (define-key m (kbd "6") "gselect 6")
+	  (define-key m (kbd "7") "gselect 7")
+	  (define-key m (kbd "8") "gselect 8")
+	  (define-key m (kbd "9") "gselect 9")
+	  (define-key m (kbd "0") "gselect 10")
+	  m)))
+
+(defun group-forward (current list)
+  (let* ((matches (member current list))
+	 ng)
+    (setf ng (if (null (cdr matches))
+		 ;; If the last one in the list is current, then
+		 ;; use the first one.
+		 (car list)
+	       ;; Otherwise, use the next one in the list.
+	       (cadr matches)))
+    (when ng
+      (switch-to-group ng))))
+
+(define-stumpwm-command "gnew" ((name :string "Group Name: "))
+  (switch-to-group (add-group (current-screen) name)))
+
+(define-stumpwm-command "gnewbg" ((name :string "Group Name: "))
+  (add-group (current-screen) name))
+
+(define-stumpwm-command "gnext" ()
+  (group-forward (screen-current-group (current-screen))
+		 (screen-groups (current-screen))))
+
+(define-stumpwm-command "gprev" ()
+  (group-forward (screen-current-group (current-screen))
+		 (reverse (screen-groups (current-screen)))))
+
+(defun echo-groups (screen fmt &optional verbose)
+  "Print a list of the windows to the screen."
+  (let* ((groups (sort-groups screen))
+	 (names (reduce 'nconc 
+			(mapcar (lambda (g)
+				  (list*
+				   (format-expand *group-formatters* fmt g)
+				   (when verbose
+				     (mapcar (lambda (w)
+					       (format-expand *window-formatters*
+							      (concatenate 'string "  " *window-format*)
+							      w))
+					     (sort-windows g)))))
+				groups))))
+    (echo-string-list screen names)))
+
+(define-stumpwm-command "groups" ()
+  (echo-groups (current-screen) *group-format*))
+
+(define-stumpwm-command "vgroups" ()
+  (echo-groups (current-screen) *group-format* t))
+
+(defun select-group (screen query)
+  "Read input from the user and go to the selected window."
+  (let (match
+	(num (ignore-errors (parse-integer query))))
+    (labels ((match (grp)
+	       (let* ((name (group-name grp))
+		      (end (min (length name) (length query))))
+		 ;; try by name or number
+		 (or (string-equal name query :end1 end :end2 end)
+		     (eql (group-number grp) num)))))
+      (unless (null query)
+	(setf match (find-if #'match (screen-groups screen))))
+      (when match
+	(switch-to-group match)))))
+
+(define-stumpwm-command "gselect" ((query :rest "Select Group: "))
+  (select-group (current-screen) query))

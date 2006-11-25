@@ -1,3 +1,62 @@
+2006-11-25  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* mode-line.lisp (toggle-mode-line): update each group's frame list
+	(redraw-mode-line-for): set *current-mode-line-formatters* to the current group
+
+	* user.lisp (*root-map*): add lastmsg and group related bindings
+	(define-stumpwm-command): remove screen argument. all callers updated.
+	(parse-and-run-command): set *last-command*
+	(*groups-map*): new global
+	(group-forward): new function
+	("gnew"): new command
+	("gnewbg"): likewise
+	("gnext"): likewise
+	("gprev"): likewise
+	(echo-groups): new function
+	("groups"): new command
+	("vgroups"): likewise
+	(select-group): new function
+	("gselect"): new command
+
+	* primitives.lisp (group): new struct
+	(tile-group): likewise
+	(window): remove screen. add group. all callers updated.
+	(screen): remove frame-tree, window-hash. add groups,
+	current-group. all callers updated. add last-msg
+	last-msg-highlights.
+	(*current-screen*): new global
+	(find-free-number): add optional min argument
+	(*group-formatters*): new global
+	(*group-format*): likewise
+	(*last-command*): likewise
+	(*max-last-message-size*): likewise
+	(*record-last-msg-override*): likewise
+
+	* core.lisp (move-group-to-head): new function
+	(sort-groups): likewise
+	(fmt-group-status): likewise
+	(find-free-group-number): likewise
+	(group-current-window): likewise
+	(switch-to-group): likewise
+	(add-group): likewise
+	(window-screen): likewise
+	(setf xwin-state): dont call window-xwin on win
+	(xwin-unhide): new function
+	(unhide-window): call xwin-unhide
+	(xwin-hide): new function
+	(hide-window): call xwin-hide
+	(group-add-window): new generic
+	(group-add-window): new method
+	(add-window): call group-add-window
+	(push-last-message): new function
+	(echo-nth-last-message): likewise
+	(echo-string-list): take a list of lines to highlight. call
+	push-last-message
+	(init-screen): create initial group
+	(:configure-request): only grant raise request if the window's
+	group is the current group
+	(:key-press): bind *current-screen*
+
 2006-11-23  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* primitives.lisp (window): add normal-hints slot

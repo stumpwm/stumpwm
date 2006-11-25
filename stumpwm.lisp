@@ -136,7 +136,8 @@ loaded."
         (update-modifier-map)
 	(mapc 'process-existing-windows *screen-list*)
 	;; Give the first screen's frame focus
-	(focus-frame (first *screen-list*) (screen-current-frame (first *screen-list*)))
+	(let ((group (screen-current-group (first *screen-list*))))
+	  (focus-frame group (tile-group-current-frame group)))
         ;; Set the DISPLAY-environment-variable properly. This is
         ;; necessary if Stumpwm is running from a Lisp in another
         ;; X-display.

@@ -63,7 +63,8 @@ identity with a range check."
 (defun screen-y (screen)
   (let ((ml (screen-mode-line screen)))
     (if ml
-	(xlib:drawable-height (mode-line-window ml))
+	(+ (xlib:drawable-height (mode-line-window ml))
+	   (* 2 (xlib:drawable-border-width (mode-line-window ml))))
 	0)))
 
 (defun screen-height (screen)
@@ -84,14 +85,79 @@ identity with a range check."
 	   *screen-list*))
 
 
+;;; Group function
+
+(defun move-group-to-head (screen group)
+  "Move window to the head of the group's window list."
+  ;(assert (member window (screen-mapped-windows screen)))
+  (setf (screen-groups screen) (delete group (screen-groups screen)))
+  (push group (screen-groups screen)))
+
+(defun sort-groups (screen)
+  "Return a copy of the screen's group list sorted by number."
+  (sort1 (screen-groups screen)
+	 (lambda (a b)
+	   (< (group-number a)
+	      (group-number b)))))
+
+(defun fmt-group-status (group)
+  (let ((screen (group-screen group)))
+    (cond ((eq group (screen-current-group screen))
+	   #\*)
+	  ((and (typep (second (screen-groups screen)) 'group)
+		(eq group (second (screen-groups screen))))
+	   #\+)
+	  (t #\-))))
+
+(defun find-free-group-number (screen)
+  "Return a free window number for GROUP."
+  (find-free-number (mapcar 'group-number (screen-groups screen)) 1))
+
+(defun group-current-window (group)
+  (frame-window (tile-group-current-frame group)))
+
+(defun switch-to-group (new-group)
+  (let* ((screen (group-screen new-group))
+	 (old-group (screen-current-group screen)))
+    (unless (eq new-group old-group)
+      ;; restore the visible windows
+      (dolist (w (group-windows old-group))
+	(xwin-hide (window-xwin w) (window-parent w)))
+      (dolist (w (group-windows new-group))
+	(xwin-unhide (window-xwin w) (window-parent w)))
+      (setf (screen-current-group screen) new-group)
+      (move-group-to-head screen new-group)
+      ;; restore the focus
+      (setf (screen-focus screen) nil)
+      (focus-frame new-group (tile-group-current-frame new-group))
+      (show-frame-indicator new-group))))
+
+(defun add-group (screen name)
+  (let* ((initial-frame (make-initial-frame 
+			 (screen-x screen) (screen-y screen)
+			 (screen-width screen) (screen-height screen)))
+	 (ng (make-tile-group
+	      :frame-tree initial-frame
+	      :current-frame initial-frame
+	      :screen screen
+	      :number (find-free-group-number screen)
+	      :name name)))
+    (push ng (screen-groups screen))
+    ng))
+
+
 ;;; Window functions
+
+(defun window-screen (window)
+  (group-screen (window-group window)))
 
 (defun update-window-border (window)
   ;; give it a colored border but only if there are more than 1 frames.
-  (let ((screen (window-screen window)))
-    (setf (xlib:window-border (window-parent window)) 
-	  (if (and (> (length (screen-frames screen)) 1)
-		   (eq (screen-current-window screen) window))
+  (let* ((group (window-group window))
+	 (screen (group-screen group)))
+    (setf (xlib:window-border (window-parent window))
+	  (if (and (> (length (group-frames group)) 1)
+		   (eq (group-current-window group) window))
 	      (get-color-pixel screen *focus-color*)
 	      (get-color-pixel screen *unfocus-color*)))))
 
@@ -111,11 +177,11 @@ identity with a range check."
 		   :data data))
 
 (defun fmt-window-status (window)
-  (let ((screen (window-screen window)))
-    (cond ((eq window (screen-current-window screen))
+  (let ((group (window-group window)))
+    (cond ((eq window (group-current-window group))
 	   #\*)
-	  ((and (typep (second (screen-mapped-windows screen)) 'window)
-		(eq window (second (screen-mapped-windows screen))))
+	  ((and (typep (second (group-windows group)) 'window)
+		(eq window (second (group-windows group))))
 	   #\+)
 	  (t #\-))))
 
@@ -127,6 +193,7 @@ identity with a range check."
 (defun xwin-name (win)
   (xlib:wm-name win))
 
+;; FIXME: should we raise the winodw or its parent?
 (defun raise-window (win)
   "Map the window if needed and bring it to the top of the stack. Does not affect focus."
   (when (window-hidden-p win)
@@ -167,40 +234,45 @@ identity with a range check."
        (defun (setf ,(intern (format nil "WINDOW-~a" attr))) (,val ,win)
 	 (setf (gethash ,attr (window-plist ,win))) ,val))))
 
-(defun sort-windows (screen)
+(defun sort-windows (group)
   "Return a copy of the screen's window list sorted by number."
-  (sort1 (screen-mapped-windows screen)
+  (sort1 (group-windows group)
 	 (lambda (a b)
 	   (< (window-number a)
 	      (window-number b)))))
 
-(defun (setf xwin-state) (state win)
+(defun (setf xwin-state) (state xwin)
   "Set the state (iconic, normal, withdrawn) of a window."
-  (xlib:change-property (window-xwin win)
+  (xlib:change-property xwin
 			:WM_STATE
 			(list state)
 			:WM_STATE
 			32))
 
-(defun xwin-state (win)
+(defun xwin-state (xwin)
   "Get the state (iconic, normal, withdraw of a window."
-  (first (xlib:get-property win :WM_STATE)))
+  (first (xlib:get-property xwin :WM_STATE)))
 
 (defun window-hidden-p (window)
   (eql (window-state window) +iconic-state+))
 
+(defun xwin-unhide (xwin parent)
+  (xlib:map-window parent)
+  (xlib:map-subwindows parent)
+  (setf	(xwin-state xwin) +normal-state+))
+
 (defun unhide-window (window)
-  (xlib:map-window (window-parent window))
-  (xlib:map-subwindows (window-parent window))
-  (setf (window-state window) +normal-state+
-	(xwin-state window) +normal-state+))
+  (xwin-unhide (window-xwin window) (window-parent window))
+  (setf (window-state window) +normal-state+))
+
+(defun xwin-hide (xwin parent)
+  (setf	(xwin-state xwin) +iconic-state+)
+  (xlib:unmap-window parent))
 
 (defun hide-window (window)
   (dformat "hide window: ~a~%" (window-name window))
-  (setf (window-state window) +iconic-state+
-	(xwin-state window) +iconic-state+)
-  ;;(incf (window-unmap-ignores window))
-  (xlib:unmap-window (window-parent window)))
+  (setf (window-state window) +iconic-state+)
+  (xwin-hide (window-xwin window) (window-parent window)))
 
 (defun xwin-type (win)
   "Return one of :maxsize, :transient, or :normal."
@@ -312,9 +384,9 @@ than the root window's width and height."
 							      (* 2 (xlib:drawable-border-width (window-parent win)))))))
     (xlib:display-force-output *display*)))
 
-(defun find-free-window-number (screen)
-  "Return a free window number for SCREEN."
-  (find-free-number (mapcar 'window-number (screen-mapped-windows screen))))
+(defun find-free-window-number (group)
+  "Return a free window number for GROUP."
+  (find-free-number (mapcar 'window-number (group-windows group))))
 
 (defun reparent-window (window)
   (let* ((screen (window-screen window))
@@ -349,9 +421,8 @@ than the root window's width and height."
 		(dformat "Processing ~S ~S~%" (xwin-name win) win)
 		(process-mapped-window screen win)))))))
   ;; Once processing them, hide them all. Later one will be mapped and
-  ;; focused.
-  (mapcar 'hide-window (screen-mapped-windows screen))
-)
+  ;; focused. We can do this because on start up there is only 1 group.
+  (mapcar 'hide-window (group-windows (screen-current-group screen))))
 
 (defun xwin-grab-keys (win)
   (labels ((grabit (w key)
@@ -377,15 +448,17 @@ than the root window's width and height."
   (loop for i in *screen-list*
      do (xwin-ungrab-keys (screen-focus-window i))
      do (loop for j in (screen-mapped-windows i)
-	   do (ungrab-keys-on-window j))
+	   do (xwin-ungrab-keys j))
      do (xlib:display-finish-output *display*)
      do (loop for j in (screen-mapped-windows i)
-	   do (grab-keys-on-window j))
+	   do (xwin-grab-keys j))
      do (xwin-grab-keys (screen-focus-window i)))
   (xlib:display-finish-output *display*))
 
-(defun add-window (screen xwin)
-  "add window to the head of the mapped-windows list."
+(defgeneric group-add-window (group xwin)
+  (:documentation "add window to the head of the group's windows list."))
+
+(defmethod group-add-window ((group tile-group) xwin)
   ;; give it a number, put it in a frame
   (let ((window (make-window :xwin xwin
 			     :name (xwin-name xwin)
@@ -393,15 +466,19 @@ than the root window's width and height."
 			     :res (xwin-res-name xwin)
 			     :type (xwin-type xwin)
 			     :normal-hints (xlib:wm-normal-hints xwin)
-			     :state +iconic-state+
-			     :screen screen
+			     :state +normal-state+
+			     :group group
 			     :plist (make-hash-table)
-			     :number (find-free-window-number screen)
-			     :frame (screen-current-frame screen)
+			     :number (find-free-window-number group)
+			     :frame (tile-group-current-frame group)
 			     :unmap-ignores 0)))
-    (setf (frame-window (screen-current-frame screen)) window)
-    (push window (screen-mapped-windows screen))
+    (setf (frame-window (tile-group-current-frame group)) window)
+    (push window (group-windows group))
     window))
+
+(defun add-window (screen xwin)
+  (push xwin (screen-mapped-windows screen))
+  (group-add-window (screen-current-group screen) xwin))
 
 (defun process-mapped-window (screen xwin)
   "Add the window to the screen's mapped window list and process it as
@@ -425,35 +502,38 @@ needed."
 give the last accessed window focus."
   ;; This function cannot request info about WINDOW from the xserver
   ;; Remove the window from the list of mapped windows.
-  (let ((f (window-frame window))
-	(screen (window-screen window)))
+  (let* ((f (window-frame window))
+	 (group (window-group window))
+	 (screen (group-screen group)))
     (dformat "remove window ~a~%" screen)
-    (assert (find window (screen-mapped-windows screen)))
     (dformat "destroying parent window~%")
     (xlib:destroy-window (window-parent window))
     (dformat "destroyed.~%")
     (xlib:display-finish-output *display*)
-    ;; Clean up the window's entry in screen-window-hash
+    ;; Clean up the window's entry in the screen and group
     (setf (screen-mapped-windows screen)
-	  (delete window (screen-mapped-windows screen)))
+	  (delete (window-xwin window) (screen-mapped-windows screen))
+	  (group-windows group)
+	  (delete window (group-windows group)))
     ;; remove it from it's frame structures
     (when (eq (frame-window f) window)
-      (setf (frame-window f) (first (frame-windows screen f))))
+      (setf (frame-window f) (first (frame-windows group f))))
     ;; Run the unmap hook on the window
     (unwind-protect
 	 (run-hook-with-args *unmap-window-hook* window)
       ;; If the current window was removed, then refocus the frame it
       ;; was in, since it has a new current window
-      (when (eq (screen-current-frame screen) f)
+      (when (and (eq (screen-current-group screen) group)
+		 (eq (tile-group-current-frame group) f))
 	;; since the window doesn't exist, it doesn't have focus.
 	(setf (screen-focus screen) nil)
-	(focus-frame screen f)))))
+	(focus-frame (window-group window) f)))))
   
-(defun move-window-to-head (screen window)
-  "Move window to the head of the mapped-windows list."
+(defun move-window-to-head (group window)
+  "Move window to the head of the group's window list."
   ;(assert (member window (screen-mapped-windows screen)))
-  (setf (screen-mapped-windows screen) (delete window (screen-mapped-windows screen)))
-  (push window (screen-mapped-windows screen)))
+  (setf (group-windows group) (delete window (group-windows group)))
+  (push window (group-windows group)))
 
 (defun no-focus (screen)
   "don't focus any window but still read keyboard events."
@@ -476,7 +556,8 @@ NEW-WINDOW is nil then the window is being hidden."
   "Give the window focus. This means the window will be visible,
 maximized, and given focus."
   (handler-case
-      (let* ((screen (window-screen window))
+      (let* ((group (window-group window))
+	     (screen (group-screen group))
 	     (cw (screen-focus screen)))
 	;; If window to focus is already focused then our work is done.
 	(unless (eq window cw)
@@ -488,7 +569,7 @@ maximized, and given focus."
 	  (when cw
 	    (update-window-border cw))
 	  ;; Move the window to the head of the mapped-windows list
-	  (move-window-to-head screen window)
+	  (move-window-to-head group window)
 	  ;; If another window was focused, then call the unfocus hook for
 	  ;; it.
 	  (when cw
@@ -622,14 +703,14 @@ maximized, and given focus."
 
 ;;; Frame functions
 
-(defun frame-raise-window (s f w &optional (focus t))
+(defun frame-raise-window (g f w &optional (focus t))
   "Raise the window w in frame f in screen s. if FOCUS is
 T (default) then also focus the frame."
   ;; nothing to do when W is nil
   (let ((oldw (frame-window f)))
     (setf (frame-window f) w)
     (when focus
-      (focus-frame s f))
+      (focus-frame g f))
     ;; The old one might need to be hidden
     (unless (and w (eq oldw w))
       (when oldw
@@ -637,23 +718,23 @@ T (default) then also focus the frame."
       (when w
 	(raise-window w)))))
 
-(defun focus-frame (screen f)
+(defun focus-frame (group f)
   (let ((w (frame-window f))
-	(last (screen-current-frame screen)))
-    (setf (screen-current-frame screen) f)
+	(last (tile-group-current-frame group)))
+    (setf (tile-group-current-frame group) f)
     (dformat "~S~%" f)
     (if w
 	(focus-window w)
-      (no-focus screen))
+      (no-focus (group-screen group)))
     (run-hook-with-args *focus-frame-hook* f last)))
 
-(defun frame-windows (screen f)
+(defun frame-windows (group f)
   (remove-if-not (lambda (w) (eq (window-frame w) f))
-		 (screen-mapped-windows screen)))
+		 (group-windows group)))
 
-(defun frame-sort-windows (screen f)
+(defun frame-sort-windows (group f)
   (remove-if-not (lambda (w) (eq (window-frame w) f))
-		 (sort-windows screen)))
+		 (sort-windows group)))
 
 (defun make-initial-frame (x y w h)
   "Used to create an initial frame hash for a screen."
@@ -664,7 +745,7 @@ T (default) then also focus the frame."
 	      :height h
 	      :window nil))
 
-(defun copy-frame-tree (screen)
+(defun copy-frame-tree (group)
   "Return a copy of the frame tree."
   (labels ((copy (tree)
 	     (cond ((null tree) tree)
@@ -672,16 +753,16 @@ T (default) then also focus the frame."
 		    (copy-structure tree))
 		   (t 
 		    (mapcar 'copy-frame-tree tree)))))
-    (copy (screen-frame-tree screen))))
+    (copy (tile-group-frame-tree group))))
 
-(defun screen-frames (screen)
-  (tree-accum-fn (screen-frame-tree screen) 'nconc 'list))
+(defun group-frames (group)
+  (tree-accum-fn (tile-group-frame-tree group) 'nconc 'list))
 
-(defun find-free-frame-number (screen)
+(defun find-free-frame-number (group)
   (find-free-number (mapcar (lambda (f) (frame-number f))
-			    (screen-frames screen))))
+			    (group-frames group))))
 
-(defun split-frame-h (screen p)
+(defun split-frame-h (group p)
   "Return 2 new frames. The first one stealing P's number and window"
   (let* ((w (truncate (/ (frame-width p) 2)))
 	 (h (frame-height p))
@@ -691,7 +772,7 @@ T (default) then also focus the frame."
 			 :width w
 			 :height h
 			 :window (frame-window p)))
-	 (f2 (make-frame :number (find-free-frame-number screen)
+	 (f2 (make-frame :number (find-free-frame-number group)
 			 :x (+ (frame-x p) w)
 			 :y (frame-y p)
 			 :width w
@@ -699,7 +780,7 @@ T (default) then also focus the frame."
 			 :window nil)))
     (values f1 f2)))
 
-(defun split-frame-v (screen p)
+(defun split-frame-v (group p)
   "Return 2 new frames. The first one stealing P's number and window"
   (let* ((w (frame-width p))
 	 (h (truncate (/ (frame-height p) 2)))
@@ -709,7 +790,7 @@ T (default) then also focus the frame."
 			 :width w
 			 :height h
 			 :window (frame-window p)))
-	 (f2 (make-frame :number (find-free-frame-number screen)
+	 (f2 (make-frame :number (find-free-frame-number group)
 			 :x (frame-x p)
 			 :y (+ (frame-y p) h)
 			 :width w
@@ -749,12 +830,12 @@ T (default) then also focus the frame."
 	(t (or (sibling (first tree) leaf)
 	       (sibling (second tree) leaf)))))
 
-(defun migrate-frame-windows (screen src dest)
+(defun migrate-frame-windows (group src dest)
   "Migrate all windows in SRC frame to DEST frame."
   (mapc (lambda (w)
 	  (when (eq (window-frame w) src)
 	    (setf (window-frame w) dest)))
-	(screen-mapped-windows screen)))
+	(group-windows group)))
 
 (defun tree-accum-fn (tree acc fn)
   "Run an accumulator function on fn applied to each leaf"
@@ -862,19 +943,19 @@ one."
 	(t (list (remove-frame (first tree) leaf)
 		 (remove-frame (second tree) leaf)))))
 
-(defun sync-frame-windows (screen frame)
+(defun sync-frame-windows (group frame)
   "synchronize windows attached to FRAME."
   (mapc (lambda (w)
 	  (when (eq (window-frame w) frame)
 	    (dformat "maximizing ~S~%" w)
 	    (maximize-window w)))
-	(screen-mapped-windows screen)))
+	(group-windows group)))
 
-(defun sync-all-frame-windows (screen)
-  (let ((tree (screen-frame-tree screen)))
+(defun sync-all-frame-windows (group)
+  (let ((tree (tile-group-frame-tree group)))
     (tree-iterate tree
 		  (lambda (f)
-		    (sync-frame-windows screen f)))))
+		    (sync-frame-windows group f)))))
 
 (defun depth-first-search (tree elt &key (test #'eq))
   "If ELT is in TREE return the branches from ELT up to and including TREE"
@@ -897,16 +978,17 @@ one."
       (loop for branch in path while (funcall pred branch)
 	    finally (return branch)))))
 
-(defun offset-frames (screen x y)
+(defun offset-frames (group x y)
   "move the screen's frames around."
-  (let ((tree (screen-frame-tree screen)))
+  (let ((tree (tile-group-frame-tree group)))
     (tree-iterate tree (lambda (frame)
 			 (incf (frame-x frame) x)
 			 (incf (frame-y frame) y)))))
 
-(defun resize-frame (screen frame amount dim)
+(defun resize-frame (group frame amount dim)
   "Resize FRAME by AMOUNT in DIM dimension, DIM can be either 'width or 'height"
-  (let ((tree (screen-frame-tree screen)))
+  (let ((tree (tile-group-frame-tree group))
+	(screen (group-screen group)))
     ;; if FRAME is taking up the whole DIM or if AMOUNT = 0, do nothing
     (unless (or (zerop amount)
                 (case dim
@@ -936,69 +1018,76 @@ one."
 					(bottom 'top)))
             (tree-iterate a-branch
                           (lambda (leaf)
-                            (sync-frame-windows screen leaf)))))))))
+                            (sync-frame-windows group leaf)))))))))
 
-(defun split-frame (screen how-fn)
-  (let* ((frame (screen-current-frame screen)))
+(defun split-frame (group how-fn)
+  (let* ((frame (tile-group-current-frame group)))
     (multiple-value-bind (f1 f2) (funcall how-fn frame)
-      (setf (screen-frame-tree screen)
-	    (replace-frame-in-tree (screen-frame-tree screen)
+      (setf (tile-group-frame-tree group)
+	    (replace-frame-in-tree (tile-group-frame-tree group)
 				   frame f1 f2))
-      (migrate-frame-windows screen frame f1)
-      (if (eq (screen-current-frame screen)
+      (migrate-frame-windows group frame f1)
+      (if (eq (tile-group-current-frame group)
 	      frame)
-	  (setf (screen-current-frame screen) f1))
-      (sync-frame-windows screen f1)
-      (sync-frame-windows screen f2))))
+	  (setf (tile-group-current-frame group) f1))
+      (sync-frame-windows group f1)
+      (sync-frame-windows group f2))))
     
-(defun draw-frame-outlines (screen)
+(defun draw-frame-outlines (group)
   "Draw an outline around all frames in SCREEN."
-  (let ((gc (xlib:create-gcontext :drawable (screen-root screen)
-				  :font (screen-font screen)
-				  :foreground (get-fg-color-pixel screen)
-				  :background (get-bg-color-pixel screen)
-				  :line-style :dash)))
+  (let* ((screen (group-screen group))
+	 (gc (xlib:create-gcontext :drawable (screen-root screen)
+				   :font (screen-font screen)
+				   :foreground (get-fg-color-pixel screen)
+				   :background (get-bg-color-pixel screen)
+				   :line-style :dash)))
     (mapc (lambda (f)
 	    (xlib:draw-line (screen-root screen) gc
 			    (frame-x f) (frame-y f) (frame-width f) 0 t)
 	    (xlib:draw-line (screen-root screen) gc
 			    (frame-x f) (frame-y f) 0 (frame-height f) t))
-	  (screen-frames screen))))
+	  (group-frames group))))
 
-(defun clear-frame-outlines (screen)
+(defun clear-frame-outlines (group)
   "Clear the outlines drawn with DRAW-FRAME-OUTLINES."
-  (xlib:clear-area (screen-root screen)))
+  (xlib:clear-area (screen-root (group-screen group))))
 
-(defun draw-frame-numbers (screen)
+(defun draw-frame-numbers (group)
   "Draw the number of each frame in its corner. Return the list of
 windows used to draw the numbers in. The caller must destroy them."
-  (mapcar (lambda (f)
-		 (let ((w (xlib:create-window
-			   :parent (screen-root screen)
-			   :x (frame-x f) :y (frame-y f) :width 1 :height 1
-			   :background (get-fg-color-pixel screen)
-			   :border (get-border-color-pixel screen)
-			   :border-width 1
-			   :event-mask '())))
-		   (xlib:map-window w)
-		   (setf (xlib:window-priority w) :above)
-		   (echo-in-window w (screen-font screen)
-				   (get-fg-color-pixel screen)
-				   (get-bg-color-pixel screen)
-				   (string (get-frame-number-translation f)))
-		   (xlib:display-force-output *display*)
-		   (dformat "mapped ~S~%" (frame-number f))
-		   w))
-	       (screen-frames screen)))
+  (let ((screen (group-screen group)))
+    (mapcar (lambda (f)
+	      (let ((w (xlib:create-window
+			:parent (screen-root screen)
+			:x (frame-x f) :y (frame-y f) :width 1 :height 1
+			:background (get-fg-color-pixel screen)
+			:border (get-border-color-pixel screen)
+			:border-width 1
+			:event-mask '())))
+		(xlib:map-window w)
+		(setf (xlib:window-priority w) :above)
+		(echo-in-window w (screen-font screen)
+				(get-fg-color-pixel screen)
+				(get-bg-color-pixel screen)
+				(string (get-frame-number-translation f)))
+		(xlib:display-force-output *display*)
+		(dformat "mapped ~S~%" (frame-number f))
+		w))
+	    (group-frames group))))
 	    
 
 ;;; Screen functions
 
+(defun screen-current-window (screen)
+  (group-current-window (screen-current-group screen)))
+
+;;; TODO: Will windows exist in multiple groups, one day?
 (defun find-window (xwin)
   (dolist (i *screen-list*)
-    (let ((w (find xwin (screen-mapped-windows i) :key 'window-xwin :test 'xlib:window-equal)))
-      (when w
-	(return w)))))
+    (dolist (g (screen-groups i))
+      (let ((w (find xwin (group-windows g) :key 'window-xwin :test 'xlib:window-equal)))
+	(when w
+	  (return-from find-window w))))))
 
 (defun screen-root (screen)
   (xlib:screen-root (screen-number screen)))
@@ -1023,9 +1112,6 @@ windows used to draw the numbers in. The caller must destroy them."
       (xlib:window-equal (screen-frame-window screen) win)
       (xlib:window-equal (screen-focus-window screen) win)))
 
-(defun screen-current-window (screen)
-  (frame-window (screen-current-frame screen)))
-
 (defun unmap-message-window (screen)
   "Unmap the screen's message window, if it is mapped."
   (unless (eq (xlib:window-map-state (screen-message-window screen)) :unmapped)
@@ -1041,14 +1127,16 @@ windows used to draw the numbers in. The caller must destroy them."
 (defun unmap-all-frame-indicators ()
   (mapc #'unmap-frame-indicator *screen-list*))
 
-(defun show-frame-indicator (screen)
-  (let* ((w (screen-frame-window screen))
+(defun show-frame-indicator (group)
+  (let* ((screen (group-screen group))
+	 (w (screen-frame-window screen))
 	 (s "Current Frame")
 	 (height (font-height (screen-font screen)))
-	 (width (xlib:text-width (screen-font screen) s)))
+	 (width (xlib:text-width (screen-font screen) s))
+	 (cf (tile-group-current-frame group)))
     (xlib:map-window w)
-    (setf (xlib:drawable-x w) (+ (frame-x (screen-current-frame screen)) (truncate (- (frame-width (screen-current-frame screen)) width) 2))
-	  (xlib:drawable-y w) (+ (frame-y (screen-current-frame screen)) (truncate (- (frame-height (screen-current-frame screen)) height) 2))
+    (setf (xlib:drawable-x w) (+ (frame-x cf) (truncate (- (frame-width cf) width) 2))
+	  (xlib:drawable-y w) (+ (frame-y cf) (truncate (- (frame-height cf) height) 2))
 	  (xlib:window-priority w) :above)
     (echo-in-window w (screen-font screen)
 		    (get-fg-color-pixel screen)
@@ -1068,8 +1156,26 @@ windows used to draw the numbers in. The caller must destroy them."
 	  (xlib:drawable-width win) width)
     (xlib:clear-area win)
     (xlib:draw-image-glyphs win gcontext 0 (xlib:font-ascent font) string)))
-	 
-(defun echo-string-list (screen strings &optional highlight)
+
+(defun push-last-message (screen strings highlights)
+  ;; only push unique messages
+  (unless *record-last-msg-override*
+    (push strings (screen-last-msg screen))
+    (push highlights (screen-last-msg-highlights screen))
+    ;; crop for size
+    (when (>= (length (screen-last-msg screen)) *max-last-message-size*)
+      (setf (screen-last-msg screen) (butlast (screen-last-msg screen)
+					      (- (length (screen-last-msg screen))
+						 *max-last-message-size*))
+	    (screen-last-msg-highlights screen) (butlast (screen-last-msg-highlights screen)
+							 (- (length (screen-last-msg screen))
+							    *max-last-message-size*))))))
+
+(defun echo-nth-last-message (screen n)
+  (let ((*record-last-msg-override* t))
+    (apply 'echo-string-list screen (nth n (screen-last-msg screen)) (nth n (screen-last-msg-highlights screen)))))
+
+(defun echo-string-list (screen strings &rest highlights)
   "Draw each string in l in the screen's message window. HIGHLIGHT is
 the nth entry to highlight."
   (let* ((height (+ (xlib:font-descent (screen-font screen))
@@ -1087,13 +1193,13 @@ the nth entry to highlight."
 				     s
 				     :translate #'translate-id
 				     :size 16)
-	  when (and highlight
-		    (= highlight i))
+	  when (find i highlights :test 'eql)
 	  do (invert-rect screen message-win
 			  0 (* i height)
 			  (xlib:drawable-width message-win)
 			  height)))
   (xlib:display-force-output *display*)
+  (push-last-message screen strings highlights)
   ;; Set a timer to hide the message after a number of seconds
   (reset-timeout))
 
@@ -1104,14 +1210,15 @@ the nth entry to highlight."
 (defun current-screen ()
   "Return the current screen. The current screen is the screen whose
 window has focus. If no window has focus it is the screen that last had
-focus of a window."
-  (let* ((win (xlib:input-focus *display*))
-	 (screen (xwin-screen win)))
-    ;; We MUST be able to figure out the current screen by this method
-    (assert screen)
-    ;; Return the current screen
-    (prog1
-    screen)))
+focus of a window. *CURRENT-SCREEN* overrides this process."
+  (or *current-screen*
+      (let* ((win (xlib:input-focus *display*))
+	     (screen (xwin-screen win)))
+	;; We MUST be able to figure out the current screen by this method
+	(assert screen)
+	;; Return the current screen
+	(prog1
+	    screen))))
 
 (defun init-screen (screen-number)
   "Given a screen number, returns a screen structure with initialized members"
@@ -1122,7 +1229,8 @@ focus of a window."
 	  :property-change))
   (xlib:display-force-output *display*) 
   ;; Initialize the screen structure
-  (let* ((fg (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-foreground-color+))
+  (let* ((screen (make-screen))
+	 (fg (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-foreground-color+))
 	 (bg (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-background-color+))
 	 (border (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-border-color+))
 	 (input-window (xlib:create-window :parent (xlib:screen-root screen-number)
@@ -1154,28 +1262,35 @@ focus of a window."
 	 (initial-frame (make-initial-frame 0 0
 					    (xlib:screen-width screen-number)
 					    (xlib:screen-height screen-number)))
-	 (font (xlib:open-font *display* +default-font-name+)))
+	 (font (xlib:open-font *display* +default-font-name+))
+	 (group (make-tile-group
+		 :frame-tree initial-frame
+		 :current-frame initial-frame
+		 :screen screen
+		 :number 1
+		 :name "Default")))
     ;; Create our screen structure
     ;; The focus window is mapped at all times
     (xlib:map-window focus-window)
     (xwin-grab-keys focus-window)
-    (make-screen :number screen-number
-		 :frame-tree initial-frame
-		 :font font
-		 :fg-color +default-foreground-color+
-		 :bg-color +default-background-color+
-		 :border-color +default-border-color+
-		 :current-frame initial-frame
-		 :window-hash (make-hash-table)
-		 :message-window message-window
-		 :input-window input-window
-		 :frame-window frame-window
-		 :focus-window focus-window
-		 :message-gc (xlib:create-gcontext
-			      :drawable message-window
-			      :font font
-			      :foreground (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-foreground-color+)
-			      :background (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-background-color+)))))
+    (setf (screen-number screen) screen-number
+	  (screen-groups screen) (list group)
+	  (screen-current-group screen) group
+	  (screen-font screen) font
+	  (screen-fg-color screen) +default-foreground-color+
+	  (screen-bg-color screen) +default-background-color+
+	  (screen-border-color screen) +default-border-color+
+	  (screen-message-window screen) message-window
+	  (screen-input-window screen) input-window
+	  (screen-frame-window screen) frame-window
+	  (screen-focus-window screen) focus-window
+	  (screen-message-gc screen) (xlib:create-gcontext
+				      :drawable message-window
+				      :font font
+				      :foreground (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-foreground-color+)
+				      :background (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-background-color+)))
+    screen))
+
 
 ;;; keyboard helper functions
 
@@ -1243,14 +1358,13 @@ list of modifier symbols."
 ;(define-stump-event-handler :map-notify (event-window window override-redirect-p)
 ;  )
 
-(define-stump-event-handler :configure-request (stack-mode #|parent|# window #|above-sibling|# x y width height border-width value-mask)
+(define-stump-event-handler :configure-request (stack-mode #|parent|# window #|above-sibling|# x y width height value-mask)
   ;; Grant the configure request but then maximize the window after the granting.
   (dformat "CONFIGURE REQUEST ~S~%" value-mask)
   (labels ((has-x (mask) (= 1 (logand mask 1)))
 	   (has-y (mask) (= 2 (logand mask 2)))
 	   (has-w (mask) (= 4 (logand mask 4)))
 	   (has-h (mask) (= 8 (logand mask 8)))
-	   (has-bw (mask) (= 16 (logand mask 16)))
 	   (has-stackmode (mask) (= 64 (logand mask 64))))
     ;; First, give the window what it wants
     (xlib:with-state (window)
@@ -1267,9 +1381,9 @@ list of modifier symbols."
       (when (has-w value-mask)
 	(dformat "w~%")
 	(setf (xlib:drawable-width window) width))
-;;       (when (has-bw value-mask)
-;; 	(dformat "bw~%")
-;; 	(setf (xlib:drawable-border-width window) border-width))
+      ;;       (when (has-bw value-mask)
+      ;; 	(dformat "bw~%")
+      ;; 	(setf (xlib:drawable-border-width window) border-width))
       )
     ;; TODO: are we ICCCM compliant?
     ;; The ICCCM says with have to send a fake configure-notify if
@@ -1283,20 +1397,21 @@ list of modifier symbols."
       (when window
 	(maximize-window window)
 	;; Finally, grant the stack-mode change (if it's mapped)
-	(when (has-stackmode value-mask)
-	  (case stack-mode
-	    (:above
-	     (let ((f (window-frame window)))
-	       (frame-raise-window (window-screen window) f window)))))))))
+	(when (eq (screen-current-group (window-screen window))
+		  (window-group window))
+	  (when (has-stackmode value-mask)
+	    (case stack-mode
+	      (:above
+	       (frame-raise-window (window-group window) (window-frame window) window)))))))))
 
 (define-stump-event-handler :map-request (#|parent|# send-event-p window)
   (unless send-event-p
     (let ((screen (xwin-screen window)))
       ;; only absorb it if it's not already managed (it could be iconic)
       (unless (find-window window)
-      (let ((window (process-mapped-window screen window)))
-	;; Give it focus
-	(frame-raise-window screen (window-frame window) window))))))
+	(let ((window (process-mapped-window screen window)))
+	  ;; Give it focus
+	  (frame-raise-window (window-group window) (window-frame window) window))))))
 
 (define-stump-event-handler :unmap-notify (send-event-p event-window window #|configure-p|#)
   ;; There are two kinds of unmap notify events: the straight up
@@ -1373,7 +1488,8 @@ list of modifier symbols."
 		 ;; this force output is crucial. Without it weird
 		 ;; things happen if an error happens later on.
 		 (xlib:display-force-output *display*))))
-      (let* ((screen (find-screen root)))
+      (let* ((screen (find-screen root))
+	     (*current-screen* screen))
 	(multiple-value-bind (cmd key-seq) (get-cmd screen code state)
 	  (unmap-message-window screen)
 	  (if cmd
@@ -1413,14 +1529,14 @@ chunks."
     (:wm_normal_hints
      (setf (window-normal-hints window) (xlib:wm-normal-hints (window-xwin window))
 	   (window-type window) (xwin-type (window-xwin window)))
-     (sync-frame-windows (window-screen window) (window-frame window)))
+     (sync-frame-windows (window-group window) (window-frame window)))
     (:wm_hints)
     (:wm_class
      (setf (window-class window) (xwin-class (window-xwin window))
 	   (window-res window) (xwin-res-name (window-xwin window))))
     (:wm_transient_for
      (setf (window-type window) (xwin-type (window-xwin window)))
-     (sync-frame-windows (window-screen window) (window-frame window)))))
+     (sync-frame-windows (window-group window) (window-frame window)))))
 
 (define-stump-event-handler :property-notify (window atom state)
   (let* ((screen (xwin-screen window))
@@ -1454,7 +1570,9 @@ chunks."
   (dformat "Handling event ~S~%" event-key)
   (let ((eventfn (gethash event-key *event-fn-table*)))
     (when eventfn
-      (handler-case (apply eventfn event-slots)
+      (handler-case (prog1
+			(apply eventfn event-slots)
+		      (xlib:display-finish-output *display*))
 	((or xlib:drawable-error xlib:window-error) (c)
 	  ;; This is generally the error we get when
 	  ;; attempting to focus a window that's been

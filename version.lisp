@@ -30,5 +30,5 @@
 (defun echo-version (screen)
   (echo-string screen *version*))
 
-(define-stumpwm-command "version" (screen)
-  (echo-version screen))
+(define-stumpwm-command "version" ()
+  (echo-version (current-screen)))

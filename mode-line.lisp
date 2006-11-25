@@ -72,8 +72,10 @@ A string is printed verbatim in the mode line except for
 %w -- print the window list
 ")
 
-(defvar *screen-mode-line-formatters* '((#\w fmt-screen-window-list))
-  "An alist containing format character format function pairs for formatting screen mode-lines.")
+(defvar *screen-mode-line-formatters* '((#\w fmt-window-list))
+  "An alist containing format character format function pairs for
+formatting screen mode-lines. functions are passed the screen's
+current group.")
 
 (defvar *current-mode-line-formatters* nil
   "used in formatting modeline strings.")
@@ -153,7 +155,7 @@ A string is printed verbatim in the mode line except for
 
 (defmethod redraw-mode-line-for (ml (obj screen))
   (let* ((*current-mode-line-formatters* *screen-mode-line-formatters*)
-	 (*current-mode-line-formatter-args* (list obj))
+	 (*current-mode-line-formatter-args* (list (screen-current-group obj)))
 	 (string (mode-line-format-string ml)))
     (xlib:draw-image-glyphs (mode-line-window ml) (mode-line-gc ml)
 			    *mode-line-pad-x*
@@ -171,9 +173,11 @@ A string is printed verbatim in the mode line except for
 (defun toggle-mode-line (screen &optional (format '*screen-mode-line-format*))
   (if (screen-mode-line screen)
       (progn
-	(when (eq (mode-line-position (screen-mode-line screen)) :top)
-	  (offset-frames screen 0 (- (true-height (mode-line-window (screen-mode-line screen))))))
-	(expand-tree (screen-frame-tree screen) (true-height (mode-line-window (screen-mode-line screen))) 'bottom)
+	(dolist (group (screen-groups screen))
+	  (when (eq (mode-line-position (screen-mode-line screen)) :top)
+	    (offset-frames group 0 (- (true-height (mode-line-window (screen-mode-line screen))))))
+	  (expand-tree (tile-group-frame-tree group) (true-height (mode-line-window (screen-mode-line screen))) 'bottom)
+	  (sync-all-frame-windows group))
 	(xlib:destroy-window (mode-line-window (screen-mode-line screen)))
 	(xlib:free-gcontext (mode-line-gc (screen-mode-line screen)))
 	(setf (screen-mode-line screen) nil))
@@ -183,10 +187,11 @@ A string is printed verbatim in the mode line except for
 	(redraw-mode-line-for (screen-mode-line screen) screen)
 	;; move the frames
 	(dformat "modeline: ~s~%" (screen-mode-line screen))
-	(when (eq (mode-line-position (screen-mode-line screen)) :top)
-	  (offset-frames screen 0 (true-height (mode-line-window (screen-mode-line screen)))))
-	(expand-tree (screen-frame-tree screen) (- (true-height (mode-line-window (screen-mode-line screen)))) 'bottom)))
-  (sync-all-frame-windows screen))
+	(dolist (group (screen-groups screen))
+	  (when (eq (mode-line-position (screen-mode-line screen)) :top)
+	    (offset-frames group 0 (true-height (mode-line-window (screen-mode-line screen)))))
+	  (expand-tree (tile-group-frame-tree group) (- (true-height (mode-line-window (screen-mode-line screen)))) 'bottom)
+	  (sync-all-frame-windows group)))))
       
-(define-stumpwm-command "mode-line" (screen)
-  (toggle-mode-line screen))
+(define-stumpwm-command "mode-line" ()
+  (toggle-mode-line (current-screen)))

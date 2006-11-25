@@ -164,7 +164,7 @@ to login remotely to regain control.")
 
 (defstruct window
   xwin
-  screen
+  group
   frame
   number
   parent
@@ -184,6 +184,19 @@ to login remotely to regain control.")
   width
   height
   window)
+
+(defstruct group
+  ;; A list of all windows in this group. They are of the window
+  ;; struct variety.
+  screen
+  windows
+  number
+  name)
+
+(defstruct (tile-group (:include group))
+  ;; From this frame tree a list of frames can be gathered
+  frame-tree
+  current-frame)
 
 (defmethod print-object ((object frame) stream)
   (format stream "#S<frame ~d ~d ~d ~d>" 
@@ -224,17 +237,17 @@ single char keys are supported.")
 
 (defstruct screen
   number
-  ;; From this frame tree a list of frames can be gathered
-  frame-tree
+  ;; the list of groups available on this screen
+  groups
+  current-group
   border-color
   fg-color
   bg-color
   font
   current-frame
-  ;; A list of all mapped windows. Used for navigating windows.
+  ;; A list of all mapped windows. These are the raw
+  ;; xlib:window's. window structures are stored in groups.
   mapped-windows
-  ;; A hash table for stumpwm properties on any absorbed windows.
-  window-hash
   message-window
   input-window
   frame-window
@@ -246,8 +259,12 @@ single char keys are supported.")
   message-gc
   ;; the window that has focus
   focus
-  )
+  last-msg
+  last-msg-highlights)
 
+(defvar *current-screen* nil
+  "When this is non-nil use it as the current screen. Don't use
+this var. Just call current-screen.")
 
 (defmethod print-object ((object screen) stream)
   (format stream "#S<screen ~s>" (screen-number object)))
@@ -293,10 +310,10 @@ single char keys are supported.")
       (maphash #'mapfn hash))
     accum))
 
-(defun find-free-number (l)
+(defun find-free-number (l &optional (min 0))
   "Return a number that is not in the list l."
   (let* ((nums (sort l #'<))
-	 (new-num (loop for n from 0 to (or (car (last nums)) 0)
+	 (new-num (loop for n from min to (or (car (last nums)) 0)
 			for i in nums
 			when (/= n i)
 			do (return n))))
@@ -462,6 +479,14 @@ Modifies the match data; use `save-match-data' if necessary."
 (defvar *window-format* "%n%s%t"
   "The format string for echoing the window list.")
 
+(defvar *group-formatters* '((#\n group-number)
+			      (#\s fmt-group-status)
+			      (#\t group-name))
+  "an alist containing format character format function pairs for formatting window lists.")
+
+(defvar *group-format* "%n%s%t"
+  "The format string for echoing the window list.")
+
 (defun font-height (font)
   (+ (xlib:font-descent font)
      (xlib:font-ascent font)))
@@ -473,3 +498,13 @@ when killing text in the input bar.")
 ;; This is here to avoid warnings
 (defvar *top-map* nil
   "Top level bindings.")
+
+(defvar *last-command* nil
+  "Set to the last interactive command run.")
+
+(defvar *max-last-message-size* 20
+  "how many previous messages to keep.")
+
+(defvar *record-last-msg-override* nil
+  "assign this to T and messages won't be recorded. It is
+recommended this is assigned using LET.")
