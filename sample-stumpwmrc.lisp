@@ -9,10 +9,10 @@
 
 ;; prompt the user for an interactive command. The first arg is an
 ;; optional initial contents.
-(define-stumpwm-command "colon1" (screen (initial :rest nil))
+(define-stumpwm-command "colon1" ((initial :rest nil))
   (let ((cmd (read-one-line screen ": " initial)))
     (when cmd
-      (interactive-command cmd screen))))
+      (interactive-command cmd (current-screen)))))
 
 ;; Read some doc
 (define-key *root-map* (kbd "d") "exec gv")
@@ -25,8 +25,7 @@
 
 ;; Web jump (works for Google and Imdb)
 (defmacro make-web-jump (name prefix)
-  `(define-stumpwm-command ,name (screen (search :rest ,(concatenate 'string name " search: ")))
-     (declare (ignore screen))
+  `(define-stumpwm-command ,name ((search :rest ,(concatenate 'string name " search: ")))
      (substitute #\+ #\Space search)
      (run-shell-command (concatenate 'string ,prefix search))))
 
