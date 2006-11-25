@@ -86,6 +86,7 @@ This document explains how to use The Stump Window Manager.
 * Frames::                      
 * Mode-line::                   
 * Groups::                      
+* Screens::                     
 * Interacting With Unix::       
 * Interacting With X11::        
 * Miscellaneous Commands::      
@@ -118,6 +119,10 @@ Windows
 
 * Customizing Window Appearance::  
 * Programming With Windows::    
+
+Screens
+
+* Xinerama::                    
 
 @end detailmenu
 @end menu
@@ -423,6 +428,12 @@ Go to the next group in the list.
 
 @item C-t g '
 Select a group by name or by number.
+
+@item C-t g m
+Move the current window to the specified group.
+
+@item C-t g k
+Kill the current group. All windows are merged into the next group.
 
 @item C-t g 1
 @itemx C-t g 2
@@ -742,6 +753,10 @@ might do the following:
 @code{(stumpwm:run-shell-command "date" t)} runs the command
 @command{date} and returns its output as a string.
 
+@deffn {Command} mode-line
+A command to toggle the mode line visibility.
+@end deffn
+
 @defun toggle-mode-line
 @end defun
 
@@ -776,7 +791,7 @@ The mode line foreground color.
 The mode line border color.
 @end defvar
 
-@node Groups, Interacting With Unix, Mode-line, Top
+@node Groups, Screens, Mode-line, Top
 @chapter Groups
 Groups in stumpwm are also known as virtual desktops or
 workspaces. Why not create a new term for it?
@@ -802,8 +817,26 @@ workspaces. Why not create a new term for it?
 @deffn {Command} gselect
 @end deffn
 
+@deffn {Command} gmove
+@end deffn
 
-@node Interacting With Unix, Interacting With X11, Groups, Top
+@deffn {Command} gkill
+@end deffn
+
+@node Screens, Interacting With Unix, Groups, Top
+@chapter Screens
+Stumpwm handles multiple screens.
+
+@menu
+* Xinerama::                    
+@end menu
+
+@node Xinerama,  , Screens, Screens
+@section Xinerama
+Currently Stumpwm doesn't explicitly handle Xinerama. Though, it
+shouldn't break stumpwm.
+
+@node Interacting With Unix, Interacting With X11, Screens, Top
 @chapter Interacting With Unix
 
 
