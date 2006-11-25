@@ -151,16 +151,16 @@ occur in that many seconds.")
 (defparameter +default-border-color+ "White")
 (defparameter +default-font-name+ "9x15bold")
 
-(defvar *top-level-error-action* :message
+(defvar *top-level-error-action* :abort
   "If an error is encountered at the top level, in
 STUMPWM-INTERNAL-LOOP, then this variable decides what action
 shall be taken. By default it will print a message to the screen
 and to *standard-output*. 
 
-Valid values are :message, :break. :break will break to the
+Valid values are :message, :break, :abort. :break will break to the
 debugger. This can be problematic because if the user hit's a
 mapped key the ENTIRE keyboard will be frozen and you will have
-to login remotely to regain control.")
+to login remotely to regain control. :abort quits stumpmwm.")
 
 (defstruct window
   xwin

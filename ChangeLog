@@ -1,5 +1,9 @@
 2006-11-25  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* primitives.lisp (*top-level-error-action*): default value is :abort
+
+	* stumpwm.lisp (stumpwm-internal-loop): handle the :abort value of *top-level-error-action*
+
 	* mode-line.lisp (toggle-mode-line): update each group's frame list
 	(redraw-mode-line-for): set *current-mode-line-formatters* to the current group
 

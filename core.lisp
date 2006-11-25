@@ -1541,7 +1541,7 @@ chunks."
 (define-stump-event-handler :property-notify (window atom state)
   (let* ((screen (xwin-screen window))
 	 (root (screen-root screen)))
-    (format t "property notify ~s ~s ~s~%" window atom state)
+    (dformat "property notify ~s ~s ~s~%" window atom state)
     (case atom      
       (:rp_command_request 
        (when (and (eq state :new-value)
