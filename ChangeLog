@@ -1,3 +1,27 @@
+2006-11-25  Shawn Betts  <sabetts@shitbender.gagrod>
+
+	* user.lisp (*group-map*): add bindings to move and kill groups
+	(parse-and-run-command): new option :group
+	(group-forward): call next-group
+	("gmove"): new command
+	("gkill"): likewise
+
+	* primitives.lisp (run-hook-with-args): ignore errors
+	(run-hook): likewise
+
+	* core.lisp (move-window-to-group): new function
+	(next-group): likewise
+	(merge-groups): likewise
+	(kill-group): likewise
+	(window-in-current-group-p): likewise
+	(raise-window): call window-in-current-group-p
+	(unhide-window): only actually unhide the window when the window is in the current group
+	(hide-window): likewise, but hide
+	(remove-window): bug fix involving windows in non-current groups
+	(no-focus): only actually focus nothing if the group is current
+	(focus-window): call screen-set-focus
+	(screen-set-focus): new function
+
 2006-11-25  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp ("gnext"): sort the windows
