@@ -1,3 +1,7 @@
+2006-11-26  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* core.lisp (export-selection): transform the characters to card8's
+
 2006-11-26  Shawn Betts  <sabetts@shitbender.gagrod>
 
 	* core.lisp (no-focus): pass the last focused window in as an argument. callers updated.

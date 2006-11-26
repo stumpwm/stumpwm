@@ -1648,7 +1648,7 @@ chunks."
     (unless (eq (xlib:selection-owner *display* :primary) selwin)
       (error "Can't set selection owner"))
     ;; also set the cut buffer for completeness
-    (xlib:change-property root :cut-buffer0 *x-selection* :string 8
+    (xlib:change-property root :cut-buffer0 *x-selection* :string 8 :transform #'xlib:char->card8
 			  :mode :replace)))
 
 (defun set-x-selection (text)
