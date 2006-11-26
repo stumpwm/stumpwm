@@ -120,6 +120,10 @@ Windows
 * Customizing Window Appearance::  
 * Programming With Windows::    
 
+Groups
+
+* Customizing Groups::          
+
 Screens
 
 * Xinerama::                    
@@ -453,34 +457,76 @@ Go to the corresonding group. @kbd{C-t g 1} jumps to group 1 and so on.
 @section Binding Keys
 
 @defun define-key @var{keymap} @var{key} @var{command}
+Add a keybinding mapping the key, @var{key}, to the command,
+@var{command}, in the specified keymap. For example,
+
+@example
+(stumpwm:define-key stumpwm:*root-map* (stumpwm:kbd "C-z") "echo Zzzzz...")
+@end example
+
+Now when you type C-t C-z, you'll see the text ``Zzzzz...'' pop up.
 @end defun
 
 @defun undefine-key @var{keymap} @var{key}
+Clear the key binding in the specified keybinding.
 @end defun
 
 @defun kbd @var{key-string}
+This compiles a key string into a key structure used by
+@code{define-key}, @code{undefine-key}, @code{set-prefix-key} and
+others.
 @end defun
 
 @defun set-prefix-key @var{key}
+Change the prefix key.
+
+@example
+(stumpwm:set-prefix-key (stumpwm:kbd "C-M-H-s-z"))
+@end example
+
+This will change the prefix key to @key{Control} + @key{Meta} + @key{Hyper} + @key{Super} +
+the @key{z} key. By most standards, a terrible prefix key but it makes a
+great example.
+
 @end defun
 
 @defun make-sparse-keymap
+Create an empty keymap. If you want to create a new list of bindings
+in the key binding tree, this is where you start. To hang frame
+related bindings off @kbd{C-t C-f} one might use the following code:
+
+@example
+(defvar *my-frame-bindings*
+  (let ((m (stumpwm:make-sparse-keymap)))
+    (stumpwm:define-key m (stumpwm:kbd "f") "curframe")
+    (stumpwm:define-key m (stumpwm:kbd "M-b") "move-focus left")
+    m ; NOTE: this is important
+  ))
+
+(stumpwm:define-key stumpwm:*root-map* (stumpwm:kbd "C-f") '*my-frame-bindings*)
+@end example
+
 @end defun
 
 @defvar *root-map*
+This is the keymap by default bound to @kbd{C-t}. It is known as the @dfn{prefix map}.
 @end defvar
 
 @defvar *top-map*
+The top level key map. This is where you'll find the binding for the
+@dfn{prefix map}.
 @end defvar
 
 @node Message and Input Bar, Windows, Key Bindings, Top
 @chapter Message and Input Bar
 
-
 @deffn {Command} echo @var{string}
+Display @var{string} in the message bar.
 @end deffn
 
-@deffn {Command} colon @var{command}
+@deffn {Command} colon @var{initial-text}
+Read a command from the user. @var{initial-text} is optional. When
+supplied, the text will appear in the prompt.
 @end deffn
 
 
@@ -496,28 +542,56 @@ Go to the corresonding group. @kbd{C-t g 1} jumps to group 1 and so on.
 The bar's appearance and behavior can be modified with the following
 functions and variables.
 
-@defun set-fg-color
+@defun set-fg-color @var{color}
+Set the foreground color for the message bar and input
+bar. @var{color} can be any color recognized by X.
 @end defun
 
-@defun set-bg-color
+@defun set-bg-color @var{color}
+Set the background color for the message bar and input
+bar. @var{color} can be any color recognized by X.
 @end defun
 
-@defun set-border-color
+@defun set-border-color @var{color}
+Set the border color for the message bar and input
+bar. @var{color} can be any color recognized by X.
 @end defun
 
-@defun set-font
+@defun set-font @var{font}
+Set the font for the message bar and input bar.
 @end defun
 
 @defvar *message-window-padding*
+The number of pixels that pad the text in the message window.
 @end defvar
 
 @defvar *message-window-gravity*
+This variable controls where the message window appears. The follow
+are valid values.
+@table @asis
+@item :top-left
+@item :top-right
+@item :bottom-left
+@item :bottom-right
+@item :center
+@end table
 @end defvar
 
 @defvar *timeout-wait*
+Specifies, in seconds, how long a message will appear for. This must
+be an integer.
 @end defvar
 
 @defvar *input-window-gravity*
+This variable controls where the input window appears. The follow
+are valid values.
+@table @asis
+@item :top-left
+@item :top-right
+@item :bottom-left
+@item :bottom-right
+@item :center
+@end table
 @end defvar
 
 @node Using The Input Bar, Programming The Message Bar, Customizing The Bar, Message and Input Bar
@@ -590,7 +664,8 @@ yank-selection
 @node Programming The Message Bar, Programming the Input Bar, Using The Input Bar, Message and Input Bar
 @section Programming The Message Bar
 
-@defun echo-string
+@defun echo-string @var{string}
+Display @var{string} in the message bar.
 @end defun
 
 @node Programming the Input Bar,  , Programming The Message Bar, Message and Input Bar
@@ -601,49 +676,71 @@ functions and binding them to keys in the @var{*input-map*} using
 
 An input function takes 2 arguments: the input structure and the key pressed.
 
-@defun read-one-line
+@defun read-one-line @var{screen} @var{prompt} &optional @var{initial-input}
+Read a line of input from the user.
 @end defun
 
-@defun read-one-char
+@defun read-one-char @var{screen}
+Read one character from the user.
 @end defun
 
-@defun input-insert-string
+@defun input-insert-string @var{input} @var{string}
+Insert @var{string} into the input at the current
+position. @var{input} must be of type @var{input-line}. Input
+functions are passed this structure as their first argument.
 @end defun
 
-@defun input-insert-char
+@defun input-insert-char @var{input} @var{char}
+Insert @var{char} into the input at the current
+position. @var{input} must be of type @var{input-line}. Input
+functions are passed this structure as their first argument.
 @end defun
 
 @defvar *input-map*
+This is the keymap containing all input editing key bindings.
 @end defvar
 
 @node Windows, Frames, Message and Input Bar, Top
 @chapter Windows
 
 @deffn {Command} next
+Go to the next window in the window list.
 @end deffn
 
 @deffn {Command} prev
+Go to the previous window in the window list.
 @end deffn
 
 @deffn {Command} delete
+Delete the current window. This is a request sent to the window. The
+window's client may decide not to grant the request or may not be able
+to if it is unresponsive.
 @end deffn
 
 @deffn {Command} kill
+Tell X to disconnect the client that owns the current window.if
+@command{delete} didn't work, try this.
 @end deffn
 
 @deffn {Command} windows
+Display a list of managed windows.
 @end deffn
 
 @deffn {Command} other
+Switch to the window last focused.
 @end deffn
 
 @deffn {Command} number @var{number}
+Change the window's number to the specified number. If another window
+is using the number, then the windows swap numbers.
 @end deffn
 
 @deffn {Command} meta @var{key}
+Send a fake key to the current window. @var{key} is a typical stumpwm key, like @kbd{C-M-o}.
 @end deffn
 
-@deffn {Command} select @var{string}
+@deffn {Command} select @var{substring}
+Switch to the first window that starts with @var{substring}.
 @end deffn
 
 
@@ -654,19 +751,25 @@ An input function takes 2 arguments: the input structure and the key pressed.
 
 @node Customizing Window Appearance, Programming With Windows, Windows, Windows
 @section Customizing Window Appearance
+
 @defvar *maxsize-border-width*
+The width in pixels given to the borders of windows with maxsize or ratio hints.
 @end defvar
 
 @defvar *transient-border-width*
+The width in pixels given to the borders of transient or pop-up windows.
 @end defvar
 
 @defvar *normal-border-width*
+The width in pixels given to the borders of regular windows.
 @end defvar
 
 @defvar *focus-color*
+The color given to the border of the focused window.
 @end defvar
 
 @defvar *unfocus-color*
+The color given to the border of all windows without focus.
 @end defvar
 
 @node  Programming With Windows,  , Customizing Window Appearance, Windows
@@ -684,40 +787,64 @@ Those used to ratpoison will notice that this differs from ratpoison's
 window pool, where windows and frames are not so tightly connected.
 
 @deffn {Command} pull @var{window-number}
+Move the window whose number is @var{window-number} to the current frame.
 @end deffn
 
 @deffn {Command} hsplit
+Split the current frame into 2 side-by-side frames.
 @end deffn
 
 @deffn {Command} vsplit
+Split the current frame into 2 frames, one on top of the other.
 @end deffn
 
 @deffn {Command} remove
+Remove the current frame. Windows in the frame are migrated to the
+frame taking up its space.
 @end deffn
 
 @deffn {Command} only
+Delete all the frames but the current one and grow it to take up the entire screen.
 @end deffn
 
 @deffn {Command} curframe
+Display a window indicating which frame is focused.
 @end deffn
 
 @deffn {Command} fnext
+Cycle through the frame tree to the next frame.
 @end deffn
 
 @deffn {Command} sibling
+Jump to the frame's sibling. If a frame is split into twe frames,
+these two frames are siblings.
 @end deffn
 
 @deffn {Command} fselect @var{frame-number}
+Display a number in the corner of each frame and let the user to
+select a frame by number. If @var{frame-number} is specified, just
+jump to that frame.
 @end deffn
 
 @deffn {Command} resize @var{width} @var{height}
+Resize the current frame by @var{width} and @var{height} pixels
 @end deffn
 
 
 @deffn {Command} fclear
+Clear the current frame.
 @end deffn
 
 @deffn {Command} move-focus @var{direction}
+Focus the frame adjacent to the current one in the specified
+direction. The following are valid directions:
+@table @asis
+@item up
+@item down
+@item left
+@item right
+@end table
+
 @end deffn
 
 @node Mode-line, Groups, Frames, Top
@@ -796,32 +923,67 @@ The mode line border color.
 Groups in stumpwm are also known as virtual desktops or
 workspaces. Why not create a new term for it?
 
-@deffn {Command} gnew
+@deffn {Command} gnew @var{name}
+Create a new group with the specified name. The new group becomes the
+current group.
 @end deffn
 
-@deffn {Command} gnewbg
+@deffn {Command} gnewbg @var{name}
+Create a new group but do not switch to it.
 @end deffn
 
 @deffn {Command} gnext
+Cycle to the next group in the group list.
 @end deffn
 
 @deffn {Command} gprev
+Cycle to the previous group in the group list.
 @end deffn
 
 @deffn {Command} groups
+Display the list of groups with their number and
+name. @var{*group-format*} controls the formatting.
 @end deffn
 
 @deffn {Command} vgroups
+Like @command{groups} but also display the windows in each group.
 @end deffn
 
-@deffn {Command} gselect
+@deffn {Command} gselect @var{substring}
+Select the first group that starts with
+@var{substring}. @var{substring} can also be a number, in which case
+@command{gselect} selects the group with that number.
 @end deffn
 
-@deffn {Command} gmove
+@deffn {Command} gmove @var{to-group}
+Move the current window to the specified group.
 @end deffn
 
 @deffn {Command} gkill
+Kill the current group. All windows in the current group are migrated
+to the next group.
 @end deffn
+
+@menu
+* Customizing Groups::          
+@end menu
+
+@node Customizing Groups,  , Groups, Groups
+@section Customizing Groups
+
+@defvar *group-formatters*
+An alist of characters and formatter functions. The character can be
+used as a format character in @var{*group-format*}. When the character
+is encountered in the string, the corresponding function is called
+with a group as an argument. The functions return value is inserted
+into the string. If the return value isn't a string it is converted to
+one using @code{prin1-to-string}.
+@end defvar
+
+@defvar *group-format*
+The format string that decides what information will show up in the
+group listing.
+@end defvar
 
 @node Screens, Interacting With Unix, Groups, Top
 @chapter Screens
@@ -841,30 +1003,41 @@ shouldn't break stumpwm.
 
 
 @deffn {Command} exec @var{shell-command}
+Run the shell command asynchronously. Output is discarded.
 @end deffn
 
 @deffn {Command} shell
+Open an xterm or raise an xterm if one is already running.
 @end deffn
 
-@defun run-shell-command
+@defun run-shell-command @var{command} &optional @var{collect-output-p}
+Run the specified shell command. If @var{collect-output-p} is @code{T}
+then run the command synchonously and collect the output. Be
+careful. If the shell command doesn't return, it will hang stumpwm. In
+such a case, kill the shell command to resume stumpwm.
 @end defun
 
 @defvar *shell-program*
+The shell program used by @code{run-shell-command}.
 @end defvar
 
-@defun getenv
+@defun getenv @var{env-var}
+Return the value of the environment variable, @var{env-var}.
 @end defun
 
-@defun {(setf getenv)}
+@defun {(setf getenv)} @var{env-var} @var{value}
+Set the value of the environment variable, @var{env-var} to @var{value}.
 @end defun
 
 @node Interacting With X11, Miscellaneous Commands, Interacting With Unix, Top
 @chapter Interacting With X11
 
-@defun set-x-selection
+@defun set-x-selection @var{string}
+Set the X11 selection string to @var{string}.
 @end defun
 
 @defun get-x-selection
+Return the X11 selection.
 @end defun
 
 @node Miscellaneous Commands, Hooks, Interacting With X11, Top
@@ -874,42 +1047,52 @@ section.
 
 
 @deffn {Command} banish
+Warp the mouse the lower right corner.
 @end deffn
 
 @deffn {Command} ratwarp @var{x} @var{y}
+Warp the mouse to the specified location.
 @end deffn
 
 @deffn {Command} ratrelwarp @var{delta-x} @var{delta-y}
+Warp the mouse by the specified amount from its current position.
 @end deffn
 
 @deffn {Command} time
+Display time.
 @end deffn
 
 
 @deffn {Command} eval @var{s-expression}
+Evaluate the s-expression and display the result.
 @end deffn
 
 @deffn {Command} reload
+Reload stumpwm using @code{asdf}.
 @end deffn
 
 @deffn {Command} loadrc
+Reload the @file{~/.stumpwmrc} file.
 @end deffn
 
 @deffn {Command} help
+Display all the bindings in @var{*root-map*}.
 @end deffn
 
 @deffn {Command} abort
+Do nothing.
 @end deffn
 
 @deffn {Command} quit
+Quit stumpwm.
 @end deffn
-
 
 @deffn {Command} web
+Load firefox or switch to its window if it is running.
 @end deffn
 
-
-@defun define-stumpwm-command
+@defun define-stumpwm-command @var{name} (@var{var} @var{type} @var{prompt}) ...
+Create a new command with the name @var{name}.
 @end defun
 
 @node Hooks, Command and Function Index, Miscellaneous Commands, Top
@@ -925,11 +1108,24 @@ function. for example:
 adds your @code{my-new-window-custos} function to the list of
 functions called when a new window appears.
 
-@defun add-hook
-@end defun
+@defmac add-hook @var{hook-variable} @var{function}
+Add @var{function} to the hook @var{hook-variable}. For example, to
+display a message whenever you switch frames:
 
-@defun remove-hook
-@end defun
+@example
+(defun my-rad-fn (from-frame to-frame)
+  (stumpwm:echo-string (stumpwm:current-screen) "Mustard!"))
+
+(stumpmwm:add-hook stumpwm:*focus-frame-hook* 'my-rad-fn)
+@end example
+@end defmac
+
+It is not recommended you add lambda functions or function objects to
+a hook as they are difficult to remove.
+
+@defmac remove-hook @var{hook-variable} @var{function}
+Remove the specified function from the hook.
+@end defmac
 
 The following hooks are available:
 
@@ -969,10 +1165,6 @@ A hook called inside stumpwm's inner loop.
 A hook called when a frame is given focus. The hook functions are
 called with 2 arguments: the current frame and the last frame.
 @end defvr
-
-@c @node Command Index, Variable Index, Mode-line, Top
-@c @unnumbered Command Index
-@c @printindex cmd
 
 @node Command and Function Index, Variable Index, Hooks, Top
 @unnumbered Command and Function Index

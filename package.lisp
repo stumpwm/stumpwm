@@ -5,6 +5,7 @@
 	   #:*screen-list*
 	   #:split-string
 	   #:*version*
+	   #:current-screen
 	   ;; message bar
 	   #:set-fg-color
 	   #:set-bg-color
