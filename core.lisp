@@ -583,16 +583,15 @@ give the last accessed window focus."
   (setf (group-windows group) (delete window (group-windows group)))
   (push window (group-windows group)))
 
-(defun no-focus (group)
+(defun no-focus (group last-win)
   "don't focus any window but still read keyboard events."
   (dformat "no-focus~%")
-  (let* ((screen (group-screen group))
-	 (cw (group-current-window group)))
+  (let* ((screen (group-screen group)))
     (when (eq group (screen-current-group screen))
       (xlib:set-input-focus *display* (screen-focus-window screen) :POINTER-ROOT)
       (setf (screen-focus screen) nil))
-    (when cw
-      (setf (xlib:window-border (window-parent cw)) (get-color-pixel screen *unfocus-color*)))))
+    (when last-win
+      (setf (xlib:window-border (window-parent last-win)) (get-color-pixel screen *unfocus-color*)))))
 
 (defun maybe-hide-window (window new-window)
   "Hide WINDOW depending on what kind of window NEW-WINDOW is. if
@@ -774,7 +773,7 @@ T (default) then also focus the frame."
     (dformat "~S~%" f)
     (if w
 	(focus-window w)
-      (no-focus group))
+      (no-focus group (frame-window last)))
     (run-hook-with-args *focus-frame-hook* f last)))
 
 (defun frame-windows (group f)
