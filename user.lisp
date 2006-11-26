@@ -115,14 +115,12 @@
 			      ,@body))))
 
 (defun focus-next-window (group)
-  (focus-forward group (frame-sort-windows group
-					    (tile-group-current-frame group))))
+  (focus-forward group (sort-windows group)))
 
 (defun focus-prev-window (group)
   (focus-forward group
 		 (reverse
-		  (frame-sort-windows group
-				      (tile-group-current-frame group)))))
+		  (sort-windows group))))
 
 (define-stumpwm-command "next" ()
   (focus-next-window (screen-current-group (current-screen))))
@@ -137,6 +135,7 @@
   ;; The window with focus is the "current" window, so find it in the
   ;; list and give that window focus
   (let* ((w (group-current-window group))
+	 (old-frame (tile-group-current-frame group))
 	 (wins (member w window-list))
 	 nw)
     ;;(assert wins)
@@ -147,7 +146,9 @@
 	       ;; Otherwise, focus the next one in the list.
 	       (cadr wins)))
     (when nw
-      (frame-raise-window group (window-frame nw) nw))))
+      (frame-raise-window group (window-frame nw) nw)
+      (unless (eq (window-frame nw) old-frame)
+	(show-frame-indicator group)))))
 
 (defun delete-current-window ()
   "Send a delete event to the current window."
@@ -696,10 +697,12 @@ be found, select it.  Otherwise simply run cmd."
 	   ;; does not select the screen.
 	   (goto-win (win)
 	     (let* ((group (window-group win))
-		    (frame (window-frame win)))
-	       ;; Select screen?
+		    (frame (window-frame win))
+		    (old-frame (tile-group-current-frame group)))
 	       (frame-raise-window group frame win)
-	       (focus-frame group frame)))
+	       (focus-frame group frame)
+	       (unless (eq frame old-frame)
+		 (show-frame-indicator group))))
 	   ;; Compare two lists of strings representing window
 	   ;; attributes.  If an element is nil it matches anything.
 	   ;; Doesn't handle lists of different lengths: extra
@@ -729,7 +732,7 @@ be found, select it.  Otherwise simply run cmd."
   (run-or-raise "xterm -title '*shell*'" :title "*shell*"))
 
 (define-stumpwm-command "web" ()
-  (run-or-raise "firefox" :class "mozilla-firefox"))
+  (run-or-raise "firefox" :class "Firefox-bin"))
 
 (define-stumpwm-command "escape" ((key :string "Key: "))
   (set-prefix-key (kbd key)))

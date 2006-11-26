@@ -151,7 +151,8 @@ the stumpwm source code.
 
 @enumerate
 @item
-Install @emph{SBCL} and the @emph{portable-clx} package.
+Install @emph{SBCL} and the @emph{portable-clx} package. In Debian,
+@emph{portable-clx} is the @emph{cl-clx-sbcl} package.
 
 @item
 in the file @file{~/.sbclrc} insert:
@@ -185,6 +186,10 @@ This allows sbcl to act as part of a command-line script.
 Create a symlink in @file{~/.sbcl/systems/} to point to the
 @file{stumpwm.asd} file, included in the stumpwm source. Now
 @emph{SBCL} knows how to load stumpwm.
+
+@example
+ln -s /path/to/stumpwm/stumpwm.asd ~/.sbcl/systems
+@end example
 
 @item
 In your @file{~/.xinitrc} file include the line

@@ -477,7 +477,7 @@ Modifies the match data; use `save-match-data' if necessary."
 			      (#\s fmt-window-status)
 			      (#\t window-name)
 			      (#\c window-class)
-			      (#\i window-res-name))
+			      (#\i window-res))
   "an alist containing format character format function pairs for formatting window lists.")
 
 (defvar *window-format* "%n%s%t"
