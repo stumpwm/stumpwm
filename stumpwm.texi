@@ -1,13 +1,13 @@
 \input texinfo   @c -*-texinfo-*-
 @c %**start of header
 @setfilename stumpwm.info
-@settitle stumpwm manual
+@settitle StumpWM manual
 @setchapternewpage odd
 @c %**end of header
 
 @dircategory X11
 @direntry
-* stumpwm: (stumpwm).       A Common Lisp window manager
+* StumpWM: (StumpWM).       A Common Lisp window manager
 @end direntry
 
 @ifinfo
@@ -101,7 +101,7 @@ Introduction
 
 * Starting StumpWM::            
 * Basic Usage::                 
-* Contact the Stumpwm developers::  
+* Contact the StumpWM developers::  
 
 Key Bindings
 
@@ -133,21 +133,21 @@ Screens
 
 @node Introduction, Key Bindings, Top, Top
 @chapter Introduction
-Stumpwm is an X11 window manager written entirely in Common Lisp. Its
+StumpWM is an X11 window manager written entirely in Common Lisp. Its
 user interface goals are similar to ratpoison's but with an emphasis on
 customizability, completeness, and cushiness.
 
 @menu
 * Starting StumpWM::            
 * Basic Usage::                 
-* Contact the Stumpwm developers::  
+* Contact the StumpWM developers::  
 @end menu
 
 @node Starting StumpWM, Basic Usage, Introduction, Introduction
 @section Starting StumpWM
-There are a number of ways to start Stumpwm but possibly the most
+There are a number of ways to start StumpWM but possibly the most
 straight forward method is as follows. This assumes you have a copy of
-the stumpwm source code.
+the StumpWM source code and are using the @emph{SBCL} Common Lisp environment.
 
 @enumerate
 @item
@@ -180,12 +180,12 @@ in the file @file{~/.sbclrc} insert:
     (quit)))
 @end example
 
-This allows sbcl to act as part of a command-line script.
+This allows @emph{SBCL} to act as part of a command-line script.
 
 @item
 Create a symlink in @file{~/.sbcl/systems/} to point to the
-@file{stumpwm.asd} file, included in the stumpwm source. Now
-@emph{SBCL} knows how to load stumpwm.
+@file{stumpwm.asd} file, included in the StumpWM source. Now
+@emph{SBCL} knows how to load StumpWM.
 
 @example
 ln -s /path/to/stumpwm/stumpwm.asd ~/.sbcl/systems
@@ -195,37 +195,38 @@ ln -s /path/to/stumpwm/stumpwm.asd ~/.sbcl/systems
 In your @file{~/.xinitrc} file include the line
 @command{/path/to/stumpwm.sbcl}. Remember to replace @samp{/path/to/}
 with the actual path. @command{stumpwm.sbcl} is included in the
-stumpwm source.
+StumpWM source.
 
 @item
 Finally, start X windows with @command{startx}. Cross your fingers. It
-may take some time for @emph{SBCL} to finish compiling stumpwm. This
+may take some time for @emph{SBCL} to finish compiling StumpWM. This
 only happens once. Subsequent start ups should be much
 faster. Eventually you should see a @samp{Welcome To the Stump Window Manager}
-message pop up. At this point, you have successfully started
-stumpwm.
+message pop up in the upper, right corner. At this point, you have
+successfully started StumpWM.
 @end enumerate
 
-@node Basic Usage, Contact the Stumpwm developers, Starting StumpWM, Introduction
+@node Basic Usage, Contact the StumpWM developers, Starting StumpWM, Introduction
 @section Basic Usage
-Once you have stumpwm up and running, the first thing you might want
-to do is start @samp{emacs}. Type @kbd{C-t e}, or in other words
+Once you have StumpWM up and running, the first thing you might want
+to do is start @samp{Emacs}. Type @kbd{C-t e}, or in other words
 @kbd{Control + t} followed by @kbd{e}. Now perhaps you want an
-@samp{xterm}. Type @kbd{C-t c}. Now You have some programs running.
+@samp{xterm}. Type @kbd{C-t c}. Now you have some programs running.
 
-To see a list of windows Stumpwm is managing, type @kbd{C-t w}. The
+To see a list of windows StumpWM is managing, type @kbd{C-t w}. The
 highlighted window is the one you're looking at right now. It's the
 focused window.
 
-All of Stumpwm's key are bound to commands, which can be executed not
-only by keys but also from the input bar. Type @kbd{C-t ;}. Now type
-@samp{time} and press return. Throughout this manual you'll find
-definitions for commands, functions, and variables. Any command you
-see in this manual can be executed from the input bar or bound to a
-key.
+All of StumpWM's keys are bound to named commands, which can be
+executed not only by keys but also from the input bar. Type @kbd{C-t
+;} to open a command prompt. Now type @samp{time} and press
+return. Note, @samp{time} can also be called by typing @kbd{C-t a}.
+Throughout this manual you'll find definitions for commands,
+functions, and variables. Any command you see in this manual can be
+executed from the input bar or bound to a key.
 
 At this point you probably want to switch back from your new
-@samp{xterm} to @samp{emacs}. Type @kbd{C-t C-t}. This runs the
+@samp{xterm} to @samp{Emacs}. Type @kbd{C-t C-t}. This runs the
 @command{other} command. Type it again and you're back to xterm.
 
 Perhaps you'd like to see @samp{emacs} and @samp{xterm}
@@ -236,38 +237,37 @@ this empty frame. Type @kbd{C-t w} for a window listing. Find the
 @samp{xterm} window. See the number beside it? Type @kbd{C-t} followed
 by @samp{xterm}'s window number.
 
-Another common activity is browsing the interweb. Type @kbd{C-t !}.
+Another common activity is browsing the interwebs. Type @kbd{C-t !}.
 The input bar pops up again. You can now run a shell command.  Let's
-start a web browser. Type @samp{firefox} into the input bar and press
+start a web browser: type @samp{firefox} into the input bar and press
 return.
 
 Unfortunately, @samp{firefox} probably isn't wide enough because it's
 in one of the frames. Type @kbd{C-t Q} to remove all frames but the
-current one and resizes it to fit the screen.
+current one and resize it to fit the screen.
 
 For a full list of key bindings, @xref{List of Default Keybindings}.
 
-@node Contact the Stumpwm developers,  , Basic Usage, Introduction
-@section Contact the Stumpwm developers
-The Stumpwm home page is @url{http://stumpwm.nongnu.org/}.
+@node Contact the StumpWM developers,  , Basic Usage, Introduction
+@section Contact the StumpWM developers
+The StumpWM home page is @url{http://stumpwm.nongnu.org/}.
 
 You can reach Shawn Betts at @email{sabetts at vcn.bc.ca}.
 
-The Stumpwm mailing list is @email{stumpwm-devel@@nongnu.org} which
+The StumpWM mailing list is @email{stumpwm-devel@@nongnu.org} which
 you can subscribe to at
 @url{http://mail.nongnu.org/mailman/listinfo/stumpwm-devel}. Posting
 is restricted to subscribers to keep spam out of the archives.
 
-The Stumpwm IRC channel can be found on Freenode at #stumpwm.
+The StumpWM IRC channel can be found on Freenode at #stumpwm.
 
 
 
 @node Key Bindings, Message and Input Bar, Introduction, Top
 @chapter Key Bindings
-Stumpwm is controlled entirely by keystrokes and Lisp commands. It
-mimics GNU Screen's keyboard handling. Stumpwm's default prefix key is
-@kbd{C-t}. The full list of Stumpwm commands can be found in
-user.lisp.
+StumpWM is controlled entirely by keystrokes and Lisp commands. It
+mimics GNU Screen's keyboard handling. StumpWM's default prefix key is
+@kbd{C-t}.
 
 @deffn {Command} escape @var{key}
 Set the prefix key. Here's how you would change the prefix key to @kbd{C-z}.
@@ -291,7 +291,7 @@ The following is a list of keybindings.
 @item C-t n
 @itemx C-t C-n
 @itemx C-t Space
-go to the next window in the window list
+Go to the next window in the window list
 
 @item C-t p
 @itemx C-t C-p
@@ -335,9 +335,9 @@ Run an X terminal; by default xterm
 Run Emacs 
 
 @item C-t t
-Sends a C-t to the frame; this is useful for applications like Firefox
-which make heavy use of C-t (in Firefox's case, for opening a new
-tab). This is similar to how GNU screen uses C-a a.
+Sends a @key{C-t} to the frame; this is useful for applications like Firefox
+which make heavy use of @key{C-t} (in Firefox's case, for opening a new
+tab). This is similar to how GNU screen uses @kbd{C-a a}.
 
 @item C-t w
 @itemx C-t C-w
@@ -349,33 +349,30 @@ Banish the mouse point to the lower right corner of the screen.
 
 @item C-t a
 @itemx C-t C-a
-Prints out to the infobox the current time and date, much like the Unix command 'date'.
+Display the current time and date, much like the Unix command @command{date}.
 
 @item C-t C-t
-Switch to the last window to have focus. So, it switches to the other
-window, and if used again, it switches back to the
-original. 
+Switch to the last window to have focus.
 
 @item C-t !
-Like in Emacs, this prompts for a shell command to run via /bin/sh. It
-will not display any return values.
+Prompt for a shell command to run via @file{/bin/sh}. All output is discarded.
 
 @item C-t r
 If the screen is split into multiple frames, one split will be
-undone. If there is only one split, the effect will be the same as C-t Q.
+undone. If there is only one split, the effect will be the same as @kbd{C-t Q}.
 
 @item C-t o
 If the screen is split into multiple frames, focus shifts to the
-``next'' frame, where it cycles to the right and then down; analogous
-to C-x o in Emacs.
+@command{next} frame, where it cycles to the right and then down; analogous
+to @kbd{C-x o} in Emacs.
 
 @item C-t TAB
 
 @item C-t F
-Prints message ``Current Frame'' in the frame which has focus.
+Display ``Current Frame'' in the frame which has focus.
 
 @item C-t ;
-Opens the input box. Stumpwm commands can be run from here, and the
+Opens the input box. StumpWM commands can be run from here, and the
 input history moved through.
 
 @item C-t :
@@ -396,12 +393,11 @@ Removes all splits and maximizes the frame with focus.
 @itemx C-t Down
 @itemx C-t Left
 @itemx C-t Right
-When the window is split into multiple frames, one can shift focus in
-a desired cardinal direction via the D-pad. Up will shift focus up, if
-possible, Down will shift downwards, etc.
+Shift focus to an adjacent frame in the specified direction. @kbd{C-t Up} will
+shift focus up, if possible, @kbd{C-t Down} will shift downwards, etc.
 
 @item C-t v
-Prints out the version of the running Stumpwm.
+Prints out the version of the running StumpWM.
 
 @item C-t m
 @itemx C-t C-m
@@ -609,33 +605,29 @@ The following is a list of keybindings for the input bar.
 delete-backward-char
 
 @item C-d
-delete-forward-char
-
-@item Delete
+@itemx Delete
 delete-forward-char
 
 @item C-f
-forward-char
-
-@item Right
+@itemx Right
 forward-char
 
 @item M-f
 forward-word
 
 @item C-b
-backward-char
-
-@item Left
+@itemx Left
 backward-char
 
 @item M-b
 backward-word
 
 @item C-a
+@itemx Home
 move-beginning-of-line
 
 @item C-e
+@itemx End
 move-end-of-line
 
 @item C-k
@@ -645,15 +637,11 @@ kill-line
 kill-to-beginning
 
 @item C-p
-history-back
-
-@item Up
+@itemx Up
 history-back
 
 @item C-n
-history-forward
-
-@item Down
+@itemx Down
 history-forward
 
 @item RET
@@ -741,7 +729,7 @@ is using the number, then the windows swap numbers.
 @end deffn
 
 @deffn {Command} meta @var{key}
-Send a fake key to the current window. @var{key} is a typical stumpwm key, like @kbd{C-M-o}.
+Send a fake key to the current window. @var{key} is a typical StumpWM key, like @kbd{C-M-o}.
 @end deffn
 
 @deffn {Command} select @var{substring}
@@ -859,9 +847,9 @@ the screen and is used to display information. By default the
 mode line displays the list of windows, similar to the output C-t w
 produces.
 
-Toggle the mode line with the @command{mode-line} command or the lisp
-function @code{stumpwm:toggle-mode-line}. Each screen has its own
-mode line. For example:
+The mode line can be turned on and off with the @command{mode-line}
+command or the lisp function @code{stumpwm:toggle-mode-line}. Each
+screen has its own mode line. For example:
 
 @example
 ;; turn on/off the mode line for the current screen only.
@@ -871,7 +859,7 @@ mode line. For example:
 (mapc 'stumpwm:toggle-mode-line stumpwm:*screen-list*)
 @end example
 
-The mode line is updated after ever stumpwm command.
+The mode line is updated after every StumpWM command.
 
 To display the window list and the current date on the modeline, one
 might do the following:
@@ -900,7 +888,7 @@ Specifies where the mode line is displayed. Valid values are :top and :bottom.
 @end defvar
 
 @defvar *mode-line-border-width* 1
-Specifies How thick the mode line's border will be. Integer value.
+Specifies how thick the mode line's border will be. Integer value.
 @end defvar
 
 @defvar *mode-line-pad-x* 
@@ -925,8 +913,8 @@ The mode line border color.
 
 @node Groups, Screens, Mode-line, Top
 @chapter Groups
-Groups in stumpwm are also known as virtual desktops or
-workspaces. Why not create a new term for it?
+Groups in StumpWM are more commonly known as @dfn{virtual desktops} or
+@dfn{workspaces}. Why not create a new term for it?
 
 @deffn {Command} gnew @var{name}
 Create a new group with the specified name. The new group becomes the
@@ -992,7 +980,7 @@ group listing.
 
 @node Screens, Interacting With Unix, Groups, Top
 @chapter Screens
-Stumpwm handles multiple screens.
+StumpWM handles multiple screens.
 
 @menu
 * Xinerama::                    
@@ -1000,8 +988,8 @@ Stumpwm handles multiple screens.
 
 @node Xinerama,  , Screens, Screens
 @section Xinerama
-Currently Stumpwm doesn't explicitly handle Xinerama. Though, it
-shouldn't break stumpwm.
+Currently StumpWM doesn't explicitly handle Xinerama. Though, it
+shouldn't break StumpWM.
 
 @node Interacting With Unix, Interacting With X11, Screens, Top
 @chapter Interacting With Unix
@@ -1018,8 +1006,8 @@ Open an xterm or raise an xterm if one is already running.
 @defun run-shell-command @var{command} &optional @var{collect-output-p}
 Run the specified shell command. If @var{collect-output-p} is @code{T}
 then run the command synchonously and collect the output. Be
-careful. If the shell command doesn't return, it will hang stumpwm. In
-such a case, kill the shell command to resume stumpwm.
+careful. If the shell command doesn't return, it will hang StumpWM. In
+such a case, kill the shell command to resume StumpWM.
 @end defun
 
 @defvar *shell-program*
@@ -1069,11 +1057,11 @@ Display time.
 
 
 @deffn {Command} eval @var{s-expression}
-Evaluate the s-expression and display the result.
+Evaluate the lisp s-expression and display the result.
 @end deffn
 
 @deffn {Command} reload
-Reload stumpwm using @code{asdf}.
+Reload StumpWM using @code{asdf}.
 @end deffn
 
 @deffn {Command} loadrc
@@ -1089,7 +1077,7 @@ Do nothing.
 @end deffn
 
 @deffn {Command} quit
-Quit stumpwm.
+Quit StumpWM.
 @end deffn
 
 @deffn {Command} web
@@ -1102,7 +1090,7 @@ Create a new command with the name @var{name}.
 
 @node Hooks, Command and Function Index, Miscellaneous Commands, Top
 @chapter Hooks
-Stumpwm exports a number of hooks you can use to add customizations;
+StumpWM exports a number of hooks you can use to add customizations;
 like hooks in Emacs, you add to a hook with the @code{add-hook}
 function. for example:
 
@@ -1159,11 +1147,11 @@ A hook called when a window loses focus.
 @end defvr
 
 @defvr {Hook} *start-hook*
-A hook called when stumpwm starts.
+A hook called when StumpWM starts.
 @end defvr
 
 @defvr {Hook} *internal-loop-hook*
-A hook called inside stumpwm's inner loop.
+A hook called inside StumpWM's inner loop.
 @end defvr
 
 @defvr {Hook} *focus-frame-hook*
