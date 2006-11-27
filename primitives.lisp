@@ -512,3 +512,6 @@ when killing text in the input bar.")
 (defvar *record-last-msg-override* nil
   "assign this to T and messages won't be recorded. It is
 recommended this is assigned using LET.")
+
+(defvar *supress-echo-timeout* nil
+  "Asign this T and messages will not time out. It is recommended this is assigned using LET.")

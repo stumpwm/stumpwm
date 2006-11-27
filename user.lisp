@@ -52,6 +52,7 @@
 	  (define-key m (kbd "a") "time")
 	  (define-key m (kbd "C-a") "time")
 	  (define-key m (kbd "'") "select")
+	  (define-key m (kbd "\"") "windowlist")
 	  (define-key m (kbd "C-t") "other")
 	  (define-key m (kbd "!") "exec")
 	  (define-key m (kbd "C-g") "abort")
@@ -123,10 +124,16 @@
 		  (sort-windows group))))
 
 (define-stumpwm-command "next" ()
-  (focus-next-window (screen-current-group (current-screen))))
+  (let ((group (screen-current-group (current-screen))))
+    (if (group-current-window group)
+	(focus-next-window group)
+	(other-window group))))
 
 (define-stumpwm-command "prev" ()
-  (focus-prev-window (screen-current-group (current-screen))))
+  (let ((group (screen-current-group (current-screen))))
+    (if (group-current-window group)
+	(focus-prev-window group)
+	(other-window group))))
 
 ;; In the future, this window will raise the window into the current
 ;; frame.
@@ -906,3 +913,92 @@ be found, select it.  Otherwise simply run cmd."
 	(to-group (next-group (screen-current-group (current-screen)))))
     (switch-to-group to-group)
     (kill-group dead-group to-group)))
+
+;;; interactive menu
+
+(defvar *menu-map* nil
+  "The keymap used by the interactive menu.")
+
+(when (null *menu-map*)
+  (setf *menu-map*
+	(let ((m (make-sparse-keymap)))
+	  (define-key m (kbd "C-p") 'menu-up)
+	  (define-key m (kbd "Up") 'menu-up)
+	  (define-key m (kbd "k") 'menu-up)
+
+	  (define-key m (kbd "C-n") 'menu-down)
+	  (define-key m (kbd "Down") 'menu-down)
+	  (define-key m (kbd "j") 'menu-down)
+	  (define-key m (kbd "C-g") 'menu-abort)
+	  (define-key m (kbd "ESC") 'menu-abort)
+	  (define-key m (kbd "RET") 'menu-finish)
+	  m)))
+
+(defstruct menu-state
+  table prompt selected)
+
+(defun bound-check-menu (menu)
+  (setf (menu-state-selected menu)
+	(cond ((< (menu-state-selected menu) 0)
+	       (1- (length (menu-state-table menu))))
+	      ((>= (menu-state-selected menu) (length (menu-state-table menu)))
+	       0)
+	      (t (menu-state-selected menu)))))
+  
+(defun menu-up (menu)
+  (decf (menu-state-selected menu))
+  (bound-check-menu menu))
+
+(defun menu-down (menu)
+  (incf (menu-state-selected menu))
+  (bound-check-menu menu))
+
+(defun menu-finish (menu)
+  (throw :menu-quit (nth (menu-state-selected menu) (menu-state-table menu))))
+
+(defun menu-abort (menu)
+  (declare (ignore menu))
+  (throw :menu-quit nil))
+
+(defun select-from-menu (screen table prompt &optional (initial-selection 0))
+  "Prompt the user to select from a menu on SCREEN. TABLE can be
+a list of values or an alist. If it's an alist, the CAR of each
+element is displayed in the menu. What is displayed as menu items
+must be strings. Returns the selected element in TABLE or nil if aborted.
+
+See *menu-map* for menu bindings."
+  (check-type table list)
+  (check-type prompt string)
+  (let ((menu (make-menu-state
+	       :table table
+	       :prompt prompt
+	       :selected initial-selection))
+	(*record-last-msg-override* t)
+	(*supress-echo-timeout* t))
+    (bound-check-menu menu)
+    (catch :menu-quit
+      (grab-keyboard screen)
+      (unwind-protect
+	   (loop
+	      (echo-string-list screen (mapcar (lambda (elt)
+						 (if (listp elt)
+						     (first elt)
+						     elt))
+					       table)
+				(menu-state-selected menu))
+	      (let ((action (read-from-keymap *menu-map*)))
+		(when action
+		  (funcall action menu))))
+	(ungrab-keyboard)
+	(unmap-all-message-windows)))))
+
+(define-stumpwm-command "windowlist" ()
+  (let* ((group (screen-current-group (current-screen)))
+	 (window (second (select-from-menu
+			  (current-screen)
+			  (mapcar (lambda (w)
+				    (list (format-expand *window-formatters* *window-format* w) w))
+				  (sort-windows group))
+			  ""))))
+    (when window
+      (frame-raise-window group (window-frame window) window))))

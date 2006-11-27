@@ -1255,7 +1255,8 @@ the nth entry to highlight."
   (xlib:display-force-output *display*)
   (push-last-message screen strings highlights)
   ;; Set a timer to hide the message after a number of seconds
-  (reset-timeout))
+  (unless *supress-echo-timeout*
+    (reset-timeout)))
 
 (defun echo-string (screen msg)
   "Print msg to SCREEN's message window."
@@ -1505,11 +1506,23 @@ list of modifier symbols."
       ;(xlib:destroy-window event-window)
       (run-hook-with-args *destroy-window-hook* window))))
 
+(defun read-from-keymap (kmap)
+  "Read a sequence of keys from the user, guided by the keymap,
+KMAP and return the binding or nil if the user hit an unbound sequence."
+  (let* ((code-state (loop for k = (read-key)
+			while (is-modifier (xlib:keycode->keysym *display* (car k) 0))
+			finally (return k)))
+	 (code (car code-state))
+	 (state (cdr code-state)))
+    (handle-keymap kmap code state nil)))
+
 (defun handle-keymap (kmap code state key-seq)
   "Find the command mapped to the (code state) and return it."
   ;; a symbol is assumed to have a hashtable as a value.
   (dformat "Awaiting key ~a~%" kmap)
-  (when (symbolp kmap)
+  (when (and (symbolp kmap)
+	     (boundp kmap)
+	     (hash-table-p (symbol-value kmap)))
     (setf kmap (symbol-value kmap)))
   (check-type kmap hash-table)
   (let* ((key (code-state->key code state))
@@ -1517,14 +1530,17 @@ list of modifier symbols."
 	 (key-seq (cons key key-seq)))
     (dformat "key-press: ~S ~S ~S~%" key state cmd)
     (if cmd
-	(etypecase cmd
-	  ((or hash-table symbol)
+	(cond
+	  ((or (hash-table-p cmd)
+	       (and (symbolp cmd)
+		    (boundp cmd)
+		    (hash-table-p (symbol-value cmd))))
 	   (let* ((code-state (do ((k (read-key) (read-key)))
 				  ((not (is-modifier (xlib:keycode->keysym *display* (car k) 0))) k)))
 		  (code (car code-state))
 		  (state (cdr code-state)))
 	     (handle-keymap cmd code state key-seq)))
-	  (string (values cmd key-seq)))
+	  (t (values cmd key-seq)))
 	(values nil key-seq))))
 
 (define-stump-event-handler :key-press (code state #|window|# root)

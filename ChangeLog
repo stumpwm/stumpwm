@@ -1,5 +1,32 @@
 2006-11-26  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* user.lisp (*root-map*): bind C-t " to windowlist
+	("next"): if no window is focused call other-window
+	("prev"): likewise
+	(*menu-map*): new keymap
+	(menu-state): new struct
+	(bound-check-menu): new function
+	(menu-up): likewise
+	(menu-down): likewise
+	(menu-finish): likewise
+	(menu-abort): likewise
+	(select-from-menu): likewise
+	("windowlist"): new command
+
+	* primitives.lisp (*supress-echo-timeout*): new global
+
+	* core.lisp (echo-string-list): dont reset timeout if *supress-echo-timeout* is T
+	(read-from-keymap): new function
+	(handle-keymap): only use the kmap's symbol value if it's bound and a hash-table
+
+	* user.lisp (focus-next-window): cycle through all the frame windows
+	(focus-prev-window): likewise
+	(focus-forward): show the frame indicator when switching frames
+	(run-or-raise): likewise
+	("web"): use "Firefox-bin" class
+
+	* primitives.lisp (*window-formatters*): use window-res 
+
 	* core.lisp (export-selection): transform the characters to card8's
 
 2006-11-26  Shawn Betts  <sabetts@shitbender.gagrod>
