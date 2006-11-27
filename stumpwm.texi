@@ -128,6 +128,10 @@ Screens
 
 * Xinerama::                    
 
+Miscellaneous Commands
+
+* Menus::                       
+
 @end detailmenu
 @end menu
 
@@ -299,6 +303,9 @@ Go to the previous window in the window list
 
 @item C-t '
 Go to a window by name
+
+@item C-t "
+Select a window from a list and focus the window.
 
 @item C-t g
 @itemx C-t C-g
@@ -736,6 +743,11 @@ Send a fake key to the current window. @var{key} is a typical StumpWM key, like 
 Switch to the first window that starts with @var{substring}.
 @end deffn
 
+@deffn {Command} windowlist
+Allow the user to Select a window from the list of windows and focus
+the selected window. For information of menu bindings @xref{Menus}.
+@end deffn
+
 
 @menu
 * Customizing Window Appearance::  
@@ -1084,9 +1096,51 @@ Quit StumpWM.
 Load firefox or switch to its window if it is running.
 @end deffn
 
+@defun run-commands &rest @var{commands}
+Run each stumpwm command in sequence. This could be used if you're
+used to ratpoison's rc file and you just want to run commands or don't
+know lisp very well. One might put the following in one's rc file:
+
+@example
+(stumpwm:run-commands
+  "escape C-z"
+  "exec firefox"
+  "split")
+@end example
+@end defun
+
+
 @defun define-stumpwm-command @var{name} (@var{var} @var{type} @var{prompt}) ...
 Create a new command with the name @var{name}.
 @end defun
+
+@menu
+* Menus::                       
+@end menu
+
+@node Menus,  , Miscellaneous Commands, Miscellaneous Commands
+@subsection Menus
+Some commands present the options in a menu. The following are the menu key bindings:
+
+@table @kbd
+@item C-p
+@itemx Up
+@itemx k
+Highlight the previous menu option.
+
+@item C-n
+@itemx Down
+@itemx j
+Highlight the next menu option.
+
+@item C-g
+@itemx ESC
+Abort the menu.
+
+@item RET
+Select the highlighted option.
+
+@end table
 
 @node Hooks, Command and Function Index, Miscellaneous Commands, Top
 @chapter Hooks

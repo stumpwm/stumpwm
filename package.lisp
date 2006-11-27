@@ -6,6 +6,7 @@
 	   #:split-string
 	   #:*version*
 	   #:current-screen
+	   #:run-commands
 	   ;; message bar
 	   #:set-fg-color
 	   #:set-bg-color

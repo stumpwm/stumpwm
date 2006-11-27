@@ -1002,3 +1002,10 @@ See *menu-map* for menu bindings."
 			  ""))))
     (when window
       (frame-raise-window group (window-frame window) window))))
+
+(defun run-commands (&rest commands)
+  "Run each stumpwm command in sequence. This could be used if
+you're used to ratpoison's rc file and you just want to run
+commands or don't know lisp very well."
+  (loop for i in commands
+       (interactive-command i (current-screen))))

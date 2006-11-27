@@ -12,6 +12,7 @@
 	(menu-abort): likewise
 	(select-from-menu): likewise
 	("windowlist"): new command
+	(run-commands): new function
 
 	* primitives.lisp (*supress-echo-timeout*): new global
 
