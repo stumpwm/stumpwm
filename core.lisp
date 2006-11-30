@@ -1126,6 +1126,24 @@ windows used to draw the numbers in. The caller must destroy them."
 
 ;;; Screen functions
 
+(defun next-screen (&optional (list *screen-list*))
+  (let ((matches (member (current-screen) list)))
+    (if (null (cdr matches))
+	;; If the last one in the list is current, then
+	;; use the first one.
+	(car list)
+	;; Otherwise, use the next one in the list.
+	(cadr matches))))
+
+(defun move-screen-to-head (screen)
+  (setf *screen-list* (delete screen *screen-list*))
+  (push screen *screen-list*))
+
+(defun switch-to-screen (screen)
+  (when screen
+    (let ((group (screen-current-group screen)))
+      (focus-frame group (tile-group-current-frame group)))))
+
 (defun screen-set-focus (screen window)
   (when (eq (window-group window)
 	    (screen-current-group screen))

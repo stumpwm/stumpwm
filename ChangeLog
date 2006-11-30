@@ -1,5 +1,13 @@
 2006-11-30  Shawn Betts  <sabetts@shitbender.gagrod>
 
+	* user.lisp ("snext"): new command
+	("sprev"): likewise
+	("sother"): likewise
+
+	* core.lisp (next-screen): new function
+	(move-screen-to-head): likewise
+	(switch-to-screen): likewise
+
 	* user.lisp (run-commands): add a 'do' to the loop
 
 2006-11-27  Shawn Betts  <sabetts@vcn.bc.ca>
