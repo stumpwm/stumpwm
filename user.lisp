@@ -100,6 +100,7 @@
 	  (define-key m (kbd "F8") "gselect 8")
 	  (define-key m (kbd "F9") "gselect 9")
 	  (define-key m (kbd "F10") "gselect 10")
+	  (define-key m (kbd "?") "help")
 	  m)))
 
 (defstruct command
@@ -1007,5 +1008,5 @@ See *menu-map* for menu bindings."
   "Run each stumpwm command in sequence. This could be used if
 you're used to ratpoison's rc file and you just want to run
 commands or don't know lisp very well."
-  (loop for i in commands
+  (loop for i in commands do
        (interactive-command i (current-screen))))

@@ -1,3 +1,11 @@
+2006-11-30  Shawn Betts  <sabetts@shitbender.gagrod>
+
+	* user.lisp (run-commands): add a 'do' to the loop
+
+2006-11-27  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* user.lisp (*root-map): bind C-t ? to help
+
 2006-11-26  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp (*root-map*): bind C-t " to windowlist
