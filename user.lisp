@@ -371,7 +371,8 @@ returns..which could be forever if you're not careful."
   ;; make sure the last frame still exists in the frame tree
   (when (and (tile-group-last-frame group)
 	     (find (tile-group-last-frame group) (group-frames group)))
-    (focus-frame group (tile-group-last-frame group))))
+    (focus-frame group (tile-group-last-frame group))
+    (show-frame-indicator group)))
 
 (defun focus-frame-after (group frames)
   "Given a list of frames focus the next one in the list after
