@@ -236,7 +236,7 @@ At this point you probably want to switch back from your new
 Perhaps you'd like to see @samp{emacs} and @samp{xterm}
 side-by-side. Type @kbd{C-t s}. You have now split the screen into 2
 @samp{frames}. For more information @xref{Frames}. To switch to the
-empty frame type @kbd{C-t TAB}. Now let's pull the xterm window into
+empty frame type @kbd{C-t o}. Now let's pull the xterm window into
 this empty frame. Type @kbd{C-t w} for a window listing. Find the
 @samp{xterm} window. See the number beside it? Type @kbd{C-t} followed
 by @samp{xterm}'s window number.
@@ -374,6 +374,7 @@ If the screen is split into multiple frames, focus shifts to the
 to @kbd{C-x o} in Emacs.
 
 @item C-t TAB
+Jump to the last frame that had focus.
 
 @item C-t F
 Display ``Current Frame'' in the frame which has focus.
@@ -823,6 +824,10 @@ Cycle through the frame tree to the next frame.
 @deffn {Command} sibling
 Jump to the frame's sibling. If a frame is split into twe frames,
 these two frames are siblings.
+@end deffn
+
+@deffn {Command} fother
+Jump to the last frame that had focus.
 @end deffn
 
 @deffn {Command} fselect @var{frame-number}

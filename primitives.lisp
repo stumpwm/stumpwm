@@ -196,6 +196,7 @@ to login remotely to regain control. :abort quits stumpmwm.")
 (defstruct (tile-group (:include group))
   ;; From this frame tree a list of frames can be gathered
   frame-tree
+  last-frame
   current-frame)
 
 (defmethod print-object ((object frame) stream)

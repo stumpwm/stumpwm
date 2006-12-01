@@ -1,3 +1,13 @@
+2006-12-01  Shawn Betts  <sabetts@shitbender.gagrod>
+
+	* user.lisp (*root-map*): bind TAB to fother
+	(focus-last-frame): new function
+	("fother"): new command
+
+	* primitives.lisp (tile-group): add last-frame slot
+
+	* core.lisp (focus-frame): record the last frame
+
 2006-11-30  Shawn Betts  <sabetts@shitbender.gagrod>
 
 	* user.lisp ("snext"): new command

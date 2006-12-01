@@ -770,6 +770,9 @@ T (default) then also focus the frame."
   (let ((w (frame-window f))
 	(last (tile-group-current-frame group)))
     (setf (tile-group-current-frame group) f)
+    ;; record the last frame to be used in the fother command.
+    (unless (eq f last)
+      (setf (tile-group-last-frame group) last))
     (dformat "~S~%" f)
     (if w
 	(focus-window w)

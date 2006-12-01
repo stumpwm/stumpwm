@@ -71,7 +71,7 @@
 	  (define-key m (kbd "S") "hsplit")
 	  (define-key m (kbd "r") "iresize")
 	  (define-key m (kbd "o") "fnext")
-	  (define-key m (kbd "TAB") "sibling")
+	  (define-key m (kbd "TAB") "fother")
 	  (define-key m (kbd "f") "fselect")
 	  (define-key m (kbd "F") "curframe")
 	  (define-key m (kbd "t") "meta C-t")
@@ -367,6 +367,12 @@ returns..which could be forever if you're not careful."
                                          'identity))
       (show-frame-indicator group))))
 
+(defun focus-last-frame (group)
+  ;; make sure the last frame still exists in the frame tree
+  (when (and (tile-group-last-frame group)
+	     (find (tile-group-last-frame group) (group-frames group)))
+    (focus-frame group (tile-group-last-frame group))))
+
 (defun focus-frame-after (group frames)
   "Given a list of frames focus the next one in the list after
 the current frame."
@@ -389,6 +395,9 @@ the current frame."
 
 (define-stumpwm-command "sibling" ()
   (focus-frame-sibling (screen-current-group (current-screen))))
+
+(define-stumpwm-command "fother" ()
+  (focus-last-frame (screen-current-group (current-screen))))
 
 (defun choose-frame-by-number (group)
   "show a number in the corner of each frame and wait for the user to
