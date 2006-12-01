@@ -236,7 +236,7 @@ At this point you probably want to switch back from your new
 Perhaps you'd like to see @samp{emacs} and @samp{xterm}
 side-by-side. Type @kbd{C-t s}. You have now split the screen into 2
 @samp{frames}. For more information @xref{Frames}. To switch to the
-empty frame type @kbd{C-t o}. Now let's pull the xterm window into
+empty frame type @kbd{C-t TAB}. Now let's pull the xterm window into
 this empty frame. Type @kbd{C-t w} for a window listing. Find the
 @samp{xterm} window. See the number beside it? Type @kbd{C-t} followed
 by @samp{xterm}'s window number.

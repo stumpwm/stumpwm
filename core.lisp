@@ -245,7 +245,7 @@ identity with a range check."
   (when (window-hidden-p win)
     (unhide-window win))
   (when (window-in-current-group-p win)
-    (setf (xlib:window-priority (window-xwin win)) :top-if)))
+    (setf (xlib:window-priority (window-parent win)) :top-if)))
 
 ;; some handy wrappers
 
@@ -1081,6 +1081,7 @@ one."
       (if (eq (tile-group-current-frame group)
 	      frame)
 	  (setf (tile-group-current-frame group) f1))
+      (setf (tile-group-last-frame group) f2)
       (sync-frame-windows group f1)
       (sync-frame-windows group f2))))
     
