@@ -127,6 +127,8 @@ loaded."
   ;; In the event of an error, we always need to close the display
   (unwind-protect
       (progn
+	;; we need to do this first because init-screen grabs keys
+        (update-modifier-map)
 	;; Initialize all the screens
 	(handler-case
 	 (setf *screen-list* (mapcar #'init-screen (xlib:display-roots *display*)))
@@ -135,7 +137,6 @@ loaded."
            (return-from stumpwm (write-line "Another window manager is running."))))
 	;; Initialize the necessary atoms
 	(init-atoms)
-        (update-modifier-map)
 	(mapc 'process-existing-windows *screen-list*)
 	;; Give the first screen's frame focus
 	(let ((group (screen-current-group (first *screen-list*))))

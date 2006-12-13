@@ -1,7 +1,14 @@
 2006-12-12  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* stumpwm.lisp (stumpwm): update modifier mapping before calling init-screen
+
+	* primitives.lisp (modifiers): new slot, numlock
+
+	* kmap.lisp (x11-mods): add optional arg with-numlock
+
 	* core.lisp (screen-y): handle the case when the mode-line is on the bottom 
 	(remove-window): reparent the window back to root
+	(xwin-grab-keys): grab keys including the numlock modifier
 
 2006-12-01  Shawn Betts  <sabetts@shitbender.gagrod>
 

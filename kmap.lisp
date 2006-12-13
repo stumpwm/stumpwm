@@ -53,7 +53,10 @@
       (key-hyper key)
       (key-super key)))
 
-(defun x11-mods (key)
+(defun x11-mods (key &optional with-numlock)
+  "Return the modifiers for key in a format that clx
+understands. if WITH-NUMLOCK is non-nil then include the numlock
+modifier. Most of the time numlock just gets in the way."
   (let (mods)
     (when (key-shift key) (push :shift mods))
     (when (key-control key) (push :control mods))
@@ -61,6 +64,7 @@
     (when (key-alt key) (setf mods (append (modifiers-alt *modifiers*) mods)))
     (when (key-hyper key) (setf mods (append (modifiers-hyper *modifiers*) mods)))
     (when (key-super key) (setf mods (append (modifiers-super *modifiers*) mods)))
+    (when with-numlock (setf mods (append (modifiers-numlock *modifiers*) mods)))
     (apply 'xlib:make-state-mask mods)))
 
 (define-condition kbd-parse ()

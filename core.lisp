@@ -478,7 +478,13 @@ than the root window's width and height."
   (labels ((grabit (w key)
 	     (xlib:grab-key w (xlib:keysym->keycodes *display* (key-keysym key))
 			    :modifiers (x11-mods key) :owner-p t
-			    :sync-pointer-p nil :sync-keyboard-p t)))
+			    :sync-pointer-p nil :sync-keyboard-p t)
+	     ;; Ignore numlock by also grabbing the keycombo with
+	     ;; numlock on.
+	     (when (modifiers-numlock *modifiers*)
+	       (xlib:grab-key w (xlib:keysym->keycodes *display* (key-keysym key))
+			      :modifiers (x11-mods key t) :owner-p t
+			      :sync-pointer-p nil :sync-keyboard-p t))))
     (maphash (lambda (k v)
 	       (declare (ignore v))
 	       (grabit win k))
@@ -1496,7 +1502,7 @@ list of modifier symbols."
   ;; ones where event-window and window are the same, and
   ;; substructure unmap events when the event-window is the parent
   ;; of window. So use event-window to find the screen.
-  (format t "UNMAP: ~s ~s~%" send-event-p (not (xlib:window-equal event-window window)))
+  (dformat "UNMAP: ~s ~s~%" send-event-p (not (xlib:window-equal event-window window)))
   (unless (and (not send-event-p)
 	      (not (xlib:window-equal event-window window)))
     (let ((window (find-window window)))

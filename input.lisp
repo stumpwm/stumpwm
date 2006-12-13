@@ -438,7 +438,9 @@ input (pressing Return), nil otherwise."
                   (push mod (modifiers-super modifiers)))
                  ((or (find-mod "Hyper_L" codes)
                       (find-mod "Hyper_R" codes))
-                  (push mod (modifiers-hyper modifiers)))))
+                  (push mod (modifiers-hyper modifiers)))
+		 ((find-mod "Num_Lock" codes)
+		  (push mod (modifiers-numlock modifiers)))))
         ;; If alt is defined but meta isn't set meta to alt and clear alt
         (when (and (modifiers-alt modifiers)
                    (null (modifiers-meta modifiers)))

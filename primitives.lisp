@@ -228,7 +228,8 @@ single char keys are supported.")
   (meta nil)
   (alt nil)
   (hyper nil)
-  (super nil))
+  (super nil)
+  (numlock nil))
   
 (defvar *all-modifiers* nil
   "A list of all keycodes that are considered modifiers")
