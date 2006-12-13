@@ -62,7 +62,8 @@ identity with a range check."
 
 (defun screen-y (screen)
   (let ((ml (screen-mode-line screen)))
-    (if ml
+    (if (and ml 
+	     (eq (mode-line-position ml) :top))
 	(+ (xlib:drawable-height (mode-line-window ml))
 	   (* 2 (xlib:drawable-border-width (mode-line-window ml))))
 	0)))
@@ -556,9 +557,10 @@ give the last accessed window focus."
 	 (screen (group-screen group)))
     (dformat "remove window ~a~%" screen)
     (dformat "destroying parent window~%")
+    (xlib:reparent-window (window-xwin window) (screen-root screen) 0 0)
     (xlib:destroy-window (window-parent window))
     (dformat "destroyed.~%")
-    (xlib:display-finish-output *display*)
+
     ;; Clean up the window's entry in the screen and group
     (setf (screen-mapped-windows screen)
 	  (delete (window-xwin window) (screen-mapped-windows screen))
@@ -1374,10 +1376,10 @@ focus of a window. *CURRENT-SCREEN* overrides this process."
 (defun send-fake-key (win key)
   "Send a fake key event to win. ch is the character and mods is a
 list of modifier symbols."
-  (xlib:send-event (window-xwin win) :key-press '(:key-press)
+  (xlib:send-event (window-xwin win) :key-press (xlib:make-event-mask :key-press)
 		   :display *display*
 		   :root (screen-root (window-screen win))
-		   :window (window-xwin win)
+		   :window (window-xwin win) :event-window (window-xwin win)
 		   :code (xlib:keysym->keycodes *display* (key-keysym key))
 		   :state (x11-mods key)))
 
@@ -1494,7 +1496,8 @@ list of modifier symbols."
   ;; ones where event-window and window are the same, and
   ;; substructure unmap events when the event-window is the parent
   ;; of window. So use event-window to find the screen.
-  (unless (or send-event-p
+  (format t "UNMAP: ~s ~s~%" send-event-p (not (xlib:window-equal event-window window)))
+  (unless (and (not send-event-p)
 	      (not (xlib:window-equal event-window window)))
     (let ((window (find-window window)))
       ;; if we can't find the window then there's nothing we need to
@@ -1655,6 +1658,11 @@ chunks."
 
 (define-stump-event-handler :selection-clear ()
   (setf *x-selection* nil))
+
+;; Handling event :KEY-PRESS 
+;; (:DISPLAY #<XLIB:DISPLAY :0 (The X.Org Foundation R60700000)> :EVENT-KEY :KEY-PRESS :EVENT-CODE 2 :SEND-EVENT-P NIL :CODE 45 :SEQUENCE 1419 :TIME 98761213 :ROOT #<XLIB:WINDOW :0 96> :WINDOW #<XLIB:WINDOW :0 6291484> :EVENT-WINDOW #<XLIB:WINDOW :0 6291484> :CHILD
+;;  #<XLIB:WINDOW :0 6291485> :ROOT-X 754 :ROOT-Y 223 :X 753 :Y 222 :STATE 4 :SAME-SCREEN-P T)
+;; H
 
 (defun handle-event (&rest event-slots &key display event-key &allow-other-keys)
   (declare (ignore display))

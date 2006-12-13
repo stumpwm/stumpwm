@@ -1,4 +1,11 @@
+2006-12-12  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* core.lisp (screen-y): handle the case when the mode-line is on the bottom 
+	(remove-window): reparent the window back to root
+
 2006-12-01  Shawn Betts  <sabetts@shitbender.gagrod>
+
+	* user.lisp (focus-last-frame): show the frame indicator
 
 	* core.lisp (raise-window): raise the window's parent
 	(split-frame): set the group's last frame to the new frame.
