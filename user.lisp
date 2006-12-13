@@ -1005,14 +1005,16 @@ See *menu-map* for menu bindings."
 
 (define-stumpwm-command "windowlist" ()
   (let* ((group (screen-current-group (current-screen)))
-	 (window (second (select-from-menu
-			  (current-screen)
-			  (mapcar (lambda (w)
-				    (list (format-expand *window-formatters* *window-format* w) w))
-				  (sort-windows group))
-			  ""))))
-    (when window
-      (frame-raise-window group (window-frame window) window))))
+	 (window (when (group-windows group)
+		   (second (select-from-menu
+			    (current-screen)
+			    (mapcar (lambda (w)
+				      (list (format-expand *window-formatters* *window-format* w) w))
+				    (sort-windows group))
+			    "")))))
+    (if window
+      (frame-raise-window group (window-frame window) window)
+      (echo-string (group-screen group) "No Managed Windows"))))
 
 (defun run-commands (&rest commands)
   "Run each stumpwm command in sequence. This could be used if

@@ -1,5 +1,7 @@
 2006-12-12  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* user.lisp ("windowlist"): display a message when there are no windows to select from
+
 	* stumpwm.lisp (stumpwm): update modifier mapping before calling init-screen
 
 	* primitives.lisp (modifiers): new slot, numlock
