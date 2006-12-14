@@ -995,6 +995,10 @@ The format string that decides what information will show up in the
 group listing.
 @end defvar
 
+@defvar *groups-map*
+All group related keybindings hang from this keymap.
+@end defvar
+
 @node Screens, Interacting With Unix, Groups, Top
 @chapter Screens
 StumpWM handles multiple screens.
