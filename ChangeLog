@@ -1,3 +1,10 @@
+2006-12-14  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* mode-line.lisp (*screen-mode-line-formatters*): add %g to print the group list
+
+	* user.lisp (fmt-group-list): new function
+	(run-or-raise): search all groups for a matching window
+
 2006-12-12  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp ("windowlist"): display a message when there are no windows to select from
