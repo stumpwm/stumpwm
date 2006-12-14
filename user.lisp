@@ -208,6 +208,12 @@
 	  (mapcar (lambda (w)
 		    (format-expand *window-formatters* *window-format* w)) (sort-windows group))))
 
+(defun fmt-group-list (group)
+  "Given a group list all the groups in the group's screen."
+  (format nil "~{~a~^ ~}" 
+	  (mapcar (lambda (w)
+		    (format-expand *group-formatters* *group-format* w)) (sort-groups (group-screen group)))))
+
 (define-stumpwm-command "windows" ()
   (echo-windows (screen-current-group (current-screen)) *window-format*))
 
@@ -717,6 +723,7 @@ be found, select it.  Otherwise simply run cmd."
 	     (let* ((group (window-group win))
 		    (frame (window-frame win))
 		    (old-frame (tile-group-current-frame group)))
+	       (switch-to-group group)
 	       (frame-raise-window group frame win)
 	       (focus-frame group frame)
 	       (unless (eq frame old-frame)
@@ -734,14 +741,21 @@ be found, select it.  Otherwise simply run cmd."
 		    (or (not a)
 			(not b)
 			(string= a b))
-		    (app-info-cmp (cdr match1) (cdr match2)))))))
+		    (app-info-cmp (cdr match1) (cdr match2))))))
+	   (find-window (group)
+	     (find (list class instance title)
+		   (group-windows group)
+		   :key #'win-app-info
+		   :test #'app-info-cmp)))
     (let ((win
 	   ;; If no qualifiers are set don't bother looking for a match.
 	   (and (or class instance title)
-		(find (list class instance title)
-		      (group-windows (screen-current-group (current-screen)))
-		      :key #'win-app-info
-		      :test #'app-info-cmp))))
+		;; search all groups
+		(loop
+		   for g in (screen-groups (current-screen))
+		   for win = (find-window g)
+		   when win
+		   return win))))
       (if win
 	  (goto-win win)
 	  (run-shell-command cmd)))))

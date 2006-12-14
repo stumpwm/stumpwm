@@ -72,7 +72,8 @@ A string is printed verbatim in the mode line except for
 %w -- print the window list
 ")
 
-(defvar *screen-mode-line-formatters* '((#\w fmt-window-list))
+(defvar *screen-mode-line-formatters* '((#\w fmt-window-list)
+					(#\g fmt-group-list))
   "An alist containing format character format function pairs for
 formatting screen mode-lines. functions are passed the screen's
 current group.")
