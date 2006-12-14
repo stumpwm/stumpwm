@@ -526,6 +526,10 @@ The top level key map. This is where you'll find the binding for the
 @dfn{prefix map}.
 @end defvar
 
+@defvar *group-map*
+The keymap that group related key bindings sit on. It is bound to @kbd{C-t g} by default.
+@end defvar
+ 
 @node Message and Input Bar, Windows, Key Bindings, Top
 @chapter Message and Input Bar
 
@@ -749,6 +753,24 @@ Allow the user to Select a window from the list of windows and focus
 the selected window. For information of menu bindings @xref{Menus}.
 @end deffn
 
+@defvar *window-format*
+This variable decides how the window list is formatted. It is a string
+with the following formatting options:
+
+@table @asis
+@item %n
+Substitute the window number.
+@item %s
+Substitute the window's status. * means current window, + means last
+window, and - means any other window.
+@item %t
+Substitute the window's name.
+@item %c
+Substitute the window's class.
+@item %i
+Substitute the window's resource ID.
+@end table
+@end defvar
 
 @menu
 * Customizing Window Appearance::  
@@ -897,6 +919,20 @@ A command to toggle the mode line visibility.
 @defun toggle-mode-line
 @end defun
 
+@defvar *screen-mode-line-format*
+This variable describes what will be displayed on the modeline. It can
+be a string or a list. If it is a string the string is printed with
+the following formatting options:
+
+@table @asis
+@item %w
+List the windows using @var{*window-format*}
+
+@item %g
+List the groups using @var{*group-format*}
+@end table
+@end defvar
+
 The following variables control the color, position, and size of the
 mode line.
 
@@ -992,7 +1028,18 @@ one using @code{prin1-to-string}.
 
 @defvar *group-format*
 The format string that decides what information will show up in the
-group listing.
+group listing. The following format options are available:
+
+@table @asis
+@item %n
+The group's number.
+
+@item %s
+The group's status. Similar to a window's status.
+
+@item %t
+The group's name.
+@end table
 @end defvar
 
 @defvar *groups-map*
