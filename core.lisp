@@ -1308,7 +1308,7 @@ the nth entry to highlight."
   "Return the current screen."
   (car *screen-list*))
 
-(defun init-screen (screen-number id)
+(defun init-screen (screen-number id host)
   "Given a screen number, returns a screen structure with initialized members"
   ;; Listen for the window manager events on the root window
   (setf (xlib:window-event-mask (xlib:screen-root screen-number))
@@ -1363,6 +1363,7 @@ the nth entry to highlight."
     (xwin-grab-keys focus-window)
     (setf (screen-number screen) screen-number
 	  (screen-id screen) id
+	  (screen-host screen) host
 	  (screen-groups screen) (list group)
 	  (screen-current-group screen) group
 	  (screen-font screen) font
@@ -1578,7 +1579,7 @@ KMAP and return the binding or nil if the user hit an unbound sequence."
 	  (t (values cmd key-seq)))
 	(values nil key-seq))))
 
-(define-stump-event-handler :key-press (code state #|window|# root)
+(define-stump-event-handler :key-press (code state #|window|#)
   ;; modifiers can sneak in with a race condition. so avoid that.
   (unless (is-modifier (xlib:keycode->keysym *display* code 0))
     (labels ((get-cmd (screen code state)

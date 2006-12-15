@@ -123,42 +123,36 @@ loaded."
 (defun stumpwm (&optional (display-str (or (getenv "DISPLAY") ":0")) protocol)
   "Start the stump window manager."
   (multiple-value-bind (host display) (parse-display-string display-str)
-    (setf *display* (xlib:open-display host :display display :protocol protocol)))
-  ;; In the event of an error, we always need to close the display
-  (unwind-protect
-      (progn
-	;; we need to do this first because init-screen grabs keys
-        (update-modifier-map)
-	;; Initialize all the screens
-	(handler-case
-	 (setf *screen-list* (loop for i in (xlib:display-roots *display*)
-				  for n from 0
-				  collect (init-screen i n)))
-	 (xlib:access-error (c)
-           (declare (ignore c))
-           (return-from stumpwm (write-line "Another window manager is running."))))
-	;; Initialize the necessary atoms
-	(init-atoms)
-	(mapc 'process-existing-windows *screen-list*)
-	;; We need to setup each screen with its current window. Go
-	;; through them in reverse so the first screen's frame ends up
-	;; with focus.
-	(dolist (s (reverse *screen-list*))
-	  (let ((group (screen-current-group s)))
-	    (focus-frame group (tile-group-current-frame group))))
-        ;; Set the DISPLAY-environment-variable properly. This is
-        ;; necessary if Stumpwm is running from a Lisp in another
-        ;; X-display.
-	;; XXX: check to see if its defined to work around a bug in sbcl's putenv.
-	(unless (getenv "DISPLAY")
-	  (setf (getenv "DISPLAY") display-str))
-	;; Load rc file
-	(multiple-value-bind (success err rc) (load-rc-file)
-	  (echo-string (current-screen)
-		       (if success
-			   "Welcome to The Stump Window Manager!"
-			   (format nil "Error loading ~A: ~A" rc err))))
-	(run-hook *start-hook*)
-	;; Let's manage.
-	(stumpwm-internal-loop))
-    (xlib:close-display *display*)))
+    (setf *display* (xlib:open-display host :display display :protocol protocol))
+    ;; In the event of an error, we always need to close the display
+    (unwind-protect
+	 (progn
+	   ;; we need to do this first because init-screen grabs keys
+	   (update-modifier-map)
+	   ;; Initialize all the screens
+	   (handler-case
+	       (setf *screen-list* (loop for i in (xlib:display-roots *display*)
+				      for n from 0
+				      collect (init-screen i n host)))
+	     (xlib:access-error (c)
+	       (declare (ignore c))
+	       (return-from stumpwm (write-line "Another window manager is running."))))
+	   ;; Initialize the necessary atoms
+	   (init-atoms)
+	   (mapc 'process-existing-windows *screen-list*)
+	   ;; We need to setup each screen with its current window. Go
+	   ;; through them in reverse so the first screen's frame ends up
+	   ;; with focus.
+	   (dolist (s (reverse *screen-list*))
+	     (let ((group (screen-current-group s)))
+	       (focus-frame group (tile-group-current-frame group))))
+	   ;; Load rc file
+	   (multiple-value-bind (success err rc) (load-rc-file)
+	     (echo-string (current-screen)
+			  (if success
+			      "Welcome to The Stump Window Manager!"
+			      (format nil "Error loading ~A: ~A" rc err))))
+	   (run-hook *start-hook*)
+	   ;; Let's manage.
+	   (stumpwm-internal-loop))
+      (xlib:close-display *display*))))

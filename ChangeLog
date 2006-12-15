@@ -1,5 +1,37 @@
 2006-12-14  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* user.lisp ("snext"): show frame indicator
+	("sprev"): likewise
+	("sother"): likewise
+
+	* stumpwm.lisp (stumpwm): pass host into init-screen. don't set DISPLAY env var
+
+	* primitives.lisp (screen): new slot, host
+	(screen-display-string): new function
+	(run-prog): set the DISPLAY variable for the current screen
+	(run-prog-collect-output): likewise
+
+	* core.lisp (init-screen): new arg, host
+	(:key-press): remove root arg
+
+	* user.lisp ("sprev"): call sort-screens
+
+	* stumpwm.lisp (stumpwm): pass an id to init-screen. focus a
+	window in each screen.
+
+	* primitives.lisp (screen): new slot, id
+	(*current-screen*): remove global
+
+	* core.lisp (no-focus): call move-screen-to-head
+	(sort-screens): new function
+	(next-screen): use sort-screens
+	(move-screen-to-head): use remove instead of delete
+	(switch-to-screen): focus the appropriate window directly
+	(screen-set-focus): call move-screen-to-head
+	(current-screen): the current screen is now the car of *screen-list*
+	(init-screen): new arg, id
+	(:key-press): do not bind *current-screen*
+
 	* mode-line.lisp (*screen-mode-line-formatters*): add %g to print the group list
 
 	* user.lisp (fmt-group-list): new function

@@ -1038,10 +1038,13 @@ commands or don't know lisp very well."
        (interactive-command i (current-screen))))
 
 (define-stumpwm-command "snext" ()
-  (switch-to-screen (next-screen)))
+  (switch-to-screen (next-screen))
+  (show-frame-indicator (screen-current-group (current-screen))))
 
 (define-stumpwm-command "sprev" ()
-  (switch-to-screen (next-screen (reverse (sort-screens)))))
+  (switch-to-screen (next-screen (reverse (sort-screens))))
+  (show-frame-indicator (screen-current-group (current-screen))))
 
 (define-stumpwm-command "sother" ()
-  (switch-to-screen (cadr *screen-list*)))
+  (switch-to-screen (cadr *screen-list*))
+  (show-frame-indicator (screen-current-group (current-screen))))

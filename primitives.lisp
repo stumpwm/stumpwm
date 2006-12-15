@@ -239,6 +239,7 @@ single char keys are supported.")
 
 (defstruct screen
   id
+  host
   number
   ;; the list of groups available on this screen
   groups
@@ -340,6 +341,13 @@ Useful for re-using the &REST arg after removing some options."
       (push (pop plist) copy))
     (setq plist (cddr plist))))
 
+(defun screen-display-string (screen)
+  (format nil "DISPLAY=~a:~d.~d"
+	  (screen-host screen)
+	  (xlib:display-display *display*)
+	  (screen-id screen)))
+    
+;;; XXX: DISPLAY env var isn't set for cmucl
 (defun run-prog (prog &rest opts &key args (wait t) &allow-other-keys)
   "Common interface to shell. Does not return anything useful."
   #+gcl (declare (ignore wait))
@@ -347,7 +355,14 @@ Useful for re-using the &REST arg after removing some options."
   #+allegro (apply #'excl:run-shell-command (apply #'vector prog prog args)
                    :wait wait opts)
   #+(and clisp      lisp=cl)
-  (apply #'ext:run-program prog :arguments args :wait wait opts)
+  (progn
+    ;; Arg. We can't pass in an environment so just set the DISPLAY
+    ;; variable so it's inherited by the child process.
+    (setf (getenv "DISPLAY") (format nil "~a:~d.~d"
+				     (screen-host (current-screen))
+				     (xlib:display-display *display*)
+				     (screen-id (current-screen))))
+    (apply #'ext:run-program prog :arguments args :wait wait opts))
   #+(and clisp (not lisp=cl))
   (if wait
       (apply #'lisp:run-program prog :arguments args opts)
@@ -359,10 +374,18 @@ Useful for re-using the &REST arg after removing some options."
                      (format nil "~a~{ '~a'~}~@[ &~]" prog args (not wait))
                      opts)
   #+lucid (apply #'lcl:run-program prog :wait wait :arguments args opts)
-  #+sbcl (apply #'sb-ext:run-program prog args :output t :error t :wait wait opts)
+  #+sbcl (apply #'sb-ext:run-program prog args :output t :error t :wait wait
+		;; inject the DISPLAY variable in so programs show up
+		;; on the right screen.
+		:environment (cons (screen-display-string (current-screen))
+				   (remove-if (lambda (str)
+						(string= "DISPLAY=" str :end2 (min 8 (length str))))
+					      (sb-ext:posix-environ)))
+		opts)
   #-(or allegro clisp cmu gcl liquid lispworks lucid sbcl)
   (error 'not-implemented :proc (list 'run-prog prog opts)))
 
+;;; XXX: DISPLAY isn't set for cmucl 
 (defun run-prog-collect-output (prog &rest args)
   "run a command and read its output."
   #+allegro (with-output-to-string (s) 
@@ -370,12 +393,25 @@ Useful for re-using the &REST arg after removing some options."
                                       :output s :wait t))
   ;; FIXME: this is a dumb hack but I don't care right now.
   #+clisp (with-output-to-string (s)
+	    ;; Arg. We can't pass in an environment so just set the DISPLAY
+	    ;; variable so it's inherited by the child process.
+	    (setf (getenv "DISPLAY") (format nil "~a:~d.~d"
+					     (screen-host (current-screen))
+					     (xlib:display-display *display*)
+					     (screen-id (current-screen))))
 	    (let ((out (ext:run-program prog :arguments args :wait t :output :stream)))
 	      (loop for i = (read-char out nil out)
 		 until (eq i out)
 		 do (write-char i s))))
   #+cmu (with-output-to-string (s) (ext:run-program prog args :output s :error t :wait t))
-  #+sbcl (with-output-to-string (s) (sb-ext:run-program prog args :output s :error t :wait t))
+  #+sbcl (with-output-to-string (s)
+	   (sb-ext:run-program prog args :output s :error t :wait t
+			       ;; inject the DISPLAY variable in so programs show up
+			       ;; on the right screen.
+			       :environment (cons (screen-display-string (current-screen))
+						  (remove-if (lambda (str)
+							       (string= "DISPLAY=" str :end2 (min 8 (length str))))
+							     (sb-ext:posix-environ)))))
   #-(or allegro clisp cmu sbcl)
   (error 'not-implemented :proc (list 'pipe-input prog args)))
 
