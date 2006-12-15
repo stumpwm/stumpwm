@@ -664,6 +664,15 @@ abort
 
 @item C-y
 yank-selection
+
+@item TAB
+Clockwise tab complete the current string, if possible. Press @key{TAB} again to
+cycle through completions.
+ 
+@item S-TAB
+Counter-clockwise tab complete the current string, if possible. Press @key{S-TAB} again to
+cycle through completions.
+
 @end table
 
 @node Programming The Message Bar, Programming the Input Bar, Using The Input Bar, Message and Input Bar
