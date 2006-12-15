@@ -116,6 +116,15 @@
 		       :fn (lambda (,@(mapcar 'first args))
 			      ,@body))))
 
+(defun all-commands ()
+  "Return a list of all interactive commands."
+  (let (acc)
+    (maphash (lambda (k v)
+	       (declare (ignore v))
+	       (push k acc))
+	     *command-hash*)
+    (sort acc 'string<)))
+
 (defun focus-next-window (group)
   (focus-forward group (sort-windows group)))
 
@@ -246,7 +255,7 @@
 	(when match
 	  (frame-raise-window group (window-frame match) match)))))
 
-(define-stumpwm-command "select" ((win :string "Select: "))
+(define-stumpwm-command "select" ((win :window-name "Select: "))
   (select-window (screen-current-group (current-screen)) win))
 
 (defun select-window-number (group num)
@@ -460,31 +469,33 @@ string between them."
   "Parse the command and its arguments given the commands argument
 specifications then execute it. Returns a string or nil if user
 aborted."
-  (macrolet ((skip-spaces (string-list)
-			  ;; A nice'n'gross side-effect loop
-			  `(do ((s #1=(car ,string-list) #1#))
-			       ((or (null s)
-				    (string/= s "")) ,string-list)
-			     (pop ,string-list)))
-	     (pop-or-read (l prompt scrn)
-			  `(or (pop ,l)
-			       ;; If prompt is nil, then the argument is
-			       ;; considered optional.
-			       (unless (null ,prompt)
-				 (or (read-one-line ,scrn ,prompt)
-				     ;; read-one-line returns nil when the user aborts
-				     (throw 'error "Abort."))))))
-    (let (str cmd arg-specs args)
+  (let (str cmd arg-specs args)
+    (labels ((skip-spaces ()
+	       ;; A nice'n'gross side-effect loop
+	       (do ((s (car str) (car str)))
+		   ((or (null s)
+			(string/= s "")) str)
+		 (pop str)))
+	     (pop-or-read (prompt scrn &optional completions)
+	       (or (pop str)
+		   ;; If prompt is nil, then the argument is
+		   ;; considered optional.
+		   (unless (null prompt)
+		     (or (if completions
+			     (completing-read scrn prompt completions)
+			     (read-one-line scrn prompt))
+			 ;; read-one-line returns nil when the user aborts
+			 (throw 'error "Abort."))))))
       ;; Catch parse errors
       (catch 'error
 	;; Setup the input
 	(setf str (split-by-one-space input))
 	;; Make sure we have a valid command
-	(skip-spaces str)
+	(skip-spaces)
 	(setf cmd (gethash (pop str) *command-hash*))
 	(if cmd
 	    (setf arg-specs (command-args cmd))
-	  (throw 'error (format nil "Command '~a' not found." input)))
+	    (throw 'error (format nil "Command '~a' not found." input)))
 	;; Create a list of args to pass to the function. If str is
 	;; snarfed and we have more args, then prompt the user for a
 	;; value.
@@ -492,21 +503,34 @@ aborted."
 	(setf args (mapcar (lambda (spec)
 			     (let ((type (second spec))
 				   (prompt (third spec)))
-			       (skip-spaces str)
+			       (skip-spaces)
 			       (case type
+				 (:window-number
+				  (let ((n (pop-or-read prompt screen 
+							(mapcar 'prin1-to-string
+								(mapcar 'window-number 
+									(group-windows (screen-current-group screen)))))))
+				    (when n
+				      (parse-integer n))))
 				 (:number 
-				  (let ((n (pop-or-read str prompt screen)))
+				  (let ((n (pop-or-read prompt screen)))
 				    (when n
 				      (parse-integer n))))
 				 (:string 
-				  (pop-or-read str prompt screen))
+				  (pop-or-read prompt screen))
 				 (:key
-				  (let ((s (pop-or-read str prompt screen)))
+				  (let ((s (pop-or-read prompt screen)))
 				    (when s
 				      (kbd s))))
+				 (:window-name
+				  (pop-or-read prompt screen (mapcar 'window-name (group-windows (screen-current-group screen)))))
+				 (:group-name 
+				  (pop-or-read prompt screen (mapcar 'group-name (screen-groups screen))))
 				 (:group
-				  (find (pop-or-read str prompt screen)
-					(screen-groups screen) :test 'string= :key 'group-name))
+				  (find (string-trim " " (pop-or-read prompt screen (mapcar 'group-name (screen-groups screen))))
+					(screen-groups screen) 
+					:test 'string=
+					:key 'group-name))
 				 (:frame
 				  (let ((arg (pop str)))
 				    (if arg
@@ -517,26 +541,26 @@ aborted."
 					    (throw 'error "Frame not found."))
 					(or (choose-frame-by-number (screen-current-group screen))
 					    (throw 'error "Abort.")))))
-				  (:rest
-				   (if (null str)
-				       (when prompt
-					 (or (read-one-line screen prompt)
-					     (throw 'error "Abort.")))
-				       (prog1
-					   (format nil "~{~A~^ ~}" str)
-					 (setf str nil))))
-				  ;; FIXME: for now this is an optional :rest argument
-				  (:optional
-				   (when str
-				     (prog1
-					 (format nil "~{~A~^ ~}" str)
-				       (setf str nil))))
-				  (t (throw 'error "Bad argument type")))))
-			     arg-specs))
+				 (:rest
+				  (if (null str)
+				      (when prompt
+					(or (read-one-line screen prompt)
+					    (throw 'error "Abort.")))
+				      (prog1
+					  (format nil "~{~A~^ ~}" str)
+					(setf str nil))))
+				 ;; FIXME: for now this is an optional :rest argument
+				 (:optional
+				  (when str
+				    (prog1
+					(format nil "~{~A~^ ~}" str)
+				      (setf str nil))))
+				 (t (throw 'error "Bad argument type")))))
+			   arg-specs))
 	;; Did the whole string get parsed? (get rid of trailing
 	;; spaces)
 	(dformat "arguments: ~S~%" args)
-	(unless (null (skip-spaces str))
+	(unless (null (skip-spaces))
 	  (throw 'error (format nil "Trailing garbage: ~{~A~^ ~}" str)))
 	;; Success
 	(prog1
@@ -555,7 +579,7 @@ aborted."
       (echo-string screen result))))
 
 (define-stumpwm-command "colon" ((initial-input :optional "Initial Input: "))
-  (let ((cmd (read-one-line (current-screen) ": " (or initial-input ""))))
+  (let ((cmd (completing-read (current-screen) ": " (all-commands) (or initial-input ""))))
     (unless cmd
       (throw 'error "Abort."))
     (when (plusp (length cmd))
@@ -576,7 +600,7 @@ aborted."
 	  (setf (frame-window f) nil)
 	  (frame-raise-window group f (first (frame-windows group f)) nil))))))
 
-(define-stumpwm-command "pull" ((n :number "Pull: "))
+(define-stumpwm-command "pull" ((n :window-number "Pull: "))
   (pull-window-by-number (screen-current-group (current-screen)) n))
 
 (defun send-meta-key (screen key)
@@ -925,7 +949,7 @@ be found, select it.  Otherwise simply run cmd."
       (when match
 	(switch-to-group match)))))
 
-(define-stumpwm-command "gselect" ((query :rest "Select Group: "))
+(define-stumpwm-command "gselect" ((query :group-name "Select Group: "))
   (select-group (current-screen) query))
 
 (define-stumpwm-command "gmove" ((to-group :group "To Group: "))

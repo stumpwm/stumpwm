@@ -55,11 +55,19 @@
 	  (define-key map (kbd "RET") 'input-submit)
 	  (define-key map (kbd "C-g") 'input-abort)
 	  (define-key map (kbd "C-y") 'input-yank-selection)
+	  (define-key map (kbd "TAB") 'input-complete-forward)
+	  (define-key map (kbd "ISO_Left_Tab") 'input-complete-backward)
 	  (define-key map t 'input-self-insert)
 	  map)))
 
 (defvar *input-history* nil
   "History for the input line.")
+
+(defvar *input-last-command* nil
+  "The last input command.")
+
+(defvar *input-completions* nil
+  "The list of completions")
 
 ;;; keysym functions
 
@@ -149,9 +157,17 @@
   (make-array (length initial-input) :element-type 'character :initial-contents initial-input
 	      :adjustable t :fill-pointer t))
   
+(defun completing-read (screen prompt completions &optional (initial-input ""))
+  "Read a line of input through stumpwm and return it with TAB completion."
+  (let ((*input-completions* completions)
+	(*input-current-completions* nil)
+	(*input-current-completions-idx* nil))
+    (read-one-line screen prompt initial-input)))
+
 (defun read-one-line (screen prompt &optional (initial-input ""))
   "Read a line of input through stumpwm and return it. returns nil if the user aborted."
-  (let ((input (make-input-line :string (make-input-string initial-input)
+  (let ((*input-last-command* nil)
+	(input (make-input-line :string (make-input-string initial-input)
 				:position (length initial-input)
 				:history -1)))
     (labels ((key-loop ()
@@ -244,6 +260,119 @@
               :alt (and (intersection mods (modifiers-alt *modifiers*)) t)
               :hyper (and (intersection mods (modifiers-hyper *modifiers*)) t)
               :super (and (intersection mods (modifiers-super *modifiers*)) t))))
+
+
+;;; input string utility functions
+
+(defun input-submit (input key)
+  (declare (ignore input key))
+  :done)
+
+(defun input-abort (input key)
+  (declare (ignore input key))
+  (throw 'abort nil))
+
+(defun input-goto-char (input point)
+  "Move the cursor to the specified point in the string"
+  (setf (input-line-position input) (min (max 0 point)
+					 (length (input-line-string input)))))
+
+(defun input-insert-string (input string)
+  "Insert the string into the input string at the cursor position"
+  (check-type string string)
+  ;; FIXME: obviously this is substandard
+  (map nil (lambda (c) (input-insert-char input c))
+       string))
+
+(defun input-point (input)
+  "Return the position of the cursor."
+  (check-type input input-line)
+  (input-line-position input))
+
+(defun input-validate-region (input start end)
+  "Return a value pair of numbers where the first number is < the
+second and neither excedes the bounds of the input string."
+  (values (max 0 (min start end))
+	  (min (length (input-line-string input))
+		 (max start end))))
+
+(defun input-delete-region (input start end)
+  "Delete the region between start and end in the input string"
+  (check-type input input-line)
+  (check-type start fixnum)
+  (check-type end fixnum)
+  (multiple-value-setq (start end) (input-validate-region input start end))
+  (replace (input-line-string input) (input-line-string input)
+	   :start2 end :start1 start)
+  (decf (fill-pointer (input-line-string input)) (- end start))
+  (cond
+    ((< (input-line-position input) start))
+    ((< (input-line-position input) end)
+     (setf (input-line-position input) start))
+    (t
+     (decf (input-line-position input) (- end start)))))
+
+(defun input-insert-char (input char)
+  "Insert the specified character into the input string at the cursor position."
+  (vector-push-extend #\_ (input-line-string input))
+  (replace (input-line-string input) (input-line-string input)
+	   :start2 (input-line-position input) :start1 (1+ (input-line-position input)))
+  (setf (char (input-line-string input) (input-line-position input)) char)
+  (incf (input-line-position input)))
+
+(defun input-substring (input start end)
+  "Return a the substring in INPUT bounded by START and END."
+  (subseq (input-line-string input) start end))
+
+
+;;; "interactive" input functions
+
+(defvar *input-current-completions* nil
+  "The list of matching completions.")
+
+(defvar *input-current-completions-idx* nil
+  "The current index in the current completions list.")
+
+(defun input-find-completions (str completions)
+  (remove-if-not (lambda (elt)
+		   (string= str elt
+			    :end1 (min (length str)
+				       (length elt))
+			    :end2 (min (length str)
+				       (length elt))))
+		 completions))
+
+(defun input-complete (input direction)
+  ;; reset the completion list if this is the first time they're
+  ;; trying to complete.
+  (unless (find *input-last-command* '(input-complete-forward
+				       input-complete-backward))
+    (setf *input-current-completions* (input-find-completions (input-substring input 0 (input-point input)) *input-completions*)
+	  *input-current-completions-idx* -1))
+  (if *input-current-completions*
+      (progn
+	;; Insert the next completion
+	(input-delete-region input 0 (input-point input))
+	(if (eq direction :forward)
+	    (progn
+	      (incf *input-current-completions-idx*)
+	      (when (>= *input-current-completions-idx* (length *input-current-completions*))
+		(setf *input-current-completions-idx* 0)))
+	    (progn
+	      (decf *input-current-completions-idx*)
+	      (when (< *input-current-completions-idx* 0)
+		(setf *input-current-completions-idx* (1- (length *input-current-completions*))))))
+	(input-insert-string input (nth *input-current-completions-idx* *input-current-completions*))
+	(input-insert-char input #\Space))
+      :error))
+
+(defun input-complete-forward (input key)
+  (declare (ignore key))
+  (input-complete input :forward))
+
+(defun input-complete-backward (input key)
+  (declare (ignore key))
+  (input-complete input :backward))
 
 (defun input-delete-backward-char (input key)
   (declare (ignore key))
@@ -343,27 +472,6 @@
 	 (setf (input-line-string input) (make-input-string (elt *input-history* (input-line-history input)))
 	       (input-line-position input) (length (input-line-string input))))))
 
-(defun input-submit (input key)
-  (declare (ignore input key))
-  :done)
-
-(defun input-abort (input key)
-  (declare (ignore input key))
-  (throw 'abort nil))
-
-(defun input-insert-string (input string)
-  (check-type string string)
-  ;; FIXME: obviously this is substandard
-  (map nil (lambda (c) (input-insert-char input c))
-       string))
-
-(defun input-insert-char (input char)
-  (vector-push-extend #\_ (input-line-string input))
-  (replace (input-line-string input) (input-line-string input)
-	   :start2 (input-line-position input) :start1 (1+ (input-line-position input)))
-  (setf (char (input-line-string input) (input-line-position input)) char)
-  (incf (input-line-position input)))
-
 (defun input-self-insert (input key)
   (let ((char (xlib:keysym->character *display* (key-keysym key))))
     (if (or (key-mods-p key) (null char))
@@ -377,6 +485,9 @@
       (input-insert-string input *x-selection*)
       (xlib:convert-selection :primary :string (screen-input-window (current-screen)) :stumpwm-selection)))
 
+
+;;; Misc functions
+
 (defun process-input (screen prompt input code state)
   "Process the key (code and state), given the current input
 buffer. Returns a new modified input buffer."
@@ -387,7 +498,9 @@ input (pressing Return), nil otherwise."
 			(let* ((key (code-state->key code state))
 			       (command (and key (lookup-key *input-map* key t))))
 			  (if command
-			      (funcall command input key)
+			      (prog1
+				(funcall command input key)
+				(setf *input-last-command* command))
 			    :error))))
     (case (process-key code state)
       (:done 

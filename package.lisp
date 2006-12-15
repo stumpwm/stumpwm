@@ -19,9 +19,15 @@
 	   #:*message-window-gravity*
 	   ;; input bar
 	   #:read-one-line
+	   #:completing-read
 	   #:read-one-char
 	   #:input-insert-string
 	   #:input-insert-char
+	   #:input-goto-char
+	   #:input-point
+	   #:input-validate-region
+	   #:input-delete-region
+	   #:input-substring
 	   #:*input-map*
 	   #:*input-window-gravity*
 	   ;; keys

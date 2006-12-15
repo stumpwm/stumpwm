@@ -1,3 +1,29 @@
+2006-12-15  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* user.lisp (all-commands): new function
+	("select"): change arg type to :window-name
+	(parse-and-run-command): use completing-read on some arg types
+	("colon"): using completing-read
+	("pull"): change arg type to :window-number
+	("gselect"): change arg type to :group-name
+
+	* input.lisp (*input-map*): bind TAB and ISO_Left_Tab to tab completion
+	(*input-last-command*): new global
+	(*input-completions*): likewise
+	(completing-read): new function
+	(read-one-line): set *input-last-command* to null
+	(input-point): new function
+	(input-validate-region): likewise
+	(input-delete-region): likewise
+	(input-substring): likewise
+	(*input-current-completions*): new global var
+	(*input-current-completions-idx*): likewise
+	(input-find-completions): new function
+	(input-complete): likewise
+	(input-complete-forward): likewise
+	(input-complete-backward): likewise
+	(process-input): set *input-last-command* to last command
+
 2006-12-14  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp ("snext"): show frame indicator
