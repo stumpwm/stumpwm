@@ -597,7 +597,8 @@ give the last accessed window focus."
   (let* ((screen (group-screen group)))
     (when (eq group (screen-current-group screen))
       (xlib:set-input-focus *display* (screen-focus-window screen) :POINTER-ROOT)
-      (setf (screen-focus screen) nil))
+      (setf (screen-focus screen) nil)
+      (move-screen-to-head screen))
     (when last-win
       (setf (xlib:window-border (window-parent last-win)) (get-color-pixel screen *unfocus-color*)))))
 
@@ -1138,7 +1139,14 @@ windows used to draw the numbers in. The caller must destroy them."
 
 ;;; Screen functions
 
-(defun next-screen (&optional (list *screen-list*))
+(defun sort-screens ()
+  "Return the list of screen sorted by ID."
+  (sort1 *screen-list*
+	 (lambda (a b)
+	   (< (screen-id a)
+	      (screen-id b)))))
+
+(defun next-screen (&optional (list (sort-screens)))
   (let ((matches (member (current-screen) list)))
     (if (null (cdr matches))
 	;; If the last one in the list is current, then
@@ -1148,19 +1156,23 @@ windows used to draw the numbers in. The caller must destroy them."
 	(cadr matches))))
 
 (defun move-screen-to-head (screen)
-  (setf *screen-list* (delete screen *screen-list*))
+  (setf *screen-list* (remove screen *screen-list*))
   (push screen *screen-list*))
 
 (defun switch-to-screen (screen)
-  (when screen
-    (let ((group (screen-current-group screen)))
-      (focus-frame group (tile-group-current-frame group)))))
+  (when (and screen
+	     (not (eq screen (current-screen))))
+    (if (screen-focus screen)
+	(xlib:set-input-focus *display* (window-xwin (screen-focus screen)) :POINTER-ROOT)
+	(xlib:set-input-focus *display* (screen-focus-window screen) :POINTER-ROOT))
+    (move-screen-to-head screen)))
 
 (defun screen-set-focus (screen window)
   (when (eq (window-group window)
 	    (screen-current-group screen))
     (xlib:set-input-focus *display* (window-xwin window) :POINTER-ROOT)
-    (setf (screen-focus screen) window)))
+    (setf (screen-focus screen) window)
+    (move-screen-to-head screen)))
 
 (defun screen-current-window (screen)
   (group-current-window (screen-current-group screen)))
@@ -1293,19 +1305,10 @@ the nth entry to highlight."
   (echo-string-list screen (split-string msg (string #\Newline))))
 
 (defun current-screen ()
-  "Return the current screen. The current screen is the screen whose
-window has focus. If no window has focus it is the screen that last had
-focus of a window. *CURRENT-SCREEN* overrides this process."
-  (or *current-screen*
-      (let* ((win (xlib:input-focus *display*))
-	     (screen (xwin-screen win)))
-	;; We MUST be able to figure out the current screen by this method
-	(assert screen)
-	;; Return the current screen
-	(prog1
-	    screen))))
+  "Return the current screen."
+  (car *screen-list*))
 
-(defun init-screen (screen-number)
+(defun init-screen (screen-number id)
   "Given a screen number, returns a screen structure with initialized members"
   ;; Listen for the window manager events on the root window
   (setf (xlib:window-event-mask (xlib:screen-root screen-number))
@@ -1359,6 +1362,7 @@ focus of a window. *CURRENT-SCREEN* overrides this process."
     (xlib:map-window focus-window)
     (xwin-grab-keys focus-window)
     (setf (screen-number screen) screen-number
+	  (screen-id screen) id
 	  (screen-groups screen) (list group)
 	  (screen-current-group screen) group
 	  (screen-font screen) font
@@ -1588,13 +1592,11 @@ KMAP and return the binding or nil if the user hit an unbound sequence."
 		 ;; this force output is crucial. Without it weird
 		 ;; things happen if an error happens later on.
 		 (xlib:display-force-output *display*))))
-      (let* ((screen (find-screen root))
-	     (*current-screen* screen))
-	(multiple-value-bind (cmd key-seq) (get-cmd screen code state)
-	  (unmap-message-window screen)
-	  (if cmd
-	      (interactive-command cmd screen)
-	      (echo-string screen (format nil "~{~a ~}not bound." (mapcar 'print-key (nreverse key-seq))))))))))
+      (multiple-value-bind (cmd key-seq) (get-cmd (current-screen) code state)
+	(unmap-message-window (current-screen))
+	(if cmd
+	    (interactive-command cmd (current-screen))
+	    (echo-string (current-screen) (format nil "~{~a ~}not bound." (mapcar 'print-key (nreverse key-seq)))))))))
 
 (defun bytes-to-window (bytes)
   "A sick hack to assemble 4 bytes into a 32 bit number. This is

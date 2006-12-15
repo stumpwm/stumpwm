@@ -238,6 +238,7 @@ single char keys are supported.")
   "A mapping from modifier type to x11 modifier.")
 
 (defstruct screen
+  id
   number
   ;; the list of groups available on this screen
   groups
@@ -263,10 +264,6 @@ single char keys are supported.")
   focus
   last-msg
   last-msg-highlights)
-
-(defvar *current-screen* nil
-  "When this is non-nil use it as the current screen. Don't use
-this var. Just call current-screen.")
 
 (defmethod print-object ((object screen) stream)
   (format stream "#S<screen ~s>" (screen-number object)))

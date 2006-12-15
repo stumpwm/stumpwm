@@ -1041,7 +1041,7 @@ commands or don't know lisp very well."
   (switch-to-screen (next-screen)))
 
 (define-stumpwm-command "sprev" ()
-  (switch-to-screen (next-screen (reverse *screen-list*))))
+  (switch-to-screen (next-screen (reverse (sort-screens)))))
 
 (define-stumpwm-command "sother" ()
   (switch-to-screen (cadr *screen-list*)))

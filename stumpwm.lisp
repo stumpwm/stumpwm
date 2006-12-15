@@ -131,16 +131,21 @@ loaded."
         (update-modifier-map)
 	;; Initialize all the screens
 	(handler-case
-	 (setf *screen-list* (mapcar #'init-screen (xlib:display-roots *display*)))
+	 (setf *screen-list* (loop for i in (xlib:display-roots *display*)
+				  for n from 0
+				  collect (init-screen i n)))
 	 (xlib:access-error (c)
            (declare (ignore c))
            (return-from stumpwm (write-line "Another window manager is running."))))
 	;; Initialize the necessary atoms
 	(init-atoms)
 	(mapc 'process-existing-windows *screen-list*)
-	;; Give the first screen's frame focus
-	(let ((group (screen-current-group (first *screen-list*))))
-	  (focus-frame group (tile-group-current-frame group)))
+	;; We need to setup each screen with its current window. Go
+	;; through them in reverse so the first screen's frame ends up
+	;; with focus.
+	(dolist (s (reverse *screen-list*))
+	  (let ((group (screen-current-group s)))
+	    (focus-frame group (tile-group-current-frame group))))
         ;; Set the DISPLAY-environment-variable properly. This is
         ;; necessary if Stumpwm is running from a Lisp in another
         ;; X-display.
