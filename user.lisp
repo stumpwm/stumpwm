@@ -279,6 +279,27 @@
 (define-stumpwm-command "other" ()
   (other-window (screen-current-group (current-screen))))
 
+(defun programs-in-path (base &optional full-path (path (split-string (getenv "PATH") ":")))
+  "Return a list of programs in the path that start with BASE. if
+FULL-PATH is T then return the full path, otherwise just return
+the filename."
+  (loop
+     for p in path
+     for dir = (probe-file p)
+     when dir
+     nconc (loop
+	      for file in (directory (merge-pathnames (make-pathname :name :wild) dir))
+	      for namestring = (file-namestring file)
+	      when (and (string= base namestring
+				 :end1 (min (length base)
+					    (length namestring))
+				 :end2 (min (length base)
+					    (length namestring)))
+			(pathname-is-executable-p file))
+	      collect (if full-path 
+			  (namestring file)
+			  namestring))))
+
 (defun run-shell-command (cmd &optional collect-output-p)
   "Run a shell command in the background or wait for it to finish
 and collect the output if COLLECT-OUTPUT-P is T. Warning! if
@@ -288,7 +309,7 @@ returns..which could be forever if you're not careful."
       (run-prog-collect-output *shell-program* "-c" cmd)
       (run-prog *shell-program* :args (list "-c" cmd) :wait nil)))
 
-(define-stumpwm-command "exec" ((cmd :rest "/bin/sh -c "))
+(define-stumpwm-command "exec" ((cmd :shell "/bin/sh -c "))
   (run-shell-command cmd))
 
 (defun horiz-split-frame (group)
@@ -541,6 +562,12 @@ aborted."
 					    (throw 'error "Frame not found."))
 					(or (choose-frame-by-number (screen-current-group screen))
 					    (throw 'error "Abort.")))))
+				 (:shell
+				  (if (null str)
+				      (completing-read screen prompt 'programs-in-path)
+				      (prog1
+					  (format nil "~{~A~^ ~}" str)
+					(setf str nil))))
 				 (:rest
 				  (if (null str)
 				      (when prompt
@@ -1072,3 +1099,10 @@ commands or don't know lisp very well."
 (define-stumpwm-command "sother" ()
   (switch-to-screen (cadr *screen-list*))
   (show-frame-indicator (screen-current-group (current-screen))))
+
+(define-stumpwm-command "insert" ((string :rest "Insert: "))
+  (when (screen-current-window (current-screen))
+    (map nil (lambda (ch) 
+	       (send-fake-key (screen-current-window (current-screen))
+			      (make-key :keysym (stumpwm-name->keysym (string ch)))))
+	 string)))

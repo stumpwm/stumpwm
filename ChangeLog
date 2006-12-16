@@ -1,3 +1,15 @@
+2006-12-16  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* user.lisp (programs-in-path): new function
+	("exec"): change arg to type :shell
+	(parse-and-run-command): handle :shell type
+	("insert"): new command
+
+	* primitives.lisp (pathname-is-executable-p): new function
+
+	* input.lisp (completing-read): check the type of completions argument
+	(input-find-completions): handle the case where completions is a function
+
 2006-12-15  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp (all-commands): new function

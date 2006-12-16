@@ -448,6 +448,13 @@ Useful for re-using the &REST arg after removing some options."
   #-(or allegro clisp cmu gcl lispworks lucid sbcl scl)
   (error 'not-implemented :proc (list '(setf getenv) var)))
 
+(defun pathname-is-executable-p (pathname)
+  #+sbcl
+  (let ((filename (coerce (sb-int:unix-namestring pathname) 'base-string)))
+    (and (eq (sb-unix:unix-file-kind filename) :file)
+	 (sb-unix:unix-access filename sb-unix:x_ok)))
+  ;; FIXME: add the code for clisp
+  #-sbcl t)
 
 (defun split-string (string &optional (separators " 
 "))

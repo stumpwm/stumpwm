@@ -68,6 +68,8 @@
 	   #:toggle-mode-line
 	   ;; shell
 	   #:run-shell-command
+	   #:programs-in-path
+	   #:pathname-is-executable-p
 	   #:*shell-program*
 	   #:getenv
 	   ;; selection

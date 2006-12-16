@@ -158,7 +158,12 @@
 	      :adjustable t :fill-pointer t))
   
 (defun completing-read (screen prompt completions &optional (initial-input ""))
-  "Read a line of input through stumpwm and return it with TAB completion."
+  "Read a line of input through stumpwm and return it with TAB
+completion. completions can be a list, an fbound symbol, or a
+function. if its an fbound symbol or a function then that
+function is passed the substring to complete on and is expected
+to return a list of matches."
+  (check-type completions (or list function symbol))
   (let ((*input-completions* completions)
 	(*input-current-completions* nil)
 	(*input-current-completions-idx* nil))
@@ -334,13 +339,16 @@ second and neither excedes the bounds of the input string."
   "The current index in the current completions list.")
 
 (defun input-find-completions (str completions)
-  (remove-if-not (lambda (elt)
-		   (string= str elt
-			    :end1 (min (length str)
-				       (length elt))
-			    :end2 (min (length str)
-				       (length elt))))
-		 completions))
+  (if (or (functionp completions)
+	  (symbolp completions))
+      (funcall completions str)
+      (remove-if-not (lambda (elt)
+		       (string= str elt
+				:end1 (min (length str)
+					   (length elt))
+				:end2 (min (length str)
+					   (length elt))))
+		     completions)))
 
 (defun input-complete (input direction)
   ;; reset the completion list if this is the first time they're

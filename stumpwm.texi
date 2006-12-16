@@ -698,6 +698,10 @@ Read a line of input from the user.
 Read one character from the user.
 @end defun
 
+@defun completing-read @var{screen} @var{prompt} @var{completions} &optional @var{initial-input}
+
+@end defun
+
 @defun input-insert-string @var{input} @var{string}
 Insert @var{string} into the input at the current
 position. @var{input} must be of type @var{input-line}. Input
@@ -1087,6 +1091,18 @@ careful. If the shell command doesn't return, it will hang StumpWM. In
 such a case, kill the shell command to resume StumpWM.
 @end defun
 
+@defun programs-in-path @var{base} @var{full-path} &optional @var{path}
+Return a list of programs in the path that start with @var{base}. if
+@var{full-path} is @var{t} then return the full path, otherwise just
+return the filename. @var{path} is by default the @env{PATH}
+evironment variable but can be specified. It should be a string containing
+each directory seperated by a colon.
+@end defun
+
+@defun pathname-is-executable-p @var{pathname}
+Return T if the pathname describes an executable file.
+@end defun
+
 @defvar *shell-program*
 The shell program used by @code{run-shell-command}.
 @end defvar
@@ -1135,6 +1151,10 @@ Display time.
 
 @deffn {Command} eval @var{s-expression}
 Evaluate the lisp s-expression and display the result.
+@end deffn
+
+@deffn {Command} insert @var{string}
+Send the string of characters to the current window as if they'd been typed.
 @end deffn
 
 @deffn {Command} reload
