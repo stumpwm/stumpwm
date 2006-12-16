@@ -1100,14 +1100,18 @@ commands or don't know lisp very well."
   (switch-to-screen (cadr *screen-list*))
   (show-frame-indicator (screen-current-group (current-screen))))
 
-(define-stumpwm-command "insert" ((string :rest "Insert: "))
-  (when (screen-current-window (current-screen))
+(defun window-send-string (window string)
+  "Send the string of characters to the window as if they'd been typed."
+  (when window
     (map nil (lambda (ch) 
 	       ;; exploit the fact that keysyms for ascii characters
 	       ;; are the same as their ascii value.
 	       (let ((sym (when (<= 32 (char-code ch) 127)
 			    (char-code ch))))
 		 (when sym
-		   (send-fake-key (screen-current-window (current-screen))
+		   (send-fake-key window
 				  (make-key :keysym sym)))))
 	 string)))
+
+(define-stumpwm-command "insert" ((string :rest "Insert: "))
+  (window-send-string (screen-current-window (current-screen)) string))

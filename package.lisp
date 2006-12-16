@@ -84,6 +84,7 @@
 	   #:*window-formatters*
 	   #:*window-format*
 	   #:def-window-attr
+	   #:window-send-string
 	   ;; frames
 	   #:*frame-number-map*
 	   ))

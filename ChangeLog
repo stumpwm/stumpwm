@@ -4,6 +4,8 @@
 	("exec"): change arg to type :shell
 	(parse-and-run-command): handle :shell type
 	("insert"): new command
+	(window-send-string): new function
+	("insert"): use window-send-string
 
 	* primitives.lisp (pathname-is-executable-p): new function
 

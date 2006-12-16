@@ -820,6 +820,10 @@ The color given to the border of all windows without focus.
 Create a new window attribute and corresponding get/set functions.
 @end defmac
 
+@defun window-send-string @var{window} @var{string}
+Send the string of characters to the window as if they'd been typed.
+@end defun
+
 @node Frames, Mode-line, Windows, Top
 @chapter Frames
 Frames contain windows. All windows exist within a frame.
