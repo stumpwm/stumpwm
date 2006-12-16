@@ -1103,6 +1103,11 @@ commands or don't know lisp very well."
 (define-stumpwm-command "insert" ((string :rest "Insert: "))
   (when (screen-current-window (current-screen))
     (map nil (lambda (ch) 
-	       (send-fake-key (screen-current-window (current-screen))
-			      (make-key :keysym (stumpwm-name->keysym (string ch)))))
+	       ;; exploit the fact that keysyms for ascii characters
+	       ;; are the same as their ascii value.
+	       (let ((sym (when (<= 32 (char-code ch) 127)
+			    (char-code ch))))
+		 (when sym
+		   (send-fake-key (screen-current-window (current-screen))
+				  (make-key :keysym sym)))))
 	 string)))
