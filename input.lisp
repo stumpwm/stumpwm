@@ -34,7 +34,9 @@
   (setf *input-map*
 	(let ((map (make-sparse-keymap)))
 	  (define-key map (kbd "DEL") 'input-delete-backward-char)
+	  (define-key map (kbd "M-DEL") 'input-backward-kill-word)
 	  (define-key map (kbd "C-d") 'input-delete-forward-char)
+	  (define-key map (kbd "M-d") 'input-forward-kill-word)
 	  (define-key map (kbd "Delete") 'input-delete-forward-char)
 	  (define-key map (kbd "C-f") 'input-forward-char)
 	  (define-key map (kbd "Right") 'input-forward-char)
@@ -404,6 +406,18 @@ second and neither excedes the bounds of the input string."
 	   (replace (input-line-string input) (input-line-string input)
 		    :start1 pos :start2 (1+ pos))
 	   (decf (fill-pointer (input-line-string input)))))))
+
+(defun input-forward-kill-word (input key)
+  (declare (ignore key))
+  (let* ((p1 (position-if 'alphanumericp (input-line-string input) :start (input-line-position input)))
+	 (p2 (and p1 (position-if-not 'alphanumericp (input-line-string input) :start p1))))
+    (input-delete-region input (input-point input) (or p2 (length (input-line-string input))))))
+
+(defun input-backward-kill-word (input key)
+  (declare (ignore key))
+  (let* ((p1 (position-if 'alphanumericp (input-line-string input) :end (input-line-position input) :from-end t))
+	 (p2 (and p1 (position-if-not 'alphanumericp (input-line-string input) :end p1 :from-end t))))
+    (input-delete-region input (input-point input) (or (and p2 (1+ p2)) 0))))
 
 (defun input-forward-word (input key)
   (declare (ignore key))

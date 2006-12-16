@@ -1,5 +1,9 @@
 2006-12-16  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* input.lisp (input-forward-kill-word): new function
+	(input-backward-kill-word): likewise
+	(*input-map*): bind M-d and M-DEL
+
 	* user.lisp (programs-in-path): new function
 	("exec"): change arg to type :shell
 	(parse-and-run-command): handle :shell type

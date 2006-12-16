@@ -616,9 +616,15 @@ The following is a list of keybindings for the input bar.
 @item DEL
 delete-backward-char
 
+@item M-DEL
+backward-kill-word
+
 @item C-d
 @itemx Delete
 delete-forward-char
+
+@item M-d
+forward-kill-word
 
 @item C-f
 @itemx Right
