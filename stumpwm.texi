@@ -746,8 +746,9 @@ Tell X to disconnect the client that owns the current window.if
 @command{delete} didn't work, try this.
 @end deffn
 
-@deffn {Command} windows
-Display a list of managed windows.
+@deffn {Command} windows @var{fmt}
+Display a list of managed windows. The optional argument @var{fmt} can
+be used to override the default window formatting.
 @end deffn
 
 @deffn {Command} other
@@ -767,9 +768,11 @@ Send a fake key to the current window. @var{key} is a typical StumpWM key, like 
 Switch to the first window that starts with @var{substring}.
 @end deffn
 
-@deffn {Command} windowlist
+@deffn {Command} windowlist @var{fmt}
 Allow the user to Select a window from the list of windows and focus
-the selected window. For information of menu bindings @xref{Menus}.
+the selected window. For information of menu bindings
+@xref{Menus}. The optional argument @var{fmt} can be specified to
+override the default window formatting.
 @end deffn
 
 @defvar *window-format*
@@ -915,7 +918,7 @@ screen has its own mode line. For example:
 
 @example
 ;; turn on/off the mode line for the current screen only.
-(stumpwm:toggle-mode-line (current-screen))
+(stumpwm:toggle-mode-line (stumpwm:current-screen))
 
 ;; turn on/off the mode-line for all the screens
 (mapc 'stumpwm:toggle-mode-line stumpwm:*screen-list*)
@@ -1009,13 +1012,17 @@ Cycle to the next group in the group list.
 Cycle to the previous group in the group list.
 @end deffn
 
-@deffn {Command} groups
+@deffn {Command} groups @var{fmt}
 Display the list of groups with their number and
-name. @var{*group-format*} controls the formatting.
+name. @var{*group-format*} controls the formatting. The optional
+argument @var{fmt} can be used to override the default group
+formatting.
 @end deffn
 
-@deffn {Command} vgroups
-Like @command{groups} but also display the windows in each group.
+@deffn {Command} vgroups @var{gfmt} @var{wfmt}
+Like @command{groups} but also display the windows in each group. The
+optional arguments @var{gfmt} and @var{fmt} can be used to override
+the default group formatting and window formatting, respectively.
 @end deffn
 
 @deffn {Command} gselect @var{substring}
@@ -1082,6 +1089,21 @@ StumpWM handles multiple screens.
 Currently StumpWM doesn't explicitly handle Xinerama. Though, it
 shouldn't break StumpWM.
 
+@node
+@chapter Programming With Screens
+
+@defun current-screen
+Return the current screen
+@end defun
+
+@defun screen-current-window @var{screen}
+Return the current window on the specified screen
+@end defun
+
+@defvar *screen-list*
+The list of screens managed by stumpwm.
+@end defvar
+        
 @node Interacting With Unix, Interacting With X11, Screens, Top
 @chapter Interacting With Unix
 
@@ -1205,9 +1227,48 @@ know lisp very well. One might put the following in one's rc file:
 @end defun
 
 
-@defun define-stumpwm-command @var{name} (@var{var} @var{type} @var{prompt}) ...
-Create a new command with the name @var{name}.
-@end defun
+@defmac define-stumpwm-command @var{name} ((@var{var} @var{type} @var{prompt}) ...) &body @var{body}
+Create a new command with the name @var{name}. @var{prompt} is
+optional. If left out, stumpwm will not prompt for the variable and it
+will be set to nil.
+@end defmac
+
+@defmac define-stumpwm-type @var{type} (@var{input} @var{prompt}) &body @var{body}
+Create a new type that can be used for command arguments. @var{type} can be any symbol. 
+
+When @var{body} is evaluated @var{input} is bound to the
+argument-line. It is passed to @code{argument-pop},
+@code{argument-pop-rest}, etc. @var{prompt} is the prompt that should
+be used when prompting the user for the argument.
+
+@example
+(define-stumpwm-type :symbol (input prompt)
+ (or (find-symbol (string-upcase
+		     (or (argument-pop input)
+                         ;; Whitespace messes up find-symbol.
+		         (string-trim " "
+		           (completing-read (current-screen)
+					  prompt
+					  ;; find all symbols in the
+					  ;;  stumpwm package.
+					  (let (acc)
+					    (do-symbols (s (find-package "STUMPWM"))
+					      (push (string-downcase (symbol-name s)) acc))
+					    acc)))
+                      (throw 'error "Abort.")))
+                  "STUMPWM")
+     (throw 'error "Symbol not in STUMPWM package")))
+
+(define-stumpwm-command "symbol" ((sym :symbol "Pick a symbol: "))
+  (echo-string (current-screen) (with-output-to-string (s)
+				  (describe sym s))))
+@end example
+
+This code creates a new type called @code{:symbol} which finds the
+symbol in the stumpwm package. The command @code{symbol} uses it and
+then describes the symbol.
+
+@end defmac
 
 @menu
 * Menus::                       

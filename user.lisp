@@ -223,8 +223,8 @@
 	  (mapcar (lambda (w)
 		    (format-expand *group-formatters* *group-format* w)) (sort-groups (group-screen group)))))
 
-(define-stumpwm-command "windows" ()
-  (echo-windows (screen-current-group (current-screen)) *window-format*))
+(define-stumpwm-command "windows" ((fmt :rest))
+  (echo-windows (screen-current-group (current-screen)) (or fmt *window-format*)))
 
 (defun echo-date ()
   "Print the output of the 'date' command to the screen."
@@ -486,131 +486,181 @@ string between them."
 	collect (subseq string i j)
 	while j))
 
-(defun parse-and-run-command (input screen)
+(defstruct argument-line
+  string start)
+
+(defvar *command-type-hash* (make-hash-table)
+  "A hash table of types and functions to deal with these types.")
+
+(defun argument-line-end-p (input)
+  "Return T if we're outta arguments from the input line."
+  (>= (argument-line-start input)
+      (length (argument-line-string input))))
+
+(defun argument-pop (input)
+  "Pop the next argument off."
+  (unless (argument-line-end-p input)
+    (let* ((p1 (position-if-not (lambda (ch)
+				  (char= ch #\Space))
+				(argument-line-string input)
+				:start (argument-line-start input)))
+	   (p2 (or (and p1 (position #\Space (argument-line-string input) :start p1))
+		   (length (argument-line-string input)))))
+      (prog1
+	  ;; we wanna return nil if they're the same
+	  (unless (= p1 p2)
+	    (subseq (argument-line-string input) p1 p2))
+	(setf (argument-line-start input) (1+ p2))))))
+
+(defun argument-pop-rest (input)
+  "Return the remainder of the argument text."
+  (unless (argument-line-end-p input)
+    (prog1
+	(subseq (argument-line-string input) (argument-line-start input))
+      (setf (argument-line-start input) (length (argument-line-string input))))))
+
+(defmacro define-stumpwm-type (type (input prompt) &body body)
+  `(setf (gethash ,type *command-type-hash*) 
+	 (lambda (,input ,prompt)
+	   ,@body)))
+
+(define-stumpwm-type :window-number (input prompt)
+  (let ((n (or (argument-pop input)
+	       (completing-read (current-screen)
+				prompt
+				(mapcar 'prin1-to-string
+					(mapcar 'window-number 
+						(group-windows (screen-current-group (current-screen)))))))))
+    (when n
+      (handler-case
+	  (parse-integer n)
+	(parse-error (c)
+	  (declare (ignore c))
+	  (throw 'error "Number required."))))))
+
+(define-stumpwm-type :number (input prompt)
+  (let ((n (or (argument-pop input)
+	       (read-one-line (current-screen) prompt))))
+    (when n
+      (handler-case
+	  (parse-integer n)
+	(parse-error (c)
+	  (declare (ignore c))
+	  (throw 'error "Number required."))))))
+  
+
+(define-stumpwm-type :string (input prompt)
+  (or (argument-pop input)
+      (read-one-line (current-screen) prompt)))
+
+(define-stumpwm-type :key (input prompt)
+  (let ((s (or (argument-pop input)
+	       (read-one-line (current-screen) prompt))))
+    (when s
+      (kbd s))))
+
+(define-stumpwm-type :window-name (input prompt)
+  (or (argument-pop input)
+      (completing-read (current-screen) prompt
+		       (mapcar 'window-name 
+			       (group-windows (screen-current-group (current-screen)))))))
+
+(define-stumpwm-type :group-name (input prompt)
+  (or (argument-pop input)
+      (completing-read (current-screen) prompt
+		       (mapcar 'group-name
+			       (screen-groups (current-screen))))))
+
+(define-stumpwm-type :group (input prompt)
+  (or 
+   (find (string-trim " " (or (argument-pop input)
+			     (completing-read (current-screen) prompt
+					      (mapcar 'group-name
+						      (screen-groups (current-screen))))))
+	(screen-groups (current-screen))
+	:test 'string=
+	:key 'group-name)
+   (throw 'error "No Such Group.")))
+
+(define-stumpwm-type :frame (input prompt)
+  (declare (ignore prompt))
+  (let ((arg (argument-pop input)))
+    (if arg
+	(or (find arg (group-frames (screen-current-group (current-screen)))
+		  :key (lambda (f)
+			 (string (get-frame-number-translation f)))
+		  :test 'string=)
+	    (throw 'error "Frame not found."))
+	(or (choose-frame-by-number (screen-current-group (current-screen)))
+	    (throw 'error "Abort.")))))
+
+(define-stumpwm-type :shell (input prompt)
+  (or (argument-pop-rest input)
+      (completing-read (current-screen) prompt 'programs-in-path)))
+
+(define-stumpwm-type :rest (input prompt)
+  (or (argument-pop-rest input)
+      (read-one-line (current-screen) prompt)))
+
+(defun parse-and-run-command (input)
   "Parse the command and its arguments given the commands argument
 specifications then execute it. Returns a string or nil if user
 aborted."
-  (let (str cmd arg-specs args)
-    (labels ((skip-spaces ()
-	       ;; A nice'n'gross side-effect loop
-	       (do ((s (car str) (car str)))
-		   ((or (null s)
-			(string/= s "")) str)
-		 (pop str)))
-	     (pop-or-read (prompt scrn &optional completions)
-	       (or (pop str)
-		   ;; If prompt is nil, then the argument is
-		   ;; considered optional.
-		   (unless (null prompt)
-		     (or (if completions
-			     (completing-read scrn prompt completions)
-			     (read-one-line scrn prompt))
-			 ;; read-one-line returns nil when the user aborts
-			 (throw 'error "Abort."))))))
-      ;; Catch parse errors
-      (catch 'error
-	;; Setup the input
-	(setf str (split-by-one-space input))
-	;; Make sure we have a valid command
-	(skip-spaces)
-	(setf cmd (gethash (pop str) *command-hash*))
-	(if cmd
-	    (setf arg-specs (command-args cmd))
-	    (throw 'error (format nil "Command '~a' not found." input)))
-	;; Create a list of args to pass to the function. If str is
-	;; snarfed and we have more args, then prompt the user for a
-	;; value.
-	(dformat "str: ~A~%" str)
-	(setf args (mapcar (lambda (spec)
-			     (let ((type (second spec))
-				   (prompt (third spec)))
-			       (skip-spaces)
-			       (case type
-				 (:window-number
-				  (let ((n (pop-or-read prompt screen 
-							(mapcar 'prin1-to-string
-								(mapcar 'window-number 
-									(group-windows (screen-current-group screen)))))))
-				    (when n
-				      (parse-integer n))))
-				 (:number 
-				  (let ((n (pop-or-read prompt screen)))
-				    (when n
-				      (parse-integer n))))
-				 (:string 
-				  (pop-or-read prompt screen))
-				 (:key
-				  (let ((s (pop-or-read prompt screen)))
-				    (when s
-				      (kbd s))))
-				 (:window-name
-				  (pop-or-read prompt screen (mapcar 'window-name (group-windows (screen-current-group screen)))))
-				 (:group-name 
-				  (pop-or-read prompt screen (mapcar 'group-name (screen-groups screen))))
-				 (:group
-				  (find (string-trim " " (pop-or-read prompt screen (mapcar 'group-name (screen-groups screen))))
-					(screen-groups screen) 
-					:test 'string=
-					:key 'group-name))
-				 (:frame
-				  (let ((arg (pop str)))
-				    (if arg
-					(or (find arg (group-frames (screen-current-group screen))
-						  :key (lambda (f)
-							 (string (get-frame-number-translation f)))
-						  :test 'string=)
-					    (throw 'error "Frame not found."))
-					(or (choose-frame-by-number (screen-current-group screen))
-					    (throw 'error "Abort.")))))
-				 (:shell
-				  (if (null str)
-				      (completing-read screen prompt 'programs-in-path)
-				      (prog1
-					  (format nil "~{~A~^ ~}" str)
-					(setf str nil))))
-				 (:rest
-				  (if (null str)
-				      (when prompt
-					(or (read-one-line screen prompt)
-					    (throw 'error "Abort.")))
-				      (prog1
-					  (format nil "~{~A~^ ~}" str)
-					(setf str nil))))
-				 ;; FIXME: for now this is an optional :rest argument
-				 (:optional
-				  (when str
-				    (prog1
-					(format nil "~{~A~^ ~}" str)
-				      (setf str nil))))
-				 (t (throw 'error "Bad argument type")))))
-			   arg-specs))
-	;; Did the whole string get parsed? (get rid of trailing
-	;; spaces)
-	(dformat "arguments: ~S~%" args)
-	(unless (null (skip-spaces))
-	  (throw 'error (format nil "Trailing garbage: ~{~A~^ ~}" str)))
-	;; Success
-	(prog1
-	    (apply (command-fn cmd) args)
-	  (setf *last-command* (command-name cmd)))))))
+  ;; Catch parse errors
+  (catch 'error
+    (let* ((arg-line (make-argument-line :string input
+					 :start 0))
+	   (cmd-str (argument-pop arg-line))
+	   (cmd (or (gethash cmd-str *command-hash*)
+		    (throw 'error (format nil "Command '~a' not found." cmd-str))))
+	   (arg-specs (command-args cmd))
+	   ;; Create a list of args to pass to the function. If the
+	   ;; input is snarfed and we have more args, then prompt the
+	   ;; user for a value.
+	   (args (mapcar (lambda (spec)
+			   (let* ((type (second spec))
+				  (prompt (third spec))
+				  (fn (gethash type *command-type-hash*)))
+			     (unless fn
+			       (throw 'error (format nil "Bad argument type: ~s" type)))
+			     ;; If the prompt is NIL then it's
+			     ;; considered an optional argument
+			     ;; whose value is nil.
+			     (if (and (null prompt)
+				      (argument-line-end-p arg-line))
+				 nil
+				 ;; FIXME: Is it presumptuous to assume NIL means abort?
+				 (or (funcall fn arg-line prompt)
+				     (throw 'error "Abort.")))))
+			 arg-specs)))
+      (dformat "arguments: ~S~%" args)
+      ;; Did the whole string get parsed?
+      (unless (or (argument-line-end-p arg-line)
+		  (position-if 'alphanumericp (argument-line-string arg-line) :start (argument-line-start arg-line)))
+	(throw 'error (format nil "Trailing garbage: ~{~A~^ ~}" (subseq (argument-line-string arg-line) 
+									(argument-line-start arg-line)))))
+      ;; Success
+      (prog1
+	  (apply (command-fn cmd) args)
+	(setf *last-command* (command-name cmd))))))
 
-(defun interactive-command (cmd screen)
+(defun interactive-command (cmd)
   "exec cmd and echo the result."
-  (let ((result (handler-case (parse-and-run-command cmd screen)
+  (let ((result (handler-case (parse-and-run-command cmd)
 			      (error (c)
 				     (format nil "Error In Command '~a': ~A" cmd c)))))
     ;; interactive commands update the modeline
-    (when (screen-mode-line screen)
-      (redraw-mode-line-for (screen-mode-line screen) screen))
+    (when (screen-mode-line (current-screen))
+      (redraw-mode-line-for (screen-mode-line (current-screen)) (current-screen)))
     (when (stringp result)
-      (echo-string screen result))))
+      (echo-string (current-screen) result))))
 
-(define-stumpwm-command "colon" ((initial-input :optional "Initial Input: "))
+(define-stumpwm-command "colon" ((initial-input :rest))
   (let ((cmd (completing-read (current-screen) ": " (all-commands) (or initial-input ""))))
     (unless cmd
       (throw 'error "Abort."))
     (when (plusp (length cmd))
-      (interactive-command cmd (current-screen)))))
+      (interactive-command cmd))))
 
 (defun pull-window-by-number (group n)
   "Pull window N from another frame into the current frame and focus it."
@@ -939,7 +989,7 @@ be found, select it.  Otherwise simply run cmd."
   (group-forward (screen-current-group (current-screen))
 		 (reverse (sort-groups (current-screen)))))
 
-(defun echo-groups (screen fmt &optional verbose)
+(defun echo-groups (screen fmt &optional verbose (wfmt *window-format*))
   "Print a list of the windows to the screen."
   (let* ((groups (sort-groups screen))
 	 (names (reduce 'nconc 
@@ -949,17 +999,19 @@ be found, select it.  Otherwise simply run cmd."
 				   (when verbose
 				     (mapcar (lambda (w)
 					       (format-expand *window-formatters*
-							      (concatenate 'string "  " *window-format*)
+							      (concatenate 'string "  " wfmt)
 							      w))
 					     (sort-windows g)))))
 				groups))))
     (echo-string-list screen names)))
 
-(define-stumpwm-command "groups" ()
-  (echo-groups (current-screen) *group-format*))
+(define-stumpwm-command "groups" ((fmt :rest))
+  (echo-groups (current-screen) (or fmt *group-format*)))
 
-(define-stumpwm-command "vgroups" ()
-  (echo-groups (current-screen) *group-format* t))
+(define-stumpwm-command "vgroups" ((gfmt :string) (wfmt :rest))
+  (echo-groups (current-screen)
+	       (or gfmt *group-format*)
+	       t (or wfmt *window-format*)))
 
 (defun select-group (screen query)
   "Read input from the user and go to the selected window."
@@ -1068,13 +1120,13 @@ See *menu-map* for menu bindings."
 	(ungrab-keyboard)
 	(unmap-all-message-windows)))))
 
-(define-stumpwm-command "windowlist" ()
+(define-stumpwm-command "windowlist" ((fmt :rest))
   (let* ((group (screen-current-group (current-screen)))
 	 (window (when (group-windows group)
 		   (second (select-from-menu
 			    (current-screen)
 			    (mapcar (lambda (w)
-				      (list (format-expand *window-formatters* *window-format* w) w))
+				      (list (format-expand *window-formatters* (or fmt *window-format*) w) w))
 				    (sort-windows group))
 			    "")))))
     (if window
@@ -1086,7 +1138,7 @@ See *menu-map* for menu bindings."
 you're used to ratpoison's rc file and you just want to run
 commands or don't know lisp very well."
   (loop for i in commands do
-       (interactive-command i (current-screen))))
+       (interactive-command i)))
 
 (define-stumpwm-command "snext" ()
   (switch-to-screen (next-screen))

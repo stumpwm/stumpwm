@@ -6,6 +6,7 @@
 	   #:split-string
 	   #:*version*
 	   #:current-screen
+	   #:screen-current-window
 	   #:run-commands
 	   ;; message bar
 	   #:set-fg-color
@@ -42,6 +43,10 @@
 	   #:lookup-key
 	   ;; commands
 	   #:define-stumpwm-command
+	   #:define-stumpwm-type
+	   #:argument-pop
+	   #:argument-pop-rest
+	   #:argument-line-end-p
 	   ;; hooks
 	   #:run-hook-with-args
 	   #:run-hook

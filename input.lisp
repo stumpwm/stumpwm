@@ -71,6 +71,12 @@
 (defvar *input-completions* nil
   "The list of completions")
 
+(defvar *input-current-completions* nil
+  "The list of matching completions.")
+
+(defvar *input-current-completions-idx* nil
+  "The current index in the current completions list.")
+
 ;;; keysym functions
 
 (defun is-modifier (keysym)
@@ -188,7 +194,7 @@ to return a list of matches."
 			((process-input screen prompt input (car key) (cdr key))
 			 (return (input-line-string input)))))))
       (setup-input-window screen prompt input)
-      (catch 'abort
+      (catch :abort
 	(unwind-protect
 	     (key-loop)
 	  (shutdown-input-window screen))))))
@@ -277,7 +283,7 @@ to return a list of matches."
 
 (defun input-abort (input key)
   (declare (ignore input key))
-  (throw 'abort nil))
+  (throw :abort nil))
 
 (defun input-goto-char (input point)
   "Move the cursor to the specified point in the string"
@@ -333,12 +339,6 @@ second and neither excedes the bounds of the input string."
 
 
 ;;; "interactive" input functions
-
-(defvar *input-current-completions* nil
-  "The list of matching completions.")
-
-(defvar *input-current-completions-idx* nil
-  "The current index in the current completions list.")
 
 (defun input-find-completions (str completions)
   (if (or (functionp completions)

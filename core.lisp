@@ -730,8 +730,8 @@ maximized, and given focus."
 	       ((:bottom-right :bottom-left) (- screen-height h (* (xlib:drawable-border-width win) 2)))
 	       (:center (truncate (- screen-height h (* (xlib:drawable-border-width win) 2)) 2))
 	       (t 0))))
-      (setf (xlib:drawable-y win) y
-	    (xlib:drawable-x win) x))))
+      (setf (xlib:drawable-y win) (max 0 y)
+	    (xlib:drawable-x win) (max 0 x)))))
 
 (defun setup-message-window (screen l)
   (let ((height (* (length l)
@@ -1596,7 +1596,7 @@ KMAP and return the binding or nil if the user hit an unbound sequence."
       (multiple-value-bind (cmd key-seq) (get-cmd (current-screen) code state)
 	(unmap-message-window (current-screen))
 	(if cmd
-	    (interactive-command cmd (current-screen))
+	    (interactive-command cmd)
 	    (echo-string (current-screen) (format nil "~{~a ~}not bound." (mapcar 'print-key (nreverse key-seq)))))))))
 
 (defun bytes-to-window (bytes)
@@ -1619,7 +1619,7 @@ chunks."
 			(interactive-p (car data))
 			(cmd (map 'string 'code-char (nbutlast (cdr data)))))
 		   (declare (ignore interactive-p))
-		   (interactive-command cmd (current-screen))
+		   (interactive-command cmd)
 		   (xlib:change-property win :rp_command_result (map 'list 'char-code "0TODO") :string 8)
 		   (xlib:display-finish-output *display*)))
 	       bytes-after)))

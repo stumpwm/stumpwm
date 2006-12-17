@@ -1,8 +1,39 @@
 2006-12-16  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* core.lisp (setup-win-gravity): make sure the window doesn't go
+	off the left side of the screen.
+
+	* user.lisp ("windows"): take optional fmt arg
+	(argument-line): new struct
+	(*command-type-hash*): new global
+	(argument-line-end-p): new function
+	(argument-pop): likewise
+	(argument-pop-rest): likewise
+	(define-stumpwm-type): new macro
+	(:window-number): new command type
+	(:number): likewise
+	(:string): likewise
+	(:key): likewise
+	(:window-name): likewise
+	(:group-name): likewise
+	(:group): likewise
+	(:frame): likewise
+	(:shell): likewise
+	(:rest): likewise
+	(parse-and-run-command): use argument-line and *command-type-hash*
+	to read in arguments
+	(interactive-command): remove screen argument. all callers updated.
+	("colon"): use :rest as optional argument
+	(echo-groups): take a window format as an optional argument
+	("groups"): take optional fmt arg
+	("vgroups"): take optional group and window fmt args
+	("windowlist"): take option fmt arg
+
 	* input.lisp (input-forward-kill-word): new function
 	(input-backward-kill-word): likewise
 	(*input-map*): bind M-d and M-DEL
+	(read-one-line): catch :abort
+	(input-abort): throw :abort
 
 	* user.lisp (programs-in-path): new function
 	("exec"): change arg to type :shell
