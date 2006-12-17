@@ -87,6 +87,7 @@ This document explains how to use The Stump Window Manager.
 * Mode-line::                   
 * Groups::                      
 * Screens::                     
+* Programming With Screens::    
 * Interacting With Unix::       
 * Interacting With X11::        
 * Miscellaneous Commands::      
@@ -1076,7 +1077,7 @@ The group's name.
 All group related keybindings hang from this keymap.
 @end defvar
 
-@node Screens, Interacting With Unix, Groups, Top
+@node Screens, Programming With Screens, Groups, Top
 @chapter Screens
 StumpWM handles multiple screens.
 
@@ -1089,7 +1090,7 @@ StumpWM handles multiple screens.
 Currently StumpWM doesn't explicitly handle Xinerama. Though, it
 shouldn't break StumpWM.
 
-@node
+@node Programming With Screens, Interacting With Unix, Screens, Top
 @chapter Programming With Screens
 
 @defun current-screen
@@ -1104,7 +1105,7 @@ Return the current window on the specified screen
 The list of screens managed by stumpwm.
 @end defvar
         
-@node Interacting With Unix, Interacting With X11, Screens, Top
+@node Interacting With Unix, Interacting With X11, Programming With Screens, Top
 @chapter Interacting With Unix
 
 
