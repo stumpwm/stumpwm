@@ -1,5 +1,7 @@
 2006-12-16  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* sample-stumpwmrc.lisp: add a call to use-package
+
 	* core.lisp (setup-win-gravity): make sure the window doesn't go
 	off the left side of the screen.
 
