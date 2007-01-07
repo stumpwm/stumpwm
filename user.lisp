@@ -512,12 +512,26 @@ string between them."
 	    (subseq (argument-line-string input) p1 p2))
 	(setf (argument-line-start input) (1+ p2))))))
 
+(defun argument-pop-or-read (input prompt &optional completions)
+  (or (argument-pop input)
+      (if completions
+	  (completing-read (current-screen) prompt completions)
+	  (read-one-line (current-screen) prompt))
+      (throw 'error "Abort.")))
+
 (defun argument-pop-rest (input)
   "Return the remainder of the argument text."
   (unless (argument-line-end-p input)
     (prog1
 	(subseq (argument-line-string input) (argument-line-start input))
       (setf (argument-line-start input) (length (argument-line-string input))))))
+
+(defun argument-pop-rest-or-read (input prompt &optional completions)
+  (or (argument-pop-rest input)
+      (if completions
+	  (completing-read (current-screen) prompt completions)
+	  (read-one-line (current-screen) prompt))
+      (throw 'error "Abort.")))
 
 (defmacro define-stumpwm-type (type (input prompt) &body body)
   `(setf (gethash ,type *command-type-hash*) 
@@ -852,11 +866,13 @@ be found, select it.  Otherwise simply run cmd."
 	   ;; If no qualifiers are set don't bother looking for a match.
 	   (and (or class instance title)
 		;; search all groups
-		(loop
-		   for g in (screen-groups (current-screen))
-		   for win = (find-window g)
-		   when win
-		   return win))))
+		(if *run-or-raise-all-groups*
+		    (loop
+		       for g in (screen-groups (current-screen))
+		       for win = (find-window g)
+		       when win
+		       return win)
+		    (find-window (screen-current-group (current-screen)))))))
       (if win
 	  (goto-win win)
 	  (run-shell-command cmd)))))

@@ -169,6 +169,7 @@ to login remotely to regain control. :abort quits stumpmwm.")
   number
   parent
   name
+  user-title
   class
   type
   res
@@ -557,3 +558,8 @@ recommended this is assigned using LET.")
 
 (defvar *supress-echo-timeout* nil
   "Asign this T and messages will not time out. It is recommended this is assigned using LET.")
+
+(defvar *run-or-raise-all-groups* t
+  "When this is T the run-or-raise function searches all groups
+  for a running instance. Set it to NIL to search only the
+  current group.")

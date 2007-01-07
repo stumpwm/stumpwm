@@ -1272,6 +1272,20 @@ then describes the symbol.
 
 @end defmac
 
+@defun run-or-raise @var{command} &key @var{class} @var{instance} @var{title}
+Run the shell command, @var{command}, unless an existing window
+matches @var{class}, @var{instance}, and @var{title}. At least one
+must be supplied.
+
+By default, search all groups for a running instance. See @var{*run-or-raise-all-groups*}.
+
+@end defun
+
+@defvar *run-or-raise-all-groups*
+When this is T the @code{run-or-raise} function searches all groups for a
+running instance. Set it to NIL to search only the current group.
+@end defvar
+
 @menu
 * Menus::                       
 @end menu

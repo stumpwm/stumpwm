@@ -77,6 +77,8 @@
 	   #:pathname-is-executable-p
 	   #:*shell-program*
 	   #:getenv
+	   #:run-or-raise
+	   #:*run-or-raise-all-groups*
 	   ;; selection
 	   #:set-x-selection
 	   #:get-x-selection
