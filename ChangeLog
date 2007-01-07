@@ -5,7 +5,7 @@
 	* user.lisp (argument-pop-or-read): new function
 	(argument-pop-rest-or-read): likewise
 	(run-or-raise): search only the current group when
-	*run-or-raise-all-groups* is NIL
+	*run-or-raise-all-groups* is NIL.
 
 2006-12-16  Shawn Betts  <sabetts@vcn.bc.ca>
 

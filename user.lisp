@@ -825,7 +825,7 @@ aborted."
 	    (focus-frame group new-frame))
 	  (show-frame-indicator group))))))
 
-(defun run-or-raise (cmd &key class instance title)
+(defun run-or-raise (cmd &key class instance title (all-groups *run-or-raise-all-groups*))
   "If any of class, title, or instance are set and a matching window can
 be found, select it.  Otherwise simply run cmd."
   (labels ((win-app-info (win)
@@ -866,7 +866,7 @@ be found, select it.  Otherwise simply run cmd."
 	   ;; If no qualifiers are set don't bother looking for a match.
 	   (and (or class instance title)
 		;; search all groups
-		(if *run-or-raise-all-groups*
+		(if all-groups
 		    (loop
 		       for g in (screen-groups (current-screen))
 		       for win = (find-window g)
