@@ -1,5 +1,7 @@
 2007-01-07  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* core.lisp (font-exists-p): query something about the font. catch xlib:font-error conditions.
+
 	* primitives.lisp (*run-or-raise-all-groups*): new global var
 
 	* user.lisp (argument-pop-or-read): new function

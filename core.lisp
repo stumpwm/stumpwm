@@ -664,9 +664,13 @@ maximized, and given focus."
 (defun font-exists-p (font-name)
   (handler-case
       (progn 
-	(xlib:close-font (prog1 (xlib:open-font *display* font-name)
-			   (xlib:display-finish-output *display*)))
+	(xlib:close-font (let ((fobj (xlib:open-font *display* font-name)))
+			   ;; do a query on it to make sure it actually exists
+			   (xlib:max-char-width fobj)
+			   (xlib:display-finish-output *display*)
+			   fobj))
 	t)
+    (xlib:font-error (c) (declare (ignore c)) nil)
     (xlib:name-error (c) (declare (ignore c)) nil)))
 
 (defun set-fg-color (color)
