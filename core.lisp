@@ -673,7 +673,7 @@ maximized, and given focus."
 			   (xlib:display-finish-output *display*)
 			   fobj))
 	t)
-    ((or xlib:font-error xlib:name-error) (c) (format t "the error: ~s | ~a~%" c c))))
+    ((or xlib:font-error xlib:name-error) ())))
 
 (defun set-fg-color (color)
   (when (color-exists-p color)
