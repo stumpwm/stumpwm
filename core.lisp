@@ -638,9 +638,9 @@ maximized, and given focus."
 	;; A nonlocal exit could leave stumpwm in an inconsistent
 	;; state. So make sure that doesn't happen.
 	(xlib:display-finish-output *display*))
-    ((or xlib:match-error xlib:window-error xlib:drawable-error) (c)
+    ((or xlib:match-error xlib:window-error xlib:drawable-error) ()
       ;; ignore the error for now.
-      (declare (ignore c)))))
+      )))
     
 (defun delete-window (window)
   "Send a delete event to the window."
@@ -659,19 +659,21 @@ maximized, and given focus."
   (handler-case
       (loop for i in *screen-list*
 	 always (xlib:lookup-color (xlib:screen-default-colormap (screen-number i)) color))
-    (xlib:name-error (c) (declare (ignore c)) nil)))
+    (xlib:name-error () nil)))
 
 (defun font-exists-p (font-name)
   (handler-case
       (progn 
 	(xlib:close-font (let ((fobj (xlib:open-font *display* font-name)))
-			   ;; do a query on it to make sure it actually exists
+			   ;; do a query on it to make sure it
+			   ;; actually exists. Yes, we need both
+			   ;; finish-output calls.
+			   (xlib:display-finish-output *display*)
 			   (xlib:max-char-width fobj)
 			   (xlib:display-finish-output *display*)
 			   fobj))
 	t)
-    (xlib:font-error (c) (declare (ignore c)) nil)
-    (xlib:name-error (c) (declare (ignore c)) nil)))
+    ((or xlib:font-error xlib:name-error) (c) (format t "the error: ~s | ~a~%" c c))))
 
 (defun set-fg-color (color)
   (when (color-exists-p color)
@@ -1685,7 +1687,7 @@ chunks."
       (handler-case (prog1
 			(apply eventfn event-slots)
 		      (xlib:display-finish-output *display*))
-	((or xlib:drawable-error xlib:window-error) (c)
+	((or xlib:drawable-error xlib:window-error) ()
 	  ;; This is generally the error we get when
 	  ;; attempting to focus a window that's been
 	  ;; destroyed. Give a warning and ignore
@@ -1693,8 +1695,7 @@ chunks."
 	  ;; and destroy events we'll be getting
 	  ;; shortly.
 	  ;; (warn "Caught ~s in ~s event handler.~%" c event-key)
-	  (declare (ignore c))
-	 )))
+	  )))
     t))
 
 ;;; Selection
