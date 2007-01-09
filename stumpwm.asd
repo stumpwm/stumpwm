@@ -26,6 +26,8 @@
 	       (:file "core" :depends-on ("input"))
 	       (:file "user" :depends-on ("core"))
 	       (:file "mode-line" :depends-on ("user"))
-	       (:file "version" :depends-on ("mode-line"))
-	       (:file "stumpwm" :depends-on  ("version"))))
+	       (:file "stumpwm" :depends-on  ("mode-line"))
+	       ;; keep this last so it always gets recompiled if
+	       ;; anything changes
+	       (:file "version" :depends-on ("stumpwm"))))
 

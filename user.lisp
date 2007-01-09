@@ -226,19 +226,22 @@
 (define-stumpwm-command "windows" ((fmt :rest))
   (echo-windows (screen-current-group (current-screen)) (or fmt *window-format*)))
 
-(defun echo-date ()
-  "Print the output of the 'date' command to the screen."
+(defun format-time-string (&optional time)
+  "Return a formatted date-time string. FIXME: how about being able to pass a format string in?"
   (let* ((month-names
 	  #("Jan" "Feb" "Mar" "Apr" "May" "Jun" "Jul" "Aug" "Sep" "Oct" "Nov" "Dec"))
 	 (day-names
-	  #("Mon" "Tue" "Wed" "Thu" "Fri" "Sat" "Sun"))
-	 (date-string (multiple-value-bind (sec min hour dom mon year dow)
-			 (get-decoded-time)
-		       (format nil "~A ~A ~A ~A:~2,,,'0@A:~2,,,'0@A ~A"
-			       (aref day-names dow)
-			       (aref month-names (- mon 1))
-			       dom hour min sec year))))
-    (echo-string (current-screen) date-string)))
+	  #("Mon" "Tue" "Wed" "Thu" "Fri" "Sat" "Sun")))
+    (multiple-value-bind (sec min hour dom mon year dow)
+	(or time (get-decoded-time))
+      (format nil "~A ~A ~A ~A:~2,,,'0@A:~2,,,'0@A ~A"
+	      (aref day-names dow)
+	      (aref month-names (- mon 1))
+	      dom hour min sec year))))
+
+(defun echo-date ()
+  "Print the output of the 'date' command to the screen."
+    (echo-string (current-screen) (format-current-date)))
 
 (define-stumpwm-command "time" ()
   (echo-date))

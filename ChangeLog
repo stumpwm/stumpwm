@@ -1,3 +1,10 @@
+2007-01-09  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* user.lisp (format-time-string): new function
+	(echo-date): call format-time-string
+
+	* version.lisp (*version*): include a compile/load time.
+
 2007-01-08  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* primitives.lisp (run-prog-collect-output): collect error output as well for sbcl and cmucl
