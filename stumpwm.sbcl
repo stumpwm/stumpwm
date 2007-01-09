@@ -2,7 +2,7 @@
 
 ;; Here's a script that runs stumpwm using sbcl. You can put it in
 ;; your path and run it as a regular program. Make sure you have a
-;; symlink of stumpwm.asd is your ~/.sbcl/systems/ directory or
+;; symlink of stumpwm.asd in your ~/.sbcl/systems/ directory or
 ;; another directory in asdf:*central-registry* so asdf can find
 ;; stumpwm.
 ;;
