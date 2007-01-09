@@ -241,7 +241,7 @@
 
 (defun echo-date ()
   "Print the output of the 'date' command to the screen."
-    (echo-string (current-screen) (format-current-date)))
+    (echo-string (current-screen) (format-time-string)))
 
 (define-stumpwm-command "time" ()
   (echo-date))
