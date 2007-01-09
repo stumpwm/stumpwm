@@ -1,5 +1,8 @@
 2007-01-08  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* primitives.lisp (run-prog-collect-output): collect error output as well for sbcl and cmucl
+	(split-string): return ("") when splitting the empty string
+
 	* stumpwm.asd (:stumpwm): change around dependencies
 
 	* mode-line.lisp (screen-mode-line-mode): new function

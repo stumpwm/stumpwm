@@ -404,9 +404,9 @@ Useful for re-using the &REST arg after removing some options."
 	      (loop for i = (read-char out nil out)
 		 until (eq i out)
 		 do (write-char i s))))
-  #+cmu (with-output-to-string (s) (ext:run-program prog args :output s :error t :wait t))
+  #+cmu (with-output-to-string (s) (ext:run-program prog args :output s :error s :wait t))
   #+sbcl (with-output-to-string (s)
-	   (sb-ext:run-program prog args :output s :error t :wait t
+	   (sb-ext:run-program prog args :output s :error s :wait t
 			       ;; inject the DISPLAY variable in so programs show up
 			       ;; on the right screen.
 			       :environment (cons (screen-display-string (current-screen))
@@ -474,12 +474,15 @@ Modifies the match data; use `save-match-data' if necessary."
   (let ((seps separators))
     (labels ((sep (c)
 	       (find c seps :test #'char=)))
-      (loop for i = (position-if (complement #'sep) string) 
-	 then (position-if (complement #'sep) string :start j)
-	 as j = (position-if #'sep string :start (or i 0))
-	 while i
-	 collect (subseq string i j)
-	 while j))))
+      (or (loop for i = (position-if (complement #'sep) string) 
+	     then (position-if (complement #'sep) string :start j)
+	     as j = (position-if #'sep string :start (or i 0))
+	     while i
+	     collect (subseq string i j)
+	     while j)
+	  ;; the empty string causes the above to return NIL, so help
+	  ;; it out a little.
+	  '("")))))
 
 (defun dformat (fmt &rest args)
   (declare (ignore fmt args))
