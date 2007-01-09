@@ -1,3 +1,9 @@
+2007-01-08  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* stumpwm.asd (:stumpwm): change around dependencies
+
+	* mode-line.lisp (screen-mode-line-mode): new function
+
 2007-01-07  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* core.lisp (font-exists-p): query something about the font. catch xlib:font-error conditions.

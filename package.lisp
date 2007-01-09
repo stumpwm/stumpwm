@@ -71,6 +71,7 @@
 	   #:*mode-line-border-color*
 	   #:*screen-mode-line-format*
 	   #:toggle-mode-line
+	   #:screen-mode-line-mode
 	   ;; shell
 	   #:run-shell-command
 	   #:programs-in-path

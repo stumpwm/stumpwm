@@ -193,6 +193,14 @@ current group.")
 	    (offset-frames group 0 (true-height (mode-line-window (screen-mode-line screen)))))
 	  (expand-tree (tile-group-frame-tree group) (- (true-height (mode-line-window (screen-mode-line screen)))) 'bottom)
 	  (sync-all-frame-windows group)))))
+
+(defun screen-mode-line-mode (screen arg &optional (format '*screen-mode-line-format*))
+  "Turn on the mode line for SCREEN if and only if ARG is non-nil."
+  ;; only do something if the state they want and the current state
+  ;; differ.
+  (unless (eq (and arg t)
+	      (and (screen-mode-line screen) t))
+    (toggle-mode-line screen format)))
       
 (define-stumpwm-command "mode-line" ()
   (toggle-mode-line (current-screen)))

@@ -943,7 +943,12 @@ might do the following:
 A command to toggle the mode line visibility.
 @end deffn
 
-@defun toggle-mode-line
+@defun toggle-mode-line @var{screen}
+Toggle the state of the mode line for the specified screen
+@end defun
+
+@defun screen-mode-line-mode @var{screen} @var{arg}
+Turn on the mode line for @var{screen} if and only if @var{arg} is non-nil.
 @end defun
 
 @defvar *screen-mode-line-format*
