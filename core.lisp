@@ -476,15 +476,18 @@ than the root window's width and height."
 
 (defun xwin-grab-keys (win)
   (labels ((grabit (w key)
-	     (xlib:grab-key w (xlib:keysym->keycodes *display* (key-keysym key))
-			    :modifiers (x11-mods key) :owner-p t
-			    :sync-pointer-p nil :sync-keyboard-p t)
-	     ;; Ignore numlock by also grabbing the keycombo with
-	     ;; numlock on.
-	     (when (modifiers-numlock *modifiers*)
-	       (xlib:grab-key w (xlib:keysym->keycodes *display* (key-keysym key))
-			      :modifiers (x11-mods key t) :owner-p t
-			      :sync-pointer-p nil :sync-keyboard-p t))))
+	     (let ((code (xlib:keysym->keycodes *display* (key-keysym key))))
+	       ;; some keysyms aren't mapped to keycodes so just ignore them.
+	       (when code
+		 (xlib:grab-key w code
+				:modifiers (x11-mods key) :owner-p t
+				:sync-pointer-p nil :sync-keyboard-p t)
+		 ;; Ignore numlock by also grabbing the keycombo with
+		 ;; numlock on.
+		 (when (modifiers-numlock *modifiers*)
+		   (xlib:grab-key w code
+				  :modifiers (x11-mods key t) :owner-p t
+				  :sync-pointer-p nil :sync-keyboard-p t))))))
     (maphash (lambda (k v)
 	       (declare (ignore v))
 	       (grabit win k))

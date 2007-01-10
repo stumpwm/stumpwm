@@ -1,6 +1,7 @@
 2007-01-09  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* core.lisp (font-exists-p): rewrite using xlib:list-font-names
+	(xwin-grab-keys): only grab the key if it has a corresponding keycode.
 
 	* user.lisp (format-time-string): new function
 	(echo-date): call format-time-string
