@@ -662,18 +662,8 @@ maximized, and given focus."
     (xlib:name-error () nil)))
 
 (defun font-exists-p (font-name)
-  (handler-case
-      (progn 
-	(xlib:close-font (let ((fobj (xlib:open-font *display* font-name)))
-			   ;; do a query on it to make sure it
-			   ;; actually exists. Yes, we need both
-			   ;; finish-output calls.
-			   (xlib:display-finish-output *display*)
-			   (xlib:max-char-width fobj)
-			   (xlib:display-finish-output *display*)
-			   fobj))
-	t)
-    ((or xlib:font-error xlib:name-error) ())))
+  ;; if we can list the font then it exists
+  (plusp (length (xlib:list-font-names *display* font-name :max-fonts 1))))
 
 (defun set-fg-color (color)
   (when (color-exists-p color)
