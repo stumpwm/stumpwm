@@ -4,16 +4,21 @@
   (:use :cl :asdf))
 (in-package :stumpwm-system)
 
-(ignore-errors (require :cmucl-clx))
-(ignore-errors (require :clx))
-;;(require :gray-streams)
+;; This is a hack for debian because it calls cmucl's clx
+;; cmucl-clx. *very* annoying. I don't actually know if debian still
+;; does this.
+#+cmu (progn
+	  (ignore-errors (require :cmucl-clx))
+	  (ignore-errors (require :clx)))
+;; Otherwise just load clx
+#-cmu(require :clx)
 
-#+sbcl (require 'sb-posix)
+#+sbcl (require :sb-posix)
 
 (defsystem :stumpwm
   :name "StumpWM"
   :author "Shawn Betts <sabetts@vcn.bc.ca>"
-  :version "0.0.3"
+  :version "CVS"
   :maintainer "Shawn Betts <sabetts@vcn.bc.ca>"
   ;; :license "GNU General Public License"
   :description "A tiling, keyboard driven window manager" 
