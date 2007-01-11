@@ -1186,3 +1186,10 @@ commands or don't know lisp very well."
 
 (define-stumpwm-command "insert" ((string :rest "Insert: "))
   (window-send-string (screen-current-window (current-screen)) string))
+
+(define-stumpwm-command "putsel" ((string :rest "Text: "))
+  (set-x-selection string))
+
+;; FIXME: this function is basically useless atm.
+(define-stumpwm-command "getsel" ()
+  (echo-string (current-screen) (get-x-selection)))

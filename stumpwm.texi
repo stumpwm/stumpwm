@@ -1220,6 +1220,14 @@ Quit StumpWM.
 Load firefox or switch to its window if it is running.
 @end deffn
 
+@deffn {Command} getsel
+Echo the X selection.
+@end deffn
+
+@deffn {Command} putsel @var{text}
+Stuff the string @var{text} into the X selection.
+@end deffn
+
 @defun run-commands &rest @var{commands}
 Run each stumpwm command in sequence. This could be used if you're
 used to ratpoison's rc file and you just want to run commands or don't
