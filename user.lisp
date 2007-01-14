@@ -294,18 +294,21 @@ frame."
 	(frame-raise-window group (window-frame win) win)))))
 
 (defun other-window (group)
-  (let* ((f (tile-group-current-frame group))
-	 (wins (frame-windows group f))
+  (let* ((wins (group-windows group))
 	 ;; the frame could be empty
-	 (win (if (frame-window f)
+	 (win (if (group-current-window group)
 		  (second wins)
 		  (first wins))))
-  (if win
-      (frame-raise-window group (window-frame win) win)
-      (echo-string (group-screen group) "No other window."))))
+    (if win
+	(frame-raise-window group (window-frame win) win)
+	(echo-string (group-screen group) "No other window."))))
 
 (define-stumpwm-command "other" ()
-  (other-window (screen-current-group (current-screen))))
+  (let* ((group (screen-current-group (current-screen)))
+	 (old-frame (tile-group-current-frame group)))
+    (other-window (screen-current-group (current-screen)))
+    (unless (eq old-frame (tile-group-current-frame group))
+      (show-frame-indicator group))))
 
 (defun programs-in-path (base &optional full-path (path (split-string (getenv "PATH") ":")))
   "Return a list of programs in the path that start with BASE. if

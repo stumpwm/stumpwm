@@ -14,6 +14,9 @@
 	("next-in-frame"): likewise
 	("prev-in-frame"): likewise
 	("other-in-frame"): likewise
+	(other-window): use the group's window list to find the other
+	window.
+	("other"): show the frame indicator if a frame switch occurred.
 
 2007-01-11  Shawn Betts  <sabetts@vcn.bc.ca>
 

@@ -732,8 +732,16 @@ This is the keymap containing all input editing key bindings.
 Go to the next window in the window list.
 @end deffn
 
+@deffn {Command} pull-hidden-next
+Pull the next hidden window into the current frame.
+@end deffn
+
 @deffn {Command} prev
 Go to the previous window in the window list.
+@end deffn
+
+@deffn {Command} pull-hidden-previous
+Pull the next hidden window into the current frame.
 @end deffn
 
 @deffn {Command} delete
@@ -754,6 +762,10 @@ be used to override the default window formatting.
 
 @deffn {Command} other
 Switch to the window last focused.
+@end deffn
+
+@deffn {Command} pull-hidden-other
+Pull the last focused, hidden window into the current frame.
 @end deffn
 
 @deffn {Command} number @var{number}
@@ -905,6 +917,19 @@ direction. The following are valid directions:
 @end table
 
 @end deffn
+
+@deffn {Command} next-in-frame
+Go to the next window in the current frame.
+@end deffn
+
+@deffn {Command} prev-in-frame
+Go to the previous window in the current frame.
+@end deffn
+
+@deffn {Command} other-in-frame
+Go to the last accessed window in the current frame.
+@end deffn
+
 
 @node Mode-line, Groups, Frames, Top
 @chapter The Mode Line
