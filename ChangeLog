@@ -1,3 +1,20 @@
+2007-01-14  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* user.lisp (*root-map*): bind pull-hidden-next,
+	pull-hidden-previous, pull-hidden-other, other-in-frame,
+	next-in-frame, prev-in-frame
+	(pull-window): new function
+	(focus-forward): new argument pull-p. use pull-window
+	(pull-window-by-number): use pull-window
+	(other-hidden-window): new function
+	(other-window-in-frame): likewise
+	("pull-hidden-next"): new command
+	("pull-hidden-previous"): likewise
+	("pull-hidden-other"): likewise
+	("next-in-frame"): likewise
+	("prev-in-frame"): likewise
+	("other-in-frame"): likewise
+
 2007-01-11  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp ("putsel"): new command

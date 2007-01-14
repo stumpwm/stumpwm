@@ -39,9 +39,13 @@
 	  (define-key m (kbd "C-e") "exec emacs")
 	  (define-key m (kbd "n") "next")
 	  (define-key m (kbd "C-n") "next")
+	  (define-key m (kbd "M-n") "pull-hidden-next")
+	  (define-key m (kbd "C-M-n") "next-in-frame")
 	  (define-key m (kbd "SPC") "next")
 	  (define-key m (kbd "p") "prev")
 	  (define-key m (kbd "C-p") "prev")
+	  (define-key m (kbd "M-p") "pull-hidden-previous")
+	  (define-key m (kbd "C-M-p") "prev-in-frame")
 	  (define-key m (kbd "w") "windows")
 	  (define-key m (kbd "C-w") "windows")
 	  (define-key m (kbd "k") "delete")
@@ -54,6 +58,8 @@
 	  (define-key m (kbd "'") "select")
 	  (define-key m (kbd "\"") "windowlist")
 	  (define-key m (kbd "C-t") "other")
+	  (define-key m (kbd "M-t") "pull-hidden-other")
+	  (define-key m (kbd "C-M-t") "other-in-frame")
 	  (define-key m (kbd "!") "exec")
 	  (define-key m (kbd "C-g") "abort")
 	  (define-key m (kbd "0") "pull 0")
@@ -145,10 +151,25 @@
 	(focus-prev-window group)
 	(other-window group))))
 
+(defun pull-window (win &optional (to-frame (tile-group-current-frame (window-group win))))
+  (let ((f (window-frame win))
+	(group (window-group win)))
+    (setf (window-frame win) to-frame)
+    (sync-frame-windows group to-frame)
+    (frame-raise-window group to-frame win)
+    ;; if win was focused in its old frame then give the old
+    ;; frame the frame's last focused window.
+    (when (eq (frame-window f) win)
+      ;; the current value is no longer valid.
+      (setf (frame-window f) nil)
+      (frame-raise-window group f (first (frame-windows group f)) nil))))
+
 ;; In the future, this window will raise the window into the current
 ;; frame.
-(defun focus-forward (group window-list)
- "Set the focus to the next item in window-list from the focused window."
+(defun focus-forward (group window-list &optional pull-p)
+ "Set the focus to the next item in window-list from the focused
+window. If PULL-P is T then pull the window into the current
+frame."
   ;; The window with focus is the "current" window, so find it in the
   ;; list and give that window focus
   (let* ((w (group-current-window group))
@@ -162,10 +183,14 @@
 		 (car window-list)
 	       ;; Otherwise, focus the next one in the list.
 	       (cadr wins)))
-    (when nw
-      (frame-raise-window group (window-frame nw) nw)
-      (unless (eq (window-frame nw) old-frame)
-	(show-frame-indicator group)))))
+    (if nw
+	(if pull-p
+	    (pull-window nw)
+	    (progn
+	      (frame-raise-window group (window-frame nw) nw)
+	      (unless (eq (window-frame nw) old-frame)
+		(show-frame-indicator group))))
+	(echo-string (current-screen) "No other window."))))
 
 (defun delete-current-window ()
   "Send a delete event to the current window."
@@ -683,16 +708,7 @@ aborted."
   "Pull window N from another frame into the current frame and focus it."
   (let ((win (find n (group-windows group) :key 'window-number :test '=)))
     (when win
-      (let ((f (window-frame win)))
-	(setf (window-frame win) (tile-group-current-frame group))
-	(sync-frame-windows group (tile-group-current-frame group))
-	(frame-raise-window group (tile-group-current-frame group) win)
-	;; if win was focused in its old frame then give the old
-	;; frame the frame's last focused window.
-	(when (eq (frame-window f) win)
-	  ;; the current value is no longer valid.
-	  (setf (frame-window f) nil)
-	  (frame-raise-window group f (first (frame-windows group f)) nil))))))
+      (pull-window win))))
 
 (define-stumpwm-command "pull" ((n :window-number "Pull: "))
   (pull-window-by-number (screen-current-group (current-screen)) n))
@@ -1193,3 +1209,50 @@ commands or don't know lisp very well."
 ;; FIXME: this function is basically useless atm.
 (define-stumpwm-command "getsel" ()
   (echo-string (current-screen) (get-x-selection)))
+
+(defun other-hidden-window (group)
+  "pull the last accessed hidden window from any frame into the
+current frame and raise it."
+  (let* ((f (tile-group-current-frame group))
+	 (wins (remove-if-not 'window-hidden-p (group-windows group)))
+	 (win (first wins)))
+    (if win
+	(pull-window win)
+	(echo-string (group-screen group) "No other window."))))
+
+(defun other-window-in-frame (group)
+  (let* ((f (tile-group-current-frame group))
+	 (wins (frame-windows group f))
+	 (win (if (frame-window f)
+		  (second wins)
+		  (first wins))))
+    (if win
+	(frame-raise-window group (window-frame win) win)
+	(echo-string (group-screen group) "No other window."))))  
+
+(define-stumpwm-command "pull-hidden-next" ()
+  (let ((group (screen-current-group (current-screen))))
+    (focus-forward group (remove-if-not 'window-hidden-p (sort-windows group)) t)))
+
+(define-stumpwm-command "pull-hidden-previous" ()
+  (let ((group (screen-current-group (current-screen))))
+    (focus-forward group (remove-if-not 'window-hidden-p (nreverse (sort-windows group))) t)))
+
+(define-stumpwm-command "pull-hidden-other" ()
+  (let ((group (screen-current-group (current-screen))))
+    (other-hidden-window group)))
+
+(define-stumpwm-command "next-in-frame" ()
+  (let ((group (screen-current-group (current-screen))))
+    (if (group-current-window group)
+	(focus-forward group (frame-windows group (tile-group-current-frame group)))
+	(other-window-in-frame group))))
+
+(define-stumpwm-command "prev-in-frame" ()
+  (let ((group (screen-current-group (current-screen))))
+    (if (group-current-window group)
+	(focus-forward group (reverse (frame-windows group (tile-group-current-frame group))))
+	(other-window-in-frame group))))
+
+(define-stumpwm-command "other-in-frame" ()
+  (other-window-in-frame (screen-current-group (current-screen))))
