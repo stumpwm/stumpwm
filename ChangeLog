@@ -1,5 +1,7 @@
 2007-01-15  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* input.lisp (input-find-completions): properly match strings
+
 	* user.lisp (*root-map*): add C-SPC binding. bind lastmsg to M. bind mark to m and C-m
 	("fselect"): make arg non-optional
 	("mark"): new command

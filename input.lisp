@@ -345,11 +345,10 @@ second and neither excedes the bounds of the input string."
 	  (symbolp completions))
       (funcall completions str)
       (remove-if-not (lambda (elt)
-		       (string= str elt
-				:end1 (min (length str)
-					   (length elt))
-				:end2 (min (length str)
-					   (length elt))))
+		       (and (<= (length str) (length elt))
+			    (string= str elt
+				     :end1 (length str)
+				     :end2 (length str))))
 		     completions)))
 
 (defun input-complete (input direction)
