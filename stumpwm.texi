@@ -117,6 +117,7 @@ Message and Input Bar
 
 Windows
 
+* Window Marks::                
 * Customizing Window Appearance::  
 * Programming With Windows::    
 
@@ -408,10 +409,13 @@ shift focus up, if possible, @kbd{C-t Down} will shift downwards, etc.
 @item C-t v
 Prints out the version of the running StumpWM.
 
-@item C-t m
-@itemx C-t C-m
+@item C-t M
 Display the last message. Hitting this keybinding again displays the
 message before that, and so on.
+
+@item C-t m
+@itemx C-t C-m
+Toggle the mark on the current window
 
 @item C-t G
 Display all groups and windows in each group. For more information @xref{Groups}.
@@ -808,11 +812,29 @@ Substitute the window's resource ID.
 @end defvar
 
 @menu
+* Window Marks::                
 * Customizing Window Appearance::  
 * Programming With Windows::    
 @end menu
 
-@node Customizing Window Appearance, Programming With Windows, Windows, Windows
+@node Window Marks, Customizing Window Appearance, Windows, Windows
+@section Window Marks
+Windows can be marked. A marked window has a # beside it in the window
+list. Some commands operate only on marked windows.
+
+@deffn {Command} mark
+Toggle the current window's mark.
+@end deffn
+
+@deffn {Command} clear-marks
+Clear all marks in the current group.
+@end deffn
+
+@deffn {Command} pull-marked
+Pull all marked windows into the current frame and clear the marks.
+@end deffn
+
+@node Customizing Window Appearance, Programming With Windows, Window Marks, Windows
 @section Customizing Window Appearance
 
 @defvar *maxsize-border-width*

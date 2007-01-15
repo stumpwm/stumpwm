@@ -42,6 +42,7 @@
 	  (define-key m (kbd "M-n") "pull-hidden-next")
 	  (define-key m (kbd "C-M-n") "next-in-frame")
 	  (define-key m (kbd "SPC") "next")
+	  (define-key m (kbd "C-SPC") "next")
 	  (define-key m (kbd "p") "prev")
 	  (define-key m (kbd "C-p") "prev")
 	  (define-key m (kbd "M-p") "pull-hidden-previous")
@@ -92,8 +93,9 @@
 	  (define-key m (kbd "Left") "move-focus left")
 	  (define-key m (kbd "Right") "move-focus right")
 	  (define-key m (kbd "v") "version")
-	  (define-key m (kbd "m") "lastmsg")
-	  (define-key m (kbd "C-m") "lastmsg")
+	  (define-key m (kbd "M") "lastmsg")
+	  (define-key m (kbd "m") "mark")
+	  (define-key m (kbd "C-m") "mark")
 	  (define-key m (kbd "G") "vgroups")
 	  (define-key m (kbd "g") '*groups-map*)
 	  (define-key m (kbd "F1") "gselect 1")
@@ -483,7 +485,7 @@ select one. Returns the selected frame or nil if aborted."
 	  :key 'get-frame-number-translation)))
 
 
-(define-stumpwm-command "fselect" ((f :frame))
+(define-stumpwm-command "fselect" ((f :frame t))
   (let ((group (screen-current-group (current-screen))))
     (focus-frame group f)
     (show-frame-indicator group)))
@@ -1265,3 +1267,22 @@ current frame and raise it."
 
 (define-stumpwm-command "command-mode" ()
   (push-top-map *root-map*))
+
+(define-stumpwm-command "mark" ()
+  (let ((win (screen-current-window (current-screen))))
+    (when win
+      (setf (window-marked win) (not (window-marked win)))
+      (echo-string (current-screen)
+		   (if (window-marked win)
+		       "Marked!"
+		       "Unmarked!")))))
+
+(define-stumpwm-command "clear-marks" ()
+  (let ((group (screen-current-group (current-screen))))
+    (clear-window-marks group)))
+
+(define-stumpwm-command "pull-marked" ()
+  (let ((group (screen-current-group (current-screen))))
+    (dolist (i (marked-windows group))
+      (pull-window i))
+    (clear-window-marks group)))

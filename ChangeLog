@@ -1,3 +1,26 @@
+2007-01-15  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* user.lisp (*root-map*): add C-SPC binding. bind lastmsg to M. bind mark to m and C-m
+	("fselect"): make arg non-optional
+	("mark"): new command
+	("clear-marks"): likewise
+	("pull-marked"): likewise
+
+	* primitives.lisp (window): new slot marked
+	(screen): new slot marked-gc
+	(*window-formatters*): add formatter #\m
+	(*window-format*): add %m
+
+	* mode-line.lisp (make-mode-line-window): add :exposure to event mask
+
+	* core.lisp (fmt-window-marked): new function
+	(update-window-mark): likewise
+	(marked-windows): likewise
+	(clear-window-marks): likewise
+	(show-frame-indicator): don't draw it if there's only 1 frame
+	(init-screen): initialise marked-gc
+	(:exposure): new event handler
+
 2007-01-14  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp (focus-forward): add predicate function
@@ -6,6 +29,8 @@
 	("pull-hidden-previous"): likewise
 	("prev-in-frame"): call frame-sort-windows
 	("next-in-frame"): likewise
+	("command-mode"): new command
+	("abort"): pop the top map
 
 	* primitives.lisp (format-expand): handle the case when % is the
 	last char in the string.

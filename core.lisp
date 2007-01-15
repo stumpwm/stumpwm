@@ -232,6 +232,22 @@ identity with a range check."
 	   #\+)
 	  (t #\-))))
 
+(defun fmt-window-marked (window)
+  (if (window-marked window) 
+      #\#
+      #\Space))
+
+(defun update-window-mark (window)
+  "Called when we need to draw or clear the mark."
+  ;; FIXME: This doesn't work at all. I'd like to have little squares
+  ;; that look like clamps on the corners of the window, likes its
+  ;; sorta grabbed. But i dunno how to properly draw them.
+  (let* ((screen (window-screen window)))
+    (if (window-marked window)
+	(xlib:draw-rectangle (window-parent window) (screen-marked-gc (window-screen window))
+			     0 0 300 200 t)
+	(xlib:clear-area (window-parent window)))))
+
 (defun xwin-screen (w)
   "Return the screen associated with window w."
   (or (find-screen w)
@@ -288,6 +304,16 @@ identity with a range check."
 	 (lambda (a b)
 	   (< (window-number a)
 	      (window-number b)))))
+
+(defun marked-windows (group)
+  "Return the marked windows in the specified group."
+  (loop for i in (sort-windows group)
+       when (window-marked i)
+       collect i))
+
+(defun clear-window-marks (group)
+  (dolist (w (group-windows group))
+    (setf (window-marked w) nil)))
 
 (defun (setf xwin-state) (state xwin)
   "Set the state (iconic, normal, withdrawn) of a window."
@@ -1222,23 +1248,26 @@ windows used to draw the numbers in. The caller must destroy them."
 (defun unmap-all-frame-indicators ()
   (mapc #'unmap-frame-indicator *screen-list*))
 
-(defun show-frame-indicator (group)
+(defun show-frame-indicator (group &optional force-draw)
   (let* ((screen (group-screen group))
 	 (w (screen-frame-window screen))
 	 (s "Current Frame")
 	 (height (font-height (screen-font screen)))
 	 (width (xlib:text-width (screen-font screen) s))
 	 (cf (tile-group-current-frame group)))
-    (xlib:map-window w)
-    (setf (xlib:drawable-x w) (+ (frame-x cf) (truncate (- (frame-width cf) width) 2))
-	  (xlib:drawable-y w) (+ (frame-y cf) (truncate (- (frame-height cf) height) 2))
-	  (xlib:window-priority w) :above)
-    (echo-in-window w (screen-font screen)
-		    (get-fg-color-pixel screen)
-		    (get-bg-color-pixel screen)
-		    s)
-    (xlib:display-force-output *display*)
-    (reset-timeout-for-frame-indicator)))
+    ;; don't bother drawing it if there's only one frame.
+    (when (or force-draw
+	      (consp (tile-group-frame-tree group)))
+      (xlib:map-window w)
+      (setf (xlib:drawable-x w) (+ (frame-x cf) (truncate (- (frame-width cf) width) 2))
+	    (xlib:drawable-y w) (+ (frame-y cf) (truncate (- (frame-height cf) height) 2))
+	    (xlib:window-priority w) :above)
+      (echo-in-window w (screen-font screen)
+		      (get-fg-color-pixel screen)
+		      (get-bg-color-pixel screen)
+		      s)
+      (xlib:display-force-output *display*)
+      (reset-timeout-for-frame-indicator))))
 
 (defun echo-in-window (win font fg bg string)
   (let* ((height (font-height font))
@@ -1377,7 +1406,16 @@ the nth entry to highlight."
 				      :drawable message-window
 				      :font font
 				      :foreground (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-foreground-color+)
-				      :background (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-background-color+)))
+				      :background (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-background-color+))
+	  (screen-marked-gc screen) (xlib:create-gcontext
+				     ;; We just use this as placeholder. it'll actually be used
+				     ;; on parent windows but according to the docs the
+				     ;; drawables just have to have the same depth and something
+				     ;; else to work. So this should.
+				     :drawable message-window
+				     :subwindow-mode :include-inferiors
+				     :foreground  (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-foreground-color+)
+				     :background (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-background-color+)))
     screen))
 
 
@@ -1666,6 +1704,15 @@ chunks."
 
 (define-stump-event-handler :selection-clear ()
   (setf *x-selection* nil))
+
+(define-stump-event-handler :exposure (window x y width height count)
+  (let ((screen (find-if (lambda (s)
+			   (and (screen-mode-line s)
+				(xlib:window-equal window (mode-line-window (screen-mode-line s)))))
+			 *screen-list*)))
+    (when (and screen
+	       (zerop count))
+      (redraw-mode-line-for (screen-mode-line screen) screen))))
 
 ;; Handling event :KEY-PRESS 
 ;; (:DISPLAY #<XLIB:DISPLAY :0 (The X.Org Foundation R60700000)> :EVENT-KEY :KEY-PRESS :EVENT-CODE 2 :SEND-EVENT-P NIL :CODE 45 :SEQUENCE 1419 :TIME 98761213 :ROOT #<XLIB:WINDOW :0 96> :WINDOW #<XLIB:WINDOW :0 6291484> :EVENT-WINDOW #<XLIB:WINDOW :0 6291484> :CHILD

@@ -176,6 +176,7 @@ to login remotely to regain control. :abort quits stumpmwm.")
   unmap-ignores
   state
   normal-hints
+  marked
   plist)
 
 (defstruct frame
@@ -262,6 +263,7 @@ single char keys are supported.")
   mode-line
   ;; graphic contexts
   message-gc
+  marked-gc
   ;; the window that has focus
   focus
   last-msg
@@ -525,10 +527,11 @@ Modifies the match data; use `save-match-data' if necessary."
 			      (#\s fmt-window-status)
 			      (#\t window-name)
 			      (#\c window-class)
-			      (#\i window-res))
+			      (#\i window-res)
+			      (#\m fmt-window-marked))
   "an alist containing format character format function pairs for formatting window lists.")
 
-(defvar *window-format* "%n%s%t"
+(defvar *window-format* "%m%n%s%t"
   "The format string for echoing the window list.")
 
 (defvar *group-formatters* '((#\n group-number)

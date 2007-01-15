@@ -93,7 +93,7 @@ current group.")
    :border (get-color-pixel screen *mode-line-border-color*)
    :border-width *mode-line-border-width*
    ;; You can click the modeline
-   :event-mask (xlib:make-event-mask :button-press)
+   :event-mask (xlib:make-event-mask :button-press :exposure)
    ;; these windows are not controlled by the window manager
    :override-redirect :on))
 
