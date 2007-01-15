@@ -1133,6 +1133,18 @@ All group related keybindings hang from this keymap.
 @chapter Screens
 StumpWM handles multiple screens.
 
+@deffn {Command} snext
+Go to the next screen.
+@end deffn
+
+@deffn {Command} sprev
+Go to the previous screen.
+@end deffn
+
+@deffn {Command} sother
+Go to the last screen.
+@end deffn
+
 @menu
 * Xinerama::                    
 * Programming With Screens::    
