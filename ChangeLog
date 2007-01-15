@@ -1,5 +1,12 @@
 2007-01-14  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* user.lisp (focus-forward): add predicate function
+	(other-hidden-window): fix hidden windows predicate function
+	("pull-hidden-next"): pass predicate function to focus-forward
+	("pull-hidden-previous"): likewise
+	("prev-in-frame"): call frame-sort-windows
+	("next-in-frame"): likewise
+
 	* primitives.lisp (format-expand): handle the case when % is the
 	last char in the string.
 

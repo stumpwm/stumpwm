@@ -166,7 +166,7 @@
 
 ;; In the future, this window will raise the window into the current
 ;; frame.
-(defun focus-forward (group window-list &optional pull-p)
+(defun focus-forward (group window-list &optional pull-p (predicate (constantly t)))
  "Set the focus to the next item in window-list from the focused
 window. If PULL-P is T then pull the window into the current
 frame."
@@ -174,15 +174,15 @@ frame."
   ;; list and give that window focus
   (let* ((w (group-current-window group))
 	 (old-frame (tile-group-current-frame group))
-	 (wins (member w window-list))
+	 (wins (remove-if-not predicate (cdr (member w window-list))))
 	 nw)
     ;;(assert wins)
-    (setf nw (if (null (cdr wins))
+    (setf nw (if (null wins)
 		 ;; If the last window in the list is focused, then
 		 ;; focus the first one.
-		 (car window-list)
+		 (car (remove-if-not predicate window-list))
 	       ;; Otherwise, focus the next one in the list.
-	       (cadr wins)))
+	       (first wins)))
     (if nw
 	(if pull-p
 	    (pull-window nw)
@@ -1217,7 +1217,7 @@ commands or don't know lisp very well."
   "pull the last accessed hidden window from any frame into the
 current frame and raise it."
   (let* ((f (tile-group-current-frame group))
-	 (wins (remove-if-not 'window-hidden-p (group-windows group)))
+	 (wins (remove-if (lambda (w) (eq (frame-window (window-frame w)) w)) (group-windows group)))
 	 (win (first wins)))
     (if win
 	(pull-window win)
@@ -1235,11 +1235,11 @@ current frame and raise it."
 
 (define-stumpwm-command "pull-hidden-next" ()
   (let ((group (screen-current-group (current-screen))))
-    (focus-forward group (remove-if-not 'window-hidden-p (sort-windows group)) t)))
+    (focus-forward group (sort-windows group) t (lambda (w) (not (eq (frame-window (window-frame w)) w))))))
 
 (define-stumpwm-command "pull-hidden-previous" ()
   (let ((group (screen-current-group (current-screen))))
-    (focus-forward group (remove-if-not 'window-hidden-p (nreverse (sort-windows group))) t)))
+    (focus-forward group (nreverse (sort-windows group)) t (lambda (w) (not (eq (frame-window (window-frame w)) w))))))
 
 (define-stumpwm-command "pull-hidden-other" ()
   (let ((group (screen-current-group (current-screen))))
@@ -1248,13 +1248,13 @@ current frame and raise it."
 (define-stumpwm-command "next-in-frame" ()
   (let ((group (screen-current-group (current-screen))))
     (if (group-current-window group)
-	(focus-forward group (frame-windows group (tile-group-current-frame group)))
+	(focus-forward group (frame-sort-windows group (tile-group-current-frame group)))
 	(other-window-in-frame group))))
 
 (define-stumpwm-command "prev-in-frame" ()
   (let ((group (screen-current-group (current-screen))))
     (if (group-current-window group)
-	(focus-forward group (reverse (frame-windows group (tile-group-current-frame group))))
+	(focus-forward group (reverse (frame-sort-windows group (tile-group-current-frame group))))
 	(other-window-in-frame group))))
 
 (define-stumpwm-command "other-in-frame" ()
