@@ -1762,4 +1762,5 @@ chunks."
 (defun pop-top-map ()
   (when *top-map-list*
     (setf *top-map* (pop *top-map-list*))
-    (sync-keys)))
+    (sync-keys)
+    t))

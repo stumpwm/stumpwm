@@ -761,7 +761,10 @@ aborted."
   (display-keybinding *root-map*))
 
 ;; Trivial function
-(define-stumpwm-command "abort" ())
+(define-stumpwm-command "abort" ()
+  ;; This way you can exit from command mode
+  (when (pop-top-map)
+    (echo-string (current-screen) "Exited.")))
 
 (defun set-prefix-key (key)
   "Change the stumpwm prefix key to KEY."
@@ -971,7 +974,7 @@ be found, select it.  Otherwise simply run cmd."
 
 (define-stumpwm-command "exit-iresize" ()
  (echo-string (current-screen) "Resize Complete")
-  (pop-top-map))
+ (pop-top-map))
 
 ;;; group commands
 
@@ -1259,3 +1262,6 @@ current frame and raise it."
 
 (define-stumpwm-command "other-in-frame" ()
   (other-window-in-frame (screen-current-group (current-screen))))
+
+(define-stumpwm-command "command-mode" ()
+  (push-top-map *root-map*))
