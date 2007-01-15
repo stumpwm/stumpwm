@@ -361,7 +361,7 @@ Banish the mouse point to the lower right corner of the screen.
 Display the current time and date, much like the Unix command @command{date}.
 
 @item C-t C-t
-Switch to the last window to have focus.
+Switch to the last window to have focus in the current frame.
 
 @item C-t !
 Prompt for a shell command to run via @file{/bin/sh}. All output is discarded.
@@ -409,13 +409,13 @@ shift focus up, if possible, @kbd{C-t Down} will shift downwards, etc.
 @item C-t v
 Prints out the version of the running StumpWM.
 
-@item C-t M
-Display the last message. Hitting this keybinding again displays the
-message before that, and so on.
+@item C-t #
+Toggle the mark on the current window
 
 @item C-t m
 @itemx C-t C-m
-Toggle the mark on the current window
+Display the last message. Hitting this keybinding again displays the
+message before that, and so on.
 
 @item C-t G
 Display all groups and windows in each group. For more information @xref{Groups}.

@@ -1,5 +1,8 @@
 2007-01-15  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* user.lisp (*root-map*): bind mark to C-t # and lastmsg back to m
+	and C-m. Bind C-t C-t to other-in-frame.
+
 	* input.lisp (input-find-completions): properly match strings
 
 	* user.lisp (*root-map*): add C-SPC binding. bind lastmsg to M. bind mark to m and C-m
