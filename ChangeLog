@@ -1,5 +1,8 @@
 2007-01-14  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* primitives.lisp (format-expand): handle the case when % is the
+	last char in the string.
+
 	* user.lisp (*root-map*): bind pull-hidden-next,
 	pull-hidden-previous, pull-hidden-other, other-in-frame,
 	next-in-frame, prev-in-frame

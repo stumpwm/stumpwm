@@ -503,7 +503,9 @@ Modifies the match data; use `save-match-data' if necessary."
     (loop
      (cond ((null cur)
 	    (return-from format-expand output))
-	   ((char= (car cur) #\%)
+	   ;; if % is the last char in the string then it's a literal.
+	   ((and (char= (car cur) #\%)
+		 (cdr cur))
 	    (setf cur (cdr cur))
 	    (let ((fmt (cadr (assoc (car cur) fmt-alist :test 'char=))))
 	      (setf output (concatenate 'string output
