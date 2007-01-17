@@ -227,6 +227,11 @@ frame."
 (define-stumpwm-command "ratrelwarp" ((dx :number "Delta X: ") (dy :number "Delta Y: "))
   (warp-pointer-relative dx dy))
 
+;; FIXME: This function doesn't work.
+(define-stumpwm-command "ratclick" ((button :number))
+  (when (screen-current-window (current-screen))
+    (send-fake-click (screen-current-window (current-screen)) (or button 1))))
+
 (defun echo-windows (group fmt)
   "Print a list of the windows to the screen."
   (let* ((wins (sort-windows group))
@@ -1184,15 +1189,15 @@ commands or don't know lisp very well."
 
 (define-stumpwm-command "snext" ()
   (switch-to-screen (next-screen))
-  (show-frame-indicator (screen-current-group (current-screen))))
+  (show-frame-indicator (screen-current-group (current-screen)) t))
 
 (define-stumpwm-command "sprev" ()
   (switch-to-screen (next-screen (reverse (sort-screens))))
-  (show-frame-indicator (screen-current-group (current-screen))))
+  (show-frame-indicator (screen-current-group (current-screen)) t))
 
 (define-stumpwm-command "sother" ()
   (switch-to-screen (cadr *screen-list*))
-  (show-frame-indicator (screen-current-group (current-screen))))
+  (show-frame-indicator (screen-current-group (current-screen)) t))
 
 (defun window-send-string (window string)
   "Send the string of characters to the window as if they'd been typed."

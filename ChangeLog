@@ -1,3 +1,13 @@
+2007-01-17  Shawn Betts  <sabetts@shitbender.gagrod>
+
+	* user.lisp ("ratclick"): new function
+
+	* core.lisp (send-fake-click): new function
+
+	* user.lisp ("snext"): force the frame indicator to show
+	("sprev"): likewise
+	("sother"): likewise
+
 2007-01-15  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp (*root-map*): bind mark to C-t # and lastmsg back to m
