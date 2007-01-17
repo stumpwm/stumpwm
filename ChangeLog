@@ -1,5 +1,8 @@
 2007-01-17  Shawn Betts  <sabetts@shitbender.gagrod>
 
+	* core.lisp (show-frame-indicator): clear the frame indicator on
+	all other screens.
+
 	* user.lisp ("ratclick"): new function
 
 	* core.lisp (send-fake-click): new function
