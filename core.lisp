@@ -1255,6 +1255,8 @@ windows used to draw the numbers in. The caller must destroy them."
 	 (height (font-height (screen-font screen)))
 	 (width (xlib:text-width (screen-font screen) s))
 	 (cf (tile-group-current-frame group)))
+    ;; first thing, make sure its not being displayed somewhere else
+    (mapc 'unmap-frame-indicator *screen-list*)
     ;; don't bother drawing it if there's only one frame.
     (when (or force-draw
 	      (consp (tile-group-frame-tree group)))
