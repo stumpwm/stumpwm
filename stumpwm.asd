@@ -11,7 +11,7 @@
 	  (ignore-errors (require :cmucl-clx))
 	  (ignore-errors (require :clx)))
 ;; Otherwise just load clx
-#-cmu(require :clx)
+#+sbcl(require :clx)
 
 #+sbcl (require :sb-posix)
 
