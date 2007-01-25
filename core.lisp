@@ -1752,7 +1752,7 @@ chunks."
 
 (defun handle-event (&rest event-slots &key display event-key &allow-other-keys)
   (declare (ignore display))
-  (dformat 1 "Handling event ~S~%" event-key)
+  (dformat 1 ">>> ~S~%" event-key)
   (let ((eventfn (gethash event-key *event-fn-table*)))
     (when eventfn
       (handler-case (prog1
@@ -1767,6 +1767,7 @@ chunks."
 	  ;; shortly.
 	  ;;(warn "Caught ~s in ~s event handler." c event-key)
 	  )))
+    (dformat 2 "<<< ~S~%" event-key)
     t))
 
 ;;; Selection
