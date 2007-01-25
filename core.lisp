@@ -237,21 +237,16 @@ identity with a range check."
       #\#
       #\Space))
 
-(defun update-window-mark (window)
-  "Called when we need to draw or clear the mark."
-  ;; FIXME: This doesn't work at all. I'd like to have little squares
-  ;; that look like clamps on the corners of the window, likes its
-  ;; sorta grabbed. But i dunno how to properly draw them.
-  (let* ((screen (window-screen window)))
-    (if (window-marked window)
-	(xlib:draw-rectangle (window-parent window) (screen-marked-gc (window-screen window))
-			     0 0 300 200 t)
-	(xlib:clear-area (window-parent window)))))
-
-(defun xwin-screen (w)
-  "Return the screen associated with window w."
-  (or (find-screen w)
-      (find-screen (xlib:drawable-root w))))
+;; (defun update-window-mark (window)
+;;   "Called when we need to draw or clear the mark."
+;;   ;; FIXME: This doesn't work at all. I'd like to have little squares
+;;   ;; that look like clamps on the corners of the window, likes its
+;;   ;; sorta grabbed. But i dunno how to properly draw them.
+;;   (let* ((screen (window-screen window)))
+;;     (if (window-marked window)
+;; 	(xlib:draw-rectangle (window-parent window) (screen-marked-gc (window-screen window))
+;; 			     0 0 300 200 t)
+;; 	(xlib:clear-area (window-parent window)))))
 
 (defun xwin-name (win)
   (xlib:wm-name win))
@@ -345,7 +340,7 @@ identity with a range check."
   (xlib:unmap-window parent))
 
 (defun hide-window (window)
-  (dformat "hide window: ~a~%" (window-name window))
+  (dformat 2 "hide window: ~a~%" (window-name window))
   (setf (window-state window) +iconic-state+)
   (when (window-in-current-group-p window)
     (xwin-hide (window-xwin window) (window-parent window))))
@@ -363,6 +358,7 @@ identity with a range check."
 ;; Stolen from Eclipse
 (defun xwin-send-configuration-notify (xwin)
   "Send a synthetic configure notify event to the given window (ICCCM 4.1.5)"
+  (dformat 3 "xwin send configure notify~%")
   (multiple-value-bind (x y)
       (xlib:translate-coordinates xwin 0 0 (xlib:drawable-root xwin))
     (xlib:send-event xwin
@@ -458,7 +454,7 @@ than the root window's width and height."
 							     (* 2 (xlib:drawable-border-width (window-parent win))))
 		(xlib:drawable-height (window-parent win)) (- (frame-height frame)
 							      (* 2 (xlib:drawable-border-width (window-parent win)))))))
-    (xlib:display-force-output *display*)))
+    (xlib:display-finish-output *display*)))
 
 (defun find-free-window-number (group)
   "Return a free window number for GROUP."
@@ -494,7 +490,7 @@ than the root window's width and height."
 	  (if (or (eql map-state :viewable)
 		  (eql wm-state +iconic-state+))
 	      (progn
-		(dformat "Processing ~S ~S~%" (xwin-name win) win)
+		(dformat 1 "Processing ~S ~S~%" (xwin-name win) win)
 		(process-mapped-window screen win)))))))
   ;; Once processing them, hide them all. Later one will be mapped and
   ;; focused. We can do this because on start up there is only 1 group.
@@ -590,11 +586,11 @@ give the last accessed window focus."
   (let* ((f (window-frame window))
 	 (group (window-group window))
 	 (screen (group-screen group)))
-    (dformat "remove window ~a~%" screen)
-    (dformat "destroying parent window~%")
+    (dformat 1 "remove window ~a~%" screen)
+    (dformat 3 "destroying parent window~%")
     (xlib:reparent-window (window-xwin window) (screen-root screen) 0 0)
     (xlib:destroy-window (window-parent window))
-    (dformat "destroyed.~%")
+    (dformat 3 "destroyed.~%")
 
     ;; Clean up the window's entry in the screen and group
     (setf (screen-mapped-windows screen)
@@ -622,7 +618,7 @@ give the last accessed window focus."
 
 (defun no-focus (group last-win)
   "don't focus any window but still read keyboard events."
-  (dformat "no-focus~%")
+  (dformat 3 "no-focus~%")
   (let* ((screen (group-screen group)))
     (when (eq group (screen-current-group screen))
       (xlib:set-input-focus *display* (screen-focus-window screen) :POINTER-ROOT)
@@ -642,43 +638,36 @@ NEW-WINDOW is nil then the window is being hidden."
 (defun focus-window (window)
   "Give the window focus. This means the window will be visible,
 maximized, and given focus."
-  (handler-case
-      (let* ((group (window-group window))
-	     (screen (group-screen group))
-	     (cw (screen-focus screen)))
-	;; If window to focus is already focused then our work is done.
-	(unless (eq window cw)
-	  (raise-window window)
-	  (screen-set-focus screen window)
-	  ;;(send-client-message window :WM_PROTOCOLS +wm-take-focus+)
-	  (update-window-border window)
-	  (when cw
-	    (update-window-border cw))
-	  ;; Move the window to the head of the mapped-windows list
-	  (move-window-to-head group window)
-	  ;; If another window was focused, then call the unfocus hook for
-	  ;; it.
-	  (when cw
-	    ;; iconize the previous window if it was in the same frame and
-	    ;; is a :normal window
-	    (maybe-hide-window cw window)
-	    (run-hook-with-args *unfocus-window-hook* cw))
-	  (run-hook-with-args *focus-window-hook* window))
-	;; A nonlocal exit could leave stumpwm in an inconsistent
-	;; state. So make sure that doesn't happen.
-	(xlib:display-finish-output *display*))
-    ((or xlib:match-error xlib:window-error xlib:drawable-error) ()
-      ;; ignore the error for now.
-      )))
+  (let* ((group (window-group window))
+	 (screen (group-screen group))
+	 (cw (screen-focus screen)))
+    ;; If window to focus is already focused then our work is done.
+    (unless (eq window cw)
+      (raise-window window)
+      (screen-set-focus screen window)
+      ;;(send-client-message window :WM_PROTOCOLS +wm-take-focus+)
+      (update-window-border window)
+      (when cw
+	(update-window-border cw))
+      ;; Move the window to the head of the mapped-windows list
+      (move-window-to-head group window)
+      ;; If another window was focused, then call the unfocus hook for
+      ;; it.
+      (when cw
+	;; iconize the previous window if it was in the same frame and
+	;; is a :normal window
+	(maybe-hide-window cw window)
+	(run-hook-with-args *unfocus-window-hook* cw))
+      (run-hook-with-args *focus-window-hook* window))))
     
 (defun delete-window (window)
   "Send a delete event to the window."
-  (dformat "Delete window~%")
+  (dformat 3 "Delete window~%")
   (send-client-message window :WM_PROTOCOLS +wm-delete-window+))
 
 (defun xwin-kill (window)
   "Kill the client associated with window."
-  (dformat "Kill client~%")
+  (dformat 3 "Kill client~%")
   (xlib:kill-client *display* (xlib:window-id window)))
 
 
@@ -807,7 +796,6 @@ T (default) then also focus the frame."
     ;; record the last frame to be used in the fother command.
     (unless (eq f last)
       (setf (tile-group-last-frame group) last))
-    (dformat "~S~%" f)
     (if w
 	(focus-window w)
       (no-focus group (frame-window last)))
@@ -1032,7 +1020,7 @@ one."
   "synchronize windows attached to FRAME."
   (mapc (lambda (w)
 	  (when (eq (window-frame w) frame)
-	    (dformat "maximizing ~S~%" w)
+	    (dformat 3 "maximizing ~S~%" w)
 	    (maximize-window w)))
 	(group-windows group)))
 
@@ -1156,8 +1144,8 @@ windows used to draw the numbers in. The caller must destroy them."
 				(get-fg-color-pixel screen)
 				(get-bg-color-pixel screen)
 				(string (get-frame-number-translation f)))
-		(xlib:display-force-output *display*)
-		(dformat "mapped ~S~%" (frame-number f))
+		(xlib:display-finish-output *display*)
+		(dformat 3 "mapped ~S~%" (frame-number f))
 		w))
 	    (group-frames group))))
 	    
@@ -1204,6 +1192,7 @@ windows used to draw the numbers in. The caller must destroy them."
 
 ;;; TODO: Will windows exist in multiple groups, one day?
 (defun find-window (xwin)
+  (dformat 3 "find-window!~%")
   (dolist (i *screen-list*)
     (dolist (g (screen-groups i))
       (let ((w (find xwin (group-windows g) :key 'window-xwin :test 'xlib:window-equal)))
@@ -1268,7 +1257,7 @@ windows used to draw the numbers in. The caller must destroy them."
 		      (get-fg-color-pixel screen)
 		      (get-bg-color-pixel screen)
 		      s)
-      (xlib:display-force-output *display*)
+      (xlib:display-finish-output *display*)
       (reset-timeout-for-frame-indicator))))
 
 (defun echo-in-window (win font fg bg string)
@@ -1324,11 +1313,12 @@ the nth entry to highlight."
 			  0 (* i height)
 			  (xlib:drawable-width message-win)
 			  height)))
-  (xlib:display-force-output *display*)
+  (xlib:display-finish-output *display*)
   (push-last-message screen strings highlights)
   ;; Set a timer to hide the message after a number of seconds
   (unless *supress-echo-timeout*
-    (reset-timeout)))
+    (reset-timeout))
+  (apply 'run-hook-with-args *message-hook* strings))
 
 (defun echo-string (screen msg)
   "Print msg to SCREEN's message window."
@@ -1345,7 +1335,7 @@ the nth entry to highlight."
 	'(:substructure-redirect
 	  :substructure-notify
 	  :property-change))
-  (xlib:display-force-output *display*) 
+  (xlib:display-finish-output *display*) 
   ;; Initialize the screen structure
   (let* ((screen (make-screen))
 	 (fg (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-foreground-color+))
@@ -1423,15 +1413,27 @@ the nth entry to highlight."
 
 ;;; keyboard helper functions
 
+(defun key-to-keycode+state (key)
+  (let ((code (xlib:keysym->keycodes *display* (key-keysym key))))
+    (cond ((eq (xlib:keycode->keysym *display* code 0) (key-keysym key))
+	   (values code (x11-mods key)))
+	  ((eq (xlib:keycode->keysym *display* code 1) (key-keysym key))
+	   (values code (cons :shift (x11-mods key))))
+	  (t 
+	   ;; just warn them and go ahead as scheduled
+	   (warn "Don't know how to encode ~s" key)
+	   (values code (x11-mods key))))))
+
 (defun send-fake-key (win key)
   "Send a fake key event to win. ch is the character and mods is a
 list of modifier symbols."
-  (xlib:send-event (window-xwin win) :key-press (xlib:make-event-mask :key-press)
-		   :display *display*
-		   :root (screen-root (window-screen win))
-		   :window (window-xwin win) :event-window (window-xwin win)
-		   :code (xlib:keysym->keycodes *display* (key-keysym key))
-		   :state (x11-mods key)))
+  (multiple-value-bind (code state) (key-to-keycode+state key)
+    (xlib:send-event (window-xwin win) :key-press (xlib:make-event-mask :key-press)
+		     :display *display*
+		     :root (screen-root (window-screen win))
+		     :window (window-xwin win) :event-window (window-xwin win)
+		     :code code
+		     :state state)))
 
 (defun send-fake-click (win button)
   "Send a fake key event to win. ch is the character and mods is a
@@ -1476,7 +1478,8 @@ list of modifier symbols."
 
 (defun ungrab-pointer ()
   "Remove the grab on the cursor and restore the cursor shape."
-  (xlib:ungrab-pointer *display*))
+  (xlib:ungrab-pointer *display*)
+  (xlib:display-finish-output *display*))
 
 (defun grab-keyboard (screen)
   (xlib:grab-keyboard (screen-root screen) :owner-p nil
@@ -1513,7 +1516,7 @@ list of modifier symbols."
 
 (define-stump-event-handler :configure-request (stack-mode #|parent|# window #|above-sibling|# x y width height value-mask)
   ;; Grant the configure request but then maximize the window after the granting.
-  (dformat "CONFIGURE REQUEST ~S~%" value-mask)
+  (dformat 3 "CONFIGURE REQUEST ~S~%" value-mask)
   (labels ((has-x (mask) (= 1 (logand mask 1)))
 	   (has-y (mask) (= 2 (logand mask 2)))
 	   (has-w (mask) (= 4 (logand mask 4)))
@@ -1521,18 +1524,17 @@ list of modifier symbols."
 	   (has-stackmode (mask) (= 64 (logand mask 64))))
     ;; First, give the window what it wants
     (xlib:with-state (window)
-      (dformat "~S~%" value-mask)
       (when (has-x value-mask)
-	(dformat "x~%")
+	(dformat 3 "x~%")
 	(setf (xlib:drawable-x window) x))
       (when (has-y value-mask)
-	(dformat "y~%")
+	(dformat 3 "y~%")
 	(setf (xlib:drawable-y window) y))
       (when (has-h value-mask)
-	(dformat "h~%")
+	(dformat 3 "h~%")
 	(setf (xlib:drawable-height window) height))
       (when (has-w value-mask)
-	(dformat "w~%")
+	(dformat 3 "w~%")
 	(setf (xlib:drawable-width window) width))
       ;;       (when (has-bw value-mask)
       ;; 	(dformat "bw~%")
@@ -1544,7 +1546,7 @@ list of modifier symbols."
     (unless (or (logbitp 2 value-mask) (logbitp 3 value-mask))
       (xwin-send-configuration-notify window))
     ;; Make sure that goes to the client
-    (xlib:display-force-output *display*)
+    (xlib:display-finish-output *display*)
     ;; After honouring the request, maximize it
     (let ((window (find-window window)))
       (when window
@@ -1556,9 +1558,10 @@ list of modifier symbols."
 	      (:above
 	       (frame-raise-window (window-group window) (window-frame window) window)))))))))
 
-(define-stump-event-handler :map-request (#|parent|# send-event-p window)
+(define-stump-event-handler :map-request (parent send-event-p window)
   (unless send-event-p
-    (let ((screen (xwin-screen window)))
+    ;; This assumes parent is a root window and it should be.
+    (let ((screen (find-screen parent)))
       ;; only absorb it if it's not already managed (it could be iconic)
       (unless (find-window window)
 	(let ((window (process-mapped-window screen window)))
@@ -1570,7 +1573,7 @@ list of modifier symbols."
   ;; ones where event-window and window are the same, and
   ;; substructure unmap events when the event-window is the parent
   ;; of window. So use event-window to find the screen.
-  (dformat "UNMAP: ~s ~s~%" send-event-p (not (xlib:window-equal event-window window)))
+  (dformat 2 "UNMAP: ~s ~s~%" send-event-p (not (xlib:window-equal event-window window)))
   (unless (and (not send-event-p)
 	      (not (xlib:window-equal event-window window)))
     (let ((window (find-window window)))
@@ -1579,7 +1582,7 @@ list of modifier symbols."
       (when window
 	(if (plusp (window-unmap-ignores window))
 	    (progn
-	      (dformat "decrement ignores! ~d~%" (window-unmap-ignores window))
+	      (dformat 3 "decrement ignores! ~d~%" (window-unmap-ignores window))
 	      (decf (window-unmap-ignores window)))
 	    (remove-window window))))))
 
@@ -1618,7 +1621,7 @@ KMAP and return the binding or nil if the user hit an unbound sequence."
 (defun handle-keymap (kmap code state key-seq)
   "Find the command mapped to the (code state) and return it."
   ;; a symbol is assumed to have a hashtable as a value.
-  (dformat "Awaiting key ~a~%" kmap)
+  (dformat 1 "Awaiting key ~a~%" kmap)
   (when (and (symbolp kmap)
 	     (boundp kmap)
 	     (hash-table-p (symbol-value kmap)))
@@ -1627,7 +1630,7 @@ KMAP and return the binding or nil if the user hit an unbound sequence."
   (let* ((key (code-state->key code state))
 	 (cmd (lookup-key kmap key))
 	 (key-seq (cons key key-seq)))
-    (dformat "key-press: ~S ~S ~S~%" key state cmd)
+    (dformat 1 "key-press: ~S ~S ~S~%" key state cmd)
     (if cmd
 	(cond
 	  ((or (hash-table-p cmd)
@@ -1655,7 +1658,7 @@ KMAP and return the binding or nil if the user hit an unbound sequence."
 		 (ungrab-keyboard)
 		 ;; this force output is crucial. Without it weird
 		 ;; things happen if an error happens later on.
-		 (xlib:display-force-output *display*))))
+		 (xlib:display-finish-output *display*))))
       (multiple-value-bind (cmd key-seq) (get-cmd (current-screen) code state)
 	(unmap-message-window (current-screen))
 	(if cmd
@@ -1705,19 +1708,20 @@ chunks."
      (sync-frame-windows (window-group window) (window-frame window)))))
 
 (define-stump-event-handler :property-notify (window atom state)
-  (let* ((screen (xwin-screen window))
-	 (root (screen-root screen)))
-    (dformat "property notify ~s ~s ~s~%" window atom state)
-    (case atom      
-      (:rp_command_request 
+  (dformat 2 "property notify ~s ~s ~s~%" window atom state)
+  (case atom      
+    (:rp_command_request 
+     ;; we will only find the screen if window is a root window, which
+     ;; is the only place we listen for ratpoison commands.
+     (let* ((screen (find-screen window)))
        (when (and (eq state :new-value)
-		  (xlib:window-equal window root))
-	 (handle-rp-commands root)))
-      (t
-       (let ((window (find-window window)))
-	 (when window
-	   (update-window-properties window atom)))))))
-
+		  screen)
+	 (handle-rp-commands window))))
+     (t
+      (let ((window (find-window window)))
+	(when window
+	  (update-window-properties window atom))))))
+ 
 (define-stump-event-handler :mapping-notify (request start count)
   ;; We could be a bit more intelligent about when to update the
   ;; modifier map, but I don't think it really matters.
@@ -1732,6 +1736,7 @@ chunks."
   (setf *x-selection* nil))
 
 (define-stump-event-handler :exposure (window x y width height count)
+  (declare (ignore x y width height))
   (let ((screen (find-if (lambda (s)
 			   (and (screen-mode-line s)
 				(xlib:window-equal window (mode-line-window (screen-mode-line s)))))
@@ -1747,7 +1752,7 @@ chunks."
 
 (defun handle-event (&rest event-slots &key display event-key &allow-other-keys)
   (declare (ignore display))
-  (dformat "Handling event ~S~%" event-key)
+  (dformat 1 "Handling event ~S~%" event-key)
   (let ((eventfn (gethash event-key *event-fn-table*)))
     (when eventfn
       (handler-case (prog1
@@ -1760,7 +1765,7 @@ chunks."
 	  ;; it. It will be taken care of in the unmap
 	  ;; and destroy events we'll be getting
 	  ;; shortly.
-	  ;; (warn "Caught ~s in ~s event handler.~%" c event-key)
+	  ;;(warn "Caught ~s in ~s event handler." c event-key)
 	  )))
     t))
 
@@ -1782,6 +1787,7 @@ chunks."
   (export-selection))
 
 (defun send-selection (requestor property selection target time)
+  (dformat 1 "send-selection ~s ~s ~s ~s ~s~%" requestor property selection target time)
   (cond 
     ;; they're requesting what targets are available
     ((eq target :targets)

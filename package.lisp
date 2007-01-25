@@ -8,6 +8,8 @@
 	   #:current-screen
 	   #:screen-current-window
 	   #:run-commands
+	   #:*debug-level*
+	   #:dformat
 	   ;; message bar
 	   #:set-fg-color
 	   #:set-bg-color

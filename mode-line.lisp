@@ -187,7 +187,7 @@ current group.")
 	(resize-mode-line-for (screen-mode-line screen) screen)
 	(redraw-mode-line-for (screen-mode-line screen) screen)
 	;; move the frames
-	(dformat "modeline: ~s~%" (screen-mode-line screen))
+	(dformat 3 "modeline: ~s~%" (screen-mode-line screen))
 	(dolist (group (screen-groups screen))
 	  (when (eq (mode-line-position (screen-mode-line screen)) :top)
 	    (offset-frames group 0 (true-height (mode-line-window (screen-mode-line screen)))))

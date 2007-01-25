@@ -1,3 +1,27 @@
+2007-01-25  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* primitives.lisp (*debug-level*): new defvar
+	(*debug-stream*): likewise
+	(dformat): send output to *debug-stream*
+
+	* user.lisp ("move-focus"): use error for invalid directions
+
+	* stumpwm.lisp (stumpwm): call display-finish-output after each init-screen
+
+	* core.lisp (echo-string-list): run *message-hook* hook
+
+2007-01-21  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* core.lisp (xwin-screen): remove. all callers updated.
+	(focus-window): don't call display-finish-output
+	(maximize-window): call display-finish-output, not display-force-output
+	(draw-frame-numbers): likewise
+	(show-frame-indicator): likewise
+	(echo-string-list): likewise
+	(init-screen): likewise
+	(:configure-request): likewise
+	(:key-press): likewise
+
 2007-01-20  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* stumpwm.asd: only require :clx in sbcl

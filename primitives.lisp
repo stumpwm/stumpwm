@@ -78,6 +78,11 @@ occur in that many seconds.")
   are called with 2 arguments: the current frame and the last
   frame.")
 
+(defvar *message-hook* '()
+  "A hook called whenever stumpwm displays a message. The hook
+function is passed any number of arguments. Each argument is a
+line of text.")
+
 ;; Data types and globals used by stumpwm
 
 (defvar *display* nil
@@ -324,7 +329,7 @@ single char keys are supported.")
 			for i in nums
 			when (/= n i)
 			do (return n))))
-    (dformat "Free number: ~S~%" nums)
+    (dformat 3 "Free number: ~S~%" nums)
     (if new-num
 	new-num
       ;; there was no space between the numbers, so use the last + 1
@@ -486,13 +491,18 @@ Modifies the match data; use `save-match-data' if necessary."
 	  ;; it out a little.
 	  '("")))))
 
-(defun dformat (fmt &rest args)
-  (declare (ignore fmt args))
-  ;;(with-open-file (s #p"/tmp/stumplog" :direction :output :if-exists :append :if-does-not-exist :create)
-;;     (multiple-value-bind (sec m h) (decode-universal-time (get-universal-time))
-;;       (format t "~d:~d:~d" h m sec))
-;;     (apply 'format t fmt args)
-    )
+(defvar *debug-level* 0
+  "Set this to a number > 0 and debugging output will be
+  produced. The higher the number the more output.")
+
+(defvar *debug-stream* *error-output*
+  "Where to send debugging output.")
+
+(defun dformat (level fmt &rest args)
+  (when (>= *debug-level* level)
+    (multiple-value-bind (sec m h) (decode-universal-time (get-universal-time))
+      (format *debug-stream* "~d:~d:~d " h m sec))
+    (apply 'format *debug-stream* fmt args)))
 
 ;;; 
 ;;; formatting routines

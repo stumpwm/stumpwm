@@ -103,7 +103,6 @@
   (let* ((height (+ (xlib:font-descent (screen-font screen))
 		    (xlib:font-ascent (screen-font screen))))
 	 (win (screen-input-window screen)))
-    (dformat "Setup input window~%")
     ;; Window dimensions
     (xlib:map-window win)
     (setf (xlib:window-priority win) :above
@@ -115,7 +114,6 @@
 			:sync-keyboard-p nil :sync-pointer-p nil)))
 
 (defun shutdown-input-window (screen)
-  (dformat "Shutdown input window~%")
   (xlib:ungrab-keyboard *display*)
   (xlib:unmap-window (screen-input-window screen)))
 

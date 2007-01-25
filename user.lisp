@@ -380,9 +380,9 @@ returns..which could be forever if you're not careful."
                              x)
                            #'identity)))
     ;; Only remove the current frame if it has a sibling
-    (dformat "~S~%" s)
+    (dformat 3 "~S~%" s)
     (when s
-      (dformat "~S~%" l)
+      (dformat 3 "~S~%" l)
       ;; Move the windows from the removed frame to its sibling
       (migrate-frame-windows group (tile-group-current-frame group) l)
       ;; If the frame has no window, give it the current window of
@@ -481,7 +481,7 @@ select one. Returns the selected frame or nil if aborted."
 		 (draw-frame-numbers group)))
 	 (ch (read-one-char (group-screen group)))
 	 (num (read-from-string (string ch))))
-    (dformat "read ~S ~S~%" ch num)
+    (dformat 3 "read ~S ~S~%" ch num)
     (mapc #'xlib:destroy-window wins)
     (clear-frame-outlines group)
     (find ch (group-frames group)
@@ -684,7 +684,7 @@ aborted."
 				 (or (funcall fn arg-line prompt)
 				     (throw 'error "Abort.")))))
 			 arg-specs)))
-      (dformat "arguments: ~S~%" args)
+      (dformat 3 "arguments: ~S~%" args)
       ;; Did the whole string get parsed?
       (unless (or (argument-line-end-p arg-line)
 		  (position-if 'alphanumericp (argument-line-string arg-line) :start (argument-line-start arg-line)))
@@ -830,12 +830,11 @@ aborted."
     (destructuring-bind (perp-coord perp-span parall-coord parall-span)
 	(cond
 	  ((or (string= dir "left") (string= dir "right"))
-	   (list #'frame-y #'frame-height #'frame-x #'frame-width))
+	   '(frame-y frame-height frame-x frame-width))
 	  ((or (string= dir "up") (string= dir "down"))
-	   (list #'frame-x #'frame-width #'frame-y #'frame-height))
+	   '(frame-x frame-width frame-y frame-height))
 	  (t
-	   (echo-string (current-screen) "Valid directions: up, down, left, right")
-	   '(nil nil nil nil)))
+	   (error "Valid directions: up, down, left, right")))
       (when perp-coord
 	(let ((new-frame (find-closest-frame
 			  (tile-group-current-frame group)

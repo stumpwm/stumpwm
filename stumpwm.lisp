@@ -57,14 +57,14 @@ loaded."
 	)
 )
 
-(defun error-handler (display error-key &rest key-vals &key asynchronous &allow-other-keys)
-  "Handle X errors"
-  (declare (ignore display asynchronous))
-  (case error-key
-    ('xlib:access-error
-     (error "Another window manager is running."))
-    (t
-     (dformat "Error ~S ~S~%" error-key key-vals))))
+;; (defun error-handler (display error-key &rest key-vals &key asynchronous &allow-other-keys)
+;;   "Handle X errors"
+;;   (declare (ignore display asynchronous))
+;;   (case error-key
+;;     ('xlib:access-error
+;;      (error "Another window manager is running."))
+;;     (t
+;;      (dformat "Error ~S ~S~%" error-key key-vals))))
 
 (defun stumpwm-internal-loop ()
   "The internal loop that waits for events and handles them."
@@ -72,7 +72,7 @@ loaded."
   ;; we don't the whole X server could be locked.
   (labels ((ungrab (condition hook)
 	     (declare (ignore condition hook))
-	     (dformat "Error! Ungrabbing keyboard.~%")
+	     (dformat 1 "Error! Ungrabbing keyboard.~%")
 	     ;;#+clisp (ext:show-stack 1 100 (sys::the-frame))
 	     (ungrab-keyboard)
 	     (xlib:display-finish-output *display*)))
@@ -131,11 +131,11 @@ loaded."
 	   (update-modifier-map)
 	   ;; Initialize all the screens
 	   (handler-case
-	       (setf *screen-list* (loop for i in (xlib:display-roots *display*)
-				      for n from 0
-				      collect (init-screen i n host)))
-	     (xlib:access-error (c)
-	       (declare (ignore c))
+	       (progn (setf *screen-list* (loop for i in (xlib:display-roots *display*)
+					     for n from 0
+					     collect (init-screen i n host)))
+		      (xlib:display-finish-output *display*))
+	     (xlib:access-error ()
 	       (return-from stumpwm (write-line "Another window manager is running."))))
 	   ;; Initialize the necessary atoms
 	   (init-atoms)

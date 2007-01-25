@@ -133,6 +133,7 @@ Screens
 Miscellaneous Commands
 
 * Menus::                       
+* Debugging StumpWM::           
 
 @end detailmenu
 @end menu
@@ -1368,10 +1369,11 @@ running instance. Set it to NIL to search only the current group.
 
 @menu
 * Menus::                       
+* Debugging StumpWM::           
 @end menu
 
-@node Menus,  , Miscellaneous Commands, Miscellaneous Commands
-@subsection Menus
+@node Menus, Debugging StumpWM, Miscellaneous Commands, Miscellaneous Commands
+@section Menus
 Some commands present the options in a menu. The following are the menu key bindings:
 
 @table @kbd
@@ -1393,6 +1395,19 @@ Abort the menu.
 Select the highlighted option.
 
 @end table
+
+@node Debugging StumpWM,  , Menus, Miscellaneous Commands
+@section Debugging StumpWM
+
+@defvar *debug-level*
+Set this variable to a number > 0 to turn on debugging. The greater the number the more debugging output.
+@end defvar
+
+@defvar *debug-stream*
+This is the stream debugging output is sent to. It defaults to
+*error-output*. It may be more convenient for you to pipe debugging
+output directly to a file.
+@end defvar
 
 @node Hooks, Command and Function Index, Miscellaneous Commands, Top
 @chapter Hooks
