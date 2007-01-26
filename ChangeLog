@@ -2,6 +2,7 @@
 
 	* stumpwm.lisp (error-handler): new defun
 	(stumpwm): set error handler
+	(stumpwm-internal-loop): remove catch for drawable and window-error 
 
 	* core.lisp (set-font): use the first font that matches
 
