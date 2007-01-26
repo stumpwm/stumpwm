@@ -1,5 +1,7 @@
 2007-01-25  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* user.lisp (window-send-string): handle RET and TAB
+
 	* core.lisp (key-to-keycode+state): new function
 	(send-fake-key): use key-to-keycode+state
 

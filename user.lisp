@@ -1204,8 +1204,13 @@ commands or don't know lisp very well."
     (map nil (lambda (ch) 
 	       ;; exploit the fact that keysyms for ascii characters
 	       ;; are the same as their ascii value.
-	       (let ((sym (when (<= 32 (char-code ch) 127)
-			    (char-code ch))))
+	       (let ((sym (cond ((<= 32 (char-code ch) 127)
+				 (char-code ch))
+				((char= ch #\Tab)
+				 (stumpwm-name->keysym "TAB"))
+				((char= ch #\Newline)
+				 (stumpwm-name->keysym "RET"))
+				(t nil))))
 		 (when sym
 		   (send-fake-key window
 				  (make-key :keysym sym)))))
