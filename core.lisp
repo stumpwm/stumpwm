@@ -706,7 +706,7 @@ maximized, and given focus."
 
 (defun set-font (font)
   (when (font-exists-p font)
-    (let ((fobj (xlib:open-font *display* font)))
+    (let ((fobj (xlib:open-font *display* (first (xlib:list-font-names *display* font :max-fonts 1)))))
       (dolist (i *screen-list*)
 	(xlib:close-font (screen-font i))
 	(setf (screen-font i) fobj
