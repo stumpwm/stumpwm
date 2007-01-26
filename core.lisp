@@ -1418,7 +1418,8 @@ the nth entry to highlight."
     (cond ((eq (xlib:keycode->keysym *display* code 0) (key-keysym key))
 	   (values code (x11-mods key)))
 	  ((eq (xlib:keycode->keysym *display* code 1) (key-keysym key))
-	   (values code (cons :shift (x11-mods key))))
+	   (values code (apply 'xlib:make-state-mask
+			       (cons :shift (xlib:make-state-keys (x11-mods key))))))
 	  (t 
 	   ;; just warn them and go ahead as scheduled
 	   (warn "Don't know how to encode ~s" key)

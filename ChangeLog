@@ -1,5 +1,8 @@
 2007-01-25  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* core.lisp (key-to-keycode+state): new function
+	(send-fake-key): use key-to-keycode+state
+
 	* input.lisp (draw-input-bucket): make room for the cursor
 
 	* primitives.lisp (*debug-level*): new defvar
