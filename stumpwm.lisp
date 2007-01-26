@@ -100,6 +100,15 @@ loaded."
 		 ;; flush any pending output. You'd think process-event would, but
 		 ;; it seems not.
 		 (xlib:display-finish-output *display*))
+	     ((or xlib:drawable-error xlib:window-error) ()
+	       ;; This is generally the error we get when
+	       ;; attempting to focus a window that's been
+	       ;; destroyed. Give a warning and ignore
+	       ;; it. It will be taken care of in the unmap
+	       ;; and destroy events we'll be getting
+	       ;; shortly.
+	       ;;(warn "Caught ~s in ~s event handler." c event-key)
+	       )
 	     (error (c)
 	       (ecase *top-level-error-action*
 		 (:message

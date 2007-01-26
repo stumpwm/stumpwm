@@ -1756,18 +1756,8 @@ chunks."
   (dformat 1 ">>> ~S~%" event-key)
   (let ((eventfn (gethash event-key *event-fn-table*)))
     (when eventfn
-      (handler-case (prog1
-			(apply eventfn event-slots)
-		      (xlib:display-finish-output *display*))
-	((or xlib:drawable-error xlib:window-error) ()
-	  ;; This is generally the error we get when
-	  ;; attempting to focus a window that's been
-	  ;; destroyed. Give a warning and ignore
-	  ;; it. It will be taken care of in the unmap
-	  ;; and destroy events we'll be getting
-	  ;; shortly.
-	  ;;(warn "Caught ~s in ~s event handler." c event-key)
-	  )))
+      (apply eventfn event-slots)
+      (xlib:display-finish-output *display*))
     (dformat 2 "<<< ~S~%" event-key)
     t))
 

@@ -1,3 +1,10 @@
+2007-01-26  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* stumpwm.lisp (stumpwm-internal-loop): handle window-error and
+	drawable-error errors
+
+	* core.lisp (handle-event): remove handler-case
+
 2007-01-25  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp (window-send-string): handle RET and TAB
