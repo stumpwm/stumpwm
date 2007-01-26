@@ -1,5 +1,8 @@
 2007-01-26  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* stumpwm.lisp (error-handler): new defun
+	(stumpwm): set error handler
+
 	* core.lisp (set-font): use the first font that matches
 
 	* stumpwm.lisp (stumpwm-internal-loop): handle window-error and

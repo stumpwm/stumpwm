@@ -57,14 +57,18 @@ loaded."
 	)
 )
 
-;; (defun error-handler (display error-key &rest key-vals &key asynchronous &allow-other-keys)
-;;   "Handle X errors"
-;;   (declare (ignore display asynchronous))
-;;   (case error-key
-;;     ('xlib:access-error
-;;      (error "Another window manager is running."))
-;;     (t
-;;      (dformat "Error ~S ~S~%" error-key key-vals))))
+(defun error-handler (display error-key &rest key-vals &key asynchronous &allow-other-keys)
+  "Handle X errors"
+  (case error-key
+    ((or xlib:window-error xlib:drawable-error)
+     ;; ignore
+     )
+    ;; all other errors are thrown and caught at the top level where
+    ;; stumpwm quits, basically.
+    (t
+     (if asynchronous
+	 (apply #'x-cerror "Ignore" error-key :display display :error-key error-key key-vals)
+	 (apply #'x-error error-key :display display :error-key error-key key-vals)))))
 
 (defun stumpwm-internal-loop ()
   "The internal loop that waits for events and handles them."
@@ -132,7 +136,8 @@ loaded."
 (defun stumpwm (&optional (display-str (or (getenv "DISPLAY") ":0")) protocol)
   "Start the stump window manager."
   (multiple-value-bind (host display) (parse-display-string display-str)
-    (setf *display* (xlib:open-display host :display display :protocol protocol))
+    (setf *display* (xlib:open-display host :display display :protocol protocol)
+	  (xlib:display-error-handler *display*) 'error-handler)
     ;; In the event of an error, we always need to close the display
     (unwind-protect
 	 (progn
