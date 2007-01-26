@@ -1,5 +1,7 @@
 2007-01-25  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* input.lisp (draw-input-bucket): make room for the cursor
+
 	* primitives.lisp (*debug-level*): new defvar
 	(*debug-stream*): likewise
 	(dformat): send output to *debug-stream*

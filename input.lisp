@@ -213,12 +213,14 @@ to return a list of matches."
 	 (win (screen-input-window screen))
 	 (prompt-width (xlib:text-width (screen-font screen) prompt :translate #'translate-id))
 	 (string (input-line-string input))
+	 (string-width (+ (xlib:text-width (screen-font screen) string :translate #'translate-id)
+			       (xlib:text-width (screen-font screen) " " :translate #'translate-id)))
 	 (pos (input-line-position input))
 	 (width (+ prompt-width
-		   (max 100 (xlib:text-width (screen-font screen) string :translate #'translate-id)))))
+		   (max 100 string-width))))
     (xlib:clear-area win :x (+ *message-window-padding*
 			       prompt-width
-			       (xlib:text-width (screen-font screen) string :translate #'translate-id)))
+			       string-width))
     (xlib:with-state (win)
 		     (setf (xlib:drawable-width win) (+ width (* *message-window-padding* 2)))
 		     (setup-win-gravity screen win *input-window-gravity*))
