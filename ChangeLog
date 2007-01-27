@@ -1,8 +1,10 @@
 2007-01-27  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* core.lisp (reparent-window): give normal windows a black bg
+
 	* stumpwm.lisp (error-handler): new function
 
-	* primitives.lisp (window): new slots x y width height border-width
+	* primitives.lisp (window): new slots width height
 
 	* core.lisp (xwin-send-configuration-notify): take the geometry as arguments. all callers updated.
 	(geometry-hints): use cached window geometry slots
