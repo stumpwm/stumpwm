@@ -356,7 +356,7 @@ identity with a range check."
       :normal))
 
 ;; Stolen from Eclipse
-(defun xwin-send-configuration-notify (root xwin x y w h bw)
+(defun xwin-send-configuration-notify (xwin x y w h bw)
   "Send a synthetic configure notify event to the given window (ICCCM 4.1.5)"
     (xlib:send-event xwin :configure-notify nil
 		     :event-window xwin
@@ -393,7 +393,7 @@ than the root window's width and height."
 	 (hints-min-aspect (and hints (xlib:wm-size-hints-min-aspect hints)))
 	 (hints-max-aspect (and hints (xlib:wm-size-hints-max-aspect hints)))
 	 center)
-;;    (dformat 4 "hints: ~s~%" hints)
+    ;;    (dformat 4 "hints: ~s~%" hints)
     ;; determine what the width and height should be
     (cond
       ;; Adjust the defaults if the window is a transient_for window.
@@ -466,7 +466,7 @@ than the root window's width and height."
     (setf (xlib:drawable-x (window-parent win)) x
 	  (xlib:drawable-y (window-parent win)) y)
     ;; This is the only place a window's geometry should change
-    (set-window-geometry win :x x :y y :width width :height height :border-width 0)
+    (set-window-geometry win :x 0 :y 0 :width width :height height :border-width 0)
     ;; the parent window should stick to the size of the window
     ;; unless it isn't being maximized to fill the frame.
     (if stick
@@ -1571,7 +1571,7 @@ managing. Basically just give the window what it wants."
 	       (not (or (has-h value-mask)
 			(has-w value-mask)
 			(has-bw value-mask))))
-	  (xwin-send-configuration-notify (xlib:drawable-root xwin) xwin x y width height border-width)))))
+	  (xwin-send-configuration-notify xwin x y width height border-width)))))
 
 (defun handle-managed-window (window border-width stack-mode value-mask)
   "This is a managed window so deal with it appropriately."
@@ -1585,8 +1585,7 @@ managing. Basically just give the window what it wants."
   ;; Send the window a synthetic event. We didn't honour any of its
   ;; requests so it'll just get its current geometry sent back. Take
   ;; that silly window!
-  (xwin-send-configuration-notify (screen-root (window-screen window))
-				  (window-xwin window)
+  (xwin-send-configuration-notify (window-xwin window)
 				  (window-x window) (window-y window) (window-width window) (window-height window)
 				  border-width))
 
