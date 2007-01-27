@@ -1,5 +1,7 @@
 2007-01-27  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* stumpwm.lisp (stumpwm-internal-loop): print the error before throwing :quit
+
 	* core.lisp (reparent-window): give normal windows a black bg
 
 	* stumpwm.lisp (error-handler): new function

@@ -115,7 +115,8 @@ loaded."
 		    (echo-string (current-screen) s)))
 		 (:break (invoke-debugger c))
 		 (:abort
-		  (throw :quit (format nil "~&Caught ~a at the top level. Please report this." c)))))))))))
+		  (format t "~&Caught ~a at the top level. Please report this." c)
+		  (throw :quit t))))))))))
 
 (defun parse-display-string (display)
   "Parse an X11 DISPLAY string and return the host and display from it."
