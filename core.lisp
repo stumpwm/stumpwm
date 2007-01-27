@@ -255,6 +255,12 @@ identity with a range check."
 
 ;; some handy wrappers
 
+(defun true-height (win)
+  (+ (xlib:drawable-height win) (* (xlib:drawable-border-width win) 2)))
+
+(defun true-width (win)
+  (+ (xlib:drawable-width win) (* (xlib:drawable-border-width win) 2)))
+
 (defun xwin-border-width (win)
   (xlib:drawable-border-width win))
 
