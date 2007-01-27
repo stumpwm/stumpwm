@@ -401,9 +401,9 @@ than the root window's width and height."
       ((and hints-min-aspect hints-max-aspect)
        (let ((ratio (/ width height)))
 	 (cond ((< ratio hints-min-aspect)
-		(setf height (ceiling width hints-min-aspect)))
+		(setf height (truncate width hints-min-aspect)))
 	       ((> ratio hints-max-aspect)
-		(setf width  (ceiling (* height hints-max-aspect)))))
+		(setf width  (truncate (* height hints-max-aspect)))))
 	 (setf center t)))
       ;; Update our defaults if the window has the maxsize hints
       ((or hints-max-width hints-max-height)
@@ -478,7 +478,7 @@ than the root window's width and height."
 			 :width (window-width window)
 			 :height (window-height window)
 			 ;; normal windows geta black background
-			 :background (when (eq (window-type window) :normal) (get-bg-color-pixel screen))
+			 :background (get-bg-color-pixel screen)
 			 :border (get-color-pixel screen *unfocus-color*)
 			 :border-width (default-border-width-for-type (window-type window))
 			 :event-mask *window-parent-events*)))
