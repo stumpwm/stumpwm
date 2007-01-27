@@ -169,7 +169,7 @@ to login remotely to regain control. :abort quits stumpmwm.")
 
 (defstruct window
   xwin
-  x y width height border-width
+  width height
   group
   frame
   number
