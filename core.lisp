@@ -440,7 +440,7 @@ than the root window's width and height."
     (xlib:with-state ((window-xwin win))
       (update xlib:drawable-x nil x)
       (update xlib:drawable-y nil y)
-      (update xlib:drawable-width window-height width)
+      (update xlib:drawable-width window-width width)
       (update xlib:drawable-height window-height height)
       (update xlib:drawable-border-width nil border-width)
       )))
@@ -449,7 +449,7 @@ than the root window's width and height."
   "Maximize the window."
   (multiple-value-bind (x y width height stick)
       (geometry-hints win)
-    (dformat 4 "maximize window x: ~d y: ~d width: ~d height: ~d stick: ~s~%" x y width height stick)
+    (dformat 4 "maximize window ~a x: ~d y: ~d width: ~d height: ~d stick: ~s~%" win x y width height stick)
     ;; Move the parent window
     (setf (xlib:drawable-x (window-parent win)) x
 	  (xlib:drawable-y (window-parent win)) y)
