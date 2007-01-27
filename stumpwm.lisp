@@ -59,16 +59,15 @@ loaded."
 
 (defun error-handler (display error-key &rest key-vals &key asynchronous &allow-other-keys)
   "Handle X errors"
-  (case error-key
-    ((or xlib:window-error xlib:drawable-error)
-     ;; ignore
-     (dformat 4 "Ignoring error: ~s~%" error-key))
-    ;; all other errors are thrown and caught at the top level where
-    ;; stumpwm quits, basically.
-    (t
-     (if asynchronous
-	 (apply #'x-cerror "Ignore" error-key :display display :error-key error-key key-vals)
-	 (apply #'x-error error-key :display display :error-key error-key key-vals)))))
+  ;; ignore asynchronous window errors
+  (if (and asynchronous
+	   (find error-key '(xlib:window-error xlib:drawable-error)))
+      (dformat 4 "Ignoring error: ~s~%" error-key)
+      ;; all other errors are thrown and caught at the top level where
+      ;; stumpwm quits, basically.
+      (if asynchronous
+	  (apply 'cerror "Ignore" error-key :display display :error-key error-key key-vals)
+	  (apply 'error error-key :display display :error-key error-key key-vals))))
 
 (defun stumpwm-internal-loop ()
   "The internal loop that waits for events and handles them."
@@ -104,6 +103,10 @@ loaded."
 		 ;; flush any pending output. You'd think process-event would, but
 		 ;; it seems not.
 		 (xlib:display-finish-output *display*))
+;; 	     ((or xlib:window-error xlib:drawable-error) (c)
+;; 	       ;; Just in case some synchronous window error gets here
+;; 	       ;; (this should be impossible) catch it and ignore it.
+;; 	       (dformat 4 "top level ignore synchronous ~a~%" c))
 	     (error (c)
 	       (ecase *top-level-error-action*
 		 (:message

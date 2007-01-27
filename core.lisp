@@ -208,11 +208,11 @@ identity with a range check."
 	      (get-color-pixel screen *focus-color*)
 	      (get-color-pixel screen *unfocus-color*)))))
 
-(defun true-height (drawable)
-  (+ (xlib:drawable-height drawable) (* (xlib:drawable-border-width drawable) 2)))
+(defun true-height (win)
+  (+ (window-height win) (* (window-border-width win) 2)))
 
-(defun true-width (drawable)
-  (+ (xlib:drawable-width drawable) (* (xlib:drawable-border-width drawable))))
+(defun true-width (win)
+  (+ (window-width win) (* (window-border-width win) 2)))
 
 (defun send-client-message (window type &rest data)
   "Send a client message to a client's window."
@@ -356,21 +356,16 @@ identity with a range check."
       :normal))
 
 ;; Stolen from Eclipse
-(defun xwin-send-configuration-notify (xwin)
+(defun xwin-send-configuration-notify (root xwin x y w h bw)
   "Send a synthetic configure notify event to the given window (ICCCM 4.1.5)"
-  (dformat 3 "xwin send configure notify~%")
-  (multiple-value-bind (x y)
-      (xlib:translate-coordinates xwin 0 0 (xlib:drawable-root xwin))
-    (xlib:send-event xwin
-		     :configure-notify
-		     (xlib:make-event-mask :structure-notify)
-		     :event-window xwin :window xwin
+    (xlib:send-event xwin :configure-notify nil
+		     :event-window xwin
+		     :window xwin
 		     :x x :y y
-		     :override-redirect-p nil
-		     :border-width (xlib:drawable-border-width xwin)
-		     :width (xlib:drawable-width xwin)
-		     :height (xlib:drawable-height xwin)
-		     :propagate-p nil)))
+		     :width w
+		     :height h
+		     :border-width bw
+		     :propagate-p nil))
   
 (defun geometry-hints (win)
   "Return hints for max width and height and increment hints. These
@@ -384,77 +379,104 @@ than the root window's width and height."
 		     (* 2 (xlib:drawable-border-width (window-parent win)))))
 	 (width fwidth)
 	 (height fheight)
-	 (inc-x 1)
-	 (inc-y 1)
 	 (hints (window-normal-hints win))
-	 (hints-width (and hints (xlib:wm-size-hints-max-width hints)))
-	 (hints-height (and hints (xlib:wm-size-hints-max-height hints)))
+	 (hints-max-width (and hints (xlib:wm-size-hints-max-width hints)))
+	 (hints-max-height (and hints (xlib:wm-size-hints-max-height hints)))
+	 ;; width/height are obsolete so use base-width/height if
+	 ;; they're there.
+	 (hints-width (and hints (or (xlib:wm-size-hints-base-width hints)
+				     (xlib:wm-size-hints-width hints))))
+	 (hints-height (and hints (or (xlib:wm-size-hints-base-height hints)
+				      (xlib:wm-size-hints-height hints))))
 	 (hints-inc-x (and hints (xlib:wm-size-hints-width-inc hints)))
 	 (hints-inc-y (and hints (xlib:wm-size-hints-height-inc hints)))
 	 (hints-min-aspect (and hints (xlib:wm-size-hints-min-aspect hints)))
 	 (hints-max-aspect (and hints (xlib:wm-size-hints-max-aspect hints)))
 	 center)
+;;    (dformat 4 "hints: ~s~%" hints)
+    ;; determine what the width and height should be
     (cond
       ;; Adjust the defaults if the window is a transient_for window.
-      ((xlib:get-property (window-xwin win) :WM_TRANSIENT_FOR)
+      ((eq (window-type win) :transient)
        (setf center t
-	     width (min (xlib:drawable-width (window-xwin win)) width)
-	     height (min (xlib:drawable-height (window-xwin win)) height)))
+	     width (min (or hints-width 
+			    (window-width win)) width)
+	     height (min (or hints-height
+			     (window-height win)) height)))
+      ;; aspect hints are handled similar to max size hints
       ((and hints-min-aspect hints-max-aspect)
        (let ((ratio (/ width height)))
 	 (cond ((< ratio hints-min-aspect)
-		(setf height (truncate width hints-min-aspect)))
+		(setf height (ceiling width hints-min-aspect)))
 	       ((> ratio hints-max-aspect)
-		(setf width  (truncate (* height hints-max-aspect)))))
+		(setf width  (ceiling (* height hints-max-aspect)))))
 	 (setf center t)))
-      ;; Update our defaults if the window has the hints
-      ((or hints-width hints-height)
-       (when (and hints-width
-		  (< hints-width width))
-	 (setf width hints-width))
-       (when (and hints-height
-		  (< hints-height height))
-	 (setf height hints-height))
-       (setf center t)))
-    (when hints-inc-x
-      (setf inc-x hints-inc-x))
-    (when hints-inc-y
-      (setf inc-y hints-inc-y))
+      ;; Update our defaults if the window has the maxsize hints
+      ((or hints-max-width hints-max-height)
+       (when (and hints-max-width
+		  (< hints-max-width width))
+	 (setf width hints-max-width))
+       (when (and hints-max-height
+		  (< hints-max-height height))
+	 (setf height hints-max-height))
+       (setf center t))
+      (t
+       ;; if they have inc hints then start with the size and adjust
+       ;; based on those increments until the window fits in the frame
+       (when hints-inc-x
+	 (let ((w (or hints-width (window-width win))))
+	   (setf width (+ w (* hints-inc-x
+			       (+ (floor (- fwidth w) hints-inc-x)))))))
+       (when hints-inc-y
+	 (let ((h (or hints-height (window-height win))))
+	   (setf height (+ h (* hints-inc-y
+				(+ (floor (- fheight h -1) hints-inc-y)))))))))
     ;; center if needed
     (when center
       (setf x (+ x (truncate (- fwidth width) 2))
 	    y (+ y (truncate (- fheight height) 2))))
     ;; Now return our findings
-    (values x y width height inc-x inc-y center)))
+    (values x y width height center)))
+
+(defun set-window-geometry (win &key x y width height border-width)
+  (macrolet ((update (xfn wfn v)
+	       `(when (and ,v (/= (,wfn win) ,v))
+		  (setf (,xfn (window-xwin win)) ,v
+			(,wfn win) ,v))))
+    (xlib:with-state ((window-xwin win))
+      ;; Make sure the window is seated at the upperleft of its parent
+      (update xlib:drawable-x window-x x)
+      (update xlib:drawable-y window-y y)
+      (update xlib:drawable-width window-height width)
+      (update xlib:drawable-height window-height height)
+      (update xlib:drawable-border-width window-border-width border-width))))
 
 (defun maximize-window (win)
   "Maximize the window."
-  (multiple-value-bind (x y width height inc-x inc-y stick)
+  (multiple-value-bind (x y width height stick)
       (geometry-hints win)
+    (dformat 4 "old x: ~d y: ~d width: ~d height: ~d border: ~s~%" 
+	     (window-x win)
+	     (window-y win)
+	     (window-width win)
+	     (window-height win)
+	     (window-border-width win))
+    (dformat 4 "new x: ~d y: ~d width: ~d height: ~d stick: ~s~%" x y width height stick)
     ;; Move the parent window
     (setf (xlib:drawable-x (window-parent win)) x
 	  (xlib:drawable-y (window-parent win)) y)
-    ;; Make sure the window is seated at the upperleft of its parent
-    (setf (xlib:drawable-x (window-xwin win)) 0
-	  (xlib:drawable-y (window-xwin win)) 0)
-    ;; Resize the window
-    (setf (xlib:drawable-width (window-xwin win))
-	  (+ (xlib:drawable-width (window-xwin win))
-	     (* inc-x (floor (/ (- width (xlib:drawable-width (window-xwin win))) inc-x))))
-	  (xlib:drawable-height (window-xwin win))
-	  (+ (xlib:drawable-height (window-xwin win))
-	     (* inc-y (floor (/ (- height (xlib:drawable-height (window-xwin win))) inc-y)))))
+    ;; This is the only place a window's geometry should change
+    (set-window-geometry win :x x :y y :width width :height height :border-width 0)
     ;; the parent window should stick to the size of the window
     ;; unless it isn't being maximized to fill the frame.
     (if stick
-	(setf (xlib:drawable-width (window-parent win)) (true-width (window-xwin win))
-	      (xlib:drawable-height (window-parent win)) (true-height (window-xwin win)))
+	(setf (xlib:drawable-width (window-parent win)) (true-width win)
+	      (xlib:drawable-height (window-parent win)) (true-height win))
 	(let ((frame (window-frame win)))
 	  (setf (xlib:drawable-width (window-parent win)) (- (frame-width frame) 
 							     (* 2 (xlib:drawable-border-width (window-parent win))))
 		(xlib:drawable-height (window-parent win)) (- (frame-height frame)
-							      (* 2 (xlib:drawable-border-width (window-parent win)))))))
-    (xlib:display-finish-output *display*)))
+							      (* 2 (xlib:drawable-border-width (window-parent win)))))))))
 
 (defun find-free-window-number (group)
   "Return a free window number for GROUP."
@@ -464,10 +486,10 @@ than the root window's width and height."
   (let* ((screen (window-screen window))
 	 (master-window (xlib:create-window
 			 :parent (screen-root screen)
-			 :x (xlib:drawable-x (window-xwin window))
-			 :y (xlib:drawable-y (window-xwin window))
-			 :width (xlib:drawable-width (window-xwin window))
-			 :height (xlib:drawable-height (window-xwin window))
+			 :x (window-x window)
+			 :y (window-y window)
+			 :width (window-width window)
+			 :height (window-height window)
 			 :background (get-bg-color-pixel screen)
 			 :border (get-color-pixel screen *unfocus-color*)
 			 :border-width (default-border-width-for-type (window-type window))
@@ -475,6 +497,9 @@ than the root window's width and height."
     (unless (eq (xlib:window-map-state (window-xwin window)) :unmapped)
       (incf (window-unmap-ignores window)))
     (xlib:reparent-window (window-xwin window) master-window 0 0)
+    ;; we need to update these values since they get set to 0,0 on reparent
+    (setf (window-x window) 0
+	  (window-y window) 0)
     (xlib:add-to-save-set (window-xwin window))
     (setf (window-parent window) master-window)))
 
@@ -542,6 +567,9 @@ than the root window's width and height."
 (defmethod group-add-window ((group tile-group) xwin)
   ;; give it a number, put it in a frame
   (let ((window (make-window :xwin xwin
+			     :x (xlib:drawable-x xwin) :y (xlib:drawable-y xwin) 
+			     :width (xlib:drawable-width xwin) :height (xlib:drawable-height xwin)
+			     :border-width (xlib:drawable-border-width xwin)
 			     :name (xwin-name xwin)
 			     :class (xwin-class xwin)
 			     :res (xwin-res-name xwin)
@@ -568,7 +596,7 @@ needed."
     (setf (xlib:window-event-mask (window-xwin window)) *window-events*)
     ;; windows always have border width 0. Their parents provide the
     ;; border.
-    (setf (window-border-width (window-xwin window)) 0)
+    (set-window-geometry window :border-width 0)
     (reparent-window window)
     (xlib:map-window (window-parent window))
     (maximize-window window)
@@ -1515,49 +1543,60 @@ list of modifier symbols."
 ;(define-stump-event-handler :map-notify (event-window window override-redirect-p)
 ;  )
 
-(define-stump-event-handler :configure-request (stack-mode #|parent|# window #|above-sibling|# x y width height value-mask)
-  ;; Grant the configure request but then maximize the window after the granting.
-  (dformat 3 "CONFIGURE REQUEST ~S~%" value-mask)
+(defun handle-unmanaged-window (xwin x y width height border-width value-mask)
+  "Call this function for windows that stumpwm isn't
+managing. Basically just give the window what it wants."
   (labels ((has-x (mask) (= 1 (logand mask 1)))
 	   (has-y (mask) (= 2 (logand mask 2)))
 	   (has-w (mask) (= 4 (logand mask 4)))
 	   (has-h (mask) (= 8 (logand mask 8)))
-	   (has-stackmode (mask) (= 64 (logand mask 64))))
-    ;; First, give the window what it wants
-    (xlib:with-state (window)
+	   (has-bw (mask) (= 16 (logand mask 16)))
+	   ;; (has-stackmode (mask) (= 64 (logand mask 64)))
+	   )
+    (xlib:with-state (xwin)
       (when (has-x value-mask)
-	(dformat 3 "x~%")
-	(setf (xlib:drawable-x window) x))
+	(setf (xlib:drawable-x xwin) x))
       (when (has-y value-mask)
-	(dformat 3 "y~%")
-	(setf (xlib:drawable-y window) y))
+	(setf (xlib:drawable-y xwin) y))
       (when (has-h value-mask)
-	(dformat 3 "h~%")
-	(setf (xlib:drawable-height window) height))
+	(setf (xlib:drawable-height xwin) height))
       (when (has-w value-mask)
-	(dformat 3 "w~%")
-	(setf (xlib:drawable-width window) width))
-      ;;       (when (has-bw value-mask)
-      ;; 	(dformat "bw~%")
-      ;; 	(setf (xlib:drawable-border-width window) border-width))
-      )
-    ;; TODO: are we ICCCM compliant?
-    ;; The ICCCM says with have to send a fake configure-notify if
-    ;; the window is moved but not resized.
-    (unless (or (logbitp 2 value-mask) (logbitp 3 value-mask))
-      (xwin-send-configuration-notify window))
-    ;; Make sure that goes to the client
-    (xlib:display-finish-output *display*)
-    ;; After honouring the request, maximize it
-    (let ((window (find-window window)))
-      (when window
-	(maximize-window window)
-	;; Finally, grant the stack-mode change (if it's mapped)
-	(when (window-in-current-group-p window)
-	  (when (has-stackmode value-mask)
-	    (case stack-mode
-	      (:above
-	       (frame-raise-window (window-group window) (window-frame window) window)))))))))
+	(setf (xlib:drawable-width xwin) width))
+      (when (has-bw value-mask)
+      	(setf (xlib:drawable-border-width xwin) border-width))
+      ;; don't change the stackmode. we don't want it interfering with
+      ;; managed windows.
+      (if (and (or (has-x value-mask)
+		   (has-y value-mask))
+	       (not (or (has-h value-mask)
+			(has-w value-mask)
+			(has-bw value-mask))))
+	  (xwin-send-configuration-notify (xlib:drawable-root xwin) xwin x y width height border-width)))))
+
+(defun handle-managed-window (window border-width stack-mode value-mask)
+  "This is a managed window so deal with it appropriately."
+  ;; Grant the stack-mode change (if it's mapped)
+  (when (and (window-in-current-group-p window)
+	     ;; stack-mode change?
+	     (= 64 (logand value-mask 64)))
+    (case stack-mode
+      (:above
+       (frame-raise-window (window-group window) (window-frame window) window))))
+  ;; Send the window a synthetic event. We didn't honour any of its
+  ;; requests so it'll just get its current geometry sent back. Take
+  ;; that silly window!
+  (xwin-send-configuration-notify (screen-root (window-screen window))
+				  (window-xwin window)
+				  (window-x window) (window-y window) (window-width window) (window-height window)
+				  border-width))
+
+(define-stump-event-handler :configure-request (stack-mode #|parent|# window #|above-sibling|# x y width height border-width value-mask)
+  ;; Grant the configure request but then maximize the window after the granting.
+  (dformat 3 "CONFIGURE REQUEST ~S ~S ~S~%" value-mask height (xlib:drawable-height window))
+  (let ((win (find-window window)))
+    (if win
+	(handle-managed-window win border-width stack-mode value-mask)
+	(handle-unmanaged-window window x y width height border-width value-mask))))
 
 (define-stump-event-handler :map-request (parent send-event-p window)
   (unless send-event-p
@@ -1699,14 +1738,15 @@ chunks."
     (:wm_normal_hints
      (setf (window-normal-hints window) (xlib:wm-normal-hints (window-xwin window))
 	   (window-type window) (xwin-type (window-xwin window)))
-     (sync-frame-windows (window-group window) (window-frame window)))
+     (dformat 4 "new hints: ~s~%" (window-normal-hints window))
+     (maximize-window window))
     (:wm_hints)
     (:wm_class
      (setf (window-class window) (xwin-class (window-xwin window))
 	   (window-res window) (xwin-res-name (window-xwin window))))
     (:wm_transient_for
      (setf (window-type window) (xwin-type (window-xwin window)))
-     (sync-frame-windows (window-group window) (window-frame window)))))
+     (maximize-window window))))
 
 (define-stump-event-handler :property-notify (window atom state)
   (dformat 2 "property notify ~s ~s ~s~%" window atom state)
@@ -1756,8 +1796,19 @@ chunks."
   (dformat 1 ">>> ~S~%" event-key)
   (let ((eventfn (gethash event-key *event-fn-table*)))
     (when eventfn
-      (apply eventfn event-slots)
-      (xlib:display-finish-output *display*))
+      (handler-case
+	  (progn
+	    (apply eventfn event-slots)
+	    (xlib:display-finish-output *display*))
+	((or xlib:window-error xlib:drawable-error) (c)
+	  ;; Asynchronous errors are handled in the error
+	  ;; handler. Synchronous errors like trying to get the window
+	  ;; hints on a deleted window are caught and ignored here. We
+	  ;; do this inside the event handler so that the event is
+	  ;; handled. If we catch it higher up the event will not be
+	  ;; flushed from the queue and we'll get ourselves into an
+	  ;; infinite loop.
+	  (dformat 4 "ignore synchronous ~a~%" c))))
     (dformat 2 "<<< ~S~%" event-key)
     t))
 

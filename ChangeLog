@@ -1,3 +1,21 @@
+2007-01-27  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* stumpwm.lisp (error-handler): new function
+
+	* primitives.lisp (window): new slots x y width height border-width
+
+	* core.lisp (xwin-send-configuration-notify): take the geometry as arguments. all callers updated.
+	(geometry-hints): use cached window geometry slots
+	(reparent-window): likewise
+	(maximize-window): call set-window-geometry
+	(group-add-window): init x y width height border-width window slots
+	(process-mapped-window): call set-window-geometry
+	(handle-unmanaged-window): new function
+	(handle-managed-window): likewise
+	(:configure-request): call handle-managed-window and handle-unmanaged-window
+	(update-window-properties): only maximize the window being updated
+	(handle-event): catch xlib:window-error and xlib:drawable-error events
+
 2007-01-26  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* stumpwm.lisp (error-handler): new defun
