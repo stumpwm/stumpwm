@@ -588,6 +588,9 @@ needed."
     (maximize-window window)
     (xlib:map-subwindows (window-parent window))
     (grab-keys-on-window window)
+    ;; quite often the modeline displays the window list, so update it
+    (when (screen-mode-line screen)
+      (redraw-mode-line-for (screen-mode-line screen) screen))
     ;; Run the map window hook on it
     (run-hook-with-args *map-window-hook* window)
     window))
@@ -621,6 +624,9 @@ give the last accessed window focus."
     ;; was in, since it has a new current window
     (when (eq (tile-group-current-frame group) f)
       (focus-frame (window-group window) f))
+    ;; quite often the modeline displays the window list, so update it
+    (when (screen-mode-line screen)
+      (redraw-mode-line-for (screen-mode-line screen) screen))
     ;; Run the unmap hook on the window
     (run-hook-with-args *unmap-window-hook* window)))
   
