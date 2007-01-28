@@ -115,7 +115,13 @@ current group.")
 	 *current-mode-line-formatter-args*))
 
 (defmethod mode-line-format-elt ((elt symbol))
-  (mode-line-format-elt (symbol-value elt)))
+  (if (boundp elt)
+      (let ((val (symbol-value elt)))
+	;; ignore T and nil, like emacs.
+	(unless (or (eq val t)
+		    (eq val nil))
+	  (mode-line-format-elt val)))
+      (symbol-name elt)))
 
 (defmethod mode-line-format-elt ((elt null))
   "")
@@ -172,6 +178,8 @@ current group.")
 					    :translate #'translate-id)))))
 
 (defun toggle-mode-line (screen &optional (format '*screen-mode-line-format*))
+  (check-type screen screen)
+  (check-type format (or symbol list string))
   (if (screen-mode-line screen)
       (progn
 	(dolist (group (screen-groups screen))
@@ -198,6 +206,8 @@ current group.")
   "Turn on the mode line for SCREEN if and only if ARG is non-nil."
   ;; only do something if the state they want and the current state
   ;; differ.
+  (check-type screen screen)
+  (check-type format (or symbol list string))
   (unless (eq (and arg t)
 	      (and (screen-mode-line screen) t))
     (toggle-mode-line screen format)))

@@ -1,3 +1,9 @@
+2007-01-28  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* mode-line.lisp (mode-line-format-elt): use the symbol as a string if it's unbound. ignore T and NIL
+	(screen-mode-line-mode): check the arg types
+	(toggle-mode-line): likewise
+
 2007-01-27  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* stumpwm.lisp (stumpwm-internal-loop): print the error before throwing :quit
