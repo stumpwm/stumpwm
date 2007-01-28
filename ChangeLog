@@ -1,6 +1,7 @@
 2007-01-28  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* core.lisp (set-font): open the font for each screen
+	(add-group): put the new group at the end of the group list
 
 	* mode-line.lisp (mode-line-format-elt): use the symbol as a string if it's unbound. ignore T and NIL
 	(screen-mode-line-mode): check the arg types

@@ -185,7 +185,7 @@ identity with a range check."
 	      :screen screen
 	      :number (find-free-group-number screen)
 	      :name name)))
-    (push ng (screen-groups screen))
+    (setf (screen-groups screen) (append (screen-groups screen) (list ng)))
     ng))
 
 
