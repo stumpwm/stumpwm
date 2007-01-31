@@ -97,4 +97,6 @@
 	   #:window-send-string
 	   ;; frames
 	   #:*frame-number-map*
+	   ;; groups
+	   #:current-group
 	   ))

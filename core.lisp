@@ -88,6 +88,11 @@ identity with a range check."
 
 ;;; Group function
 
+(defun current-group (&optional (screen (current-screen)))
+  "Return the current group for the current screen, unless
+otherwise specified."
+  (screen-current-group screen))
+
 (defun move-group-to-head (screen group)
   "Move window to the head of the group's window list."
   ;(assert (member window (screen-mapped-windows screen)))

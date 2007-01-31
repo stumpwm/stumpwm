@@ -1,3 +1,7 @@
+2007-01-31  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* core.lisp (current-group): new function
+
 2007-01-28  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* core.lisp (set-font): open the font for each screen

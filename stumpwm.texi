@@ -1130,6 +1130,12 @@ The group's name.
 All group related keybindings hang from this keymap.
 @end defvar
 
+@defun current-group &optional @var{screen}
+Return the current group of the current screen, unless screen is
+specified.
+@end defun
+
+
 @node Screens, Interacting With Unix, Groups, Top
 @chapter Screens
 StumpWM handles multiple screens.
