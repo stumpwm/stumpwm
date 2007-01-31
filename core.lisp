@@ -876,6 +876,7 @@ T (default) then also focus the frame."
 			 :width w
 			 :height h
 			 :window nil)))
+    (run-hook-with-args *new-frame-hook* f2)
     (values f1 f2)))
 
 (defun split-frame-v (group p)
@@ -894,6 +895,7 @@ T (default) then also focus the frame."
 			 :width w
 			 :height h
 			 :window nil)))
+    (run-hook-with-args *new-frame-hook* f2)
     (values f1 f2)))
 
 (defun funcall-on-leaf (tree leaf fn)

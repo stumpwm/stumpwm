@@ -1491,6 +1491,10 @@ Any time a message is displayed in stumpwm this hook gets called with
 the lines displayed.
 @end defvr
 
+@defvr{Hook} *new-frame-hook* @var{new-frame}
+When a new frame is created, this hook is called with the new frame as an argument.
+@end defvr
+
 @node Command and Function Index, Variable Index, Hooks, Top
 @unnumbered Command and Function Index
 @printindex fn

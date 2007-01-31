@@ -78,6 +78,10 @@ occur in that many seconds.")
   are called with 2 arguments: the current frame and the last
   frame.")
 
+(defvar *new-frame-hook* '()
+  "A hook called when a new frame is created. the hook is
+  called with the frame as an argument.")
+
 (defvar *message-hook* '()
   "A hook called whenever stumpwm displays a message. The hook
 function is passed any number of arguments. Each argument is a

@@ -63,6 +63,7 @@
 	   #:*start-hook*
 	   #:*internal-loop-hook*
 	   #:*focus-frame-hook*
+	   #:*new-frame-hook*
 	   ;; mode line
 	   #:*mode-line-screen-position*
 	   #:*mode-line-border-width*
