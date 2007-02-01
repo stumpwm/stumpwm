@@ -6,12 +6,12 @@
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation; either version 2, or (at your option)
 ;; any later version.
- 
+
 ;; stumpwm is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
- 
+
 ;; You should have received a copy of the GNU General Public License
 ;; along with this software; see the file COPYING.  If not, write to
 ;; the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
@@ -34,7 +34,7 @@
 	  m)))
 
 ;; Screen helper functions
- 
+
 (defun translate-id (src src-start src-end font dst dst-start)
   "A simple replacement for xlib:translate-default.  just the
 identity with a range check."
@@ -62,7 +62,7 @@ identity with a range check."
 
 (defun screen-y (screen)
   (let ((ml (screen-mode-line screen)))
-    (if (and ml 
+    (if (and ml
 	     (eq (mode-line-position ml) :top))
 	(+ (xlib:drawable-height (mode-line-window ml))
 	   (* 2 (xlib:drawable-border-width (mode-line-window ml))))
@@ -181,7 +181,7 @@ otherwise specified."
 (defun add-group (screen name)
   (check-type screen screen)
   (check-type name string)
-  (let* ((initial-frame (make-initial-frame 
+  (let* ((initial-frame (make-initial-frame
 			 (screen-x screen) (screen-y screen)
 			 (screen-width screen) (screen-height screen)))
 	 (ng (make-tile-group
@@ -232,7 +232,7 @@ otherwise specified."
 	  (t #\-))))
 
 (defun fmt-window-marked (window)
-  (if (window-marked window) 
+  (if (window-marked window)
       #\#
       #\Space))
 
@@ -371,7 +371,7 @@ otherwise specified."
 		     :height h
 		     :border-width bw
 		     :propagate-p nil))
-  
+
 (defun geometry-hints (win)
   "Return hints for max width and height and increment hints. These
 hints have been modified to always be defined and never be greater
@@ -466,7 +466,7 @@ than the root window's width and height."
 	(setf (xlib:drawable-width (window-parent win)) (window-width win)
 	      (xlib:drawable-height (window-parent win)) (window-height win))
 	(let ((frame (window-frame win)))
-	  (setf (xlib:drawable-width (window-parent win)) (- (frame-width frame) 
+	  (setf (xlib:drawable-width (window-parent win)) (- (frame-width frame)
 							     (* 2 (xlib:drawable-border-width (window-parent win))))
 		(xlib:drawable-height (window-parent win)) (- (frame-height frame)
 							      (* 2 (xlib:drawable-border-width (window-parent win)))))))))
@@ -634,7 +634,7 @@ give the last accessed window focus."
       (redraw-mode-line-for (screen-mode-line screen) screen))
     ;; Run the unmap hook on the window
     (run-hook-with-args *unmap-window-hook* window)))
-  
+
 (defun move-window-to-head (group window)
   "Move window to the head of the group's window list."
   ;(assert (member window (screen-mapped-windows screen)))
@@ -684,7 +684,7 @@ maximized, and given focus."
 	(maybe-hide-window cw window)
 	(run-hook-with-args *unfocus-window-hook* cw))
       (run-hook-with-args *focus-window-hook* window))))
-    
+
 (defun delete-window (window)
   "Send a delete event to the window."
   (dformat 3 "Delete window~%")
@@ -696,7 +696,7 @@ maximized, and given focus."
   (xlib:kill-client *display* (xlib:window-id window)))
 
 
-;;; Message printing functions 
+;;; Message printing functions
 
 (defun color-exists-p (color)
   (handler-case
@@ -849,7 +849,7 @@ T (default) then also focus the frame."
 	     (cond ((null tree) tree)
 		   ((typep tree 'frame)
 		    (copy-structure tree))
-		   (t 
+		   (t
 		    (mapcar 'copy-frame-tree tree)))))
     (copy (tile-group-frame-tree group))))
 
@@ -899,7 +899,7 @@ T (default) then also focus the frame."
     (values f1 f2)))
 
 (defun funcall-on-leaf (tree leaf fn)
-  "Return a new tree with LEAF replaced with the result of calling FN on LEAF." 
+  "Return a new tree with LEAF replaced with the result of calling FN on LEAF."
   (cond ((atom tree)
 	 (if (eq leaf tree)
 	     (funcall fn leaf)
@@ -978,7 +978,7 @@ T (default) then also focus the frame."
   (ecase dir
     (left (decf (frame-x f) amount)
 	  (incf (frame-width f) amount))
-    (right (incf (frame-width f) amount))    
+    (right (incf (frame-width f) amount))
     (top (decf (frame-y f) amount)
 	 (incf (frame-height f) amount))
     (bottom (incf (frame-height f) amount))))
@@ -996,7 +996,7 @@ T (default) then also focus the frame."
 		 (expand-tree (first tree) amount dir)
 		 (expand-tree (second tree) amount dir))
 	     (let ((n (truncate amount 2)))
-	       (multiple-value-bind (a b) 
+	       (multiple-value-bind (a b)
 		   (if (find dir '(left top))
 		       (values (first tree) (second tree))
 		     (values (second tree) (first tree)))
@@ -1133,7 +1133,7 @@ one."
       (setf (tile-group-last-frame group) f2)
       (sync-frame-windows group f1)
       (sync-frame-windows group f2))))
-    
+
 (defun draw-frame-outlines (group)
   "Draw an outline around all frames in SCREEN."
   (let* ((screen (group-screen group))
@@ -1175,7 +1175,7 @@ windows used to draw the numbers in. The caller must destroy them."
 		(dformat 3 "mapped ~S~%" (frame-number f))
 		w))
 	    (group-frames group))))
-	    
+
 
 ;;; Screen functions
 
@@ -1362,7 +1362,7 @@ the nth entry to highlight."
 	'(:substructure-redirect
 	  :substructure-notify
 	  :property-change))
-  (xlib:display-finish-output *display*) 
+  (xlib:display-finish-output *display*)
   ;; Initialize the screen structure
   (let* ((screen (make-screen))
 	 (fg (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-foreground-color+))
@@ -1447,7 +1447,7 @@ the nth entry to highlight."
 	  ((eq (xlib:keycode->keysym *display* code 1) (key-keysym key))
 	   (values code (apply 'xlib:make-state-mask
 			       (cons :shift (xlib:make-state-keys (x11-mods key))))))
-	  (t 
+	  (t
 	   ;; just warn them and go ahead as scheduled
 	   (warn "Don't know how to encode ~s" key)
 	   (values code (x11-mods key))))))
@@ -1736,8 +1736,8 @@ chunks."
 
 (define-stump-event-handler :property-notify (window atom state)
   (dformat 2 "property notify ~s ~s ~s~%" window atom state)
-  (case atom      
-    (:rp_command_request 
+  (case atom
+    (:rp_command_request
      ;; we will only find the screen if window is a root window, which
      ;; is the only place we listen for ratpoison commands.
      (let* ((screen (find-screen window)))
@@ -1748,7 +1748,7 @@ chunks."
       (let ((window (find-window window)))
 	(when window
 	  (update-window-properties window atom))))))
- 
+
 (define-stump-event-handler :mapping-notify (request start count)
   ;; We could be a bit more intelligent about when to update the
   ;; modifier map, but I don't think it really matters.
@@ -1772,7 +1772,7 @@ chunks."
 	       (zerop count))
       (redraw-mode-line-for (screen-mode-line screen) screen))))
 
-;; Handling event :KEY-PRESS 
+;; Handling event :KEY-PRESS
 ;; (:DISPLAY #<XLIB:DISPLAY :0 (The X.Org Foundation R60700000)> :EVENT-KEY :KEY-PRESS :EVENT-CODE 2 :SEND-EVENT-P NIL :CODE 45 :SEQUENCE 1419 :TIME 98761213 :ROOT #<XLIB:WINDOW :0 96> :WINDOW #<XLIB:WINDOW :0 6291484> :EVENT-WINDOW #<XLIB:WINDOW :0 6291484> :CHILD
 ;;  #<XLIB:WINDOW :0 6291485> :ROOT-X 754 :ROOT-Y 223 :X 753 :Y 222 :STATE 4 :SAME-SCREEN-P T)
 ;; H
@@ -1817,7 +1817,7 @@ chunks."
 
 (defun send-selection (requestor property selection target time)
   (dformat 1 "send-selection ~s ~s ~s ~s ~s~%" requestor property selection target time)
-  (cond 
+  (cond
     ;; they're requesting what targets are available
     ((eq target :targets)
      (xlib:change-property requestor property target (list :targets :string) 8 :mode :replace))
@@ -1872,3 +1872,12 @@ chunks."
     (setf *top-map* (pop *top-map-list*))
     (sync-keys)
     t))
+
+(defmacro save-frame-excursion (&body body)
+  "Execute body and then restore the current frame."
+  (let ((oframe (gensym "OFRAME"))
+	(ogroup (gensym "OGROUP")))
+    `(let ((,oframe (tile-group-current-frame (current-group)))
+	   (,ogroup (current-group)))
+       (unwind-protect (progn ,@body)
+	 (focus-frame ,ogroup ,oframe)))))

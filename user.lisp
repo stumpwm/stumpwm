@@ -1226,7 +1226,7 @@ commands or don't know lisp very well."
 (define-stumpwm-command "getsel" ()
   (echo-string (current-screen) (get-x-selection)))
 
-(defun other-hidden-window (group)
+(defun pull-other-hidden-window (group)
   "pull the last accessed hidden window from any frame into the
 current frame and raise it."
   (let* ((f (tile-group-current-frame group))
@@ -1256,7 +1256,7 @@ current frame and raise it."
 
 (define-stumpwm-command "pull-hidden-other" ()
   (let ((group (screen-current-group (current-screen))))
-    (other-hidden-window group)))
+    (pull-other-hidden-window group)))
 
 (define-stumpwm-command "next-in-frame" ()
   (let ((group (screen-current-group (current-screen))))

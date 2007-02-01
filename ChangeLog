@@ -1,4 +1,15 @@
+2007-02-01  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* user.lisp (pull-other-hidden-window): rename from other-hidden-window. all callers updated.
+
+	* core.lisp (save-frame-excursion): new macro
+
 2007-01-31  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* core.lisp (split-frame-v): call *new-frame-hook*
+	(split-frame-h): likewise
+
+	* primitives.lisp (*new-frame-hook*): new hook
 
 	* core.lisp (current-group): new function
 

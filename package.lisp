@@ -10,6 +10,7 @@
 	   #:run-commands
 	   #:*debug-level*
 	   #:dformat
+	   #:save-frame-excursion
 	   ;; message bar
 	   #:set-fg-color
 	   #:set-bg-color
