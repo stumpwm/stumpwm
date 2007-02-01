@@ -1226,12 +1226,16 @@ commands or don't know lisp very well."
 (define-stumpwm-command "getsel" ()
   (echo-string (current-screen) (get-x-selection)))
 
+(defun other-hidden-window (group)
+  "Return the last window that was accessed and that is hidden."
+  (let* ((f (tile-group-current-frame group))
+	 (wins (remove-if (lambda (w) (eq (frame-window (window-frame w)) w)) (group-windows group))))
+    (first wins)))
+
 (defun pull-other-hidden-window (group)
   "pull the last accessed hidden window from any frame into the
 current frame and raise it."
-  (let* ((f (tile-group-current-frame group))
-	 (wins (remove-if (lambda (w) (eq (frame-window (window-frame w)) w)) (group-windows group)))
-	 (win (first wins)))
+  (let ((win (other-hidden-window group)))
     (if win
 	(pull-window win)
 	(echo-string (group-screen group) "No other window."))))
