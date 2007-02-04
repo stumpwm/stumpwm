@@ -82,7 +82,7 @@ identity with a range check."
 (defun find-screen (root)
   "Return the screen containing the root window."
   (find-if (lambda (s)
-	     (xlib:window-equal (xlib:screen-root (screen-number s)) root))
+	     (xlib:window-equal (screen-root s) root))
 	   *screen-list*))
 
 
@@ -406,9 +406,9 @@ than the root window's width and height."
       ((and hints-min-aspect hints-max-aspect)
        (let ((ratio (/ width height)))
 	 (cond ((< ratio hints-min-aspect)
-		(setf height (truncate width hints-min-aspect)))
+		(setf height (ceiling width hints-min-aspect)))
 	       ((> ratio hints-max-aspect)
-		(setf width  (truncate (* height hints-max-aspect)))))
+		(setf width  (ceiling (* height hints-max-aspect)))))
 	 (setf center t)))
       ;; Update our defaults if the window has the maxsize hints
       ((or hints-max-width hints-max-height)
@@ -476,25 +476,29 @@ than the root window's width and height."
   (find-free-number (mapcar 'window-number (group-windows group))))
 
 (defun reparent-window (window)
-  (let* ((screen (window-screen window))
-	 (master-window (xlib:create-window
-			 :parent (screen-root screen)
-			 :x (xlib:drawable-x (window-xwin window)) :y (xlib:drawable-y (window-xwin window))
-			 :width (window-width window)
-			 :height (window-height window)
-			 ;; normal windows geta black background
-			 :background (get-bg-color-pixel screen)
-			 :border (get-color-pixel screen *unfocus-color*)
-			 :border-width (default-border-width-for-type (window-type window))
-			 :event-mask *window-parent-events*)))
-    (unless (eq (xlib:window-map-state (window-xwin window)) :unmapped)
-      (incf (window-unmap-ignores window)))
-    (xlib:reparent-window (window-xwin window) master-window 0 0)
-;;     ;; we need to update these values since they get set to 0,0 on reparent
-;;     (setf (window-x window) 0
-;; 	  (window-y window) 0)
-    (xlib:add-to-save-set (window-xwin window))
-    (setf (window-parent window) master-window)))
+  ;; apparently we need to grab the server so the client doesn't get
+  ;; the mapnotify event before the reparent event. that's what fvwm
+  ;; says.
+  (xlib:with-server-grabbed (*display*)
+    (let* ((screen (window-screen window))
+	   (master-window (xlib:create-window
+			   :parent (screen-root screen)
+			   :x (xlib:drawable-x (window-xwin window)) :y (xlib:drawable-y (window-xwin window))
+			   :width (window-width window)
+			   :height (window-height window)
+			   ;; normal windows geta black background
+			   :background (get-bg-color-pixel screen)
+			   :border (get-color-pixel screen *unfocus-color*)
+			   :border-width (default-border-width-for-type (window-type window))
+			   :event-mask *window-parent-events*)))
+      (unless (eq (xlib:window-map-state (window-xwin window)) :unmapped)
+	(incf (window-unmap-ignores window)))
+      (xlib:reparent-window (window-xwin window) master-window 0 0)
+      ;;     ;; we need to update these values since they get set to 0,0 on reparent
+      ;;     (setf (window-x window) 0
+      ;; 	  (window-y window) 0)
+      (xlib:add-to-save-set (window-xwin window))
+      (setf (window-parent window) master-window))))
 
 (defun process-existing-windows (screen)
   "Windows present when stumpwm starts up must be absorbed by stumpwm."
@@ -600,20 +604,41 @@ needed."
     (run-hook-with-args *map-window-hook* window)
     window))
 
-(defun remove-window (window)
-  "Remove the window from the list of mapped windows and, possibly,
-give the last accessed window focus."
-  ;; This function cannot request info about WINDOW from the xserver
-  ;; Remove the window from the list of mapped windows.
-  (let* ((f (window-frame window))
-	 (group (window-group window))
-	 (screen (group-screen group)))
-    (dformat 1 "remove window ~a~%" screen)
-    (dformat 3 "destroying parent window~%")
-    (xlib:reparent-window (window-xwin window) (screen-root screen) 0 0)
-    (xlib:destroy-window (window-parent window))
-    (dformat 3 "destroyed.~%")
+(defun find-withdrawn-window (xwin)
+  "Return the window and screen for a withdrawn window."
+  (dolist (i *screen-list*)
+    (let ((w (find xwin (screen-withdrawn-windows i) :key 'window-xwin :test 'xlib:window-equal)))
+      (when w
+	(return-from find-withdrawn-window (values w i))))))
 
+(defun restore-window (window)
+  "Restore a withdrawn window"
+  ;; put it in a valid group
+  (let ((screen (window-screen window)))
+    (unless (find (window-group window)
+		  (screen-groups screen))
+      (setf (window-group window) (screen-current-group screen)))
+    ;; FIXME: somehow it feels like this could be merged with group-add-window
+    (setf (window-number window) (find-free-window-number (window-group window))
+	  (window-frame window) (tile-group-current-frame (window-group window))
+	  (window-state window) +iconic-state+
+	  (xwin-state (window-xwin window)) +iconic-state+
+	  (screen-withdrawn-windows screen) (delete window (screen-withdrawn-windows screen)))
+    (push window (group-windows (window-group window)))
+    ;; give it focus
+    (frame-raise-window (window-group window) (window-frame window) window)))
+
+(defun withdraw-window (window)
+  "Withdrawing a window means just putting it in a list til we get a destroy event."
+  ;; This function cannot request info about WINDOW from the xserver as it may not exist anymore.
+  (let ((f (window-frame window))
+	(group (window-group window))
+	(screen (window-screen window)))
+    (dformat 1 "withdraw window ~a~%" screen)
+    ;; Save it for later since it is only withdrawn, not destroyed.
+    (push window (screen-withdrawn-windows screen))
+    (setf (window-state window) +withdrawn-state+
+	  (xwin-state (window-xwin window)) +withdrawn-state+)
     ;; Clean up the window's entry in the screen and group
     (setf (screen-mapped-windows screen)
 	  (delete (window-xwin window) (screen-mapped-windows screen))
@@ -634,6 +659,20 @@ give the last accessed window focus."
       (redraw-mode-line-for (screen-mode-line screen) screen))
     ;; Run the unmap hook on the window
     (run-hook-with-args *unmap-window-hook* window)))
+
+(defun destroy-window (window)
+  "The window has been destroyed. clean up our data structures."
+  ;; This function cannot request info about WINDOW from the xserver
+  (let ((screen (window-screen window)))
+    (unless (eql (window-state window) +withdrawn-state+)
+      (withdraw-window window))
+    ;; now that the window is withdrawn, clean up the data structures
+    (setf (screen-withdrawn-windows screen)
+	  (delete window (screen-withdrawn-windows screen)))
+    (dformat 1 "destroy window ~a~%" screen)
+    (dformat 3 "destroying parent window~%")
+    (xlib:destroy-window (window-parent window))
+    (run-hook-with-args *destroy-window-hook* window)))
 
 (defun move-window-to-head (group window)
   "Move window to the head of the group's window list."
@@ -1587,21 +1626,27 @@ managing. Basically just give the window what it wants."
 (define-stump-event-handler :map-request (parent send-event-p window)
   (unless send-event-p
     ;; This assumes parent is a root window and it should be.
-    (let ((screen (find-screen parent)))
+    (dformat 3 "map request: ~a ~a ~a~%" window parent (find-window window))
+    (let ((screen (find-screen parent))
+	  (win (find-window window))
+	  (wwin (find-withdrawn-window window)))
       ;; only absorb it if it's not already managed (it could be iconic)
-      (unless (find-window window)
-	(let ((window (process-mapped-window screen window)))
-	  ;; Give it focus
-	  (frame-raise-window (window-group window) (window-frame window) window))))))
+      (cond 
+	(win (dformat 1 "map request for mapped window ~a~%" win))
+	(wwin (restore-window wwin))
+	(t
+	 (let ((window (process-mapped-window screen window)))
+	   ;; Give it focus
+	   (frame-raise-window (window-group window) (window-frame window) window)))))))
 
 (define-stump-event-handler :unmap-notify (send-event-p event-window window #|configure-p|#)
   ;; There are two kinds of unmap notify events: the straight up
   ;; ones where event-window and window are the same, and
   ;; substructure unmap events when the event-window is the parent
   ;; of window. So use event-window to find the screen.
-  (dformat 2 "UNMAP: ~s ~s~%" send-event-p (not (xlib:window-equal event-window window)))
+  (dformat 2 "UNMAP: ~s ~s ~a~%" send-event-p (not (xlib:window-equal event-window window)) (find-window window))
   (unless (and (not send-event-p)
-	      (not (xlib:window-equal event-window window)))
+	       (not (xlib:window-equal event-window window)))
     (let ((window (find-window window)))
       ;; if we can't find the window then there's nothing we need to
       ;; do.
@@ -1610,7 +1655,7 @@ managing. Basically just give the window what it wants."
 	    (progn
 	      (dformat 3 "decrement ignores! ~d~%" (window-unmap-ignores window))
 	      (decf (window-unmap-ignores window)))
-	    (remove-window window))))))
+	    (withdraw-window window))))))
 
 ;;(define-stump-event-handler :create-notify (#|window parent x y width height border-width|# override-redirect-p))
   ;; (unless (or override-redirect-p
@@ -1625,14 +1670,10 @@ managing. Basically just give the window what it wants."
     ;; Ignore structure destroy notifies and only
     ;; use substructure destroy notifiers. This way
     ;; event-window is the window's parent.
-    (let ((window (find-window event-window)))
-      ;; In some cases, we get a destroy notify before an unmap
-      ;; notify, so simulate an unmap notify (for now).
-      (when window
-	(remove-window window))
-      ;; Destroy the master window
-      ;(xlib:destroy-window event-window)
-      (run-hook-with-args *destroy-window-hook* window))))
+    (let ((win (or (find-window window)
+		   (find-withdrawn-window window))))
+      (when win
+	(destroy-window win)))))
 
 (defun read-from-keymap (kmap)
   "Read a sequence of keys from the user, guided by the keymap,
@@ -1771,6 +1812,16 @@ chunks."
     (when (and screen
 	       (zerop count))
       (redraw-mode-line-for (screen-mode-line screen) screen))))
+
+(define-stump-event-handler :reparent-notify (window parent)
+  (let ((win (find-window window)))
+    (when (and win
+	       (not (xlib:window-equal parent (window-parent win))))
+      ;; reparent it back
+      (unless (eq (xlib:window-map-state (window-xwin win)) :unmapped)
+	(incf (window-unmap-ignores win)))
+      (xlib:reparent-window (window-xwin win) (window-parent win) 0 0))))
+
 
 ;; Handling event :KEY-PRESS
 ;; (:DISPLAY #<XLIB:DISPLAY :0 (The X.Org Foundation R60700000)> :EVENT-KEY :KEY-PRESS :EVENT-CODE 2 :SEND-EVENT-P NIL :CODE 45 :SEQUENCE 1419 :TIME 98761213 :ROOT #<XLIB:WINDOW :0 96> :WINDOW #<XLIB:WINDOW :0 6291484> :EVENT-WINDOW #<XLIB:WINDOW :0 6291484> :CHILD

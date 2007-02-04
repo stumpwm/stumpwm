@@ -211,6 +211,41 @@ to login remotely to regain control. :abort quits stumpmwm.")
   last-frame
   current-frame)
 
+(defstruct screen
+  id
+  host
+  number
+  ;; the list of groups available on this screen
+  groups
+  current-group
+  border-color
+  fg-color
+  bg-color
+  font
+  current-frame
+  ;; A list of all mapped windows. These are the raw
+  ;; xlib:window's. window structures are stored in groups.
+  mapped-windows
+  ;; A list of withdrawn windows. These are of type stumpwm::window
+  ;; and when they're mapped again they'll be put back in the group
+  ;; they were in when they were unmapped unless that group doesn't
+  ;; exist, in which case they go into the current group.
+  withdrawn-windows
+  message-window
+  input-window
+  frame-window
+  ;; The window that gets focus when no window has focus
+  focus-window
+  ;; a bar along the top or bottom that displays anything you want.
+  mode-line
+  ;; graphic contexts
+  message-gc
+  marked-gc
+  ;; the window that has focus
+  focus
+  last-msg
+  last-msg-highlights)
+
 (defmethod print-object ((object frame) stream)
   (format stream "#S<frame ~d ~d ~d ~d>" 
 	  (frame-x object) (frame-y object) (frame-window object) (frame-height object)))
@@ -248,36 +283,6 @@ single char keys are supported.")
 
 (defvar *modifiers* nil
   "A mapping from modifier type to x11 modifier.")
-
-(defstruct screen
-  id
-  host
-  number
-  ;; the list of groups available on this screen
-  groups
-  current-group
-  border-color
-  fg-color
-  bg-color
-  font
-  current-frame
-  ;; A list of all mapped windows. These are the raw
-  ;; xlib:window's. window structures are stored in groups.
-  mapped-windows
-  message-window
-  input-window
-  frame-window
-  ;; The window that gets focus when no window has focus
-  focus-window
-  ;; a bar along the top or bottom that displays anything you want.
-  mode-line
-  ;; graphic contexts
-  message-gc
-  marked-gc
-  ;; the window that has focus
-  focus
-  last-msg
-  last-msg-highlights)
 
 (defmethod print-object ((object screen) stream)
   (format stream "#S<screen ~s>" (screen-number object)))
