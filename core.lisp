@@ -356,7 +356,9 @@ otherwise specified."
 	   :transient)
       (and (let ((hints (xlib:wm-normal-hints win)))
 	     (and hints (or (xlib:wm-size-hints-max-width hints)
-			    (xlib:wm-size-hints-max-height hints))))
+			    (xlib:wm-size-hints-max-height hints)
+			    (xlib:wm-size-hints-min-aspect hints)
+			    (xlib:wm-size-hints-max-aspect hints))))
 	   :maxsize)
       :normal))
 
@@ -619,7 +621,12 @@ needed."
 		  (screen-groups screen))
       (setf (window-group window) (screen-current-group screen)))
     ;; FIXME: somehow it feels like this could be merged with group-add-window
-    (setf (window-number window) (find-free-window-number (window-group window))
+    (setf (window-name window) (xwin-name (window-xwin window))
+	  (window-class window) (xwin-class (window-xwin window))
+	  (window-res window) (xwin-res-name (window-xwin window))
+	  (window-type window) (xwin-type (window-xwin window))
+	  (window-normal-hints window) (xlib:wm-normal-hints (window-xwin window))
+	  (window-number window) (find-free-window-number (window-group window))
 	  (window-frame window) (tile-group-current-frame (window-group window))
 	  (window-state window) +iconic-state+
 	  (xwin-state (window-xwin window)) +iconic-state+
@@ -691,13 +698,13 @@ needed."
     (when last-win
       (setf (xlib:window-border (window-parent last-win)) (get-color-pixel screen *unfocus-color*)))))
 
-(defun maybe-hide-window (window new-window)
-  "Hide WINDOW depending on what kind of window NEW-WINDOW is. if
-NEW-WINDOW is nil then the window is being hidden."
+(defun maybe-hide-windows (new-window group frame)
+  "Hide windows in FRAME depending on what kind of window NEW-WINDOW is. if
+NEW-WINDOW is nil then the windows will be hidden."
   (when (or (null new-window)
-	    (and (eql (window-frame window) (window-frame new-window))
+	    (and (eql frame (window-frame new-window))
 		 (eq (window-type new-window) :normal)))
-    (hide-window window)))
+    (mapc 'hide-window (frame-windows group frame))))
 
 (defun focus-window (window)
   "Give the window focus. This means the window will be visible,
@@ -718,9 +725,6 @@ maximized, and given focus."
       ;; If another window was focused, then call the unfocus hook for
       ;; it.
       (when cw
-	;; iconize the previous window if it was in the same frame and
-	;; is a :normal window
-	(maybe-hide-window cw window)
 	(run-hook-with-args *unfocus-window-hook* cw))
       (run-hook-with-args *focus-window-hook* window))))
 
@@ -841,15 +845,14 @@ maximized, and given focus."
 (defun frame-raise-window (g f w &optional (focus t))
   "Raise the window w in frame f in screen s. if FOCUS is
 T (default) then also focus the frame."
-  ;; nothing to do when W is nil
   (let ((oldw (frame-window f)))
+    ;; nothing to do when W is nil
     (setf (frame-window f) w)
     (when focus
       (focus-frame g f))
     ;; The old one might need to be hidden
     (unless (and w (eq oldw w))
-      (when oldw
-	(maybe-hide-window oldw w))
+      (maybe-hide-windows w g f)
       (when w
 	(raise-window w)))))
 
@@ -1255,6 +1258,9 @@ windows used to draw the numbers in. The caller must destroy them."
 
 (defun screen-current-window (screen)
   (group-current-window (screen-current-group screen)))
+
+(defun current-window ()
+  (screen-current-window (current-screen)))
 
 ;;; TODO: Will windows exist in multiple groups, one day?
 (defun find-window (xwin)

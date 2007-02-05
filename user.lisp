@@ -229,8 +229,8 @@ frame."
 
 ;; FIXME: This function doesn't work.
 (define-stumpwm-command "ratclick" ((button :number))
-  (when (screen-current-window (current-screen))
-    (send-fake-click (screen-current-window (current-screen)) (or button 1))))
+  (when (current-window)
+    (send-fake-click (current-window) (or button 1))))
 
 (defun echo-windows (group fmt)
   "Print a list of the windows to the screen."
@@ -1079,8 +1079,8 @@ be found, select it.  Otherwise simply run cmd."
 
 (define-stumpwm-command "gmove" ((to-group :group "To Group: "))
   (when (and to-group
-	     (screen-current-window (current-screen)))
-    (move-window-to-group (screen-current-window (current-screen)) to-group)))
+	     (current-window))
+    (move-window-to-group (current-window) to-group)))
 
 (define-stumpwm-command "gkill" ()
   (let ((dead-group (screen-current-group (current-screen)))
@@ -1217,7 +1217,7 @@ commands or don't know lisp very well."
 	 string)))
 
 (define-stumpwm-command "insert" ((string :rest "Insert: "))
-  (window-send-string (screen-current-window (current-screen)) string))
+  (window-send-string (current-window) string))
 
 (define-stumpwm-command "putsel" ((string :rest "Text: "))
   (set-x-selection string))
@@ -1228,8 +1228,7 @@ commands or don't know lisp very well."
 
 (defun other-hidden-window (group)
   "Return the last window that was accessed and that is hidden."
-  (let* ((f (tile-group-current-frame group))
-	 (wins (remove-if (lambda (w) (eq (frame-window (window-frame w)) w)) (group-windows group))))
+  (let ((wins (remove-if (lambda (w) (eq (frame-window (window-frame w)) w)) (group-windows group))))
     (first wins)))
 
 (defun pull-other-hidden-window (group)
@@ -1281,7 +1280,7 @@ current frame and raise it."
   (push-top-map *root-map*))
 
 (define-stumpwm-command "mark" ()
-  (let ((win (screen-current-window (current-screen))))
+  (let ((win (current-window)))
     (when win
       (setf (window-marked win) (not (window-marked win)))
       (echo-string (current-screen)

@@ -1,3 +1,19 @@
+2007-02-05  Shawn Betts  <sabetts@shitbender.gagrod>
+
+	* user.lisp ("ratclick"): call current-window
+	("gmove"): likewise
+	("insert"): likewise
+	("mark"): likewise
+	(other-hidden-window): remove unused lexical var f
+
+	* core.lisp (restore-window): update all X caches for window
+	(xwin-type): an aspect hint window is considered :maxsize
+	(maybe-hide-windows): rename from maybe-hide-window. take the
+	group and frame as args. hide all windows in the frame.
+	(focus-window): don't hide any windows
+	(frame-raise-window): call maybe-hide-windows
+	(current-window): new function
+
 2007-02-04  Shawn Betts  <sabetts@shitbender.gagrod>
 
 	* primitives.lisp (screen): add withdrawn-windows slot

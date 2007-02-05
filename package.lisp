@@ -97,6 +97,7 @@
 	   #:*window-format*
 	   #:def-window-attr
 	   #:window-send-string
+	   #:current-window
 	   ;; frames
 	   #:*frame-number-map*
 	   ;; groups

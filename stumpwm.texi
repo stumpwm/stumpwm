@@ -1173,6 +1173,10 @@ Return the current screen
 Return the current window on the specified screen
 @end defun
 
+@defun current-window
+Return the current window on the current screen
+@end defun
+
 @defvar *screen-list*
 The list of screens managed by stumpwm.
 @end defvar
