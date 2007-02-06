@@ -1,3 +1,7 @@
+2007-02-06  Shawn Betts  <sabetts@shitbender.gagrod>
+
+	* core.lisp (frame-raise-window): hide windows & raise before focusing window
+
 2007-02-05  Shawn Betts  <sabetts@shitbender.gagrod>
 
 	* user.lisp ("ratclick"): call current-window

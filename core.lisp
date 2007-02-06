@@ -704,7 +704,7 @@ NEW-WINDOW is nil then the windows will be hidden."
   (when (or (null new-window)
 	    (and (eql frame (window-frame new-window))
 		 (eq (window-type new-window) :normal)))
-    (mapc 'hide-window (frame-windows group frame))))
+    (mapc 'hide-window (delete new-window (frame-windows group frame)))))
 
 (defun focus-window (window)
   "Give the window focus. This means the window will be visible,
@@ -848,13 +848,13 @@ T (default) then also focus the frame."
   (let ((oldw (frame-window f)))
     ;; nothing to do when W is nil
     (setf (frame-window f) w)
-    (when focus
-      (focus-frame g f))
-    ;; The old one might need to be hidden
+    ;; The old ones might need to be hidden
     (unless (and w (eq oldw w))
       (maybe-hide-windows w g f)
       (when w
-	(raise-window w)))))
+	(raise-window w)))
+    (when focus
+      (focus-frame g f))))
 
 (defun focus-frame (group f)
   (let ((w (frame-window f))
