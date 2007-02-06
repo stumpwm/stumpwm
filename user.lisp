@@ -216,7 +216,7 @@ frame."
   (let ((group (screen-current-group (current-screen))))
     (warp-pointer (group-screen group)
 		  (1- (screen-width (current-screen)))
-		  (1- (screen-height (current-screen))))))
+		  (1- (screen-true-height (current-screen))))))
 
 (define-stumpwm-command "banish" ()
   (banish-pointer))

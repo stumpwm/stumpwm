@@ -75,6 +75,12 @@ identity with a range check."
        (or (and ml (true-height (mode-line-window ml)))
 	   0))))
 
+(defun screen-true-height (screen)
+  "Return the height of the screen regardless of the modeline"
+  (let ((root (screen-root screen))
+	(ml (screen-mode-line screen)))
+    (xlib:drawable-height root)))
+
 (defun screen-width (screen)
   (let ((root (screen-root screen)))
     (xlib:drawable-width root)))

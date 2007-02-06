@@ -1,6 +1,9 @@
 2007-02-06  Shawn Betts  <sabetts@shitbender.gagrod>
 
+	* user.lisp (banish-pointer): call screen-true-height
+
 	* core.lisp (frame-raise-window): hide windows & raise before focusing window
+	(screen-true-height): new function
 
 2007-02-05  Shawn Betts  <sabetts@shitbender.gagrod>
 
