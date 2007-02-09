@@ -512,7 +512,12 @@ Modifies the match data; use `save-match-data' if necessary."
   (when (>= *debug-level* level)
     (multiple-value-bind (sec m h) (decode-universal-time (get-universal-time))
       (format *debug-stream* "~d:~d:~d " h m sec))
-    (apply 'format *debug-stream* fmt args)))
+    ;; strip out non base-char chars quick-n-dirty like
+    (write-string (map 'string (lambda (ch)
+                                 (if (typep ch 'base-char)
+                                     ch #\?))
+                       (apply 'format nil fmt args))
+                  *debug-stream*)))
 
 ;;; 
 ;;; formatting routines
