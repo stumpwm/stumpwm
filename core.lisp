@@ -1625,7 +1625,10 @@ managing. Basically just give the window what it wants."
 	     (= 64 (logand value-mask 64)))
     (case stack-mode
       (:above
-       (frame-raise-window (window-group window) (window-frame window) window)))))
+       (let ((oldf (tile-group-current-frame (window-group window))))
+         (frame-raise-window (window-group window) (window-frame window) window)
+         (unless (eq (window-frame window) oldf)
+           (show-frame-indicator (window-group window))))))))
 
 (define-stump-event-handler :configure-request (stack-mode #|parent|# window #|above-sibling|# x y width height border-width value-mask)
   ;; Grant the configure request but then maximize the window after the granting.

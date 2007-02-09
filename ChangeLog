@@ -1,5 +1,7 @@
 2007-02-09  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* core.lisp (handle-managed-window): show the frame indicator on focus change
+
 	* primitives.lisp (dformat): string out non base-char chars
 
 2007-02-06  Shawn Betts  <sabetts@shitbender.gagrod>
