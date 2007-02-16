@@ -858,6 +858,31 @@ The color given to the border of the focused window.
 The color given to the border of all windows without focus.
 @end defvar
 
+@defun set-win-bg-color @var{color}
+Set the background color of the window. The background color will only
+be visible for windows with size increment hints such as @samp{emacs}
+and @samp{xterm}.
+@end defun
+
+@defun set-normal-gravity @var{gravity}
+Set the default gravity for normal windows. Possible values are
+@code{:center} @code{:top} @code{:left} @code{:right} @code{:bottom}
+@code{:top-left} @code{:top-right} @code{:bottom-left} and
+@code{:bottom-right}.
+@end defun
+
+@defun set-maxsize-gravity @var{gravity}
+Set the default gravity for maxsize windows.
+@end defun
+
+@defun set-transient-gravity @var{gravity}
+Set the default gravity for transient/pop-up windows.
+@end defun
+
+@deffn {Command} gravity @var{gravity}
+Set the current window's gravity.
+@end deffn
+
 @node  Programming With Windows,  , Customizing Window Appearance, Windows
 @section Programming With Windows
 
