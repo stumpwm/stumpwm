@@ -14,6 +14,7 @@
 	   ;; message bar
 	   #:set-fg-color
 	   #:set-bg-color
+	   #:set-win-bg-color
 	   #:set-border-color
 	   #:set-font
 	   #:echo-string
@@ -98,6 +99,9 @@
 	   #:def-window-attr
 	   #:window-send-string
 	   #:current-window
+           #:set-normal-gravity
+           #:set-maxsize-gravity
+           #:set-transient-gravity
 	   ;; frames
 	   #:*frame-number-map*
 	   ;; groups

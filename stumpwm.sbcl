@@ -33,6 +33,6 @@
 ;; If you want stumpwm to load on a specific display use the DISPLAY
 ;; environment variable.
 
-(require 'asdf)
-(require 'stumpwm)
+(require :asdf)
+(require :stumpwm)
 (stumpwm:stumpwm)

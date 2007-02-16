@@ -157,8 +157,14 @@ line of text.")
 ;; default values. use the set-* functions to these attributes
 (defparameter +default-foreground-color+ "White")
 (defparameter +default-background-color+ "Black")
+(defparameter +default-window-background-color+ "Black")
 (defparameter +default-border-color+ "White")
 (defparameter +default-font-name+ "9x15bold")
+
+;; Don't set these variables directly, use set-<var name> instead
+(defvar *normal-gravity* :center)
+(defvar *maxsize-gravity* :center)
+(defvar *transient-gravity* :center)
 
 (defvar *top-level-error-action* :abort
   "If an error is encountered at the top level, in
@@ -174,6 +180,7 @@ to login remotely to regain control. :abort quits stumpmwm.")
 (defstruct window
   xwin
   width height
+  gravity
   group
   frame
   number
@@ -221,6 +228,7 @@ to login remotely to regain control. :abort quits stumpmwm.")
   border-color
   fg-color
   bg-color
+  win-bg-color
   font
   current-frame
   ;; A list of all mapped windows. These are the raw

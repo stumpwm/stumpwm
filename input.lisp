@@ -346,6 +346,8 @@ second and neither excedes the bounds of the input string."
 	  (symbolp completions))
       (funcall completions str)
       (remove-if-not (lambda (elt)
+                       (when (listp elt)
+                         (setf elt (car elt)))
 		       (and (<= (length str) (length elt))
 			    (string= str elt
 				     :end1 (length str)
@@ -372,8 +374,9 @@ second and neither excedes the bounds of the input string."
 	      (decf *input-current-completions-idx*)
 	      (when (< *input-current-completions-idx* 0)
 		(setf *input-current-completions-idx* (1- (length *input-current-completions*))))))
-	(input-insert-string input (nth *input-current-completions-idx* *input-current-completions*))
-	(input-insert-char input #\Space))
+        (let ((elt (nth *input-current-completions-idx* *input-current-completions*)))
+          (input-insert-string input (if (listp elt) (first elt) elt))
+          (input-insert-char input #\Space)))
       :error))
 
 (defun input-complete-forward (input key)

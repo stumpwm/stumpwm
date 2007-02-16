@@ -616,6 +616,20 @@ string between them."
 		       (mapcar 'window-name 
 			       (group-windows (screen-current-group (current-screen)))))))
 
+(define-stumpwm-type :gravity (input prompt)
+  (let* ((values '(("center" :center)
+                   ("top" :top)
+                   ("right" :right)
+                   ("bottom" :bottom)
+                   ("left" :left) 
+                   ("top-right" :top-right)
+                   ("top-left" :top-left)
+                   ("bottom-right" :bottom-right)
+                   ("bottom-left" :bottom-left)))
+         (gravity (second (assoc (string-trim " " (argument-pop-or-read input prompt values)) values :test 'string-equal))))
+    (or gravity
+        (throw 'error "No matching gravity."))))
+    
 (define-stumpwm-type :group-name (input prompt)
   (or (argument-pop input)
       (completing-read (current-screen) prompt
@@ -747,6 +761,11 @@ aborted."
 
 (define-stumpwm-command "number" ((n :number "Number: "))
   (renumber (screen-current-group (current-screen)) n))
+
+(define-stumpwm-command "gravity" ((gravity :gravity "Gravity: "))
+  (when (current-window)
+    (setf (window-gravity (current-window)) gravity)
+    (maximize-window (current-window))))
 
 (define-stumpwm-command "reload" ()
   (echo-string (current-screen) "Reloading StumpWM...")

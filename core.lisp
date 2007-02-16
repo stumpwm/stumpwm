@@ -213,11 +213,14 @@ otherwise specified."
   ;; give it a colored border but only if there are more than 1 frames.
   (let* ((group (window-group window))
 	 (screen (group-screen group)))
-    (setf (xlib:window-border (window-parent window))
-	  (if (and (> (length (group-frames group)) 1)
-		   (eq (group-current-window group) window))
-	      (get-color-pixel screen *focus-color*)
-	      (get-color-pixel screen *unfocus-color*)))))
+    (if (and (> (length (group-frames group)) 1)
+             (eq (group-current-window group) window))
+        (setf (xlib:window-border (window-parent window)) (get-color-pixel screen *focus-color*)
+              (xlib:window-background (window-parent window)) (get-color-pixel screen *focus-color*))
+        (setf (xlib:window-border (window-parent window)) (get-color-pixel screen *unfocus-color*)
+              (xlib:window-background (window-parent window)) (get-win-bg-color-pixel (window-screen window))))
+    ;; get the background updated
+    (xlib:clear-area (window-parent window))))
 
 (defun send-client-message (window type &rest data)
   "Send a client message to a client's window."
@@ -380,6 +383,33 @@ otherwise specified."
 		     :border-width bw
 		     :propagate-p nil))
 
+(defun update-window-gravity ()
+  (dolist (s *screen-list*)
+    (dolist (g (screen-groups s))
+      (mapc 'maximize-window (group-windows g)))))
+
+(defun set-normal-gravity (gravity)
+  "Set the default gravity for normal windows."
+  (setf *normal-gravity* gravity)
+  (update-window-gravity))
+
+(defun set-maxsize-gravity (gravity)
+  "Set the default gravity for maxsize windows."
+  (setf *maxsize-gravity* gravity)
+  (update-window-gravity))
+
+(defun set-transient-gravity (gravity)
+  "Set the default gravity for transient/pop-up windows."
+  (setf *transient-gravity* gravity)
+  (update-window-gravity))
+
+(defun gravity-for-window (win)
+  (or (window-gravity win)
+      (ecase (window-type win)
+        (:normal *normal-gravity*)
+        (:maxsize *maxsize-gravity*)
+        (:transient *transient-gravity*))))
+
 (defun geometry-hints (win)
   "Return hints for max width and height and increment hints. These
 hints have been modified to always be defined and never be greater
@@ -438,12 +468,17 @@ than the root window's width and height."
 	 (let ((h (or hints-height (window-height win))))
 	   (setf height (+ h (* hints-inc-y
 				(+ (floor (- fheight h -1) hints-inc-y)))))))))
-    ;; center if needed
-    (when center
-      (setf x (+ x (truncate (- fwidth width) 2))
-	    y (+ y (truncate (- fheight height) 2))))
-    ;; Now return our findings
-    (values x y width height center)))
+    ;; adjust for gravity
+    (multiple-value-bind (wx wy) (get-gravity-coords (gravity-for-window win)
+                                                     width height
+                                                     0 0
+                                                     fwidth fheight)
+      (when center
+        (setf x (+ wx (frame-x f)) 
+              y (+ wy (frame-y f))
+              wx 0 wy 0))
+      ;; Now return our findings
+      (values x y wx wy width height center))))
 
 (defun set-window-geometry (win &key x y width height border-width)
   (macrolet ((update (xfn wfn v)
@@ -460,14 +495,14 @@ than the root window's width and height."
 
 (defun maximize-window (win)
   "Maximize the window."
-  (multiple-value-bind (x y width height stick)
+  (multiple-value-bind (x y wx wy width height stick)
       (geometry-hints win)
     (dformat 4 "maximize window ~a x: ~d y: ~d width: ~d height: ~d stick: ~s~%" win x y width height stick)
     ;; Move the parent window
     (setf (xlib:drawable-x (window-parent win)) x
 	  (xlib:drawable-y (window-parent win)) y)
     ;; This is the only place a window's geometry should change
-    (set-window-geometry win :x 0 :y 0 :width width :height height :border-width 0)
+    (set-window-geometry win :x wx :y wy :width width :height height :border-width 0)
     ;; the parent window should stick to the size of the window
     ;; unless it isn't being maximized to fill the frame.
     (if stick
@@ -778,6 +813,14 @@ maximized, and given focus."
     (update-colors-all-screens)
     t))
 
+(defun set-win-bg-color (color)
+  (when (color-exists-p color)
+    (dolist (i *screen-list*)
+      (setf (screen-win-bg-color i) color))
+    (update-colors-all-screens)
+    t))
+
+
 (defun set-font (font)
   (when (font-exists-p font)
     (dolist (i *screen-list*)
@@ -796,6 +839,9 @@ maximized, and given focus."
 (defun get-bg-color-pixel (screen)
   (get-color-pixel screen (screen-bg-color screen)))
 
+(defun get-win-bg-color-pixel (screen)
+  (get-color-pixel screen (screen-win-bg-color screen)))
+
 (defun get-border-color-pixel (screen)
   (get-color-pixel screen (screen-border-color screen)))
 
@@ -804,6 +850,17 @@ maximized, and given focus."
   (loop for i in l
 	maximize (xlib:text-width font i :translate #'translate-id)))
 
+(defun get-gravity-coords (gravity width height minx miny maxx maxy)
+  "Return the x y coords for a window on with gravity etc"
+  (values (case gravity
+            ((:top-right :bottom-right :right) (- maxx width))
+            ((:top :bottom :center) (truncate (- maxx minx width) 2))
+            (t minx))
+          (case gravity
+            ((:bottom-left :bottom-right :bottom) (- maxy height))
+            ((:left :right :center) (truncate (- maxy miny height) 2))
+            (t miny))))
+         
 (defun setup-win-gravity (screen win gravity)
   "Position the x, y of the window according to its gravity."
   (let ((w (xlib:drawable-width win))
@@ -1287,7 +1344,16 @@ windows used to draw the numbers in. The caller must destroy them."
 		   (screen-frame-window screen)
 		   (screen-input-window screen)))
     (setf (xlib:window-border i) (get-border-color-pixel screen)
-	  (xlib:window-background i) (get-bg-color-pixel screen))))
+	  (xlib:window-background i) (get-bg-color-pixel screen)))
+  ;; update the backgrounds of all the managed windows
+  (dolist (g (screen-groups screen))
+    (dolist (w (group-windows g))
+      (unless (eq w (group-current-window g))
+        (setf (xlib:window-background (window-parent w)) (get-win-bg-color-pixel screen))
+        (xlib:clear-area (window-parent w)))))
+  (dolist (i (screen-withdrawn-windows screen))  
+    (setf (xlib:window-background (window-parent i)) (get-win-bg-color-pixel screen))
+    (xlib:clear-area (window-parent i))))
 
 (defun update-colors-all-screens ()
   "After setting the fg, bg, or border colors. call this to sync any existing windows."
@@ -1467,6 +1533,7 @@ the nth entry to highlight."
 	  (screen-font screen) font
 	  (screen-fg-color screen) +default-foreground-color+
 	  (screen-bg-color screen) +default-background-color+
+	  (screen-win-bg-color screen) +default-window-background-color+
 	  (screen-border-color screen) +default-border-color+
 	  (screen-message-window screen) message-window
 	  (screen-input-window screen) input-window

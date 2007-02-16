@@ -1,3 +1,36 @@
+2007-02-16  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* user.lisp (:gravity): new arg type
+	("gravity"): new command
+
+	* stumpwm.sbcl: use keyword symbols
+
+	* primitives.lisp (+default-window-background-color+): new constant
+	(*normal-gravity*): new global
+	(*maxsize-gravity*): likewise
+	(*transient-gravity*): likewise
+	(window): add gravity slot
+	(screen): add win-bg-color slot
+
+	* input.lisp (input-find-completions): handle alist completion lists
+	(input-complete): likewise
+
+	* core.lisp (update-window-border): clear the parent window with
+	its background color
+	(update-window-gravity): new function
+	(set-normal-gravity): likewise
+	(set-maxsize-gravity): likewise
+	(set-transient-gravity): likewise
+	(gravity-for-window): likewise
+	(geometry-hints): work with window gravity
+	(maximize-window): bind extra geometry-hints ret values
+	(set-win-bg-color): new function
+	(get-win-bg-color-pixel): likewise
+	(get-gravity-coords): likewise
+	(update-colors-for-screen): update the window parent's background
+	color
+	(init-screen): init screen-win-bg-color
+
 2007-02-09  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* core.lisp (handle-managed-window): show the frame indicator on focus change
