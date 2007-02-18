@@ -61,7 +61,7 @@ loaded."
   "Handle X errors"
   ;; ignore asynchronous window errors
   (if (and asynchronous
-	   (find error-key '(xlib:window-error xlib:drawable-error)))
+	   (find error-key '(xlib:window-error xlib:drawable-error xlib:match-error)))
       (dformat 4 "Ignoring error: ~s~%" error-key)
       ;; all other errors are thrown and caught at the top level where
       ;; stumpwm quits, basically.

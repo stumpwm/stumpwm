@@ -1,3 +1,7 @@
+2007-02-17  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* stumpwm.lisp (error-handler): ignore match-errors
+
 2007-02-16  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp (:gravity): new arg type
