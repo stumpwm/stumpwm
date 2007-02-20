@@ -64,8 +64,9 @@ identity with a range check."
   (let ((ml (screen-mode-line screen)))
     (if (and ml
 	     (eq (mode-line-position ml) :top))
-	(+ (xlib:drawable-height (mode-line-window ml))
-	   (* 2 (xlib:drawable-border-width (mode-line-window ml))))
+        (xlib:with-state ((mode-line-window ml))
+          (+ (xlib:drawable-height (mode-line-window ml))
+             (* 2 (xlib:drawable-border-width (mode-line-window ml)))))
 	0)))
 
 (defun screen-height (screen)
@@ -77,8 +78,7 @@ identity with a range check."
 
 (defun screen-true-height (screen)
   "Return the height of the screen regardless of the modeline"
-  (let ((root (screen-root screen))
-	(ml (screen-mode-line screen)))
+  (let ((root (screen-root screen)))
     (xlib:drawable-height root)))
 
 (defun screen-width (screen)
@@ -270,10 +270,12 @@ otherwise specified."
 ;; some handy wrappers
 
 (defun true-height (win)
-  (+ (xlib:drawable-height win) (* (xlib:drawable-border-width win) 2)))
+  (xlib:with-state (win)
+    (+ (xlib:drawable-height win) (* (xlib:drawable-border-width win) 2))))
 
 (defun true-width (win)
-  (+ (xlib:drawable-width win) (* (xlib:drawable-border-width win) 2)))
+  (xlib:with-state (win)
+    (+ (xlib:drawable-width win) (* (xlib:drawable-border-width win) 2))))
 
 (defun xwin-border-width (win)
   (xlib:drawable-border-width win))
@@ -417,9 +419,10 @@ than the root window's width and height."
   (let* ((f (window-frame win))
 	 (x (frame-x f))
 	 (y (frame-y f))
-	 (fwidth (- (frame-width f) (* 2 (xlib:drawable-border-width (window-parent win)))))
+         (border (xlib:drawable-border-width (window-parent win)))
+	 (fwidth (- (frame-width f) (* 2 border)))
 	 (fheight (- (frame-height f)
-		     (* 2 (xlib:drawable-border-width (window-parent win)))))
+		     (* 2 border)))
 	 (width fwidth)
 	 (height fheight)
 	 (hints (window-normal-hints win))
@@ -499,20 +502,22 @@ than the root window's width and height."
       (geometry-hints win)
     (dformat 4 "maximize window ~a x: ~d y: ~d width: ~d height: ~d stick: ~s~%" win x y width height stick)
     ;; Move the parent window
-    (setf (xlib:drawable-x (window-parent win)) x
-	  (xlib:drawable-y (window-parent win)) y)
+    (xlib:with-state ((window-parent win))
+      (setf (xlib:drawable-x (window-parent win)) x
+            (xlib:drawable-y (window-parent win)) y))
     ;; This is the only place a window's geometry should change
     (set-window-geometry win :x wx :y wy :width width :height height :border-width 0)
     ;; the parent window should stick to the size of the window
     ;; unless it isn't being maximized to fill the frame.
-    (if stick
-	(setf (xlib:drawable-width (window-parent win)) (window-width win)
-	      (xlib:drawable-height (window-parent win)) (window-height win))
-	(let ((frame (window-frame win)))
-	  (setf (xlib:drawable-width (window-parent win)) (- (frame-width frame)
-							     (* 2 (xlib:drawable-border-width (window-parent win))))
-		(xlib:drawable-height (window-parent win)) (- (frame-height frame)
-							      (* 2 (xlib:drawable-border-width (window-parent win)))))))))
+    (xlib:with-state ((window-parent win))
+      (if stick
+          (setf (xlib:drawable-width (window-parent win)) (window-width win)
+                (xlib:drawable-height (window-parent win)) (window-height win))
+          (let ((frame (window-frame win)))
+            (setf (xlib:drawable-width (window-parent win)) (- (frame-width frame)
+                                                               (* 2 (xlib:drawable-border-width (window-parent win))))
+                  (xlib:drawable-height (window-parent win)) (- (frame-height frame)
+                                                                (* 2 (xlib:drawable-border-width (window-parent win))))))))))
 
 (defun find-free-window-number (group)
   "Return a free window number for GROUP."
@@ -862,21 +867,23 @@ maximized, and given focus."
             (t miny))))
          
 (defun setup-win-gravity (screen win gravity)
-  "Position the x, y of the window according to its gravity."
-  (let ((w (xlib:drawable-width win))
-	(h (xlib:drawable-height win))
-	(screen-width (xlib:drawable-width (screen-root screen)))
-	(screen-height (xlib:drawable-height (screen-root screen))))
-    (let ((x (case gravity
-	       ((:top-left :bottom-left) 0)
-	       (:center (truncate (- screen-width w (* (xlib:drawable-border-width win) 2)) 2))
-	       (t (- screen-width w (* (xlib:drawable-border-width win) 2)))))
-	  (y (case gravity
-	       ((:bottom-right :bottom-left) (- screen-height h (* (xlib:drawable-border-width win) 2)))
-	       (:center (truncate (- screen-height h (* (xlib:drawable-border-width win) 2)) 2))
-	       (t 0))))
-      (setf (xlib:drawable-y win) (max 0 y)
-	    (xlib:drawable-x win) (max 0 x)))))
+  "Position the x, y of the window according to its gravity. This
+function expects to be wrapped in a with-state for win."
+  (xlib:with-state ((screen-root screen))
+    (let ((w (xlib:drawable-width win))
+          (h (xlib:drawable-height win))
+          (screen-width (xlib:drawable-width (screen-root screen)))
+          (screen-height (xlib:drawable-height (screen-root screen))))
+      (let ((x (case gravity
+                 ((:top-left :bottom-left) 0)
+                 (:center (truncate (- screen-width w (* (xlib:drawable-border-width win) 2)) 2))
+                 (t (- screen-width w (* (xlib:drawable-border-width win) 2)))))
+            (y (case gravity
+                 ((:bottom-right :bottom-left) (- screen-height h (* (xlib:drawable-border-width win) 2)))
+                 (:center (truncate (- screen-height h (* (xlib:drawable-border-width win) 2)) 2))
+                 (t 0))))
+        (setf (xlib:drawable-y win) (max 0 y)
+              (xlib:drawable-x win) (max 0 x))))))
 
 (defun setup-message-window (screen l)
   (let ((height (* (length l)
@@ -886,10 +893,11 @@ maximized, and given focus."
 	(win (screen-message-window screen)))
     ;; Now that we know the dimensions, raise and resize it.
     (xlib:map-window (screen-message-window screen))
-    (setf (xlib:drawable-height win) height
-	  (xlib:drawable-width win) (+ width (* *message-window-padding* 2))
-	  (xlib:window-priority win) :above)
-    (setup-win-gravity screen win *message-window-gravity*)
+    (xlib:with-state (win)
+      (setf (xlib:drawable-height win) height
+            (xlib:drawable-width win) (+ width (* *message-window-padding* 2))
+            (xlib:window-priority win) :above)
+      (setup-win-gravity screen win *message-window-gravity*))
     ;; Clear the window
     (xlib:clear-area win)))
 
@@ -1394,9 +1402,10 @@ windows used to draw the numbers in. The caller must destroy them."
     (when (or force-draw
 	      (consp (tile-group-frame-tree group)))
       (xlib:map-window w)
-      (setf (xlib:drawable-x w) (+ (frame-x cf) (truncate (- (frame-width cf) width) 2))
-	    (xlib:drawable-y w) (+ (frame-y cf) (truncate (- (frame-height cf) height) 2))
-	    (xlib:window-priority w) :above)
+      (xlib:with-state (w)
+        (setf (xlib:drawable-x w) (+ (frame-x cf) (truncate (- (frame-width cf) width) 2))
+              (xlib:drawable-y w) (+ (frame-y cf) (truncate (- (frame-height cf) height) 2))
+              (xlib:window-priority w) :above))
       (echo-in-window w (screen-font screen)
 		      (get-fg-color-pixel screen)
 		      (get-bg-color-pixel screen)
@@ -1411,8 +1420,9 @@ windows used to draw the numbers in. The caller must destroy them."
 					 :foreground fg
 					 :background bg))
 	 (width (xlib:text-width font string)))
-    (setf (xlib:drawable-height win) height
-	  (xlib:drawable-width win) width)
+    (xlib:with-state (win)
+      (setf (xlib:drawable-height win) height
+            (xlib:drawable-width win) width))
     (xlib:clear-area win)
     (xlib:draw-image-glyphs win gcontext 0 (xlib:font-ascent font) string)))
 

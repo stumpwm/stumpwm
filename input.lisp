@@ -105,8 +105,9 @@
 	 (win (screen-input-window screen)))
     ;; Window dimensions
     (xlib:map-window win)
-    (setf (xlib:window-priority win) :above
-	  (xlib:drawable-height win) height)
+    (xlib:with-state (win)
+      (setf (xlib:window-priority win) :above
+            (xlib:drawable-height win) height))
     ;; Draw the prompt
     (draw-input-bucket screen prompt input)
     ;; Ready to recieve input
@@ -219,44 +220,44 @@ to return a list of matches."
 	 (pos (input-line-position input))
 	 (width (+ prompt-width
 		   (max 100 full-string-width))))
-    (xlib:clear-area win :x (+ *message-window-padding*
-			       prompt-width
-			       string-width))
     (xlib:with-state (win)
-		     (setf (xlib:drawable-width win) (+ width (* *message-window-padding* 2)))
-		     (setup-win-gravity screen win *input-window-gravity*))
-    (xlib:draw-image-glyphs win gcontext
-			    *message-window-padding*
-			    (xlib:font-ascent (screen-font screen))
-			    prompt
-			    :translate #'translate-id
-			    :size 16)
-    (xlib:draw-image-glyphs win gcontext
-			    (+ *message-window-padding* prompt-width)
-			    (xlib:font-ascent (screen-font screen))
-			    string
-			    :translate #'translate-id
-			    :size 16)
-    ;; draw a block cursor
-    (invert-rect screen win 
-		 (+ *message-window-padding*
-		    prompt-width
-		    (xlib:text-width (screen-font screen) (subseq string 0 pos) :translate #'translate-id))
-		 0
-		 (xlib:text-width (screen-font screen) (if (>= pos (length string))
-							   " "
-							   (string (char string pos)))
-				  :translate #'translate-id)
-		 (+ (xlib:font-descent (screen-font screen))
-		    (xlib:font-ascent (screen-font screen))))
-    ;; draw the error 
-    (when errorp
-      (invert-rect screen win 0 0 (xlib:drawable-width win) (xlib:drawable-height win))
-      (xlib:display-force-output *display*)
-      ;; FIXME: there's no usleep
-      (loop with time = (get-internal-run-time)
-	    until (> (- (get-internal-run-time) time) 50))
-      (invert-rect screen win 0 0 (xlib:drawable-width win) (xlib:drawable-height win)))))
+      (xlib:clear-area win :x (+ *message-window-padding*
+                                 prompt-width
+                                 string-width))
+      (setf (xlib:drawable-width win) (+ width (* *message-window-padding* 2)))
+      (setup-win-gravity screen win *input-window-gravity*)
+      (xlib:draw-image-glyphs win gcontext
+                              *message-window-padding*
+                              (xlib:font-ascent (screen-font screen))
+                              prompt
+                              :translate #'translate-id
+                              :size 16)
+      (xlib:draw-image-glyphs win gcontext
+                              (+ *message-window-padding* prompt-width)
+                              (xlib:font-ascent (screen-font screen))
+                              string
+                              :translate #'translate-id
+                              :size 16)
+      ;; draw a block cursor
+      (invert-rect screen win 
+                   (+ *message-window-padding*
+                      prompt-width
+                      (xlib:text-width (screen-font screen) (subseq string 0 pos) :translate #'translate-id))
+                   0
+                   (xlib:text-width (screen-font screen) (if (>= pos (length string))
+                                                             " "
+                                                             (string (char string pos)))
+                                    :translate #'translate-id)
+                   (+ (xlib:font-descent (screen-font screen))
+                      (xlib:font-ascent (screen-font screen))))
+      ;; draw the error 
+      (when errorp
+        (invert-rect screen win 0 0 (xlib:drawable-width win) (xlib:drawable-height win))
+        (xlib:display-force-output *display*)
+        ;; FIXME: there's no usleep
+        (loop with time = (get-internal-run-time)
+           until (> (- (get-internal-run-time) time) 50))
+        (invert-rect screen win 0 0 (xlib:drawable-width win) (xlib:drawable-height win))))))
 
 (defun code-state->key (code state)
   (let* ((mods    (xlib:make-state-keys state))
