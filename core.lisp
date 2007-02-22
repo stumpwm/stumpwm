@@ -1587,6 +1587,9 @@ list of modifier symbols."
     (xlib:send-event (window-xwin win) :key-press (xlib:make-event-mask :key-press)
 		     :display *display*
 		     :root (screen-root (window-screen win))
+                     ;; Apparently we need these in here, though they
+                     ;; make no sense for a key event.
+                     :x 0 :y 0 :root-x 0 :root-y 0
 		     :window (window-xwin win) :event-window (window-xwin win)
 		     :code code
 		     :state state)))
