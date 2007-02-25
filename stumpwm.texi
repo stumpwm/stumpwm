@@ -576,6 +576,11 @@ Set the border color for the message bar and input
 bar. @var{color} can be any color recognized by X.
 @end defun
 
+@defun set-msg-border-width @var{width}
+Set the border width for the message bar and input
+bar.
+@end defun
+
 @defun set-font @var{font}
 Set the font for the message bar and input bar.
 @end defun
