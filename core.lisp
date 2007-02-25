@@ -742,7 +742,7 @@ needed."
       (setf (screen-focus screen) nil)
       (move-screen-to-head screen))
     (when last-win
-      (setf (xlib:window-border (window-parent last-win)) (get-color-pixel screen *unfocus-color*)))))
+      (update-window-border last-win))))
 
 (defun maybe-hide-windows (new-window group frame)
   "Hide windows in FRAME depending on what kind of window NEW-WINDOW is. if
