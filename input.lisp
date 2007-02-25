@@ -225,7 +225,8 @@ to return a list of matches."
                                  prompt-width
                                  string-width))
       (setf (xlib:drawable-width win) (+ width (* *message-window-padding* 2)))
-      (setup-win-gravity screen win *input-window-gravity*)
+      (setup-win-gravity screen win *input-window-gravity*))
+    (xlib:with-state (win)
       (xlib:draw-image-glyphs win gcontext
                               *message-window-padding*
                               (xlib:font-ascent (screen-font screen))

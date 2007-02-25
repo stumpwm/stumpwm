@@ -229,6 +229,7 @@ to login remotely to regain control. :abort quits stumpmwm.")
   fg-color
   bg-color
   win-bg-color
+  msg-border-width
   font
   current-frame
   ;; A list of all mapped windows. These are the raw

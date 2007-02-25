@@ -825,6 +825,12 @@ maximized, and given focus."
     (update-colors-all-screens)
     t))
 
+(defun set-msg-border-width (width)
+  (check-type width (integer 0))
+  (dolist (i *screen-list*)
+    (setf (screen-msg-border-width i) width))
+  (update-border-all-screens)
+  t)
 
 (defun set-font (font)
   (when (font-exists-p font)
@@ -1367,6 +1373,14 @@ windows used to draw the numbers in. The caller must destroy them."
   "After setting the fg, bg, or border colors. call this to sync any existing windows."
   (mapc 'update-colors-for-screen *screen-list*))
 
+(defun update-border-for-screen (screen)
+  (setf (xlib:drawable-border-width (screen-input-window screen)) (screen-msg-border-width screen)
+        (xlib:drawable-border-width (screen-message-window screen)) (screen-msg-border-width screen)))
+
+(defun update-border-all-screens ()
+  "After setting the border width call this to sync any existing windows."
+  (mapc 'update-border-for-screen *screen-list*))
+
 (defun internal-window-p (screen win)
   "Return t if win is a window used by stumpwm"
   (or (xlib:window-equal (screen-message-window screen) win)
@@ -1545,6 +1559,7 @@ the nth entry to highlight."
 	  (screen-bg-color screen) +default-background-color+
 	  (screen-win-bg-color screen) +default-window-background-color+
 	  (screen-border-color screen) +default-border-color+
+	  (screen-msg-border-width screen) 1
 	  (screen-message-window screen) message-window
 	  (screen-input-window screen) input-window
 	  (screen-frame-window screen) frame-window
@@ -1780,7 +1795,7 @@ KMAP and return the binding or nil if the user hit an unbound sequence."
 	 (state (cdr code-state)))
     (handle-keymap kmap code state nil)))
 
-(defun handle-keymap (kmap code state key-seq)
+(defun handle-keymap (kmap code state key-seq grab)
   "Find the command mapped to the (code state) and return it."
   ;; a symbol is assumed to have a hashtable as a value.
   (dformat 1 "Awaiting key ~a~%" kmap)
@@ -1799,29 +1814,30 @@ KMAP and return the binding or nil if the user hit an unbound sequence."
 	       (and (symbolp cmd)
 		    (boundp cmd)
 		    (hash-table-p (symbol-value cmd))))
+           (when grab
+             (grab-pointer (current-screen))
+             (grab-keyboard (current-screen)))
 	   (let* ((code-state (do ((k (read-key) (read-key)))
 				  ((not (is-modifier (xlib:keycode->keysym *display* (car k) 0))) k)))
 		  (code (car code-state))
-		  (state (cdr code-state)))
-	     (handle-keymap cmd code state key-seq)))
+		  (state (cdr code-state)))             
+	     (handle-keymap cmd code state key-seq nil)))
 	  (t (values cmd key-seq)))
 	(values nil key-seq))))
 
 (define-stump-event-handler :key-press (code state #|window|#)
   ;; modifiers can sneak in with a race condition. so avoid that.
   (unless (is-modifier (xlib:keycode->keysym *display* code 0))
-    (labels ((get-cmd (screen code state)
+    (labels ((get-cmd (code state)
 	       (unwind-protect
 		    (progn
-		      (grab-pointer screen)
-		      (grab-keyboard screen)
-		      (handle-keymap *top-map* code state nil))
+		      (handle-keymap *top-map* code state nil t))
 		 (ungrab-pointer)
 		 (ungrab-keyboard)
 		 ;; this force output is crucial. Without it weird
 		 ;; things happen if an error happens later on.
 		 (xlib:display-finish-output *display*))))
-      (multiple-value-bind (cmd key-seq) (get-cmd (current-screen) code state)
+      (multiple-value-bind (cmd key-seq) (get-cmd code state)
 	(unmap-message-window (current-screen))
 	(if cmd
 	    (interactive-command cmd)

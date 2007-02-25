@@ -17,6 +17,7 @@
 	   #:set-win-bg-color
 	   #:set-border-color
 	   #:set-font
+           #:set-msg-border-width
 	   #:echo-string
 	   #:*timeout-wait*
 	   #:*timeout-frame-indicator-wait*

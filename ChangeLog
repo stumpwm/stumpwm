@@ -1,5 +1,15 @@
 2007-02-24  Shawn Betts  <sabetts@shitbender.gagrod>
 
+	* core.lisp (:key-press): only grab the key when reading another key
+
+	* primitives.lisp (screen): new slot msg-border-width
+
+	* core.lisp (set-msg-border-width): new function
+	(update-border-all-screens): likewise
+	(update-border-for-screen): likewise
+
+	* input.lisp (draw-input-bucket): wrap window resizing in its own with-state
+
 	* core.lisp (no-focus): call update-window-border
 
 2007-02-21  Shawn Betts  <sabetts@shitbender.gagrod>
