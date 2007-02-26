@@ -154,6 +154,8 @@ loaded."
 	   ;; with focus.
 	   (dolist (s (reverse *screen-list*))
 	     (let ((group (screen-current-group s)))
+               (when (group-windows group)
+                 (frame-raise-window group (tile-group-current-frame group) (car (group-windows group))))
 	       (focus-frame group (tile-group-current-frame group))))
 	   ;; Load rc file
 	   (multiple-value-bind (success err rc) (load-rc-file)

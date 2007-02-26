@@ -605,3 +605,58 @@ recommended this is assigned using LET.")
   "When this is T the run-or-raise function searches all groups
   for a running instance. Set it to NIL to search only the
   current group.")
+
+(defvar *deny-map-request* nil
+  "A list of window names, window types, and class-id resource-id cons
+pairs that stumpwm should deny matching windows' requests to become
+mapped for the first time.
+
+If set to T, then deny all map requests.
+
+If a window type is added to the list stumpwm denies map
+requests for the window type. Valid window types are :normal,
+:transient, :maxsize.
+
+If a the resource-id is nil in a class-id, resource-id cons pair
+then only the class ID is matched.")
+
+(defvar *deny-raise-request* nil
+  "A list of window names, window types, and class-id resource-id
+cons pairs that stumpwm should deny matching windows' requests to
+be raised and focused.
+
+If set to T, then deny all raise requests.
+
+If a window type is added to the list stumpwm denies
+map requests for the window type. Valid window types are :normal,
+:transient, :maxsize.
+
+If a the resource-id is nil in a class-id, resource-id cons pair
+then only the class ID is matched.")
+
+(defvar *suppress-deny-messages* nil
+  "Set this to T so stumpwm doesn't notify you of denied raise/map requests.")
+
+;; FIXME: maybe this should be a method to allow user customizable matching?
+(defun match-res-or-type (window res)
+  (or (and (stringp res)
+           (string-equal (window-name window) res))
+      (and (symbolp res)
+           (eq (window-type window) res))
+      ;; if its a cons expect a class . res pair
+      (and (consp res)
+           (stringp (car res))
+           (string-equal (window-class window) (car res))
+           ;; the res can be nil in order to match only the class
+           (or (null (cdr res))
+               (and (stringp (cdr res))
+                    (string-equal (window-res window) (cdr res)))))))
+
+(defun deny-request-p (window deny-list)
+  (or (eq deny-list t)
+      (and
+       (listp deny-list)
+       (find-if (lambda (res)
+                  (match-res-or-type window res))
+                deny-list)
+       t)))

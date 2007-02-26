@@ -162,7 +162,10 @@ otherwise specified."
       ;; maybe pick a new window for the old frame
       (when (eq (frame-window old-frame) window)
 	(setf (frame-window old-frame) (first (frame-windows old-group old-frame)))
-	(focus-frame old-group old-frame)))))
+	(focus-frame old-group old-frame))
+      ;; maybe show the window in it's new frame
+      (when (null (frame-window (window-frame window)))
+        (frame-raise-window (window-group window) (window-frame window) window)))))
 
 (defun next-group (current &optional (list (screen-groups (group-screen current))))
   (let ((matches (member current list)))
@@ -353,7 +356,10 @@ otherwise specified."
 
 (defun xwin-hide (xwin parent)
   (setf	(xwin-state xwin) +iconic-state+)
-  (xlib:unmap-window parent))
+  (xlib:unmap-window parent)
+  ;; FIXME: I'm pretty sure we're supposed to unmap the subwindows too
+  ;; (xlib:unmap-subwindows parent)
+  )
 
 (defun hide-window (window)
   (dformat 2 "hide window: ~a~%" (window-name window))
@@ -618,14 +624,15 @@ than the root window's width and height."
 			     :res (xwin-res-name xwin)
 			     :type (xwin-type xwin)
 			     :normal-hints (xlib:wm-normal-hints xwin)
-			     :state +normal-state+
+			     :state +iconic-state+
 			     :group group
 			     :plist (make-hash-table)
 			     :number (find-free-window-number group)
 			     :frame (tile-group-current-frame group)
 			     :unmap-ignores 0)))
-    (setf (frame-window (tile-group-current-frame group)) window)
-    (push window (group-windows group))
+    (setf (xwin-state xwin) +iconic-state+)
+    ;; put the window at the end of the list
+    (setf (group-windows group) (append (group-windows group) (list window)))
     window))
 
 (defun add-window (screen xwin)
@@ -641,9 +648,7 @@ needed."
     ;; border.
     (set-window-geometry window :border-width 0)
     (reparent-window window)
-    (xlib:map-window (window-parent window))
     (maximize-window window)
-    (xlib:map-subwindows (window-parent window))
     (grab-keys-on-window window)
     ;; quite often the modeline displays the window list, so update it
     (when (screen-mode-line screen)
@@ -654,6 +659,7 @@ needed."
 
 (defun find-withdrawn-window (xwin)
   "Return the window and screen for a withdrawn window."
+  (declare (type xlib:window xwin))
   (dolist (i *screen-list*)
     (let ((w (find xwin (screen-withdrawn-windows i) :key 'window-xwin :test 'xlib:window-equal)))
       (when w
@@ -661,6 +667,7 @@ needed."
 
 (defun restore-window (window)
   "Restore a withdrawn window"
+  (declare (type window window))
   ;; put it in a valid group
   (let ((screen (window-screen window)))
     (unless (find (window-group window)
@@ -676,13 +683,20 @@ needed."
 	  (window-frame window) (tile-group-current-frame (window-group window))
 	  (window-state window) +iconic-state+
 	  (xwin-state (window-xwin window)) +iconic-state+
-	  (screen-withdrawn-windows screen) (delete window (screen-withdrawn-windows screen)))
-    (push window (group-windows (window-group window)))
+	  (screen-withdrawn-windows screen) (delete window (screen-withdrawn-windows screen))
+          ;; put the window at the end of the list
+          (group-windows (window-group window)) (append (group-windows (window-group window)) (list window)))
     ;; give it focus
-    (frame-raise-window (window-group window) (window-frame window) window)))
+    (if (deny-request-p window *deny-map-request*)
+        (unless *suppress-deny-messages*
+          (if (eq (window-group window) (current-group))
+              (echo-string (window-screen window) (format nil "'~a' denied map request" (window-name window)))
+              (echo-string (window-screen window) (format nil "'~a' denied map request in group ~a" (window-name window) (group-name (window-group window))))))
+        (frame-raise-window (window-group window) (window-frame window) window))))
 
 (defun withdraw-window (window)
   "Withdrawing a window means just putting it in a list til we get a destroy event."
+  (declare (type window window))
   ;; This function cannot request info about WINDOW from the xserver as it may not exist anymore.
   (let ((f (window-frame window))
 	(group (window-group window))
@@ -714,6 +728,7 @@ needed."
     (run-hook-with-args *unmap-window-hook* window)))
 
 (defun destroy-window (window)
+  (declare (type window window))
   "The window has been destroyed. clean up our data structures."
   ;; This function cannot request info about WINDOW from the xserver
   (let ((screen (window-screen window)))
@@ -729,6 +744,8 @@ needed."
 
 (defun move-window-to-head (group window)
   "Move window to the head of the group's window list."
+  (declare (type group group))
+  (declare (type window window))
   ;(assert (member window (screen-mapped-windows screen)))
   (setf (group-windows group) (delete window (group-windows group)))
   (push window (group-windows group)))
@@ -1720,10 +1737,17 @@ managing. Basically just give the window what it wants."
 	     (= 64 (logand value-mask 64)))
     (case stack-mode
       (:above
-       (let ((oldf (tile-group-current-frame (window-group window))))
-         (frame-raise-window (window-group window) (window-frame window) window)
-         (unless (eq (window-frame window) oldf)
-           (show-frame-indicator (window-group window))))))))
+       (if (deny-request-p window *deny-raise-request*)
+           (unless (or *suppress-deny-messages*
+                       ;; don't mention windows that are already visible
+                       (eql (window-state window) +normal-state+))
+             (if (eq (window-group window) (current-group))
+                 (echo-string (window-screen window) (format nil "'~a' denied raises request" (window-name window)))
+                 (echo-string (window-screen window) (format nil "'~a' denied raises request in group ~a" (window-name window) (group-name (window-group window))))))
+           (let ((oldf (tile-group-current-frame (window-group window))))
+             (frame-raise-window (window-group window) (window-frame window) window)
+             (unless (eq (window-frame window) oldf)
+               (show-frame-indicator (window-group window)))))))))
 
 (define-stump-event-handler :configure-request (stack-mode #|parent|# window #|above-sibling|# x y width height border-width value-mask)
   ;; Grant the configure request but then maximize the window after the granting.
@@ -1747,7 +1771,12 @@ managing. Basically just give the window what it wants."
 	(t
 	 (let ((window (process-mapped-window screen window)))
 	   ;; Give it focus
-	   (frame-raise-window (window-group window) (window-frame window) window)))))))
+           (if (deny-request-p window *deny-map-request*)
+               (unless *suppress-deny-messages*
+                 (if (eq (window-group window) (current-group))
+                     (echo-string (window-screen window) (format nil "'~a' denied map request" (window-name window)))
+                     (echo-string (window-screen window) (format nil "'~a' denied map request in group ~a" (window-name window) (group-name (window-group window))))))
+               (frame-raise-window (window-group window) (window-frame window) window))))))))
 
 (define-stump-event-handler :unmap-notify (send-event-p event-window window #|configure-p|#)
   ;; There are two kinds of unmap notify events: the straight up

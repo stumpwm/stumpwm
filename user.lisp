@@ -1296,6 +1296,7 @@ current frame and raise it."
   (other-window-in-frame (screen-current-group (current-screen))))
 
 (define-stumpwm-command "command-mode" ()
+  (echo-string (current-screen) "Press C-g to exit command-mode.")
   (push-top-map *root-map*))
 
 (define-stumpwm-command "mark" ()

@@ -103,6 +103,9 @@
            #:set-normal-gravity
            #:set-maxsize-gravity
            #:set-transient-gravity
+           #:*deny-map-request*
+           #:*deny-raise-request*
+           #:*suppress-deny-messages*
 	   ;; frames
 	   #:*frame-number-map*
 	   ;; groups

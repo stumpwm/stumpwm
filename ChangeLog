@@ -1,3 +1,27 @@
+2007-02-26  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* user.lisp ("command-mode"): echo a message about how to exit command mode
+
+	* stumpwm.lisp (stumpwm): raise one of the windows in the initial frame
+
+	* primitives.lisp (*deny-map-request*): new global
+	(*deny-raise-request*): likewise
+	(*suppress-deny-messages*): likewise
+	(match-res-or-type): new function
+	(deny-request-p): likewise
+
+	* core.lisp (move-window-to-group): raise the window in its new frame if the frame is empty
+	(group-add-window): windows default to iconic
+	(process-mapped-window): don't map the parent window
+	(find-withdrawn-window): add type declare 
+	(withdraw-window): likewise
+	(destroy-window): likewise
+	(restore-window): likewise
+	(move-window-to-head): likewise
+	(restore-window): deny some windows their map request
+	(handle-managed-window): likewise
+	(:map-request): likwise
+
 2007-02-24  Shawn Betts  <sabetts@shitbender.gagrod>
 
 	* core.lisp (:key-press): only grab the key when reading another key

@@ -119,6 +119,7 @@ Windows
 
 * Window Marks::                
 * Customizing Window Appearance::  
+* Controlling Raise And Map Requests::  
 * Programming With Windows::    
 
 Groups
@@ -820,6 +821,7 @@ Substitute the window's resource ID.
 @menu
 * Window Marks::                
 * Customizing Window Appearance::  
+* Controlling Raise And Map Requests::  
 * Programming With Windows::    
 @end menu
 
@@ -840,7 +842,7 @@ Clear all marks in the current group.
 Pull all marked windows into the current frame and clear the marks.
 @end deffn
 
-@node Customizing Window Appearance, Programming With Windows, Window Marks, Windows
+@node Customizing Window Appearance, Controlling Raise And Map Requests, Window Marks, Windows
 @section Customizing Window Appearance
 
 @defvar *maxsize-border-width*
@@ -888,7 +890,60 @@ Set the default gravity for transient/pop-up windows.
 Set the current window's gravity.
 @end deffn
 
-@node  Programming With Windows,  , Customizing Window Appearance, Windows
+@node Controlling Raise And Map Requests, Programming With Windows, Customizing Window Appearance, Windows
+@section Controlling Raise And Map Requests
+It is sometimes handy to deny a window's request to be focused. The
+following variables determine such behavior.
+
+A map request occurs when a new or withdrawn window requests to be
+mapped for the first time.
+
+A raise request occurs when a client asks the window manager to give
+an existing window focus.
+
+@defvar *deny-map-request*
+A list of window names, window types, and class-id resource-id cons
+pairs that stumpwm should deny matching windows' requests to become
+mapped for the first time.
+
+If set to @code{T}, then deny all map requests.
+
+If a window type is added to the list stumpwm denies map requests for
+the window type. Valid window types are @code{:normal},
+@code{:transient}, @code{:maxsize}.
+
+Furthermore, if a the resource-id is nil in a class-id, resource-id
+cons pair then only the class ID is matched.
+@end defvar
+
+@defvar *deny-raise-request*
+Exactly the same as @var{*deny-map-request*} but for raise requests.
+
+Note that no denial message is displayed if the window is already visible.
+@end defvar
+
+@defvar *suppress-deny-messages*
+For complete focus on the task at hand, set this to @code{T} and no
+raise/map denial messages will be seen.
+@end defvar
+
+Some examples follow.
+
+@example
+;; Deny the firefox window from taking focus when clicked upon.
+(push (cons "firefox-bin" "gecko") stumpwm:*deny-raise-request*)
+
+;; Deny all map requests
+(setf stumpwm:*deny-map-request* t)
+
+;; Deny transient raise requests
+(push :transient stumpwm:*deny-map-request*)
+
+;; Deny the all windows in the xterm class from taking focus.
+(push (cons "xterm" nil) stumpwm:*deny-raise-request*)
+@end example
+
+@node Programming With Windows,  , Controlling Raise And Map Requests, Windows
 @section Programming With Windows
 
 @defmac def-window-attr @var{attr}
