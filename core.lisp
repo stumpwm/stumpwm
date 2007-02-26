@@ -1793,7 +1793,7 @@ KMAP and return the binding or nil if the user hit an unbound sequence."
 			finally (return k)))
 	 (code (car code-state))
 	 (state (cdr code-state)))
-    (handle-keymap kmap code state nil)))
+    (handle-keymap kmap code state nil nil)))
 
 (defun handle-keymap (kmap code state key-seq grab)
   "Find the command mapped to the (code state) and return it."

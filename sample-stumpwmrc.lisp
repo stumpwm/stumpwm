@@ -10,7 +10,7 @@
 ;; prompt the user for an interactive command. The first arg is an
 ;; optional initial contents.
 (define-stumpwm-command "colon1" ((initial :rest nil))
-  (let ((cmd (read-one-line screen ": " initial)))
+  (let ((cmd (read-one-line (current-screen) ": " initial)))
     (when cmd
       (interactive-command cmd (current-screen)))))
 
@@ -36,4 +36,4 @@
 (define-key *root-map* (kbd "i") "imdb")
 
 ;; Message window font
-(setf *font-name* "-xos4-terminus-medium-r-normal--14-140-72-72-c-80-iso8859-15")
+(set-font "-xos4-terminus-medium-r-normal--14-140-72-72-c-80-iso8859-15")
