@@ -32,7 +32,8 @@
 (make-web-jump "google" "firefox http://www.google.fr/search?q=")
 (make-web-jump "imdb" "firefox http://www.imdb.com/find?q=")
 
-(define-key *root-map* (kbd "g") "google")
+;; C-t M-s is a terrble binding, but you get the idea.
+(define-key *root-map* (kbd "M-s") "google")
 (define-key *root-map* (kbd "i") "imdb")
 
 ;; Message window font
