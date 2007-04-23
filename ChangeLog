@@ -1,3 +1,67 @@
+2007-04-23  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* user.lisp (*root-map*): add + binding
+	(split-frame-in-dir): new function
+	("hsplit"): call split-frame-in-dir
+	("vsplit"): likewise
+	(horiz-split-frame): remove function
+	(vert-split-frame): likewise
+	(remove-split): call closest-sibling
+	("resize"): display message when there's only 1 frame
+	("balance-frames"): new command
+
+	* primitives.lisp (*unfocus-window-hook*): remove global var
+	(*focus-group-hook*): new global var
+	(screen): remove current-frame slot
+	(print-object): use parens instead of < and >
+	(print-object): likewise
+	(list-splice-replace): new function
+	(*min-frame-width*): new global var
+	(*min-frame-height*): likewise
+
+	* core.lisp (def-thing-attr-macro): new macro
+	(switch-to-group): call *focus-group-hook* hook
+	(focus-window): don't call *unfocus-window-hook*. pass both old
+	and new windows to *focus-window-hook*
+	(make-initial-frame): just take the screen as an argument. all
+	callers updated.
+	(funcall-on-leaf): handle >2 children
+	(funcall-on-node): likewise
+	(replace-frame-in-tree): likewise
+	(tree-accum-fn): likewise
+	(tree-iterate): likewise
+	(tree-row-split): likewise
+	(tree-column-split): likewise
+	(expand-tree): likwise
+	(join-subtrees): likewise
+	(resize-frame): likewise
+	(sibling-internal): new function
+	(sibling): remove function
+	(next-sibling): new function
+	(prev-sibling): likewise
+	(tree-width): calculate correctly
+	(tree-height): likewise
+	(tree-parent): new function
+	(tree-split-type): new function
+	(offset-tree): new function
+	(offset-tree-dir): call offset-tree
+	(spree-root-branch): remove function
+	(depth-first-search): likewise
+	(offset-frames): likewise
+	(balance-frames): new function
+	(split-frame): splice frames that are split in the same direction
+	as their parent into the parent list.
+	(message): new function
+	(current-group): new
+	function. all (screen-current-group (current-screen)) callers
+	updated.
+	(closest-sibling): new function
+	
+2007-04-18  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* user.lisp (focus-forward): properly detect when there is no
+	other window.
+
 2007-02-26  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* user.lisp ("command-mode"): echo a message about how to exit command mode

@@ -108,6 +108,7 @@
 	  (define-key m (kbd "F9") "gselect 9")
 	  (define-key m (kbd "F10") "gselect 10")
 	  (define-key m (kbd "?") "help")
+	  (define-key m (kbd "+") "balance-frames")
 	  m)))
 
 (defstruct command
@@ -141,13 +142,13 @@
 		  (sort-windows group))))
 
 (define-stumpwm-command "next" ()
-  (let ((group (screen-current-group (current-screen))))
+  (let ((group (current-group)))
     (if (group-current-window group)
 	(focus-next-window group)
 	(other-window group))))
 
 (define-stumpwm-command "prev" ()
-  (let ((group (screen-current-group (current-screen))))
+  (let ((group (current-group)))
     (if (group-current-window group)
 	(focus-prev-window group)
 	(other-window group))))
@@ -176,15 +177,16 @@ frame."
   (let* ((w (group-current-window group))
 	 (old-frame (tile-group-current-frame group))
 	 (wins (remove-if-not predicate (cdr (member w window-list))))
-	 nw)
-    ;;(assert wins)
-    (setf nw (if (null wins)
+	 (nw (if (null wins)
 		 ;; If the last window in the list is focused, then
 		 ;; focus the first one.
 		 (car (remove-if-not predicate window-list))
-	       ;; Otherwise, focus the next one in the list.
-	       (first wins)))
-    (if nw
+                 ;; Otherwise, focus the next one in the list.
+                 (first wins))))
+    ;; there's still the case when the window is the only one in the
+    ;; list, so make sure its not the same as the current window.
+    (if (and nw
+             (not (eq w nw)))
 	(if pull-p
 	    (pull-window nw)
 	    (progn
@@ -195,7 +197,7 @@ frame."
 
 (defun delete-current-window ()
   "Send a delete event to the current window."
-  (let ((group (screen-current-group (current-screen))))
+  (let ((group (current-group)))
     (when (group-current-window group)
       (delete-window (group-current-window group)))))
 
@@ -204,7 +206,7 @@ frame."
 
 (defun kill-current-window ()
   "Kill the client of the current window."
-  (let ((group (screen-current-group (current-screen))))
+  (let ((group (current-group)))
     (when (group-current-window group)
       (xwin-kill (window-xwin (group-current-window group))))))
 
@@ -213,7 +215,7 @@ frame."
 
 (defun banish-pointer ()
   "Move the pointer to the lower right corner of the screen"
-  (let ((group (screen-current-group (current-screen))))
+  (let ((group (current-group)))
     (warp-pointer (group-screen group)
 		  (1- (screen-width (current-screen)))
 		  (1- (screen-true-height (current-screen))))))
@@ -255,7 +257,7 @@ frame."
 		    (format-expand *group-formatters* *group-format* w)) (sort-groups (group-screen group)))))
 
 (define-stumpwm-command "windows" ((fmt :rest))
-  (echo-windows (screen-current-group (current-screen)) (or fmt *window-format*)))
+  (echo-windows (current-group) (or fmt *window-format*)))
 
 (defun format-time-string (&optional time)
   "Return a formatted date-time string. FIXME: how about being able to pass a format string in?"
@@ -290,7 +292,7 @@ frame."
 	  (frame-raise-window group (window-frame match) match)))))
 
 (define-stumpwm-command "select" ((win :window-name "Select: "))
-  (select-window (screen-current-group (current-screen)) win))
+  (select-window (current-group) win))
 
 (defun select-window-number (group num)
   (labels ((match (win)
@@ -310,9 +312,9 @@ frame."
 	(echo-string (group-screen group) "No other window."))))
 
 (define-stumpwm-command "other" ()
-  (let* ((group (screen-current-group (current-screen)))
+  (let* ((group (current-group))
 	 (old-frame (tile-group-current-frame group)))
-    (other-window (screen-current-group (current-screen)))
+    (other-window (current-group))
     (unless (eq old-frame (tile-group-current-frame group))
       (show-frame-indicator group))))
 
@@ -349,35 +351,28 @@ returns..which could be forever if you're not careful."
 (define-stumpwm-command "exec" ((cmd :shell "/bin/sh -c "))
   (run-shell-command cmd))
 
-(defun horiz-split-frame (group)
-  (split-frame group (lambda (f) (split-frame-h group f)))
-  (let ((f (tile-group-current-frame group)))
-    (when (frame-window f)
-      (update-window-border (frame-window f))))
-  (show-frame-indicator group))
+(defun split-frame-in-dir (group dir)
+  (if (split-frame group dir)
+      (let ((f (tile-group-current-frame group)))
+        (when (frame-window f)
+          (update-window-border (frame-window f)))
+        (show-frame-indicator group))
+      (message "Cannot split smaller than minimum size.")))
 
 (define-stumpwm-command "hsplit" ()
-  (horiz-split-frame (screen-current-group (current-screen))))
-
-(defun vert-split-frame (group)
-  (split-frame group (lambda (f) (split-frame-v group f)))
-  (let ((f (tile-group-current-frame group)))
-    (when (frame-window f)
-      (update-window-border (frame-window f))))
-  (show-frame-indicator group))
+  (split-frame-in-dir (current-group) :column))
 
 (define-stumpwm-command "vsplit" ()
-  (vert-split-frame (screen-current-group (current-screen))))
+  (split-frame-in-dir (current-group) :row))
 
 (defun remove-split (group)
-  (let* ((s (sibling (tile-group-frame-tree group)
-		    (tile-group-current-frame group)))
-	 ;; grab a leaf of the sibling. The sibling doesn't have to be
+  (let* ((s (closest-sibling (tile-group-frame-tree group)
+                             (tile-group-current-frame group)))
+	 ;; grab a leaf of the siblings. The siblings doesn't have to be
 	 ;; a frame.
 	 (l (tree-accum-fn s
-                           (lambda (x y)
-                             (declare (ignore y))
-                             x)
+                           (lambda (&rest siblings)
+                             (car siblings))
                            #'identity)))
     ;; Only remove the current frame if it has a sibling
     (dformat 3 "~S~%" s)
@@ -405,13 +400,12 @@ returns..which could be forever if you're not careful."
       (show-frame-indicator group))))
 
 (define-stumpwm-command "remove" ()
-  (remove-split (screen-current-group (current-screen))))
+  (remove-split (current-group)))
 
 (define-stumpwm-command "only" ()
   (let* ((screen (current-screen))
 	 (group (screen-current-group screen))
-	 (frame (make-initial-frame (screen-x screen) (screen-y screen)
-				    (screen-width screen) (screen-height screen)))
+	 (frame (make-initial-frame screen))
 	 (win (frame-window (tile-group-current-frame group))))
     (mapc (lambda (w)
 	    ;; windows in other frames disappear
@@ -427,17 +421,17 @@ returns..which could be forever if you're not careful."
     (sync-frame-windows group (tile-group-current-frame group))))
 
 (define-stumpwm-command "curframe" ()
-  (show-frame-indicator (screen-current-group (current-screen))))
+  (show-frame-indicator (current-group)))
 
-(defun focus-frame-sibling (group)
-  (let* ((sib (sibling (tile-group-frame-tree group)
-		       (tile-group-current-frame group))))
+(defun focus-frame-next-sibling (group)
+  (let* ((sib (next-sibling (tile-group-frame-tree group)
+                            (tile-group-current-frame group))))
     (when sib
       (focus-frame group (tree-accum-fn sib
-                                         (lambda (x y)
-                                           (declare (ignore y))
-                                           x)
-                                         'identity))
+                                        (lambda (x y)
+                                          (declare (ignore y))
+                                          x)
+                                        'identity))
       (show-frame-indicator group))))
 
 (defun focus-last-frame (group)
@@ -465,13 +459,13 @@ the current frame."
   (show-frame-indicator group))
 
 (define-stumpwm-command "fnext" ()
-  (focus-next-frame (screen-current-group (current-screen))))
+  (focus-next-frame (current-group)))
 
 (define-stumpwm-command "sibling" ()
-  (focus-frame-sibling (screen-current-group (current-screen))))
+  (focus-frame-next-sibling (current-group)))
 
 (define-stumpwm-command "fother" ()
-  (focus-last-frame (screen-current-group (current-screen))))
+  (focus-last-frame (current-group)))
 
 (defun choose-frame-by-number (group)
   "show a number in the corner of each frame and wait for the user to
@@ -490,16 +484,18 @@ select one. Returns the selected frame or nil if aborted."
 
 
 (define-stumpwm-command "fselect" ((f :frame t))
-  (let ((group (screen-current-group (current-screen))))
+  (let ((group (current-group)))
     (focus-frame group f)
     (show-frame-indicator group)))
 
 (define-stumpwm-command "resize" ((w :number "+ Width: ")
 				  (h :number "+ Height: "))
-  (let* ((group (screen-current-group (current-screen)))
-	 (f (tile-group-current-frame group)))
-    (resize-frame group f w 'width)
-    (resize-frame group f h 'height)))
+  (if (atom (tile-group-frame-tree (current-group)))
+      (echo-string (current-screen) "There's only 1 frame!")
+      (let* ((group (current-group))
+             (f (tile-group-current-frame group)))  
+        (resize-frame group f w :width)
+        (resize-frame group f h :height))))
 
 (defun eval-line (screen cmd)
   (echo-string screen
@@ -581,7 +577,7 @@ string between them."
 				prompt
 				(mapcar 'prin1-to-string
 					(mapcar 'window-number 
-						(group-windows (screen-current-group (current-screen)))))))))
+						(group-windows (current-group))))))))
     (when n
       (handler-case
 	  (parse-integer n)
@@ -614,7 +610,7 @@ string between them."
   (or (argument-pop input)
       (completing-read (current-screen) prompt
 		       (mapcar 'window-name 
-			       (group-windows (screen-current-group (current-screen)))))))
+			       (group-windows (current-group))))))
 
 (define-stumpwm-type :gravity (input prompt)
   (let* ((values '(("center" :center)
@@ -651,12 +647,12 @@ string between them."
   (declare (ignore prompt))
   (let ((arg (argument-pop input)))
     (if arg
-	(or (find arg (group-frames (screen-current-group (current-screen)))
+	(or (find arg (group-frames (current-group))
 		  :key (lambda (f)
 			 (string (get-frame-number-translation f)))
 		  :test 'string=)
 	    (throw 'error "Frame not found."))
-	(or (choose-frame-by-number (screen-current-group (current-screen)))
+	(or (choose-frame-by-number (current-group))
 	    (throw 'error "Abort.")))))
 
 (define-stumpwm-type :shell (input prompt)
@@ -734,7 +730,7 @@ aborted."
       (pull-window win))))
 
 (define-stumpwm-command "pull" ((n :window-number "Pull: "))
-  (pull-window-by-number (screen-current-group (current-screen)) n))
+  (pull-window-by-number (current-group) n))
 
 (defun send-meta-key (screen key)
   "Send the prefix key"
@@ -760,7 +756,7 @@ aborted."
       (setf (window-number (group-current-window group)) nt))))
 
 (define-stumpwm-command "number" ((n :number "Number: "))
-  (renumber (screen-current-group (current-screen)) n))
+  (renumber (current-group) n))
 
 (define-stumpwm-command "gravity" ((gravity :gravity "Gravity: "))
   (when (current-window)
@@ -816,7 +812,7 @@ aborted."
   (frame-raise-window group frame nil (eq (tile-group-current-frame group) frame)))
 
 (define-stumpwm-command "fclear" ()
-  (clear-frame (tile-group-current-frame (screen-current-group (current-screen))) (screen-current-group (current-screen))))
+  (clear-frame (tile-group-current-frame (current-group)) (current-group)))
 
 (defun find-closest-frame (ref-frame framelist closeness-func lower-bound-func
 			   upper-bound-func)
@@ -845,7 +841,7 @@ aborted."
      finally (return r)))
 
 (define-stumpwm-command "move-focus" ((dir :string "Direction: "))
-  (let ((group (screen-current-group (current-screen))))
+  (let ((group (current-group)))
     (destructuring-bind (perp-coord perp-span parall-coord parall-span)
 	(cond
 	  ((or (string= dir "left") (string= dir "right"))
@@ -921,7 +917,7 @@ be found, select it.  Otherwise simply run cmd."
 		       for win = (find-window g)
 		       when win
 		       return win)
-		    (find-window (screen-current-group (current-screen)))))))
+		    (find-window (current-group))))))
       (if win
 	  (goto-win win)
 	  (run-shell-command cmd)))))
@@ -983,7 +979,7 @@ be found, select it.  Otherwise simply run cmd."
 	  m)))
 
 (define-stumpwm-command "iresize" ()
-  (if (atom (tile-group-frame-tree (screen-current-group (current-screen))))
+  (if (atom (tile-group-frame-tree (current-group)))
       (echo-string (current-screen) "There's only 1 frame!")
       (progn
 	(echo-string (current-screen) "Resize Frame")
@@ -1047,11 +1043,11 @@ be found, select it.  Otherwise simply run cmd."
   (add-group (current-screen) name))
 
 (define-stumpwm-command "gnext" ()
-  (group-forward (screen-current-group (current-screen))
+  (group-forward (current-group)
 		 (sort-groups (current-screen))))
 
 (define-stumpwm-command "gprev" ()
-  (group-forward (screen-current-group (current-screen))
+  (group-forward (current-group)
 		 (reverse (sort-groups (current-screen)))))
 
 (defun echo-groups (screen fmt &optional verbose (wfmt *window-format*))
@@ -1102,8 +1098,8 @@ be found, select it.  Otherwise simply run cmd."
     (move-window-to-group (current-window) to-group)))
 
 (define-stumpwm-command "gkill" ()
-  (let ((dead-group (screen-current-group (current-screen)))
-	(to-group (next-group (screen-current-group (current-screen)))))
+  (let ((dead-group (current-group))
+	(to-group (next-group (current-group))))
     (switch-to-group to-group)
     (kill-group dead-group to-group)))
 
@@ -1160,6 +1156,7 @@ element is displayed in the menu. What is displayed as menu items
 must be strings. Returns the selected element in TABLE or nil if aborted.
 
 See *menu-map* for menu bindings."
+  (check-type screen screen)
   (check-type table list)
   (check-type prompt string)
   (let ((menu (make-menu-state
@@ -1186,7 +1183,7 @@ See *menu-map* for menu bindings."
 	(unmap-all-message-windows)))))
 
 (define-stumpwm-command "windowlist" ((fmt :rest))
-  (let* ((group (screen-current-group (current-screen)))
+  (let* ((group (current-group))
 	 (window (when (group-windows group)
 		   (second (select-from-menu
 			    (current-screen)
@@ -1207,15 +1204,15 @@ commands or don't know lisp very well."
 
 (define-stumpwm-command "snext" ()
   (switch-to-screen (next-screen))
-  (show-frame-indicator (screen-current-group (current-screen)) t))
+  (show-frame-indicator (current-group) t))
 
 (define-stumpwm-command "sprev" ()
   (switch-to-screen (next-screen (reverse (sort-screens))))
-  (show-frame-indicator (screen-current-group (current-screen)) t))
+  (show-frame-indicator (current-group) t))
 
 (define-stumpwm-command "sother" ()
   (switch-to-screen (cadr *screen-list*))
-  (show-frame-indicator (screen-current-group (current-screen)) t))
+  (show-frame-indicator (current-group) t))
 
 (defun window-send-string (window string)
   "Send the string of characters to the window as if they'd been typed."
@@ -1269,31 +1266,31 @@ current frame and raise it."
 	(echo-string (group-screen group) "No other window."))))  
 
 (define-stumpwm-command "pull-hidden-next" ()
-  (let ((group (screen-current-group (current-screen))))
+  (let ((group (current-group)))
     (focus-forward group (sort-windows group) t (lambda (w) (not (eq (frame-window (window-frame w)) w))))))
 
 (define-stumpwm-command "pull-hidden-previous" ()
-  (let ((group (screen-current-group (current-screen))))
+  (let ((group (current-group)))
     (focus-forward group (nreverse (sort-windows group)) t (lambda (w) (not (eq (frame-window (window-frame w)) w))))))
 
 (define-stumpwm-command "pull-hidden-other" ()
-  (let ((group (screen-current-group (current-screen))))
+  (let ((group (current-group)))
     (pull-other-hidden-window group)))
 
 (define-stumpwm-command "next-in-frame" ()
-  (let ((group (screen-current-group (current-screen))))
+  (let ((group (current-group)))
     (if (group-current-window group)
 	(focus-forward group (frame-sort-windows group (tile-group-current-frame group)))
 	(other-window-in-frame group))))
 
 (define-stumpwm-command "prev-in-frame" ()
-  (let ((group (screen-current-group (current-screen))))
+  (let ((group (current-group)))
     (if (group-current-window group)
 	(focus-forward group (reverse (frame-sort-windows group (tile-group-current-frame group))))
 	(other-window-in-frame group))))
 
 (define-stumpwm-command "other-in-frame" ()
-  (other-window-in-frame (screen-current-group (current-screen))))
+  (other-window-in-frame (current-group)))
 
 (define-stumpwm-command "command-mode" ()
   (echo-string (current-screen) "Press C-g to exit command-mode.")
@@ -1309,11 +1306,18 @@ current frame and raise it."
 		       "Unmarked!")))))
 
 (define-stumpwm-command "clear-marks" ()
-  (let ((group (screen-current-group (current-screen))))
+  (let ((group (current-group)))
     (clear-window-marks group)))
 
 (define-stumpwm-command "pull-marked" ()
-  (let ((group (screen-current-group (current-screen))))
+  (let ((group (current-group)))
     (dolist (i (marked-windows group))
       (pull-window i))
     (clear-window-marks group)))
+
+(define-stumpwm-command "balance-frames" ()
+  (let ((tree (tree-parent (tile-group-frame-tree (current-group))
+                           (tile-group-current-frame (current-group)))))
+    (if tree
+        (balance-frames (current-group) tree)
+        (echo-string (current-screen) "There's only 1 frame!"))))

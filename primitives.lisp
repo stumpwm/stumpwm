@@ -62,10 +62,9 @@ occur in that many seconds.")
   "A hook called whenever a window is destroyed.")
 
 (defvar *focus-window-hook* '()
-  "A hook called when a window is given focus.")
-
-(defvar *unfocus-window-hook* '()
-  "A hook called when a window loses focus.")
+  "A hook called when a window is given focus. It is called with
+  2 arguments: the current window and the last window (could be
+  nil).")
 
 (defvar *start-hook* '()
   "A hook called when stumpwm starts.")
@@ -86,6 +85,9 @@ occur in that many seconds.")
   "A hook called whenever stumpwm displays a message. The hook
 function is passed any number of arguments. Each argument is a
 line of text.")
+
+(defvar *focus-group-hook* '()
+  "A hook called whenever stumpwm switches groups. It is called with 2 arguments: the current group and the last group.")
 
 ;; Data types and globals used by stumpwm
 
@@ -231,7 +233,6 @@ to login remotely to regain control. :abort quits stumpmwm.")
   win-bg-color
   msg-border-width
   font
-  current-frame
   ;; A list of all mapped windows. These are the raw
   ;; xlib:window's. window structures are stored in groups.
   mapped-windows
@@ -256,11 +257,11 @@ to login remotely to regain control. :abort quits stumpmwm.")
   last-msg-highlights)
 
 (defmethod print-object ((object frame) stream)
-  (format stream "#S<frame ~d ~d ~d ~d>" 
-	  (frame-x object) (frame-y object) (frame-window object) (frame-height object)))
+  (format stream "#S(frame ~a ~d ~d ~d ~d)" 
+	  (frame-window object) (frame-x object) (frame-y object) (frame-width object) (frame-height object)))
 
 (defmethod print-object ((object window) stream)
-  (format stream "#S<window ~s>" (window-name object)))
+  (format stream "#S(window ~s)" (window-name object)))
 
 (defvar *frame-number-map* nil
   "Set this to a string to remap the regular frame numbers to more convenient keys.
@@ -660,3 +661,20 @@ then only the class ID is matched.")
                   (match-res-or-type window res))
                 deny-list)
        t)))
+
+(defun list-splice-replace (item list &rest replacements)
+  "splice REPLACEMENTS into LIST where ITEM is, removing
+ITEM. Return the new list."
+  (let ((p (position item list)))
+    (if p
+        (nconc (subseq list 0 p) replacements (subseq list (1+ p)))
+        list)))
+
+(defvar *min-frame-width* 50
+  "A frame will not shrink below this width. Splitting will not
+affect frames if the new frame widths are less than this value.")
+
+(defvar *min-frame-height* 50
+  "A frame will not shrink below this height. Splitting will not
+affect frames if the new frame heights are less than this
+value.")

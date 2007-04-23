@@ -393,10 +393,11 @@ Common Lisp interpreter where they will be ran as Lisp programs; thus,
 input should be valid Common Lisp.
 
 @item C-t C-h
+@itemx C-t ?
 The help.
 
 @item C-t -
-Hides all frames and show the root window.
+Hide all frames and show the root window.
 
 @item C-t Q
 Removes all splits and maximizes the frame with focus.
@@ -466,6 +467,9 @@ Kill the current group. All windows are merged into the next group.
 @itemx C-t g 9
 @itemx C-t g 0
 Go to the corresonding group. @kbd{C-t g 1} jumps to group 1 and so on.
+
+@item C-t +
+Make frames the same height or width in the current frame's subtree.
 
 @end table
 
@@ -1009,6 +1013,9 @@ jump to that frame.
 Resize the current frame by @var{width} and @var{height} pixels
 @end deffn
 
+@deffn {Command} balance-frames
+Make frames the same height or width in the current frame's subtree.
+@end deffn
 
 @deffn {Command} fclear
 Clear the current frame.

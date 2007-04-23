@@ -19,6 +19,7 @@
 	   #:set-font
            #:set-msg-border-width
 	   #:echo-string
+           #:message
 	   #:*timeout-wait*
 	   #:*timeout-frame-indicator-wait*
 	   #:*message-window-padding*
@@ -108,6 +109,8 @@
            #:*suppress-deny-messages*
 	   ;; frames
 	   #:*frame-number-map*
+           #:*min-frame-width*
+           #:*min-frame-height*
 	   ;; groups
 	   #:current-group
 	   ))

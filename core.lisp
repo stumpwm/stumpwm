@@ -33,6 +33,21 @@
 	  (define-key m (kbd "C-t") '*root-map*)
 	  m)))
 
+;; Wow, is there an easier way to do this?
+(defmacro def-thing-attr-macro (thing hash-slot)
+  (let ((attr (gensym "ATTR"))
+        (obj (gensym "METAOBJ"))
+        (val (gensym "METAVAL")))
+    `(defmacro ,(intern (format nil "DEF-~a-ATTR" thing)) (,attr)
+       "Create a new attribute and corresponding get/set functions."
+       (let ((,obj (gensym "OBJ"))
+             (,val (gensym "VAL")))
+         `(progn
+            (defun ,(intern (format nil ,(format nil "~a-~~a" thing) ,attr)) (,,obj)
+              (gethash ,,attr (,(quote ,hash-slot) ,,obj)))
+            (defun (setf ,(intern (format nil ,(format nil "~a-~~a" thing) ,attr))) (,,val ,,obj)
+              (setf (gethash ,,attr (,(quote ,hash-slot) ,,obj))) ,,val))))))
+
 ;; Screen helper functions
 
 (defun translate-id (src src-start src-end font dst dst-start)
@@ -144,7 +159,8 @@ otherwise specified."
       ;; restore the focus
       (setf (screen-focus screen) nil)
       (focus-frame new-group (tile-group-current-frame new-group))
-      (show-frame-indicator new-group))))
+      (show-frame-indicator new-group)
+      (run-hook-with-args *focus-group-hook* new-group old-group))))
 
 (defun move-window-to-group (window to-group)
   (unless (eq (window-group window) to-group)
@@ -190,9 +206,7 @@ otherwise specified."
 (defun add-group (screen name)
   (check-type screen screen)
   (check-type name string)
-  (let* ((initial-frame (make-initial-frame
-			 (screen-x screen) (screen-y screen)
-			 (screen-width screen) (screen-height screen)))
+  (let* ((initial-frame (make-initial-frame screen))
 	 (ng (make-tile-group
 	      :frame-tree initial-frame
 	      :current-frame initial-frame
@@ -785,11 +799,7 @@ maximized, and given focus."
 	(update-window-border cw))
       ;; Move the window to the head of the mapped-windows list
       (move-window-to-head group window)
-      ;; If another window was focused, then call the unfocus hook for
-      ;; it.
-      (when cw
-	(run-hook-with-args *unfocus-window-hook* cw))
-      (run-hook-with-args *focus-window-hook* window))))
+      (run-hook-with-args *focus-window-hook* window cw))))
 
 (defun delete-window (window)
   "Send a delete event to the window."
@@ -970,14 +980,14 @@ T (default) then also focus the frame."
   (remove-if-not (lambda (w) (eq (window-frame w) f))
 		 (sort-windows group)))
 
-(defun make-initial-frame (x y w h)
+(defun make-initial-frame (screen)
   "Used to create an initial frame hash for a screen."
   (make-frame :number 0
-	      :x x
-	      :y y
-	      :width w
-	      :height h
-	      :window nil))
+              :x (screen-x screen)
+              :y (screen-y screen)
+              :width (screen-width screen)
+              :height (screen-height screen)
+              :window nil))
 
 (defun copy-frame-tree (group)
   "Return a copy of the frame tree."
@@ -1039,32 +1049,52 @@ T (default) then also focus the frame."
   (cond ((atom tree)
 	 (if (eq leaf tree)
 	     (funcall fn leaf)
-	   tree))
-	(t (list (funcall-on-leaf (first tree) leaf fn)
-		 (funcall-on-leaf (second tree) leaf fn)))))
+             tree))
+	(t (mapcar (lambda (sib)
+                     (funcall-on-leaf sib leaf fn))
+                   tree))))
 
 (defun funcall-on-node (tree fn match)
   "Call fn on the node where match returns t."
   (if (funcall match tree)
       (funcall fn tree)
-    (cond ((atom tree) tree)
-	  (t (list (funcall-on-node (first tree) fn match)
-		   (funcall-on-node (second tree) fn match))))))
+      (cond ((atom tree) tree)
+            (t (mapcar (lambda (sib)
+                         (funcall-on-node sib fn match))
+                       tree)))))
 
-(defun replace-frame-in-tree (tree f f1 f2)
+(defun replace-frame-in-tree (tree f &rest frames)
   (funcall-on-leaf tree f (lambda (f)
                             (declare (ignore f))
-			    (list f1 f2))))
+			    frames)))
 
-(defun sibling (tree leaf)
-  "Return the sibling of LEAF in TREE."
+(defun sibling-internal (tree leaf fn)
+  "helper for next-sibling and prev-sibling."
   (cond ((atom tree) nil)
-	((eq (first tree) leaf)
-	 (second tree))
-	((eq (second tree) leaf)
-	 (first tree))
-	(t (or (sibling (first tree) leaf)
-	       (sibling (second tree) leaf)))))
+	((find leaf tree)
+         (let* ((rest (cdr (member leaf (funcall fn tree))))
+                (pick (car (if (null rest) (funcall fn tree) rest))))
+           (unless (eq pick leaf)
+             pick)))
+	(t (find-if (lambda (x)
+                      (sibling-internal x leaf fn))
+                    tree))))
+
+(defun next-sibling (tree leaf)
+  "Return the sibling of LEAF in TREE."
+  (sibling-internal tree leaf 'identity))
+
+(defun prev-sibling (tree leaf)
+  (sibling-internal tree leaf 'reverse))
+
+(defun closest-sibling (tree leaf)
+  "Return the sibling to the right/below of leaf or left/above if
+leaf is the most right/below of its siblings."
+  (let* ((parent (tree-parent tree leaf))
+         (lastp (= (position leaf parent) (1- (length parent)))))
+    (if lastp
+        (prev-sibling parent leaf)
+        (next-sibling parent leaf))))
 
 (defun migrate-frame-windows (group src dest)
   "Migrate all windows in SRC frame to DEST frame."
@@ -1078,17 +1108,14 @@ T (default) then also focus the frame."
   (cond ((null tree) nil)
 	((atom tree)
 	 (funcall fn tree))
-	(t (funcall acc
-		    (tree-accum-fn (first tree) acc fn)
-		    (tree-accum-fn (second tree) acc fn)))))
+	(t (apply acc (mapcar (lambda (x) (tree-accum-fn x acc fn)) tree)))))
 
 (defun tree-iterate (tree fn)
   "Call FN on every leaf in TREE"
   (cond ((null tree) nil)
 	((atom tree)
 	 (funcall fn tree))
-	(t (tree-iterate (first tree) fn)
-           (tree-iterate (second tree) fn))))
+	(t (mapc (lambda (x) (tree-iterate x fn)) tree))))
 
 (defun tree-x (tree)
   (tree-accum-fn tree 'min 'frame-x))
@@ -1097,87 +1124,123 @@ T (default) then also focus the frame."
   (tree-accum-fn tree 'min 'frame-y))
 
 (defun tree-width (tree)
-  (tree-accum-fn tree '+ 'frame-width))
+  (cond ((atom tree) (frame-width tree))
+        ((tree-row-split tree)
+         ;; in row splits, all children have the same width, so use the
+         ;; first one.
+         (tree-width (first tree)))
+        (t
+         ;; for column splits we add the width of each child
+         (reduce '+ tree :key 'tree-width))))
 
 (defun tree-height (tree)
-  (tree-accum-fn tree '+ 'frame-height))
+  (cond ((atom tree) (frame-height tree))
+        ((tree-column-split tree)
+         ;; in row splits, all children have the same width, so use the
+         ;; first one.
+         (tree-height (first tree)))
+        (t
+         ;; for column splits we add the width of each child
+         (reduce '+ tree :key 'tree-height))))
+
+(defun tree-parent (top node)
+  "Return the list in TOP that contains NODE."
+  (cond ((atom top) nil)
+        ((find node top) top)
+        (t (loop for i in top
+              thereis (tree-parent i node)))))
 
 (defun tree-row-split (tree)
   "Return t if the children of tree are stacked vertically"
-  (= (tree-y (first tree)) (tree-y (second tree))))
+  (loop for i in (cdr tree)
+       with head = (car tree)
+       always (= (tree-x head) (tree-x i))))
 
 (defun tree-column-split (tree)
   "Return t if the children of tree are side-by-side"
-  (= (tree-x (first tree)) (tree-x (second tree))))
+  (loop for i in (cdr tree)
+       with head = (car tree)
+       always (= (tree-y head) (tree-y i))))
 
-(defun expand-frame (f amount dir)
+(defun tree-split-type (tree)
+  "return :row or :column"
+  (cond ((tree-column-split tree) :column)
+        ((tree-row-split tree) :row)
+        (t (error "tree-split-type unknown"))))
+
+(defun offset-tree (tree x y)
+  "move the screen's frames around."
+  (tree-iterate tree (lambda (frame)
+                       (incf (frame-x frame) x)
+                       (incf (frame-y frame) y))))
+
+(defun offset-tree-dir (tree amount dir)
   (ecase dir
-    (left (decf (frame-x f) amount)
-	  (incf (frame-width f) amount))
-    (right (incf (frame-width f) amount))
-    (top (decf (frame-y f) amount)
-	 (incf (frame-height f) amount))
-    (bottom (incf (frame-height f) amount))))
+    (:left   (offset-tree tree (- amount) 0))
+    (:right  (offset-tree tree amount 0))
+    (:top    (offset-tree tree 0 (- amount)))
+    (:bottom (offset-tree tree 0 amount))))
 
 (defun expand-tree (tree amount dir)
-  "expand the frames in tree by AMOUNT in DIR direction. DIR can be 'top 'bottom 'left 'right"
-  (cond ((null tree) nil)
-	((atom tree)
-	 (expand-frame tree amount dir))
-	(t (if (or (and (member dir '(left right))
-			(tree-column-split tree))
-		   (and (member dir '(top bottom))
-			(tree-row-split tree)))
-	       (progn
-		 (expand-tree (first tree) amount dir)
-		 (expand-tree (second tree) amount dir))
-	     (let ((n (truncate amount 2)))
-	       (multiple-value-bind (a b)
-		   (if (find dir '(left top))
-		       (values (first tree) (second tree))
-		     (values (second tree) (first tree)))
-		 ;; first expand it the full amount to take up the
-		 ;; space. then shrink it in the other direction by
-		 ;; half.
-		 (expand-tree a amount dir)
-		 (expand-tree a (- n) (ecase dir
-					       (left 'right)
-					       (right 'left)
-					       (top 'bottom)
-					       (bottom 'top)))
-		 ;; the other side simple needs to be expanded half
-		 ;; the amount.
-		 (expand-tree b n dir)))))))
+  "expand the frames in tree by AMOUNT in DIR direction. DIR can be :top :bottom :left :right"
+  (labels ((expand-frame (f amount dir)
+             (ecase dir
+               (:left   (decf (frame-x f) amount)
+                        (incf (frame-width f) amount))
+               (:right  (incf (frame-width f) amount))
+               (:top    (decf (frame-y f) amount)
+                        (incf (frame-height f) amount))
+               (:bottom (incf (frame-height f) amount)))))
+    (cond ((null tree) nil)
+          ((atom tree)
+           (expand-frame tree amount dir))
+          (t (if (or (and (find dir '(:left :right))
+                          (tree-row-split tree))
+                     (and (find dir '(:top :bottom))
+                          (tree-column-split tree)))
+                 (dolist (i tree)
+                   (expand-tree i amount dir))
+                 (let ((n (truncate amount (length tree)))
+                       (children (if (find dir '(:left :top))
+                                     (reverse tree)
+                                     tree)))
+                   (loop for i in children
+                      for ofs = 0 then (+ ofs n) do
+                      (expand-tree i n dir)
+                      (offset-tree-dir i ofs dir))))))))
 
-(defun join-subtrees (tree keep)
-  "expand one of the children of tree to occupy the space of the other
-child. KEEP decides which child to keep. It can be 'LEFT or
-'RIGHT. Return the child that was kept."
-  (multiple-value-bind (child other)
-      (if (eql keep 'left)
-	  (values (first tree) (second tree))
-	(values (second tree) (first tree)))
-    (if (tree-row-split tree)
-	(expand-tree child
-		     (tree-width other)
-		     (if (eql keep 'left) 'right 'left))
-      (expand-tree child
-		   (tree-height other)
-		   (if (eql keep 'left) 'bottom 'top)))
-    child))
+(defun join-subtrees (tree leaf)
+  "expand the children of tree to occupy the space of
+LEAF. Return tree with leaf removed."
+  (let* ((others (remove leaf tree))
+         (newtree (if (= (length others) 1)
+                      (car others)
+                      others))
+         (split-type (tree-split-type tree)))
+    (if (eq split-type :column)
+        (let ((after (cdr (member leaf tree))))
+          ;; align all children after the leaf with the edge of the
+          ;; frame before leaf. 
+          (dolist (i after)
+            (decf (frame-x i) (frame-width leaf)))
+          (expand-tree newtree (tree-width leaf) :right))
+        (let ((after (cdr (member leaf tree))))
+          ;; align all children after the leaf with the edge of the
+          ;; frame before leaf. 
+          (dolist (i after)
+            (decf (frame-y i) (frame-height leaf)))
+          (expand-tree newtree (tree-height leaf) :bottom)))
+    newtree))
 
 (defun remove-frame (tree leaf)
   "Return a new tree with LEAF and it's sibling merged into
 one."
   (cond ((atom tree) tree)
-	((and (atom (first tree))
-	      (eq (first tree) leaf))
-	 (join-subtrees tree 'right))
-	((and (atom (second tree))
-	      (eq (second tree) leaf))
-	 (join-subtrees tree 'left))
-	(t (list (remove-frame (first tree) leaf)
-		 (remove-frame (second tree) leaf)))))
+	((find leaf tree) 
+	 (join-subtrees tree leaf))
+	(t (mapcar (lambda (sib)
+                     (remove-frame sib leaf))
+                   tree))))
 
 (defun sync-frame-windows (group frame)
   "synchronize windows attached to FRAME."
@@ -1193,82 +1256,137 @@ one."
 		  (lambda (f)
 		    (sync-frame-windows group f)))))
 
-(defun depth-first-search (tree elt &key (test #'eq))
-  "If ELT is in TREE return the branches from ELT up to and including TREE"
-  (if (atom tree)
-      (funcall test tree elt)
-    (labels ((find-path (acc)
-			(let ((current (car acc)))
-			  (cond ((atom current)
-				 (when (funcall test elt current)
-				   (throw 'found (cdr acc))))
-				(t (find-path (cons (first current) acc))
-				   (find-path (cons (second current) acc)))))))
-      (catch 'found (find-path (list tree))))))
-
-(defun spree-root-branch (tree pred t-frame)
-  "Find the first parent branch of T-FRAME in TREE for which PRED no longer is T"
-  (let ((path (depth-first-search tree t-frame)))
-    ;; path is the path of branches traversed to reach T-FRAME
-    (when path
-      (loop for branch in path while (funcall pred branch)
-	    finally (return branch)))))
-
-(defun offset-frames (group x y)
-  "move the screen's frames around."
-  (let ((tree (tile-group-frame-tree group)))
-    (tree-iterate tree (lambda (frame)
-			 (incf (frame-x frame) x)
-			 (incf (frame-y frame) y)))))
-
 (defun resize-frame (group frame amount dim)
-  "Resize FRAME by AMOUNT in DIM dimension, DIM can be either 'width or 'height"
-  (let ((tree (tile-group-frame-tree group))
-	(screen (group-screen group)))
-    ;; if FRAME is taking up the whole DIM or if AMOUNT = 0, do nothing
-    (unless (or (zerop amount)
-                (case dim
-                  (width  (< (screen-width screen) (+ (frame-width frame) amount)))
-                  (height (< (screen-height screen) (+ (frame-height frame) amount)))))
-      (let* ((split-pred (ecase dim
-                           (width   #'tree-column-split)
-                           (height  #'tree-row-split)))
-             (a-branch (spree-root-branch tree
-                                          (lambda (b)
-                                            (funcall split-pred b))
-                                          frame)))
-        (multiple-value-bind (a b)
-            (if (depth-first-search (first a-branch) frame)
-                (values (first a-branch) (second a-branch))
-		(values (second a-branch) (first a-branch)))
-          (let ((dir (ecase dim
-                       (width (if (< (tree-x a) (tree-x b))
-				  'right 'left))
-                       (height (if (< (tree-y a) (tree-y b))
-				   'bottom 'top)))))
-            (expand-tree a amount dir)
-            (expand-tree b (- amount) (ecase dir
-					(left 'right)
-					(right 'left)
-					(top 'bottom)
-					(bottom 'top)))
-            (tree-iterate a-branch
-                          (lambda (leaf)
-                            (sync-frame-windows group leaf)))))))))
+  "Resize FRAME by AMOUNT in DIM dimension, DIM can be
+either :width or :height"
+  (check-type group group)
+  (check-type frame frame)
+  (check-type amount integer)
+    ;; (check-type dim (member :width :height))
+  (labels ((max-amount (parent node min dim-fn)
+             (format t "max ~@{~a~^ ~}~%" parent node min dim-fn)
+             (if parent
+                 (- (funcall dim-fn parent)
+                    (funcall dim-fn node)
+                    (* min (1- (length parent))))
+                 ;; no parent means the frame can't get any bigger.
+                 0)))
+    (let* ((tree (tile-group-frame-tree group))
+           (parent (tree-parent tree frame))
+           (gparent (tree-parent tree parent))
+           (split-type (tree-split-type parent)))
+      (format t "~s ~s parent: ~s ~s width: ~s h: ~s~%" dim amount split-type parent (tree-width parent) (tree-height parent))
+      ;; normalize amount
+      (let* ((max (ecase dim
+                    (:width 
+                     (if (eq split-type :column)
+                         (max-amount parent frame *min-frame-width* 'tree-width)
+                         (max-amount gparent parent *min-frame-width* 'tree-width)))
+                    (:height
+                     (if (eq split-type :row)
+                         (max-amount parent frame *min-frame-height* 'tree-height)
+                         (max-amount gparent parent *min-frame-height* 'tree-height)))))
+             (min (ecase dim
+                    ;; Frames taking up the entire screen in one
+                    ;; dimension can't be resized in that dimension.
+                    (:width 
+                     (if (and (eq split-type :row)
+                              (null gparent))
+                         0
+                         (- *min-frame-width* (frame-width frame))))
+                    (:height
+                     (if (and (eq split-type :column)
+                              (null gparent))
+                         0
+                         (- *min-frame-height* (frame-height frame)))))))
+        (setf amount (max (min amount max) min))
+        (format t "bounds ~d ~d ~d~%" amount max min))
+      ;; if FRAME is taking up the whole DIM or if AMOUNT = 0, do nothing    
+      (unless (zerop amount)
+        (let* ((resize-parent (or (and (eq split-type :column)
+                                       (eq dim :height))
+                                  (and (eq split-type :row)
+                                       (eq dim :width))))
+               (to-resize (if resize-parent parent frame))
+               (to-resize-parent (if resize-parent gparent parent)) 
+               (lastp (= (position to-resize to-resize-parent) (1- (length to-resize-parent))))
+               (to-shrink (if lastp
+                              (prev-sibling to-resize-parent to-resize)
+                              (next-sibling to-resize-parent to-resize))))
+          (expand-tree to-resize amount (ecase dim
+                                          (:width (if lastp :left :right))
+                                          (:height (if lastp :top :bottom))))
+          (expand-tree to-shrink (- amount) (ecase dim
+                                              (:width (if lastp :right :left))
+                                              (:height (if lastp :bottom :top))))
+          (tree-iterate to-resize
+                        (lambda (leaf)
+                          (sync-frame-windows group leaf)))
+          (tree-iterate to-shrink
+                        (lambda (leaf)
+                          (sync-frame-windows group leaf))))))))
 
-(defun split-frame (group how-fn)
+(defun balance-frames (group tree)
+  "Resize all the children of tree to be of equal width or height
+depending on the tree's split direction."
+  (let* ((split-type (tree-split-type tree))
+         (fn (if (eq split-type :column)
+                 'tree-width
+                 'tree-height))
+         (side (if (eq split-type :column)
+                   :right 
+                   :bottom))
+         (other (if (eq split-type :column)
+                    :left
+                    :top))
+         (total (funcall fn tree))
+         (first (car tree))
+         (last (car (last tree)))
+         size rem)
+    (multiple-value-setq (size rem) (truncate total (length tree)))
+    (loop
+       for i in tree
+       for j = rem then (1- rem)
+       for totalofs = 0 then (+ totalofs ofs)
+       for ofs = (+ (- size (funcall fn i)) (if (plusp rem) 1 0))
+       do
+       (expand-tree i ofs side)
+       (offset-tree-dir i totalofs side)
+       (tree-iterate i (lambda (leaf)
+                         (sync-frame-windows group leaf))))))
+
+(defun split-frame (group how)
+  "split the current frame into 2 frames. return T if it succeeded. NIL otherwise."
+  (check-type how (member :row :column))
   (let* ((frame (tile-group-current-frame group)))
-    (multiple-value-bind (f1 f2) (funcall how-fn frame)
-      (setf (tile-group-frame-tree group)
-	    (replace-frame-in-tree (tile-group-frame-tree group)
-				   frame f1 f2))
-      (migrate-frame-windows group frame f1)
-      (if (eq (tile-group-current-frame group)
-	      frame)
-	  (setf (tile-group-current-frame group) f1))
-      (setf (tile-group-last-frame group) f2)
-      (sync-frame-windows group f1)
-      (sync-frame-windows group f2))))
+    ;; don't create frames smaller than the minimum size
+    (when (or (and (eq how :row)
+                   (>= (frame-height frame) (* *min-frame-height* 2)))
+              (and (eq how :column)
+                   (>= (frame-width frame) (* *min-frame-width* 2))))
+      (multiple-value-bind (f1 f2) (funcall (if (eq how :column)
+                                                'split-frame-h
+                                                'split-frame-v)
+                                            group frame)
+        (setf (tile-group-frame-tree group)
+              (if (atom (tile-group-frame-tree group))
+                  (list f1 f2)
+                  (funcall-on-node (tile-group-frame-tree group)
+                                   (lambda (tree)
+                                     (if (eq (tree-split-type tree) how)
+                                         (list-splice-replace frame tree f1 f2)
+                                         (substitute (list f1 f2) frame tree)))
+                                   (lambda (tree)
+                                     (unless (atom tree)
+                                       (find frame tree))))))
+        (migrate-frame-windows group frame f1)
+        (if (eq (tile-group-current-frame group)
+                frame)
+            (setf (tile-group-current-frame group) f1))
+        (setf (tile-group-last-frame group) f2)
+        (sync-frame-windows group f1)
+        (sync-frame-windows group f2)
+        t))))
 
 (defun draw-frame-outlines (group)
   "Draw an outline around all frames in SCREEN."
@@ -1509,6 +1627,10 @@ the nth entry to highlight."
   "Print msg to SCREEN's message window."
   (echo-string-list screen (split-string msg (string #\Newline))))
 
+(defun message (fmt &rest args)
+  "run FMT and ARGS through format and echo the result to the current screen."
+  (echo-string (current-screen) (apply 'format nil fmt args)))
+
 (defun current-screen ()
   "Return the current screen."
   (car *screen-list*))
@@ -1552,13 +1674,8 @@ the nth entry to highlight."
 					     :colormap (xlib:screen-default-colormap
 							screen-number)
 					     :event-mask '()))
-	 (initial-frame (make-initial-frame 0 0
-					    (xlib:screen-width screen-number)
-					    (xlib:screen-height screen-number)))
 	 (font (xlib:open-font *display* +default-font-name+))
 	 (group (make-tile-group
-		 :frame-tree initial-frame
-		 :current-frame initial-frame
 		 :screen screen
 		 :number 1
 		 :name "Default")))
@@ -1595,6 +1712,8 @@ the nth entry to highlight."
 				     :subwindow-mode :include-inferiors
 				     :foreground  (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-foreground-color+)
 				     :background (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-background-color+)))
+    (setf (tile-group-frame-tree group) (make-initial-frame screen)
+          (tile-group-current-frame group) (tile-group-frame-tree group))
     screen))
 
 
