@@ -1,5 +1,12 @@
 2007-04-23  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* core.lisp (split-frame-h): properly handle modulo
+	(split-frame-v): likewise
+	(expand-tree): properly expand the children with modulo
+	(join-subtrees): rewrite
+	(offset-frames): new function
+	(balance-frames): properly resize with modulo
+
 	* user.lisp (*root-map*): add + binding
 	(split-frame-in-dir): new function
 	("hsplit"): call split-frame-in-dir
@@ -51,7 +58,8 @@
 	(balance-frames): new function
 	(split-frame): splice frames that are split in the same direction
 	as their parent into the parent list.
-	(message): new function
+	(message): new function. all (echo-string (current-screen) ..)
+	callers updated.
 	(current-group): new
 	function. all (screen-current-group (current-screen)) callers
 	updated.

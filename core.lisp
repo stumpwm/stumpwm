@@ -1019,7 +1019,8 @@ T (default) then also focus the frame."
 	 (f2 (make-frame :number (find-free-frame-number group)
 			 :x (+ (frame-x p) w)
 			 :y (frame-y p)
-			 :width w
+                         ;; gobble up the modulo
+			 :width (- (frame-width p) w)
 			 :height h
 			 :window nil)))
     (run-hook-with-args *new-frame-hook* f2)
@@ -1039,7 +1040,8 @@ T (default) then also focus the frame."
 			 :x (frame-x p)
 			 :y (+ (frame-y p) h)
 			 :width w
-			 :height h
+                         ;; gobble up the modulo
+			 :height (- (frame-height p) h)
 			 :window nil)))
     (run-hook-with-args *new-frame-hook* f2)
     (values f1 f2)))
@@ -1200,14 +1202,18 @@ leaf is the most right/below of its siblings."
                           (tree-column-split tree)))
                  (dolist (i tree)
                    (expand-tree i amount dir))
-                 (let ((n (truncate amount (length tree)))
-                       (children (if (find dir '(:left :top))
+                 (let ((children (if (find dir '(:left :top))
                                      (reverse tree)
                                      tree)))
-                   (loop for i in children
-                      for ofs = 0 then (+ ofs n) do
-                      (expand-tree i n dir)
-                      (offset-tree-dir i ofs dir))))))))
+                   (multiple-value-bind (n rem) (truncate amount (length tree))
+                     (loop
+                        for i in children
+                        ;; distribute the remainder as evenly as possible across the windows
+                        for j = rem then (1- j)
+                        for ofs = 0 then (+ ofs amt)
+                        for amt = (+ n (if (plusp j) 1 0)) do
+                        (expand-tree i amt dir)
+                        (offset-tree-dir i ofs dir)))))))))
 
 (defun join-subtrees (tree leaf)
   "expand the children of tree to occupy the space of
@@ -1216,20 +1222,17 @@ LEAF. Return tree with leaf removed."
          (newtree (if (= (length others) 1)
                       (car others)
                       others))
-         (split-type (tree-split-type tree)))
-    (if (eq split-type :column)
-        (let ((after (cdr (member leaf tree))))
-          ;; align all children after the leaf with the edge of the
-          ;; frame before leaf. 
-          (dolist (i after)
-            (decf (frame-x i) (frame-width leaf)))
-          (expand-tree newtree (tree-width leaf) :right))
-        (let ((after (cdr (member leaf tree))))
-          ;; align all children after the leaf with the edge of the
-          ;; frame before leaf. 
-          (dolist (i after)
-            (decf (frame-y i) (frame-height leaf)))
-          (expand-tree newtree (tree-height leaf) :bottom)))
+         (split-type (tree-split-type tree))
+         (dir (if (eq split-type :column) :right :bottom))
+         (ofsdir (if (eq split-type :column) :left :top))
+         (amt (if (eq split-type :column) 
+                  (tree-width leaf)
+                  (tree-height leaf)))
+         (after (cdr (member leaf tree))))
+    ;; align all children after the leaf with the edge of the
+    ;; frame before leaf. 
+    (offset-tree-dir after amt ofsdir)
+    (expand-tree newtree amt dir)
     newtree))
 
 (defun remove-frame (tree leaf)
@@ -1255,6 +1258,13 @@ one."
     (tree-iterate tree
 		  (lambda (f)
 		    (sync-frame-windows group f)))))
+
+(defun offset-frames (group x y)
+  "move the screen's frames around."
+  (let ((tree (tile-group-frame-tree group)))
+    (tree-iterate tree (lambda (frame)
+                         (incf (frame-x frame) x)
+                         (incf (frame-y frame) y)))))
 
 (defun resize-frame (group frame amount dim)
   "Resize FRAME by AMOUNT in DIM dimension, DIM can be
@@ -1336,19 +1346,14 @@ depending on the tree's split direction."
          (side (if (eq split-type :column)
                    :right 
                    :bottom))
-         (other (if (eq split-type :column)
-                    :left
-                    :top))
          (total (funcall fn tree))
-         (first (car tree))
-         (last (car (last tree)))
          size rem)
     (multiple-value-setq (size rem) (truncate total (length tree)))
     (loop
        for i in tree
-       for j = rem then (1- rem)
+       for j = rem then (1- j)
        for totalofs = 0 then (+ totalofs ofs)
-       for ofs = (+ (- size (funcall fn i)) (if (plusp rem) 1 0))
+       for ofs = (+ (- size (funcall fn i)) (if (plusp j) 1 0))
        do
        (expand-tree i ofs side)
        (offset-tree-dir i totalofs side)
@@ -1989,7 +1994,7 @@ KMAP and return the binding or nil if the user hit an unbound sequence."
 	(unmap-message-window (current-screen))
 	(if cmd
 	    (interactive-command cmd)
-	    (echo-string (current-screen) (format nil "~{~a ~}not bound." (mapcar 'print-key (nreverse key-seq)))))))))
+	    (message "~{~a ~}not bound." (mapcar 'print-key (nreverse key-seq))))))))
 
 (defun bytes-to-window (bytes)
   "A sick hack to assemble 4 bytes into a 32 bit number. This is

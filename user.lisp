@@ -193,7 +193,7 @@ frame."
 	      (frame-raise-window group (window-frame nw) nw)
 	      (unless (eq (window-frame nw) old-frame)
 		(show-frame-indicator group))))
-	(echo-string (current-screen) "No other window."))))
+	(message "No other window."))))
 
 (defun delete-current-window ()
   "Send a delete event to the current window."
@@ -274,7 +274,7 @@ frame."
 
 (defun echo-date ()
   "Print the output of the 'date' command to the screen."
-    (echo-string (current-screen) (format-time-string)))
+    (message "~a" (format-time-string)))
 
 (define-stumpwm-command "time" ()
   (echo-date))
@@ -491,7 +491,7 @@ select one. Returns the selected frame or nil if aborted."
 (define-stumpwm-command "resize" ((w :number "+ Width: ")
 				  (h :number "+ Height: "))
   (if (atom (tile-group-frame-tree (current-group)))
-      (echo-string (current-screen) "There's only 1 frame!")
+      (message "There's only 1 frame!")
       (let* ((group (current-group))
              (f (tile-group-current-frame group)))  
         (resize-frame group f w :width)
@@ -507,7 +507,7 @@ select one. Returns the selected frame or nil if aborted."
   (eval-line (current-screen) cmd))
 
 (define-stumpwm-command "echo" ((s :rest "Echo: "))
-  (echo-string (current-screen) s))
+  (message "~a" s))
 
 ;; Simple command & arg parsing
 (defun split-by-one-space (string)
@@ -714,7 +714,7 @@ aborted."
     (when (screen-mode-line (current-screen))
       (redraw-mode-line-for (screen-mode-line (current-screen)) (current-screen)))
     (when (stringp result)
-      (echo-string (current-screen) result))))
+      (message "~a" result))))
 
 (define-stumpwm-command "colon" ((initial-input :rest))
   (let ((cmd (completing-read (current-screen) ": " (all-commands) (or initial-input ""))))
@@ -764,16 +764,15 @@ aborted."
     (maximize-window (current-window))))
 
 (define-stumpwm-command "reload" ()
-  (echo-string (current-screen) "Reloading StumpWM...")
+  (message "Reloading StumpWM...")
   (asdf:operate 'asdf:load-op :stumpwm)
-  (echo-string (current-screen) "Reloading StumpWM...Done."))
+  (message "Reloading StumpWM...Done."))
 
 (define-stumpwm-command "loadrc" ()
   (multiple-value-bind (success err rc) (load-rc-file)
-    (echo-string (current-screen)
-		 (if success
-		     "RC File loaded successfully."
-		     (format nil "Error loading ~A: ~A" rc err)))))
+    (if success
+        (message "RC File loaded successfully.")
+        (message "Error loading ~A: ~A" rc err))))
 
 (defun display-keybinding (kmap)
   (echo-string-list (current-screen) (mapcar-hash #'(lambda (k v) (format nil "~A -> ~A" (print-key k) v)) kmap)))
@@ -785,7 +784,7 @@ aborted."
 (define-stumpwm-command "abort" ()
   ;; This way you can exit from command mode
   (when (pop-top-map)
-    (echo-string (current-screen) "Exited.")))
+    (message "Exited.")))
 
 (defun set-prefix-key (key)
   "Change the stumpwm prefix key to KEY."
@@ -980,20 +979,20 @@ be found, select it.  Otherwise simply run cmd."
 
 (define-stumpwm-command "iresize" ()
   (if (atom (tile-group-frame-tree (current-group)))
-      (echo-string (current-screen) "There's only 1 frame!")
+      (message "There's only 1 frame!")
       (progn
-	(echo-string (current-screen) "Resize Frame")
+	(message "Resize Frame")
 	(push-top-map *resize-map*))
       ;;   (setf *resize-backup* (copy-frame-tree screen))
       ))
 
 (define-stumpwm-command "abort-iresize" ()
-  (echo-string (current-screen) "Abort resize")
+  (message "Abort resize")
   ;; TODO: actually revert the frames
   (pop-top-map))
 
 (define-stumpwm-command "exit-iresize" ()
- (echo-string (current-screen) "Resize Complete")
+ (message "Resize Complete")
  (pop-top-map))
 
 ;;; group commands
@@ -1240,7 +1239,7 @@ commands or don't know lisp very well."
 
 ;; FIXME: this function is basically useless atm.
 (define-stumpwm-command "getsel" ()
-  (echo-string (current-screen) (get-x-selection)))
+  (message "~a" (get-x-selection)))
 
 (defun other-hidden-window (group)
   "Return the last window that was accessed and that is hidden."
@@ -1293,17 +1292,16 @@ current frame and raise it."
   (other-window-in-frame (current-group)))
 
 (define-stumpwm-command "command-mode" ()
-  (echo-string (current-screen) "Press C-g to exit command-mode.")
+  (message "Press C-g to exit command-mode.")
   (push-top-map *root-map*))
 
 (define-stumpwm-command "mark" ()
   (let ((win (current-window)))
     (when win
       (setf (window-marked win) (not (window-marked win)))
-      (echo-string (current-screen)
-		   (if (window-marked win)
-		       "Marked!"
-		       "Unmarked!")))))
+      (message (if (window-marked win)
+                   "Marked!"
+                   "Unmarked!")))))
 
 (define-stumpwm-command "clear-marks" ()
   (let ((group (current-group)))
@@ -1320,4 +1318,4 @@ current frame and raise it."
                            (tile-group-current-frame (current-group)))))
     (if tree
         (balance-frames (current-group) tree)
-        (echo-string (current-screen) "There's only 1 frame!"))))
+        (message "There's only 1 frame!"))))

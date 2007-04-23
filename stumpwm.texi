@@ -700,8 +700,13 @@ cycle through completions.
 @node Programming The Message Bar, Programming the Input Bar, Using The Input Bar, Message and Input Bar
 @section Programming The Message Bar
 
-@defun echo-string @var{string}
-Display @var{string} in the message bar.
+@defun echo-string @var{screen} @var{string}
+Display @var{string} in the message bar on @var{screen}. You almost always want to use @command{message}.
+@end defun
+
+@defun message @var{fmt-string} &rest @var{arguments}
+Pass @var{fmt-string} and @var{arguments} to @command{format} and echo
+the result to the current screen.
 @end defun
 
 @node Programming the Input Bar,  , Programming The Message Bar, Message and Input Bar
@@ -1045,6 +1050,17 @@ Go to the previous window in the current frame.
 Go to the last accessed window in the current frame.
 @end deffn
 
+@defvar *min-frame-width*
+The minimum width a frame can be. A frame will not shrink below this
+width. Splitting will not affect frames if the new frame widths are
+less than this value.
+@end defvar
+
+@defvar *min-frame-height*
+The minimum height a frame can be. A frame will not shrink below this
+height. Splitting will not affect frames if the new frame heights are
+less than this value.
+@end defvar
 
 @node Mode-line, Groups, Frames, Top
 @chapter The Mode Line
@@ -1443,8 +1459,8 @@ be used when prompting the user for the argument.
      (throw 'error "Symbol not in STUMPWM package")))
 
 (define-stumpwm-command "symbol" ((sym :symbol "Pick a symbol: "))
-  (echo-string (current-screen) (with-output-to-string (s)
-				  (describe sym s))))
+  (message "~a" (with-output-to-string (s)
+	          (describe sym s))))
 @end example
 
 This code creates a new type called @code{:symbol} which finds the
@@ -1530,7 +1546,7 @@ display a message whenever you switch frames:
 
 @example
 (defun my-rad-fn (from-frame to-frame)
-  (stumpwm:echo-string (stumpwm:current-screen) "Mustard!"))
+  (stumpwm:message "Mustard!"))
 
 (stumpmwm:add-hook stumpwm:*focus-frame-hook* 'my-rad-fn)
 @end example
