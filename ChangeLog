@@ -1,5 +1,7 @@
 2007-04-23  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* mode-line.lisp (toggle-mode-line): use :bottom not 'bottom in expand-tree calls
+
 	* core.lisp (split-frame-h): properly handle modulo
 	(split-frame-v): likewise
 	(expand-tree): properly expand the children with modulo
