@@ -1202,18 +1202,23 @@ leaf is the most right/below of its siblings."
                           (tree-column-split tree)))
                  (dolist (i tree)
                    (expand-tree i amount dir))
-                 (let ((children (if (find dir '(:left :top))
-                                     (reverse tree)
-                                     tree)))
-                   (multiple-value-bind (n rem) (truncate amount (length tree))
-                     (loop
-                        for i in children
-                        ;; distribute the remainder as evenly as possible across the windows
-                        for j = rem then (1- j)
-                        for ofs = 0 then (+ ofs amt)
-                        for amt = (+ n (if (plusp j) 1 0)) do
-                        (expand-tree i amt dir)
-                        (offset-tree-dir i ofs dir)))))))))
+                 (let* ((children (if (find dir '(:left :top))
+                                      (reverse tree)
+                                      tree))
+                        (fn (if (find dir '(:left :right))
+                                'tree-width
+                                'tree-height))
+                        (total (funcall fn tree)))
+                   ;; resize proportionally
+                   (loop
+                      for i in children
+                      for ofs = 0 then (+ ofs amt)
+                      for left = amount then (- left amt)
+                      for totalleft = total then (- total oldamt)
+                      for oldamt = (funcall fn i)
+                      for amt = (truncate (* (/ oldamt totalleft) left)) do
+                      (expand-tree i amt dir)
+                      (offset-tree-dir i ofs dir))))))))
 
 (defun join-subtrees (tree leaf)
   "expand the children of tree to occupy the space of

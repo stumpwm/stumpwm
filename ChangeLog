@@ -6,6 +6,7 @@
 	(join-subtrees): rewrite
 	(offset-frames): new function
 	(balance-frames): properly resize with modulo
+	(expand-tree): resize proportionally
 
 	* user.lisp (*root-map*): add + binding
 	(split-frame-in-dir): new function
