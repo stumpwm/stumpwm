@@ -84,6 +84,12 @@ current group.")
 (defvar *current-mode-line-formatter-args* nil
   "used in formatting modeline strings.")
 
+(defvar *mode-line-timeout* 60
+  "The amount of time between modeline updates.")
+
+(defvar *mode-line-timer* nil
+  "The timer that updates the modeline")
+
 (defun make-mode-line-window (parent screen)
   "Create a window suitable for a modeline."
   (xlib:create-window
@@ -177,6 +183,24 @@ current group.")
 			   (xlib:text-width (xlib:gcontext-font (mode-line-gc ml)) string
 					    :translate #'translate-id)))))
 
+(defun update-screen-mode-lines ()
+  (dolist (i *screen-list*)
+    (when (screen-mode-line i)
+      (redraw-mode-line-for (screen-mode-line i) i))))
+
+(defun turn-on-mode-line-timer ()
+  (when (timer-p *mode-line-timer*)
+    (cancel-timer *mode-line-timer*))
+  (setf *mode-line-timer* (run-with-timer *mode-line-timeout*
+                                          *mode-line-timeout*
+                                          'update-screen-mode-lines)))
+
+(defun maybe-cancel-mode-line-timer ()
+  (unless (find-if 'screen-mode-line *screen-list*)
+    (when (timer-p *mode-line-timer*)
+      (cancel-timer *mode-line-timer*)
+      (setf *mode-line-timer* nil))))
+
 (defun toggle-mode-line (screen &optional (format '*screen-mode-line-format*))
   (check-type screen screen)
   (check-type format (or symbol list string))
@@ -189,7 +213,8 @@ current group.")
 	  (sync-all-frame-windows group))
 	(xlib:destroy-window (mode-line-window (screen-mode-line screen)))
 	(xlib:free-gcontext (mode-line-gc (screen-mode-line screen)))
-	(setf (screen-mode-line screen) nil))
+	(setf (screen-mode-line screen) nil)
+        (maybe-cancel-mode-line-timer))
       (progn
 	(setf (screen-mode-line screen) (make-screen-mode-line screen format))
 	(resize-mode-line-for (screen-mode-line screen) screen)
@@ -200,7 +225,9 @@ current group.")
 	  (when (eq (mode-line-position (screen-mode-line screen)) :top)
 	    (offset-frames group 0 (true-height (mode-line-window (screen-mode-line screen)))))
 	  (expand-tree (tile-group-frame-tree group) (- (true-height (mode-line-window (screen-mode-line screen)))) :bottom)
-	  (sync-all-frame-windows group)))))
+	  (sync-all-frame-windows group))
+        ;; setup the timer
+        (turn-on-mode-line-timer))))
 
 (defun screen-mode-line-mode (screen arg &optional (format '*screen-mode-line-format*))
   "Turn on the mode line for SCREEN if and only if ARG is non-nil."

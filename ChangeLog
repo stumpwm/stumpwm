@@ -1,3 +1,34 @@
+2007-04-25  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* stumpwm.lisp (*timer-list*): new global
+	(timer): new defstruct
+	(timer-p): new function
+	(run-with-timer): likewise
+	(cancel-timer): likewise
+	(schedule-timer): likewise
+	(sort-timers): likewise
+	(run-expired-timers): likewise
+	(get-next-timeout): likewise
+	(stumpwm-internal-loop): handle timers
+
+	* primitives.lisp (*timeout*): remove global
+	(reset-timeout): remove function
+	(reset-timeout-for-frame-indicator): remove function
+	(*frame-indicator-timer*): new global
+	(*message-window-timer*): likewise
+
+	* mode-line.lisp (*mode-line-timeout*): new global
+	(*mode-line-timer*): likewise
+	(update-screen-mode-lines): new function
+	(turn-on-mode-line-timer): likewise
+	(maybe-cancel-mode-line-timer): likewise
+	(toggle-mode-line): call maybe-cancel-mode-line-timer and turn-on-mode-line-timer
+
+	* core.lisp (reset-message-window-timer): new function
+	(reset-frame-indicator-timer): likewise
+	(show-frame-indicator): call reset-frame-indicator-timer
+	(echo-string-list): call reset-message-window-timer
+
 2007-04-23  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* mode-line.lisp (toggle-mode-line): use :bottom not 'bottom in expand-tree calls

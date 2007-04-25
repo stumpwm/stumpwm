@@ -35,17 +35,11 @@
 (defvar *timeout-frame-indicator-wait* 1
   "The amount of time a frame indicator timeout takes.")
 
-(defvar *timeout* 0
-  "Internal variable. When this variable is >0 then a timeout will
-occur in that many seconds.")
+(defvar *frame-indicator-timer* nil
+  "Keep track of the timer that hides the frame indicator.")
 
-(defun reset-timeout ()
-  "Set the timer to timeout in *timeout-wait* seconds."
-  (setf *timeout* *timeout-wait*))
-
-(defun reset-timeout-for-frame-indicator ()
-  "Set the timer to timeout in *timeout-frame-indicator-wait* seconds."
-  (setf *timeout* *timeout-frame-indicator-wait*))
+(defvar *message-window-timer* nil
+  "Keep track of the timer that hides the message window.")
 
 ;;; Hooks
 

@@ -1548,6 +1548,24 @@ windows used to draw the numbers in. The caller must destroy them."
 (defun unmap-all-frame-indicators ()
   (mapc #'unmap-frame-indicator *screen-list*))
 
+(defun reset-message-window-timer ()
+  "Set the message window timer to timeout in *timeout-wait* seconds."
+  (when (timer-p *message-window-timer*)
+    (cancel-timer *message-window-timer*))
+  (setf *message-window-timer* (run-with-timer *timeout-wait* nil 
+                                               (lambda ()
+                                                 (unmap-all-message-windows)
+                                                 (setf *message-window-timer* nil)))))
+(defun reset-frame-indicator-timer ()
+  "Set the frame indicator timer to timeout in
+*timeout-frame-indicator-wait* seconds."
+  (when (timer-p *frame-indicator-timer*)
+    (cancel-timer *frame-indicator-timer*))
+  (setf *frame-indicator-timer* (run-with-timer *timeout-frame-indicator-wait* nil 
+                                                (lambda ()
+                                                  (unmap-all-frame-indicators)
+                                                  (setf *frame-indicator-timer* nil)))))
+
 (defun show-frame-indicator (group &optional force-draw)
   (let* ((screen (group-screen group))
 	 (w (screen-frame-window screen))
@@ -1570,7 +1588,7 @@ windows used to draw the numbers in. The caller must destroy them."
 		      (get-bg-color-pixel screen)
 		      s)
       (xlib:display-finish-output *display*)
-      (reset-timeout-for-frame-indicator))))
+      (reset-frame-indicator-timer))))
 
 (defun echo-in-window (win font fg bg string)
   (let* ((height (font-height font))
@@ -1630,7 +1648,7 @@ the nth entry to highlight."
   (push-last-message screen strings highlights)
   ;; Set a timer to hide the message after a number of seconds
   (unless *supress-echo-timeout*
-    (reset-timeout))
+    (reset-message-window-timer))
   (apply 'run-hook-with-args *message-hook* strings))
 
 (defun echo-string (screen msg)

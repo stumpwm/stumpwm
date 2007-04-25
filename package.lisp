@@ -113,4 +113,8 @@
            #:*min-frame-height*
 	   ;; groups
 	   #:current-group
+           ;; timers
+           #:run-with-timer
+           #:cancel-timer
+           #:timer-p
 	   ))

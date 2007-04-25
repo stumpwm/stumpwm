@@ -69,6 +69,71 @@ loaded."
 	  (apply 'cerror "Ignore" error-key :display display :error-key error-key key-vals)
 	  (apply 'error error-key :display display :error-key error-key key-vals))))
 
+;;; Timers
+
+(defvar *timer-list* nil
+  "List of active timers.")
+
+(defstruct timer
+  time repeat function args)
+
+(defun timer-p (timer)
+  "Return T if TIMER is a timer structure."
+  (typep timer 'timer))
+
+(defun run-with-timer (secs repeat function &rest args)
+  "Perform an action after a delay of SECS seconds.
+Repeat the action every REPEAT seconds, if repeat is non-nil.
+SECS and REPEAT may be reals.
+The action is to call FUNCTION with arguments ARGS."
+  (check-type secs (real 0 *))
+  (check-type repeat (or null (real 0 *)))
+  (check-type function (or function symbol))
+  (let ((timer (make-timer
+                :repeat repeat
+                :function function
+                :args args)))
+    (schedule-timer timer secs)
+    (setf *timer-list* (sort-timers (cons timer *timer-list*)))
+    timer))
+
+(defun cancel-timer (timer)
+  "Remove TIMER from the list of active timers."
+  (check-type timer timer)
+  (setf *timer-list* (remove timer *timer-list*)))
+
+(defun schedule-timer (timer when)
+  (setf (timer-time timer) (+ (get-internal-real-time) 
+                              (* when internal-time-units-per-second))))
+
+(defun sort-timers (timers)
+  "Return a new list of timers sorted by time to time out."
+  (sort (copy-list timers) 
+        (lambda (a b)
+          (< (timer-time a) (timer-time b)))))
+
+(defun run-expired-timers (timers)
+  "Return a new list of valid timers and run the timer functions
+of those expired."
+  (let ((now (get-internal-real-time)))
+    (sort-timers (loop for i in timers
+                    with keepers = nil do
+                    (if (< (timer-time i) now)
+                        (progn
+                          (apply (timer-function i) (timer-args i))
+                          (when (timer-repeat i)
+                            (schedule-timer i (timer-repeat i))
+                            (push i keepers)))
+                        (push i keepers))
+                    finally (return keepers)))))
+
+(defun get-next-timeout (timers)
+  "Return the number of seconds until the next timeout or nil if there are no timers."
+  (when timers
+    (max (/ (- (timer-time (car timers)) (get-internal-real-time))
+            internal-time-units-per-second)
+         0)))
+
 (defun stumpwm-internal-loop ()
   "The internal loop that waits for events and handles them."
   ;; before entering the interactive debugger, ungrab the keyboard. If
@@ -84,20 +149,12 @@ loaded."
 	(loop
 	   (run-hook *internal-loop-hook*)
 	   (handler-case 
-	       (progn
-		 (if (> *timeout* 0)
-		     (progn
-		       (let* ((time-before (get-universal-time))
-			      (nevents (xlib:event-listen *display* *timeout*))
-			      (time-left  (- *timeout* (- (get-universal-time) time-before))))
-			 (if (<= time-left 0)
-			     (progn
-			       (unmap-all-frame-indicators)
-			       (unmap-all-message-windows)
-			       (setf *timeout* 0))
-			     (setf *timeout* time-left))
-			 (when nevents
-			   (xlib:process-event *display* :handler #'handle-event))))
+	       (let ((timeout (get-next-timeout *timer-list*)))
+		 (if timeout
+                     (let* ((nevents (xlib:event-listen *display* timeout)))
+                       (setf *timer-list* (run-expired-timers *timer-list*))
+                       (when nevents
+                         (xlib:process-event *display* :handler #'handle-event)))
 		     ;; Otherwise, simply wait for an event
 		     (xlib:process-event *display* :handler #'handle-event :timeout nil))
 		 ;; flush any pending output. You'd think process-event would, but
