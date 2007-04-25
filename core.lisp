@@ -219,6 +219,10 @@ otherwise specified."
 
 ;;; Window functions
 
+(defun window-name (window)
+  (or (window-user-title window)
+      (window-title window)))
+
 (defun window-in-current-group-p (window)
   (eq (window-group window)
       (screen-current-group (window-screen window))))
@@ -633,7 +637,7 @@ than the root window's width and height."
   ;; give it a number, put it in a frame
   (let ((window (make-window :xwin xwin
 			     :width (xlib:drawable-width xwin) :height (xlib:drawable-height xwin)
-			     :name (xwin-name xwin)
+			     :title (xwin-name xwin)
 			     :class (xwin-class xwin)
 			     :res (xwin-res-name xwin)
 			     :type (xwin-type xwin)
@@ -688,7 +692,7 @@ needed."
 		  (screen-groups screen))
       (setf (window-group window) (screen-current-group screen)))
     ;; FIXME: somehow it feels like this could be merged with group-add-window
-    (setf (window-name window) (xwin-name (window-xwin window))
+    (setf (window-title window) (xwin-name (window-xwin window))
 	  (window-class window) (xwin-class (window-xwin window))
 	  (window-res window) (xwin-res-name (window-xwin window))
 	  (window-type window) (xwin-type (window-xwin window))
@@ -2048,7 +2052,7 @@ chunks."
 (defun update-window-properties (window atom)
   (case atom
     (:wm_name
-     (setf (window-name window) (xwin-name (window-xwin window))))
+     (setf (window-title window) (xwin-name (window-xwin window))))
     (:wm_normal_hints
      (setf (window-normal-hints window) (xlib:wm-normal-hints (window-xwin window))
 	   (window-type window) (xwin-type (window-xwin window)))

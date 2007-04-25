@@ -1,5 +1,13 @@
 2007-04-25  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* user.lisp (*root-map*): new "A" binding
+	("title"): new command
+
+	* primitives.lisp (window): rename name slot to title. all callers
+	updated.
+
+	* core.lisp (window-name): new function
+
 	* user.lisp ("reload"): use restarts-menu
 	(select-from-menu): make prompt optional. display prompt in menu.
 	(restarts-menu): new function

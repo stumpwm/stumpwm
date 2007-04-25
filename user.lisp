@@ -109,6 +109,7 @@
 	  (define-key m (kbd "F10") "gselect 10")
 	  (define-key m (kbd "?") "help")
 	  (define-key m (kbd "+") "balance-frames")
+	  (define-key m (kbd "A") "title")
 	  m)))
 
 (defstruct command
@@ -258,6 +259,11 @@ frame."
 
 (define-stumpwm-command "windows" ((fmt :rest))
   (echo-windows (current-group) (or fmt *window-format*)))
+
+(define-stumpwm-command "title" ((title :rest "Set window's title to: "))
+  (if (current-window)
+      (setf (window-user-title (current-window)) title)
+      (message "No Focused Window")))
 
 (defun format-time-string (&optional time)
   "Return a formatted date-time string. FIXME: how about being able to pass a format string in?"
@@ -763,12 +769,6 @@ aborted."
     (setf (window-gravity (current-window)) gravity)
     (maximize-window (current-window))))
 
-(define-stumpwm-command "reload" ()
-  (message "Reloading StumpWM...")
-  (with-restarts-menu
-      (asdf:operate 'asdf:load-op :stumpwm))
-  (message "Reloading StumpWM...Done."))
-
 (define-stumpwm-command "loadrc" ()
   (multiple-value-bind (success err rc) (load-rc-file)
     (if success
@@ -1235,6 +1235,12 @@ chosen, resignal the error."
              (restarts-menu ,c)
              (signal ,c))))
        ,@body)))
+
+(define-stumpwm-command "reload" ()
+  (message "Reloading StumpWM...")
+  (with-restarts-menu
+      (asdf:operate 'asdf:load-op :stumpwm))
+  (message "Reloading StumpWM...Done."))
 
 (defun run-commands (&rest commands)
   "Run each stumpwm command in sequence. This could be used if

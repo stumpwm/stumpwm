@@ -181,7 +181,7 @@ to login remotely to regain control. :abort quits stumpmwm.")
   frame
   number
   parent
-  name
+  title
   user-title
   class
   type
