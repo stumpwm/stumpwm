@@ -81,6 +81,7 @@
 	   #:*screen-mode-line-format*
 	   #:toggle-mode-line
 	   #:screen-mode-line-mode
+           #:*mode-line-timeout*
 	   ;; shell
 	   #:run-shell-command
 	   #:programs-in-path

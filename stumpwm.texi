@@ -1168,6 +1168,14 @@ The mode line foreground color.
 The mode line border color.
 @end defvar
 
+@defvar *mode-line-timeout*
+The modeline updates after each command, when a new window appears or
+an existing one disappears, and on a timer. This variable controls how
+many seconds elapse between each update. If this variable is changed
+while the modeline is visible, you must toggle the modeline to update
+timer.
+@end defvar
+
 @node Groups, Screens, Mode-line, Top
 @chapter Groups
 Groups in StumpWM are more commonly known as @dfn{virtual desktops} or
