@@ -4,6 +4,8 @@
 	(select-from-menu): make prompt optional. display prompt in menu.
 	(restarts-menu): new function
 	(with-restarts-menu): new macro
+	(with-restarts-menu): use handler-bind, not handler-case
+	(restarts-menu): remove newlines from restarts, errors
 
 	* core.lisp (handle-event): add a top-level restart
 

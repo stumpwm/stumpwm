@@ -1204,16 +1204,23 @@ See *menu-map* for menu bindings."
 choose. Run the selected restart."
   (let ((restart (select-from-menu (current-screen)
                                    (mapcar (lambda (r)
-                                             (list (format nil "[~a] ~a" (restart-name r) r)
+                                             (list (format nil "[~a] ~a" 
+                                                           (restart-name r)
+                                                           (substitute #\Space
+                                                                       #\Newline
+                                                                       (write-to-string r :escape nil)))
                                                    r))
                                            ;; a crusty way to get only
                                            ;; the restarts from
                                            ;; stumpwm's top-level
                                            ;; restart inward.
-                                           (nreverse (member 'top-level
-                                                             (reverse (compute-restarts))
-                                                             :key 'restart-name)))
-                                   (format nil "Error: ~a" err))))
+                                           (reverse (member 'top-level
+                                                            (reverse (compute-restarts))
+                                                            :key 'restart-name)))
+                                   (format nil "Error: ~a" 
+                                           (substitute #\Space
+                                                       #\Newline
+                                                       (write-to-string err :escape nil))))))
     (when restart
       (invoke-restart (second restart)))))
 
@@ -1222,11 +1229,12 @@ choose. Run the selected restart."
 restart from a menu of possible restarts. If a restart is not
 chosen, resignal the error."
   (let ((c (gensym)))
-    `(handler-case
-         (progn ,@body)
-       (error (,c)
-         (restarts-menu ,c)
-         (signal ,c)))))
+    `(handler-bind
+         ((error 
+           (lambda (,c)
+             (restarts-menu ,c)
+             (signal ,c))))
+       ,@body)))
 
 (defun run-commands (&rest commands)
   "Run each stumpwm command in sequence. This could be used if
