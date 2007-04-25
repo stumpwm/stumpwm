@@ -173,6 +173,10 @@ debugger. This can be problematic because if the user hit's a
 mapped key the ENTIRE keyboard will be frozen and you will have
 to login remotely to regain control. :abort quits stumpmwm.")
 
+(defvar *window-name-source* :title
+  "This variable controls what is used for the window's
+name. :title, :resource-name, :class are valid values.")
+
 (defstruct window
   xwin
   width height

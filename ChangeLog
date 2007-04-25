@@ -1,5 +1,10 @@
 2007-04-25  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* primitives.lisp (*window-name-source*): new global
+
+	* core.lisp (window-name): use *window-name-source* to decide what
+	value to return.
+
 	* user.lisp (*root-map*): new "A" binding
 	("title"): new command
 

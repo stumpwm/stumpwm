@@ -221,7 +221,10 @@ otherwise specified."
 
 (defun window-name (window)
   (or (window-user-title window)
-      (window-title window)))
+      (case *window-name-source*
+        (:resource-name (window-res window))
+        (:class (window-class window))
+        (t (window-title window)))))
 
 (defun window-in-current-group-p (window)
   (eq (window-group window)

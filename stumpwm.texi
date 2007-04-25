@@ -135,6 +135,7 @@ Miscellaneous Commands
 
 * Menus::                       
 * Debugging StumpWM::           
+* Timers::                      
 
 @end detailmenu
 @end menu
@@ -827,6 +828,21 @@ Substitute the window's resource ID.
 @end table
 @end defvar
 
+@defvar *window-name-source*
+This variable controls what is used for the window's name. The default is @code{:title}.
+@end defvar
+
+@table @code
+@item :title
+Use the window's title given to it by its owner.
+
+@item :class
+Use the window's resource class.
+
+@item :resource-name
+Use the window's resource name.
+@end table
+
 @menu
 * Window Marks::                
 * Customizing Window Appearance::  
@@ -1485,9 +1501,21 @@ When this is T the @code{run-or-raise} function searches all groups for a
 running instance. Set it to NIL to search only the current group.
 @end defvar
 
+@defun restarts-menu @var{error}
+Display a menu with the active restarts and let the user pick
+one. Error is the error being recovered from. If the user aborts the
+menu, the error is re-signalled.
+@end defun
+
+@defmac with-restarts-menu &body @var{body}
+Execute @var{body}. If an error occurs inside @var{body} then call
+restarts-menu on it.
+@end defmac
+
 @menu
 * Menus::                       
 * Debugging StumpWM::           
+* Timers::                      
 @end menu
 
 @node Menus, Debugging StumpWM, Miscellaneous Commands, Miscellaneous Commands
@@ -1514,7 +1542,7 @@ Select the highlighted option.
 
 @end table
 
-@node Debugging StumpWM,  , Menus, Miscellaneous Commands
+@node Debugging StumpWM, Timers, Menus, Miscellaneous Commands
 @section Debugging StumpWM
 
 @defvar *debug-level*
@@ -1526,6 +1554,25 @@ This is the stream debugging output is sent to. It defaults to
 *error-output*. It may be more convenient for you to pipe debugging
 output directly to a file.
 @end defvar
+
+@node Timers,  , Debugging StumpWM, Miscellaneous Commands
+@section Timers
+StumpWM has a timer system similar to that of @dfn{Emacs}.
+
+@defun run-with-timer @var{secs} @var{repeat} @var{function} &rest @var{args}
+Perform an action after a delay of @var{secs} seconds.  Repeat the
+action every @var{repeat} seconds, if repeat is non-nil.  @var{secs}
+and @var{repeat} may be reals.  The action is to call @var{function}
+with arguments @var{args}.
+@end defun
+
+@defun cancel-timer @var{timer}
+Remove TIMER from the list of active timers.
+@end defun
+
+@defun timer-p @var{timer}
+Return T if TIMER is a timer structure.
+@end defun
 
 @node Hooks, Command and Function Index, Miscellaneous Commands, Top
 @chapter Hooks
