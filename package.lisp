@@ -11,6 +11,8 @@
 	   #:*debug-level*
 	   #:dformat
 	   #:save-frame-excursion
+           #:with-restarts-menu
+           #:restarts-menu
 	   ;; message bar
 	   #:set-fg-color
 	   #:set-bg-color

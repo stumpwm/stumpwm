@@ -2122,7 +2122,13 @@ chunks."
     (when eventfn
       (handler-case
 	  (progn
-	    (apply eventfn event-slots)
+            ;; This is not the stumpwm top level, but if the restart
+            ;; is in the top level then it seems the event being
+            ;; processed isn't popped off the stack and is immediately
+            ;; reprocessed after restarting to the top level. So fake
+            ;; it, and put the restart here.
+            (with-simple-restart (top-level "Return to stumpwm's top level")
+              (apply eventfn event-slots))
 	    (xlib:display-finish-output *display*))
 	((or xlib:window-error xlib:drawable-error) (c)
 	  ;; Asynchronous errors are handled in the error

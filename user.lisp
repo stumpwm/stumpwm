@@ -765,7 +765,8 @@ aborted."
 
 (define-stumpwm-command "reload" ()
   (message "Reloading StumpWM...")
-  (asdf:operate 'asdf:load-op :stumpwm)
+  (with-restarts-menu
+      (asdf:operate 'asdf:load-op :stumpwm))
   (message "Reloading StumpWM...Done."))
 
 (define-stumpwm-command "loadrc" ()
@@ -1148,7 +1149,7 @@ be found, select it.  Otherwise simply run cmd."
   (declare (ignore menu))
   (throw :menu-quit nil))
 
-(defun select-from-menu (screen table prompt &optional (initial-selection 0))
+(defun select-from-menu (screen table &optional prompt (initial-selection 0))
   "Prompt the user to select from a menu on SCREEN. TABLE can be
 a list of values or an alist. If it's an alist, the CAR of each
 element is displayed in the menu. What is displayed as menu items
@@ -1157,11 +1158,20 @@ must be strings. Returns the selected element in TABLE or nil if aborted.
 See *menu-map* for menu bindings."
   (check-type screen screen)
   (check-type table list)
-  (check-type prompt string)
-  (let ((menu (make-menu-state
+  (check-type prompt (or null string))
+  (check-type initial-selection integer)
+  (let* ((menu (make-menu-state
 	       :table table
 	       :prompt prompt
 	       :selected initial-selection))
+        (menu-options (mapcar (lambda (elt)
+                                (if (listp elt)
+                                    (first elt)
+                                    elt))
+                              table))
+        (menu-text (if prompt 
+                       (cons prompt menu-options)
+                       menu-options))
 	(*record-last-msg-override* t)
 	(*supress-echo-timeout* t))
     (bound-check-menu menu)
@@ -1169,12 +1179,8 @@ See *menu-map* for menu bindings."
       (grab-keyboard screen)
       (unwind-protect
 	   (loop
-	      (echo-string-list screen (mapcar (lambda (elt)
-						 (if (listp elt)
-						     (first elt)
-						     elt))
-					       table)
-				(menu-state-selected menu))
+	      (echo-string-list screen menu-text
+                                (+ (menu-state-selected menu) (if prompt 1 0)))
 	      (let ((action (read-from-keymap *menu-map*)))
 		(when action
 		  (funcall action menu))))
@@ -1188,11 +1194,39 @@ See *menu-map* for menu bindings."
 			    (current-screen)
 			    (mapcar (lambda (w)
 				      (list (format-expand *window-formatters* (or fmt *window-format*) w) w))
-				    (sort-windows group))
-			    "")))))
+				    (sort-windows group)))))))
     (if window
-      (frame-raise-window group (window-frame window) window)
-      (echo-string (group-screen group) "No Managed Windows"))))
+        (frame-raise-window group (window-frame window) window)
+        (echo-string (group-screen group) "No Managed Windows"))))
+
+(defun restarts-menu (err)
+  "Present a menu of restarts to the user and let them
+choose. Run the selected restart."
+  (let ((restart (select-from-menu (current-screen)
+                                   (mapcar (lambda (r)
+                                             (list (format nil "[~a] ~a" (restart-name r) r)
+                                                   r))
+                                           ;; a crusty way to get only
+                                           ;; the restarts from
+                                           ;; stumpwm's top-level
+                                           ;; restart inward.
+                                           (nreverse (member 'top-level
+                                                             (reverse (compute-restarts))
+                                                             :key 'restart-name)))
+                                   (format nil "Error: ~a" err))))
+    (when restart
+      (invoke-restart (second restart)))))
+
+(defmacro with-restarts-menu (&body body)
+  "Execute BODY. If an error occurs allow the user to pick a
+restart from a menu of possible restarts. If a restart is not
+chosen, resignal the error."
+  (let ((c (gensym)))
+    `(handler-case
+         (progn ,@body)
+       (error (,c)
+         (restarts-menu ,c)
+         (signal ,c)))))
 
 (defun run-commands (&rest commands)
   "Run each stumpwm command in sequence. This could be used if

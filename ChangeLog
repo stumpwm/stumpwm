@@ -1,5 +1,12 @@
 2007-04-25  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* user.lisp ("reload"): use restarts-menu
+	(select-from-menu): make prompt optional. display prompt in menu.
+	(restarts-menu): new function
+	(with-restarts-menu): new macro
+
+	* core.lisp (handle-event): add a top-level restart
+
 	* stumpwm.lisp (*timer-list*): new global
 	(timer): new defstruct
 	(timer-p): new function

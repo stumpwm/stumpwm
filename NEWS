@@ -5,6 +5,14 @@ This file documents user visible changes between versions of StumpWM
 * Changes since 0.0.6
 These changes are probably incomplete
 
+** modeline update timer
+set to 60s by default.
+
+** timers
+see run-with-timer and cancel-timer
+
+** improved frame splitting, resizing and removing
+
 ** *run-or-raise-all-groups* variable
 
 * Changes since 0.0.5
