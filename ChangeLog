@@ -1,5 +1,7 @@
 2007-04-25  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* stumpwm.lisp (get-next-timeout): return a whole number
+
 	* primitives.lisp (*window-name-source*): new global
 
 	* core.lisp (window-name): use *window-name-source* to decide what

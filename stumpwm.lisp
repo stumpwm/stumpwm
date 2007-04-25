@@ -130,8 +130,8 @@ of those expired."
 (defun get-next-timeout (timers)
   "Return the number of seconds until the next timeout or nil if there are no timers."
   (when timers
-    (max (/ (- (timer-time (car timers)) (get-internal-real-time))
-            internal-time-units-per-second)
+    (max (truncate (/ (- (timer-time (car timers)) (get-internal-real-time))
+                      internal-time-units-per-second))
          0)))
 
 (defun stumpwm-internal-loop ()
