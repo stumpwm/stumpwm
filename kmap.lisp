@@ -123,6 +123,9 @@ saving keyboard macros ***(see `insert-kbd-macro')."
 	  (print-mods key)
 	  (keysym->stumpwm-name (key-keysym key))))
 
+(defun print-key-seq (seq)
+  (format nil "~{~a~^ ~}" (mapcar 'print-key seq)))
+
 (defun define-key (map key command)
   (setf (gethash key map) command)
   ;; We need to tell the X server when changing the top-map bindings.
@@ -131,3 +134,48 @@ saving keyboard macros ***(see `insert-kbd-macro')."
 
 (defun undefine-key (map key)
   (remhash key map))
+
+(defun lookup-key-sequence (kmap key-seq)
+  "Return the command bound to the key sequenc, KEY-SEQ, in keymap KMAP."
+  (when (and (symbolp kmap)
+	     (boundp kmap)
+	     (hash-table-p (symbol-value kmap)))
+    (setf kmap (symbol-value kmap)))
+  (check-type kmap hash-table)
+  (let* ((key (car key-seq))
+	 (cmd (lookup-key kmap key)))
+    (cond ((null (cdr key-seq))
+           cmd)
+          (cmd
+           (if (or (hash-table-p cmd)
+                   (and (symbolp cmd)
+                        (boundp cmd)
+                        (hash-table-p (symbol-value cmd))))
+               (lookup-key-sequence cmd (cdr key-seq))
+               cmd))
+          (t nil))))
+
+(defun kmap-p (x)
+  (or (hash-table-p x)
+      (and (symbolp x)
+           (boundp x)
+           (hash-table-p (symbol-value x)))))
+
+(defun search-kmap (command keymap &key (test 'equal))
+  "Search the keymap for the specified binding. Return the key
+sequences that run binding."
+  (labels ((search-it (cmd kmap key-seq)
+             (when (and (symbolp kmap)
+                        (boundp kmap)
+                        (hash-table-p (symbol-value kmap)))
+               (setf kmap (symbol-value kmap)))
+             (check-type kmap hash-table)
+             (let (cmds)
+               (maphash (lambda (k v)
+                          (cond ((kmap-p v)
+                                 (setf cmds (append cmds (search-it cmd v (cons k key-seq)))))
+                                ((funcall test v cmd)
+                                 (push (cons k key-seq) cmds))))
+                        kmap)
+               cmds)))
+    (mapcar 'reverse (search-it command keymap nil))))

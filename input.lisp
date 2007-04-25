@@ -154,6 +154,11 @@
   (do ((ret nil (xlib:process-event *display* :handler #'read-key-handle-event :timeout nil)))
       ((consp ret) ret)))
 
+(defun read-key-no-modifiers ()
+  "Like read-key but never returns a modifier key."
+  (do ((k (read-key) (read-key)))
+      ((not (is-modifier (xlib:keycode->keysym *display* (car k) 0))) k)))
+
 (defun read-key-or-selection ()
   (do ((ret nil (xlib:process-event *display* :handler #'read-key-or-selection-handle-event :timeout nil)))
       ((or (stringp ret)
@@ -203,8 +208,7 @@ to return a list of matches."
   (grab-keyboard screen)
   ;; FIXME: should this be in an unwind-protect to ungrab the kbd?
   (prog1
-      (let ((k (do ((k (read-key) (read-key)))
-		   ((not (is-modifier (xlib:keycode->keysym *display* (car k) 0))) k))))
+      (let ((k (read-key-no-modifiers)))
 	(keycode->character (car k) (xlib:make-state-keys (cdr k))))
     (ungrab-keyboard)))
 

@@ -597,7 +597,7 @@ when killing text in the input bar.")
   "assign this to T and messages won't be recorded. It is
 recommended this is assigned using LET.")
 
-(defvar *supress-echo-timeout* nil
+(defvar *suppress-echo-timeout* nil
   "Asign this T and messages will not time out. It is recommended this is assigned using LET.")
 
 (defvar *run-or-raise-all-groups* t

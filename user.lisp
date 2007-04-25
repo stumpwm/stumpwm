@@ -110,7 +110,20 @@
 	  (define-key m (kbd "?") "help")
 	  (define-key m (kbd "+") "balance-frames")
 	  (define-key m (kbd "A") "title")
+	  (define-key m (kbd "h") '*help-map*)
 	  m)))
+
+(defvar *help-map* nil
+  "Help related bindings hang from this keymap")
+
+(when (null *help-map*)
+  (setf *help-map*
+        (let ((m (make-sparse-keymap)))
+          (define-key m (kbd "v") "describe-variable")
+          (define-key m (kbd "f") "describe-function")
+          (define-key m (kbd "k") "describe-key")
+          (define-key m (kbd "w") "where-is")
+          m)))
 
 (defstruct command
   name args fn)
@@ -576,6 +589,48 @@ string between them."
   `(setf (gethash ,type *command-type-hash*) 
 	 (lambda (,input ,prompt)
 	   ,@body)))
+
+(defun lookup-symbol (string)
+  ;; FIXME: should we really use string-upcase?
+  (let* ((ofs (split-string string ":"))
+         (pkg (if (> (length ofs) 1)
+                  (find-package (string-upcase (pop ofs)))
+                  *package*))
+         (var (string-upcase (pop ofs)))
+         (ret (find-symbol var pkg)))
+    (when (plusp (length ofs))
+      (throw 'error "Too many :'s"))
+    (if ret
+        (values ret pkg var)
+        (throw 'error (format nil "No such symbol: ~a::~a."
+                              (package-name pkg) var)))))
+
+(define-stumpwm-type :variable (input prompt)
+  (lookup-symbol (argument-pop-or-read input prompt)))
+
+(define-stumpwm-type :function (input prompt)
+  (multiple-value-bind (sym pkg var)
+      (lookup-symbol (argument-pop-or-read input prompt))
+    (if (symbol-function sym)
+        (symbol-function sym)
+        (throw 'error (format nil "the symbol ~a::~a has no function."
+                              (package-name pkg) var)))))
+
+(define-stumpwm-type :key-seq (input prompt)
+  (labels ((update (seq)
+             (message "~a: ~{~a ~}" 
+                      prompt
+                      (mapcar 'print-key (reverse seq)))))
+    (let ((rest (argument-pop-rest input)))
+      (or (and rest (parse-key-seq rest))
+          ;; read a key sequence from the user
+          (unwind-protect
+               (progn
+                 (grab-keyboard (current-screen))
+                 (message "~a" prompt)
+                 (nreverse (second (multiple-value-list
+                                    (read-from-keymap *top-map* #'update)))))
+            (ungrab-keyboard))))))
 
 (define-stumpwm-type :window-number (input prompt)
   (let ((n (or (argument-pop input)
@@ -1173,7 +1228,7 @@ See *menu-map* for menu bindings."
                        (cons prompt menu-options)
                        menu-options))
 	(*record-last-msg-override* t)
-	(*supress-echo-timeout* t))
+	(*suppress-echo-timeout* t))
     (bound-check-menu menu)
     (catch :menu-quit
       (grab-keyboard screen)
@@ -1367,3 +1422,24 @@ current frame and raise it."
     (if tree
         (balance-frames (current-group) tree)
         (message "There's only 1 frame!"))))
+
+(define-stumpwm-command "describe-key" ((keys :key-seq "Describe Key: "))
+  (let ((cmd (lookup-key-sequence *top-map* keys)))
+    (if cmd
+        (message "~{~a~^ ~} is bound to \"~a\"." (mapcar 'print-key keys)  cmd)
+        (message "~{~a~^ ~} is not bound." (mapcar 'print-key keys)))))
+
+(define-stumpwm-command "describe-variable" ((var :variable "Describe Variable: "))
+  (message-no-timeout "~a"
+                      (with-output-to-string (s)
+                        (describe var s))))
+
+(define-stumpwm-command "describe-function" ((fn :function "Describe Function: "))
+  (message-no-timeout "~a"
+                      (with-output-to-string (s)
+                        (describe fn s))))
+
+(define-stumpwm-command "where-is" ((cmd :rest "Where is command: "))
+  (message-no-timeout "\"~a\" is on ~{~a~^, ~}"
+                      cmd
+                      (mapcar 'print-key-seq (search-kmap cmd *top-map*))))

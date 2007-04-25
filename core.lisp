@@ -1546,32 +1546,35 @@ windows used to draw the numbers in. The caller must destroy them."
     (xlib:unmap-window (screen-message-window screen))))
 
 (defun unmap-all-message-windows ()
-  (mapc #'unmap-message-window *screen-list*))
+  (mapc #'unmap-message-window *screen-list*)
+  (when (timer-p *message-window-timer*)
+    (cancel-timer *message-window-timer*)
+    (setf *message-window-timer* nil)))
 
 (defun unmap-frame-indicator (screen)
   (unless (eq (xlib:window-map-state (screen-frame-window screen)) :unmapped)
     (xlib:unmap-window (screen-frame-window screen))))
 
 (defun unmap-all-frame-indicators ()
-  (mapc #'unmap-frame-indicator *screen-list*))
+  (mapc #'unmap-frame-indicator *screen-list*)
+  (when (timer-p *frame-indicator-timer*)
+    (cancel-timer *frame-indicator-timer*)
+    (setf *frame-indicator-timer* nil)))
 
 (defun reset-message-window-timer ()
   "Set the message window timer to timeout in *timeout-wait* seconds."
   (when (timer-p *message-window-timer*)
     (cancel-timer *message-window-timer*))
   (setf *message-window-timer* (run-with-timer *timeout-wait* nil 
-                                               (lambda ()
-                                                 (unmap-all-message-windows)
-                                                 (setf *message-window-timer* nil)))))
+                                               'unmap-all-message-windows)))
+
 (defun reset-frame-indicator-timer ()
   "Set the frame indicator timer to timeout in
 *timeout-frame-indicator-wait* seconds."
   (when (timer-p *frame-indicator-timer*)
     (cancel-timer *frame-indicator-timer*))
   (setf *frame-indicator-timer* (run-with-timer *timeout-frame-indicator-wait* nil 
-                                                (lambda ()
-                                                  (unmap-all-frame-indicators)
-                                                  (setf *frame-indicator-timer* nil)))))
+                                                'unmap-all-frame-indicators)))
 
 (defun show-frame-indicator (group &optional force-draw)
   (let* ((screen (group-screen group))
@@ -1654,8 +1657,12 @@ the nth entry to highlight."
   (xlib:display-finish-output *display*)
   (push-last-message screen strings highlights)
   ;; Set a timer to hide the message after a number of seconds
-  (unless *supress-echo-timeout*
-    (reset-message-window-timer))
+  (if *suppress-echo-timeout*
+      ;; any left over timers need to be canceled.
+      (when (timer-p *message-window-timer*)
+        (cancel-timer *message-window-timer*)
+        (setf *message-window-timer* nil))
+      (reset-message-window-timer))
   (apply 'run-hook-with-args *message-hook* strings))
 
 (defun echo-string (screen msg)
@@ -1665,6 +1672,11 @@ the nth entry to highlight."
 (defun message (fmt &rest args)
   "run FMT and ARGS through format and echo the result to the current screen."
   (echo-string (current-screen) (apply 'format nil fmt args)))
+
+(defun message-no-timeout (fmt &rest args)
+  "Like message, but the window doesn't disappear after a few seconds."
+  (let ((*suppress-echo-timeout* t))
+    (apply 'message fmt args)))
 
 (defun current-screen ()
   "Return the current screen."
@@ -1968,17 +1980,15 @@ managing. Basically just give the window what it wants."
       (when win
 	(destroy-window win)))))
 
-(defun read-from-keymap (kmap)
+(defun read-from-keymap (kmap &optional update-fn)
   "Read a sequence of keys from the user, guided by the keymap,
 KMAP and return the binding or nil if the user hit an unbound sequence."
-  (let* ((code-state (loop for k = (read-key)
-			while (is-modifier (xlib:keycode->keysym *display* (car k) 0))
-			finally (return k)))
+  (let* ((code-state (read-key-no-modifiers))
 	 (code (car code-state))
 	 (state (cdr code-state)))
-    (handle-keymap kmap code state nil nil)))
+    (handle-keymap kmap code state nil nil update-fn)))
 
-(defun handle-keymap (kmap code state key-seq grab)
+(defun handle-keymap (kmap code state key-seq grab update-fn)
   "Find the command mapped to the (code state) and return it."
   ;; a symbol is assumed to have a hashtable as a value.
   (dformat 1 "Awaiting key ~a~%" kmap)
@@ -1991,6 +2001,8 @@ KMAP and return the binding or nil if the user hit an unbound sequence."
 	 (cmd (lookup-key kmap key))
 	 (key-seq (cons key key-seq)))
     (dformat 1 "key-press: ~S ~S ~S~%" key state cmd)
+    (when update-fn
+      (funcall update-fn key-seq))
     (if cmd
 	(cond
 	  ((or (hash-table-p cmd)
@@ -2000,11 +2012,10 @@ KMAP and return the binding or nil if the user hit an unbound sequence."
            (when grab
              (grab-pointer (current-screen))
              (grab-keyboard (current-screen)))
-	   (let* ((code-state (do ((k (read-key) (read-key)))
-				  ((not (is-modifier (xlib:keycode->keysym *display* (car k) 0))) k)))
+	   (let* ((code-state (read-key-no-modifiers))
 		  (code (car code-state))
 		  (state (cdr code-state)))             
-	     (handle-keymap cmd code state key-seq nil)))
+	     (handle-keymap cmd code state key-seq nil update-fn)))
 	  (t (values cmd key-seq)))
 	(values nil key-seq))))
 
@@ -2014,7 +2025,7 @@ KMAP and return the binding or nil if the user hit an unbound sequence."
     (labels ((get-cmd (code state)
 	       (unwind-protect
 		    (progn
-		      (handle-keymap *top-map* code state nil t))
+		      (handle-keymap *top-map* code state nil t nil))
 		 (ungrab-pointer)
 		 (ungrab-keyboard)
 		 ;; this force output is crucial. Without it weird

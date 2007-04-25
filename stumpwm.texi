@@ -136,6 +136,7 @@ Miscellaneous Commands
 * Menus::                       
 * Debugging StumpWM::           
 * Timers::                      
+* Getting Help::                
 
 @end detailmenu
 @end menu
@@ -471,6 +472,18 @@ Go to the corresonding group. @kbd{C-t g 1} jumps to group 1 and so on.
 
 @item C-t +
 Make frames the same height or width in the current frame's subtree.
+
+@item C-t h k
+Describe the specified key binding.
+
+@item C-t h f
+Describe the specified function.
+
+@item C-t h v
+Describe the specified variable.
+
+@item C-t h w
+List all key sequences that are bound to the specified command
 
 @end table
 
@@ -1172,7 +1185,7 @@ The mode line border color.
 The modeline updates after each command, when a new window appears or
 an existing one disappears, and on a timer. This variable controls how
 many seconds elapse between each update. If this variable is changed
-while the modeline is visible, you must toggle the modeline to update
+dwhile the modeline is visible, you must toggle the modeline to update
 timer.
 @end defvar
 
@@ -1524,6 +1537,7 @@ restarts-menu on it.
 * Menus::                       
 * Debugging StumpWM::           
 * Timers::                      
+* Getting Help::                
 @end menu
 
 @node Menus, Debugging StumpWM, Miscellaneous Commands, Miscellaneous Commands
@@ -1563,7 +1577,7 @@ This is the stream debugging output is sent to. It defaults to
 output directly to a file.
 @end defvar
 
-@node Timers,  , Debugging StumpWM, Miscellaneous Commands
+@node Timers, Getting Help, Debugging StumpWM, Miscellaneous Commands
 @section Timers
 StumpWM has a timer system similar to that of @dfn{Emacs}.
 
@@ -1581,6 +1595,26 @@ Remove TIMER from the list of active timers.
 @defun timer-p @var{timer}
 Return T if TIMER is a timer structure.
 @end defun
+
+@node Getting Help,  , Timers, Miscellaneous Commands
+@section Getting Help
+
+@deffn {Command} describe-key @var{key-sequence}
+Either interactively type the key sequence or supply it as text. This
+command prints the command bound to the specified key sequence.
+@end deffn
+
+@deffn {Command} describe-variable @var{variable}
+Print the online help associated with the specified variable.
+@end deffn
+
+@deffn {Command} describe-function @var{function}
+Print the online help associated with the specified function.
+@end deffn
+
+@deffn {Command} where-is @var{command}
+Print the key sequences bound to the specified command.
+@end deffn
 
 @node Hooks, Command and Function Index, Miscellaneous Commands, Top
 @chapter Hooks

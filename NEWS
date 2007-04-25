@@ -5,6 +5,10 @@ This file documents user visible changes between versions of StumpWM
 * Changes since 0.0.6
 These changes are probably incomplete
 
+** New commands describe-key, describe-variable, describe-function, where-is
+
+** New prefix map *help-map*
+
 ** New command, title, bound to C-t A
 title sets the window's name.
 
