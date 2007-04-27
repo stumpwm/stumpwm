@@ -676,3 +676,10 @@ affect frames if the new frame widths are less than this value.")
   "A frame will not shrink below this height. Splitting will not
 affect frames if the new frame heights are less than this
 value.")
+
+(defun print-backtrace (&optional (frames 100))
+  "print a backtrace of FRAMES number of frames to standard-output"
+  #+sbcl (sb-debug:backtrace frames)
+  #+clisp (ext:show-stack 1 frames (sys::the-frame))
+
+  #-(or sbcl clisp) (write-line "Sorry, no backtrace for you."))

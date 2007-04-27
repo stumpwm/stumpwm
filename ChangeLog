@@ -1,4 +1,44 @@
+2007-04-27  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* primitives.lisp (print-backtrace): new function
+
+	* stumpwm.lisp (stumpwm-internal-loop): use handler-bind for
+	errors. print a backtrace for the error.
+
 2007-04-25  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* user.lisp (*root-map*): add "h" binding
+	(*help-map*): new global
+	(lookup-symbol): new function
+	(:variable): new stumpwm type
+	(:function): likewise
+	(:key-seq): likewise
+	("describe-key"): new command
+	("describe-variable"): likewise
+	("describe-function"): likewise
+	("where-is"): likewise
+
+	* primitives.lisp (*suppress-echo-timeout*): rename from
+	*supress-echo-timeout*. all callers updated.
+
+	* kmap.lisp (print-key-seq): new function
+	(lookup-key-sequence): likewise
+	(kmap-p): likewise
+	(search-kmap): likewise
+
+	* input.lisp (read-key-no-modifiers): new function
+	(read-one-char): call read-key-no-modifiers
+
+	* core.lisp (unmap-all-message-windows): cancel the timer
+	(unmap-all-frame-indicators): likewise
+	(reset-message-window-timer): just call the unmap function in the
+	timer
+	(reset-frame-indicator-timer): likewise
+	(echo-string-list): if *suppress-echo-timeout* is T, cancel the
+	message timer.
+	(message-no-timeout): new function
+	(read-from-keymap): take optional update-fn argument
+	(handle-keymap): likewise
 
 	* stumpwm.lisp (get-next-timeout): return a whole number
 

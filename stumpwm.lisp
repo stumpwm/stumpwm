@@ -148,7 +148,23 @@ of those expired."
       (catch :quit
 	(loop
 	   (run-hook *internal-loop-hook*)
-	   (handler-case 
+	   (handler-bind
+;; 	     ((or xlib:window-error xlib:drawable-error) (lambda (c)
+;; 	       ;; Just in case some synchronous window error gets here
+;; 	       ;; (this should be impossible) catch it and ignore it.
+;; 	       (dformat 4 "top level ignore synchronous ~a~%" c))
+	     ((error (lambda (c)
+                       (ecase *top-level-error-action*
+                         (:message
+                          (let ((s (format nil "~&Caught '~a' at the top level. Please report this." c)))
+                            (write-line s)
+                            (print-backtrace)
+                            (message "~a" s)))
+                         (:break (invoke-debugger c))
+                         (:abort
+                          (format t "~&Caught '~a' at the top level. Please report this." c)
+                          (print-backtrace)
+                          (throw :quit t))))))
 	       (let ((timeout (get-next-timeout *timer-list*)))
 		 (if timeout
                      (let* ((nevents (xlib:event-listen *display* timeout)))
@@ -159,21 +175,7 @@ of those expired."
                      (xlib:process-event *display* :handler #'handle-event :timeout nil))
 		 ;; flush any pending output. You'd think process-event would, but
 		 ;; it seems not.
-		 (xlib:display-finish-output *display*))
-;; 	     ((or xlib:window-error xlib:drawable-error) (c)
-;; 	       ;; Just in case some synchronous window error gets here
-;; 	       ;; (this should be impossible) catch it and ignore it.
-;; 	       (dformat 4 "top level ignore synchronous ~a~%" c))
-	     (error (c)
-	       (ecase *top-level-error-action*
-		 (:message
-		  (let ((s (format nil "~&Caught ~a at the top level. Please report this." c)))
-		    (write-line s)
-		    (echo-string (current-screen) s)))
-		 (:break (invoke-debugger c))
-		 (:abort
-		  (format t "~&Caught ~a at the top level. Please report this." c)
-		  (throw :quit t))))))))))
+		 (xlib:display-finish-output *display*))))))))
 
 (defun parse-display-string (display)
   "Parse an X11 DISPLAY string and return the host and display from it."
