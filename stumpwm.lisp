@@ -77,10 +77,6 @@ loaded."
 (defstruct timer
   time repeat function args)
 
-(defun timer-p (timer)
-  "Return T if TIMER is a timer structure."
-  (typep timer 'timer))
-
 (defun run-with-timer (secs repeat function &rest args)
   "Perform an action after a delay of SECS seconds.
 Repeat the action every REPEAT seconds, if repeat is non-nil.

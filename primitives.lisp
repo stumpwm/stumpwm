@@ -679,7 +679,7 @@ value.")
 
 (defun print-backtrace (&optional (frames 100))
   "print a backtrace of FRAMES number of frames to standard-output"
-  #+sbcl (sb-debug:backtrace frames)
+  #+sbcl (sb-debug:backtrace frames *standard-output*)
   #+clisp (ext:show-stack 1 frames (sys::the-frame))
 
   #-(or sbcl clisp) (write-line "Sorry, no backtrace for you."))

@@ -1,6 +1,12 @@
 2007-04-27  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* core.lisp (send-selection): pass args to change-property
+	properly.
+
+	* stumpwm.lisp (timer-p): remove function
+
 	* primitives.lisp (print-backtrace): new function
+	(print-backtrace): print to *standard-output* for sbcl
 
 	* stumpwm.lisp (stumpwm-internal-loop): use handler-bind for
 	errors. print a backtrace for the error.

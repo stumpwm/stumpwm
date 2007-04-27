@@ -2182,7 +2182,7 @@ chunks."
   (cond
     ;; they're requesting what targets are available
     ((eq target :targets)
-     (xlib:change-property requestor property target (list :targets :string) 8 :mode :replace))
+     (xlib:change-property requestor property (list :targets :string) target 8 :mode :replace))
     ;; send them a string
     ((find target '(:string ))
      (xlib:change-property requestor property *x-selection* :string 8 :mode :replace :transform #'xlib:char->card8))
