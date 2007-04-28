@@ -45,17 +45,6 @@ loaded."
 		      (error (c) (values nil (format nil "~s" c) rc))
 		      (:no-error (&rest args) (declare (ignore args)) (values t nil rc)))
       (values t nil nil))))
-    
-(defun init-atoms ()
-  (setf +wm-delete-window+ (xlib:intern-atom *display* "WM_DELETE_WINDOW")
-	+wm-take-focus+ (xlib:intern-atom *display* "WM_TAKE_FOCUS")
-;; 	+wm-state+ (xlib:find-atom *display* "WM_STATE")
-;; 	+wm-protocols+ (xlib:find-atom *display* "WM_PROTOCOLS")
-;; 	+rp-command+ (xlib:intern-atom *display* "RP_COMMAND")
-;; 	+rp-command-request+ (xlib:intern-atom *display* "RP_COMMAND_REQUEST")
-;; 	+rp-command-result+ (xlib:intern-atom *display* "RP_COMMAND_RESULT")
-	)
-)
 
 (defun error-handler (display error-key &rest key-vals &key asynchronous &allow-other-keys)
   "Handle X errors"
@@ -201,8 +190,6 @@ of those expired."
 		      (xlib:display-finish-output *display*))
 	     (xlib:access-error ()
 	       (return-from stumpwm (write-line "Another window manager is running."))))
-	   ;; Initialize the necessary atoms
-	   (init-atoms)
 	   (mapc 'process-existing-windows *screen-list*)
 	   ;; We need to setup each screen with its current window. Go
 	   ;; through them in reverse so the first screen's frame ends up

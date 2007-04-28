@@ -105,21 +105,29 @@ line of text.")
 
 (defvar *unfocus-color* "Black"
   "The border color of an unfocused window")
-    
-;; FIXME: This variable is set only once but it needs to be set after
-;; the display is opened. So should it have +'s around it even though
-;; it's defined as a variable?
-(defvar +wm-delete-window+ nil
-  "The atom used to delete a window.")
 
-(defvar +wm-take-focus+ nil
-  "The WM_TAKE_FOCUS atom")
+(defparameter +netwm-supported+
+  '(:_NET_SUPPORTING_WM_CHECK
+    :_NET_NUMBER_OF_DESKTOPS
+    :_NET_DESKTOP_GEOMETRY
+    :_NET_DESKTOP_VIEWPORT
+    :_NET_CURRENT_DESKTOP
+    :_NET_WM_WINDOW_TYPE)
+  "Supported NETWM properties.
+Window types are in +WINDOW-TYPES+.")
 
-(defvar +wm-state+ nil
-  "the WM_STATE atom")
-
-(defvar +wm-protocols+ nil
-  "the WM_PROTOCOLS atom")
+(defparameter +netwm-window-types+
+  '(
+    ;; (:_NET_WM_WINDOW_TYPE_DESKTOP . :desktop)
+    ;; (:_NET_WM_WINDOW_TYPE_DOCK . :dock)
+    ;; (:_NET_WM_WINDOW_TYPE_TOOLBAR . :toolbar)
+    ;; (:_NET_WM_WINDOW_TYPE_MENU . :menu)
+    ;; (:_NET_WM_WINDOW_TYPE_UTILITY . :utility)
+    ;; (:_NET_WM_WINDOW_TYPE_SPLASH . :splash)
+    (:_NET_WM_WINDOW_TYPE_DIALOG . :dialog)
+    (:_NET_WM_WINDOW_TYPE_NORMAL . :normal))
+  "Alist mapping NETWM window types to keywords.
+Include only those we are ready to support.")
 
 ;; Window states
 (defconstant +withdrawn-state+ 0)
@@ -683,3 +691,12 @@ value.")
   #+clisp (ext:show-stack 1 frames (sys::the-frame))
 
   #-(or sbcl clisp) (write-line "Sorry, no backtrace for you."))
+
+(defun utf8-to-string (octets)
+  "Convert the list of octets to a string."
+  #+sbcl (sb-ext:octets-to-string
+          (coerce octets '(vector (unsigned-byte 8)))
+          :external-format :utf-8)
+  ;; TODO: handle UTF-8 for other lisps
+  #-sbcl
+  (map 'string #'code-char octets))

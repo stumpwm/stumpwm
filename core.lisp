@@ -61,14 +61,16 @@ identity with a range check."
 	   for j from dst-start
 	   as c = (char-code (char src i))
 	   if (<= min c max) do (setf (aref dst j) c)
-	   else do (return i)
+	   ;; replace unknown characters with question marks
+	   else do (setf (aref dst j) (char-code #\?))
 	   finally (return i))
 	(loop for i from src-start to src-end
 	   for j from dst-start
 	   as c = (elt src i)
 	   as n = (if (characterp c) (char-code c) c)
 	   if (and (integerp n) (<= min n max)) do (setf (aref dst j) n)
-	   else do (return i)
+	   ;; ditto
+	   else do (setf (aref dst j) (char-code #\?))
 	   finally (return i)))))
 
 (defun screen-x (screen)
@@ -280,8 +282,16 @@ otherwise specified."
 ;; 			     0 0 300 200 t)
 ;; 	(xlib:clear-area (window-parent window)))))
 
+(defun xwin-net-wm-name (win)
+  "Return the netwm wm name"
+  (let ((name (xlib:get-property win :_NET_WM_NAME)))
+    (when name
+      (utf8-to-string name))))
+
 (defun xwin-name (win)
-  (xlib:wm-name win))
+  (or
+   (xwin-net-wm-name win)
+   (xlib:wm-name win)))
 
 ;; FIXME: should we raise the winodw or its parent?
 (defun raise-window (win)
@@ -311,7 +321,7 @@ otherwise specified."
   (ecase type
     (:normal *normal-border-width*)
     (:maxsize *maxsize-border-width*)
-    (:transient *transient-border-width*)))
+    ((:transient :dialog) *transient-border-width*)))
 
 (defun xwin-class (win)
   (multiple-value-bind (res class) (xlib:get-wm-class win)
@@ -389,16 +399,41 @@ otherwise specified."
     (xwin-hide (window-xwin window) (window-parent window))))
 
 (defun xwin-type (win)
-  "Return one of :maxsize, :transient, or :normal."
-  (or (and (xlib:get-property win :WM_TRANSIENT_FOR)
-	   :transient)
-      (and (let ((hints (xlib:wm-normal-hints win)))
+  "Return one of :desktop, :dock, :toolbar, :utility, :splash,
+:dialog, :transient, :maxsize and :normal.  Right now
+only :dialog, :normal, :maxsize and :transient are
+actually returned; see +NETWM-WINDOW-TYPES+."
+  (or (and (let ((hints (xlib:wm-normal-hints win)))
 	     (and hints (or (xlib:wm-size-hints-max-width hints)
 			    (xlib:wm-size-hints-max-height hints)
 			    (xlib:wm-size-hints-min-aspect hints)
 			    (xlib:wm-size-hints-max-aspect hints))))
 	   :maxsize)
+      (let ((net-wm-window-type (xlib:get-property win :_NET_WM_WINDOW_TYPE)))
+	(when net-wm-window-type
+	  (dolist (type-atom net-wm-window-type)
+	    (when (assoc (xlib:atom-name *display* type-atom) +netwm-window-types+)
+	      (return (cdr (assoc (xlib:atom-name *display* type-atom) +netwm-window-types+)))))))
+      (and (xlib:get-property win :WM_TRANSIENT_FOR)
+	   :transient)
       :normal))
+
+(defun xwin-strut (screen win)
+  "Return the area that the window wants to reserve along the edges of the screen.
+Values are left, right, top, bottom, left_start_y, left_end_y,
+right_start_y, right_end_y, top_start_x, top_end_x, bottom_start_x
+and bottom_end_x."
+  (let ((net-wm-strut-partial (xlib:get-property win :_NET_WM_STRUT_PARTIAL)))
+    (if (= (length net-wm-strut-partial) 12)
+	(apply 'values net-wm-strut-partial)
+        (let ((net-wm-strut (xlib:get-property win :_NET_WM_STRUT)))
+          (if (= (length net-wm-strut) 4)
+              (apply 'values (concatenate 'list net-wm-strut
+                                          (list 0 (screen-height screen)
+                                                0 (screen-height screen)
+                                                0 (screen-width screen)
+                                                0 (screen-width screen))))
+              (values 0 0 0 0 0 0 0 0 0 0 0 0))))))
 
 ;; Stolen from Eclipse
 (defun xwin-send-configuration-notify (xwin x y w h bw)
@@ -437,7 +472,7 @@ otherwise specified."
       (ecase (window-type win)
         (:normal *normal-gravity*)
         (:maxsize *maxsize-gravity*)
-        (:transient *transient-gravity*))))
+        ((:transient :dialog) *transient-gravity*))))
 
 (defun geometry-hints (win)
   "Return hints for max width and height and increment hints. These
@@ -466,7 +501,7 @@ than the root window's width and height."
     ;; determine what the width and height should be
     (cond
       ;; Adjust the defaults if the window is a transient_for window.
-      ((eq (window-type win) :transient)
+      ((find (window-type win) '(:transient :dialog))
        (setf center t
 	     width (min (window-width win) width)
 	     height (min (window-height win) height)))
@@ -811,7 +846,7 @@ maximized, and given focus."
 (defun delete-window (window)
   "Send a delete event to the window."
   (dformat 3 "Delete window~%")
-  (send-client-message window :WM_PROTOCOLS +wm-delete-window+))
+  (send-client-message window :WM_PROTOCOLS (xlib:intern-atom *display* :WM_DELETE_WINDOW)))
 
 (defun xwin-kill (window)
   "Kill the client associated with window."
@@ -1682,9 +1717,51 @@ the nth entry to highlight."
   "Return the current screen."
   (car *screen-list*))
 
+(defun net-set-properties (screen-number focus-window)
+  "Set NETWM properties on the root window of the specified screen.
+FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
+  (let ((root (xlib:screen-root screen-number)))
+    ;; _NET_SUPPORTED
+    (xlib:change-property root :_NET_SUPPORTED
+                          (mapcar (lambda (a)
+                                    (xlib:intern-atom *display* a))
+                                  (append +netwm-supported+
+                                          (mapcar 'car +netwm-window-types+)))
+                          :atom 32)
+ 
+    ;; _NET_SUPPORTING_WM_CHECK
+    (xlib:change-property root :_NET_SUPPORTING_WM_CHECK
+                          (list focus-window) :window 32
+                          :transform #'xlib:drawable-id)
+    (xlib:change-property focus-window :_NET_SUPPORTING_WM_CHECK
+                          (list focus-window) :window 32
+                          :transform #'xlib:drawable-id)
+    (xlib:change-property focus-window :_NET_WM_NAME
+			  "stumpwm"
+			  :string 8 :transform #'xlib:char->card8)
+     
+    ;; _NET_CLIENT_LIST: TODO
+ 
+    ;; _NET_NUMBER_OF_DESKTOPS
+    (xlib:change-property root :_NET_NUMBER_OF_DESKTOPS (list 1) :cardinal 32)
+ 
+    ;; _NET_DESKTOP_GEOMETRY
+    (xlib:change-property root :_NET_DESKTOP_GEOMETRY
+                          (list (xlib:screen-width screen-number)
+                                (xlib:screen-height screen-number))
+                          :cardinal 32)
+     
+    ;; _NET_DESKTOP_VIEWPORT
+    (xlib:change-property root :_NET_DESKTOP_VIEWPORT
+                          (list 0 0) :cardinal 32)
+    ;; _NET_CURRENT_DESKTOP
+    (xlib:change-property root :_NET_CURRENT_DESKTOP
+                          (list 0) :cardinal 32)))
+
 (defun init-screen (screen-number id host)
   "Given a screen number, returns a screen structure with initialized members"
   ;; Listen for the window manager events on the root window
+  (dformat 1 "Initializing screen: ~a ~a~%" host id)
   (setf (xlib:window-event-mask (xlib:screen-root screen-number))
 	'(:substructure-redirect
 	  :substructure-notify
@@ -1761,6 +1838,7 @@ the nth entry to highlight."
 				     :background (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-background-color+)))
     (setf (tile-group-frame-tree group) (make-initial-frame screen)
           (tile-group-current-frame group) (tile-group-frame-tree group))
+    (net-set-properties screen-number focus-window)
     screen))
 
 

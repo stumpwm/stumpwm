@@ -1,7 +1,25 @@
 2007-04-27  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* primitives.lisp (+netwm-supported+): new constant
+	(+netwm-window-types+): likewise
+	(+wm-take-focus+): remove constant
+	(+wm-state+): likewise
+	(+wm-protocols+): likewise
+	(+wm-delete-window+): likewise
+	(utf8-to-string): new function
+
 	* core.lisp (send-selection): pass args to change-property
 	properly.
+	(translate-id): replace unknown chars with ?
+	(xwin-net-wm-name): new function
+	(xwin-name): call xwin-net-wm-name
+	(default-border-width-for-type): handle :dialog type
+	(gravity-for-window): likewise
+	(xwin-type): return supported netwm types
+	(xwin-strut): newfunction
+	(delete-window): intern the atom
+	(net-set-properties): new function
+	(init-screen): call net-set-properties
 
 	* stumpwm.lisp (timer-p): remove function
 
