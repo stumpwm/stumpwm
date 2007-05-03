@@ -5,6 +5,12 @@ This file documents user visible changes between versions of StumpWM
 * Changes since 0.0.6
 These changes are probably incomplete
 
+** stumpwm executables
+the Makefile can now generate executables for sbcl and clisp. Edit the
+Makefile to choose you lisp.
+
+** New global *new-frame-action*
+
 ** New commands describe-key, describe-variable, describe-function, where-is
 
 ** New prefix map *help-map*

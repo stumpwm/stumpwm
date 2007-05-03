@@ -685,6 +685,9 @@ affect frames if the new frame widths are less than this value.")
 affect frames if the new frame heights are less than this
 value.")
 
+(defvar *new-frame-action* :last-window
+  "Controls what to do with new frame. Valid values are :last-window, :empty.")
+
 (defun print-backtrace (&optional (frames 100))
   "print a backtrace of FRAMES number of frames to standard-output"
   #+sbcl (sb-debug:backtrace frames *standard-output*)

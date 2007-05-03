@@ -165,53 +165,17 @@ Install @emph{SBCL} and the @emph{portable-clx} package. In Debian,
 @emph{portable-clx} is the @emph{cl-clx-sbcl} package.
 
 @item
-in the file @file{~/.sbclrc} insert:
-
-@example
-;;; If the first user-processable command-line argument is a filename,
-;;; disable the debugger, load the file handling shebang-line and quit.
-(let ((script (and (second *posix-argv*)
-                   (probe-file (second *posix-argv*)))))
-  (when script
-    ;; Handle shebang-line
-    (set-dispatch-macro-character #\# #\!
-                                  (lambda (stream char arg)
-                                    (declare (ignore char arg))
-                                    (read-line stream)))
-    ;; Disable debugger
-    (setf *invoke-debugger-hook*
-          (lambda (condition hook)
-            (declare (ignore hook))
-            ;; Uncomment to get backtraces on errors
-            ;; (sb-debug:backtrace 20)
-            (format *error-output* "Error: ~A~%" condition)
-            (quit)))
-    (load script)
-    (quit)))
-@end example
-
-This allows @emph{SBCL} to act as part of a command-line script.
-
-@item
-Create a symlink in @file{~/.sbcl/systems/} to point to the
-@file{stumpwm.asd} file, included in the StumpWM source. Now
-@emph{SBCL} knows how to load StumpWM.
-
-@example
-ln -s /path/to/stumpwm/stumpwm.asd ~/.sbcl/systems
-@end example
+In the @file{stumpwm} directory, run @samp{make}. If all goes well,
+this should create a @file{stumpwm} executable.
 
 @item
 In your @file{~/.xinitrc} file include the line
-@command{/path/to/stumpwm.sbcl}. Remember to replace @samp{/path/to/}
-with the actual path. @command{stumpwm.sbcl} is included in the
-StumpWM source.
+@command{/path/to/stumpwm}. Remember to replace @samp{/path/to/}
+with the actual path.
 
 @item
-Finally, start X windows with @command{startx}. Cross your fingers. It
-may take some time for @emph{SBCL} to finish compiling StumpWM. This
-only happens once. Subsequent start ups should be much
-faster. Eventually you should see a @samp{Welcome To the Stump Window Manager}
+Finally, start X windows with @command{startx}. Cross your
+fingers. You should see a @samp{Welcome To the Stump Window Manager}
 message pop up in the upper, right corner. At this point, you have
 successfully started StumpWM.
 @end enumerate
@@ -1089,6 +1053,20 @@ less than this value.
 The minimum height a frame can be. A frame will not shrink below this
 height. Splitting will not affect frames if the new frame heights are
 less than this value.
+@end defvar
+
+@defvar *new-frame-action*
+When a new frame is created, this variable controls what is put in the
+new frame. Valid values are 
+
+@table @code
+@item :empty
+The frame is left empty
+
+@item :last-window
+The last focused window that is not currently visible is placed in the
+frame. This is the default.
+@end table
 @end defvar
 
 @node Mode-line, Groups, Frames, Top

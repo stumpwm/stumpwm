@@ -1294,7 +1294,8 @@ chosen, resignal the error."
 (define-stumpwm-command "reload" ()
   (message "Reloading StumpWM...")
   (with-restarts-menu
-      (asdf:operate 'asdf:load-op :stumpwm))
+      #+asdf (asdf:operate 'asdf:load-op :stumpwm)
+      #-asdf (message "Stumpwm can only be reloaded with asdf, for now."))
   (message "Reloading StumpWM...Done."))
 
 (defun run-commands (&rest commands)

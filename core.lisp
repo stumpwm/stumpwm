@@ -1048,6 +1048,15 @@ T (default) then also focus the frame."
   (find-free-number (mapcar (lambda (f) (frame-number f))
 			    (group-frames group))))
 
+(defun choose-new-frame-window (frame group)
+  "Find out what window should go in a newly created frame."
+  (let ((win (case *new-frame-action*
+               (:last-window (other-hidden-window group))
+               (t nil))))
+    (setf (frame-window frame) win)
+    (when win
+      (setf (window-frame win) frame))))
+
 (defun split-frame-h (group p)
   "Return 2 new frames. The first one stealing P's number and window"
   (let* ((w (truncate (/ (frame-width p) 2)))
@@ -1432,12 +1441,16 @@ depending on the tree's split direction."
                                      (unless (atom tree)
                                        (find frame tree))))))
         (migrate-frame-windows group frame f1)
+        (choose-new-frame-window f2 group)
         (if (eq (tile-group-current-frame group)
                 frame)
             (setf (tile-group-current-frame group) f1))
         (setf (tile-group-last-frame group) f2)
         (sync-frame-windows group f1)
         (sync-frame-windows group f2)
+        ;; we also need to show the new window in the other frame
+        (when (frame-window f2)
+          (unhide-window (frame-window f2)))
         t))))
 
 (defun draw-frame-outlines (group)
