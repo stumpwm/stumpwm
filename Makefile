@@ -23,3 +23,5 @@ stumpwm.info: stumpwm.texi
 stumpwm: $(FILES)
 	$(LISP) $(LISP_OPTS)
 
+clean:
+	rm -f *.fasl *.fas *.lib stumpwm

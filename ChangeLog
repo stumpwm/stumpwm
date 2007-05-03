@@ -1,6 +1,7 @@
 2007-05-03  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* make-image.lisp: return error code 0 for sbcl
+	set SBCL_HOME for sbcl.
 
 	* Makefile: new file
 

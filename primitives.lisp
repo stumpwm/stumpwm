@@ -380,7 +380,7 @@ Useful for re-using the &REST arg after removing some options."
 	  (screen-host screen)
 	  (xlib:display-display *display*)
 	  (screen-id screen)))
-    
+
 ;;; XXX: DISPLAY env var isn't set for cmucl
 (defun run-prog (prog &rest opts &key args (wait t) &allow-other-keys)
   "Common interface to shell. Does not return anything useful."
