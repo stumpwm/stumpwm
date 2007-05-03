@@ -6,7 +6,10 @@
 #+sbcl 
 (progn
   (load "stumpwm.asd")
-  (sb-ext:save-lisp-and-die "stumpwm" :toplevel #'stumpwm:stumpwm :executable t))
+  (sb-ext:save-lisp-and-die "stumpwm" :toplevel (lambda ()
+                                                  (stumpwm:stumpwm)
+                                                  0)
+                            :executable t))
 
 ;;; CLISP
 
