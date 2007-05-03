@@ -1,5 +1,7 @@
 2007-05-03  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* user.lisp ("reload"): don't call asdf if it's not loaded.
+
 	* primitives.lisp (*new-frame-action*): new global
 
 	* core.lisp (choose-new-frame-window): new function
