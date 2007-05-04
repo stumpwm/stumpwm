@@ -692,7 +692,7 @@ than the root window's width and height."
     window))
 
 (defun add-window (screen xwin)
-  (push xwin (screen-mapped-windows screen))
+  (screen-add-mapped-window screen xwin)
   (group-add-window (screen-current-group screen) xwin))
 
 (defun process-mapped-window (screen xwin)
@@ -742,6 +742,7 @@ needed."
 	  (screen-withdrawn-windows screen) (delete window (screen-withdrawn-windows screen))
           ;; put the window at the end of the list
           (group-windows (window-group window)) (append (group-windows (window-group window)) (list window)))
+    (screen-add-mapped-window screen (window-xwin window))
     ;; give it focus
     (if (deny-request-p window *deny-map-request*)
         (unless *suppress-deny-messages*
@@ -763,9 +764,8 @@ needed."
     (setf (window-state window) +withdrawn-state+
 	  (xwin-state (window-xwin window)) +withdrawn-state+)
     ;; Clean up the window's entry in the screen and group
-    (setf (screen-mapped-windows screen)
-	  (delete (window-xwin window) (screen-mapped-windows screen))
-	  (group-windows group)
+    (screen-remove-mapped-window screen (window-xwin window))
+    (setf (group-windows group)
 	  (delete window (group-windows group)))
     ;; remove it from it's frame structures
     (when (eq (frame-window f) window)
@@ -1498,6 +1498,23 @@ windows used to draw the numbers in. The caller must destroy them."
 
 ;;; Screen functions
 
+(defun netwm-update-client-list (screen)
+  (xlib:change-property (screen-root screen)
+                        :_NET_CLIENT_LIST
+                        (screen-mapped-windows screen)
+                        :window 32
+                        :transform #'xlib:drawable-id
+                        :mode :replace))
+
+(defun screen-add-mapped-window (screen xwin)
+  (push xwin (screen-mapped-windows screen))
+  (netwm-update-client-list screen))
+
+(defun screen-remove-mapped-window (screen xwin)
+  (setf (screen-mapped-windows screen) 
+        (remove xwin (screen-mapped-windows screen)))
+  (netwm-update-client-list screen))
+
 (defun sort-screens ()
   "Return the list of screen sorted by ID."
   (sort1 *screen-list*
@@ -1752,8 +1769,12 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
     (xlib:change-property focus-window :_NET_WM_NAME
 			  "stumpwm"
 			  :string 8 :transform #'xlib:char->card8)
-     
-    ;; _NET_CLIENT_LIST: TODO
+
+    ;; _NET_CLIENT_LIST
+    (xlib:change-property root :_NET_CLIENT_LIST
+                          () :window 32
+                          :transform #'xlib:drawable-id)
+    ;; TODO: _NET_CLIENT_LIST_STACKING
  
     ;; _NET_NUMBER_OF_DESKTOPS
     (xlib:change-property root :_NET_NUMBER_OF_DESKTOPS (list 1) :cardinal 32)

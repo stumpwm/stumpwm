@@ -5,6 +5,9 @@ This file documents user visible changes between versions of StumpWM
 * Changes since 0.0.6
 These changes are probably incomplete
 
+** _NET_CLIENT_LIST works
+which means wmctl -l returns useful info.
+
 ** stumpwm executables
 the Makefile can now generate executables for sbcl and clisp. Edit the
 Makefile to choose you lisp.
