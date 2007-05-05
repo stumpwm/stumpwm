@@ -31,19 +31,23 @@
 
 ;;; Main
 
-(defun load-rc-file ()
+(defun load-rc-file (&optional (catch-errors t))
   "Load the user's .stumpwmrc file or the system wide one if that
 doesn't exist. Returns a values list: whether the file loaded (t if no
 rc files exist), the error if it didn't, and the rc file that was
-loaded."
+loaded. When CATCH-ERRORS is nil, errors are left to be handled further up. "
   (let* ((user-rc (probe-file (merge-pathnames (user-homedir-pathname) #p".stumpwmrc")))
 	 (etc-rc (probe-file #p"/etc/stumpwmrc"))
 	 (rc (or user-rc etc-rc)))
     (if rc
 	;; TODO: Should we compile the file before we load it?
-	(handler-case (load rc)
-		      (error (c) (values nil (format nil "~s" c) rc))
-		      (:no-error (&rest args) (declare (ignore args)) (values t nil rc)))
+        (if catch-errors
+            (handler-case (load rc)
+              (error (c) (values nil (format nil "~a" c) rc))
+              (:no-error (&rest args) (declare (ignore args)) (values t nil rc)))
+            (progn
+              (load rc)
+              (values t nil rc)))
       (values t nil nil))))
 
 (defun error-handler (display error-key &rest key-vals &key asynchronous &allow-other-keys)
@@ -201,10 +205,9 @@ of those expired."
 	       (focus-frame group (tile-group-current-frame group))))
 	   ;; Load rc file
 	   (multiple-value-bind (success err rc) (load-rc-file)
-	     (echo-string (current-screen)
-			  (if success
-			      "Welcome to The Stump Window Manager!"
-			      (format nil "Error loading ~A: ~A" rc err))))
+             (if success
+                 (and *startup-message* (message "~a" *startup-message*))
+                 (message "Error loading ~A: ~A" rc err)))
 	   (run-hook *start-hook*)
 	   ;; Let's manage.
 	   (stumpwm-internal-loop))

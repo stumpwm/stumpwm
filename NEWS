@@ -5,6 +5,15 @@ This file documents user visible changes between versions of StumpWM
 * Changes since 0.0.6
 These changes are probably incomplete
 
+** new command gmerge
+
+** startup message configurable
+with *startup-message*.
+
+** format string arguments can be cropped
+In the windows command, %20t will crop the window's title to 20
+characters. This numeric prefix works for all % arguments.
+
 ** _NET_CLIENT_LIST works
 which means wmctl -l returns useful info.
 

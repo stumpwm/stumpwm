@@ -1,3 +1,20 @@
+2007-05-05  Shawn Betts  <sabetts@shitbender.gagrod>
+
+	* user.lisp ("loadrc"): wrap in with-restarts-menu
+	("lastmsg"): handle case when there is no last message.
+	("gmerge"): new command
+
+	* stumpwm.lisp (load-rc-file): take new argument, catch-errors.
+	(stumpwm): print *startup-message* when non-nil on start up.
+
+	* primitives.lisp (*window-format*): crop title at 50 chars
+	(*startup-message*): new defvar
+
+2007-05-04  Shawn Betts  <sabetts@shitbender.gagrod>
+
+	* primitives.lisp (format-expand): allow a numeric "prefix" that
+	crops the argument's string length.
+
 2007-05-04  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* core.lisp (add-window): call screen-add-mapped-window

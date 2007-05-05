@@ -544,25 +544,33 @@ Modifies the match data; use `save-match-data' if necessary."
 	 (cur chars))
     ;; FIXME: this is horribly inneficient
     (loop
-     (cond ((null cur)
-	    (return-from format-expand output))
-	   ;; if % is the last char in the string then it's a literal.
-	   ((and (char= (car cur) #\%)
-		 (cdr cur))
-	    (setf cur (cdr cur))
-	    (let ((fmt (cadr (assoc (car cur) fmt-alist :test 'char=))))
-	      (setf output (concatenate 'string output
-					(cond (fmt
-					       ;; it can return any type, not jut as string.
-					       (format nil "~a" (apply fmt args)))
-					      ((char= (car cur) #\%)
-					       (string #\%))
-					      (t
-					       (concatenate 'string (string #\%) (string (car cur))))))))
-	    (setf cur (cdr cur)))
-	   (t
-	    (setf output (concatenate 'string output (string (car cur)))
-		  cur (cdr cur)))))))
+       (cond ((null cur)
+              (return-from format-expand output))
+             ;; if % is the last char in the string then it's a literal.
+             ((and (char= (car cur) #\%)
+                   (cdr cur))
+              (setf cur (cdr cur))
+              (let* ((tmp (loop while (and cur (char<= #\0 (car cur) #\9))
+                             collect (pop cur)))
+                     (len (and tmp (parse-integer (coerce tmp 'string)))))
+                (if (null cur)
+                    (format t "%~a" len)
+                    (let* ((fmt (cadr (assoc (car cur) fmt-alist :test 'char=)))
+                           (str (cond (fmt
+                                       ;; it can return any type, not jut as string.
+                                       (format nil "~a" (apply fmt args)))
+                                      ((char= (car cur) #\%)
+                                       (string #\%))
+                                      (t
+                                       (concatenate 'string (string #\%) (string (car cur)))))))
+                      ;; crop string if needed
+                      (setf output (concatenate 'string output (if len 
+                                                                   (subseq str 0 (min len (length str)))
+                                                                   str)))
+                      (setf cur (cdr cur))))))
+             (t
+              (setf output (concatenate 'string output (string (car cur)))
+                    cur (cdr cur)))))))
 
 (defvar *window-formatters* '((#\n window-number)
 			      (#\s fmt-window-status)
@@ -572,8 +580,9 @@ Modifies the match data; use `save-match-data' if necessary."
 			      (#\m fmt-window-marked))
   "an alist containing format character format function pairs for formatting window lists.")
 
-(defvar *window-format* "%m%n%s%t"
-  "The format string for echoing the window list.")
+(defvar *window-format* "%m%n%s%50t"
+  "The format string for echoing the window list. Note the title
+is cropped to 50 characters.")
 
 (defvar *group-formatters* '((#\n group-number)
 			      (#\s fmt-group-status)
@@ -703,3 +712,6 @@ value.")
   ;; TODO: handle UTF-8 for other lisps
   #-sbcl
   (map 'string #'code-char octets))
+
+(defvar *startup-message* "Welcome to The Stump Window Manager!"
+  "StumpWM's startup message. Set to NIL to suppress.")

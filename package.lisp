@@ -1,6 +1,7 @@
 (defpackage :stumpwm
   (:use :cl)
   (:export #:stumpwm
+           #:*startup-message*
 	   #:*top-level-error-action*
 	   #:*screen-list*
 	   #:split-string

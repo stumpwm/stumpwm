@@ -147,6 +147,43 @@
 	     *command-hash*)
     (sort acc 'string<)))
 
+(defun restarts-menu (err)
+  "Present a menu of restarts to the user and let them
+choose. Run the selected restart."
+  (let ((restart (select-from-menu (current-screen)
+                                   (mapcar (lambda (r)
+                                             (list (format nil "[~a] ~a" 
+                                                           (restart-name r)
+                                                           (substitute #\Space
+                                                                       #\Newline
+                                                                       (write-to-string r :escape nil)))
+                                                   r))
+                                           ;; a crusty way to get only
+                                           ;; the restarts from
+                                           ;; stumpwm's top-level
+                                           ;; restart inward.
+                                           (reverse (member 'top-level
+                                                            (reverse (compute-restarts))
+                                                            :key 'restart-name)))
+                                   (format nil "Error: ~a" 
+                                           (substitute #\Space
+                                                       #\Newline
+                                                       (write-to-string err :escape nil))))))
+    (when restart
+      (invoke-restart (second restart)))))
+
+(defmacro with-restarts-menu (&body body)
+  "Execute BODY. If an error occurs allow the user to pick a
+restart from a menu of possible restarts. If a restart is not
+chosen, resignal the error."
+  (let ((c (gensym)))
+    `(handler-bind
+         ((error 
+           (lambda (,c)
+             (restarts-menu ,c)
+             (signal ,c))))
+       ,@body)))
+
 (defun focus-next-window (group)
   (focus-forward group (sort-windows group)))
 
@@ -825,10 +862,14 @@ aborted."
     (maximize-window (current-window))))
 
 (define-stumpwm-command "loadrc" ()
-  (multiple-value-bind (success err rc) (load-rc-file)
-    (if success
-        (message "RC File loaded successfully.")
-        (message "Error loading ~A: ~A" rc err))))
+  (handler-case
+      (progn
+        (with-restarts-menu (load-rc-file nil)))
+    (error (c)
+      (message "Error loading rc file: ~A" c))
+    (:no-error (&rest args)
+      (declare (ignore args))
+      (message "rc file loaded successfully."))))
 
 (defun display-keybinding (kmap)
   (echo-string-list (current-screen) (mapcar-hash #'(lambda (k v) (format nil "~A -> ~A" (print-key k) v)) kmap)))
@@ -996,7 +1037,9 @@ be found, select it.  Otherwise simply run cmd."
 	(if (>= *lastmsg-nth* (length (screen-last-msg (current-screen))))
 	    (setf *lastmsg-nth* 0)))
       (setf *lastmsg-nth* 0))
-  (echo-nth-last-message (current-screen) *lastmsg-nth*))
+  (if (screen-last-msg (current-screen))
+      (echo-nth-last-message (current-screen) *lastmsg-nth*)
+      (message "No last message.")))
 
 ;;; A resize minor mode. Something a bit better should probably be
 ;;; written. But it's an interesting way of doing it.
@@ -1158,6 +1201,11 @@ be found, select it.  Otherwise simply run cmd."
     (switch-to-group to-group)
     (kill-group dead-group to-group)))
 
+(define-stumpwm-command "gmerge" ((from :group "From Group: "))
+  (if (eq from (current-group))
+      (message "Cannot merge group with itself!")
+      (merge-groups from (current-group))))
+
 ;;; interactive menu
 
 (defvar *menu-map* nil
@@ -1253,43 +1301,6 @@ See *menu-map* for menu bindings."
     (if window
         (frame-raise-window group (window-frame window) window)
         (echo-string (group-screen group) "No Managed Windows"))))
-
-(defun restarts-menu (err)
-  "Present a menu of restarts to the user and let them
-choose. Run the selected restart."
-  (let ((restart (select-from-menu (current-screen)
-                                   (mapcar (lambda (r)
-                                             (list (format nil "[~a] ~a" 
-                                                           (restart-name r)
-                                                           (substitute #\Space
-                                                                       #\Newline
-                                                                       (write-to-string r :escape nil)))
-                                                   r))
-                                           ;; a crusty way to get only
-                                           ;; the restarts from
-                                           ;; stumpwm's top-level
-                                           ;; restart inward.
-                                           (reverse (member 'top-level
-                                                            (reverse (compute-restarts))
-                                                            :key 'restart-name)))
-                                   (format nil "Error: ~a" 
-                                           (substitute #\Space
-                                                       #\Newline
-                                                       (write-to-string err :escape nil))))))
-    (when restart
-      (invoke-restart (second restart)))))
-
-(defmacro with-restarts-menu (&body body)
-  "Execute BODY. If an error occurs allow the user to pick a
-restart from a menu of possible restarts. If a restart is not
-chosen, resignal the error."
-  (let ((c (gensym)))
-    `(handler-bind
-         ((error 
-           (lambda (,c)
-             (restarts-menu ,c)
-             (signal ,c))))
-       ,@body)))
 
 (define-stumpwm-command "reload" ()
   (message "Reloading StumpWM...")

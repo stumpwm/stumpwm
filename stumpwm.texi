@@ -803,6 +803,11 @@ Substitute the window's class.
 @item %i
 Substitute the window's resource ID.
 @end table
+
+Note, a prefix number can be used to crop the argument to a specified
+size. For instance, @samp{%20t} crops the window's title to 20
+characters.
+
 @end defvar
 
 @defvar *window-name-source*
@@ -1189,6 +1194,10 @@ Cycle to the next group in the group list.
 Cycle to the previous group in the group list.
 @end deffn
 
+@deffn {Command} gmerge @var{from-group}
+Merge @var{from-group} into the current group. @var{from-group} is not deleted.
+@end deffn
+
 @deffn {Command} groups @var{fmt}
 Display the list of groups with their number and
 name. @var{*group-format*} controls the formatting. The optional
@@ -1510,6 +1519,11 @@ menu, the error is re-signalled.
 Execute @var{body}. If an error occurs inside @var{body} then call
 restarts-menu on it.
 @end defmac
+
+@defvar *startup-message*
+This is the message StumpWM displays when it starts. Set it to NIL to
+suppress.
+@end defvar
 
 @menu
 * Menus::                       
