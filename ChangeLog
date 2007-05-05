@@ -1,8 +1,11 @@
 2007-05-05  Shawn Betts  <sabetts@shitbender.gagrod>
 
+	* primitives.lisp (*focus-color*): set to gray
+
 	* user.lisp ("loadrc"): wrap in with-restarts-menu
 	("lastmsg"): handle case when there is no last message.
 	("gmerge"): new command
+	(*root-map*): switch around window navigating bindings to be the same as ratpoison
 
 	* stumpwm.lisp (load-rc-file): take new argument, catch-errors.
 	(stumpwm): print *startup-message* when non-nil on start up.

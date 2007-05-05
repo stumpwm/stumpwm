@@ -100,7 +100,7 @@ line of text.")
 (defvar *normal-border-width* 1
   "The default border width for normal windows.")
 
-(defvar *focus-color* "DarkGreen"
+(defvar *focus-color* "gray"
   "The color a window's border becomes when it is focused")
 
 (defvar *unfocus-color* "Black"
