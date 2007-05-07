@@ -1135,10 +1135,12 @@ be found, select it.  Otherwise simply run cmd."
       (switch-to-group ng))))
 
 (define-stumpwm-command "gnew" ((name :string "Group Name: "))
-  (switch-to-group (add-group (current-screen) name)))
+  (switch-to-group (or (find-group (current-screen) name)
+                       (add-group (current-screen) name))))
 
 (define-stumpwm-command "gnewbg" ((name :string "Group Name: "))
-  (add-group (current-screen) name))
+  (unless (find-group (current-screen) name)
+    (add-group (current-screen) name)))
 
 (define-stumpwm-command "gnext" ()
   (group-forward (current-group)

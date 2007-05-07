@@ -349,7 +349,8 @@ second and neither excedes the bounds of the input string."
 
 (defun input-find-completions (str completions)
   (if (or (functionp completions)
-	  (symbolp completions))
+	  (and (symbolp completions)
+               (fboundp completions)))
       (funcall completions str)
       (remove-if-not (lambda (elt)
                        (when (listp elt)

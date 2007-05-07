@@ -218,6 +218,10 @@ otherwise specified."
     (setf (screen-groups screen) (append (screen-groups screen) (list ng)))
     ng))
 
+(defun find-group (screen name)
+  "Return the group with the name, NAME. Or NIL if none exists."
+  (find name (screen-groups screen) :key 'group-name :test 'string=))
+
 
 ;;; Window functions
 
