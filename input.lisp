@@ -56,6 +56,7 @@
 	  (define-key map (kbd "Down") 'input-history-forward)
 	  (define-key map (kbd "RET") 'input-submit)
 	  (define-key map (kbd "C-g") 'input-abort)
+	  (define-key map (kbd "ESC") 'input-abort)
 	  (define-key map (kbd "C-y") 'input-yank-selection)
 	  (define-key map (kbd "TAB") 'input-complete-forward)
 	  (define-key map (kbd "ISO_Left_Tab") 'input-complete-backward)

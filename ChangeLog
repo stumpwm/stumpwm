@@ -1,3 +1,7 @@
+2007-05-07  Shawn Betts  <sabetts@shitbender.gagrod>
+
+	* input.lisp (*input-map*): bind ESC to input-abort
+
 2007-05-06  Shawn Betts  <sabetts@shitbender.gagrod>
 
 	* user.lisp ("gnew"): check if group exists
