@@ -1,3 +1,12 @@
+2007-05-06  Shawn Betts  <sabetts@shitbender.gagrod>
+
+	* user.lisp ("gnew"): check if group exists
+	("gnewbg"): likewise
+
+	* input.lisp (input-find-completions): make sure the symbol is fboundp
+
+	* core.lisp (find-group): new function
+
 2007-05-05  Shawn Betts  <sabetts@shitbender.gagrod>
 
 	* primitives.lisp (*focus-color*): set to gray

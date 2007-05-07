@@ -5,6 +5,10 @@ This file documents user visible changes between versions of StumpWM
 * Changes since 0.0.6
 These changes are probably incomplete
 
+** configure script
+Now you can use it to select a lisp and point the makefile to the
+location of your lisp.
+
 ** new command gmerge
 
 ** startup message configurable

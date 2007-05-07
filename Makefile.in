@@ -1,13 +1,9 @@
-# choose your lisp and appropriate lisp_opts
-CLISP=clisp
-SBCL=sbcl
+LISP=@LISP_PROGRAM@
 
-LISP=$(SBCL)
+clisp_OPTS=-K full -on-error exit ./make-image.lisp
+sbcl_OPTS=--load ./make-image.lisp
 
-CLISP_OPTS=-K full -on-error exit ./make-image.lisp
-SBCL_OPTS=--load ./make-image.lisp
-
-LISP_OPTS= $(SBCL_OPTS)
+LISP_OPTS= $(@LISP@_OPTS)
 
 # You shouldn't have to edit past this
 
