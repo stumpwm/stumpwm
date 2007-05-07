@@ -1,5 +1,8 @@
 2007-05-07  Shawn Betts  <sabetts@shitbender.gagrod>
 
+	* user.lisp ("windowlist"): properly tell the user when there are
+	no managed windows.
+
 	* input.lisp (*input-map*): bind ESC to input-abort
 
 2007-05-06  Shawn Betts  <sabetts@shitbender.gagrod>

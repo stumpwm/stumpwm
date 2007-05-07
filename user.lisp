@@ -1293,16 +1293,18 @@ See *menu-map* for menu bindings."
 	(unmap-all-message-windows)))))
 
 (define-stumpwm-command "windowlist" ((fmt :rest))
-  (let* ((group (current-group))
-	 (window (when (group-windows group)
-		   (second (select-from-menu
-			    (current-screen)
-			    (mapcar (lambda (w)
-				      (list (format-expand *window-formatters* (or fmt *window-format*) w) w))
-				    (sort-windows group)))))))
-    (if window
-        (frame-raise-window group (window-frame window) window)
-        (echo-string (group-screen group) "No Managed Windows"))))
+  (if (null (group-windows (current-group)))
+      (message "No Managed Windows")
+      (let* ((group (current-group))
+             (window (second (select-from-menu
+                              (current-screen)
+                              (mapcar (lambda (w)
+                                        (list (format-expand *window-formatters* (or fmt *window-format*) w) w))
+                                      (sort-windows group))))))
+
+        (if window
+            (frame-raise-window group (window-frame window) window)
+            (message "Abort.")))))
 
 (define-stumpwm-command "reload" ()
   (message "Reloading StumpWM...")
