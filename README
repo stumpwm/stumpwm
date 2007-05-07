@@ -9,45 +9,56 @@ bars, or any of the other conventional GUI widgets.
 These design decisions reflect the growing popularity of productive,
 customizable lisp based systems.
 
-Start Stumpwm
--------------
+Build & Start Stumpwm
+---------------------
 
-Boot up a common lisp implementation. I test it regularily with sbcl
-and clisp.
+If you intend to use sbcl you need to install portable-clx. If you're
+using clisp, make sure it has been compiled with mit-clx. As of clisp
+1.41, new-clx is too buggy to run stumpwm. If you want to use new-clx,
+build clisp from CVS where the problems have been resolved.
 
-Since stumpwm has an ASDF package, load asdf (it's probably already
-loaded) and run:
+Building stumpwm from CVS requires that you build the configure script:
 
-(asdf:operate 'asdf:load-op 'stumpwm)
+$ autoconf
 
-For most configurations you should be able to type the following:
+If there's already a configure script then just run it.
 
-(stumpwm:stumpwm)
+$ configure
 
-Note that you need to tell stumpwm where your X server is running
-either by passing the display string to stumpwm or by setting the
-DISPLAY environment variable. Stumpwm defaults to ":0". The X server
-must be running before you start stumpwm.
+By default stumpwm elects sbcl. You can explicitely use clisp this way:
 
-This is the step-by-step method of loading stumpwm. The next section
-describes some convenient scripts that capture the above.
+$ configure --with-lisp=clisp
 
-Wrappers
---------
+If your lisps are in strange places you may need to tell the script where to find them:
 
-For convenience, there are 2 scripts that boot stumpwm:
+$ configure --with-sbcl=/home/sabetts/opt/bin --with-clisp=/usr/local/downstairs/to/the/left
 
-stumpwm.clisp
-stumpwm.sbcl
+Now build it:
 
-Read the comments in the scripts. You may need to specify some load
-paths. Make sure they have the executable permission and you can use
-them as you would a regular program. Hopefully, it's as easy as
-throwing one of them in ~/.xinitrc.
+$ make
 
-For other loading methods take a look at the stumpwm wiki: 
+If all goes well, you should have a stumpwm binary now. Sorry there's
+no install yet. Just copy the binary wherever you want or run it out
+of the stumpwm/ directory.
+
+Now that you have a binary, call it from your ~/.xinitrc file:
+
+$ echo /path/to/stumpwm > ~/.xinitrc
+$ startx
+
+Hopefully that will put you in X running stumpwm!
+
+Help
+----
+
+There's a texinfo manual, stumpwm.texi. the build scripts generate an
+info file you can read in emacs or with the `info' program.
+
+For other stuff visit the stumpwm wiki: 
 
 http://stumpwm.elektrubadur.se/
+
+There's a #stumpwm channel on irc.freenode.net, too.
 
 Questions?
 ----------
