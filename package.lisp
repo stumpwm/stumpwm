@@ -2,6 +2,7 @@
   (:use :cl)
   (:export #:stumpwm
            #:*startup-message*
+           #:*suppress-abort-messages*
 	   #:*top-level-error-action*
 	   #:*screen-list*
 	   #:split-string

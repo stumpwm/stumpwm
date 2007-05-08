@@ -1,7 +1,25 @@
 2007-05-07  Shawn Betts  <sabetts@shitbender.gagrod>
 
+	* user.lisp (eval-line): print all values
+	(columnize): new function
+	(display-keybinding): print prefix keys. print bindings in columns
+	("reload"): properly notify when asdf isn't loaded
+
+	* primitives.lisp (*suppress-abort-messages*): new global
+	(concat): new defun
+
+	* kmap.lisp (search-kmap): match command before checking if its a kmap
+
 	* user.lisp ("windowlist"): properly tell the user when there are
 	no managed windows.
+	(argument-pop-or-read): throw :abort
+	(argument-pop-rest-or-read): likewise
+	(:frame): likewise
+	("colon"): likewise
+	("windowlist"): likewise
+	(parse-and-run-command): likewise
+	(interactive-command): echo "Abort." for aborted commands unless *suppress-echo-timeout* is on.
+	(display-keybinding): use message-no-timeout
 
 	* input.lisp (*input-map*): bind ESC to input-abort
 

@@ -1525,6 +1525,10 @@ This is the message StumpWM displays when it starts. Set it to NIL to
 suppress.
 @end defvar
 
+@defvar *suppress-abort-messages*
+Suppress abort message when non-nil.
+@end defvar
+
 @menu
 * Menus::                       
 * Debugging StumpWM::           

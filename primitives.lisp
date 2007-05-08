@@ -28,6 +28,8 @@
 
 
 ;;; Message Timer
+(defvar *suppress-abort-messages* nil
+  "Suppress abort message when non-nil.")
 
 (defvar *timeout-wait* 5
   "The amount of time a timeout takes.")
@@ -715,3 +717,6 @@ value.")
 
 (defvar *startup-message* "Welcome to The Stump Window Manager!"
   "StumpWM's startup message. Set to NIL to suppress.")
+
+(defun concat (&rest strings)
+  (apply 'concatenate 'string strings))

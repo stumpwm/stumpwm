@@ -554,10 +554,12 @@ select one. Returns the selected frame or nil if aborted."
         (resize-frame group f h :height))))
 
 (defun eval-line (screen cmd)
-  (echo-string screen
-	       (handler-case (prin1-to-string (eval (read-from-string cmd)))
-		 (error (c)
-		   (format nil "~A" c)))))
+  (handler-case 
+      (message "~{~a~^~%~}"
+               (mapcar 'prin1-to-string
+                       (multiple-value-list (eval (read-from-string cmd)))))
+    (error (c)
+      (message "~A" c))))
 
 (define-stumpwm-command "eval" ((cmd :rest "Eval: "))
   (eval-line (current-screen) cmd))
@@ -606,7 +608,7 @@ string between them."
       (if completions
 	  (completing-read (current-screen) prompt completions)
 	  (read-one-line (current-screen) prompt))
-      (throw 'error "Abort.")))
+      (throw 'error :abort)))
 
 (defun argument-pop-rest (input)
   "Return the remainder of the argument text."
@@ -620,7 +622,7 @@ string between them."
       (if completions
 	  (completing-read (current-screen) prompt completions)
 	  (read-one-line (current-screen) prompt))
-      (throw 'error "Abort.")))
+      (throw 'error :abort)))
 
 (defmacro define-stumpwm-type (type (input prompt) &body body)
   `(setf (gethash ,type *command-type-hash*) 
@@ -751,7 +753,7 @@ string between them."
 		  :test 'string=)
 	    (throw 'error "Frame not found."))
 	(or (choose-frame-by-number (current-group))
-	    (throw 'error "Abort.")))))
+	    (throw 'error :abort)))))
 
 (define-stumpwm-type :shell (input prompt)
   (or (argument-pop-rest input)
@@ -790,7 +792,7 @@ aborted."
 				 nil
 				 ;; FIXME: Is it presumptuous to assume NIL means abort?
 				 (or (funcall fn arg-line prompt)
-				     (throw 'error "Abort.")))))
+				     (throw 'error :abort)))))
 			 arg-specs)))
       (dformat 3 "arguments: ~S~%" args)
       ;; Did the whole string get parsed?
@@ -806,18 +808,21 @@ aborted."
 (defun interactive-command (cmd)
   "exec cmd and echo the result."
   (let ((result (handler-case (parse-and-run-command cmd)
-			      (error (c)
-				     (format nil "Error In Command '~a': ~A" cmd c)))))
+                  (error (c)
+                    (format nil "Error In Command '~a': ~A" cmd c)))))
     ;; interactive commands update the modeline
     (when (screen-mode-line (current-screen))
       (redraw-mode-line-for (screen-mode-line (current-screen)) (current-screen)))
-    (when (stringp result)
-      (message "~a" result))))
+    (cond ((stringp result)
+           (message "~a" result))
+          ((eq result :abort)
+           (unless *suppress-abort-messages*
+             (message "Abort."))))))
 
 (define-stumpwm-command "colon" ((initial-input :rest))
   (let ((cmd (completing-read (current-screen) ": " (all-commands) (or initial-input ""))))
     (unless cmd
-      (throw 'error "Abort."))
+      (throw 'error :abort))
     (when (plusp (length cmd))
       (interactive-command cmd))))
 
@@ -871,11 +876,42 @@ aborted."
       (declare (ignore args))
       (message "rc file loaded successfully."))))
 
-(defun display-keybinding (kmap)
-  (echo-string-list (current-screen) (mapcar-hash #'(lambda (k v) (format nil "~A -> ~A" (print-key k) v)) kmap)))
+(defun columnize (list columns &key col-aligns (pad 1) (char #\Space) (align :left))
+  ;; only somewhat nasty
+  (let* ((rows (truncate (length list) columns))
+         (data (loop for i from 0 below (length list) by rows
+                  collect (subseq list i (min (+ i rows) (length list)))))
+         (max (mapcar (lambda (col)
+                        (reduce 'max col :key 'length :initial-value 0))
+                      data))
+         (padstr (make-string pad :initial-element char)))
+    (apply 'mapcar 'concat
+           ;; normalize width
+           (loop
+              for i in data
+              for j in max
+              for c from 0
+              collect (loop
+                         for k from 0 below rows
+                         for s = (or (nth k i) "")
+                         for len = (make-string (- j (length s))
+                                                :initial-element char)
+                         collect (ecase (or (nth c col-aligns) align)
+                                   (:left (format nil "~a~a~a" (if (= c 0) "" padstr) s len))
+                                   (:right (format nil "~a~a~a" (if (= c 0) "" padstr) len s))))))))
+
+(defun display-keybinding (kmap-var)
+  (let* ((screen (current-screen))
+         (data (mapcar-hash (lambda (k v) (format nil "~5a ~a" (print-key k) v)) (symbol-value kmap-var)))
+         (cols (ceiling (length data)
+                        (truncate (screen-height screen)
+                                  (font-height (screen-font screen))))))
+    (message-no-timeout "Prefix: ~{~a~^ | ~}~%~{~a~^~%~}"
+                        (mapcar 'print-key-seq (search-kmap kmap-var *top-map*))
+                        (columnize data cols))))
 
 (define-stumpwm-command "help" ()
-  (display-keybinding *root-map*))
+  (display-keybinding '*root-map*))
 
 ;; Trivial function
 (define-stumpwm-command "abort" ()
@@ -1304,14 +1340,14 @@ See *menu-map* for menu bindings."
 
         (if window
             (frame-raise-window group (window-frame window) window)
-            (message "Abort.")))))
+            (throw 'error :abort)))))
 
 (define-stumpwm-command "reload" ()
   (message "Reloading StumpWM...")
-  (with-restarts-menu
-      #+asdf (asdf:operate 'asdf:load-op :stumpwm)
-      #-asdf (message "Stumpwm can only be reloaded with asdf, for now."))
-  (message "Reloading StumpWM...Done."))
+  #+asdf (with-restarts-menu
+             (asdf:operate 'asdf:load-op :stumpwm))
+  #-asdf (message "Stumpwm can only be reloaded with asdf, for now.")
+  #+asdf (message "Reloading StumpWM...Done."))
 
 (defun run-commands (&rest commands)
   "Run each stumpwm command in sequence. This could be used if
