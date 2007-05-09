@@ -1955,11 +1955,15 @@ list of modifier symbols."
   (xlib:display-finish-output *display*))
 
 (defun grab-keyboard (screen)
-  (xlib:grab-keyboard (screen-root screen) :owner-p nil
-		      :sync-keyboard-p nil :sync-pointer-p nil))
+  (let ((ret (xlib:grab-keyboard (screen-root screen) :owner-p nil
+                                 :sync-keyboard-p nil :sync-pointer-p nil)))
+    (dformat 5 "vvv Grab keyboard: ~s~%" ret)
+    ret))
 
 (defun ungrab-keyboard ()
-  (xlib:ungrab-keyboard *display*))
+  (let ((ret (xlib:ungrab-keyboard *display*)))
+    (dformat 5 "^^^ Ungrab keyboard: ~s~%" ret)
+    ret))
 
 (defun warp-pointer (screen x y)
   "Move the pointer to the specified location."
@@ -2033,7 +2037,7 @@ managing. Basically just give the window what it wants."
 
 (define-stump-event-handler :configure-request (stack-mode #|parent|# window #|above-sibling|# x y width height border-width value-mask)
   ;; Grant the configure request but then maximize the window after the granting.
-  (dformat 3 "CONFIGURE REQUEST ~S ~S ~S~%" value-mask height (xlib:drawable-height window))
+  (dformat 3 "CONFIGURE REQUEST ~@{~S~}~%" stack-mode window x y width height border-width value-mask)
   (let ((win (find-window window)))
     (if win
 	(handle-managed-window win width height stack-mode value-mask)
@@ -2243,6 +2247,8 @@ chunks."
 	(incf (window-unmap-ignores win)))
       (xlib:reparent-window (window-xwin win) (window-parent win) 0 0))))
 
+(define-stump-event-handler :focus-out (window mode kind)
+  (dformat 5 "~@{~s ~}~%" window mode kind))
 
 ;; Handling event :KEY-PRESS
 ;; (:DISPLAY #<XLIB:DISPLAY :0 (The X.Org Foundation R60700000)> :EVENT-KEY :KEY-PRESS :EVENT-CODE 2 :SEND-EVENT-P NIL :CODE 45 :SEQUENCE 1419 :TIME 98761213 :ROOT #<XLIB:WINDOW :0 96> :WINDOW #<XLIB:WINDOW :0 6291484> :EVENT-WINDOW #<XLIB:WINDOW :0 6291484> :CHILD
