@@ -2037,7 +2037,7 @@ managing. Basically just give the window what it wants."
 
 (define-stump-event-handler :configure-request (stack-mode #|parent|# window #|above-sibling|# x y width height border-width value-mask)
   ;; Grant the configure request but then maximize the window after the granting.
-  (dformat 3 "CONFIGURE REQUEST ~@{~S~}~%" stack-mode window x y width height border-width value-mask)
+  (dformat 3 "CONFIGURE REQUEST ~@{~S ~}~%" stack-mode window x y width height border-width value-mask)
   (let ((win (find-window window)))
     (if win
 	(handle-managed-window win width height stack-mode value-mask)
