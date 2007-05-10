@@ -1,13 +1,21 @@
 (defpackage :test-wm (:use :cl))
 (in-package :test-wm)
 
-(defmacro define-test ((n dpy screen) &body body)
-  `(defun ,(intern (format nil "TEST-~d" n)) (,dpy ,screen)
-     (format t "Starting test ~d~%" ,n)
-     ,@body
-     (format t "Done.~%")))
+(defparameter *current-test-num* 0)
 
-(define-test (1 dpy screen)
+(defparameter *tests* nil)
+
+(defmacro define-test ((dpy screen) &body body)
+  (let ((name (intern (format nil "TEST-~d" *current-test-num*))))
+    `(progn
+       (defun ,name (,dpy ,screen)
+         (format t "Starting test ~d~%" ,*current-test-num*)
+         ,@body
+         (format t "Done.~%"))
+       (push ',name *tests*)
+       (incf *current-test-num*))))
+
+(define-test (dpy screen)
     (let ((w (xlib:create-window :parent (xlib:screen-root screen)
                                  :x 10 :y 10 :width 100 :height 100 :border-width 1)))
       (xlib:map-window w)
@@ -15,7 +23,7 @@
       (xlib:destroy-window w)
       (xlib:display-finish-output dpy)))
 
-(define-test (2 dpy screen)
+(define-test (dpy screen)
     (let ((w (xlib:create-window :parent (xlib:screen-root screen)
                                  :x 10 :y 10 :width 100 :height 100 :border-width 1)))
       (xlib:map-window w)
@@ -27,7 +35,7 @@
       (xlib:destroy-window w)
       (xlib:display-finish-output dpy)))
 
-(define-test (3 dpy screen)
+(define-test (dpy screen)
     (let ((windows (loop for i from 0 to 100
 		      collect (let ((w (xlib:create-window :parent (xlib:screen-root screen)
 							   :x 10 :y 10 :width 100 :height 100 :border-width 1)))
@@ -43,22 +51,31 @@
       (loop for i in windows do
 	   (xlib:destroy-window i))))
 
-(define-test (4 dpy screen)
-    (let ((windows (loop for i from 0 to 100
-		      collect (let ((w (xlib:create-window :parent (xlib:screen-root screen)
-							   :x 10 :y 10 :width 100 :height 100 :border-width 1)))
-				(xlib:map-window w)
-				(xlib:display-finish-output dpy)
-				(setf (xlib:window-priority w) :above)
-				w))))
+;; (define-test (dpy screen)
+;;     (let ((windows (loop for i from 0 to 100
+;; 		      collect (let ((w (xlib:create-window :parent (xlib:screen-root screen)
+;; 							   :x 10 :y 10 :width 100 :height 100 :border-width 1)))
+;; 				(xlib:map-window w)
+;; 				(xlib:display-finish-output dpy)
+;; 				(setf (xlib:window-priority w) :above)
+;; 				w))))
+;;       (xlib:display-finish-output dpy)
+;;       (loop for i in windows do
+;; 	   (xlib:unmap-window i))
+;;       (xlib:display-finish-output dpy)
+;;       (sleep 3)
+;;       (loop for i in windows do
+;; 	   (xlib:destroy-window i))))
+
+(define-test (dpy screen)
+    (let ((w (xlib:create-window :parent (xlib:screen-root screen)
+                                 :x 10 :y 10 :width 100 :height 100 :border-width 1)))
+      (xlib:map-window w)
+      (setf (xlib:window-priority w) :above)
       (xlib:display-finish-output dpy)
-      (loop for i in windows do
-	   (xlib:unmap-window i))
-      (xlib:display-finish-output dpy)
-      (sleep 3)
-      (loop for i in windows do
-	   (xlib:destroy-window i))))
-    
+      (xlib:unmap-window w)
+      (setf (xlib:drawable-x w) 5)
+      (xlib:display-finish-output dpy)))
 
 (defun parse-display-string (display)
   "Parse an X11 DISPLAY string and return the host and display from it."
@@ -78,7 +95,6 @@
            (screen (first (xlib:display-roots dpy))))
       (unwind-protect 
 	   (progn
-	     (test-1 dpy screen)
-	     (test-2 dpy screen)
-	     (test-3 dpy screen))
+             (dolist (i *tests*)
+               (funcall i dpy screen)))
 	(xlib:close-display *dpy*)))))

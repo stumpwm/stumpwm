@@ -1,3 +1,11 @@
+2007-05-10  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* core.lisp (grab-pointer): call xlib:display-finish-output
+	(grab-keyboard): likwise
+	(ungrab-keyboard): likwise
+
+	* user.lisp (eval-line): dont take screen arg. callers updated.
+
 2007-05-09  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* core.lisp (:configure-request): more verbose debug output

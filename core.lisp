@@ -1947,7 +1947,8 @@ list of modifier symbols."
 					   :foreground black
 					   :background white)))
     (xlib:grab-pointer (screen-root screen) nil :owner-p nil
-		       :cursor cursor)))
+		       :cursor cursor)
+    (xlib:display-finish-output *display*)))
 
 (defun ungrab-pointer ()
   "Remove the grab on the cursor and restore the cursor shape."
@@ -1957,11 +1958,13 @@ list of modifier symbols."
 (defun grab-keyboard (screen)
   (let ((ret (xlib:grab-keyboard (screen-root screen) :owner-p nil
                                  :sync-keyboard-p nil :sync-pointer-p nil)))
+    (xlib:display-finish-output *display*)
     (dformat 5 "vvv Grab keyboard: ~s~%" ret)
     ret))
 
 (defun ungrab-keyboard ()
   (let ((ret (xlib:ungrab-keyboard *display*)))
+    (xlib:display-finish-output *display*)
     (dformat 5 "^^^ Ungrab keyboard: ~s~%" ret)
     ret))
 

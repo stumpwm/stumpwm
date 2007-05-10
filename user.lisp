@@ -553,7 +553,7 @@ select one. Returns the selected frame or nil if aborted."
         (resize-frame group f w :width)
         (resize-frame group f h :height))))
 
-(defun eval-line (screen cmd)
+(defun eval-line (cmd)
   (handler-case 
       (message "~{~a~^~%~}"
                (mapcar 'prin1-to-string
@@ -562,7 +562,7 @@ select one. Returns the selected frame or nil if aborted."
       (message "~A" c))))
 
 (define-stumpwm-command "eval" ((cmd :rest "Eval: "))
-  (eval-line (current-screen) cmd))
+  (eval-line cmd))
 
 (define-stumpwm-command "echo" ((s :rest "Echo: "))
   (message "~a" s))
