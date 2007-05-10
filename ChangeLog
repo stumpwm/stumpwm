@@ -1,8 +1,8 @@
 2007-05-10  Shawn Betts  <sabetts@vcn.bc.ca>
 
-	* core.lisp (grab-pointer): call xlib:display-finish-output
-	(grab-keyboard): likwise
-	(ungrab-keyboard): likwise
+	* core.lisp (handle-keymap): don't grab the keyboard
+	(:key-press): grab the keyboard at the beginning. ungrab it at the
+	very end. call allow-events after grabbing.
 
 	* user.lisp (eval-line): dont take screen arg. callers updated.
 

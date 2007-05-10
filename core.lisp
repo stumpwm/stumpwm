@@ -1947,8 +1947,7 @@ list of modifier symbols."
 					   :foreground black
 					   :background white)))
     (xlib:grab-pointer (screen-root screen) nil :owner-p nil
-		       :cursor cursor)
-    (xlib:display-finish-output *display*)))
+		       :cursor cursor)))
 
 (defun ungrab-pointer ()
   "Remove the grab on the cursor and restore the cursor shape."
@@ -1958,13 +1957,11 @@ list of modifier symbols."
 (defun grab-keyboard (screen)
   (let ((ret (xlib:grab-keyboard (screen-root screen) :owner-p nil
                                  :sync-keyboard-p nil :sync-pointer-p nil)))
-    (xlib:display-finish-output *display*)
     (dformat 5 "vvv Grab keyboard: ~s~%" ret)
     ret))
 
 (defun ungrab-keyboard ()
   (let ((ret (xlib:ungrab-keyboard *display*)))
-    (xlib:display-finish-output *display*)
     (dformat 5 "^^^ Ungrab keyboard: ~s~%" ret)
     ret))
 
@@ -2134,7 +2131,8 @@ KMAP and return the binding or nil if the user hit an unbound sequence."
 		    (hash-table-p (symbol-value cmd))))
            (when grab
              (grab-pointer (current-screen))
-             (grab-keyboard (current-screen)))
+;;              (grab-keyboard (current-screen))
+             )
 	   (let* ((code-state (read-key-no-modifiers))
 		  (code (car code-state))
 		  (state (cdr code-state)))             
@@ -2145,20 +2143,23 @@ KMAP and return the binding or nil if the user hit an unbound sequence."
 (define-stump-event-handler :key-press (code state #|window|#)
   ;; modifiers can sneak in with a race condition. so avoid that.
   (unless (is-modifier (xlib:keycode->keysym *display* code 0))
-    (labels ((get-cmd (code state)
-	       (unwind-protect
-		    (progn
-		      (handle-keymap *top-map* code state nil t nil))
-		 (ungrab-pointer)
-		 (ungrab-keyboard)
-		 ;; this force output is crucial. Without it weird
-		 ;; things happen if an error happens later on.
-		 (xlib:display-finish-output *display*))))
-      (multiple-value-bind (cmd key-seq) (get-cmd code state)
-	(unmap-message-window (current-screen))
-	(if cmd
-	    (interactive-command cmd)
-	    (message "~{~a ~}not bound." (mapcar 'print-key (nreverse key-seq))))))))
+    ;; grab the keyboard so all keys are sent to us, then thraw the
+    ;; keyboard so we get events.
+    (grab-keyboard (current-screen))
+    (xlib:allow-events *display* :async-keyboard)
+    ;; make absolutely sure we give back the keyboard
+    (unwind-protect
+         (labels ((get-cmd (code state)
+                    (unwind-protect
+                         (progn
+                           (handle-keymap *top-map* code state nil t nil))
+                      (ungrab-pointer))))
+           (multiple-value-bind (cmd key-seq) (get-cmd code state)
+             (unmap-message-window (current-screen))
+             (if cmd
+                 (interactive-command cmd)
+                 (message "~{~a ~}not bound." (mapcar 'print-key (nreverse key-seq))))))
+      (ungrab-keyboard))))
 
 (defun bytes-to-window (bytes)
   "A sick hack to assemble 4 bytes into a 32 bit number. This is
