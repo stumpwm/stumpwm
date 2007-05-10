@@ -2153,13 +2153,19 @@ KMAP and return the binding or nil if the user hit an unbound sequence."
                     (unwind-protect
                          (progn
                            (handle-keymap *top-map* code state nil t nil))
-                      (ungrab-pointer))))
+                      (ungrab-pointer)
+                      ;; This must be here and not after the command
+                      ;; has run because firefox doesn't accept fake
+                      ;; C-t keys otherwise. Presumably this is
+                      ;; because it detects the keyboard has been
+                      ;; grabbed and ignores all key events until it's
+                      ;; ungrabbed.
+                      (ungrab-keyboard))))
            (multiple-value-bind (cmd key-seq) (get-cmd code state)
              (unmap-message-window (current-screen))
              (if cmd
                  (interactive-command cmd)
-                 (message "~{~a ~}not bound." (mapcar 'print-key (nreverse key-seq))))))
-      (ungrab-keyboard))))
+                 (message "~{~a ~}not bound." (mapcar 'print-key (nreverse key-seq)))))))))
 
 (defun bytes-to-window (bytes)
   "A sick hack to assemble 4 bytes into a 32 bit number. This is
