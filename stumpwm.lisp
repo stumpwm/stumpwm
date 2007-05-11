@@ -127,44 +127,37 @@ of those expired."
   "The internal loop that waits for events and handles them."
   ;; before entering the interactive debugger, ungrab the keyboard. If
   ;; we don't the whole X server could be locked.
-  (labels ((ungrab (condition hook)
-	     (declare (ignore condition hook))
-	     (dformat 1 "Error! Ungrabbing keyboard.~%")
-	     ;;#+clisp (ext:show-stack 1 100 (sys::the-frame))
-	     (ungrab-keyboard)
-	     (xlib:display-finish-output *display*)))
-    (let ((*debugger-hook* #'ungrab))
-      (catch :quit
-	(loop
-	   (run-hook *internal-loop-hook*)
-	   (handler-bind
-;; 	     ((or xlib:window-error xlib:drawable-error) (lambda (c)
-;; 	       ;; Just in case some synchronous window error gets here
-;; 	       ;; (this should be impossible) catch it and ignore it.
-;; 	       (dformat 4 "top level ignore synchronous ~a~%" c))
-	     ((error (lambda (c)
-                       (ecase *top-level-error-action*
-                         (:message
-                          (let ((s (format nil "~&Caught '~a' at the top level. Please report this." c)))
-                            (write-line s)
-                            (print-backtrace)
-                            (message "~a" s)))
-                         (:break (invoke-debugger c))
-                         (:abort
-                          (format t "~&Caught '~a' at the top level. Please report this." c)
+  (catch :quit
+    (loop
+       (run-hook *internal-loop-hook*)
+       (handler-bind
+           ;; 	     ((or xlib:window-error xlib:drawable-error) (lambda (c)
+           ;; 	       ;; Just in case some synchronous window error gets here
+           ;; 	       ;; (this should be impossible) catch it and ignore it.
+           ;; 	       (dformat 4 "top level ignore synchronous ~a~%" c))
+           ((error (lambda (c)
+                     (ecase *top-level-error-action*
+                       (:message
+                        (let ((s (format nil "~&Caught '~a' at the top level. Please report this." c)))
+                          (write-line s)
                           (print-backtrace)
-                          (throw :quit t))))))
-	       (let ((timeout (get-next-timeout *timer-list*)))
-		 (if timeout
-                     (let* ((nevents (xlib:event-listen *display* timeout)))
-                       (setf *timer-list* (run-expired-timers *timer-list*))
-                       (when nevents
-                         (xlib:process-event *display* :handler #'handle-event)))
-		     ;; Otherwise, simply wait for an event
-                     (xlib:process-event *display* :handler #'handle-event :timeout nil))
-		 ;; flush any pending output. You'd think process-event would, but
-		 ;; it seems not.
-		 (xlib:display-finish-output *display*))))))))
+                          (message "~a" s)))
+                       (:break (invoke-debugger c))
+                       (:abort
+                        (format t "~&Caught '~a' at the top level. Please report this." c)
+                        (print-backtrace)
+                        (throw :quit t))))))
+         (let ((timeout (get-next-timeout *timer-list*)))
+           (if timeout
+               (let* ((nevents (xlib:event-listen *display* timeout)))
+                 (setf *timer-list* (run-expired-timers *timer-list*))
+                 (when nevents
+                   (xlib:process-event *display* :handler #'handle-event)))
+               ;; Otherwise, simply wait for an event
+               (xlib:process-event *display* :handler #'handle-event :timeout nil))
+           ;; flush any pending output. You'd think process-event would, but
+           ;; it seems not.
+           (xlib:display-finish-output *display*))))))
 
 (defun parse-display-string (display)
   "Parse an X11 DISPLAY string and return the host and display from it."
