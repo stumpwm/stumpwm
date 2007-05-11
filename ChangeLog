@@ -1,5 +1,7 @@
 2007-05-11  Shawn Betts  <sabetts@shitbender.gagrod>
 
+	* stumpwm.asd (:stumpwm): use :serial dependencies
+
 	* stumpwm.lisp (stumpwm-internal-loop): don't ungrab the keyboard
 	when entering the debugger.
 

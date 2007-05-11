@@ -22,17 +22,18 @@
   :maintainer "Shawn Betts <sabetts@vcn.bc.ca>"
   ;; :license "GNU General Public License"
   :description "A tiling, keyboard driven window manager" 
+  :serial t
   :components ((:file "package")
-	       (:file "primitives" :depends-on ("package"))	 
-	       (:file "keysyms" :depends-on ("primitives"))
-	       (:file "keytrans" :depends-on ("keysyms"))
-	       (:file "kmap" :depends-on ("keytrans"))
-	       (:file "input" :depends-on ("kmap"))
-	       (:file "core" :depends-on ("input"))
-	       (:file "user" :depends-on ("core"))
-	       (:file "mode-line" :depends-on ("user"))
-	       (:file "stumpwm" :depends-on  ("mode-line"))
+	       (:file "primitives")
+	       (:file "keysyms")
+	       (:file "keytrans")
+	       (:file "kmap")
+	       (:file "input")
+	       (:file "core")
+	       (:file "user")
+	       (:file "mode-line")
+	       (:file "stumpwm")
 	       ;; keep this last so it always gets recompiled if
 	       ;; anything changes
-	       (:file "version" :depends-on ("stumpwm"))))
+	       (:file "version")))
 
