@@ -2084,13 +2084,10 @@ managing. Basically just give the window what it wants."
                  (if (eq (window-group window) (current-group))
                      (echo-string (window-screen window) (format nil "'~a' denied map request" (window-name window)))
                      (echo-string (window-screen window) (format nil "'~a' denied map request in group ~a" (window-name window) (group-name (window-group window))))))
-               (progn
-                 (format t "list: ~@{~s ~}~%" window (group-windows (window-group window)))
-                 (frame-raise-window (window-group window) (window-frame window) window
-                                     (if (eq (window-frame window)
-                                             (tile-group-current-frame (window-group window)))
-                                         t nil))
-                 (format t "after: ~@{~s ~}~%" window (group-windows (window-group window)))))))))))
+               (frame-raise-window (window-group window) (window-frame window) window
+                                   (if (eq (window-frame window)
+                                           (tile-group-current-frame (window-group window)))
+                                       t nil)))))))))
 
 (define-stump-event-handler :unmap-notify (send-event-p event-window window #|configure-p|#)
   ;; There are two kinds of unmap notify events: the straight up
