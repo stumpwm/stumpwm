@@ -243,14 +243,17 @@ otherwise specified."
   ;; give it a colored border but only if there are more than 1 frames.
   (let* ((group (window-group window))
 	 (screen (group-screen group)))
-    (if (and (> (length (group-frames group)) 1)
-             (eq (group-current-window group) window))
-        (setf (xlib:window-border (window-parent window)) (get-color-pixel screen *focus-color*)
-              (xlib:window-background (window-parent window)) (get-color-pixel screen *focus-color*))
-        (setf (xlib:window-border (window-parent window)) (get-color-pixel screen *unfocus-color*)
-              (xlib:window-background (window-parent window)) (get-win-bg-color-pixel (window-screen window))))
-    ;; get the background updated
-    (xlib:clear-area (window-parent window))))
+    (let ((c (if (and (> (length (group-frames group)) 1)
+                      (eq (group-current-window group) window))
+                 (get-color-pixel screen *focus-color*)
+                 (get-color-pixel screen *unfocus-color*))))
+      (setf (xlib:window-border (window-parent window)) c
+            ;; windows that dont fill the entire screen have a transparent background.
+            (xlib:window-background (window-parent window)) 
+            (if (eq (window-type window) :normal)
+                c :none))
+      ;; get the background updated
+      (xlib:clear-area (window-parent window)))))
 
 (defun send-client-message (window type &rest data)
   "Send a client message to a client's window."
@@ -600,8 +603,10 @@ than the root window's width and height."
 			   :x (xlib:drawable-x (window-xwin window)) :y (xlib:drawable-y (window-xwin window))
 			   :width (window-width window)
 			   :height (window-height window)
-			   ;; normal windows geta black background
-			   :background (get-bg-color-pixel screen)
+			   ;; normal windows get a black background
+			   :background (if (eq (window-type window) :normal)
+                                           (get-bg-color-pixel screen)
+                                           :none)
 			   :border (get-color-pixel screen *unfocus-color*)
 			   :border-width (default-border-width-for-type (window-type window))
 			   :event-mask *window-parent-events*)))

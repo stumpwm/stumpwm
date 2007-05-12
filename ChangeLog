@@ -2,6 +2,8 @@
 
 	* core.lisp (pick-prefered-frame): make sure tile-group-last-frame
 	is valid.
+	(update-window-border): give non-normal windows a transparent background
+	(reparent-window): likewise
 
 	* primitives.lisp (print-object frame): include the frame number
 	(*new-window-prefered-frame*): new global variable
