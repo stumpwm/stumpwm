@@ -265,8 +265,8 @@ name. :title, :resource-name, :class are valid values.")
   last-msg-highlights)
 
 (defmethod print-object ((object frame) stream)
-  (format stream "#S(frame ~a ~d ~d ~d ~d)" 
-	  (frame-window object) (frame-x object) (frame-y object) (frame-width object) (frame-height object)))
+  (format stream "#S(frame ~d ~a ~d ~d ~d ~d)" 
+	  (frame-number object) (frame-window object) (frame-x object) (frame-y object) (frame-width object) (frame-height object)))
 
 (defmethod print-object ((object window) stream)
   (format stream "#S(window ~s)" (window-name object)))
@@ -698,6 +698,11 @@ value.")
 
 (defvar *new-frame-action* :last-window
   "Controls what to do with new frame. Valid values are :last-window, :empty.")
+
+(defvar *new-window-prefered-frame* '(:focused)
+  "Controls where new windows appear. It's a list where the more
+  prefered possibilities are closer to the head. Valid list
+  elements are :focused, :last, :empty, :unfocused.")
 
 (defun print-backtrace (&optional (frames 100))
   "print a backtrace of FRAMES number of frames to standard-output"

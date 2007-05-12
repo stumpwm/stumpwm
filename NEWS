@@ -5,6 +5,9 @@ This file documents user visible changes between versions of StumpWM
 * Changes since 0.0.6
 These changes are probably incomplete
 
+** new var *new-window-prefered-frame*
+It controls what frame a new window appears in.
+
 ** "help" command prints bindings in columns
 And it doesn't timeout.
 

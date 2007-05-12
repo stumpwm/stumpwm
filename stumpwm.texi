@@ -812,7 +812,6 @@ characters.
 
 @defvar *window-name-source*
 This variable controls what is used for the window's name. The default is @code{:title}.
-@end defvar
 
 @table @code
 @item :title
@@ -824,6 +823,27 @@ Use the window's resource class.
 @item :resource-name
 Use the window's resource name.
 @end table
+@end defvar
+
+@defvar *new-window-prefered-frame*
+This variable controls what frame a new window appears in. It is a
+list of preferences. The first preference that is satisfied is
+used. Valid list elements are as follows:
+
+@table @code
+@item :focused
+Choose the focused frame.
+
+@item :last
+Choose the last focused frame.
+
+@item :empty
+Choose any empty frame.
+
+@item :unfocused
+Choose any unfocused frame.
+@end table
+@end defvar
 
 @menu
 * Window Marks::                

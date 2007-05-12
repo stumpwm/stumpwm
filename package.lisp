@@ -1,6 +1,7 @@
 (defpackage :stumpwm
   (:use :cl)
   (:export #:stumpwm
+           #:*new-window-prefered-frame*
            #:*startup-message*
            #:*suppress-abort-messages*
 	   #:*top-level-error-action*

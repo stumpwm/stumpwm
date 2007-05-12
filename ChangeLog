@@ -1,3 +1,15 @@
+2007-05-12  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* primitives.lisp (print-object frame): include the frame number
+	(*new-window-prefered-frame*): new global variable
+
+	* core.lisp (group-add-window): call pick-prefered-frame
+	(pick-prefered-frame): new function
+	(restore-window): call pick-prefered-frame
+	(restore-window): only focus the new window if it's in the current frame
+	(:map-request): likewise
+	(maybe-hide-windows): use remove, not delete.
+
 2007-05-11  Shawn Betts  <sabetts@shitbender.gagrod>
 
 	* stumpwm.asd (:stumpwm): use :serial dependencies

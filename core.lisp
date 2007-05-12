@@ -688,12 +688,31 @@ than the root window's width and height."
 			     :group group
 			     :plist (make-hash-table)
 			     :number (find-free-window-number group)
-			     :frame (tile-group-current-frame group)
+			     :frame (pick-prefered-frame group)
 			     :unmap-ignores 0)))
     (setf (xwin-state xwin) +iconic-state+)
     ;; put the window at the end of the list
     (setf (group-windows group) (append (group-windows group) (list window)))
     window))
+
+(defun pick-prefered-frame (group)
+  (let ((frames (group-frames group)))
+    (or
+     (loop for i in *new-window-prefered-frame*
+        thereis (case i
+                  (:last
+                   (tile-group-last-frame group))
+                  (:unfocused
+                   (find-if (lambda (f)
+                              (not (eq f (tile-group-current-frame group))))
+                            frames))
+                  (:empty
+                   (find-if (lambda (f)
+                              (null (frame-window f)))
+                            frames))
+                  (t                    ; :focused
+                   (tile-group-current-frame group))))
+     (tile-group-current-frame group))))
 
 (defun add-window (screen xwin)
   (screen-add-mapped-window screen xwin)
@@ -740,7 +759,7 @@ needed."
 	  (window-type window) (xwin-type (window-xwin window))
 	  (window-normal-hints window) (xlib:wm-normal-hints (window-xwin window))
 	  (window-number window) (find-free-window-number (window-group window))
-	  (window-frame window) (tile-group-current-frame (window-group window))
+	  (window-frame window) (pick-prefered-frame (window-group window))
 	  (window-state window) +iconic-state+
 	  (xwin-state (window-xwin window)) +iconic-state+
 	  (screen-withdrawn-windows screen) (delete window (screen-withdrawn-windows screen))
@@ -753,7 +772,10 @@ needed."
           (if (eq (window-group window) (current-group))
               (echo-string (window-screen window) (format nil "'~a' denied map request" (window-name window)))
               (echo-string (window-screen window) (format nil "'~a' denied map request in group ~a" (window-name window) (group-name (window-group window))))))
-        (frame-raise-window (window-group window) (window-frame window) window))))
+        (frame-raise-window (window-group window) (window-frame window) window
+                            (if (eq (window-frame window)
+                                    (tile-group-current-frame (window-group window)))
+                                t nil)))))
 
 (defun withdraw-window (window)
   "Withdrawing a window means just putting it in a list til we get a destroy event."
@@ -827,7 +849,7 @@ NEW-WINDOW is nil then the windows will be hidden."
   (when (or (null new-window)
 	    (and (eql frame (window-frame new-window))
 		 (eq (window-type new-window) :normal)))
-    (mapc 'hide-window (delete new-window (frame-windows group frame)))))
+    (mapc 'hide-window (remove new-window (frame-windows group frame)))))
 
 (defun focus-window (window)
   "Give the window focus. This means the window will be visible,
@@ -2062,7 +2084,13 @@ managing. Basically just give the window what it wants."
                  (if (eq (window-group window) (current-group))
                      (echo-string (window-screen window) (format nil "'~a' denied map request" (window-name window)))
                      (echo-string (window-screen window) (format nil "'~a' denied map request in group ~a" (window-name window) (group-name (window-group window))))))
-               (frame-raise-window (window-group window) (window-frame window) window))))))))
+               (progn
+                 (format t "list: ~@{~s ~}~%" window (group-windows (window-group window)))
+                 (frame-raise-window (window-group window) (window-frame window) window
+                                     (if (eq (window-frame window)
+                                             (tile-group-current-frame (window-group window)))
+                                         t nil))
+                 (format t "after: ~@{~s ~}~%" window (group-windows (window-group window)))))))))))
 
 (define-stump-event-handler :unmap-notify (send-event-p event-window window #|configure-p|#)
   ;; There are two kinds of unmap notify events: the straight up
