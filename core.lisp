@@ -701,7 +701,9 @@ than the root window's width and height."
      (loop for i in *new-window-prefered-frame*
         thereis (case i
                   (:last
-                   (tile-group-last-frame group))
+                   ;; last-frame can be stale
+                   (and (> (length frames) 1)
+                        (tile-group-last-frame group)))
                   (:unfocused
                    (find-if (lambda (f)
                               (not (eq f (tile-group-current-frame group))))

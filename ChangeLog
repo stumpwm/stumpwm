@@ -1,5 +1,8 @@
 2007-05-12  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* core.lisp (pick-prefered-frame): make sure tile-group-last-frame
+	is valid.
+
 	* primitives.lisp (print-object frame): include the frame number
 	(*new-window-prefered-frame*): new global variable
 
