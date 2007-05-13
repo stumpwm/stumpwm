@@ -1549,6 +1549,13 @@ suppress.
 Suppress abort message when non-nil.
 @end defvar
 
+@defvar *default-package*
+This is the package eval reads and executes in. You might want to set
+this to @code{:stumpwm} if you find yourself using a lot of internal
+stumpwm symbols. Setting this variable anywhere but in your rc file
+will have no effect.
+@end defvar
+
 @menu
 * Menus::                       
 * Debugging StumpWM::           

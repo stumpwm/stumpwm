@@ -5,6 +5,10 @@ This file documents user visible changes between versions of StumpWM
 * Changes since 0.0.6
 These changes are probably incomplete
 
+** new var *default-package*
+This decides what package the eval command reads and executes things
+in.
+
 ** new var *new-window-prefered-frame*
 It controls what frame a new window appears in.
 

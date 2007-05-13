@@ -198,13 +198,13 @@ of those expired."
                    (frame-raise-window group (tile-group-current-frame group) (car (group-windows group))))
                  (focus-frame group (tile-group-current-frame group))))
              ;; Load rc file
-             (let ((*package* *default-package*))
+             (let ((*package* (find-package *default-package*)))
                (multiple-value-bind (success err rc) (load-rc-file)
                  (if success
                      (and *startup-message* (message "~a" *startup-message*))
                      (message "Error loading ~A: ~A" rc err))))
              ;; Let's manage.
-             (let ((*package* *default-package*))           
+             (let ((*package* (find-package *default-package*)))
                (run-hook *start-hook*)
                (stumpwm-internal-loop)))
         (xlib:close-display *display*)))))
