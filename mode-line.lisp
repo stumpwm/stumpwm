@@ -23,6 +23,9 @@
 ;;
 ;; Code:
 
+;; to figure out this memory-fault error
+(declaim (optimize (debug 3)))
+
 (in-package "STUMPWM")
 
 (defstruct mode-line
@@ -141,7 +144,11 @@ current group.")
      (mode-line-format-elt
       (case (first elt)
 	;; FIXME: silently failing is probably not the best idea.
-	(:eval (ignore-errors (eval (second elt))))
+	(:eval
+         (prog2
+             (dformat 10 "mode-line before ~s~%" elt)
+             (ignore-errors (eval (second elt)))
+           (dformat 10 "mode-line after ~s~%" elt)))
 	(t (and (boundp (first elt))
 		(symbol-value (first elt))
 		(second elt))))))))

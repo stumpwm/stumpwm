@@ -1,5 +1,7 @@
 2007-05-13  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* mode-line.lisp (mode-line-format-elt): add debugging for :eval
+
 	* stumpwm.lisp (stumpwm): add quit-stumpwm restart. set *package* to *default-package*
 
 	* primitives.lisp (*default-package*): new global
