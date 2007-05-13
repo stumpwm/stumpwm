@@ -723,5 +723,11 @@ value.")
 (defvar *startup-message* "Welcome to The Stump Window Manager!"
   "StumpWM's startup message. Set to NIL to suppress.")
 
+(defvar *default-package* (find-package "CL-USER")
+  "What package does stumpwm startup in? This affects the package
+symbols are read into in the eval command and the package the rc
+file is loaded in. Of course it can explicitely set in the rc
+with IN-PACKAGE.")
+
 (defun concat (&rest strings)
   (apply 'concatenate 'string strings))

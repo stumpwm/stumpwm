@@ -174,34 +174,37 @@ of those expired."
   (multiple-value-bind (host display) (parse-display-string display-str)
     (setf *display* (xlib:open-display host :display display :protocol protocol)
 	  (xlib:display-error-handler *display*) 'error-handler)
-    ;; In the event of an error, we always need to close the display
-    (unwind-protect
-	 (progn
-	   ;; we need to do this first because init-screen grabs keys
-	   (update-modifier-map)
-	   ;; Initialize all the screens
-	   (handler-case
-	       (progn (setf *screen-list* (loop for i in (xlib:display-roots *display*)
-					     for n from 0
-					     collect (init-screen i n host)))
-		      (xlib:display-finish-output *display*))
-	     (xlib:access-error ()
-	       (return-from stumpwm (write-line "Another window manager is running."))))
-	   (mapc 'process-existing-windows *screen-list*)
-	   ;; We need to setup each screen with its current window. Go
-	   ;; through them in reverse so the first screen's frame ends up
-	   ;; with focus.
-	   (dolist (s (reverse *screen-list*))
-	     (let ((group (screen-current-group s)))
-               (when (group-windows group)
-                 (frame-raise-window group (tile-group-current-frame group) (car (group-windows group))))
-	       (focus-frame group (tile-group-current-frame group))))
-	   ;; Load rc file
-	   (multiple-value-bind (success err rc) (load-rc-file)
-             (if success
-                 (and *startup-message* (message "~a" *startup-message*))
-                 (message "Error loading ~A: ~A" rc err)))
-	   (run-hook *start-hook*)
-	   ;; Let's manage.
-	   (stumpwm-internal-loop))
-      (xlib:close-display *display*))))
+    (with-simple-restart (quit-stumpwm "Quit Stumpwm")
+      ;; In the event of an error, we always need to close the display
+      (unwind-protect
+           (progn
+             ;; we need to do this first because init-screen grabs keys
+             (update-modifier-map)
+             ;; Initialize all the screens
+             (handler-case
+                 (progn (setf *screen-list* (loop for i in (xlib:display-roots *display*)
+                                               for n from 0
+                                               collect (init-screen i n host)))
+                        (xlib:display-finish-output *display*))
+               (xlib:access-error ()
+                 (return-from stumpwm (write-line "Another window manager is running."))))
+             (mapc 'process-existing-windows *screen-list*)
+             ;; We need to setup each screen with its current window. Go
+             ;; through them in reverse so the first screen's frame ends up
+             ;; with focus.
+             (dolist (s (reverse *screen-list*))
+               (let ((group (screen-current-group s)))
+                 (when (group-windows group)
+                   (frame-raise-window group (tile-group-current-frame group) (car (group-windows group))))
+                 (focus-frame group (tile-group-current-frame group))))
+             ;; Load rc file
+             (let ((*package* *default-package*))
+               (multiple-value-bind (success err rc) (load-rc-file)
+                 (if success
+                     (and *startup-message* (message "~a" *startup-message*))
+                     (message "Error loading ~A: ~A" rc err))))
+             ;; Let's manage.
+             (let ((*package* *default-package*))           
+               (run-hook *start-hook*)
+               (stumpwm-internal-loop)))
+        (xlib:close-display *display*)))))
