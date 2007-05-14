@@ -173,7 +173,7 @@ current group.")
   (let* ((*current-mode-line-formatters* *screen-mode-line-formatters*)
 	 (*current-mode-line-formatter-args* (list (screen-current-group obj)))
 	 (string (mode-line-format-string ml)))
-    (dformat 10 "redraw ml image glyphs~%")
+    (dformat 10 "redraw ml image glyphs: ~s~%" string)
     (xlib:draw-image-glyphs (mode-line-window ml) (mode-line-gc ml)
 			    *mode-line-pad-x*
 			    (+ (xlib:font-ascent (xlib:gcontext-font (mode-line-gc ml)))
