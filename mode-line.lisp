@@ -144,11 +144,7 @@ current group.")
      (mode-line-format-elt
       (case (first elt)
 	;; FIXME: silently failing is probably not the best idea.
-	(:eval
-         (prog2
-             (dformat 10 "mode-line before ~s~%" elt)
-             (ignore-errors (eval (second elt)))
-           (dformat 10 "mode-line after ~s~%" elt)))
+	(:eval (ignore-errors (eval (second elt))))
 	(t (and (boundp (first elt))
 		(symbol-value (first elt))
 		(second elt))))))))
@@ -177,6 +173,7 @@ current group.")
   (let* ((*current-mode-line-formatters* *screen-mode-line-formatters*)
 	 (*current-mode-line-formatter-args* (list (screen-current-group obj)))
 	 (string (mode-line-format-string ml)))
+    (dformat 10 "redraw ml image glyphs~%")
     (xlib:draw-image-glyphs (mode-line-window ml) (mode-line-gc ml)
 			    *mode-line-pad-x*
 			    (+ (xlib:font-ascent (xlib:gcontext-font (mode-line-gc ml)))
@@ -184,11 +181,13 @@ current group.")
 			    string
 			    :translate #'translate-id
 			    :size 16)
+    (dformat 10 "redraw ml clear area~%")
     ;; Just clear what we need to. This reduces flicker.
     (xlib:clear-area (mode-line-window ml)
 		     :x (+ *mode-line-pad-x*
 			   (xlib:text-width (xlib:gcontext-font (mode-line-gc ml)) string
-					    :translate #'translate-id)))))
+					    :translate #'translate-id)))
+    (dformat 10 "redraw ml done.~%")))
 
 (defun update-screen-mode-lines ()
   (dolist (i *screen-list*)

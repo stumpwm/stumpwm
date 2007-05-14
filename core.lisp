@@ -53,25 +53,28 @@
 (defun translate-id (src src-start src-end font dst dst-start)
   "A simple replacement for xlib:translate-default.  just the
 identity with a range check."
+  (dformat 10 "enter translate-id~%")
   (let ((min (xlib:font-min-char font))
 	(max (xlib:font-max-char font)))
     (decf src-end)
-    (if (stringp src)	   ; clx does this test so i guess it's needed
-	(loop for i from src-start to src-end
-	   for j from dst-start
-	   as c = (char-code (char src i))
-	   if (<= min c max) do (setf (aref dst j) c)
-	   ;; replace unknown characters with question marks
-	   else do (setf (aref dst j) (char-code #\?))
-	   finally (return i))
-	(loop for i from src-start to src-end
-	   for j from dst-start
-	   as c = (elt src i)
-	   as n = (if (characterp c) (char-code c) c)
-	   if (and (integerp n) (<= min n max)) do (setf (aref dst j) n)
-	   ;; ditto
-	   else do (setf (aref dst j) (char-code #\?))
-	   finally (return i)))))
+    (prog1
+        (if (stringp src)  ; clx does this test so i guess it's needed
+            (loop for i from src-start to src-end
+               for j from dst-start
+               as c = (char-code (char src i))
+               if (<= min c max) do (setf (aref dst j) c)
+               ;; replace unknown characters with question marks
+               else do (setf (aref dst j) (char-code #\?))
+               finally (return i))
+            (loop for i from src-start to src-end
+               for j from dst-start
+               as c = (elt src i)
+               as n = (if (characterp c) (char-code c) c)
+               if (and (integerp n) (<= min n max)) do (setf (aref dst j) n)
+               ;; ditto
+               else do (setf (aref dst j) (char-code #\?))
+               finally (return i)))
+      (dformat 10 "exit translate-id~%"))))
 
 (defun screen-x (screen)
   (declare (ignore screen))
