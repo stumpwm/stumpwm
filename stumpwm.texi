@@ -802,6 +802,8 @@ Substitute the window's name.
 Substitute the window's class.
 @item %i
 Substitute the window's resource ID.
+@item %m
+Draw a # if the window is marked.
 @end table
 
 Note, a prefix number can be used to crop the argument to a specified
