@@ -169,11 +169,12 @@ current group.")
 (defgeneric redraw-mode-line-for (ml thing)
   (:documentation "redraw the modeline for a screen, frame, ...other?"))
 
-(defmethod redraw-mode-line-for (ml (obj screen))
+;; This is a seperate defun in an attempt to get rid of the
+;; MEMORY-FAULT return-from error.
+(defun redraw-screen-mode-line (ml obj)
   (let* ((*current-mode-line-formatters* *screen-mode-line-formatters*)
 	 (*current-mode-line-formatter-args* (list (screen-current-group obj)))
 	 (string (mode-line-format-string ml)))
-    (dformat 10 "redraw ml image glyphs: ~s~%" (map 'list 'char-code string))
     (xlib:draw-image-glyphs (mode-line-window ml) (mode-line-gc ml)
 			    *mode-line-pad-x*
 			    (+ (xlib:font-ascent (xlib:gcontext-font (mode-line-gc ml)))
@@ -181,13 +182,14 @@ current group.")
 			    string
 			    :translate #'translate-id
 			    :size 16)
-    (dformat 10 "redraw ml clear area~%")
     ;; Just clear what we need to. This reduces flicker.
     (xlib:clear-area (mode-line-window ml)
 		     :x (+ *mode-line-pad-x*
 			   (xlib:text-width (xlib:gcontext-font (mode-line-gc ml)) string
-					    :translate #'translate-id)))
-    (dformat 10 "redraw ml done.~%")))
+					    :translate #'translate-id)))))
+
+(defmethod redraw-mode-line-for (ml (obj screen))
+  (redraw-screen-mode-line ml obj))
 
 (defun update-screen-mode-lines ()
   (dolist (i *screen-list*)

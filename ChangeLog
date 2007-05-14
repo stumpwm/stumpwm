@@ -1,3 +1,8 @@
+2007-05-14  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* mode-line.lisp (redraw-screen-mode-line): new function
+	(redraw-mode-line-for): call redraw-screen-mode-line
+
 2007-05-14  Shawn Betts  <sabetts@shitbender.gagrod>
 
 	* core.lisp (translate-id): add debug output
