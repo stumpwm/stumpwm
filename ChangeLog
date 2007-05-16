@@ -1,5 +1,7 @@
 2007-05-16  Shawn Betts  <sabetts@vcn.bc.ca>
 
+	* mode-line.lisp (redraw-mode-line-for): change to a defun
+
 	* core.lisp (withdraw-window): unmap the parent window
 	(translate-id): remove debug output
 
