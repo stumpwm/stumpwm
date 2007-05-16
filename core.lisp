@@ -53,28 +53,25 @@
 (defun translate-id (src src-start src-end font dst dst-start)
   "A simple replacement for xlib:translate-default.  just the
 identity with a range check."
-  (dformat 10 "enter translate-id~%")
   (let ((min (xlib:font-min-char font))
 	(max (xlib:font-max-char font)))
     (decf src-end)
-    (prog1
-        (if (stringp src)  ; clx does this test so i guess it's needed
-            (loop for i from src-start to src-end
-               for j from dst-start
-               as c = (char-code (char src i))
-               if (<= min c max) do (setf (aref dst j) c)
-               ;; replace unknown characters with question marks
-               else do (setf (aref dst j) (char-code #\?))
-               finally (return i))
-            (loop for i from src-start to src-end
-               for j from dst-start
-               as c = (elt src i)
-               as n = (if (characterp c) (char-code c) c)
-               if (and (integerp n) (<= min n max)) do (setf (aref dst j) n)
-               ;; ditto
-               else do (setf (aref dst j) (char-code #\?))
-               finally (return i)))
-      (dformat 10 "exit translate-id~%"))))
+    (if (stringp src)      ; clx does this test so i guess it's needed
+        (loop for i from src-start to src-end
+           for j from dst-start
+           as c = (char-code (char src i))
+           if (<= min c max) do (setf (aref dst j) c)
+           ;; replace unknown characters with question marks
+           else do (setf (aref dst j) (char-code #\?))
+           finally (return i))
+        (loop for i from src-start to src-end
+           for j from dst-start
+           as c = (elt src i)
+           as n = (if (characterp c) (char-code c) c)
+           if (and (integerp n) (<= min n max)) do (setf (aref dst j) n)
+           ;; ditto
+           else do (setf (aref dst j) (char-code #\?))
+           finally (return i)))))
 
 (defun screen-x (screen)
   (declare (ignore screen))
@@ -799,6 +796,7 @@ needed."
     (push window (screen-withdrawn-windows screen))
     (setf (window-state window) +withdrawn-state+
 	  (xwin-state (window-xwin window)) +withdrawn-state+)
+    (xlib:unmap-window (window-parent window))
     ;; Clean up the window's entry in the screen and group
     (screen-remove-mapped-window screen (window-xwin window))
     (setf (group-windows group)
@@ -2103,7 +2101,7 @@ managing. Basically just give the window what it wants."
   ;; There are two kinds of unmap notify events: the straight up
   ;; ones where event-window and window are the same, and
   ;; substructure unmap events when the event-window is the parent
-  ;; of window. So use event-window to find the screen.
+  ;; of window.
   (dformat 2 "UNMAP: ~s ~s ~a~%" send-event-p (not (xlib:window-equal event-window window)) (find-window window))
   (unless (and (not send-event-p)
 	       (not (xlib:window-equal event-window window)))
