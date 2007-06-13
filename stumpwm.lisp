@@ -119,8 +119,8 @@ of those expired."
 (defun get-next-timeout (timers)
   "Return the number of seconds until the next timeout or nil if there are no timers."
   (when timers
-    (max (truncate (/ (- (timer-time (car timers)) (get-internal-real-time))
-                      internal-time-units-per-second))
+    (max (/ (- (timer-time (car timers)) (get-internal-real-time))
+                      internal-time-units-per-second)
          0)))
 
 (defun stumpwm-internal-loop ()
@@ -148,6 +148,7 @@ of those expired."
                         (print-backtrace)
                         (throw :quit t))))))
          (let ((timeout (get-next-timeout *timer-list*)))
+           ;;(dformat 10 "timeout: ~a~%" timeout)
            (if timeout
                (let* ((nevents (xlib:event-listen *display* timeout)))
                  (setf *timer-list* (run-expired-timers *timer-list*))
@@ -157,7 +158,9 @@ of those expired."
                (xlib:process-event *display* :handler #'handle-event :timeout nil))
            ;; flush any pending output. You'd think process-event would, but
            ;; it seems not.
-           (xlib:display-finish-output *display*))))))
+           (xlib:display-finish-output *display*)
+           ;;(dformat 10 "toplevel focus: ~a~%" (multiple-value-list (xlib:input-focus *display*)))
+           )))))
 
 (defun parse-display-string (display)
   "Parse an X11 DISPLAY string and return the host and display from it."

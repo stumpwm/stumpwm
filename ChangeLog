@@ -1,3 +1,9 @@
+2007-06-13  Shawn Betts  <sabetts@shitbender.gagrod>
+
+	* stumpwm.lisp (get-next-timeout): don't truncate the value
+
+	* core.lisp (frame-raise-window): raise new window before hiding old ones
+
 2007-05-16  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* mode-line.lisp (redraw-mode-line-for): change to a defun

@@ -1028,11 +1028,11 @@ T (default) then also focus the frame."
   (let ((oldw (frame-window f)))
     ;; nothing to do when W is nil
     (setf (frame-window f) w)
-    ;; The old ones might need to be hidden
     (unless (and w (eq oldw w))
-      (maybe-hide-windows w g f)
       (when w
-	(raise-window w)))
+	(raise-window w))
+      ;; The old ones might need to be hidden
+      (maybe-hide-windows w g f))
     (when focus
       (focus-frame g f))))
 
@@ -1580,7 +1580,12 @@ windows used to draw the numbers in. The caller must destroy them."
 (defun screen-set-focus (screen window)
   (when (eq (window-group window)
 	    (screen-current-group screen))
+    ;;(format t "FOCUS TO: ~a ~a~%" window (window-xwin window))
+    ;;(format t "FOCUS BEFORE: ~a~%" (multiple-value-list (xlib:input-focus *display*)))
+    ;;(format t "FOCUS RET: ~a~%" (xlib:set-input-focus *display* (window-xwin window) :POINTER-ROOT))
     (xlib:set-input-focus *display* (window-xwin window) :POINTER-ROOT)
+    ;;(xlib:display-finish-output *display*)
+    ;;(format t "FOCUS IS: ~a~%" (multiple-value-list (xlib:input-focus *display*)))
     (setf (screen-focus screen) window)
     (move-screen-to-head screen)))
 
