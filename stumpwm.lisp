@@ -136,6 +136,7 @@ of those expired."
            ;; 	       ;; (this should be impossible) catch it and ignore it.
            ;; 	       (dformat 4 "top level ignore synchronous ~a~%" c))
            ((error (lambda (c)
+                     (run-hook *top-level-error-hook*)
                      (ecase *top-level-error-action*
                        (:message
                         (let ((s (format nil "~&Caught '~a' at the top level. Please report this." c)))

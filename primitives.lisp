@@ -82,6 +82,11 @@
 function is passed any number of arguments. Each argument is a
 line of text.")
 
+(defvar *top-level-error-hook* '()
+  "Called when a top level error occurs. Note that this hook is
+run before the error is dealt with according to
+*top-level-error-action*.")
+
 (defvar *focus-group-hook* '()
   "A hook called whenever stumpwm switches groups. It is called with 2 arguments: the current group and the last group.")
 

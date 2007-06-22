@@ -1,3 +1,9 @@
+2007-06-22  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* primitives.lisp (*top-level-error-hook*): new global
+
+	* stumpwm.lisp (stumpwm-internal-loop): call *top-level-error-hook* when an error occurs.
+
 2007-06-13  Shawn Betts  <sabetts@shitbender.gagrod>
 
 	* stumpwm.lisp (get-next-timeout): don't truncate the value
