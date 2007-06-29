@@ -497,6 +497,23 @@ Useful for re-using the &REST arg after removing some options."
   ;; FIXME: add the code for clisp
   #-sbcl t)
 
+(defun probe-path (path)
+  "Return the truename of a supplied path, or nil if it does not exist."
+  (handler-case
+      (truename
+       (let ((pathname (pathname path)))
+         ;; If there is neither a type nor a name, we have a directory
+         ;; pathname already. Otherwise make a valid one.
+         (if (and (not (pathname-name pathname))
+                  (not (pathname-type pathname)))
+             pathname
+             (make-pathname
+              :directory (append (or (pathname-directory pathname)
+                                     (list :relative))
+                                 (list (file-namestring pathname)))
+              :name nil :type nil :defaults pathname))))
+    (file-error () nil)))
+
 (defun split-string (string &optional (separators " 
 "))
   "Splits STRING into substrings where there are matches for SEPARATORS.

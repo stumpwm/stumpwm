@@ -380,7 +380,7 @@ FULL-PATH is T then return the full path, otherwise just return
 the filename."
   (loop
      for p in path
-     for dir = (probe-file p)
+     for dir = (probe-path p)
      when dir
      nconc (loop
 	      for file in (directory (merge-pathnames (make-pathname :name :wild) dir))
