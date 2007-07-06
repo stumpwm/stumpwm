@@ -803,7 +803,7 @@ needed."
 	  (delete window (group-windows group)))
     ;; remove it from it's frame structures
     (when (eq (frame-window f) window)
-      (setf (frame-window f) (first (frame-windows group f))))
+      (frame-raise-window group f (first (frame-windows group f)) nil))
     (when (window-in-current-group-p window)
       ;; since the window doesn't exist, it doesn't have focus.
       (setf (screen-focus screen) nil))

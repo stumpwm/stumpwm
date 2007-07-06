@@ -1,3 +1,7 @@
+2007-07-06  Shawn Betts  <sabetts@vcn.bc.ca>
+
+	* core.lisp (withdraw-window): raise a new window in the old window's frame.
+
 2007-06-22  Shawn Betts  <sabetts@vcn.bc.ca>
 
 	* primitives.lisp (*top-level-error-hook*): new global
