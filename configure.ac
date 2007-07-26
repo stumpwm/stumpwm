@@ -38,6 +38,14 @@ fi
 
 AC_MSG_NOTICE([Using $LISP at $LISP_PROGRAM])
 
+# check for makeinfo
+
+AC_CHECK_PROG(MAKEINFO,makeinfo,yes,no)
+
+if test "$MAKEINFO" = "no"; then
+   AC_MSG_ERROR([Please install makeinfo for the manual.])
+fi
+
 # Checks for libraries.
 
 # Checks for header files.
