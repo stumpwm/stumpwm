@@ -1054,61 +1054,64 @@ aborted."
 (define-stumpwm-command "fclear" ()
   (clear-frame (tile-group-current-frame (current-group)) (current-group)))
 
-(defun find-closest-frame (ref-frame framelist closeness-func lower-bound-func
-			   upper-bound-func)
-  (loop for f in framelist
-     with r = nil
-     do (when (and
-	       ;; Frame is on the side that we want.
-	       (<= 0 (funcall closeness-func f))
-	       ;; Frame is within the bounds set by the reference frame.
-	       (or (<= (funcall lower-bound-func ref-frame)
-		       (funcall lower-bound-func f)
-		       (funcall upper-bound-func ref-frame))
-		   (<= (funcall lower-bound-func ref-frame)
-		       (funcall upper-bound-func f)
-		       (funcall upper-bound-func ref-frame))
-		   (<= (funcall lower-bound-func f)
-		       (funcall lower-bound-func ref-frame)
-		       (funcall upper-bound-func f)))
-	       ;; Frame is closer to the reference and the origin than the
-	       ;; previous match
-	       (or (null r)
-		   (< (funcall closeness-func f) (funcall closeness-func r))
-		   (and (= (funcall closeness-func f) (funcall closeness-func r))
-			(< (funcall lower-bound-func f) (funcall lower-bound-func r)))))
-	  (setf r f))
-     finally (return r)))
+(defun get-edge (frame edge)
+  "Returns the specified edge of FRAME.  Valid values for EDGE are :TOP, :BOTTOM, :LEFT, and :RIGHT.
+  An edge is a START, END, and OFFSET. For horizontal edges, START is the left coordinate, END is
+  the right coordinate, and OFFSET is the Y coordinate.  Similarly, for vertical lines, START is
+  top, END is bottom, and OFFSET is X coordinate."
+  (let* ((x1 (frame-x frame))
+         (y1 (frame-y frame))
+         (x2 (+ x1 (frame-width frame)))
+         (y2 (+ y1 (frame-height frame))))
+    (ecase edge
+      (:top
+       (values x1 x2 y1))
+      (:bottom
+       (values x1 x2 y2))
+      (:left
+       (values y1 y2 x1))
+      (:right
+       (values y1 y2 x2)))))
+
+(defun neighbour (direction frame frameset)
+  "Returns the best neighbour of FRAME in FRAMESET on the DIRECTION edge.
+   Valid directions are :UP, :DOWN, :LEFT, :RIGHT.
+   eg: (NEIGHBOUR :UP F FS) finds the frame in FS that is the 'best'
+   neighbour above F."
+  (let ((src-edge (ecase direction
+                    (:up :top)
+                    (:down :bottom)
+                    (:left :left)
+                    (:right :right)))
+        (opposite (ecase direction
+                    (:up :bottom)
+                    (:down :top)
+                    (:left :right)
+                    (:right :left)))
+        (best-frame nil)
+        (best-overlap 0))
+    (multiple-value-bind (src-s src-e src-offset)
+        (get-edge frame src-edge)
+      (dolist (f frameset)
+        (multiple-value-bind (s e offset)
+            (get-edge f opposite)
+          (let ((overlap (- (min src-e e)
+                            (max src-s s))))
+            ;; Two edges are neighbours if they have the same offset and their starts and ends
+            ;; overlap.  We want to find the neighbour that overlaps the most.
+            (when (and (= src-offset offset)
+                       (>= overlap best-overlap))
+                (setf best-frame f)
+                (setf best-overlap overlap))))))
+    best-frame))
 
 (define-stumpwm-command "move-focus" ((dir :string "Direction: "))
-  (let ((group (current-group)))
-    (destructuring-bind (perp-coord perp-span parall-coord parall-span)
-	(cond
-	  ((or (string= dir "left") (string= dir "right"))
-	   '(frame-y frame-height frame-x frame-width))
-	  ((or (string= dir "up") (string= dir "down"))
-	   '(frame-x frame-width frame-y frame-height))
-	  (t
-	   (error "Valid directions: up, down, left, right")))
-      (when perp-coord
-	(let ((new-frame (find-closest-frame
-			  (tile-group-current-frame group)
-			  (group-frames group)
-			  (if (or (string= dir "left") (string= dir "up"))
-			      (lambda (f)
-				(- (funcall parall-coord (tile-group-current-frame group))
-				   (funcall parall-coord f) (funcall parall-span f)))
-			      (lambda (f)
-				(- (funcall parall-coord f)
-				   (funcall parall-coord (tile-group-current-frame group))
-				   (funcall parall-span (tile-group-current-frame group)))))
-			  perp-coord
-			  (lambda (f)
-			    (+ (funcall perp-coord f) (funcall perp-span
-							       f))))))
-	  (when new-frame
-	    (focus-frame group new-frame))
-	  (show-frame-indicator group))))))
+  (let* ((group (current-group))
+         (direction (intern (string-upcase dir) :keyword))
+         (new-frame (neighbour direction (tile-group-current-frame group) (group-frames group))))
+    (when new-frame
+      (focus-frame group new-frame))
+    (show-frame-indicator group)))
 
 (defun run-or-raise (cmd &key class instance title (all-groups *run-or-raise-all-groups*))
   "If any of class, title, or instance are set and a matching window can

@@ -7,6 +7,10 @@
 	(*format-time-string-default*): likewise
 	(format-time-string): return a formatted date-time string givena
 	format string.
+	(get-edge): new function
+	(find-closest-frame): remove function
+	(neighbour): new function
+	("move-focus"): use neighbour to find destination frame
 
 	* primitives.lisp (string-to-utf8): new function
 

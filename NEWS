@@ -5,6 +5,8 @@ This file documents user visible changes between versions of StumpWM
 * Changes since 0.0.6
 These changes are probably incomplete
 
+** move-focus now uses a heuristic to find the 'best' frame to focus
+
 ** format-time-string
 Now takes an optional format string as an argument!
 
