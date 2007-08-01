@@ -1,3 +1,30 @@
+2007-07-31  Shawn Betts  <sabetts@shitbender.gagrod>
+
+	* user.lisp (time-lambda): new macro
+	(*month-names*): new defvar
+	(*day-names*): likewise
+	(*format-time-string-alist*): likewise
+	(*format-time-string-default*): likewise
+	(format-time-string): return a formatted date-time string givena
+	format string.
+
+	* primitives.lisp (string-to-utf8): new function
+
+	* core.lisp (netwm-group-id): new function
+	(switch-to-group): update netwm current desktop property
+	(move-window-to-group): update window's netwm desktop property
+	(netwm-update-groups): new function
+	(kill-group): call netwm-update-groups
+	(netwm-set-group-properties): new function
+	(add-group): call netwm-set-group-properties
+	(group-add-window): update window's netwm desktop property
+	(netwm-remove-window): new function
+	(withdraw-window): call netwm-remove-window
+	(netwm-set-properties): rename from net-set-properties. add netwm
+	desktop properties.
+	(init-screen): call netwm-set-properties
+	(:client-message): new event handler
+
 2007-07-30  Shawn Betts  <sabetts@shitbender.gagrod>
 
 	* stumpwm.lisp (stumpwm-internal-loop): debug output the length of the timeout

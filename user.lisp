@@ -315,18 +315,126 @@ frame."
       (setf (window-user-title (current-window)) title)
       (message "No Focused Window")))
 
-(defun format-time-string (&optional time)
-  "Return a formatted date-time string. FIXME: how about being able to pass a format string in?"
-  (let* ((month-names
-	  #("Jan" "Feb" "Mar" "Apr" "May" "Jun" "Jul" "Aug" "Sep" "Oct" "Nov" "Dec"))
-	 (day-names
-	  #("Mon" "Tue" "Wed" "Thu" "Fri" "Sat" "Sun")))
-    (multiple-value-bind (sec min hour dom mon year dow)
+;;; (format-time-stringc ...) section
+(defmacro time-lambda (used-var &body body)
+  `(lambda (sec min hour dom mon year dow dstp tz) 
+     (declare (ignore ,@(set-difference '(sec min hour dom mon year dow dstp tz) used-var)))
+     ,@body))
+
+(defvar *month-names*
+  #("January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December"))
+
+(defvar *day-names*
+  #("Monday" "Tuesday" "Wednesday" "Thursday" "Friday" "Saturday" "Sunday"))
+
+;; `date --help` with date_5.97
+;; `date --help` with date_5.97
+(defvar *format-time-string-alist*
+  `((#\% . ,(time-lambda () "%"))
+    (#\a . ,(time-lambda (dow) (subseq (aref *day-names* dow) 0 3)))
+    (#\A . ,(time-lambda (dow) (aref *day-names* dow)))
+    (#\b . ,(time-lambda (mon) (subseq (aref *month-names* (- mon 1)) 0 3)))
+    (#\B . ,(time-lambda (mon) (aref *month-names* (- mon 1))))
+    (#\c . ,(time-lambda (dow mon dom hour min sec year)
+	     (format nil "~A ~A ~2,'0D ~2,'0D:~2,'0D:~2,'0D ~D"
+		     (subseq (aref *day-names* dow) 0 3)
+		     (subseq (aref *month-names* (- mon 1)) 0 3)
+		     dom hour min sec year)))
+    (#\C . ,(time-lambda (year) (subseq (format nil "~D" year) 0 2)))
+    (#\d . ,(time-lambda (dom) (format nil "~2,'0D" dom)))
+    (#\D . ,(time-lambda (mon dom year)
+	     (format nil "~2,'0D/~2,'0D/~A"
+		     mon dom (subseq (format nil "~D" year) 2 4))))
+    (#\e . ,(time-lambda (dom) (format nil "~2,' D" dom)))
+    (#\F . ,(time-lambda (year mon dom) (format nil "~D-~2,'0D-~2,'0D" year mon dom)))
+    ;; %g   last two digits of year of ISO week number (see %G)
+    ;; %G   year of ISO week  number (see %V); normally useful only with %V
+    (#\h . ,(time-lambda (mon) (subseq (aref *month-names* (- mon 1)) 0 3)))
+    (#\H . ,(time-lambda (hour) (format nil "~2,'0D" hour)))
+    (#\I . ,(time-lambda (hour)
+	     (format nil "~2,'0D" (if (> hour 0) (- hour 12) hour))))
+    ;; %j   day of year (001..366)
+    (#\k . ,(time-lambda (hour) (format nil "~2,D" hour)))
+    (#\l . ,(time-lambda (hour)
+	     (format nil "~2,D" (if (> hour 0) (- hour 12) hour))))
+    (#\m . ,(time-lambda (mon) (format nil "~2,'0D" mon)))
+    (#\M . ,(time-lambda (min) (format nil "~2,'0D" min)))
+    (#\n . ,(time-lambda () "~%%")) ;; two % to avoid parsing errors
+    ;; %N   nanoseconds (000000000..999999999)
+    (#\p . ,(time-lambda (hour) (if (> hour 0) "PM" "AM")))
+    (#\P . ,(time-lambda (hour) (if (> hour 0) "pm" "am")))
+    (#\r . ,(time-lambda (hour min sec)
+	     (let (hour-local am-pm)
+	       (if (> hour 0) (setf hour-local (- hour 12) am-pm "PM")
+		   (setf hour-local hour am-pm "AM"))
+	       (format nil "~2,'0D:~2,'0D:~2,'0D ~A"
+		       hour-local min sec am-pm))))
+    (#\R . ,(time-lambda (hour min) (format nil "~2,'0D:~2,'0D" hour min)))
+    (#\s . ,(time-lambda ( sec min hour dom mon year)
+	     (format nil "~D"
+		     (- (encode-universal-time
+			 sec min hour dom mon year)
+			(encode-universal-time 0 0 0 1 1 1970 0)))))
+    (#\S . ,(time-lambda (sec) (format nil "~2,'0D" sec)))
+    (#\t . ,(time-lambda () "~T"))
+    (#\T . ,(time-lambda (hour min sec)
+	     (format nil "~2,'0D:~2,'0D:~2,'0D" hour min sec)))
+    (#\u . ,(time-lambda (dow) (format nil "~D" (+ dow 1))))
+    ;; %U   week number of  year, with Sunday as first  day of week (00..53)
+    ;; %V   ISO  week number,  with  Monday as  first  day of  week (01..53)
+    (#\w . ,(time-lambda (dow) (format nil "~D" (- dow 1))))
+    ;; %W   week number of  year, with Monday as first  day of week (00..53)
+    ;; %x   locale's date representation (e.g., 12/31/99)
+    ;; %X   locale's time representation (e.g., 23:13:48)
+    (#\y . ,(time-lambda (year) (subseq (format nil "~D" year) 2 4)))
+    (#\Y . ,(time-lambda (year) (format nil "~D" year)))
+    (#\z . ,(time-lambda (tz dstp)
+	     (multiple-value-bind (hour-local decimal-local)
+		 (truncate (+ (* (float tz) -1) (if dstp 1 0)))
+	       (format nil "~A~2,'0D~2,'0D"
+		       (if (> hour-local 0) '+ '-) (abs hour-local)
+		       (truncate (if (/= decimal-local 0)
+				     (* 60 decimal-local) 0))))))
+    ;; %:z  +hh:mm numeric timezone (e.g., -04:00)
+    ;; %::z +hh:mm:ss numeric time zone (e.g., -04:00:00)
+    ;; %:::z numeric time zone with  : to necessary precision (e.g., -04, +05:30)
+    ;; %Z   alphabetic time zone abbreviation (e.g., EDT)
+    )
+  "An alist for the substitution in `format-time-string'.")
+
+(defvar *format-time-string-default* "%a %b %e %k:%M:%S %Y"
+  "The default value for `format-time-string', (e.g, Thu Mar  3 23:05:25 2005).")
+
+(defun format-time-string (&optional format-string time)
+  "Return a formatted date-time string of TIME or `get-decoded-time'.
+
+FORMAT-STRING defaults to `*format-time-string-default*' and accepts
+the 'date' command options except the following ones: %g, %G, %j, %N,
+%U, %V, %W, %x, %X, %:z, %::z, %:::z and %Z."
+  (let* ((time-string (or format-string
+			  *format-time-string-default*)))
+    (when (> 2 (length time-string))
+      (error "FORMAT-STRING should contains at least two characters."))
+    (multiple-value-bind (sec min hour dom mon year dow dstp tz)
 	(or time (get-decoded-time))
-      (format nil "~A ~A ~A ~A:~2,,,'0@A:~2,,,'0@A ~A"
-	      (aref day-names dow)
-	      (aref month-names (- mon 1))
-	      dom hour min sec year))))
+      (loop 
+	 for format-position = (position #\% time-string :start (or format-position 0))
+	 while format-position
+	 for format-character = (aref time-string (+ format-position 1))
+	 for action = (or (cdr (assoc format-character
+				      *format-time-string-alist*))
+			  (error "Invalid format option %~C"
+				 format-character))
+	 do
+	   (setf
+	    time-string (concatenate
+			 'string
+			 (subseq time-string 0 format-position)
+			 (funcall action sec min hour dom mon year dow dstp tz)
+			 (subseq time-string (+ format-position 2))))
+	   (when (char-equal #\% format-character) ; escape character
+	     (incf format-position))))
+    (format nil time-string)))
 
 (defun echo-date ()
   "Print the output of the 'date' command to the screen."
