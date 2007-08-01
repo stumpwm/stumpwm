@@ -5,6 +5,9 @@ This file documents user visible changes between versions of StumpWM
 * Changes since 0.0.6
 These changes are probably incomplete
 
+** more netwm compliance
+stumpwm now exports its groups as netwm desktops.
+
 ** new var *default-package*
 This decides what package the eval command reads and executes things
 in.

@@ -744,6 +744,15 @@ the new window, and return the prefered frame.")
   #-sbcl
   (map 'string #'code-char octets))
 
+(defun string-to-utf8 (string)
+  "Convert the string to a vector of octets."
+  #+sbcl (sb-ext:string-to-octets
+	  string
+	  :external-format :utf-8)
+  ;; TODO: handle UTF-8 for other lisps
+  #-sbcl
+  (map 'list #'char-code string))
+
 (defvar *startup-message* "Welcome to The Stump Window Manager!"
   "StumpWM's startup message. Set to NIL to suppress.")
 

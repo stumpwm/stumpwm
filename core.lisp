@@ -145,6 +145,12 @@ otherwise specified."
 (defun group-current-window (group)
   (frame-window (tile-group-current-frame group)))
 
+(defun netwm-group-id (group)
+  "netwm specifies that desktop/group numbers are contiguous and start
+at 0. Return a netwm compliant group id."
+  (let ((screen (group-screen group)))
+    (position group (sort-groups screen))))
+
 (defun switch-to-group (new-group)
   (let* ((screen (group-screen new-group))
 	 (old-group (screen-current-group screen)))
@@ -162,6 +168,9 @@ otherwise specified."
       (setf (screen-focus screen) nil)
       (focus-frame new-group (tile-group-current-frame new-group))
       (show-frame-indicator new-group)
+      (xlib:change-property (screen-root screen) :_NET_CURRENT_DESKTOP
+                            (list (group-number new-group))
+                            :cardinal 32)
       (run-hook-with-args *focus-group-hook* new-group old-group))))
 
 (defun move-window-to-group (window to-group)
@@ -181,9 +190,12 @@ otherwise specified."
       (when (eq (frame-window old-frame) window)
 	(setf (frame-window old-frame) (first (frame-windows old-group old-frame)))
 	(focus-frame old-group old-frame))
-      ;; maybe show the window in it's new frame
+      ;; maybe show the window in its new frame
       (when (null (frame-window (window-frame window)))
-        (frame-raise-window (window-group window) (window-frame window) window)))))
+        (frame-raise-window (window-group window) (window-frame window) window))
+      (xlib:change-property (window-xwin window) :_NET_WM_DESKTOP
+			    (list (netwm-group-id to-group))
+			    :cardinal 32))))
 
 (defun next-group (current &optional (list (screen-groups (group-screen current))))
   (let ((matches (member current list)))
@@ -199,11 +211,47 @@ otherwise specified."
   (dolist (window (group-windows from-group))
     (move-window-to-group window to-group)))
 
+(defun netwm-update-groups (screen)
+  "update all windows to reflect a change in the group list."
+  ;; FIXME: This could be optimized only to update windows when there
+  ;; is a need.
+  (loop for i from 0
+     for group in (sort-groups screen)
+     do (dolist (w (group-windows group))
+          (xlib:change-property (window-xwin w) :_NET_WM_DESKTOP
+                                (list i)
+                                :cardinal 32))))
+
 (defun kill-group (group to-group)
   (when (> (length (screen-groups (group-screen group))) 1)
     (let ((screen (group-screen group)))
       (merge-groups group to-group)
-      (setf (screen-groups screen) (remove group (screen-groups screen))))))
+      (setf (screen-groups screen) (remove group (screen-groups screen)))
+      (netwm-update-groups screen))))
+
+(defun netwm-set-group-properties (screen)
+  "Set NETWM properties regarding groups of SCREEN.
+Groups are known as \"virtual desktops\" in the NETWM standard."
+  (let ((root (screen-root screen)))
+    ;; _NET_NUMBER_OF_DESKTOPS
+    (xlib:change-property root :_NET_NUMBER_OF_DESKTOPS 
+			  (list (length (screen-groups screen)))
+			  :cardinal 32)
+
+    ;; _NET_CURRENT_DESKTOP
+    (xlib:change-property root :_NET_CURRENT_DESKTOP
+                          (list (group-number (screen-current-group screen)))
+			  :cardinal 32)
+
+    ;; _NET_DESKTOP_NAMES
+    (xlib:change-property root :_NET_DESKTOP_NAMES
+			  (let ((names (mapcan
+					(lambda (group)
+					  (list (string-to-utf8 (group-name group))
+						'(0)))
+					(screen-groups screen))))
+			    (apply #'concatenate 'list names))
+			  :UTF8_STRING 8)))
 
 (defun add-group (screen name)
   (check-type screen screen)
@@ -216,6 +264,7 @@ otherwise specified."
 	      :number (find-free-group-number screen)
 	      :name name)))
     (setf (screen-groups screen) (append (screen-groups screen) (list ng)))
+    (netwm-set-group-properties screen)
     ng))
 
 (defun find-group (screen name)
@@ -698,6 +747,9 @@ than the root window's width and height."
           (xwin-state xwin) +iconic-state+)
     ;; put the window at the end of the list
     (setf (group-windows group) (append (group-windows group) (list window)))
+    (xlib:change-property xwin :_NET_WM_DESKTOP
+                          (list (netwm-group-id group))
+                          :cardinal 32)
     window))
 
 (defun pick-prefered-frame (window)
@@ -734,6 +786,20 @@ than the root window's width and height."
 (defun add-window (screen xwin)
   (screen-add-mapped-window screen xwin)
   (group-add-window (screen-current-group screen) xwin))
+
+(defun netwm-remove-window (screen window)
+  ;; update _NET_CLIENT_LIST
+  (let ((client-list (xlib:get-property (screen-root screen)
+                                        :_NET_CLIENT_LIST
+                                        :type :window)))
+    (xlib:change-property (screen-root screen)
+                          :_NET_CLIENT_LIST
+                          (remove (xlib:drawable-id (window-xwin window))
+                                  client-list)
+                          :window 32
+                          :mode :replace)
+    ;; remove _NET_WM_DESKTOP property
+    (xlib:delete-property (window-xwin window) :_NET_WM_DESKTOP)))
 
 (defun process-mapped-window (screen xwin)
   "Add the window to the screen's mapped window list and process it as
@@ -817,6 +883,7 @@ needed."
     (when (window-in-current-group-p window)
       ;; since the window doesn't exist, it doesn't have focus.
       (setf (screen-focus screen) nil))
+    (netwm-remove-window screen window)
     ;; If the current window was removed, then refocus the frame it
     ;; was in, since it has a new current window
     (when (eq (tile-group-current-frame group) f)
@@ -1796,16 +1863,17 @@ the nth entry to highlight."
   "Return the current screen."
   (car *screen-list*))
 
-(defun net-set-properties (screen-number focus-window)
+(defun netwm-set-properties (screen focus-window)
   "Set NETWM properties on the root window of the specified screen.
 FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
-  (let ((root (xlib:screen-root screen-number)))
+  (let* ((screen-number (screen-number screen))
+	 (root (xlib:screen-root screen-number)))
     ;; _NET_SUPPORTED
     (xlib:change-property root :_NET_SUPPORTED
                           (mapcar (lambda (a)
                                     (xlib:intern-atom *display* a))
                                   (append +netwm-supported+
-                                          (mapcar 'car +netwm-window-types+)))
+                                          (mapcar #'car +netwm-window-types+)))
                           :atom 32)
  
     ;; _NET_SUPPORTING_WM_CHECK
@@ -1824,10 +1892,7 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
                           () :window 32
                           :transform #'xlib:drawable-id)
     ;; TODO: _NET_CLIENT_LIST_STACKING
- 
-    ;; _NET_NUMBER_OF_DESKTOPS
-    (xlib:change-property root :_NET_NUMBER_OF_DESKTOPS (list 1) :cardinal 32)
- 
+
     ;; _NET_DESKTOP_GEOMETRY
     (xlib:change-property root :_NET_DESKTOP_GEOMETRY
                           (list (xlib:screen-width screen-number)
@@ -1837,9 +1902,8 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
     ;; _NET_DESKTOP_VIEWPORT
     (xlib:change-property root :_NET_DESKTOP_VIEWPORT
                           (list 0 0) :cardinal 32)
-    ;; _NET_CURRENT_DESKTOP
-    (xlib:change-property root :_NET_CURRENT_DESKTOP
-                          (list 0) :cardinal 32)))
+    
+    (netwm-set-group-properties screen)))
 
 (defun init-screen (screen-number id host)
   "Given a screen number, returns a screen structure with initialized members"
@@ -1921,7 +1985,7 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 				     :background (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-background-color+)))
     (setf (tile-group-frame-tree group) (make-initial-frame screen)
           (tile-group-current-frame group) (tile-group-frame-tree group))
-    (net-set-properties screen-number focus-window)
+    (netwm-set-properties screen focus-window)
     screen))
 
 
@@ -2304,6 +2368,31 @@ chunks."
       (unless (eq (xlib:window-map-state (window-xwin win)) :unmapped)
 	(incf (window-unmap-ignores win)))
       (xlib:reparent-window (window-xwin win) (window-parent win) 0 0))))
+
+(define-stump-event-handler :client-message (window type #|format|# data)
+  (dformat 2 "client message: ~s ~s~%" type data)
+  (case type
+    (:_NET_CURRENT_DESKTOP		;switch desktop
+     (let* ((screen (find-screen window))
+            (n (elt data 0))
+            (group (and screen
+                        (< n (length (screen-groups screen)))
+                        (elt (sort-groups screen) n))))
+       (when group
+         (switch-to-group group))))
+    (:_NET_WM_DESKTOP			;move window to desktop
+     (let* ((our-window (find-window window))
+	    (screen (when our-window
+		      (window-screen our-window)))
+            (n (elt data 0))
+            (group (and screen
+                        (< n (length (screen-groups screen)))
+                        (elt (sort-groups screen) n))))
+       (when (and our-window group)
+	 (move-window-to-group our-window group))))
+       
+    (t
+     (dformat 2 "ignored message~%"))))
 
 (define-stump-event-handler :focus-out (window mode kind)
   (dformat 5 "~@{~s ~}~%" window mode kind))
