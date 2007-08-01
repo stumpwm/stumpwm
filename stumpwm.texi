@@ -845,6 +845,9 @@ Choose any empty frame.
 @item :unfocused
 Choose any unfocused frame.
 @end table
+
+Alternatively, it can be set to a function that takes one argument,
+the new window, and returns the prefered frame.
 @end defvar
 
 @menu

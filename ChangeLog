@@ -1,3 +1,7 @@
+2007-07-30  Shawn Betts  <sabetts@shitbender.gagrod>
+
+	* stumpwm.lisp (stumpwm-internal-loop): debug output the length of the timeout
+
 2007-07-26  Shawn Betts  <sabetts@shitbender.gagrod>
 
 	* configure.ac: check for makeinfo

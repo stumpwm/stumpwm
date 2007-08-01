@@ -149,7 +149,7 @@ of those expired."
                         (print-backtrace)
                         (throw :quit t))))))
          (let ((timeout (get-next-timeout *timer-list*)))
-           ;;(dformat 10 "timeout: ~a~%" timeout)
+           (dformat 10 "timeout: ~a~%" timeout)
            (if timeout
                (let* ((nevents (xlib:event-listen *display* timeout)))
                  (setf *timer-list* (run-expired-timers *timer-list*))

@@ -693,33 +693,43 @@ than the root window's width and height."
 			     :group group
 			     :plist (make-hash-table)
 			     :number (find-free-window-number group)
-			     :frame (pick-prefered-frame group)
 			     :unmap-ignores 0)))
-    (setf (xwin-state xwin) +iconic-state+)
+    (setf (window-frame window) (pick-prefered-frame window)
+          (xwin-state xwin) +iconic-state+)
     ;; put the window at the end of the list
     (setf (group-windows group) (append (group-windows group) (list window)))
     window))
 
-(defun pick-prefered-frame (group)
-  (let ((frames (group-frames group)))
+(defun pick-prefered-frame (window)
+  (let* ((group (window-group window))
+         (frames (group-frames group))
+         (default (tile-group-current-frame group)))
     (or
-     (loop for i in *new-window-prefered-frame*
-        thereis (case i
-                  (:last
-                   ;; last-frame can be stale
-                   (and (> (length frames) 1)
-                        (tile-group-last-frame group)))
-                  (:unfocused
-                   (find-if (lambda (f)
-                              (not (eq f (tile-group-current-frame group))))
-                            frames))
-                  (:empty
-                   (find-if (lambda (f)
-                              (null (frame-window f)))
-                            frames))
-                  (t                    ; :focused
-                   (tile-group-current-frame group))))
-     (tile-group-current-frame group))))
+     (if (or (functionp *new-window-prefered-frame*)
+             (and (symbolp *new-window-prefered-frame*)
+                  (fboundp *new-window-prefered-frame*)))
+         (handler-case
+             (funcall *new-window-prefered-frame* window)
+           (error (c)
+             (message "Error while calling *new-window-prefered-frame*: ~a" c)
+             nil))
+         (loop for i in *new-window-prefered-frame*
+            thereis (case i
+                      (:last
+                       ;; last-frame can be stale
+                       (and (> (length frames) 1)
+                            (tile-group-last-frame group)))
+                      (:unfocused
+                       (find-if (lambda (f)
+                                  (not (eq f (tile-group-current-frame group))))
+                                frames))
+                      (:empty
+                       (find-if (lambda (f)
+                                  (null (frame-window f)))
+                                frames))
+                      (t                ; :focused
+                       (tile-group-current-frame group)))))
+     default)))
 
 (defun add-window (screen xwin)
   (screen-add-mapped-window screen xwin)
