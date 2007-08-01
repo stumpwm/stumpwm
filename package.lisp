@@ -3,6 +3,7 @@
   (:export #:stumpwm
            #:*default-package*
            #:*new-window-prefered-frame*
+           #:*new-frame-action*
            #:*startup-message*
            #:*suppress-abort-messages*
 	   #:*top-level-error-action*
