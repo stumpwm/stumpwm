@@ -1441,7 +1441,7 @@ either :width or :height"
   (check-type amount integer)
     ;; (check-type dim (member :width :height))
   (labels ((max-amount (parent node min dim-fn)
-             (format t "max ~@{~a~^ ~}~%" parent node min dim-fn)
+             (dformat 10 "max ~@{~a~^ ~}~%" parent node min dim-fn)
              (if parent
                  (- (funcall dim-fn parent)
                     (funcall dim-fn node)
@@ -1452,7 +1452,7 @@ either :width or :height"
            (parent (tree-parent tree frame))
            (gparent (tree-parent tree parent))
            (split-type (tree-split-type parent)))
-      (format t "~s ~s parent: ~s ~s width: ~s h: ~s~%" dim amount split-type parent (tree-width parent) (tree-height parent))
+      (dformat 10 "~s ~s parent: ~s ~s width: ~s h: ~s~%" dim amount split-type parent (tree-width parent) (tree-height parent))
       ;; normalize amount
       (let* ((max (ecase dim
                     (:width 
@@ -1477,7 +1477,7 @@ either :width or :height"
                          0
                          (- *min-frame-height* (frame-height frame)))))))
         (setf amount (max (min amount max) min))
-        (format t "bounds ~d ~d ~d~%" amount max min))
+        (dformat 10 "bounds ~d ~d ~d~%" amount max min))
       ;; if FRAME is taking up the whole DIM or if AMOUNT = 0, do nothing    
       (unless (zerop amount)
         (let* ((resize-parent (or (and (eq split-type :column)
