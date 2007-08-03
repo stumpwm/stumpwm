@@ -842,7 +842,7 @@ needed."
 	  (window-type window) (xwin-type (window-xwin window))
 	  (window-normal-hints window) (xlib:wm-normal-hints (window-xwin window))
 	  (window-number window) (find-free-window-number (window-group window))
-	  (window-frame window) (pick-prefered-frame (window-group window))
+	  (window-frame window) (pick-prefered-frame window)
 	  (window-state window) +iconic-state+
 	  (xwin-state (window-xwin window)) +iconic-state+
 	  (screen-withdrawn-windows screen) (delete window (screen-withdrawn-windows screen))
