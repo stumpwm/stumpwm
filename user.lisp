@@ -1229,7 +1229,7 @@ be found, select it.  Otherwise simply run cmd."
       (progn
 	(message "Resize Frame")
 	(push-top-map *resize-map*))
-      ;;   (setf *resize-backup* (copy-frame-tree screen))
+      ;;   (setf *resize-backup* (copy-frame-tree (current-group)))
       ))
 
 (define-stumpwm-command "abort-iresize" ()

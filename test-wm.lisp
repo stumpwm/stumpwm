@@ -77,6 +77,21 @@
       (setf (xlib:drawable-x w) 5)
       (xlib:display-finish-output dpy)))
 
+(define-test (dpy screen)
+    ;; create a window and set its role after being mapped
+    (let ((w (xlib:create-window :parent (xlib:screen-root screen)
+                                 :x 10 :y 10 :width 100 :height 100 :border-width 1)))
+      (xlib:map-window w)
+      (xlib:display-finish-output dpy)
+      (sleep 1)
+      (xlib:change-property w
+                            :WM_WINDOW_ROLE
+                            (map 'list 'char-code "rad dude")
+                            :string
+                            8)
+      (xlib:display-finish-output dpy)
+      (sleep 10)))
+
 (defun parse-display-string (display)
   "Parse an X11 DISPLAY string and return the host and display from it."
   (let* ((colon (position #\: display))
@@ -95,6 +110,8 @@
            (screen (first (xlib:display-roots dpy))))
       (unwind-protect 
 	   (progn
-             (dolist (i *tests*)
-               (funcall i dpy screen)))
+;;              (dolist (i *tests*)
+;;                (funcall i dpy screen))
+             (funcall (car *tests*) dpy screen)
+             )
 	(xlib:close-display *dpy*)))))

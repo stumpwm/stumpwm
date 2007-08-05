@@ -1,5 +1,15 @@
 2007-08-05  Shawn Betts  <sabetts@shitbender.gagrod>
 
+	* core.lisp (xwin-role): new function
+	(hide-window): don't do anything if window is already hidden
+	(group-add-window): fill window's role slot
+	(restore-window): likewise
+	(copy-frame-tree): call copy function in mapcar
+	(update-window-properties): listen for :wm_window_role changes 
+
+	* primitives.lisp (*window-formatters*): new formatter #\r
+	(window): new slot, role
+
 	* user.lisp (choose-frame-by-number): handle an error in read-from-string
 
 2007-08-02  Shawn Betts  <sabetts@shitbender.gagrod>

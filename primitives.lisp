@@ -6,12 +6,12 @@
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation; either version 2, or (at your option)
 ;; any later version.
- 
+
 ;; stumpwm is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
- 
+
 ;; You should have received a copy of the GNU General Public License
 ;; along with this software; see the file COPYING.  If not, write to
 ;; the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
@@ -139,7 +139,7 @@ Include only those we are ready to support.")
 ;; Window states
 (defconstant +withdrawn-state+ 0)
 (defconstant +normal-state+ 1)
-(defconstant +iconic-state+ 3)  
+(defconstant +iconic-state+ 3)
 
 (defvar *window-events* '(:structure-notify
 			  :property-change
@@ -181,7 +181,7 @@ Include only those we are ready to support.")
   "If an error is encountered at the top level, in
 STUMPWM-INTERNAL-LOOP, then this variable decides what action
 shall be taken. By default it will print a message to the screen
-and to *standard-output*. 
+and to *standard-output*.
 
 Valid values are :message, :break, :abort. :break will break to the
 debugger. This can be problematic because if the user hit's a
@@ -205,6 +205,7 @@ name. :title, :resource-name, :class are valid values.")
   class
   type
   res
+  role
   unmap-ignores
   state
   normal-hints
@@ -213,7 +214,7 @@ name. :title, :resource-name, :class are valid values.")
 
 (defstruct frame
   (number nil :type integer)
-  x 
+  x
   y
   width
   height
@@ -270,7 +271,7 @@ name. :title, :resource-name, :class are valid values.")
   last-msg-highlights)
 
 (defmethod print-object ((object frame) stream)
-  (format stream "#S(frame ~d ~a ~d ~d ~d ~d)" 
+  (format stream "#S(frame ~d ~a ~d ~d ~d ~d)"
 	  (frame-number object) (frame-window object) (frame-x object) (frame-y object) (frame-width object) (frame-height object)))
 
 (defmethod print-object ((object window) stream)
@@ -300,7 +301,7 @@ single char keys are supported.")
   (hyper nil)
   (super nil)
   (numlock nil))
-  
+
 (defvar *all-modifiers* nil
   "A list of all keycodes that are considered modifiers")
 
@@ -316,7 +317,7 @@ single char keys are supported.")
 ;;; Hook functionality
 
 (defun run-hook-with-args (hook &rest args)
-  "Call each function in HOOK and pass args to it" 
+  "Call each function in HOOK and pass args to it"
   ;; FIXME: silently failing is bad
   (ignore-errors
     (dolist (fn hook)
@@ -426,10 +427,10 @@ Useful for re-using the &REST arg after removing some options."
   #-(or allegro clisp cmu gcl liquid lispworks lucid sbcl)
   (error 'not-implemented :proc (list 'run-prog prog opts)))
 
-;;; XXX: DISPLAY isn't set for cmucl 
+;;; XXX: DISPLAY isn't set for cmucl
 (defun run-prog-collect-output (prog &rest args)
   "run a command and read its output."
-  #+allegro (with-output-to-string (s) 
+  #+allegro (with-output-to-string (s)
               (excl:run-shell-command (format nil "~a~{ ~a~}" prog args)
                                       :output s :wait t))
   ;; FIXME: this is a dumb hack but I don't care right now.
@@ -514,7 +515,7 @@ Useful for re-using the &REST arg after removing some options."
               :name nil :type nil :defaults pathname))))
     (file-error () nil)))
 
-(defun split-string (string &optional (separators " 
+(defun split-string (string &optional (separators "
 "))
   "Splits STRING into substrings where there are matches for SEPARATORS.
 Each match for SEPARATORS is a splitting point.
@@ -531,7 +532,7 @@ Modifies the match data; use `save-match-data' if necessary."
   (let ((seps separators))
     (labels ((sep (c)
 	       (find c seps :test #'char=)))
-      (or (loop for i = (position-if (complement #'sep) string) 
+      (or (loop for i = (position-if (complement #'sep) string)
 	     then (position-if (complement #'sep) string :start j)
 	     as j = (position-if #'sep string :start (or i 0))
 	     while i
@@ -588,7 +589,7 @@ Modifies the match data; use `save-match-data' if necessary."
                                       (t
                                        (concatenate 'string (string #\%) (string (car cur)))))))
                       ;; crop string if needed
-                      (setf output (concatenate 'string output (if len 
+                      (setf output (concatenate 'string output (if len
                                                                    (subseq str 0 (min len (length str)))
                                                                    str)))
                       (setf cur (cdr cur))))))
@@ -597,11 +598,12 @@ Modifies the match data; use `save-match-data' if necessary."
                     cur (cdr cur)))))))
 
 (defvar *window-formatters* '((#\n window-number)
-			      (#\s fmt-window-status)
-			      (#\t window-name)
-			      (#\c window-class)
-			      (#\i window-res)
-			      (#\m fmt-window-marked))
+                              (#\s fmt-window-status)
+                              (#\t window-name)
+                              (#\c window-class)
+                              (#\i window-res)
+                              (#\r window-role)
+                              (#\m fmt-window-marked))
   "an alist containing format character format function pairs for formatting window lists.")
 
 (defvar *window-format* "%m%n%s%50t"
