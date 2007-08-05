@@ -638,7 +638,7 @@ select one. Returns the selected frame or nil if aborted."
 		 (draw-frame-outlines group)
 		 (draw-frame-numbers group)))
 	 (ch (read-one-char (group-screen group)))
-	 (num (read-from-string (string ch))))
+	 (num (read-from-string (string ch) nil nil)))
     (dformat 3 "read ~S ~S~%" ch num)
     (mapc #'xlib:destroy-window wins)
     (clear-frame-outlines group)

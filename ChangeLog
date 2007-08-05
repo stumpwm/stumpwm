@@ -1,3 +1,7 @@
+2007-08-05  Shawn Betts  <sabetts@shitbender.gagrod>
+
+	* user.lisp (choose-frame-by-number): handle an error in read-from-string
+
 2007-08-02  Shawn Betts  <sabetts@shitbender.gagrod>
 
 	* core.lisp (resize-frame): fix up crusty debug output
