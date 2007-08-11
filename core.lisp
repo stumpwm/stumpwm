@@ -108,6 +108,9 @@ identity with a range check."
 	     (xlib:window-equal (screen-root s) root))
 	   *screen-list*))
 
+(defun screen-windows (screen)
+  (mapcan 'group-windows (screen-groups screen)))
+
 
 ;;; Group function
 
@@ -277,6 +280,9 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 
 
 ;;; Window functions
+
+(defun all-windows ()
+  (mapcan 'screen-windows *screen-list*))
 
 (defun window-name (window)
   (or (window-user-title window)
@@ -452,10 +458,13 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 
 (defun xwin-hide (xwin parent)
   (setf	(xwin-state xwin) +iconic-state+)
-  (xlib:unmap-window parent)
+  (let ((window (find-window xwin)))
+    (when window
+      (incf (window-unmap-ignores window))))
   ;; FIXME: I'm pretty sure we're supposed to unmap the subwindows too
   ;; (xlib:unmap-subwindows parent)
-  )
+  (xlib:unmap-window parent)
+  (xlib:unmap-window xwin))
 
 (defun hide-window (window)
   (dformat 2 "hide window: ~a~%" (window-name window))
@@ -672,6 +681,7 @@ than the root window's width and height."
       (unless (eq (xlib:window-map-state (window-xwin window)) :unmapped)
 	(incf (window-unmap-ignores window)))
       (xlib:reparent-window (window-xwin window) master-window 0 0)
+      (xwin-grab-buttons master-window)
       ;;     ;; we need to update these values since they get set to 0,0 on reparent
       ;;     (setf (window-x window) 0
       ;; 	  (window-y window) 0)
@@ -724,6 +734,21 @@ than the root window's width and height."
 (defun ungrab-keys-on-window (win)
   (xwin-ungrab-keys (window-xwin win)))
 
+(defun xwin-grab-buttons (win)
+  ;; FIXME: Why doesn't grabbing button :any work? We have to
+  ;; grab them one by one instead.
+  (xwin-ungrab-buttons win)
+  (loop for i from 1 to 7
+	do (xlib:grab-button win i '(:button-press)
+			    :modifiers :any
+			    :owner-p nil
+			    :sync-pointer-p t
+			    :sync-keyboard-p t)))
+
+
+(defun xwin-ungrab-buttons (win)
+  (xlib:ungrab-button win :any :modifiers :any))
+
 (defun sync-keys ()
   "Any time *top-map* is modified this must be called."
   (loop for i in *screen-list*
@@ -736,8 +761,7 @@ than the root window's width and height."
      do (xwin-grab-keys (screen-focus-window i)))
   (xlib:display-finish-output *display*))
 
-
-
+
 ;;; Window placement routines
 
 (defun xwin-to-window (xwin)
@@ -808,10 +832,6 @@ than the root window's width and height."
 			      (progn
 				(message "Error placing window, group \"~a\" does not exist." group-name)
 				(values '()))))))))
-
-
-(defun screen-windows (screen)
-  (mapcan 'group-windows (screen-groups screen)))
 
 (defun sync-window-placement ()
   "Re-arrange existing windows according to placement rules"
@@ -1784,8 +1804,12 @@ windows used to draw the numbers in. The caller must destroy them."
   (dolist (i *screen-list*)
     (dolist (g (screen-groups i))
       (let ((w (find xwin (group-windows g) :key 'window-xwin :test 'xlib:window-equal)))
-	(when w
-	  (return-from find-window w))))))
+       (when w
+         (return-from find-window w))))))
+
+(defun find-window-by-parent (xwin &optional (windows (all-windows)))
+  (dformat 3 "find-window-by-parent!~%")
+  (find xwin windows :key 'window-parent :test 'xlib:window-equal))
 
 (defun screen-root (screen)
   (xlib:screen-root (screen-number screen)))
@@ -2571,6 +2595,29 @@ chunks."
 
 (define-stump-event-handler :focus-out (window mode kind)
   (dformat 5 "~@{~s ~}~%" window mode kind))
+
+;;; Mouse focus
+
+(defun focus-all (win)
+  "Focus the window, frame and screen belonging to WIN"
+  (when (and win (window-frame win))
+    (switch-to-screen (window-screen win))
+    (focus-frame (window-group win) (window-frame win))))
+
+(define-stump-event-handler :enter-notify (window mode)
+  (when (and window (eq mode :normal) (eq *focus-policy* :sloppy))
+    (let ((win (find-window window)))
+      (when win
+	(focus-all win)))))
+
+;; TODO: determine if the press was on the root window, and, if so, locate
+;; and focus the frame containing the pointer.
+(define-stump-event-handler :button-press (window time)
+  ;; Pass click to client
+  (xlib:allow-events *display* :replay-pointer time)
+  (let ((win (find-window-by-parent window (group-windows (current-group)))))
+    (when (and win (eq *focus-policy* :on-click))
+      (focus-all win))))
 
 ;; Handling event :KEY-PRESS
 ;; (:DISPLAY #<XLIB:DISPLAY :0 (The X.Org Foundation R60700000)> :EVENT-KEY :KEY-PRESS :EVENT-CODE 2 :SEND-EVENT-P NIL :CODE 45 :SEQUENCE 1419 :TIME 98761213 :ROOT #<XLIB:WINDOW :0 96> :WINDOW #<XLIB:WINDOW :0 6291484> :EVENT-WINDOW #<XLIB:WINDOW :0 6291484> :CHILD

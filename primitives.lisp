@@ -147,11 +147,13 @@ Include only those we are ready to support.")
 (defvar *window-events* '(:structure-notify
 			  :property-change
 			  :colormap-change
-			  :focus-change)
+			  :focus-change
+			  :enter-window)
   "The events to listen for on managed windows.")
 
 (defvar *window-parent-events* '(:substructure-notify
 				 :substructure-redirect)
+
   "The events to listen for on managed windows' parents.")
 
 ;; Message window variables
@@ -784,3 +786,7 @@ add rules"
 (defmacro define-frame-preference (group &rest frames)
   `(dolist (x ',frames)
      (push (cons ,group x) *window-placement-rules*)))
+
+(defvar *focus-policy* :manual
+  "Choose focus policy, one of: :manual :sloppy :on-click")
+
