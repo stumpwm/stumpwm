@@ -241,6 +241,8 @@ name. :title, :resource-name, :class are valid values.")
   id
   host
   number
+  ;; heads of screen
+  heads
   ;; the list of groups available on this screen
   groups
   current-group

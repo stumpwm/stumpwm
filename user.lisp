@@ -266,11 +266,13 @@ frame."
   (kill-current-window))
 
 (defun banish-pointer ()
-  "Move the pointer to the lower right corner of the screen"
+  "Move the pointer to the lower right corner of the head"
   (let ((group (current-group)))
     (warp-pointer (group-screen group)
-		  (1- (screen-width (current-screen)))
-		  (1- (screen-true-height (current-screen))))))
+		  (1- (+ (head-x) (head-width)))
+		  (1- (+ (head-y) (head-height))))))
+					;		  (1- (screen-width (current-screen)))
+					;		  (1- (screen-true-height (current-screen))))))
 
 (define-stumpwm-command "banish" ()
   (banish-pointer))
@@ -545,9 +547,15 @@ returns..which could be forever if you're not careful."
                            (lambda (&rest siblings)
                              (car siblings))
                            #'identity)))
+
+    (if (frame-is-head group l)
+	(message "No more frames!")
+      (progn
     ;; Only remove the current frame if it has a sibling
     (dformat 3 "~S~%" s)
     (when s
+	  (when (frame-is-head group (tile-group-current-frame group))
+	    (setf (frame-number l) (frame-number (tile-group-current-frame group))))
       (dformat 3 "~S~%" l)
       ;; Move the windows from the removed frame to its sibling
       (migrate-frame-windows group (tile-group-current-frame group) l)
@@ -568,24 +576,29 @@ returns..which could be forever if you're not careful."
       (frame-raise-window group l (frame-window l))
       (when (frame-window l)
 	(update-window-border (frame-window l)))
-      (show-frame-indicator group))))
+	  (show-frame-indicator group))))))
 
 (define-stumpwm-command "remove" ()
   (remove-split (current-group)))
 
+
 (define-stumpwm-command "only" ()
   (let* ((screen (current-screen))
 	 (group (screen-current-group screen))
-	 (frame (make-initial-frame screen))
-	 (win (frame-window (tile-group-current-frame group))))
+	 (win (frame-window (tile-group-current-frame group)))
+	 (head (current-head group))
+	 (frame (copy-frame head)))
     (mapc (lambda (w)
 	    ;; windows in other frames disappear
 	    (unless (eq (window-frame w) (tile-group-current-frame group))
 	      (hide-window w))
 	    (setf (window-frame w) frame))
-	  (group-windows group))
+	  (head-windows group head))
+
     (setf (frame-window frame) win
-	  (tile-group-frame-tree group) frame)
+	  (tile-group-frame-head group head) frame 
+	  (tile-group-current-frame group) frame)
+
     (focus-frame group frame)
     (when (frame-window frame)
       (update-window-border (frame-window frame)))
@@ -661,12 +674,13 @@ select one. Returns the selected frame or nil if aborted."
 
 (define-stumpwm-command "resize" ((w :number "+ Width: ")
 				  (h :number "+ Height: "))
-  (if (atom (tile-group-frame-tree (current-group)))
-      (message "There's only 1 frame!")
       (let* ((group (current-group))
              (f (tile-group-current-frame group)))  
+    (if (atom (tile-group-frame-tree group))
+	(message "No more frames!")
+      (progn
         (resize-frame group f w :width)
-        (resize-frame group f h :height))))
+	(resize-frame group f h :height)))))
 
 (defun eval-line (cmd)
   (handler-case 
@@ -1231,13 +1245,14 @@ be found, select it.  Otherwise simply run cmd."
 	  m)))
 
 (define-stumpwm-command "iresize" ()
-  (if (atom (tile-group-frame-tree (current-group)))
+  (let ((frame (tile-group-current-frame (current-group))))
+    (if	(atom (tile-group-frame-head (current-group) (frame-head (current-group) frame)))
       (message "There's only 1 frame!")
       (progn
 	(message "Resize Frame")
 	(push-top-map *resize-map*))
       ;;   (setf *resize-backup* (copy-frame-tree (current-group)))
-      ))
+      )))
 
 (define-stumpwm-command "abort-iresize" ()
   (message "Abort resize")

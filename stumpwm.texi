@@ -1011,7 +1011,7 @@ frame taking up its space.
 @end deffn
 
 @deffn {Command} only
-Delete all the frames but the current one and grow it to take up the entire screen.
+Delete all the frames but the current one and grow it to take up the entire head.
 @end deffn
 
 @deffn {Command} curframe
@@ -1319,8 +1319,13 @@ Go to the last screen.
 
 @node Xinerama, Programming With Screens, Screens, Screens
 @section Xinerama
-Currently StumpWM doesn't explicitly handle Xinerama. Though, it
-shouldn't break StumpWM.
+StumpWM will attempt to detect Xinerama heads at startup (and at no other
+time.) Heads are logically contained by screens. In a dual-monitor Xinerama
+configuration, there will be one screen with two heads. Non-rectangular layouts
+are supported (frames will not be created in the 'dead zone'.) And message
+windows will be displayed on the current head--that is, the head to which the
+currently focused frame belongs. The mode line is not currently Xinerama-aware.
+
 
 @node Programming With Screens,  , Xinerama, Screens
 @section Programming With Screens
@@ -1402,7 +1407,7 @@ section.
 
 
 @deffn {Command} banish
-Warp the mouse the lower right corner.
+Warp the mouse the lower right corner of the current head.
 @end deffn
 
 @deffn {Command} ratwarp @var{x} @var{y}

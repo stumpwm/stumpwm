@@ -260,16 +260,16 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
   (check-type name string)
   (unless (or (equal name "") (equal name "."))
     (or (find-group screen name)
-	  (let* ((initial-frame (make-initial-frame screen))
-		 (ng (make-tile-group
-		      :frame-tree initial-frame
-		      :current-frame initial-frame
-		      :screen screen
-		      :number (find-free-group-number screen (if (equal (elt name 0) #\.) -1 0))
-		      :name name)))
-	    (setf (screen-groups screen) (append (screen-groups screen) (list ng)))
-	    (netwm-set-group-properties screen)
-	    ng))))
+	(let* ((heads (make-heads screen))
+	       (ng (make-tile-group
+		    :frame-tree heads
+		    :current-frame (first heads)
+		    :screen screen
+		    :number (find-free-group-number screen (if (equal (elt name 0) #\.) -1 0))
+		    :name name)))
+	  (setf (screen-groups screen) (append (screen-groups screen) (list ng)))
+	  (netwm-set-group-properties screen)
+	  ng))))
 
 (defun find-group (screen name)
   "Return the group with the name, NAME. Or NIL if none exists."
@@ -1169,8 +1169,8 @@ function expects to be wrapped in a with-state for win."
   (xlib:with-state ((screen-root screen))
     (let ((w (xlib:drawable-width win))
           (h (xlib:drawable-height win))
-          (screen-width (xlib:drawable-width (screen-root screen)))
-          (screen-height (xlib:drawable-height (screen-root screen))))
+			 (screen-width (head-width))
+			 (screen-height (head-height)))
       (let ((x (case gravity
                  ((:top-left :bottom-left) 0)
                  (:center (truncate (- screen-width w (* (xlib:drawable-border-width win) 2)) 2))
@@ -1179,8 +1179,8 @@ function expects to be wrapped in a with-state for win."
                  ((:bottom-right :bottom-left) (- screen-height h (* (xlib:drawable-border-width win) 2)))
                  (:center (truncate (- screen-height h (* (xlib:drawable-border-width win) 2)) 2))
                  (t 0))))
-        (setf (xlib:drawable-y win) (max 0 y)
-              (xlib:drawable-x win) (max 0 x))))))
+		       (setf (xlib:drawable-y win) (max (head-y) (+ (head-y) y))
+			     (xlib:drawable-x win) (max (head-x) (+ (head-x) x)))))))
 
 (defun setup-message-window (screen l)
   (let ((height (* (length l)
@@ -1243,15 +1243,6 @@ T (default) then also focus the frame."
 (defun frame-sort-windows (group f)
   (remove-if-not (lambda (w) (eq (window-frame w) f))
 		 (sort-windows group)))
-
-(defun make-initial-frame (screen)
-  "Used to create an initial frame hash for a screen."
-  (make-frame :number 0
-              :x (screen-x screen)
-              :y (screen-y screen)
-              :width (screen-width screen)
-              :height (screen-height screen)
-              :window nil))
 
 (defun copy-frame-tree (group)
   "Return a copy of the frame tree."
@@ -1567,24 +1558,30 @@ either :width or :height"
       ;; normalize amount
       (let* ((max (ecase dim
                     (:width
+				(if (>= (frame-width frame) (frame-width (frame-head group frame)))
+				    0
                      (if (eq split-type :column)
                          (max-amount parent frame *min-frame-width* 'tree-width)
-                         (max-amount gparent parent *min-frame-width* 'tree-width)))
+				    (max-amount gparent parent *min-frame-width* 'tree-width))))
                     (:height
+				(if (>= (frame-height frame) (frame-height (frame-head group frame)))
+				    0
                      (if (eq split-type :row)
                          (max-amount parent frame *min-frame-height* 'tree-height)
-                         (max-amount gparent parent *min-frame-height* 'tree-height)))))
+				    (max-amount gparent parent *min-frame-height* 'tree-height))))))
              (min (ecase dim
-                    ;; Frames taking up the entire screen in one
+			       ;; Frames taking up the entire HEAD in one
                     ;; dimension can't be resized in that dimension.
                     (:width
                      (if (and (eq split-type :row)
-                              (null gparent))
+					 (or (null gparent)
+					     (>= (frame-width frame) (frame-width (frame-head group frame)))))
                          0
                          (- *min-frame-width* (frame-width frame))))
                     (:height
                      (if (and (eq split-type :column)
-                              (null gparent))
+					 (or (null gparent)
+					     (>= (frame-height frame) (frame-height (frame-head group frame)))))
                          0
                          (- *min-frame-height* (frame-height frame)))))))
         (setf amount (max (min amount max) min))
@@ -1641,7 +1638,8 @@ depending on the tree's split direction."
 (defun split-frame (group how)
   "split the current frame into 2 frames. return T if it succeeded. NIL otherwise."
   (check-type how (member :row :column))
-  (let* ((frame (tile-group-current-frame group)))
+  (let* ((frame (tile-group-current-frame group))
+		 (head (frame-head group frame)))
     ;; don't create frames smaller than the minimum size
     (when (or (and (eq how :row)
                    (>= (frame-height frame) (* *min-frame-height* 2)))
@@ -1651,10 +1649,10 @@ depending on the tree's split direction."
                                                 'split-frame-h
                                                 'split-frame-v)
                                             group frame)
-        (setf (tile-group-frame-tree group)
-              (if (atom (tile-group-frame-tree group))
+        (setf (tile-group-frame-head group head)
+              (if (atom (tile-group-frame-head group head))
                   (list f1 f2)
-                  (funcall-on-node (tile-group-frame-tree group)
+                  (funcall-on-node (tile-group-frame-head group head)
                                    (lambda (tree)
                                      (if (eq (tree-split-type tree) how)
                                          (list-splice-replace frame tree f1 f2)
@@ -1739,10 +1737,7 @@ windows used to draw the numbers in. The caller must destroy them."
 
 (defun sort-screens ()
   "Return the list of screen sorted by ID."
-  (sort1 *screen-list*
-	 (lambda (a b)
-	   (< (screen-id a)
-	      (screen-id b)))))
+  (sort1 *screen-list* #'< :key #'screen-id))
 
 (defun next-screen (&optional (list (sort-screens)))
   (let ((matches (member (current-screen) list)))
@@ -2094,10 +2089,78 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 				     :subwindow-mode :include-inferiors
 				     :foreground  (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-foreground-color+)
 				     :background (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-background-color+)))
-    (setf (tile-group-frame-tree group) (make-initial-frame screen)
-          (tile-group-current-frame group) (tile-group-frame-tree group))
+    (setf (screen-heads screen) (make-heads screen)
+	  (tile-group-frame-tree group) (make-heads screen)
+	  (tile-group-current-frame group) (first (tile-group-frame-tree group)))
     (netwm-set-properties screen focus-window)
     screen))
+
+
+;;; Head functions
+
+(defun head-width ()
+  (frame-width (current-head)))
+
+(defun head-height ()
+  (frame-height (current-head)))
+
+(defun head-x ()
+  (frame-x (current-head)))
+
+(defun head-y ()
+  (frame-y (current-head)))
+
+;; Use xdpyinfo to query the xinerama extension, if it's enabled.
+(defun make-heads (screen)
+  (if (screen-heads screen)
+      (mapcar #'copy-frame (screen-heads screen))
+    (if (xlib:query-extension *display* "XINERAMA")
+	(let ((*package* (find-package :stumpwm)))
+	  (read-from-string
+	   (let ((*screen-list* (list screen)))
+	     (run-prog-collect-output "/bin/sh" "-c" "echo -n '\('; xdpyinfo -ext XINERAMA | sed -n 's/^\\s\\+head #\\([[:digit:]]\\):\\s\\+\\([[:digit:]]\\+\\)x\\([[:digit:]]\\+\\)\\s*@\\s*\\([[:digit:]]\\+\\),\\([[:digit:]]\\+\\).*$/#S(frame :number \\1 :width \\2 :height \\3 :x \\4 :y \\5)/p'; echo -n '\)'"))))
+      (list (make-frame :number 0
+			:x (screen-x screen)
+			:y (screen-y screen)
+			:width (screen-width screen)
+			:height (screen-height screen)
+			:window nil)))))
+
+;; Determining a frame's head based on position probably won't
+;; work with overlapping heads. Would it be better to walk
+;; up the frame tree?
+(defun frame-head (group frame)
+  (dolist (head (screen-heads (group-screen group)))
+    (when (and
+	   (>= (frame-x frame) (frame-x head))
+	   (>= (frame-y frame) (frame-y head))
+	   (<= (+ (frame-x frame) (frame-width frame))
+	       (+ (frame-x head) (frame-width head)))
+	   (<= (+ (frame-y frame) (frame-height frame))
+	       (+ (frame-y head) (frame-height head))))
+      (return head))))
+
+(defun group-heads (group)
+  (screen-heads (group-screen group)))
+
+(defun tile-group-frame-head (group head)
+  (elt (tile-group-frame-tree group) (position head (group-heads group))))
+
+(defun (setf tile-group-frame-head) (frame group head)
+  (setf (elt (tile-group-frame-tree group) (position head (group-heads group))) frame))
+
+(defun current-head (&optional (group (current-group)))
+  (frame-head group (tile-group-current-frame group)))
+
+(defun head-windows (group head)
+  "Returns a list of windows on HEAD of GROUP"
+  (remove-if-not
+   (lambda (w)
+     (eq head (frame-head group (window-frame w))))
+   (group-windows group)))
+
+(defun frame-is-head (group frame)
+  (< (frame-number frame) (length (group-heads group))))
 
 
 ;;; keyboard helper functions
