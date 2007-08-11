@@ -39,6 +39,9 @@
 ;; Message window font
 (set-font "-xos4-terminus-medium-r-normal--14-140-72-72-c-80-iso8859-15")
 
+;; Restore a previously saved layout.
+(run-commands "asfrestore .stumpwm.frames")
+
 ;;; Define window placement policy...
 
 ;; Clear rules
