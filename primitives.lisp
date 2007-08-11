@@ -62,6 +62,9 @@
   2 arguments: the current window and the last window (could be
   nil).")
 
+(defvar *place-window-hook* '()
+  "A hook called whenever a window is placed by rule. Arguments are window group and frame")
+
 (defvar *start-hook* '()
   "A hook called when stumpwm starts.")
 
@@ -343,10 +346,10 @@ single char keys are supported.")
   "Append arg to the end of list"
   (nconc list (list arg)))
 
-(defun sort1 (list sort-fn)
+(defun sort1 (list sort-fn &optional &rest tags)
   "Return a sorted copy of list."
   (let ((copy (copy-list list)))
-    (sort copy sort-fn)))
+    (apply #'sort copy sort-fn tags)))
 
 (defun mapcar-hash (fn hash)
   "Just like maphash except it accumulates the result in a list."
@@ -766,3 +769,11 @@ with IN-PACKAGE.")
 
 (defun concat (&rest strings)
   (apply 'concatenate 'string strings))
+
+(defvar *window-placement-rules* '())
+ "List of rules governing window placement. Use define-frame-preference to
+add rules"
+
+(defmacro define-frame-preference (group &rest frames)
+  `(dolist (x ',frames)
+     (push (cons ,group x) *window-placement-rules*)))

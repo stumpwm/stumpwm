@@ -49,6 +49,7 @@
 	  (define-key m (kbd "C-M-p") "prev-in-frame")
 	  (define-key m (kbd "w") "windows")
 	  (define-key m (kbd "C-w") "windows")
+	  (define-key m (kbd "W") "syncplace")
 	  (define-key m (kbd "k") "delete")
 	  (define-key m (kbd "C-k") "delete")
 	  (define-key m (kbd "K") "kill")
