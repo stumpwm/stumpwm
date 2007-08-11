@@ -361,18 +361,20 @@ single char keys are supported.")
 
 (defun find-free-number (l &optional (min 0))
   "Return a number that is not in the list l."
-  (let* ((nums (sort l #'<))
-	 (new-num (loop for n from min to (or (car (last nums)) 0)
-			for i in nums
-			when (/= n i)
+  (let* ((nums (sort l (if (< min 0) #'> #'<)))
+	 (max (car (last nums)))
+	 (new-num (loop for n from min to (or max min)
+			when (not (find n nums))
 			do (return n))))
     (dformat 3 "Free number: ~S~%" nums)
     (if new-num
 	new-num
       ;; there was no space between the numbers, so use the last + 1
-      (if (car (last nums))
-	  (1+ (car (last nums)))
-	0))))
+      (if max
+	  (if (< min 0)
+	      (1- max)
+	    (1+ max))
+	min))))
 
 
 (defun remove-plist (plist &rest keys)
@@ -620,6 +622,9 @@ is cropped to 50 characters.")
 
 (defvar *group-format* "%n%s%t"
   "The format string for echoing the window list.")
+
+(defvar *list-hidden-groups* t
+  "Controls whether hidden groups are displayed by 'groups' and 'vgroups' commands")
 
 (defun font-height (font)
   (+ (xlib:font-descent font)

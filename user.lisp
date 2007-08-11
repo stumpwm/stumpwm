@@ -286,9 +286,9 @@ frame."
   (when (current-window)
     (send-fake-click (current-window) (or button 1))))
 
-(defun echo-windows (group fmt)
+(defun echo-windows (group fmt windows)
   "Print a list of the windows to the screen."
-  (let* ((wins (sort-windows group))
+  (let* ((wins (sort1 windows #'< :key #'window-number))
 	 (highlight (position (group-current-window group) wins))
 	 (names (mapcar (lambda (w)
 			  (format-expand *window-formatters* fmt w)) wins)))
@@ -309,7 +309,11 @@ frame."
 		    (format-expand *group-formatters* *group-format* w)) (sort-groups (group-screen group)))))
 
 (define-stumpwm-command "windows" ((fmt :rest))
-  (echo-windows (current-group) (or fmt *window-format*)))
+  (echo-windows (current-group) (or fmt *window-format*) (group-windows (current-group))))
+
+(define-stumpwm-command "framewindows" ((fmt :rest))
+  (echo-windows (current-group) (or fmt *window-format*) (frame-windows (current-group)
+									(tile-group-current-frame (current-group)))))
 
 (define-stumpwm-command "title" ((title :rest "Set window's title to: "))
   (if (current-window)
@@ -1313,7 +1317,7 @@ be found, select it.  Otherwise simply run cmd."
 							      (concatenate 'string "  " wfmt)
 							      w))
 					     (sort-windows g)))))
-				groups))))
+				(if *list-hidden-groups* groups (remove 1 groups :test #'> :key #'group-number))))))
     (echo-string-list screen names)))
 
 (define-stumpwm-command "groups" ((fmt :rest))
