@@ -258,16 +258,18 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 (defun add-group (screen name)
   (check-type screen screen)
   (check-type name string)
-  (let* ((initial-frame (make-initial-frame screen))
-	 (ng (make-tile-group
-	      :frame-tree initial-frame
-	      :current-frame initial-frame
-	      :screen screen
-	      :number (find-free-group-number screen (if (equal (elt name 0) #\.) - 1))
-	      :name name)))
-    (setf (screen-groups screen) (append (screen-groups screen) (list ng)))
-    (netwm-set-group-properties screen)
-    ng))
+  (unless (or (equal name "") (equal name "."))
+    (or (find-group screen name)
+	  (let* ((initial-frame (make-initial-frame screen))
+		 (ng (make-tile-group
+		      :frame-tree initial-frame
+		      :current-frame initial-frame
+		      :screen screen
+		      :number (find-free-group-number screen (if (equal (elt name 0) #\.) -1 0))
+		      :name name)))
+	    (setf (screen-groups screen) (append (screen-groups screen) (list ng)))
+	    (netwm-set-group-properties screen)
+	    ng))))
 
 (defun find-group (screen name)
   "Return the group with the name, NAME. Or NIL if none exists."
