@@ -1609,3 +1609,7 @@ current frame and raise it."
   (message-no-timeout "\"~a\" is on ~{~a~^, ~}"
                       cmd
                       (mapcar 'print-key-seq (search-kmap cmd *top-map*))))
+
+(define-stumpwm-command "syncplace" ()
+  (sync-window-placement))
+
