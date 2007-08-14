@@ -851,6 +851,7 @@ than the root window's width and height."
 	  (message "Placing window ~a in frame ~d of group ~a"
 		   (window-name window) (frame-number frame) (group-name group))))
       (when (eq raise t)
+	(switch-to-screen (group-screen group))
 	(focus-frame group frame))
       (unless (null placement)
 	(run-hook-with-args *place-window-hook* window group frame)))
