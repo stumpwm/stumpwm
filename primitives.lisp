@@ -110,6 +110,9 @@ run before the error is dealt with according to
 (defvar *normal-border-width* 1
   "The default border width for normal windows.")
 
+(defvar *frame-outline-width* 2
+  "The default width of frame outlines.")
+
 (defvar *focus-color* "gray"
   "The color a window's border becomes when it is focused")
 
