@@ -352,21 +352,26 @@ frame."
     (#\h . ,(time-lambda (mon) (subseq (aref *month-names* (- mon 1)) 0 3)))
     (#\H . ,(time-lambda (hour) (format nil "~2,'0D" hour)))
     (#\I . ,(time-lambda (hour)
-	     (format nil "~2,'0D" (if (> hour 0) (- hour 12) hour))))
+	     (format nil "~2,'0D" (if (> hour 12) (- hour 12) hour))))
     ;; %j   day of year (001..366)
     (#\k . ,(time-lambda (hour) (format nil "~2,D" hour)))
     (#\l . ,(time-lambda (hour)
-	     (format nil "~2,D" (if (> hour 0) (- hour 12) hour))))
+	     (format nil "~2,D" (if (> hour 12) (- hour 12) hour))))
     (#\m . ,(time-lambda (mon) (format nil "~2,'0D" mon)))
     (#\M . ,(time-lambda (min) (format nil "~2,'0D" min)))
     (#\n . ,(time-lambda () "~%%")) ;; two % to avoid parsing errors
     ;; %N   nanoseconds (000000000..999999999)
-    (#\p . ,(time-lambda (hour) (if (> hour 0) "PM" "AM")))
-    (#\P . ,(time-lambda (hour) (if (> hour 0) "pm" "am")))
+    (#\p . ,(time-lambda (hour) (if (>= hour 12) "PM" "AM")))
+    (#\P . ,(time-lambda (hour) (if (>= hour 12) "pm" "am")))
     (#\r . ,(time-lambda (hour min sec)
 	     (let (hour-local am-pm)
-	       (if (> hour 0) (setf hour-local (- hour 12) am-pm "PM")
-		   (setf hour-local hour am-pm "AM"))
+               (cond
+                 ((> hour 12)
+                  (setf hour-local (- hour 12) am-pm "PM"))
+                 ((= hour 12)
+                  (setf hour-local hour am-pm "PM"))
+                 (t
+                  (setf hour-local hour am-pm "AM")))
 	       (format nil "~2,'0D:~2,'0D:~2,'0D ~A"
 		       hour-local min sec am-pm))))
     (#\R . ,(time-lambda (hour min) (format nil "~2,'0D:~2,'0D" hour min)))
@@ -418,22 +423,19 @@ the 'date' command options except the following ones: %g, %G, %j, %N,
     (multiple-value-bind (sec min hour dom mon year dow dstp tz)
 	(or time (get-decoded-time))
       (loop 
-	 for format-position = (position #\% time-string :start (or format-position 0))
-	 while format-position
-	 for format-character = (aref time-string (+ format-position 1))
-	 for action = (or (cdr (assoc format-character
-				      *format-time-string-alist*))
-			  (error "Invalid format option %~C"
-				 format-character))
-	 do
-	   (setf
-	    time-string (concatenate
-			 'string
-			 (subseq time-string 0 format-position)
-			 (funcall action sec min hour dom mon year dow dstp tz)
-			 (subseq time-string (+ format-position 2))))
-	   (when (char-equal #\% format-character) ; escape character
-	     (incf format-position))))
+         for format-position = (position #\% time-string :start (or format-position 0))
+	 while format-position do
+         (let* ((format-character (aref time-string (+ format-position 1)))
+                (action (or (cdr (assoc format-character
+                                        *format-time-string-alist*))
+                            (error "Invalid format option %~C"
+                                   format-character))))
+           (setf time-string (concatenate 'string
+                                          (subseq time-string 0 format-position)
+                                          (funcall action sec min hour dom mon year dow dstp tz)
+                                          (subseq time-string (+ format-position 2))))
+           (when (char-equal #\% format-character) ; escape character
+             (incf format-position)))))
     (format nil time-string)))
 
 (defun echo-date ()
