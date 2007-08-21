@@ -92,6 +92,10 @@
 	  (define-key m (kbd "Down") "move-focus down")
 	  (define-key m (kbd "Left") "move-focus left")
 	  (define-key m (kbd "Right") "move-focus right")
+	  (define-key m (kbd "M-Up") "move-window up")
+	  (define-key m (kbd "M-Down") "move-window down")
+	  (define-key m (kbd "M-Left") "move-window left")
+	  (define-key m (kbd "M-Right") "move-window right")
 	  (define-key m (kbd "v") "version")
 	  (define-key m (kbd "#") "mark")
 	  (define-key m (kbd "m") "lastmsg")
@@ -1126,13 +1130,22 @@ aborted."
                 (setf best-overlap overlap))))))
     best-frame))
 
-(define-stumpwm-command "move-focus" ((dir :string "Direction: "))
+(defun move-focus-and-or-window (dir &optional win-p)
   (let* ((group (current-group))
          (direction (intern (string-upcase dir) :keyword))
-         (new-frame (neighbour direction (tile-group-current-frame group) (group-frames group))))
+         (new-frame (neighbour direction (tile-group-current-frame group) (group-frames group)))
+    	 (window (current-window)))
     (when new-frame
-      (focus-frame group new-frame))
+      (focus-frame group new-frame)
+      (when win-p
+	      (pull-window window)))
     (show-frame-indicator group)))
+
+(define-stumpwm-command "move-focus" ((dir :string "Direction: "))
+  (move-focus-and-or-window dir))
+
+(define-stumpwm-command "move-window" ((dir :string "Direction: "))
+  (move-focus-and-or-window dir t))
 
 (defun run-or-raise (cmd &key class instance title (all-groups *run-or-raise-all-groups*))
   "If any of class, title, or instance are set and a matching window can
