@@ -1,3 +1,7 @@
+2007-08-22  Shawn Betts  <sabetts@shitbender.gagrod>
+
+	* stumpwm.lisp (stumpwm-internal-loop): always give a timeout when listening for events.
+
 2007-08-15  Shawn Betts  <sabetts@shitbender.gagrod>
 
 	* user.lisp (format-time-string): restructure to be compatible with clisp

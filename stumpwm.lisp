@@ -148,15 +148,18 @@ of those expired."
                         (format t "~&Caught '~a' at the top level. Please report this." c)
                         (print-backtrace)
                         (throw :quit t))))))
+         ;; Note: process-event appears to hang for an unknown
+         ;; reason. This is why it is passed a timeout in hopes that
+         ;; this will keep it from hanging.
          (let ((timeout (get-next-timeout *timer-list*)))
            (dformat 10 "timeout: ~a~%" timeout)
            (if timeout
                (let* ((nevents (xlib:event-listen *display* timeout)))
                  (setf *timer-list* (run-expired-timers *timer-list*))
                  (when nevents
-                   (xlib:process-event *display* :handler #'handle-event)))
+                   (xlib:process-event *display* :handler #'handle-event :timeout 10)))
                ;; Otherwise, simply wait for an event
-               (xlib:process-event *display* :handler #'handle-event :timeout nil))
+               (xlib:process-event *display* :handler #'handle-event :timeout 10))
            ;; flush any pending output. You'd think process-event would, but
            ;; it seems not.
            (xlib:display-finish-output *display*)
