@@ -1808,6 +1808,11 @@ windows used to draw the numbers in. The caller must destroy them."
     (xlib:set-input-focus *display* (window-xwin window) :POINTER-ROOT)
     ;;(xlib:display-finish-output *display*)
     ;;(format t "FOCUS IS: ~a~%" (multiple-value-list (xlib:input-focus *display*)))
+    (xlib:change-property (screen-root screen) :_NET_ACTIVE_WINDOW
+                          (list (window-xwin window))
+                          :window 32
+			  :transform #'xlib:drawable-id
+                          :mode :replace)
     (setf (screen-focus screen) window)
     (move-screen-to-head screen)))
 
@@ -2609,6 +2614,11 @@ chunks."
                         (elt (sort-groups screen) n))))
        (when (and our-window group)
 	 (move-window-to-group our-window group))))
+    (:_NET_ACTIVE_WINDOW
+      (let ((our-window (find-window window)))
+	(message "~S ~S" window our-window)
+	(when our-window
+	  (focus-all our-window))))
     (t
      (dformat 2 "ignored message~%"))))
 
