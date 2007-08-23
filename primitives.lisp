@@ -126,10 +126,20 @@ run before the error is dealt with according to
     :_NET_DESKTOP_VIEWPORT
     :_NET_CURRENT_DESKTOP
     :_NET_WM_WINDOW_TYPE
+    :_NET_WM_STATE
+    :_NET_WM_ALLOWED_ACTIONS
+    :_NET_WM_FULL_WINDOW_PLACEMENT
+    :_NET_CLOSE_WINDOW
     :_NET_CLIENT_LIST
     :_NET_ACTIVE_WINDOW)
   "Supported NETWM properties.
 Window types are in +WINDOW-TYPES+.")
+
+(defparameter +netwm-allowed-actions+
+  '(:_NET_WM_ACTION_CHANGE_DESKTOP
+;    :_NET_WM_ACTION_FULLSCREEN
+    :_NET_WM_ACTION_CLOSE)
+  "Allowed NETWM actions for managed windows")
 
 (defparameter +netwm-window-types+
   '(
