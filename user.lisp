@@ -1381,6 +1381,13 @@ be found, select it.  Otherwise simply run cmd."
 	     (current-window))
     (move-window-to-group (current-window) to-group)))
 
+(define-stumpwm-command "gmove-marked" ((to-group :group "To Group: "))
+  (when to-group
+    (let ((group (current-group)))
+      (dolist (i (marked-windows group))
+	(setf (window-marked i) nil)
+	(move-window-to-group i to-group)))))
+
 (define-stumpwm-command "gkill" ()
   (let ((dead-group (current-group))
 	(to-group (next-group (current-group))))
