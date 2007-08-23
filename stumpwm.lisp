@@ -157,9 +157,9 @@ of those expired."
                (let* ((nevents (xlib:event-listen *display* timeout)))
                  (setf *timer-list* (run-expired-timers *timer-list*))
                  (when nevents
-                   (xlib:process-event *display* :handler #'handle-event :timeout 10)))
+                   (xlib:process-event *display* :handler #'handle-event)))
                ;; Otherwise, simply wait for an event
-               (xlib:process-event *display* :handler #'handle-event :timeout 10))
+               (xlib:process-event *display* :handler #'handle-event))
            ;; flush any pending output. You'd think process-event would, but
            ;; it seems not.
            (xlib:display-finish-output *display*)
