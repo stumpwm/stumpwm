@@ -17,27 +17,18 @@
 ;; the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
 ;; Boston, MA 02111-1307 USA
 
-;; Commentary:
-;;
-;; a modeline that can enabled per screen and per frame (todo).
-;;
-;; Code:
-
-;; to figure out this memory-fault error
-(declaim (optimize (debug 3)))
-
-(in-package "STUMPWM")
+(in-package :stumpwm)
 
 (defstruct mode-line
+  screen
+  head
   window
   format
   position
-  gc)
+  gc
+  height)
 
-(defvar *mode-line-screen-position* :top
-  "Where should the mode line be displayed? :top or :bottom.")
-
-(defvar *mode-line-frame-position* :top
+(defvar *mode-line-position* :top
   "Where should the mode line be displayed? :top or :bottom.")
 
 (defvar *mode-line-border-width* 1
@@ -106,16 +97,14 @@ current group.")
    ;; these windows are not controlled by the window manager
    :override-redirect :on))
 
-(defgeneric resize-mode-line-for (mode-line obj)
-  (:documentation "resize the modeline for a screen, frame, ...other?"))
-
-(defmethod resize-mode-line-for (ml (obj screen))
-  (setf (xlib:drawable-width (mode-line-window ml)) (- (screen-width obj) (* 2 (xlib:drawable-border-width (mode-line-window ml))))
+(defun resize-mode-line (ml)
+  (setf (xlib:drawable-width (mode-line-window ml)) (- (frame-width (mode-line-head ml)) (* 2 (xlib:drawable-border-width (mode-line-window ml))))
 	(xlib:drawable-height (mode-line-window ml)) (+ (font-height (xlib:gcontext-font (mode-line-gc ml))) (* *mode-line-pad-y* 2))
+	(mode-line-height ml) (xlib:drawable-height (mode-line-window ml))
 	(xlib:drawable-x (mode-line-window ml)) 0
 	(xlib:drawable-y (mode-line-window ml)) (if (eq (mode-line-position ml) :top)
 						    0 
-						    (screen-height obj))))
+						    (frame-height (mode-line-head ml)))))
 
 (defgeneric mode-line-format-elt (elt))
 
@@ -158,24 +147,19 @@ current group.")
 			:foreground (get-color-pixel screen *mode-line-foreground-color*)
 			:background (get-color-pixel screen *mode-line-background-color*)))
 
-(defun make-screen-mode-line (screen format)
+(defun make-head-mode-line (screen head format)
   (let ((w (make-mode-line-window (screen-root screen) screen)))
     (xlib:map-window w)
     (make-mode-line :window w
+		    :screen screen
+		    :head head
 		    :format format
-		    :position *mode-line-screen-position*
+		    :position *mode-line-position*
 		    :gc (make-mode-line-gc w screen))))
 
-;; This is a regular defun in an attempt to get rid of the
-;; MEMORY-FAULT return-from error.
-
-;; (defgeneric redraw-mode-line-for (ml thing)
-;;   (:documentation "redraw the modeline for a screen, frame, ...other?"))
-
-;; (defmethod redraw-mode-line-for (ml (obj screen))
-(defun redraw-mode-line-for (ml screen)
+(defun redraw-mode-line (ml)
   (let* ((*current-mode-line-formatters* *screen-mode-line-formatters*)
-	 (*current-mode-line-formatter-args* (list (screen-current-group screen)))
+	 (*current-mode-line-formatter-args* (list (screen-current-group (mode-line-screen ml))))
 	 (string (mode-line-format-string ml)))
     (xlib:draw-image-glyphs (mode-line-window ml) (mode-line-gc ml)
 			    *mode-line-pad-x*
@@ -191,9 +175,11 @@ current group.")
 					    :translate #'translate-id)))))
 
 (defun update-screen-mode-lines ()
-  (dolist (i *screen-list*)
-    (when (screen-mode-line i)
-      (redraw-mode-line-for (screen-mode-line i) i))))
+  (dolist (s *screen-list*)
+    (dolist (h (screen-heads s))
+      (let ((mode-line (head-mode-line h)))
+	(when mode-line
+	  (redraw-mode-line mode-line))))))
 
 (defun turn-on-mode-line-timer ()
   (when (timer-p *mode-line-timer*)
@@ -202,49 +188,35 @@ current group.")
                                           *mode-line-timeout*
                                           'update-screen-mode-lines)))
 
+#|
 (defun maybe-cancel-mode-line-timer ()
   (unless (find-if 'screen-mode-line *screen-list*)
     (when (timer-p *mode-line-timer*)
       (cancel-timer *mode-line-timer*)
       (setf *mode-line-timer* nil))))
+|#
 
-(defun toggle-mode-line (screen &optional (format '*screen-mode-line-format*))
-  (check-type screen screen)
+(defun toggle-mode-line (screen head &optional (format '*screen-mode-line-format*))
   (check-type format (or symbol list string))
-  (if (screen-mode-line screen)
+  (if (head-mode-line head)
       (progn
 	(dolist (group (screen-groups screen))
-	  (when (eq (mode-line-position (screen-mode-line screen)) :top)
-	    (offset-frames group 0 (- (true-height (mode-line-window (screen-mode-line screen))))))
-	  (expand-tree (tile-group-frame-tree group) (true-height (mode-line-window (screen-mode-line screen))) :bottom)
 	  (sync-all-frame-windows group))
-	(xlib:destroy-window (mode-line-window (screen-mode-line screen)))
-	(xlib:free-gcontext (mode-line-gc (screen-mode-line screen)))
-	(setf (screen-mode-line screen) nil)
-        (maybe-cancel-mode-line-timer))
+	(xlib:destroy-window (mode-line-window (head-mode-line head)))
+	(xlib:free-gcontext (mode-line-gc (head-mode-line head)))
+;        (maybe-cancel-mode-line-timer))
+	(setf (head-mode-line head) nil)
+        )
       (progn
-	(setf (screen-mode-line screen) (make-screen-mode-line screen format))
-	(resize-mode-line-for (screen-mode-line screen) screen)
-	(redraw-mode-line-for (screen-mode-line screen) screen)
+	(setf (head-mode-line head) (make-head-mode-line screen head format))
+	(resize-mode-line (head-mode-line head))
+	(redraw-mode-line (head-mode-line head))
 	;; move the frames
-	(dformat 3 "modeline: ~s~%" (screen-mode-line screen))
+	(dformat 3 "modeline: ~s~%" (head-mode-line head))
 	(dolist (group (screen-groups screen))
-	  (when (eq (mode-line-position (screen-mode-line screen)) :top)
-	    (offset-frames group 0 (true-height (mode-line-window (screen-mode-line screen)))))
-	  (expand-tree (tile-group-frame-tree group) (- (true-height (mode-line-window (screen-mode-line screen)))) :bottom)
 	  (sync-all-frame-windows group))
         ;; setup the timer
         (turn-on-mode-line-timer))))
 
-(defun screen-mode-line-mode (screen arg &optional (format '*screen-mode-line-format*))
-  "Turn on the mode line for SCREEN if and only if ARG is non-nil."
-  ;; only do something if the state they want and the current state
-  ;; differ.
-  (check-type screen screen)
-  (check-type format (or symbol list string))
-  (unless (eq (and arg t)
-	      (and (screen-mode-line screen) t))
-    (toggle-mode-line screen format)))
-      
 (define-stumpwm-command "mode-line" ()
-  (toggle-mode-line (current-screen)))
+  (toggle-mode-line (current-screen) (current-head)))

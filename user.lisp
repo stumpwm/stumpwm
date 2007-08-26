@@ -950,8 +950,7 @@ aborted."
                   (error (c)
                     (format nil "Error In Command '~a': ~A" cmd c)))))
     ;; interactive commands update the modeline
-    (when (screen-mode-line (current-screen))
-      (redraw-mode-line-for (screen-mode-line (current-screen)) (current-screen)))
+    (update-screen-mode-lines) 
     (cond ((stringp result)
            (message "~a" result))
           ((eq result :abort)

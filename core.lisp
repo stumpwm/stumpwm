@@ -78,6 +78,15 @@ identity with a range check."
   0)
 
 (defun screen-y (screen)
+  (declare (ignore screen))
+  0)
+
+(defun screen-height (screen)
+  (let ((root (screen-root screen)))
+    (xlib:drawable-height root)))
+
+#|
+(defun screen-y (screen)
   (let ((ml (screen-mode-line screen)))
     (if (and ml
 	     (eq (mode-line-position ml) :top))
@@ -92,7 +101,7 @@ identity with a range check."
     (- (xlib:drawable-height root)
        (or (and ml (true-height (mode-line-window ml)))
 	   0))))
-
+|#
 (defun screen-true-height (screen)
   "Return the height of the screen regardless of the modeline"
   (let ((root (screen-root screen)))
@@ -979,8 +988,7 @@ needed."
     (maximize-window window)
     (grab-keys-on-window window)
     ;; quite often the modeline displays the window list, so update it
-    (when (screen-mode-line screen)
-      (redraw-mode-line-for (screen-mode-line screen) screen))
+    (update-screen-mode-lines)
     ;; Set allowed actions
     (xlib:change-property xwin :_NET_WM_ALLOWED_ACTIONS
                           (mapcar (lambda (a)
@@ -1066,8 +1074,7 @@ needed."
     (when (eq (tile-group-current-frame group) f)
       (focus-frame (window-group window) f))
     ;; quite often the modeline displays the window list, so update it
-    (when (screen-mode-line screen)
-      (redraw-mode-line-for (screen-mode-line screen) screen))
+    (update-screen-mode-lines)
     ;; Run the unmap hook on the window
     (run-hook-with-args *unmap-window-hook* window)))
 
@@ -2632,6 +2639,7 @@ chunks."
 (define-stump-event-handler :selection-clear ()
   (setf *x-selection* nil))
 
+#|
 (define-stump-event-handler :exposure (window x y width height count)
   (declare (ignore x y width height))
   (let ((screen (find-if (lambda (s)
@@ -2640,7 +2648,8 @@ chunks."
 			 *screen-list*)))
     (when (and screen
 	       (zerop count))
-      (redraw-mode-line-for (screen-mode-line screen) screen))))
+      (update-screen-mode-lines))))
+|#
 
 (define-stump-event-handler :reparent-notify (window parent)
   (let ((win (find-window window)))
