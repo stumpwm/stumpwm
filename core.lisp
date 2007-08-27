@@ -375,7 +375,7 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
    (xwin-net-wm-name win)
    (xlib:wm-name win)))
 
-;; FIXME: should we raise the winodw or its parent?
+;; FIXME: should we raise the window or its parent?
 (defun raise-window (win)
   "Map the window if needed and bring it to the top of the stack. Does not affect focus."
   (when (window-hidden-p win)
