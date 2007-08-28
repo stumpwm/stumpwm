@@ -185,13 +185,13 @@ at 0. Return a netwm compliant group id."
 	    (window-group window) to-group
 	    (window-number window) (find-free-window-number to-group))
       ;; try to put the window in the appropriate frame for the group
-      (let ((placement (get-window-placement (window-screen window) window)))
-	(unless (null placement)
-	  (multiple-value-bind (to-group frame raise) placement
-			       (when frame
-				 (setf (window-frame window) frame))
-			       (when raise
-				 (setf (tile-group-current-frame to-group) frame)))))
+      (multiple-value-bind (placed-group frame raise) (get-window-placement (window-screen window) window)
+			   (declare (ignore placed-group))
+			   (when frame
+			     (setf (window-frame window) frame))
+			   (when raise
+			     (setf (tile-group-current-frame to-group) frame
+				   (frame-window frame) nil)))
       (push window (group-windows to-group))
       (sync-frame-windows to-group (tile-group-current-frame to-group))
       ;; maybe pick a new window for the old frame
@@ -842,53 +842,47 @@ than the root window's width and height."
   (let ((match
 	 (dolist (rule *window-placement-rules*)
 	   (when (window-matches-rule? window rule) (return rule)))))
-	
     (if (null match)
-	(values '())
+	(values)
       (destructuring-bind (group-name frame raise lock &rest props) match
 			  (declare (ignore lock props))
 			  (let ((group (find-group screen group-name)))
 			    (if group
-				(values (list group (frame-by-number group frame) raise))
+				(values group (frame-by-number group frame) raise)
 			      (progn
 				(message "Error placing window, group \"~a\" does not exist." group-name)
-				(values '()))))))))
+				(values))))))))
 
 (defun sync-window-placement ()
   "Re-arrange existing windows according to placement rules"
   (dolist (screen *screen-list*)
     (dolist (window (screen-windows screen))
-      (let ((placement (get-window-placement screen window)))
-	(unless (null placement)
-	  (destructuring-bind (to-group frame raise) placement
-			      (declare (ignore raise))
-			      (unless (eq (window-group window) to-group)
-				(move-window-to-group window to-group))
-			      (unless (eq (window-frame window) frame)
-				(pull-window window frame))))))))
+      (multiple-value-bind (to-group frame raise) (get-window-placement screen window)
+			   (declare (ignore raise))
+			   (when to-group
+			     (unless (eq (window-group window) to-group)
+			       (move-window-to-group window to-group))
+			     (unless (eq (window-frame window) frame)
+			       (pull-window window frame)))))))
 
 (defun place-window (screen xwin)
   "Pick a group and frame for XWIN (replaces group-add-window)"
   (let* ((window (xwin-to-window xwin))
-	 (placement (get-window-placement screen window))
 	 (group (screen-current-group screen))
 	 (frame nil)
 	 (raise nil))
-    (unless (null placement)
-      (destructuring-bind (to-group to-frame to-raise) placement
-			  (setf group to-group
-				frame to-frame
-				raise to-raise)))
-					;(push window (group-windows group)))
-    (setf
-     (window-group window) group
-     (window-number window) (find-free-window-number group)
-     (window-frame window) (or frame (pick-prefered-frame window)))
+    (multiple-value-bind (to-group to-frame to-raise) (get-window-placement screen window)
+			 (setf group (or to-group group)
+			       frame to-frame
+			       raise to-raise))
+    (setf (window-group window) group
+	  (window-number window) (find-free-window-number group)
+	  (window-frame window) (or frame (pick-prefered-frame window)))
     (setf (group-windows group) (append (group-windows group) (list window)))
     (setf (xwin-state xwin) +iconic-state+)
     (xlib:change-property xwin :_NET_WM_DESKTOP
-                          (list (netwm-group-id group))
-                          :cardinal 32)
+			  (list (netwm-group-id group))
+			  :cardinal 32)
     (when frame
       (unless (eq (current-group) group)
 	(if (eq raise t)
@@ -898,9 +892,7 @@ than the root window's width and height."
       (when (eq raise t)
 	(switch-to-screen (group-screen group))
 	(focus-frame group frame))
-      (unless (null placement)
-	(run-hook-with-args *place-window-hook* window group frame)))
-
+      (run-hook-with-args *place-window-hook* window group frame))
     window))
 
 (defun pick-prefered-frame (window)
