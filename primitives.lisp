@@ -128,6 +128,8 @@ run before the error is dealt with according to
     :_NET_WM_WINDOW_TYPE
     :_NET_WM_STATE
     :_NET_WM_ALLOWED_ACTIONS
+    :_NET_WM_STATE_FULLSCREEN
+    :_NET_WM_STATE_HIDDEN
     :_NET_WM_FULL_WINDOW_PLACEMENT
     :_NET_CLOSE_WINDOW
     :_NET_CLIENT_LIST
@@ -137,7 +139,7 @@ Window types are in +WINDOW-TYPES+.")
 
 (defparameter +netwm-allowed-actions+
   '(:_NET_WM_ACTION_CHANGE_DESKTOP
-;    :_NET_WM_ACTION_FULLSCREEN
+    :_NET_WM_ACTION_FULLSCREEN
     :_NET_WM_ACTION_CLOSE)
   "Allowed NETWM actions for managed windows")
 
@@ -230,7 +232,8 @@ name. :title, :resource-name, :class are valid values.")
   state
   normal-hints
   marked
-  plist)
+  plist
+  fullscreen)
 
 (defstruct frame
   (number nil :type integer)
@@ -239,6 +242,8 @@ name. :title, :resource-name, :class are valid values.")
   width
   height
   window)
+
+(defstruct (head (:include frame)))
 
 (defstruct group
   ;; A list of all windows in this group. They are of the window
@@ -805,3 +810,5 @@ add rules"
 (defvar *focus-policy* :manual
   "Choose focus policy, one of: :manual :sloppy :on-click")
 
+(defvar *xwin-to-window* (make-hash-table)
+  "Hash table for looking up windows quickly.")

@@ -112,6 +112,7 @@
 	  (define-key m (kbd "F8") "gselect 8")
 	  (define-key m (kbd "F9") "gselect 9")
 	  (define-key m (kbd "F10") "gselect 10")
+	  (define-key m (kbd "F11") "fullscreen")
 	  (define-key m (kbd "?") "help")
 	  (define-key m (kbd "+") "balance-frames")
 	  (define-key m (kbd "A") "title")
@@ -273,10 +274,8 @@ frame."
   "Move the pointer to the lower right corner of the head"
   (let ((group (current-group)))
     (warp-pointer (group-screen group)
-		  (1- (+ (head-x) (head-width)))
-		  (1- (+ (head-y) (head-height))))))
-					;		  (1- (screen-width (current-screen)))
-					;		  (1- (screen-true-height (current-screen))))))
+		  (1- (+ (head-x (current-head)) (head-width (current-head))))
+		  (1- (+ (head-y (current-head)) (head-height (current-head)))))))
 
 (define-stumpwm-command "banish" ()
   (banish-pointer))
@@ -529,12 +528,13 @@ returns..which could be forever if you're not careful."
   (run-shell-command cmd))
 
 (defun split-frame-in-dir (group dir)
-  (if (split-frame group dir)
-      (let ((f (tile-group-current-frame group)))
-        (when (frame-window f)
-          (update-window-border (frame-window f)))
-        (show-frame-indicator group))
-      (message "Cannot split smaller than minimum size.")))
+  (let ((f (tile-group-current-frame group)))
+      (if (split-frame group dir)
+	  (progn
+	    (when (frame-window f)
+	      (update-window-border (frame-window f)))
+	    (show-frame-indicator group))
+	(message "Cannot split smaller than minimum size."))))
 
 (define-stumpwm-command "hsplit" ()
   (split-frame-in-dir (current-group) :column))
@@ -585,28 +585,34 @@ returns..which could be forever if you're not careful."
 (define-stumpwm-command "remove" ()
   (remove-split (current-group)))
 
-
 (define-stumpwm-command "only" ()
   (let* ((screen (current-screen))
 	 (group (screen-current-group screen))
 	 (win (frame-window (tile-group-current-frame group)))
 	 (head (current-head group))
 	 (frame (copy-frame head)))
-    (mapc (lambda (w)
-	    ;; windows in other frames disappear
-	    (unless (eq (window-frame w) (tile-group-current-frame group))
-	      (hide-window w))
-	    (setf (window-frame w) frame))
-	  (head-windows group head))
+    (if (atom (tile-group-frame-head group head))
+	(message "There's only one frame.")
+      (progn
+	(mapc (lambda (w)
+		;; windows in other frames disappear
+		(unless (eq (window-frame w) (tile-group-current-frame group))
+		  (hide-window w))
+		(setf (window-frame w) frame))
+	      (head-windows group head))
+	(setf (frame-window frame) win
+	      (tile-group-frame-head group head) frame 
+	      (tile-group-current-frame group) frame)
+	(focus-frame group frame)
+	(when (frame-window frame)
+	  (update-window-border (frame-window frame)))
+	(sync-frame-windows group (tile-group-current-frame group))))))
 
-    (setf (frame-window frame) win
-	  (tile-group-frame-head group head) frame 
-	  (tile-group-current-frame group) frame)
-
-    (focus-frame group frame)
-    (when (frame-window frame)
-      (update-window-border (frame-window frame)))
-    (sync-frame-windows group (tile-group-current-frame group))))
+(define-stumpwm-command "fullscreen" ()
+  "Toggle the fullscreen mode of the current widnow. Use this for clients
+with broken (non-NETWM) fullscreen implemenations, such as any program
+using SDL."
+  (update-fullscreen (current-window) 2))
 
 (define-stumpwm-command "curframe" ()
   (show-frame-indicator (current-group)))
