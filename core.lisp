@@ -2386,6 +2386,7 @@ list of modifier symbols."
 ;  )
 
 (defun handle-mode-line-window (xwin x y width height)
+  (declare (ignore width))
   (let ((ml (find-mode-line-window xwin)))
     (when ml
       (setf (xlib:drawable-height xwin) height)
