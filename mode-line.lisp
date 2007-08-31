@@ -102,7 +102,7 @@ current group.")
     ((xlib:get-property xwin :_KDE_NET_WM_SYSTEM_TRAY_WINDOW_FOR)
      (xlib:change-property (screen-root screen)
 			   :_KDE_NET_WM_SYSTRAY_WINDOWS
-			   (list xwin)
+			   (list (xlib:drawable-id xwin))
 			   :window 32
 			   :mode :append)
      t)
