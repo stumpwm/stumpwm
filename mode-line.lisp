@@ -126,6 +126,7 @@ current group.")
     ;; This is a StumpWM mode-line
     (setf (xlib:drawable-height (mode-line-window ml)) (+ (font-height (xlib:gcontext-font (mode-line-gc ml))) (* *mode-line-pad-y* 2))))
   (setf (xlib:drawable-width (mode-line-window ml)) (- (frame-width (mode-line-head ml)) (* 2 (xlib:drawable-border-width (mode-line-window ml))))
+	(xlib:drawable-height (mode-line-window ml)) (min (xlib:drawable-height (mode-line-window ml)) (/ (head-height (mode-line-head ml)) 4))
 	(mode-line-height ml) (xlib:drawable-height (mode-line-window ml))
 	(xlib:drawable-x (mode-line-window ml)) (head-x (mode-line-head ml))
 	(xlib:drawable-y (mode-line-window ml)) (if (eq (mode-line-position ml) :top)
