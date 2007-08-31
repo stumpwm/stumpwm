@@ -1758,9 +1758,9 @@ depending on the tree's split direction."
     ;; Outline frames (left, top)
     (mapc (lambda (f)
 	    (let ((x (frame-x f))
-		  (y (frame-y f))
+		  (y (frame-display-y group f))
 		  (w (frame-width f))
-		  (h (frame-height f)))
+		  (h (frame-display-height group f)))
 	      (xlib:draw-line (screen-root screen) gc
 			      x (+ halfwidth y) w 0 t)
 	      (xlib:draw-line (screen-root screen) gc
@@ -1769,9 +1769,9 @@ depending on the tree's split direction."
     ;; Outline heads (bottom, right)
     (mapc (lambda (f) 
 	    (let ((x (frame-x f))
-		  (y (frame-y f))
+		  (y (frame-display-y group f))
 		  (w (frame-width f))
-		  (h (frame-height f)))
+		  (h (frame-display-height group f)))
 	      (xlib:draw-line (screen-root screen) gc
 			      (+ x (- w halfwidth)) y 0 h t)
 	      (xlib:draw-line (screen-root screen) gc
@@ -1789,7 +1789,7 @@ windows used to draw the numbers in. The caller must destroy them."
     (mapcar (lambda (f)
 	      (let ((w (xlib:create-window
 			:parent (screen-root screen)
-			:x (frame-x f) :y (frame-y f) :width 1 :height 1
+			:x (frame-x f) :y (frame-display-y group f) :width 1 :height 1
 			:background (get-fg-color-pixel screen)
 			:border (get-border-color-pixel screen)
 			:border-width 1
