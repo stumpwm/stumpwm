@@ -590,10 +590,10 @@ hints have been modified to always be defined and never be greater
 than the root window's width and height."
   (let* ((f (window-frame win))
 	 (x (frame-x f))
-	 (y (frame-y f))
+	 (y (frame-display-y (window-group win) f))
          (border (xlib:drawable-border-width (window-parent win)))
 	 (fwidth (- (frame-width f) (* 2 border)))
-	 (fheight (- (frame-height f)
+	 (fheight (- (frame-display-height (window-group win) f)
 		     (* 2 border)))
 	 (width fwidth)
 	 (height fheight)
@@ -706,7 +706,7 @@ than the root window's width and height."
           (let ((frame (window-frame win)))
             (setf (xlib:drawable-width (window-parent win)) (- (frame-width frame)
                                                                (* 2 (xlib:drawable-border-width (window-parent win))))
-                  (xlib:drawable-height (window-parent win)) (- (frame-height frame)
+                  (xlib:drawable-height (window-parent win)) (- (frame-display-height (window-group win) frame)
                                                                 (* 2 (xlib:drawable-border-width (window-parent win))))))))))
 
 (defun find-free-window-number (group)
