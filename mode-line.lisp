@@ -26,7 +26,8 @@
   format
   position
   gc
-  height)
+  height
+  (mode :stump))
 
 (defvar *mode-line-position* :top
   "Where should the mode line be displayed? :top or :bottom.")
@@ -98,20 +99,21 @@ current group.")
    :override-redirect :on))
 
 (defun resize-mode-line (ml)
+  (when (eq (mode-line-mode ml) :stump)
+    ;; This is a StumpWM mode-line
+    (setf (xlib:drawable-height (mode-line-window ml)) (+ (font-height (xlib:gcontext-font (mode-line-gc ml))) (* *mode-line-pad-y* 2))))
   (setf (xlib:drawable-width (mode-line-window ml)) (- (frame-width (mode-line-head ml)) (* 2 (xlib:drawable-border-width (mode-line-window ml))))
-	(xlib:drawable-height (mode-line-window ml)) (+ (font-height (xlib:gcontext-font (mode-line-gc ml))) (* *mode-line-pad-y* 2))
 	(mode-line-height ml) (xlib:drawable-height (mode-line-window ml))
 	(xlib:drawable-x (mode-line-window ml)) (head-x (mode-line-head ml))
 	(xlib:drawable-y (mode-line-window ml)) (if (eq (mode-line-position ml) :top)
-						    0 
-						    (- (head-height (mode-line-head ml)) (mode-line-height ml)))))
-
+						  0 
+						  (- (head-height (mode-line-head ml)) (mode-line-height ml)))))
 
 (defun frame-display-y (group frame)
   "Return a Y for frame that doesn't overlap the mode-line."
   (let* ((head (frame-head group frame))
 	 (ml (head-mode-line head)))
-    (if ml
+    (if (and ml (not (eq (mode-line-mode ml) :hidden)))
       (progn
 	(case (mode-line-position ml)
 	  (:top
@@ -130,7 +132,7 @@ current group.")
   "Return a HEIGHT for frame that doesn't overlap the mode-line."
   (let* ((head (frame-head group frame))
 	 (ml (head-mode-line head)))
-    (if ml
+    (if (and ml (not (eq (mode-line-mode ml) :hidden)))
       (progn
 	(case (mode-line-position ml)
 	  (:top
@@ -213,6 +215,23 @@ current group.")
 			   (xlib:text-width (xlib:gcontext-font (mode-line-gc ml)) string
 					    :translate #'translate-id)))))
 
+(defun find-mode-line-window (xwin)
+  (dolist (s *screen-list*)
+    (dolist (h (screen-heads s))
+      (let ((mode-line (head-mode-line h)))
+	(when (and mode-line (eq (mode-line-window mode-line) xwin))
+	  (return-from find-mode-line-window t))))))
+
+(defun set-mode-line-window (ml xwin)
+  "Use an external window as mode-line."
+  (xlib:destroy-window (mode-line-window ml))
+  (setf (mode-line-window ml) xwin
+	(mode-line-mode ml) :visible
+	(xlib:window-priority (mode-line-window ml)) :above)
+  (resize-mode-line ml)
+  (dolist (group (screen-groups (mode-line-screen ml)))
+    (sync-all-frame-windows group)))
+
 (defun update-screen-mode-lines ()
   (dolist (s *screen-list*)
     (dolist (h (screen-heads s))
@@ -237,25 +256,35 @@ current group.")
 
 (defun toggle-mode-line (screen head &optional (format '*screen-mode-line-format*))
   (check-type format (or symbol list string))
-  (if (head-mode-line head)
-      (progn
-	(xlib:destroy-window (mode-line-window (head-mode-line head)))
-	(xlib:free-gcontext (mode-line-gc (head-mode-line head)))
-	(setf (head-mode-line head) nil)
-	(dolist (group (screen-groups screen))
-	  (sync-all-frame-windows group))
-;        (maybe-cancel-mode-line-timer))
-        )
+  (let ((ml (head-mode-line head)))
+    (if ml
+      (case (mode-line-mode ml)
+	(:visible
+	  ;; Hide it.
+	  (setf (mode-line-mode ml) :hidden)
+	  (xlib:unmap-window (mode-line-window ml)))
+	(:hidden
+	  ;; Show it.
+	  (setf (mode-line-mode ml) :visible)
+	  (xlib:map-window (mode-line-window ml)))
+	(:stump
+	  ;; Delete it
+	  (xlib:destroy-window (mode-line-window ml))
+	  (xlib:free-gcontext (mode-line-gc ml))
+	  (setf (head-mode-line head) nil)
+	  ;;        (maybe-cancel-mode-line-timer)
+	  ))
       (progn
 	(setf (head-mode-line head) (make-head-mode-line screen head format))
 	(resize-mode-line (head-mode-line head))
 	(redraw-mode-line (head-mode-line head))
 	;; move the frames
 	(dformat 3 "modeline: ~s~%" (head-mode-line head))
-	(dolist (group (screen-groups screen))
-	  (sync-all-frame-windows group))
-        ;; setup the timer
-        (turn-on-mode-line-timer))))
+	;; setup the timer
+	(turn-on-mode-line-timer)))
+
+    (dolist (group (screen-groups screen))
+      (sync-all-frame-windows group))))
 
 (define-stumpwm-command "mode-line" ()
   (toggle-mode-line (current-screen) (current-head)))

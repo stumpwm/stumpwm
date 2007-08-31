@@ -146,7 +146,7 @@ Window types are in +WINDOW-TYPES+.")
 (defparameter +netwm-window-types+
   '(
     ;; (:_NET_WM_WINDOW_TYPE_DESKTOP . :desktop)
-    ;; (:_NET_WM_WINDOW_TYPE_DOCK . :dock)
+    (:_NET_WM_WINDOW_TYPE_DOCK . :dock)
     ;; (:_NET_WM_WINDOW_TYPE_TOOLBAR . :toolbar)
     ;; (:_NET_WM_WINDOW_TYPE_MENU . :menu)
     ;; (:_NET_WM_WINDOW_TYPE_UTILITY . :utility)
