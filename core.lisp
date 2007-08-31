@@ -2194,24 +2194,29 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 (defun make-heads (screen)
   (if (screen-heads screen)
     (mapcar #'copy-head (screen-heads screen))
-    (if (xlib:query-extension *display* "XINERAMA")
-      (let* ((*package* (find-package :stumpwm))
-	     (heads (read-from-string
+    (cond
+      (and 
+       (xlib:query-extension *display* "XINERAMA")
+       (let* ((*package* (find-package :stumpwm))
+	      (heads (read-from-string
 		      (let ((*screen-list* (list screen)))
 			(run-prog-collect-output "/bin/sh" "-c" "echo -n '\('; xdpyinfo -ext XINERAMA | sed -n 's/^\\s\\+head #\\([[:digit:]]\\):\\s\\+\\([[:digit:]]\\+\\)x\\([[:digit:]]\\+\\)\\s*@\\s*\\([[:digit:]]\\+\\),\\([[:digit:]]\\+\\).*$/#S(head :number \\1 :width \\2 :height \\3 :x \\4 :y \\5)/p'; echo -n '\)'")))))
-	     ;; Ignore 'clone' heads.
-	     (setf heads (delete-duplicates heads
-					    :test (lambda (h1 h2) (and (= (frame-height h1) (frame-height h2))
-								       (= (frame-width h1) (frame-width h2))
-								       (= (frame-x h1) (frame-x h2))
-								       (= (frame-y h1) (frame-y h2))))))
-	     heads)
+	 ;; Ignore 'clone' heads.
+	 (setf heads (delete-duplicates heads
+					:test (lambda (h1 h2) (and (= (frame-height h1) (frame-height h2))
+							      (= (frame-width h1) (frame-width h2))
+							      (= (frame-x h1) (frame-x h2))
+							      (= (frame-y h1) (frame-y h2))))))
+	 heads))
+      (t
+       ;; Xinerama not supported, or we got no information about
+       ;; heads for some other reason.
 	(list (make-head :number 0
 			 :x (screen-x screen)
 			 :y (screen-y screen)
 			 :width (screen-width screen)
 			 :height (screen-height screen)
-			 :window nil)))))
+			 :window nil))))))
 
 ;; Determining a frame's head based on position probably won't
 ;; work with overlapping heads. Would it be better to walk
