@@ -220,7 +220,11 @@ current group.")
     (dolist (h (screen-heads s))
       (let ((mode-line (head-mode-line h)))
 	(when (and mode-line (eq (mode-line-window mode-line) xwin))
-	  (return-from find-mode-line-window t))))))
+	  (return-from find-mode-line-window mode-line))))))
+
+(defun sync-mode-line (ml)
+  (dolist (group (screen-groups (mode-line-screen ml)))
+    (sync-all-frame-windows group)))
 
 (defun set-mode-line-window (ml xwin)
   "Use an external window as mode-line."
@@ -229,8 +233,7 @@ current group.")
 	(mode-line-mode ml) :visible
 	(xlib:window-priority (mode-line-window ml)) :above)
   (resize-mode-line ml)
-  (dolist (group (screen-groups (mode-line-screen ml)))
-    (sync-all-frame-windows group)))
+  (sync-mode-line ml))
 
 (defun update-screen-mode-lines ()
   (dolist (s *screen-list*)
