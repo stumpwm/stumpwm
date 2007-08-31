@@ -2389,6 +2389,7 @@ list of modifier symbols."
   (let ((ml (find-mode-line-window xwin)))
     (when ml
       (setf (xlib:drawable-height xwin) height)
+      (update-mode-line-position ml x y)
       (resize-mode-line ml)
       (sync-mode-line ml))))
 
@@ -2447,11 +2448,17 @@ list of modifier symbols."
 	  (handle-unmanaged-window window x y width height border-width value-mask)))))
 
 (defun place-mode-line-window (screen xwin)
-  (unless (head-mode-line (current-head))
-    (toggle-mode-line screen (current-head))
-    (xlib:reparent-window xwin (screen-root screen) 0 0)
-    (xlib:map-window xwin)
-    (set-mode-line-window (head-mode-line (current-head)) xwin)))
+  (let ((head 
+	  (if (head-mode-line (current-head))
+	    (find-if-not #'head-mode-line (screen-heads screen))
+	    (current-head))))
+    (when head
+      (toggle-mode-line screen head)
+      (xlib:reparent-window xwin (screen-root screen) 0 0)
+      (set-mode-line-window (head-mode-line head) xwin)
+      (update-mode-line-position (head-mode-line head) (xlib:drawable-x xwin) (xlib:drawable-y xwin))
+      (xlib:map-window xwin))))
+
 
 (define-stump-event-handler :map-request (parent send-event-p window)
   (unless send-event-p
@@ -2467,6 +2474,7 @@ list of modifier symbols."
 	((eq (xwin-type window) :dock)
 	 (dformat 1 "window is dock-type. placing in mode-line.")
 	 (place-mode-line-window screen window))
+	((mode-line-add-systray-window screen window))
 	(t
 	 (let ((window (process-mapped-window screen window)))
 	   ;; Give it focus

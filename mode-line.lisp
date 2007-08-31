@@ -85,6 +85,29 @@ current group.")
 (defvar *mode-line-timer* nil
   "The timer that updates the modeline")
 
+(defun netwm-remove-systray-window (screen xwin)
+  ;; update _KDE_NET_WM_SYSTRAY_WINDOWS
+  (let ((windows (xlib:get-property (screen-root screen)
+                                        :_KDE_NET_WM_SYSTRAY_WINDOWS
+                                        :type :window)))
+    (xlib:change-property (screen-root screen)
+                          :_KDE_NET_WM_SYSTRAY_WINDOWS
+                          (remove (xlib:drawable-id xwin)
+                                  windows)
+                          :window 32
+                          :mode :replace)))
+
+(defun mode-line-add-systray-window (screen xwin)
+  (cond
+    ((xlib:get-property xwin :_KDE_NET_WM_SYSTEM_TRAY_WINDOW_FOR)
+     (xlib:change-property (screen-root screen)
+			   :_KDE_NET_WM_SYSTRAY_WINDOWS
+			   (list xwin)
+			   :window 32
+			   :mode :append)
+     t)
+    (t nil)))
+
 (defun make-mode-line-window (parent screen)
   "Create a window suitable for a modeline."
   (xlib:create-window
@@ -234,6 +257,23 @@ current group.")
 	(xlib:window-priority (mode-line-window ml)) :above)
   (resize-mode-line ml)
   (sync-mode-line ml))
+
+(defun move-mode-line-to-head (ml head)
+  (if (head-mode-line head)
+    ;; FIXME: head already has a mode-line
+    nil
+    (setf
+	  (head-mode-line head) ml
+	  (head-mode-line (mode-line-head ml)) nil
+   	  (mode-line-head ml) head)))
+
+(defun update-mode-line-position (ml x y)
+  ;; Find the appropriate head
+  (dolist (head (screen-heads (mode-line-screen ml)))
+    (when (and (not (eq head (mode-line-head ml)))
+	       (eq (head-x head) x))
+      (move-mode-line-to-head ml head)))
+  (setf (mode-line-position ml) (if (eq y (head-y (mode-line-head ml))) :top :bottom)))
 
 (defun update-screen-mode-lines ()
   (dolist (s *screen-list*)
