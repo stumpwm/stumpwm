@@ -2519,9 +2519,10 @@ list of modifier symbols."
     (let ((win (or (find-window window)
 		   (find-withdrawn-window window))))
       (if win
-	  (destroy-window win)
-	(let ((ml (find-mode-line-window window)))
-	  (when ml (destroy-mode-line-window ml)))))))
+	(destroy-window win)
+	(progn
+	  (let ((ml (find-mode-line-window window)))
+	    (when ml (destroy-mode-line-window ml))))))))
 
 (defun read-from-keymap (kmap &optional update-fn)
   "Read a sequence of keys from the user, guided by the keymap,

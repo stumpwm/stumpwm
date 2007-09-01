@@ -87,28 +87,9 @@ current group.")
 (defvar *mode-line-timer* nil
   "The timer that updates the modeline")
 
-(defun netwm-remove-systray-window (screen xwin)
-  ;; update _KDE_NET_WM_SYSTRAY_WINDOWS
-  (let ((windows (xlib:get-property (screen-root screen)
-                                        :_KDE_NET_WM_SYSTRAY_WINDOWS
-                                        :type :window)))
-    (xlib:change-property (screen-root screen)
-                          :_KDE_NET_WM_SYSTRAY_WINDOWS
-                          (remove (xlib:drawable-id xwin)
-                                  windows)
-                          :window 32
-                          :mode :replace)))
-
 (defun mode-line-add-systray-window (screen xwin)
-  (cond
-    ((xlib:get-property xwin :_KDE_NET_WM_SYSTEM_TRAY_WINDOW_FOR)
-     (xlib:change-property (screen-root screen)
-			   :_KDE_NET_WM_SYSTRAY_WINDOWS
-			   (list (xlib:drawable-id xwin))
-			   :window 32
-			   :mode :append)
-     t)
-    (t nil)))
+  (declare (ignore screen))
+  (xlib:get-property xwin :_KDE_NET_WM_SYSTEM_TRAY_WINDOW_FOR))
 
 (defun make-mode-line-window (parent screen)
   "Create a window suitable for a modeline."
