@@ -259,6 +259,11 @@ current group.")
   (resize-mode-line ml)
   (sync-mode-line ml))
 
+(defun destroy-mode-line-window (ml)
+  (xlib:destroy-window (mode-line-window ml))
+  (setf (head-mode-line (mode-line-head ml)) nil)
+  (sync-mode-line ml))
+
 (defun move-mode-line-to-head (ml head)
   (if (head-mode-line head)
     ;; FIXME: head already has a mode-line
@@ -275,6 +280,18 @@ current group.")
 	       (eq (head-x head) x))
       (move-mode-line-to-head ml head)))
   (setf (mode-line-position ml) (if (eq y (head-y (mode-line-head ml))) :top :bottom)))
+
+(defun place-mode-line-window (screen xwin)
+  (let ((head
+	  (if (head-mode-line (current-head))
+	    (find-if-not #'head-mode-line (screen-heads screen))
+	    (current-head))))
+    (when head
+      (toggle-mode-line screen head)
+      (xlib:reparent-window xwin (screen-root screen) 0 0)
+      (set-mode-line-window (head-mode-line head) xwin)
+      (update-mode-line-position (head-mode-line head) (xlib:drawable-x xwin) (xlib:drawable-y xwin))
+      (xlib:map-window xwin))))
 
 (defun update-screen-mode-lines ()
   (dolist (s *screen-list*)

@@ -2448,19 +2448,6 @@ list of modifier symbols."
 	  (handle-mode-line-window window x y width height)
 	  (handle-unmanaged-window window x y width height border-width value-mask)))))
 
-(defun place-mode-line-window (screen xwin)
-  (let ((head 
-	  (if (head-mode-line (current-head))
-	    (find-if-not #'head-mode-line (screen-heads screen))
-	    (current-head))))
-    (when head
-      (toggle-mode-line screen head)
-      (xlib:reparent-window xwin (screen-root screen) 0 0)
-      (set-mode-line-window (head-mode-line head) xwin)
-      (update-mode-line-position (head-mode-line head) (xlib:drawable-x xwin) (xlib:drawable-y xwin))
-      (xlib:map-window xwin))))
-
-
 (define-stump-event-handler :map-request (parent send-event-p window)
   (unless send-event-p
     ;; This assumes parent is a root window and it should be.
@@ -2522,8 +2509,10 @@ list of modifier symbols."
     ;; event-window is the window's parent.
     (let ((win (or (find-window window)
 		   (find-withdrawn-window window))))
-      (when win
-	(destroy-window win)))))
+      (if win
+	  (destroy-window win)
+	(let ((ml (find-mode-line-window window)))
+	  (when ml (destroy-mode-line-window ml)))))))
 
 (defun read-from-keymap (kmap &optional update-fn)
   "Read a sequence of keys from the user, guided by the keymap,
