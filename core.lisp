@@ -1820,7 +1820,12 @@ windows used to draw the numbers in. The caller must destroy them."
                         (screen-mapped-windows screen)
                         :window 32
                         :transform #'xlib:drawable-id
-                        :mode :replace))
+                        :mode :replace)
+  (xlib:change-property (screen-root screen)
+			:_NET_CLIENT_LIST_STACKING
+			(xlib:get-property (screen-root screen) :_NET_CLIENT_LIST)
+			:window 32
+			:mode :replace))
 
 (defun screen-add-mapped-window (screen xwin)
   (push xwin (screen-mapped-windows screen))
@@ -2103,7 +2108,11 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
     (xlib:change-property root :_NET_CLIENT_LIST
                           () :window 32
                           :transform #'xlib:drawable-id)
-    ;; TODO: _NET_CLIENT_LIST_STACKING
+
+    ;; _NET_CLIENT_LIST_STACKING
+    (xlib:change-property root :_NET_CLIENT_LIST_STACKING
+                          () :window 32
+                          :transform #'xlib:drawable-id)
 
     ;; _NET_DESKTOP_GEOMETRY
     (xlib:change-property root :_NET_DESKTOP_GEOMETRY
