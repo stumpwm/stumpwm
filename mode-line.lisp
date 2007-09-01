@@ -68,7 +68,9 @@ A string is printed verbatim in the mode line except for
 ")
 
 (defvar *screen-mode-line-formatters* '((#\w fmt-window-list)
-					(#\g fmt-group-list))
+					(#\g fmt-group-list)
+					(#\h fmt-head)
+					(#\W fmt-head-window-list))
   "An alist containing format character format function pairs for
 formatting screen mode-lines. functions are passed the screen's
 current group.")
@@ -225,7 +227,7 @@ current group.")
 (defun redraw-mode-line (ml)
   (when (eq (mode-line-mode ml) :stump)
     (let* ((*current-mode-line-formatters* *screen-mode-line-formatters*)
-	   (*current-mode-line-formatter-args* (list (screen-current-group (mode-line-screen ml))))
+	   (*current-mode-line-formatter-args* (list (screen-current-group (mode-line-screen ml)) (mode-line-head ml)))
 	   (string (mode-line-format-string ml)))
       (xlib:draw-image-glyphs (mode-line-window ml) (mode-line-gc ml)
 			      *mode-line-pad-x*
