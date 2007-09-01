@@ -287,7 +287,7 @@ current group.")
 	    (find-if-not #'head-mode-line (screen-heads screen))
 	    (current-head))))
     (when head
-      (toggle-mode-line screen head)
+      (setf (head-mode-line head) (make-head-mode-line screen head '()))
       (xlib:reparent-window xwin (screen-root screen) 0 0)
       (set-mode-line-window (head-mode-line head) xwin)
       (update-mode-line-position (head-mode-line head) (xlib:drawable-x xwin) (xlib:drawable-y xwin))
