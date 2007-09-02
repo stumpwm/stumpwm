@@ -1004,35 +1004,38 @@ needed."
   (declare (type window window))
   ;; put it in a valid group
   (let ((screen (window-screen window)))
-    (unless (find (window-group window)
-                  (screen-groups screen))
-      (setf (window-group window) (screen-current-group screen)))
-    ;; FIXME: somehow it feels like this could be merged with group-add-window
-    (setf (window-title window) (xwin-name (window-xwin window))
-          (window-class window) (xwin-class (window-xwin window))
-          (window-res window) (xwin-res-name (window-xwin window))
-          (window-role window) (xwin-role (window-xwin window))
-          (window-type window) (xwin-type (window-xwin window))
-          (window-normal-hints window) (xlib:wm-normal-hints (window-xwin window))
-          (window-number window) (find-free-window-number (window-group window))
-          (window-state window) +iconic-state+
-          (xwin-state (window-xwin window)) +iconic-state+
-          (screen-withdrawn-windows screen) (delete window (screen-withdrawn-windows screen))
-          ;; put the window at the end of the list
-	  (group-windows (window-group window)) (append (group-windows (window-group window)) (list window))
-	  (window-frame window) (pick-prefered-frame window))
+    ;; Use window plaecment rules
+    (multiple-value-bind (group frame raise) (get-window-placement screen window)
+      (declare (ignore raise))
+      (unless (find (window-group window)
+		    (screen-groups screen))
+	(setf (window-group window) (or group (screen-current-group screen))))
+      ;; FIXME: somehow it feels like this could be merged with group-add-window
+      (setf (window-title window) (xwin-name (window-xwin window))
+	    (window-class window) (xwin-class (window-xwin window))
+	    (window-res window) (xwin-res-name (window-xwin window))
+	    (window-role window) (xwin-role (window-xwin window))
+	    (window-type window) (xwin-type (window-xwin window))
+	    (window-normal-hints window) (xlib:wm-normal-hints (window-xwin window))
+	    (window-number window) (find-free-window-number (window-group window))
+	    (window-state window) +iconic-state+
+	    (xwin-state (window-xwin window)) +iconic-state+
+	    (screen-withdrawn-windows screen) (delete window (screen-withdrawn-windows screen))
+	    ;; put the window at the end of the list
+	    (group-windows (window-group window)) (append (group-windows (window-group window)) (list window))
+	    (window-frame window) (or frame (pick-prefered-frame window))))
     (screen-add-mapped-window screen (window-xwin window))
     (register-window window)
     ;; give it focus
     (if (deny-request-p window *deny-map-request*)
-        (unless *suppress-deny-messages*
-          (if (eq (window-group window) (current-group))
-              (echo-string (window-screen window) (format nil "'~a' denied map request" (window-name window)))
-              (echo-string (window-screen window) (format nil "'~a' denied map request in group ~a" (window-name window) (group-name (window-group window))))))
-        (frame-raise-window (window-group window) (window-frame window) window
-                            (if (eq (window-frame window)
-                                    (tile-group-current-frame (window-group window)))
-                                t nil)))))
+      (unless *suppress-deny-messages*
+	(if (eq (window-group window) (current-group))
+	  (echo-string (window-screen window) (format nil "'~a' denied map request" (window-name window)))
+	  (echo-string (window-screen window) (format nil "'~a' denied map request in group ~a" (window-name window) (group-name (window-group window))))))
+      (frame-raise-window (window-group window) (window-frame window) window
+			  (if (eq (window-frame window)
+				  (tile-group-current-frame (window-group window)))
+			    t nil)))))
 
 (defun withdraw-window (window)
   "Withdrawing a window means just putting it in a list til we get a destroy event."
