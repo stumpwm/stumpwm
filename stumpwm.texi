@@ -1106,20 +1106,24 @@ frame. This is the default.
 @node Mode-line, Groups, Frames, Top
 @chapter The Mode Line
 The mode line is a bar that runs across either the top or bottom of
-the screen and is used to display information. By default the
-mode line displays the list of windows, similar to the output C-t w
-produces.
+a head and is used to display information. By default the mode line
+displays the list of windows, similar to the output C-t w produces.
+
+Alternatively, external panel applications such as the GNOME panel and
+KDE's kicker may be used. Simply starting one of these programs is enough
+to set it as the mode line of the head it would like to be on (if the
+panel is Xinerama aware) or whichever head is available. In order to
+avoid problems displaying menus, configure your panel application for
+positioning at the top or bottom of the head rather than relying on
+@var{*mode-line-position*}
 
 The mode line can be turned on and off with the @command{mode-line}
 command or the lisp function @code{stumpwm:toggle-mode-line}. Each
-screen has its own mode line. For example:
+head has its own mode line. For example:
 
 @example
-;; turn on/off the mode line for the current screen only.
-(stumpwm:toggle-mode-line (stumpwm:current-screen))
-
-;; turn on/off the mode-line for all the screens
-(mapc 'stumpwm:toggle-mode-line stumpwm:*screen-list*)
+;; turn on/off the mode line for the current head only.
+(stumpwm:toggle-mode-line (stumpwm:current-screen) (stumpwm:current-head))
 @end example
 
 The mode line is updated after every StumpWM command.
@@ -1140,12 +1144,8 @@ might do the following:
 A command to toggle the mode line visibility.
 @end deffn
 
-@defun toggle-mode-line @var{screen}
+@defun toggle-mode-line @var{screen} @var{head}
 Toggle the state of the mode line for the specified screen
-@end defun
-
-@defun screen-mode-line-mode @var{screen} @var{arg}
-Turn on the mode line for @var{screen} if and only if @var{arg} is non-nil.
 @end defun
 
 @defvar *screen-mode-line-format*
@@ -1154,8 +1154,15 @@ be a string or a list. If it is a string the string is printed with
 the following formatting options:
 
 @table @asis
+@item %h
+List the number of the head the mode-line belongs to
+
 @item %w
-List the windows using @var{*window-format*}
+List all windows in the current group windows using @var{*window-format*}
+
+@item %W
+List all windows on the current head of the current group using
+@var{*window-format*}
 
 @item %g
 List the groups using @var{*group-format*}
@@ -1165,7 +1172,7 @@ List the groups using @var{*group-format*}
 The following variables control the color, position, and size of the
 mode line.
 
-@defvar *mode-line-screen-position*
+@defvar *mode-line-position*
 Specifies where the mode line is displayed. Valid values are :top and :bottom.
 @end defvar
 
@@ -1328,8 +1335,7 @@ time.) Heads are logically contained by screens. In a dual-monitor Xinerama
 configuration, there will be one screen with two heads. Non-rectangular layouts
 are supported (frames will not be created in the 'dead zone'.) And message
 windows will be displayed on the current head--that is, the head to which the
-currently focused frame belongs. The mode line is not currently Xinerama-aware.
-
+currently focused frame belongs.
 
 @node Programming With Screens,  , Xinerama, Screens
 @section Programming With Screens
