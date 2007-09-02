@@ -181,7 +181,6 @@ current group.")
 
 (defun make-head-mode-line (screen head format)
   (let ((w (make-mode-line-window (screen-root screen) screen)))
-    (xlib:map-window w)
     (make-mode-line :window w
 		    :screen screen
 		    :head head
@@ -316,12 +315,11 @@ current group.")
       (progn
 	(setf (head-mode-line head) (make-head-mode-line screen head format))
 	(resize-mode-line (head-mode-line head))
+	(xlib:map-window (mode-line-window (head-mode-line head)))
 	(redraw-mode-line (head-mode-line head))
-	;; move the frames
 	(dformat 3 "modeline: ~s~%" (head-mode-line head))
 	;; setup the timer
 	(turn-on-mode-line-timer)))
-
     (dolist (group (screen-groups screen))
       (sync-all-frame-windows group))))
 
