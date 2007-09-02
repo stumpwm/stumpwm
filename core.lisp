@@ -2451,11 +2451,10 @@ list of modifier symbols."
   ;; Grant the configure request but then maximize the window after the granting.
   (dformat 3 "CONFIGURE REQUEST ~@{~S ~}~%" stack-mode window x y width height border-width value-mask)
   (let ((win (find-window window)))
-    (if win
-	(handle-managed-window win width height stack-mode value-mask)
-	(if (eq (xwin-type window) :dock)
-	  (handle-mode-line-window window x y width height)
-	  (handle-unmanaged-window window x y width height border-width value-mask)))))
+    (cond
+      (win (handle-managed-window win width height stack-mode value-mask))
+      ((handle-mode-line-window window x y width height))
+      (t (handle-unmanaged-window window x y width height border-width value-mask)))))
 
 (define-stump-event-handler :map-request (parent send-event-p window)
   (unless send-event-p
@@ -2467,10 +2466,16 @@ list of modifier symbols."
       ;; only absorb it if it's not already managed (it could be iconic)
       (cond
 	(win (dformat 1 "map request for mapped window ~a~%" win))
-	(wwin (restore-window wwin))
 	((eq (xwin-type window) :dock)
-	 (dformat 1 "window is dock-type. placing in mode-line.")
-	 (place-mode-line-window screen window))
+	 (when wwin
+	   (setf screen (window-screen wwin)))
+	 (dformat 1 "window is dock-type. attempting to place in mode-line.")
+	 (place-mode-line-window screen window)
+	 ;; Some panels are broken and only set the dock type after they map and withdraw.
+	 (when wwin
+	   (setf (screen-withdrawn-windows screen) (delete wwin (screen-withdrawn-windows screen))))
+	 t)
+	(wwin (restore-window wwin))
 	((mode-line-add-systray-window screen window))
 	(t
 	 (let ((window (process-mapped-window screen window)))
