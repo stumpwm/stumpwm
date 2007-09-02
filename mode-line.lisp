@@ -262,7 +262,7 @@ current group.")
 	(unless (eq ml (head-mode-line head))
 	  (move-mode-line-to-head ml head))
 	(when (mode-line-head ml)
-	  (setf (mode-line-position ml) (if (= y (head-y (mode-line-head ml))) :top :bottom))))
+	  (setf (mode-line-position ml) (if (< y (/ (head-height (mode-line-head ml)) 2)) :top :bottom))))
       nil)))
 
 (defun place-mode-line-window (screen xwin)
