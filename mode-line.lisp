@@ -288,13 +288,11 @@ current group.")
                                           *mode-line-timeout*
                                           'update-screen-mode-lines)))
 
-#|
 (defun maybe-cancel-mode-line-timer ()
-  (unless (find-if 'screen-mode-line *screen-list*)
+  (unless (find-if 'head-mode-line (mapcan 'screen-heads *screen-list*))
     (when (timer-p *mode-line-timer*)
       (cancel-timer *mode-line-timer*)
       (setf *mode-line-timer* nil))))
-|#
 
 (defun toggle-mode-line (screen head &optional (format '*screen-mode-line-format*))
   (check-type format (or symbol list string))
@@ -314,8 +312,7 @@ current group.")
 	  (xlib:destroy-window (mode-line-window ml))
 	  (xlib:free-gcontext (mode-line-gc ml))
 	  (setf (head-mode-line head) nil)
-	  ;;        (maybe-cancel-mode-line-timer)
-	  ))
+	  (maybe-cancel-mode-line-timer)))
       (progn
 	(setf (head-mode-line head) (make-head-mode-line screen head format))
 	(resize-mode-line (head-mode-line head))
