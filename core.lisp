@@ -1121,14 +1121,6 @@ needed."
     (when last-win
       (update-window-border last-win))))
 
-(defun maybe-hide-windows (new-window group frame)
-  "Hide windows in FRAME depending on what kind of window NEW-WINDOW is. if
-NEW-WINDOW is nil then the windows will be hidden."
-  (when (or (null new-window)
-	    (and (eql frame (window-frame new-window))
-		 (eq (window-type new-window) :normal)))
-    (mapc 'hide-window (remove new-window (frame-windows group frame)))))
-
 (defun focus-window (window)
   "Give the window focus. This means the window will be visible,
 maximized, and given focus."
@@ -1294,15 +1286,14 @@ function expects to be wrapped in a with-state for win."
 
 (defun frame-raise-window (g f w &optional (focus t))
   "Raise the window w in frame f in screen s. if FOCUS is
-T (default) then also focus the frame."
+  T (default) then also focus the frame."
   (let ((oldw (frame-window f)))
     ;; nothing to do when W is nil
     (setf (frame-window f) w)
     (unless (and w (eq oldw w))
-      (when w
-	(raise-window w))
-      ;; The old ones might need to be hidden
-      (maybe-hide-windows w g f))
+      (if w
+	(raise-window w)
+	(mapc 'hide-window (frame-windows g f))))
     (when focus
       (focus-frame g f))))
 
