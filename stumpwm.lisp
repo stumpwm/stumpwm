@@ -195,6 +195,12 @@ of those expired."
                         (xlib:display-finish-output *display*))
                (xlib:access-error ()
                  (return-from stumpwm (write-line "Another window manager is running."))))
+             ;; Load rc file
+             (let ((*package* (find-package *default-package*)))
+               (multiple-value-bind (success err rc) (load-rc-file)
+                 (if success
+                     (and *startup-message* (message "~a" *startup-message*))
+                     (message "Error loading ~A: ~A" rc err))))
              (mapc 'process-existing-windows *screen-list*)
              ;; We need to setup each screen with its current window. Go
              ;; through them in reverse so the first screen's frame ends up
@@ -204,12 +210,6 @@ of those expired."
                  (when (group-windows group)
                    (frame-raise-window group (tile-group-current-frame group) (car (group-windows group))))
                  (focus-frame group (tile-group-current-frame group))))
-             ;; Load rc file
-             (let ((*package* (find-package *default-package*)))
-               (multiple-value-bind (success err rc) (load-rc-file)
-                 (if success
-                     (and *startup-message* (message "~a" *startup-message*))
-                     (message "Error loading ~A: ~A" rc err))))
              ;; Let's manage.
              (let ((*package* (find-package *default-package*)))
                (run-hook *start-hook*)
