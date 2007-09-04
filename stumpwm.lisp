@@ -206,12 +206,14 @@ of those expired."
              ;; through them in reverse so the first screen's frame ends up
              ;; with focus.
              (dolist (s (reverse *screen-list*))
-               (let ((group (screen-current-group s)))
-                 (when (group-windows group)
-                   (frame-raise-window group (tile-group-current-frame group) (car (group-windows group))))
-                 (focus-frame group (tile-group-current-frame group))))
+	       (let ((netwm-id (first (xlib:get-property (screen-root s) :_NET_WM_CURRENT_DESKTOP))))
+		 (if (and netwm-id (< netwm-id (length (screen-groups s))))
+		   (switch-to-group (elt (sort-groups s) netwm-id))
+		   (switch-to-group (find-group s "Default"))))
+	       (dolist (w (group-windows (screen-current-group s)))
+		 (xwin-unhide (window-xwin w) (window-parent w))))
              ;; Let's manage.
-             (let ((*package* (find-package *default-package*)))
-               (run-hook *start-hook*)
-               (stumpwm-internal-loop)))
-        (xlib:close-display *display*)))))
+	     (let ((*package* (find-package *default-package*)))
+	       (run-hook *start-hook*)
+	       (stumpwm-internal-loop)))
+	(xlib:close-display *display*)))))

@@ -756,17 +756,16 @@ than the root window's width and height."
 	(unless (or (eq (xlib:window-override-redirect win) :on)
 		    (internal-window-p screen win))
 	  (if (eq (xwin-type win) :dock)
+	    (progn
+	      (dformat 1 "Window ~S is dock-type. Placing in mode-line.~%" win)
+	      (place-mode-line-window screen win))
+	    (if (or (eql map-state :viewable)
+		    (eql wm-state +iconic-state+))
 	      (progn
-	        (dformat 1 "Window ~S is dock-type. Placing in mode-line.~%" win)
-		(place-mode-line-window screen win))
-	      (if (or (eql map-state :viewable)
-		      (eql wm-state +iconic-state+))
-		  (progn
-		    (dformat 1 "Processing ~S ~S~%" (xwin-name win) win)
-		    (process-mapped-window screen win))))))))
-  ;; Once processing them, hide them all. Later one will be mapped and
-  ;; focused. We can do this because on start up there is only 1 group.
-  (mapcar 'hide-window (group-windows (screen-current-group screen))))
+		(dformat 1 "Processing ~S ~S~%" (xwin-name win) win)
+		(process-mapped-window screen win))))))))
+  (dolist (w (screen-windows screen))
+    (setf (window-state w) +normal-state+)))
 
 (defun xwin-grab-keys (win)
   (labels ((grabit (w key)
@@ -905,6 +904,26 @@ than the root window's width and height."
 			     (unless (eq (window-frame window) frame)
 			       (pull-window window frame)))))))
 
+(defun assign-window (window group frame)
+  (setf (window-group window) group
+	(window-number window) (find-free-window-number group)
+	(window-frame window) (or frame (pick-prefered-frame window)))
+  (setf (group-windows group) (append (group-windows group) (list window))))
+
+(defun place-existing-window (screen xwin)
+  "Called for windows existing at startup."
+  (let ((window (xwin-to-window xwin))
+	(netwm-id (first (xlib:get-property xwin :_NET_WM_DESKTOP)))
+	(group (screen-current-group screen))
+	(frame nil))
+    (when (and netwm-id (< netwm-id (length (screen-groups screen))))
+      (setf group (elt (sort-groups screen) netwm-id)))
+    (let ((to-frame (find-frame group (xlib:drawable-x xwin) (xlib:drawable-y xwin))))
+      (when to-frame
+	(setf frame to-frame)))
+  (assign-window window group frame)
+  window))
+
 (defun place-window (screen xwin)
   "Pick a group and frame for XWIN (replaces group-add-window)"
   (let* ((window (xwin-to-window xwin))
@@ -915,17 +934,7 @@ than the root window's width and height."
       (setf group (or to-group group)
 	    frame to-frame
 	    raise to-raise))
-    (when *processing-existing-windows*
-      (let ((netwm-id (first (xlib:get-property xwin :_NET_WM_DESKTOP)))
-	    (to-frame (find-frame group (xlib:drawable-x xwin) (xlib:drawable-y xwin))))
-	(when (and netwm-id (< netwm-id (length (screen-groups screen))))
-	  (setf group (elt (sort-groups screen) netwm-id)))
-	(when to-frame
-	  (setf frame to-frame))))
-    (setf (window-group window) group
-	  (window-number window) (find-free-window-number group)
-	  (window-frame window) (or frame (pick-prefered-frame window)))
-    (setf (group-windows group) (append (group-windows group) (list window)))
+    (assign-window window group frame)
     (setf (xwin-state xwin) +iconic-state+)
     (xlib:change-property xwin :_NET_WM_DESKTOP
 			  (list (netwm-group-id group))
@@ -933,9 +942,9 @@ than the root window's width and height."
     (when frame
       (unless (eq (current-group) group)
 	(if (eq raise t)
-	    (switch-to-group group)
-	    (message "Placing window ~a in frame ~d of group ~a"
-		     (window-name window) (frame-number frame) (group-name group))))
+	  (switch-to-group group)
+	  (message "Placing window ~a in frame ~d of group ~a"
+		   (window-name window) (frame-number frame) (group-name group))))
       (when (eq raise t)
 	(switch-to-screen (group-screen group))
 	(focus-frame group frame))
@@ -975,7 +984,9 @@ than the root window's width and height."
 
 (defun add-window (screen xwin)
   (screen-add-mapped-window screen xwin)
-  (register-window (place-window screen xwin)))
+  (register-window (if *processing-existing-windows* 
+		     (place-existing-window screen xwin)
+		     (place-window screen xwin))))
 
 (defun netwm-remove-window (screen window)
   ;; update _NET_CLIENT_LIST
