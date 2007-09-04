@@ -26,8 +26,6 @@
 
 (in-package :stumpwm)
 
-(defvar *processing-existing-windows* nil)
-
 ;; Do it this way so its easier to wipe the map and get a clean one.
 (when (null *top-map*)
   (setf *top-map*
@@ -259,10 +257,11 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
     (xlib:change-property root :_NET_NUMBER_OF_DESKTOPS
 			  (list (length (screen-groups screen)))
 			  :cardinal 32)
-    ;; _NET_CURRENT_DESKTOP
-    (xlib:change-property root :_NET_CURRENT_DESKTOP
-			  (list (netwm-group-id (screen-current-group screen)))
-			  :cardinal 32)
+    (unless *initializing*
+      ;; _NET_CURRENT_DESKTOP
+      (xlib:change-property root :_NET_CURRENT_DESKTOP
+			    (list (netwm-group-id (screen-current-group screen)))
+			    :cardinal 32))
     ;; _NET_DESKTOP_NAMES
     (xlib:change-property root :_NET_DESKTOP_NAMES
 			  (let ((names (mapcan
@@ -765,7 +764,8 @@ than the root window's width and height."
 		(dformat 1 "Processing ~S ~S~%" (xwin-name win) win)
 		(process-mapped-window screen win))))))))
   (dolist (w (screen-windows screen))
-    (setf (window-state w) +normal-state+)))
+    (setf (window-state w) +normal-state+)
+    (xwin-hide (window-xwin w) (window-parent w))))
 
 (defun xwin-grab-keys (win)
   (labels ((grabit (w key)
@@ -908,21 +908,19 @@ than the root window's width and height."
   (setf (window-group window) group
 	(window-number window) (find-free-window-number group)
 	(window-frame window) (or frame (pick-prefered-frame window)))
-  (setf (group-windows group) (append (group-windows group) (list window))))
+  (push window (group-windows group))
+  (dformat 3 "Group windows: ~S~%" (group-windows group)))
 
 (defun place-existing-window (screen xwin)
   "Called for windows existing at startup."
-  (let ((window (xwin-to-window xwin))
-	(netwm-id (first (xlib:get-property xwin :_NET_WM_DESKTOP)))
-	(group (screen-current-group screen))
-	(frame nil))
-    (when (and netwm-id (< netwm-id (length (screen-groups screen))))
-      (setf group (elt (sort-groups screen) netwm-id)))
-    (let ((to-frame (find-frame group (xlib:drawable-x xwin) (xlib:drawable-y xwin))))
-      (when to-frame
-	(setf frame to-frame)))
-  (assign-window window group frame)
-  window))
+  (let* ((window (xwin-to-window xwin))
+	 (netwm-id (first (xlib:get-property xwin :_NET_WM_DESKTOP)))
+	 (group (if (and netwm-id (< netwm-id (length (screen-groups screen))))
+		  (elt (sort-groups screen) netwm-id)
+		  (screen-current-group screen))))
+    (dformat 3 "Assigning pre-existing window ~S to group ~S~%" (window-name window) (group-name group))
+    (assign-window window group (find-frame group (xlib:drawable-x xwin) (xlib:drawable-y xwin)))
+    window))
 
 (defun place-window (screen xwin)
   "Pick a group and frame for XWIN (replaces group-add-window)"
@@ -984,7 +982,7 @@ than the root window's width and height."
 
 (defun add-window (screen xwin)
   (screen-add-mapped-window screen xwin)
-  (register-window (if *processing-existing-windows* 
+  (register-window (if *processing-existing-windows*
 		     (place-existing-window screen xwin)
 		     (place-window screen xwin))))
 

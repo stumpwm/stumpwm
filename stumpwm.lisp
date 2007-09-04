@@ -185,33 +185,35 @@ of those expired."
       ;; In the event of an error, we always need to close the display
       (unwind-protect
            (progn
-             ;; we need to do this first because init-screen grabs keys
-             (update-modifier-map)
-             ;; Initialize all the screens
-             (handler-case
-                 (progn (setf *screen-list* (loop for i in (xlib:display-roots *display*)
-                                               for n from 0
-                                               collect (init-screen i n host)))
-                        (xlib:display-finish-output *display*))
-               (xlib:access-error ()
-                 (return-from stumpwm (write-line "Another window manager is running."))))
-             ;; Load rc file
-             (let ((*package* (find-package *default-package*)))
-               (multiple-value-bind (success err rc) (load-rc-file)
-                 (if success
-                     (and *startup-message* (message "~a" *startup-message*))
-                     (message "Error loading ~A: ~A" rc err))))
-             (mapc 'process-existing-windows *screen-list*)
-             ;; We need to setup each screen with its current window. Go
-             ;; through them in reverse so the first screen's frame ends up
-             ;; with focus.
-             (dolist (s (reverse *screen-list*))
-	       (let ((netwm-id (first (xlib:get-property (screen-root s) :_NET_WM_CURRENT_DESKTOP))))
-		 (if (and netwm-id (< netwm-id (length (screen-groups s))))
-		   (switch-to-group (elt (sort-groups s) netwm-id))
-		   (switch-to-group (find-group s "Default"))))
-	       (dolist (w (group-windows (screen-current-group s)))
-		 (xwin-unhide (window-xwin w) (window-parent w))))
+	     (let ((*initializing* t))
+	       ;; we need to do this first because init-screen grabs keys
+	       (update-modifier-map)
+	       ;; Initialize all the screens
+	       (handler-case
+		 (progn (setf *screen-list* (loop for i in (xlib:display-roots *display*)
+						  for n from 0
+						  collect (init-screen i n host)))
+			(xlib:display-finish-output *display*))
+		 (xlib:access-error ()
+				    (return-from stumpwm (write-line "Another window manager is running."))))
+	       ;; Load rc file
+	       (let ((*package* (find-package *default-package*)))
+		 (multiple-value-bind (success err rc) (load-rc-file)
+		   (if success
+		     (and *startup-message* (message "~a" *startup-message*))
+		     (message "Error loading ~A: ~A" rc err))))
+	       (mapc 'process-existing-windows *screen-list*)
+	       ;; We need to setup each screen with its current window. Go
+	       ;; through them in reverse so the first screen's frame ends up
+	       ;; with focus.
+	       (dolist (s (reverse *screen-list*))
+		 (let ((netwm-id (first (xlib:get-property (screen-root s) :_NET_CURRENT_DESKTOP))))
+		   (when (and netwm-id (< netwm-id (length (screen-groups s))))
+		     (switch-to-group (elt (sort-groups s) netwm-id))))
+		 (dolist (g (screen-groups s))
+		   (focus-frame g (tile-group-current-frame g)))
+		 (dolist (w (group-windows (screen-current-group s)))
+		   (unhide-window w))))
              ;; Let's manage.
 	     (let ((*package* (find-package *default-package*)))
 	       (run-hook *start-hook*)

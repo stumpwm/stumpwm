@@ -345,6 +345,12 @@ single char keys are supported.")
 (defvar *screen-list* '()
   "List of screens")
 
+(defvar *initializing* nil
+  "True when starting stumpwm.")
+
+(defvar *processing-existing-windows* nil
+  "True when processing pre-existing windows at startup.")
+
 ;;; Hook functionality
 
 (defun run-hook-with-args (hook &rest args)
