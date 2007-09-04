@@ -26,6 +26,8 @@
 
 (in-package :stumpwm)
 
+(defvar *processing-existing-windows* nil)
+
 ;; Do it this way so its easier to wipe the map and get a clean one.
 (when (null *top-map*)
   (setf *top-map*
@@ -745,7 +747,8 @@ than the root window's width and height."
 
 (defun process-existing-windows (screen)
   "Windows present when stumpwm starts up must be absorbed by stumpwm."
-  (let ((children (xlib:query-tree (screen-root screen))))
+  (let ((children (xlib:query-tree (screen-root screen)))
+	(*processing-existing-windows* t))
     (dolist (win children)
       (let ((map-state (xlib:window-map-state win))
 	    (wm-state (xwin-state win)))
@@ -753,14 +756,14 @@ than the root window's width and height."
 	(unless (or (eq (xlib:window-override-redirect win) :on)
 		    (internal-window-p screen win))
 	  (if (eq (xwin-type win) :dock)
-	    (progn
-	      (dformat 1 "Window ~S is dock-type. Placing in mode-line.~%" win)
-	      (place-mode-line-window screen win))
-	    (if (or (eql map-state :viewable)
-		    (eql wm-state +iconic-state+))
 	      (progn
-		(dformat 1 "Processing ~S ~S~%" (xwin-name win) win)
-		(process-mapped-window screen win))))))))
+	        (dformat 1 "Window ~S is dock-type. Placing in mode-line.~%" win)
+		(place-mode-line-window screen win))
+	      (if (or (eql map-state :viewable)
+		      (eql wm-state +iconic-state+))
+		  (progn
+		    (dformat 1 "Processing ~S ~S~%" (xwin-name win) win)
+		    (process-mapped-window screen win))))))))
   ;; Once processing them, hide them all. Later one will be mapped and
   ;; focused. We can do this because on start up there is only 1 group.
   (mapcar 'hide-window (group-windows (screen-current-group screen))))
@@ -864,7 +867,6 @@ than the root window's width and height."
 			   (equal group-name (group-name (or (window-group w) (current-group)))))
 			  (apply 'window-matches-properties? w props))))
 
-
 (defun frame-by-number (group n)
   (unless (eq n nil)
     (find n
@@ -882,14 +884,14 @@ than the root window's width and height."
 	   (when (window-matches-rule? window rule) (return rule)))))
     (if (null match)
 	(values)
-      (destructuring-bind (group-name frame raise lock &rest props) match
-			  (declare (ignore lock props))
-			  (let ((group (find-group screen group-name)))
-			    (if group
-				(values group (frame-by-number group frame) raise)
-			      (progn
-				(message "Error placing window, group \"~a\" does not exist." group-name)
-				(values))))))))
+	(destructuring-bind (group-name frame raise lock &rest props) match
+	  (declare (ignore lock props))
+	  (let ((group (find-group screen group-name)))
+	    (if group
+		(values group (frame-by-number group frame) raise)
+		(progn
+		  (message "Error placing window, group \"~a\" does not exist." group-name)
+		  (values))))))))
 
 (defun sync-window-placement ()
   "Re-arrange existing windows according to placement rules"
@@ -910,9 +912,16 @@ than the root window's width and height."
 	 (frame nil)
 	 (raise nil))
     (multiple-value-bind (to-group to-frame to-raise) (get-window-placement screen window)
-			 (setf group (or to-group group)
-			       frame to-frame
-			       raise to-raise))
+      (setf group (or to-group group)
+	    frame to-frame
+	    raise to-raise))
+    (when *processing-existing-windows*
+      (let ((netwm-id (first (xlib:get-property xwin :_NET_WM_DESKTOP)))
+	    (to-frame (find-frame group (xlib:drawable-x xwin) (xlib:drawable-y xwin))))
+	(when (and netwm-id (< netwm-id (length (screen-groups screen))))
+	  (setf group (elt (sort-groups screen) netwm-id)))
+	(when to-frame
+	  (setf frame to-frame))))
     (setf (window-group window) group
 	  (window-number window) (find-free-window-number group)
 	  (window-frame window) (or frame (pick-prefered-frame window)))
@@ -925,8 +934,8 @@ than the root window's width and height."
       (unless (eq (current-group) group)
 	(if (eq raise t)
 	    (switch-to-group group)
-	  (message "Placing window ~a in frame ~d of group ~a"
-		   (window-name window) (frame-number frame) (group-name group))))
+	    (message "Placing window ~a in frame ~d of group ~a"
+		     (window-name window) (frame-number frame) (group-name group))))
       (when (eq raise t)
 	(switch-to-screen (group-screen group))
 	(focus-frame group frame))
@@ -935,33 +944,33 @@ than the root window's width and height."
 
 (defun pick-prefered-frame (window)
   (let* ((group (window-group window))
-         (frames (group-frames group))
-         (default (tile-group-current-frame group)))
+	 (frames (group-frames group))
+	 (default (tile-group-current-frame group)))
     (or
      (if (or (functionp *new-window-prefered-frame*)
-             (and (symbolp *new-window-prefered-frame*)
-                  (fboundp *new-window-prefered-frame*)))
-         (handler-case
-             (funcall *new-window-prefered-frame* window)
-           (error (c)
-             (message "Error while calling *new-window-prefered-frame*: ~a" c)
-             nil))
-         (loop for i in *new-window-prefered-frame*
-            thereis (case i
-                      (:last
-                       ;; last-frame can be stale
-                       (and (> (length frames) 1)
-                            (tile-group-last-frame group)))
-                      (:unfocused
-                       (find-if (lambda (f)
-                                  (not (eq f (tile-group-current-frame group))))
-                                frames))
-                      (:empty
-                       (find-if (lambda (f)
-                                  (null (frame-window f)))
-                                frames))
-                      (t                ; :focused
-                       (tile-group-current-frame group)))))
+	     (and (symbolp *new-window-prefered-frame*)
+		  (fboundp *new-window-prefered-frame*)))
+	 (handler-case
+	     (funcall *new-window-prefered-frame* window)
+	   (error (c)
+	     (message "Error while calling *new-window-prefered-frame*: ~a" c)
+	     nil))
+	 (loop for i in *new-window-prefered-frame*
+	       thereis (case i
+			 (:last
+			  ;; last-frame can be stale
+			  (and (> (length frames) 1)
+			       (tile-group-last-frame group)))
+			 (:unfocused
+			  (find-if (lambda (f)
+				     (not (eq f (tile-group-current-frame group))))
+				   frames))
+			 (:empty
+			  (find-if (lambda (f)
+				     (null (frame-window f)))
+				   frames))
+			 (t		; :focused
+			  (tile-group-current-frame group)))))
      default)))
 
 (defun add-window (screen xwin)
@@ -971,14 +980,14 @@ than the root window's width and height."
 (defun netwm-remove-window (screen window)
   ;; update _NET_CLIENT_LIST
   (let ((client-list (xlib:get-property (screen-root screen)
-                                        :_NET_CLIENT_LIST
-                                        :type :window)))
+					:_NET_CLIENT_LIST
+					:type :window)))
     (xlib:change-property (screen-root screen)
-                          :_NET_CLIENT_LIST
-                          (remove (xlib:drawable-id (window-xwin window))
-                                  client-list)
-                          :window 32
-                          :mode :replace)
+			  :_NET_CLIENT_LIST
+			  (remove (xlib:drawable-id (window-xwin window))
+				  client-list)
+			  :window 32
+			  :mode :replace)
     ;; remove _NET_WM_DESKTOP property
     (xlib:delete-property (window-xwin window) :_NET_WM_DESKTOP)))
 
@@ -997,10 +1006,10 @@ needed."
     (update-screen-mode-lines)
     ;; Set allowed actions
     (xlib:change-property xwin :_NET_WM_ALLOWED_ACTIONS
-                          (mapcar (lambda (a)
-                                    (xlib:intern-atom *display* a))
-                                  +netwm-allowed-actions+)
-                          :atom 32)
+			  (mapcar (lambda (a)
+				    (xlib:intern-atom *display* a))
+				  +netwm-allowed-actions+)
+			  :atom 32)
     ;; Run the map window hook on it
     (run-hook-with-args *map-window-hook* window)
     window))
@@ -1283,6 +1292,18 @@ function expects to be wrapped in a with-state for win."
 
 
 ;;; Frame functions
+
+(defun find-frame (group x y)
+  "Return the frame of GROUP containing the pixel at X Y"
+  (dolist (f (group-frames group))
+    (let* ((fy (frame-y f))
+	   (fx (frame-x f))
+	   (fwx (+ fx (frame-width f)))
+	   (fhy (+ fy (frame-height f))))
+      (when (and
+	     (>= y fy) (<= y fhy)
+	     (>= x fx) (<= x fwx)
+	     (return f))))))
 
 (defun frame-raise-window (g f w &optional (focus t))
   "Raise the window w in frame f in screen s. if FOCUS is
