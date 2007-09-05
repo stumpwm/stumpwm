@@ -1293,7 +1293,8 @@ function expects to be wrapped in a with-state for win."
     (unless (and w (eq oldw w))
       (if w
 	(raise-window w)
-	(mapc 'hide-window (frame-windows g f))))
+	(mapc 'hide-window (frame-windows g f)))
+      (netwm-update-client-list-stacking (group-screen g)))
     (when focus
       (focus-frame g f))))
 
@@ -1808,6 +1809,15 @@ windows used to draw the numbers in. The caller must destroy them."
 
 ;;; Screen functions
 
+(defun netwm-update-client-list-stacking (screen)
+  (xlib:change-property (screen-root screen)
+			:_NET_CLIENT_LIST_STACKING
+			;; Order is bottom to top.
+			(reverse (mapcar 'window-xwin (all-windows)))
+			:window 32
+                        :transform #'xlib:drawable-id
+			:mode :replace))
+
 (defun netwm-update-client-list (screen)
   (xlib:change-property (screen-root screen)
                         :_NET_CLIENT_LIST
@@ -1815,11 +1825,8 @@ windows used to draw the numbers in. The caller must destroy them."
                         :window 32
                         :transform #'xlib:drawable-id
                         :mode :replace)
-  (xlib:change-property (screen-root screen)
-			:_NET_CLIENT_LIST_STACKING
-			(xlib:get-property (screen-root screen) :_NET_CLIENT_LIST)
-			:window 32
-			:mode :replace))
+  (netwm-update-client-list-stacking screen))
+
 
 (defun screen-add-mapped-window (screen xwin)
   (push xwin (screen-mapped-windows screen))
