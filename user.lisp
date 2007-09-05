@@ -1315,6 +1315,7 @@ be found, select it.  Otherwise simply run cmd."
 	  (define-key m (kbd "C-p") "gprev")
 	  (define-key m (kbd "'") "gselect")
 	  (define-key m (kbd "m") "gmove")
+	  (define-key m (kbd "M") "gmove-marked")
 	  (define-key m (kbd "k") "gkill")
 	  (define-key m (kbd "1") "gselect 1")
 	  (define-key m (kbd "2") "gselect 2")
