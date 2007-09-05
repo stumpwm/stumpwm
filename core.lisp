@@ -2492,7 +2492,13 @@ list of modifier symbols."
   (dformat 3 "CONFIGURE REQUEST ~@{~S ~}~%" stack-mode window x y width height border-width value-mask)
   (let ((win (find-window window)))
     (cond
-      (win (handle-managed-window win width height stack-mode value-mask))
+      (win
+	(let* ((group (window-group win))
+	       (frame (find-frame group x y)))
+	  (when frame
+	    (setf (window-frame win) frame)
+	    (frame-raise-window group frame win nil)))
+	(handle-managed-window win width height stack-mode value-mask))
       ((handle-mode-line-window window x y width height))
       (t (handle-unmanaged-window window x y width height border-width value-mask)))))
 
