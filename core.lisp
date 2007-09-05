@@ -754,7 +754,7 @@ than the root window's width and height."
 		    (internal-window-p screen win))
 	  (if (eq (xwin-type win) :dock)
 	    (progn
-	      (dformat 1 "window is dock-type. placing in mode-line.")
+	      (dformat 1 "Window ~S is dock-type. Placing in mode-line.~%" win)
 	      (place-mode-line-window screen win))
 	    (if (or (eql map-state :viewable)
 		    (eql wm-state +iconic-state+))
