@@ -977,13 +977,18 @@ than the root window's width and height."
 				     (null (frame-window f)))
 				   frames))
 			 (:choice
-			   (let* ((hints (window-normal-hints window))
-				  (x (and hints (xlib:wm-size-hints-x hints)))
-				  (y (and hints (xlib:wm-size-hints-y hints))))
-			     ;;; TODO: program-specified-position-p and user-specified-position-p
-			     ;;; can be used here if necessary.
-			     (when (or x y)
-			       (find-frame group x y))))
+			   ;; Transient windows sometimes specify a location
+			   ;; inside where the client thinks it's window
+			   ;; is located. And I don't know how to change
+			   ;; what the client thinks.
+			   (unless (find (window-type window) '(:transient :dialog))
+			     (let* ((hints (window-normal-hints window))
+				    (x (and hints (xlib:wm-size-hints-x hints)))
+				    (y (and hints (xlib:wm-size-hints-y hints))))
+			       ;;; TODO: program-specified-position-p and user-specified-position-p
+			       ;;; can be used here if necessary.
+			       (when (or x y)
+				 (find-frame group x y)))))
 
 			 (t		; :focused
 			  (tile-group-current-frame group)))))
@@ -2470,6 +2475,10 @@ list of modifier symbols."
   ;; Grant the stack-mode change (if it's mapped)
   (set-window-geometry window :width width :height height)
   (maximize-window window)
+  ;; Send a synthetic configure-notify event so that the window
+  ;; knows where it is onscreen. This fixes problems with drop-down
+  ;; menus, etc.
+  (xwin-send-configuration-notify (window-xwin window) (window-x window) (window-y window) (window-height window) (window-width window) 0)
   (when (and (window-in-current-group-p window)
 	     ;; stack-mode change?
 	     (= 64 (logand value-mask 64)))
