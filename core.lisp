@@ -2478,7 +2478,7 @@ list of modifier symbols."
   ;; Send a synthetic configure-notify event so that the window
   ;; knows where it is onscreen. This fixes problems with drop-down
   ;; menus, etc.
-  (xwin-send-configuration-notify (window-xwin window) (window-x window) (window-y window) (window-height window) (window-width window) 0)
+  (xwin-send-configuration-notify (window-xwin window) (frame-x (window-frame window)) (frame-y (window-frame window)) (window-height window) (window-width window) 0)
   (when (and (window-in-current-group-p window)
 	     ;; stack-mode change?
 	     (= 64 (logand value-mask 64)))
@@ -2502,11 +2502,12 @@ list of modifier symbols."
   (let ((win (find-window window)))
     (cond
       (win
-	(let* ((group (window-group win))
-	       (frame (find-frame group x y)))
-	  (when frame
-	    (setf (window-frame win) frame)
-	    (frame-raise-window group frame win nil)))
+	(when *honor-window-moves*
+	  (let* ((group (window-group win))
+		 (frame (find-frame group x y)))
+	    (when frame
+	      (setf (window-frame win) frame)
+	      (frame-raise-window group frame win nil))))
 	(handle-managed-window win width height stack-mode value-mask))
       ((handle-mode-line-window window x y width height))
       (t (handle-unmanaged-window window x y width height border-width value-mask)))))

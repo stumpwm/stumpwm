@@ -721,6 +721,9 @@ then only the class ID is matched.")
 (defvar *suppress-deny-messages* nil
   "Set this to T so stumpwm doesn't notify you of denied raise/map requests.")
 
+(defvar *honor-window-moves* t
+  "Allow windows to move between frames.")
+
 ;; FIXME: maybe this should be a method to allow user customizable matching?
 (defun match-res-or-type (window res)
   (or (and (stringp res)
