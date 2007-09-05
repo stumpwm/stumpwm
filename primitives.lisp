@@ -768,7 +768,7 @@ value.")
 (defvar *new-window-prefered-frame* '(:focused)
   "Controls where new windows appear. It's a list where the more
 prefered possibilities are closer to the head. Valid list
-elements are :focused, :last, :empty, :unfocused. This can also
+elements are :focused, :last, :empty, :choice, :unfocused. This can also
 be a function, in which case the function should take 1 argument,
 the new window, and return the prefered frame.")
 

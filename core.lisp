@@ -976,6 +976,15 @@ than the root window's width and height."
 			  (find-if (lambda (f)
 				     (null (frame-window f)))
 				   frames))
+			 (:choice
+			   (let* ((hints (window-normal-hints window))
+				  (x (and hints (xlib:wm-size-hints-x hints)))
+				  (y (and hints (xlib:wm-size-hints-y hints))))
+			     ;;; TODO: program-specified-position-p and user-specified-position-p
+			     ;;; can be used here if necessary.
+			     (when (or x y)
+			       (find-frame group x y))))
+
 			 (t		; :focused
 			  (tile-group-current-frame group)))))
      default)))
