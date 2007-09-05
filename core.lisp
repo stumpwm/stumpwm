@@ -830,6 +830,7 @@ than the root window's width and height."
   (make-window
    :xwin xwin
    :width (xlib:drawable-width xwin) :height (xlib:drawable-height xwin)
+   :x (xlib:drawable-x xwin) :y (xlib:drawable-y xwin)
    :title (xwin-name xwin)
    :class (xwin-class xwin)
    :res (xwin-res-name xwin)
@@ -978,18 +979,11 @@ than the root window's width and height."
 				   frames))
 			 (:choice
 			   ;; Transient windows sometimes specify a location
-			   ;; inside where the client thinks it's window
-			   ;; is located. And I don't know how to change
-			   ;; what the client thinks.
+			   ;; relative to the TRANSIENT_FOR window. Just ignore
+			   ;; these hints.
 			   (unless (find (window-type window) '(:transient :dialog))
-			     (let* ((hints (window-normal-hints window))
-				    (x (and hints (xlib:wm-size-hints-x hints)))
-				    (y (and hints (xlib:wm-size-hints-y hints))))
-			       ;;; TODO: program-specified-position-p and user-specified-position-p
-			       ;;; can be used here if necessary.
-			       (when (or x y)
-				 (find-frame group x y)))))
-
+			     (when (xlib:wm-size-hints-user-specified-position-p (window-normal-hints window))
+			       (find-frame group (window-x window) (window-y window)))))
 			 (t		; :focused
 			  (tile-group-current-frame group)))))
      default)))
@@ -2496,18 +2490,30 @@ list of modifier symbols."
              (unless (eq (window-frame window) oldf)
                (show-frame-indicator (window-group window)))))))))
 
+(defun handle-window-move (win x y relative-to &optional (value-mask -1))
+  (when *honor-window-moves*
+    (dformat 3 "Window requested new position ~D,~D relative to ~S~%" x y relative-to)
+    (labels ((has-x (mask) (= 1 (logand mask 1)))
+	     (has-y (mask) (= 2 (logand mask 2))))
+      (when (or (eq relative-to :root) (has-x value-mask) (has-y value-mask))
+	(let* ((group (window-group win))
+	       (pos  (if (eq relative-to :parent)
+		       (list
+			 (+ (xlib:drawable-x (window-parent win)) x)
+			 (+ (xlib:drawable-y (window-parent win)) y))
+		       (list x y)))
+	       (frame (apply #'find-frame group pos)))
+	  (when frame
+	    (setf (window-frame win) frame)
+	    (frame-raise-window group frame win nil)))))))
+
 (define-stump-event-handler :configure-request (stack-mode #|parent|# window #|above-sibling|# x y width height border-width value-mask)
   ;; Grant the configure request but then maximize the window after the granting.
   (dformat 3 "CONFIGURE REQUEST ~@{~S ~}~%" stack-mode window x y width height border-width value-mask)
   (let ((win (find-window window)))
     (cond
       (win
-	(when *honor-window-moves*
-	  (let* ((group (window-group win))
-		 (frame (find-frame group x y)))
-	    (when frame
-	      (setf (window-frame win) frame)
-	      (frame-raise-window group frame win nil))))
+	(handle-window-move win x y :parent value-mask)
 	(handle-managed-window win width height stack-mode value-mask))
       ((handle-mode-line-window window x y width height))
       (t (handle-unmanaged-window window x y width height border-width value-mask)))))
@@ -2831,6 +2837,12 @@ chunks."
 			 (case (xlib:atom-name *display* p)
 			   (:_NET_WM_STATE_FULLSCREEN
 			     (update-fullscreen our-window action)))))))))
+	(:_NET_MOVERESIZE_WINDOW
+	  (let ((our-window (find-window window)))
+	    (when our-window
+	      (destructuring-bind (gravity x y width height) data
+		(declare (ignore gravity width height))
+		(hanlde-window-move our-window x y :relative :root)))))
 	(t
 	 (dformat 2 "ignored message~%"))))
 

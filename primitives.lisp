@@ -219,6 +219,7 @@ name. :title, :resource-name, :class are valid values.")
 (defstruct window
   xwin
   width height
+  x y	; these are only used to hold the requested map location.
   gravity
   group
   frame
