@@ -2479,7 +2479,12 @@ list of modifier symbols."
 	   (setf (screen-withdrawn-windows screen) (delete wwin (screen-withdrawn-windows screen))))
 	 t)
 	(wwin (restore-window wwin))
-	((mode-line-add-systray-window screen window))
+	((xlib:get-property window :_KDE_NET_WM_SYSTEM_TRAY_WINDOW_FOR)
+	 ;; Do nothing if this is a systray window (the system tray
+	 ;; will handle it, if there is one, and, if there isn't the
+	 ;; user doesn't want this popping up as a managed window
+	 ;; anyway.
+	 )
 	(t
 	 (let ((window (process-mapped-window screen window)))
 	   ;; Give it focus

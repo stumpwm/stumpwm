@@ -88,10 +88,6 @@ current group.")
 (defvar *mode-line-timer* nil
   "The timer that updates the modeline")
 
-(defun mode-line-add-systray-window (screen xwin)
-  (declare (ignore screen))
-  (xlib:get-property xwin :_KDE_NET_WM_SYSTEM_TRAY_WINDOW_FOR))
-
 (defun make-mode-line-window (parent screen)
   "Create a window suitable for a modeline."
   (xlib:create-window
