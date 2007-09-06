@@ -710,7 +710,13 @@ than the root window's width and height."
             (setf (xlib:drawable-width (window-parent win)) (- (frame-width frame)
                                                                (* 2 (xlib:drawable-border-width (window-parent win))))
                   (xlib:drawable-height (window-parent win)) (- (frame-display-height (window-group win) frame)
-                                                                (* 2 (xlib:drawable-border-width (window-parent win))))))))))
+                                                                (* 2 (xlib:drawable-border-width (window-parent win)))))))))
+  ;; Send a synthetic configure-notify event so that the window
+  ;; knows where it is onscreen.
+  (xwin-send-configuration-notify (window-xwin win)
+				  (xlib:drawable-x (window-parent win))
+				  (xlib:drawable-y (window-parent win))
+				  (window-width win) (window-height win) 0))
 
 (defun find-free-window-number (group)
   "Return a free window number for GROUP."
@@ -2474,13 +2480,6 @@ list of modifier symbols."
   ;; Grant the stack-mode change (if it's mapped)
   (set-window-geometry window :width width :height height)
   (maximize-window window)
-  ;; Send a synthetic configure-notify event so that the window
-  ;; knows where it is onscreen. This fixes problems with drop-down
-  ;; menus, etc.
-  (xwin-send-configuration-notify (window-xwin window)
-				  (xlib:drawable-x (window-parent window))
-				  (xlib:drawable-y (window-parent window))
-				  (window-width window) (window-height window) 0)
   (when (and (window-in-current-group-p window)
 	     ;; stack-mode change?
 	     (= 64 (logand value-mask 64)))
