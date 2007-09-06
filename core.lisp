@@ -747,7 +747,12 @@ than the root window's width and height."
 (defun process-existing-windows (screen)
   "Windows present when stumpwm starts up must be absorbed by stumpwm."
   (let ((children (xlib:query-tree (screen-root screen)))
-	(*processing-existing-windows* t))
+	(*processing-existing-windows* t)
+	(stacking (xlib:get-property (screen-root screen) :_NET_CLIENT_LIST_STACKING)))
+    (when stacking
+      ;; sort by _NET_CLIENT_LIST_STACKING
+      (setf children (sort #'> children :key (lambda (xwin)
+					       (position (xlib:drawable-id xwin) stacking)))))
     (dolist (win children)
       (let ((map-state (xlib:window-map-state win))
 	    (wm-state (xwin-state win)))
