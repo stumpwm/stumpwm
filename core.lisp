@@ -2477,7 +2477,10 @@ list of modifier symbols."
   ;; Send a synthetic configure-notify event so that the window
   ;; knows where it is onscreen. This fixes problems with drop-down
   ;; menus, etc.
-  (xwin-send-configuration-notify (window-xwin window) (frame-x (window-frame window)) (frame-y (window-frame window)) (window-height window) (window-width window) 0)
+  (xwin-send-configuration-notify (window-xwin window)
+				  (xlib:drawable-x (window-parent window))
+				  (xlib:drawable-y (window-parent window))
+				  (window-width window) (window-height window) 0)
   (when (and (window-in-current-group-p window)
 	     ;; stack-mode change?
 	     (= 64 (logand value-mask 64)))
@@ -2847,6 +2850,7 @@ chunks."
 	    (when our-window
 	      (destructuring-bind (gravity x y width height) data
 		(declare (ignore gravity width height))
+		(dformat 3 "!!! Data: ~S~%" data)
 		(hanlde-window-move our-window x y :relative :root)))))
 	(t
 	 (dformat 2 "ignored message~%"))))
