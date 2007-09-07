@@ -357,15 +357,13 @@ single char keys are supported.")
 (defun run-hook-with-args (hook &rest args)
   "Call each function in HOOK and pass args to it"
   ;; FIXME: silently failing is bad
-  (ignore-errors
-    (dolist (fn hook)
+  (dolist (fn hook)
+    (ignore-errors
       (apply fn args))))
 
 (defun run-hook (hook)
   "Call each function in HOOK."
-  ;; FIXME: silently failing is bad
-  (ignore-errors
-    (run-hook-with-args hook)))
+    (run-hook-with-args hook))
 
 (defmacro add-hook (hook fn)
   "Add a function to a hook."
