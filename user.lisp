@@ -1164,57 +1164,37 @@ aborted."
 (define-stumpwm-command "move-window" ((dir :string "Direction: "))
   (move-focus-and-or-window dir t))
 
-(defun run-or-raise (cmd &key class instance title (all-groups *run-or-raise-all-groups*))
-  "If any of class, title, or instance are set and a matching window can
-be found, select it.  Otherwise simply run cmd."
-  (labels ((win-app-info (win)
-	     (list (window-class win)
-		   (window-res win)
-		   (window-name win)))
-	   ;; Raise the window win and select its frame.  For now, it
-	   ;; does not select the screen.
-	   (goto-win (win)
-	     (let* ((group (window-group win))
-		    (frame (window-frame win))
-		    (old-frame (tile-group-current-frame group)))
-	       (switch-to-group group)
-	       (frame-raise-window group frame win)
-	       (focus-frame group frame)
-	       (unless (eq frame old-frame)
-		 (show-frame-indicator group))))
-	   ;; Compare two lists of strings representing window
-	   ;; attributes.  If an element is nil it matches anything.
-	   ;; Doesn't handle lists of different lengths: extra
-	   ;; elements in one list will be ignored.
-	   (app-info-cmp (match1 match2)
-	     (or (not match1)
-		 (not match2)
-		 (let ((a (car match1))
-		       (b (car match2)))
-		   (and
-		    (or (not a)
-			(not b)
-			(string= a b))
-		    (app-info-cmp (cdr match1) (cdr match2))))))
-	   (find-window (group)
-	     (find (list class instance title)
-		   (group-windows group)
-		   :key #'win-app-info
-		   :test #'app-info-cmp)))
+(defun run-or-raise (cmd props &optional (all-groups *run-or-raise-all-groups*))
+  "If a window matching PROPS can be found, select it.  Otherwise simply run cmd."
+  (labels
+    ;; Raise the window win and select its frame.  For now, it
+    ;; does not select the screen.
+    ((goto-win (win)
+	       (let* ((group (window-group win))
+		      (frame (window-frame win))
+		      (old-frame (tile-group-current-frame group)))
+		 (switch-to-group group)
+		 (frame-raise-window group frame win)
+		 (focus-frame group frame)
+		 (unless (eq frame old-frame)
+		   (show-frame-indicator group))))
+     (find-window (group)
+		  (find-if (lambda (w)
+			     (apply 'window-matches-properties-p w props))
+			   (group-windows group))))
     (let ((win
-	   ;; If no qualifiers are set don't bother looking for a match.
-	   (and (or class instance title)
-		;; search all groups
-		(if all-groups
-		    (loop
-		       for g in (screen-groups (current-screen))
-		       for win = (find-window g)
-		       when win
-		       return win)
-		    (find-window (current-group))))))
+	    ;; If no qualifiers are set don't bother looking for a match.
+	    ;; search all groups
+	    (if all-groups
+	      (loop
+		for g in (screen-groups (current-screen))
+		for win = (find-window g)
+		when win
+		return win)
+	      (find-window (current-group)))))
       (if win
-	  (goto-win win)
-	  (run-shell-command cmd)))))
+	(goto-win win)
+	(run-shell-command cmd)))))
 
 (define-stumpwm-command "shell" ()
   (run-or-raise "xterm -title '*shell*'" :title "*shell*"))

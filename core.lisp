@@ -848,21 +848,21 @@ than the root window's width and height."
    :plist (make-hash-table)
    :unmap-ignores 0))
 
-(defun string-match? (string pat)
+(defun string-match (string pat)
   (if (equal (subseq pat 0 3) "...")
       (search (subseq pat 3 (length pat)) string)
     (equal string pat)))
 
-(defun window-matches-properties? (window &key class instance type role title)
+(defun window-matches-properties-p (window &key class instance type role title)
   "Returns T if window matches all the given properties"
   (and
    (if class (equal (window-class window) class) t)
    (if instance (equal (window-res window) instance) t)
    (if type (equal (window-type window) type) t)
-   (if role (string-match? (window-role window) role) t)
-   (if title (string-match? (window-title window) title) t) t))
+   (if role (string-match (window-role window) role) t)
+   (if title (string-match (window-title window) title) t) t))
 
-(defun window-matches-rule? (w rule)
+(defun window-matches-rule-p (w rule)
   "Returns T if window matches rule"
   (destructuring-bind (group-name frame raise lock &rest props) rule
 		      (declare (ignore frame raise))
@@ -872,7 +872,7 @@ than the root window's width and height."
 					;(equal group-name (group-name (current-group))))
 					; FIXME: should be screen current group?
 			   (equal group-name (group-name (or (window-group w) (current-group)))))
-			  (apply 'window-matches-properties? w props))))
+			  (apply 'window-matches-properties-p w props))))
 
 (defun frame-by-number (group n)
   (unless (eq n nil)
@@ -888,7 +888,7 @@ than the root window's width and height."
   the window should be raised."
   (let ((match
 	 (dolist (rule *window-placement-rules*)
-	   (when (window-matches-rule? window rule) (return rule)))))
+	   (when (window-matches-rule-p window rule) (return rule)))))
     (if (null match)
 	(values)
 	(destructuring-bind (group-name frame raise lock &rest props) match

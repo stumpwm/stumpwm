@@ -934,18 +934,8 @@ A raise request occurs when a client asks the window manager to give
 an existing window focus.
 
 @defvar *deny-map-request*
-A list of window names, window types, and class-id resource-id cons
-pairs that stumpwm should deny matching windows' requests to become
-mapped for the first time.
-
-If set to @code{T}, then deny all map requests.
-
-If a window type is added to the list stumpwm denies map requests for
-the window type. Valid window types are @code{:normal},
-@code{:transient}, @code{:maxsize}.
-
-Furthermore, if a the resource-id is nil in a class-id, resource-id
-cons pair then only the class ID is matched.
+A list of window properties that stumpwm should deny matching windows'
+requests to become mapped for the first time.
 @end defvar
 
 @defvar *deny-raise-request*
@@ -963,16 +953,16 @@ Some examples follow.
 
 @example
 ;; Deny the firefox window from taking focus when clicked upon.
-(push (cons "firefox-bin" "gecko") stumpwm:*deny-raise-request*)
+(push '(:class "gecko") stumpwm:*deny-raise-request*)
 
 ;; Deny all map requests
 (setf stumpwm:*deny-map-request* t)
 
 ;; Deny transient raise requests
-(push :transient stumpwm:*deny-map-request*)
+(push '(:transient) stumpwm:*deny-map-request*)
 
 ;; Deny the all windows in the xterm class from taking focus.
-(push (cons "xterm" nil) stumpwm:*deny-raise-request*)
+(push '(:class "Xterm") stumpwm:*deny-raise-request*)
 @end example
 
 @node Programming With Windows,  , Controlling Raise And Map Requests, Windows
@@ -1536,10 +1526,9 @@ then describes the symbol.
 
 @end defmac
 
-@defun run-or-raise @var{command} &key @var{class} @var{instance} @var{title} @var{all-groups}
+@defun run-or-raise @var{command} @var{props} @var{all-groups}
 Run the shell command, @var{command}, unless an existing window
-matches @var{class}, @var{instance}, and @var{title}. At least one
-must be supplied.
+matches @var{props}
 
 By default, the global @var{*run-or-raise-all-groups*} decides whether
 to search all groups or the current one for a running
