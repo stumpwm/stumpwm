@@ -379,7 +379,8 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 (defun raise-window (win)
   "Map the window if needed and bring it to the top of the stack. Does not affect focus."
   (when (window-hidden-p win)
-    (unhide-window win))
+    (unhide-window win)
+    (update-configuration win))
   (when (window-in-current-group-p win)
     (setf (xlib:window-priority (window-parent win)) :top-if)))
 
@@ -710,13 +711,8 @@ than the root window's width and height."
             (setf (xlib:drawable-width (window-parent win)) (- (frame-width frame)
                                                                (* 2 (xlib:drawable-border-width (window-parent win))))
                   (xlib:drawable-height (window-parent win)) (- (frame-display-height (window-group win) frame)
-                                                                (* 2 (xlib:drawable-border-width (window-parent win)))))))))
-  ;; Send a synthetic configure-notify event so that the window
-  ;; knows where it is onscreen.
-  (xwin-send-configuration-notify (window-xwin win)
-				  (xlib:drawable-x (window-parent win))
-				  (xlib:drawable-y (window-parent win))
-				  (window-width win) (window-height win) 0))
+                                                                (* 2 (xlib:drawable-border-width (window-parent win))))))))))
+
 
 (defun find-free-window-number (group)
   "Return a free window number for GROUP."
@@ -2477,6 +2473,14 @@ list of modifier symbols."
 		     (when (has-bw value-mask)
 		       (setf (xlib:drawable-border-width xwin) border-width)))))
 
+(defun update-configuration (win)
+  ;; Send a synthetic configure-notify event so that the window
+  ;; knows where it is onscreen.
+  (xwin-send-configuration-notify (window-xwin win)
+				  (xlib:drawable-x (window-parent win))
+				  (xlib:drawable-y (window-parent win))
+				  (window-width win) (window-height win) 0))
+
 (defun handle-managed-window (window width height stack-mode value-mask)
   "This is a managed window so deal with it appropriately."
   ;; Grant the stack-mode change (if it's mapped)
@@ -2487,17 +2491,19 @@ list of modifier symbols."
 	     (= 64 (logand value-mask 64)))
     (case stack-mode
       (:above
-       (if (deny-request-p window *deny-raise-request*)
-           (unless (or *suppress-deny-messages*
-                       ;; don't mention windows that are already visible
-                       (eql (window-state window) +normal-state+))
-             (if (eq (window-group window) (current-group))
-                 (echo-string (window-screen window) (format nil "'~a' denied raises request" (window-name window)))
-                 (echo-string (window-screen window) (format nil "'~a' denied raises request in group ~a" (window-name window) (group-name (window-group window))))))
-           (let ((oldf (tile-group-current-frame (window-group window))))
-             (frame-raise-window (window-group window) (window-frame window) window)
-             (unless (eq (window-frame window) oldf)
-               (show-frame-indicator (window-group window)))))))))
+	(if (deny-request-p window *deny-raise-request*)
+	  (unless (or *suppress-deny-messages*
+		      ;; don't mention windows that are already visible
+		      (eql (window-state window) +normal-state+))
+	    (if (eq (window-group window) (current-group))
+	      (echo-string (window-screen window) (format nil "'~a' denied raises request" (window-name window)))
+	      (echo-string (window-screen window) (format nil "'~a' denied raises request in group ~a" (window-name window) (group-name (window-group window))))))
+	  (let ((oldf (tile-group-current-frame (window-group window))))
+	    (frame-raise-window (window-group window) (window-frame window) window)
+	    (unless (eq (window-frame window) oldf)
+	      (show-frame-indicator (window-group window))))))))
+  (update-configuration window))
+
 
 (defun handle-window-move (win x y relative-to &optional (value-mask -1))
   (when *honor-window-moves*
