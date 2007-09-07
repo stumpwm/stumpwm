@@ -214,11 +214,12 @@ of those expired."
 		 ;; map the current group's windows
 		 (mapc 'unhide-window (reverse (group-windows (screen-current-group s))))
 		 ;; update groups
-		 (dolist (g (screen-groups s))
+		 (dolist (g (reverse (screen-groups s)))
 		   ;; raise the current window and frame.
 		   (let ((window (first (group-windows g))))
-		     (when window
-		       (frame-raise-window g (window-frame window) window))))))
+		     (if window
+		       (frame-raise-window g (window-frame window) window)
+		       (focus-frame g (tile-group-current-frame g)))))))
              ;; Let's manage.
 	     (let ((*package* (find-package *default-package*)))
 	       (run-hook *start-hook*)
