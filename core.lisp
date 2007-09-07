@@ -916,12 +916,13 @@ than the root window's width and height."
 			     (unless (eq (window-frame window) frame)
 			       (pull-window window frame)))))))
 
-(defun assign-window (window group frame)
+(defun assign-window (window group frame &optional (where :tail))
   (setf (window-group window) group
 	(window-number window) (find-free-window-number group)
 	(window-frame window) (or frame (pick-prefered-frame window)))
-  (push window (group-windows group))
-  (dformat 3 "Group windows: ~S~%" (group-windows group)))
+  (if (eq where :head)
+    (push window (group-windows group))
+    (setf (group-windows group) (append (group-windows group) (list window)))))
 
 (defun place-existing-window (screen xwin)
   "Called for windows existing at startup."
@@ -931,7 +932,8 @@ than the root window's width and height."
 		  (elt (sort-groups screen) netwm-id)
 		  (screen-current-group screen))))
     (dformat 3 "Assigning pre-existing window ~S to group ~S~%" (window-name window) (group-name group))
-    (assign-window window group (find-frame group (xlib:drawable-x xwin) (xlib:drawable-y xwin)))
+    (assign-window window group (find-frame group (xlib:drawable-x xwin) (xlib:drawable-y xwin)) :head)
+    (setf (frame-window (window-frame window)) window)
     window))
 
 (defun place-window (screen xwin)
@@ -2511,8 +2513,7 @@ list of modifier symbols."
 		       (list x y)))
 	       (frame (apply #'find-frame group pos)))
 	  (when frame
-	    (setf (window-frame win) frame)
-	    (frame-raise-window group frame win nil)))))))
+	    (pull-window win frame)))))))
 
 (define-stump-event-handler :configure-request (stack-mode #|parent|# window #|above-sibling|# x y width height border-width value-mask)
   ;; Grant the configure request but then maximize the window after the granting.
@@ -2550,7 +2551,7 @@ list of modifier symbols."
 	 ;; will handle it, if there is one, and, if there isn't the
 	 ;; user doesn't want this popping up as a managed window
 	 ;; anyway.
-	 )
+	 t)
 	(t
 	 (let ((window (process-mapped-window screen window)))
 	   ;; Give it focus
