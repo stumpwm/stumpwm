@@ -356,10 +356,9 @@ single char keys are supported.")
 
 (defun run-hook-with-args (hook &rest args)
   "Call each function in HOOK and pass args to it"
-  ;; FIXME: silently failing is bad
   (dolist (fn hook)
-    (ignore-errors
-      (apply fn args))))
+    (handler-case (apply fn args)
+      (error (c) (message "Error in function ~S on hook ~S!~% ~A" fn hook c) (values nil c)))))
 
 (defun run-hook (hook)
   "Call each function in HOOK."
