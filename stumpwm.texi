@@ -1215,7 +1215,10 @@ Groups in StumpWM are more commonly known as @dfn{virtual desktops} or
 
 @deffn {Command} gnew @var{name}
 Create a new group with the specified name. The new group becomes the
-current group.
+current group. If @var{name} begins with a dot (``.'') the group new
+group will be created in the hidden state. Hidden groups have group
+numbers less than one and are invisible to from gprev, gnext, and, optionally,
+groups and vgroups commands.
 @end deffn
 
 @deffn {Command} gnewbg @var{name}

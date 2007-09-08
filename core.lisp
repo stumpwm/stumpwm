@@ -135,9 +135,9 @@ otherwise specified."
 	   #\+)
 	  (t #\-))))
 
-(defun find-free-group-number (screen)
+(defun find-free-group-number (screen &optional (min 1))
   "Return a free window number for GROUP."
-  (find-free-number (mapcar 'group-number (screen-groups screen)) 1))
+  (find-free-number (mapcar 'group-number (screen-groups screen)) min))
 
 (defun group-current-window (group)
   (frame-window (tile-group-current-frame group)))
@@ -166,7 +166,8 @@ at 0. Return a netwm compliant group id."
       (focus-frame new-group (tile-group-current-frame new-group))
       (show-frame-indicator new-group)
       (xlib:change-property (screen-root screen) :_NET_CURRENT_DESKTOP
-                            (list (group-number new-group))
+					;                            (list (group-number new-group))
+			    (list (netwm-group-id new-group))
                             :cardinal 32)
       (run-hook-with-args *focus-group-hook* new-group old-group))))
 
@@ -195,11 +196,14 @@ at 0. Return a netwm compliant group id."
 			    :cardinal 32))))
 
 (defun next-group (current &optional (list (screen-groups (group-screen current))))
-  (let ((matches (member current list)))
+  (let*
+      ((glist (remove 1 list :test #'> :key #'group-number))
+       (matches (member current glist)))
+					;list)))
     (if (null (cdr matches))
 	;; If the last one in the list is current, then
 	;; use the first one.
-	(car list)
+	(car glist)
 	;; Otherwise, use the next one in the list.
 	(cadr matches))))
 
@@ -237,7 +241,8 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 
     ;; _NET_CURRENT_DESKTOP
     (xlib:change-property root :_NET_CURRENT_DESKTOP
-                          (list (group-number (screen-current-group screen)))
+					;                          (list (group-number (screen-current-group screen)))
+			  (list (netwm-group-id (screen-current-group screen)))
 			  :cardinal 32)
 
     ;; _NET_DESKTOP_NAMES
@@ -258,7 +263,7 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 	      :frame-tree initial-frame
 	      :current-frame initial-frame
 	      :screen screen
-	      :number (find-free-group-number screen)
+	      :number (find-free-group-number screen (if (equal (elt name 0) #\.) - 1))
 	      :name name)))
     (setf (screen-groups screen) (append (screen-groups screen) (list ng)))
     (netwm-set-group-properties screen)
