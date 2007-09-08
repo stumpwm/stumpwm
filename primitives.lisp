@@ -93,6 +93,11 @@ run before the error is dealt with according to
 (defvar *focus-group-hook* '()
   "A hook called whenever stumpwm switches groups. It is called with 2 arguments: the current group and the last group.")
 
+(defvar *key-press-hook* '()
+  "A hook called whenever a key under *top-map* is pressed.
+  It is called with 3 argument: the key, the (possibly incomplete)
+  key sequence it is a part of, and command value bound to the key.")
+
 ;; Data types and globals used by stumpwm
 
 (defvar *display* nil

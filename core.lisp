@@ -2632,6 +2632,7 @@ KMAP and return the binding or nil if the user hit an unbound sequence."
 	 (cmd (lookup-key kmap key))
 	 (key-seq (cons key key-seq)))
     (dformat 1 "key-press: ~S ~S ~S~%" key state cmd)
+    (run-hook-with-args *key-press-hook* key key-seq cmd)
     (when update-fn
       (funcall update-fn key-seq))
     (if cmd
