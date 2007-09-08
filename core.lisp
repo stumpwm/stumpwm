@@ -271,18 +271,21 @@ listings (unless *list-hidden-groups* is T). They also use negative
 numbers."
   (check-type screen screen)
   (check-type name string)
-  (let* ((initial-frame (make-initial-frame screen))
-	 (ng (make-tile-group
-	      :frame-tree initial-frame
-	      :current-frame initial-frame
-	      :screen screen
-	      :number (if (char= (char name 0) #\.)
-			  (find-free-hidden-group-number screen)
-			  (find-free-group-number screen))
-	      :name name)))
-    (setf (screen-groups screen) (append (screen-groups screen) (list ng)))
-    (netwm-set-group-properties screen)
-    ng))
+  (unless (or (string= name "") 
+	      (string= name "."))
+    (or (find-group screen name)
+	(let* ((initial-frame (make-initial-frame screen))
+	       (ng (make-tile-group
+		    :frame-tree initial-frame
+		    :current-frame initial-frame
+		    :screen screen
+		    :number (if (char= (char name 0) #\.)
+				(find-free-hidden-group-number screen)
+				(find-free-group-number screen))
+		    :name name)))
+	  (setf (screen-groups screen) (append (screen-groups screen) (list ng)))
+	  (netwm-set-group-properties screen)
+	  ng))))
 
 (defun find-group (screen name)
   "Return the group with the name, NAME. Or NIL if none exists."

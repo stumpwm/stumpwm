@@ -1286,8 +1286,10 @@ be found, select it.  Otherwise simply run cmd."
       (switch-to-group ng))))
 
 (define-stumpwm-command "gnew" ((name :string "Group Name: "))
-  (switch-to-group (or (find-group (current-screen) name)
-                       (add-group (current-screen) name))))
+  (let ((group (add-group (current-screen) name)))
+    (if group
+      (switch-to-group group)
+      (message "Groups must have a name!"))))
 
 (define-stumpwm-command "gnewbg" ((name :string "Group Name: "))
   (unless (find-group (current-screen) name)
