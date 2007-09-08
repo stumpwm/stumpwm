@@ -1,3 +1,57 @@
+2007-09-04  Shawn  <sabetts@hardcopy.local>
+
+	* stumpwm.lisp (stumpwm-internal-loop): call ceiling on timeout
+
+	* fdump.lisp (gdump): rename from tdump. add number, name.
+	(sdump): new struct
+	(ddump): likewise
+	(dump-group): rename from dump-frametree. callers updated.
+	(dump-screen): new function
+	(dump-desktop): likewise
+	("dump-group"): new command
+	("dump-screen"): likewise
+	("dump-desktop"): likewise
+	("dump-frames"): remove command
+	("dump-groups"): likewise
+	("dump-screens"): likewise
+	(restore-from-file): depending on the file contents, restore the
+	appropriate things.
+	(read-dump-from-file): read the contents of a dump file
+	(restore-screen): new function
+	(restore-desktop): likewise
+	("restore"): new command
+	("frestore"): remove command
+	("afrestore"): likewise
+	("asfrestore"): likewise
+
+	* core.lisp (window-id): new function
+
+2007-08-23  Shawn Betts  <sabetts@shitbender.gagrod>
+
+	* stumpwm.asd (:stumpwm): add fdump file
+
+	* user.lisp (*root-map*): bind W to place-existing-windows
+	(remove-split): call tree-leaf
+
+	* sample-stumpwmrc.lisp: add examples for frame dump/restore and window placement
+
+	* primitives.lisp (*place-window-hook*): new hook
+	(*window-placement-rules*): new global variable
+	(define-frame-preference): new macro
+
+	* core.lisp (xwin-to-window): new function
+	(window-matches-properties-p): likewise
+	(window-matches-rule-p): likewise
+	(get-window-placement): likewise
+	(screen-windows): likewise
+	(sync-window-placement): likewise
+	(place-window): likewise
+	(group-add-window): remove method
+	(add-window): call place-window
+	(tree-leaf): new function
+
+	* fdump.lisp: new file
+
 2007-08-22  Shawn Betts  <sabetts@shitbender.gagrod>
 
 	* stumpwm.lisp (stumpwm-internal-loop): always give a timeout when listening for events.
