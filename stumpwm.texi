@@ -155,14 +155,25 @@ customizability, completeness, and cushiness.
 
 @node Starting StumpWM, Basic Usage, Introduction, Introduction
 @section Starting StumpWM
-There are a number of ways to start StumpWM but possibly the most
-straight forward method is as follows. This assumes you have a copy of
-the StumpWM source code and are using the @emph{SBCL} Common Lisp environment.
+There are a number of ways to start StumpWM but the most straight
+forward method is as follows. This assumes you have a copy of the
+StumpWM source code and are using the @samp{SBCL} Common Lisp
+environment.
 
 @enumerate
 @item
-Install @emph{SBCL} and the @emph{portable-clx} package. In Debian,
-@emph{portable-clx} is the @emph{cl-clx-sbcl} package.
+Install @samp{SBCL} and the @samp{portable-clx} package. In Debian,
+@samp{portable-clx} is the @samp{cl-clx-sbcl} package. You can also use
+@samp{asdf-install} to download and install clx:
+
+@example
+$ sbcl
+* (require :asdf)
+* (require :asdf-install)
+* (asdf-install:install :clx)
+@end example
+
+Note that asdf-install requires @samp{gnupg}.
 
 @item
 In the @file{stumpwm} directory, run @samp{make}. If all goes well,
