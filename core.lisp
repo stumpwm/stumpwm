@@ -991,8 +991,9 @@ than the root window's width and height."
 			   ;; relative to the TRANSIENT_FOR window. Just ignore
 			   ;; these hints.
 			   (unless (find (window-type window) '(:transient :dialog))
-			     (when (xlib:wm-size-hints-user-specified-position-p (window-normal-hints window))
-			       (find-frame group (window-x window) (window-y window)))))
+			     (let ((hints (window-normal-hints window)))
+			       (when (and hints (xlib:wm-size-hints-user-specified-position-p hints))
+				 (find-frame group (window-x window) (window-y window))))))
 			 (t		; :focused
 			  (tile-group-current-frame group)))))
      default)))
