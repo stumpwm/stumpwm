@@ -346,10 +346,10 @@ single char keys are supported.")
   "Append arg to the end of list"
   (nconc list (list arg)))
 
-(defun sort1 (list sort-fn &optional &rest tags)
+(defun sort1 (list sort-fn &rest keys &key &allow-other-keys)
   "Return a sorted copy of list."
   (let ((copy (copy-list list)))
-    (apply #'sort copy sort-fn tags)))
+    (apply 'sort copy sort-fn keys)))
 
 (defun mapcar-hash (fn hash)
   "Just like maphash except it accumulates the result in a list."
@@ -770,9 +770,9 @@ with IN-PACKAGE.")
 (defun concat (&rest strings)
   (apply 'concatenate 'string strings))
 
-(defvar *window-placement-rules* '())
- "List of rules governing window placement. Use define-frame-preference to
-add rules"
+(defvar *window-placement-rules* '()
+  "List of rules governing window placement. Use
+define-frame-preference to add rules.")
 
 (defmacro define-frame-preference (group &rest frames)
   `(dolist (x ',frames)

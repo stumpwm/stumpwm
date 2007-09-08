@@ -119,6 +119,8 @@
 	   #:*frame-number-map*
            #:*min-frame-width*
            #:*min-frame-height*
+           #:dump-frametree
+           #:restore-frametree
 	   ;; groups
 	   #:current-group
            ;; timers

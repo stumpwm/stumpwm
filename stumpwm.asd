@@ -31,6 +31,7 @@
 	       (:file "input")
 	       (:file "core")
 	       (:file "user")
+               (:file "fdump")
 	       (:file "mode-line")
 	       (:file "stumpwm")
 	       ;; keep this last so it always gets recompiled if

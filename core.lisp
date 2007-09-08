@@ -124,7 +124,7 @@ otherwise specified."
 
 (defun sort-groups (screen)
   "Return a copy of the screen's group list sorted by number."
-  (sort1 (screen-groups screen) #'< :key #'group-number))
+  (sort1 (screen-groups screen) '< :key 'group-number))
 
 (defun fmt-group-status (group)
   (let ((screen (group-screen group)))
@@ -278,6 +278,9 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
         (:class (window-class window))
         (t (window-title window)))))
 
+(defun window-id (window)
+  (xlib:window-id (window-xwin window)))
+
 (defun window-in-current-group-p (window)
   (eq (window-group window)
       (screen-current-group (window-screen window))))
@@ -406,10 +409,7 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 
 (defun sort-windows (group)
   "Return a copy of the screen's window list sorted by number."
-  (sort1 (group-windows group)
-	 (lambda (a b)
-	   (< (window-number a)
-	      (window-number b)))))
+  (sort1 (group-windows group) '< :key 'window-number))
 
 (defun marked-windows (group)
   "Return the marked windows in the specified group."
@@ -732,8 +732,7 @@ than the root window's width and height."
      do (xwin-grab-keys (screen-focus-window i)))
   (xlib:display-finish-output *display*))
 
-
-
+ 
 ;;; Window placement routines
 
 (defun xwin-to-window (xwin)
@@ -751,60 +750,54 @@ than the root window's width and height."
    :plist (make-hash-table)
    :unmap-ignores 0))
 
-(defun string-match? (string pat)
-  (if (equal (subseq pat 0 3) "...")
-      (search (subseq pat 3 (length pat)) string)
-    (equal string pat)))
-
-(defun window-matches-properties? (window &key class instance type role title)
+(defun window-matches-properties-p (window &key class instance type role title)
   "Returns T if window matches all the given properties"
-  (and
-   (if class (equal (window-class window) class) t)
-   (if instance (equal (window-res window) instance) t)
-   (if type (equal (window-type window) type) t)
-   (if role (string-match? (window-role window) role) t)
-   (if title (string-match? (window-title window) title) t) t))
+  (labels ((string-match? (string pat)
+             (if (equal (subseq pat 0 3) "...")
+                 (search (subseq pat 3 (length pat)) string)
+                 (equal string pat))))
+    (and
+     (if class (equal (window-class window) class) t)
+     (if instance (equal (window-res window) instance) t)
+     (if type (equal (window-type window) type) t)
+     (if role (string-match? (window-role window) role) t)
+     (if title (string-match? (window-title window) title) t) t)))
 
-(defun window-matches-rule? (w rule)
+(defun window-matches-rule-p (w rule)
   "Returns T if window matches rule"
   (destructuring-bind (group-name frame raise lock &rest props) rule
-		      (declare (ignore frame raise))
-		      (if
-			  (or
-			   (eq lock t)
-					;(equal group-name (group-name (current-group))))
-					; FIXME: should be screen current group?
-			   (equal group-name (group-name (or (window-group w) (current-group)))))
-			  (apply 'window-matches-properties? w props))))
-
-
-(defun frame-by-number (group n)
-  (unless (eq n nil)
-    (find n
-	  (group-frames group)
-	  :key 'frame-number
-	  :test '=)))
+    (declare (ignore frame raise))
+    (if
+     (or
+      (eq lock t)
+      ;; (equal group-name (group-name (current-group))))
+      ;; FIXME: should be screen current group?
+      (equal group-name (group-name (or (window-group w) (current-group)))))
+     (apply 'window-matches-properties-p w props))))
 
 ;; TODO: add rules allowing matched windows to create their own groups/frames 
-
 (defun get-window-placement (screen window)
   "Returns the ideal group and frame that WINDOW should belong to and whether
   the window should be raised."
-  (let ((match
-	 (dolist (rule *window-placement-rules*)
-	   (when (window-matches-rule? window rule) (return rule)))))
+  (labels ((frame-by-number (group n)
+             (unless (eq n nil)
+               (find n (group-frames group)
+                     :key 'frame-number
+                     :test '=))))
+    (let ((match
+           (dolist (rule *window-placement-rules*)
+             (when (window-matches-rule-p window rule) (return rule)))))
 	
-    (if (null match)
-	(values '())
-      (destructuring-bind (group-name frame raise lock &rest props) match
-			  (declare (ignore lock props))
-			  (let ((group (find-group screen group-name)))
-			    (if group
-				(values (list group (frame-by-number group frame) raise))
-			      (progn
-				(message "Error placing window, group \"~a\" does not exist." group-name)
-				(values '()))))))))
-
+      (if (null match)
+          (values '())
+          (destructuring-bind (group-name frame raise lock &rest props) match
+            (declare (ignore lock props))
+            (let ((group (find-group screen group-name)))
+              (if group
+                  (values (list group (frame-by-number group frame) raise))
+                  (progn
+                    (message "Error placing window, group \"~a\" does not exist." group-name)
+                    (values '())))))))))
 
 (defun screen-windows (screen)
   (mapcan 'group-windows (screen-groups screen)))
@@ -814,48 +807,49 @@ than the root window's width and height."
   (dolist (screen *screen-list*)
     (dolist (window (screen-windows screen))
       (let ((placement (get-window-placement screen window)))
-	(unless (null placement)
-	  (destructuring-bind (to-group frame raise) placement
-			      (declare (ignore raise))
-			      (unless (eq (window-group window) to-group)
-				(move-window-to-group window to-group))
-			      (unless (eq (window-frame window) frame)
-				(pull-window window frame))))))))
+        (when placement
+          (destructuring-bind (to-group frame raise) placement
+            (declare (ignore raise))
+            (unless (eq (window-group window) to-group)
+              (move-window-to-group window to-group))
+            (unless (eq (window-frame window) frame)
+              (pull-window window frame))))))))
 
 (defun place-window (screen xwin)
-  "Pick a group and frame for XWIN (replaces group-add-window)"
+  "Pick a group and frame for XWIN."
   (let* ((window (xwin-to-window xwin))
-	 (placement (get-window-placement screen window))
-	 (group (screen-current-group screen))
-	 (frame nil)
-	 (raise nil))
-    (unless (null placement)
+         (placement (get-window-placement screen window))
+         (group (screen-current-group screen))
+         (frame nil)
+         (raise nil))
+    (when placement
       (destructuring-bind (to-group to-frame to-raise) placement
-			  (setf group to-group
-				frame to-frame
-				raise to-raise)))
-					;(push window (group-windows group)))
+        (setf group to-group
+              frame to-frame
+              raise to-raise)))
+    ;;(push window (group-windows group)))
     (setf
      (window-group window) group
      (window-number window) (find-free-window-number group)
      (window-frame window) (or frame (pick-prefered-frame window)))
+
     (setf (group-windows group) (append (group-windows group) (list window)))
+
     (setf (xwin-state xwin) +iconic-state+)
     (xlib:change-property xwin :_NET_WM_DESKTOP
                           (list (netwm-group-id group))
                           :cardinal 32)
+
     (when frame
       (unless (eq (current-group) group)
-	(if (eq raise t)
-	    (switch-to-group group)
-	  (message "Placing window ~a in frame ~d of group ~a"
-		   (window-name window) (frame-number frame) (group-name group))))
-      (when (eq raise t)
-	(switch-to-screen (group-screen group))
-	(focus-frame group frame))
-      (unless (null placement)
-	(run-hook-with-args *place-window-hook* window group frame)))
-
+        (if raise
+            (progn
+              (switch-to-group group)
+              (focus-frame group frame))
+            (message "Placing window ~a in frame ~d of group ~a"
+                     (window-name window) (frame-number frame) (group-name group))))
+      (when placement
+        (run-hook-with-args *place-window-hook* window group frame)))
     window))
 
 (defun pick-prefered-frame (window)
@@ -941,7 +935,7 @@ needed."
     (unless (find (window-group window)
                   (screen-groups screen))
       (setf (window-group window) (screen-current-group screen)))
-    ;; FIXME: somehow it feels like this could be merged with group-add-window
+    ;; FIXME: somehow it feels like this could be merged with add-window
     (setf (window-title window) (xwin-name (window-xwin window))
           (window-class window) (xwin-class (window-xwin window))
           (window-res window) (xwin-res-name (window-xwin window))
@@ -953,8 +947,8 @@ needed."
           (xwin-state (window-xwin window)) +iconic-state+
           (screen-withdrawn-windows screen) (delete window (screen-withdrawn-windows screen))
           ;; put the window at the end of the list
-	  (group-windows (window-group window)) (append (group-windows (window-group window)) (list window))
-	  (window-frame window) (pick-prefered-frame window))
+          (group-windows (window-group window)) (append (group-windows (window-group window)) (list window))
+          (window-frame window) (pick-prefered-frame window))
     (screen-add-mapped-window screen (window-xwin window))
     ;; give it focus
     (if (deny-request-p window *deny-map-request*)
@@ -1203,11 +1197,11 @@ function expects to be wrapped in a with-state for win."
     (setf (xlib:gcontext-foreground gcontext) (get-bg-color-pixel screen))
     (xlib:draw-rectangle win gcontext x y width height t)))
 
-
+ 
 ;;; Frame functions
 
 (defun frame-raise-window (g f w &optional (focus t))
-  "Raise the window w in frame f in screen s. if FOCUS is
+  "Raise the window w in frame f in group g. if FOCUS is
 T (default) then also focus the frame."
   (let ((oldw (frame-window f)))
     ;; nothing to do when W is nil
@@ -1420,6 +1414,14 @@ leaf is the most right/below of its siblings."
         ((find node top) top)
         (t (loop for i in top
               thereis (tree-parent i node)))))
+
+(defun tree-leaf (top)
+  "Return a leaf of the tree. Use this when you need a leaf but
+you don't care which one."
+  (tree-accum-fn top
+                 (lambda (&rest siblings)
+                   (car siblings))
+                 #'identity))
 
 (defun tree-row-split (tree)
   "Return t if the children of tree are stacked vertically"
@@ -1735,10 +1737,7 @@ windows used to draw the numbers in. The caller must destroy them."
 
 (defun sort-screens ()
   "Return the list of screen sorted by ID."
-  (sort1 *screen-list*
-	 (lambda (a b)
-	   (< (screen-id a)
-	      (screen-id b)))))
+  (sort1 *screen-list* '< :key 'screen-id))
 
 (defun next-screen (&optional (list (sort-screens)))
   (let ((matches (member (current-screen) list)))
@@ -2302,11 +2301,10 @@ managing. Basically just give the window what it wants."
 	    (withdraw-window window))))))
 
 ;;(define-stump-event-handler :create-notify (#|window parent x y width height border-width|# override-redirect-p))
-  ;; (unless (or override-redirect-p
-;; 	      (internal-window-p (window-screen window) window))
+;; (unless (or override-redirect-p
+;;          (internal-window-p (window-screen window) window))
 ;;    (process-new-window (window-screen window) window))
-;    (run-hook-with-args *new-window-hook* window)))
-
+;;    (run-hook-with-args *new-window-hook* window)))
 
 (define-stump-event-handler :destroy-notify (send-event-p event-window window)
   (unless (or send-event-p
