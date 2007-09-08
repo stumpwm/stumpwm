@@ -258,12 +258,10 @@ to return a list of matches."
                       (xlib:font-ascent (screen-font screen))))
       ;; draw the error 
       (when errorp
-        (invert-rect screen win 0 0 (xlib:drawable-width win) (xlib:drawable-height win))
-        (xlib:display-force-output *display*)
-        ;; FIXME: there's no usleep
-        (loop with time = (get-internal-run-time)
-           until (> (- (get-internal-run-time) time) 50))
-        (invert-rect screen win 0 0 (xlib:drawable-width win) (xlib:drawable-height win))))))
+	(invert-rect screen win 0 0 (xlib:drawable-width win) (xlib:drawable-height win))
+	(xlib:display-force-output *display*)
+	(sleep 0.05)
+	(invert-rect screen win 0 0 (xlib:drawable-width win) (xlib:drawable-height win))))))
 
 (defun code-state->key (code state)
   (let* ((mods    (xlib:make-state-keys state))
