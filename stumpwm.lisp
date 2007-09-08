@@ -154,7 +154,11 @@ of those expired."
          (let ((timeout (get-next-timeout *timer-list*)))
            (dformat 10 "timeout: ~a~%" timeout)
            (if timeout
-               (let* ((nevents (xlib:event-listen *display* timeout)))
+	       ;; it's a real bummer, but it seems the timeout must be
+	       ;; in seconds. So always round up, instead of down, to
+	       ;; avoid a cpu spike as it spins with a 0 second timout
+	       ;; waiting for the next timer event to expire.
+               (let* ((nevents (xlib:event-listen *display* (ceiling timeout))))
                  (setf *timer-list* (run-expired-timers *timer-list*))
                  (when nevents
                    (xlib:process-event *display* :handler #'handle-event)))
