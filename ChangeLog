@@ -1,5 +1,9 @@
 2007-09-08  Shawn  <sabetts@hardcopy.local>
 
+	* user.lisp ("gnew"): add an error message when adding failed.
+
+	* core.lisp (add-group): add safety checks for group name.
+
 	* user.lisp (echo-windows): new optional parameter windows.
 	("frame-windows"): new command
 	(echo-groups): hide negative numbered groups unless. use mapcan.
