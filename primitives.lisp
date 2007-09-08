@@ -359,23 +359,28 @@ single char keys are supported.")
       (maphash #'mapfn hash))
     accum))
 
-(defun find-free-number (l &optional (min 0))
-  "Return a number that is not in the list l."
-  (let* ((nums (sort l (if (< min 0) #'> #'<)))
+(defun find-free-number (l &optional (min 0) dir)
+  "Return a number that is not in the list l. If dir is :negative then
+look for a free number in the negative direction. anything else means
+positive direction."
+  (let* ((dirfn (if (eq dir :negative) '> '<))
+	 ;; sort it and crop numbers below/above min depending on dir
+	 (nums (sort (remove-if (lambda (n)
+				  (funcall dirfn n min))
+				l) dirfn))
 	 (max (car (last nums)))
-	 (new-num (loop for n from min to (or max min)
-			when (not (find n nums))
-			do (return n))))
+	 (inc (if (eq dir :negative) -1 1))
+	 (new-num (loop for n = min then (+ n inc)
+		     for i in nums
+		     when (/= n i)
+		     do (return n))))
     (dformat 3 "Free number: ~S~%" nums)
     (if new-num
 	new-num
-      ;; there was no space between the numbers, so use the last + 1
-      (if max
-	  (if (< min 0)
-	      (1- max)
-	    (1+ max))
-	min))))
-
+	;; there was no space between the numbers, so use the max+inc
+	(if max
+	    (+ inc max)
+	    min))))
 
 (defun remove-plist (plist &rest keys)
   "Remove the keys from the plist.
@@ -623,7 +628,7 @@ is cropped to 50 characters.")
 (defvar *group-format* "%n%s%t"
   "The format string for echoing the window list.")
 
-(defvar *list-hidden-groups* t
+(defvar *list-hidden-groups* nil
   "Controls whether hidden groups are displayed by 'groups' and 'vgroups' commands")
 
 (defun font-height (font)

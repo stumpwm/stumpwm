@@ -1,3 +1,22 @@
+2007-09-08  Shawn  <sabetts@hardcopy.local>
+
+	* user.lisp (echo-windows): new optional parameter windows.
+	("frame-windows"): new command
+	(echo-groups): hide negative numbered groups unless. use mapcan.
+
+	*list-hidden-groups* is non-nil.
+
+	* primitives.lisp (find-free-number): find free numbers in both
+	positive and negative directions.
+	(*list-hidden-groups*): new global
+
+	* core.lisp (find-free-hidden-group-number): new function
+	(switch-to-group): use netwm-group-id for _NET_CURRENT_DESKTOP
+	(netwm-set-group-properties): likewise
+	(next-group): skip over negative numbered groups
+	(add-group): if the group starts with a . give it a negative number.
+	(sort-windows): use sort1
+
 2007-09-04  Shawn  <sabetts@hardcopy.local>
 
 	* stumpwm.lisp (stumpwm-internal-loop): call ceiling on timeout

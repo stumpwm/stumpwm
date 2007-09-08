@@ -286,15 +286,15 @@ frame."
   (when (current-window)
     (send-fake-click (current-window) (or button 1))))
 
-(defun echo-windows (group fmt windows)
+(defun echo-windows (group fmt &optional (windows (group-windows group)))
   "Print a list of the windows to the screen."
-  (let* ((wins (sort1 windows #'< :key #'window-number))
+  (let* ((wins (sort1 windows '< :key 'window-number))
 	 (highlight (position (group-current-window group) wins))
 	 (names (mapcar (lambda (w)
 			  (format-expand *window-formatters* fmt w)) wins)))
     (if (null wins)
 	(echo-string (group-screen group) "No Managed Windows")
-      (echo-string-list (group-screen group) names highlight))))
+	(echo-string-list (group-screen group) names highlight))))
 
 (defun fmt-window-list (group)
   "Using *window-format*, return a 1 line list of the windows, space seperated."
@@ -309,9 +309,9 @@ frame."
 		    (format-expand *group-formatters* *group-format* w)) (sort-groups (group-screen group)))))
 
 (define-stumpwm-command "windows" ((fmt :rest))
-  (echo-windows (current-group) (or fmt *window-format*) (group-windows (current-group))))
+  (echo-windows (current-group) (or fmt *window-format*)))
 
-(define-stumpwm-command "framewindows" ((fmt :rest))
+(define-stumpwm-command "frame-windows" ((fmt :rest))
   (echo-windows (current-group) (or fmt *window-format*) (frame-windows (current-group)
 									(tile-group-current-frame (current-group)))))
 
@@ -1304,17 +1304,16 @@ be found, select it.  Otherwise simply run cmd."
 (defun echo-groups (screen fmt &optional verbose (wfmt *window-format*))
   "Print a list of the windows to the screen."
   (let* ((groups (sort-groups screen))
-	 (names (reduce 'nconc 
-			(mapcar (lambda (g)
-				  (list*
-				   (format-expand *group-formatters* fmt g)
-				   (when verbose
-				     (mapcar (lambda (w)
-					       (format-expand *window-formatters*
-							      (concatenate 'string "  " wfmt)
-							      w))
-					     (sort-windows g)))))
-				(if *list-hidden-groups* groups (remove 1 groups :test #'> :key #'group-number))))))
+	 (names (mapcan (lambda (g)
+			  (list*
+			   (format-expand *group-formatters* fmt g)
+			   (when verbose
+			     (mapcar (lambda (w)
+				       (format-expand *window-formatters*
+						      (concatenate 'string "  " wfmt)
+						      w))
+				     (sort-windows g)))))
+			(if *list-hidden-groups* groups (non-hidden-groups groups)))))
     (echo-string-list screen names)))
 
 (define-stumpwm-command "groups" ((fmt :rest))

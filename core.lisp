@@ -135,12 +135,23 @@ otherwise specified."
 	   #\+)
 	  (t #\-))))
 
-(defun find-free-group-number (screen &optional (min 1))
-  "Return a free window number for GROUP."
-  (find-free-number (mapcar 'group-number (screen-groups screen)) min))
+(defun find-free-group-number (screen)
+  "Return a free group number in SCREEN."
+  (find-free-number (mapcar 'group-number (screen-groups screen)) 1))
+
+(defun find-free-hidden-group-number (screen)
+  "Return a free hidden group number for SCREEN. Hidden group numbers
+start at -1 and go down."
+  (find-free-number (mapcar 'group-number (screen-groups screen)) -1 :negative))
 
 (defun group-current-window (group)
   (frame-window (tile-group-current-frame group)))
+
+(defun non-hidden-groups (groups)
+  "Return only those groups that are not hidden."
+  (remove-if (lambda (g)
+	       (< (group-number g) 1))
+	     groups))
 
 (defun netwm-group-id (group)
   "netwm specifies that desktop/group numbers are contiguous and start
@@ -166,7 +177,6 @@ at 0. Return a netwm compliant group id."
       (focus-frame new-group (tile-group-current-frame new-group))
       (show-frame-indicator new-group)
       (xlib:change-property (screen-root screen) :_NET_CURRENT_DESKTOP
-					;                            (list (group-number new-group))
 			    (list (netwm-group-id new-group))
                             :cardinal 32)
       (run-hook-with-args *focus-group-hook* new-group old-group))))
@@ -196,14 +206,13 @@ at 0. Return a netwm compliant group id."
 			    :cardinal 32))))
 
 (defun next-group (current &optional (list (screen-groups (group-screen current))))
-  (let*
-      ((glist (remove 1 list :test #'> :key #'group-number))
-       (matches (member current glist)))
-					;list)))
+  ;; ditch the negative groups
+  (setf list (non-hidden-groups list))
+  (let* ((matches (member current list)))
     (if (null (cdr matches))
 	;; If the last one in the list is current, then
 	;; use the first one.
-	(car glist)
+	(car list)
 	;; Otherwise, use the next one in the list.
 	(cadr matches))))
 
@@ -241,7 +250,6 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 
     ;; _NET_CURRENT_DESKTOP
     (xlib:change-property root :_NET_CURRENT_DESKTOP
-					;                          (list (group-number (screen-current-group screen)))
 			  (list (netwm-group-id (screen-current-group screen)))
 			  :cardinal 32)
 
@@ -256,6 +264,11 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 			  :UTF8_STRING 8)))
 
 (defun add-group (screen name)
+  "Create a new group in SCREEN with the supplied name. group names
+starting with a . are considered hidden groups. Hidden groups are
+skipped by gprev and gnext and do not show up in the group
+listings (unless *list-hidden-groups* is T). They also use negative
+numbers."
   (check-type screen screen)
   (check-type name string)
   (let* ((initial-frame (make-initial-frame screen))
@@ -263,7 +276,9 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 	      :frame-tree initial-frame
 	      :current-frame initial-frame
 	      :screen screen
-	      :number (find-free-group-number screen (if (equal (elt name 0) #\.) - 1))
+	      :number (if (char= (char name 0) #\.)
+			  (find-free-hidden-group-number screen)
+			  (find-free-group-number screen))
 	      :name name)))
     (setf (screen-groups screen) (append (screen-groups screen) (list ng)))
     (netwm-set-group-properties screen)
