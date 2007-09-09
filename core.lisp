@@ -2105,13 +2105,14 @@ windows used to draw the numbers in. The caller must destroy them."
 							 (- (length (screen-last-msg screen))
 							    *max-last-message-size*))))))
 
+
 (defun echo-nth-last-message (screen n)
   (let ((*record-last-msg-override* t))
     (apply 'echo-string-list screen (nth n (screen-last-msg screen)) (nth n (screen-last-msg-highlights screen)))))
 
 (defun echo-string-list (screen strings &rest highlights)
   "Draw each string in l in the screen's message window. HIGHLIGHT is
-the nth entry to highlight."
+  the nth entry to highlight."
   (let* ((height (+ (xlib:font-descent (screen-font screen))
 		    (xlib:font-ascent (screen-font screen))))
 	 (gcontext (screen-message-gc screen))
@@ -2120,13 +2121,22 @@ the nth entry to highlight."
     (loop for s in strings
 	  ;; We need this so we can track the row for each element
 	  for i from 0 to (length strings)
-	  do (xlib:draw-image-glyphs message-win gcontext
-				     *message-window-padding*
-				     (+ (* i height)
-					(xlib:font-ascent (screen-font screen)))
-				     s
-				     :translate #'translate-id
-				     :size 16)
+	  do (let ((x 0))
+	       (loop
+		 for st = 0 then (+ en 3)
+		 as en = (position #\^ s :start st)
+		 do (progn 
+		      (xlib:draw-image-glyphs message-win gcontext
+					      (+ *message-window-padding* x)
+					      (+ (* i height)
+						 (xlib:font-ascent (screen-font screen)))
+					      (subseq s st en)
+					      :translate #'translate-id
+					      :size 16)
+		      (setf x (+ x (xlib:text-width (screen-font screen) (subseq s st en) :translate #'translate-id)))
+		      (when en
+			(set-color screen gcontext (subseq s (1+ en) (+ en 3)))))
+		 while en))
 	  when (find i highlights :test 'eql)
 	  do (invert-rect screen message-win
 			  0 (* i height)
@@ -2136,11 +2146,11 @@ the nth entry to highlight."
   (push-last-message screen strings highlights)
   ;; Set a timer to hide the message after a number of seconds
   (if *suppress-echo-timeout*
-      ;; any left over timers need to be canceled.
-      (when (timer-p *message-window-timer*)
-        (cancel-timer *message-window-timer*)
-        (setf *message-window-timer* nil))
-      (reset-message-window-timer))
+    ;; any left over timers need to be canceled.
+    (when (timer-p *message-window-timer*)
+      (cancel-timer *message-window-timer*)
+      (setf *message-window-timer* nil))
+    (reset-message-window-timer))
   (apply 'run-hook-with-args *message-hook* strings))
 
 (defun echo-string (screen msg)
@@ -2200,6 +2210,62 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
                           (list 0 0) :cardinal 32)
 
     (netwm-set-group-properties screen)))
+
+;; The C color code is as follows:
+;;
+;; ^B bold
+;; ^n normal (sgr0)
+;;
+;; ^00 black black
+;; ^10 red black
+;; ^01 black red
+;;
+;; and so on.
+;;
+;; I won't explain here the many reasons that C is better than ANSI, so just
+;; take my word for it.
+
+;; You can redefine these to whatever you like.
+(defvar *colors*
+  '("black"
+    "red"
+    "green"
+    "yellow"
+    "blue"
+    "magenta"
+    "cyan"
+    "white"))
+
+(defvar *color-map* '())
+
+(defun update-color-map (screen)
+  (setf *color-map*
+	(loop for c in *colors*
+	      collect (xlib:alloc-color (xlib:screen-default-colormap (screen-number screen)) c))))
+
+#|
+(defun get-gc (screen colorpair)
+  (let* ((cp colorpair)
+	 (gc (gethash cp (screen-gc screen))))
+    (unless gc
+      (let ((fg (parse-integer cp :start 0 :end 1))
+	    (bg (parse-integer cp :start 1 :end 2)))
+	(setf gc (xlib:create-gcontext
+		   :drawable (screen-message-window screen)
+		   :font (screen-font screen)
+		   :foreground (xlib:alloc-color (xlib:screen-default-colormap (screen-number screen)) (elt *color-map* fg))
+		   :background (xlib:alloc-color (xlib:screen-default-colormap (screen-number screen)) (elt *color-map* bg))))
+	(gethash cp (screen-gc screen)) gc)) gc))
+|#
+
+(defun set-color (screen gc cp)
+  (let* ((f (subseq cp 0 1))
+	 (b (subseq cp 1 2))
+	 (fg (if (equal f "*") (get-fg-color-pixel screen) (elt *color-map* (parse-integer f))))
+	 (bg (if (equal b "*") (get-bg-color-pixel screen) (elt *color-map* (parse-integer b)))))
+    (dformat 3 "setting color ~a,~a~%" f b)
+    (setf (xlib:gcontext-foreground gc) fg
+	  (xlib:gcontext-background gc) bg)))
 
 (defun init-screen (screen-number id host)
   "Given a screen number, returns a screen structure with initialized members"
@@ -2267,23 +2333,15 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 	  (screen-frame-window screen) frame-window
 	  (screen-focus-window screen) focus-window
 	  (screen-message-gc screen) (xlib:create-gcontext
-				      :drawable message-window
-				      :font font
-				      :foreground (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-foreground-color+)
-				      :background (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-background-color+))
-	  (screen-marked-gc screen) (xlib:create-gcontext
-				     ;; We just use this as placeholder. it'll actually be used
-				     ;; on parent windows but according to the docs the
-				     ;; drawables just have to have the same depth and something
-				     ;; else to work. So this should.
-				     :drawable message-window
-				     :subwindow-mode :include-inferiors
-				     :foreground  (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-foreground-color+)
-				     :background (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-background-color+)))
+				       :drawable message-window
+				       :font font
+				       :foreground fg
+				       :background bg))
     (setf (screen-heads screen) (make-heads screen)
 	  (tile-group-frame-tree group) (heads-frames (screen-heads screen))
 	  (tile-group-current-frame group) (first (tile-group-frame-tree group)))
     (netwm-set-properties screen focus-window)
+    (update-color-map screen)
     screen))
 
 

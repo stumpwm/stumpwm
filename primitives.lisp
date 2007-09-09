@@ -300,8 +300,8 @@ name. :title, :resource-name, :class are valid values.")
   ;; The window that gets focus when no window has focus
   focus-window
   ;; graphic contexts
+  gc
   message-gc
-  marked-gc
   ;; the window that has focus
   focus
   last-msg
