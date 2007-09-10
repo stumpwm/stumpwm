@@ -2221,11 +2221,13 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 ;; The C color code is as follows:
 ;;
 ;; ^B bright
+;; ^b dim
 ;; ^n normal (sgr0)
 ;;
 ;; ^00 black black
 ;; ^10 red black
 ;; ^01 black red
+;; ^1* red clear
 ;;
 ;; and so on.
 ;;
@@ -2243,35 +2245,29 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
     "cyan"
     "white"))
 
-(defvar *color-map* '())
-(defvar *color-map-norm* '())
-(defvar *color-map-bright* '())
-(defvar *fg-color* '())
-(defvar *bg-color* '())
-
 (defun update-color-map (screen)
   (let ((scm (xlib:screen-default-colormap (screen-number screen))))
-    (setf *color-map-norm*
+    (setf (color-map-norm (screen-colors screen))
 	  (loop for c in *colors*
 		as color = (xlib:lookup-color scm c)
 		do (setf (xlib:color-red color) (max 0 (- (xlib:color-red color) 0.25))
 			 (xlib:color-green color) (max 0 (- (xlib:color-green color) 0.25))
 			 (xlib:color-blue color) (max 0 (- (xlib:color-blue color) 0.25)))
 		collect (xlib:alloc-color scm color)))
-    (setf *color-map-bright*
+    (setf (color-map-bright (screen-colors screen))
 	  (loop for c in *colors*
 		collect (xlib:alloc-color scm c)))
-    (setf *color-map* *color-map-norm*)))
+    (setf (color-map-current (screen-colors screen)) (color-map-norm (screen-colors screen)))))
 
 (defun get-color (screen color)
-  (elt *color-map* color))
+  (elt (color-map-current (screen-colors screen)) color))
 
 (defun get-bg-color (screen color)
-  (setf *bg-color* color)
+  (setf (color-bg (screen-colors screen)) color)
   (get-color screen color))
 
 (defun get-fg-color (screen color)
-  (setf *fg-color* color)
+  (setf (color-fg (screen-colors screen)) color)
   (get-color screen color))
 
 (defun set-color (screen gc s i)
@@ -2281,18 +2277,18 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
     (case (elt f 0)
       (#\n ; normal
        (setf f "*" b "*" l 1
-	     *color-map* *color-map-norm*))
+	     (color-map-current (screen-colors screen)) (color-map-norm (screen-colors screen))))
       (#\b ; bright off
        (setf l 1
-	     *color-map* *color-map-norm*
-	     (xlib:gcontext-foreground gc) (get-fg-color screen *fg-color*)
-	     (xlib:gcontext-background gc) (get-bg-color screen *bg-color*))
+	     (color-map-current (screen-colors screen)) (color-map-norm (screen-colors screen))
+	     (xlib:gcontext-foreground gc) (get-fg-color screen (color-fg (screen-colors screen)))
+	     (xlib:gcontext-background gc) (get-bg-color screen (color-bg (screen-colors screen))))
        (return-from set-color l))
       (#\B ; bright on
        (setf l 1
-	     *color-map* *color-map-bright*
-	     (xlib:gcontext-foreground gc) (get-fg-color screen *fg-color*)
-	     (xlib:gcontext-background gc) (get-bg-color screen *bg-color*))
+	     (color-map-current (screen-colors screen)) (color-map-bright (screen-colors screen))
+	     (xlib:gcontext-foreground gc) (get-fg-color screen (color-fg (screen-colors screen)))
+	     (xlib:gcontext-background gc) (get-bg-color screen (color-bg (screen-colors screen))))
        (return-from set-color l)))
     (let ((fg (if (equal f "*") (get-fg-color-pixel screen) (get-fg-color screen (parse-integer f))))
 	  (bg (if (equal b "*") (get-bg-color-pixel screen) (get-bg-color screen (parse-integer b)))))
@@ -2370,7 +2366,8 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 				       :drawable message-window
 				       :font font
 				       :foreground fg
-				       :background bg))
+				       :background bg)
+	  (screen-colors screen) (make-color))
     (setf (screen-heads screen) (make-heads screen)
 	  (tile-group-frame-tree group) (heads-frames (screen-heads screen))
 	  (tile-group-current-frame group) (first (tile-group-frame-tree group)))

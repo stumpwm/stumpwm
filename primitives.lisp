@@ -300,12 +300,19 @@ name. :title, :resource-name, :class are valid values.")
   ;; The window that gets focus when no window has focus
   focus-window
   ;; graphic contexts
-  gc
   message-gc
+  colors
   ;; the window that has focus
   focus
   last-msg
   last-msg-highlights)
+
+(defstruct color
+  map-current
+  map-norm
+  map-bright
+  fg
+  bg)
 
 (defmethod print-object ((object frame) stream)
   (format stream "#S(frame ~d ~a ~d ~d ~d ~d)"
