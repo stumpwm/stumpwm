@@ -5,6 +5,8 @@ This file documents user visible changes between versions of StumpWM
 * Changes since 0.0.6
 These changes are probably incomplete
 
+** added color codes to message windows.
+
 ** added XRandR dynamic rotate/resize support
 
 ** added external panel/dock support
