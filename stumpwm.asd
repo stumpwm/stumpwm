@@ -32,6 +32,7 @@
 	       (:file "core")
 	       (:file "user")
 	       (:file "mode-line")
+	       (:file "color")
 	       (:file "stumpwm")
 	       ;; keep this last so it always gets recompiled if
 	       ;; anything changes
