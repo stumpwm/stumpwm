@@ -958,7 +958,7 @@ aborted."
   "exec cmd and echo the result."
   (let ((result (handler-case (parse-and-run-command cmd)
                   (error (c)
-                    (format nil "Error In Command '~a': ~A" cmd c)))))
+                    (format nil "^B^1*Error In Command '^b~a^B': ^n~A" cmd c)))))
     ;; interactive commands update the modeline
     (update-all-mode-lines)
     (cond ((stringp result)
@@ -1019,7 +1019,7 @@ aborted."
       (progn
         (with-restarts-menu (load-rc-file nil)))
     (error (c)
-      (message "Error loading rc file: ~A" c))
+      (message "^1*^BError loading rc file: ^n~A" c))
     (:no-error (&rest args)
       (declare (ignore args))
       (message "rc file loaded successfully."))))
@@ -1050,7 +1050,7 @@ aborted."
 
 (defun display-keybinding (kmap-var)
   (let* ((screen (current-screen))
-         (data (mapcar-hash (lambda (k v) (format nil "~5a ~a" (print-key k) v)) (symbol-value kmap-var)))
+         (data (mapcar-hash (lambda (k v) (format nil "^5*~5a^n ~a" (print-key k) v)) (symbol-value kmap-var)))
          (cols (ceiling (length data)
 			(truncate (head-height (current-head))
                                   (font-height (screen-font screen))))))
@@ -1340,7 +1340,7 @@ aborted."
   (let ((group (add-group (current-screen) name)))
     (if group
       (switch-to-group group)
-      (message "Groups must have a name!"))))
+      (message "^B^3*Groups must have a name!"))))
 
 (define-stumpwm-command "gnewbg" ((name :string "Group Name: "))
   (unless (find-group (current-screen) name)
@@ -1416,7 +1416,7 @@ aborted."
 
 (define-stumpwm-command "gmerge" ((from :group "From Group: "))
   (if (eq from (current-group))
-      (message "Cannot merge group with itself!")
+      (message "^B^3*Cannot merge group with itself!")
       (merge-groups from (current-group))))
 
 ;;; interactive menu
@@ -1521,8 +1521,8 @@ See *menu-map* for menu bindings."
   (message "Reloading StumpWM...")
   #+asdf (with-restarts-menu
              (asdf:operate 'asdf:load-op :stumpwm))
-  #-asdf (message "Stumpwm can only be reloaded with asdf, for now.")
-  #+asdf (message "Reloading StumpWM...Done."))
+  #-asdf (message "^B^1*Sorry, StumpWM can only be reloaded with asdf (for now.)")
+  #+asdf (message "Reloading StumpWM...^B^2*Done^n."))
 
 (defun run-commands (&rest commands)
   "Run each stumpwm command in sequence. This could be used if

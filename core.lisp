@@ -905,7 +905,7 @@ than the root window's width and height."
 	    (if group
 		(values group (frame-by-number group frame) raise)
 		(progn
-		  (message "Error placing window, group \"~a\" does not exist." group-name)
+		  (message "^B^1*Error placing window, group \"^b~a^B\" does not exist." group-name)
 		  (values))))))))
 
 (defun sync-window-placement ()
@@ -978,7 +978,7 @@ than the root window's width and height."
 	 (handler-case
 	     (funcall *new-window-prefered-frame* window)
 	   (error (c)
-	     (message "Error while calling *new-window-prefered-frame*: ~a" c)
+	     (message "^1*^BError while calling ^b^3**new-window-prefered-frame*^1*^B: ^n~a" c)
 	     nil))
 	 (loop for i in *new-window-prefered-frame*
 	       thereis (case i

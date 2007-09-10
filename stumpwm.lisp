@@ -142,7 +142,7 @@ of those expired."
                         (let ((s (format nil "~&Caught '~a' at the top level. Please report this." c)))
                           (write-line s)
                           (print-backtrace)
-                          (message "~a" s)))
+                          (message "^1*^B~a" s)))
                        (:break (invoke-debugger c))
                        (:abort
                         (format t "~&Caught '~a' at the top level. Please report this." c)
@@ -201,7 +201,7 @@ of those expired."
 		 (multiple-value-bind (success err rc) (load-rc-file)
 		   (if success
 		     (and *startup-message* (message "~a" *startup-message*))
-		     (message "Error loading ~A: ~A" rc err))))
+		     (message "^B^1*Error loading ^b~A^B: ^n~A" rc err))))
 	       (mapc 'process-existing-windows *screen-list*)
 	       ;; We need to setup each screen with its current window. Go
 	       ;; through them in reverse so the first screen's frame ends up

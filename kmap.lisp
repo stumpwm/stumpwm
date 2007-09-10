@@ -124,7 +124,7 @@ saving keyboard macros ***(see `insert-kbd-macro')."
 	  (keysym->stumpwm-name (key-keysym key))))
 
 (defun print-key-seq (seq)
-  (format nil "~{~a~^ ~}" (mapcar 'print-key seq)))
+  (format nil "^5*~{~a~^ ~}^n" (mapcar 'print-key seq)))
 
 (defun define-key (map key command)
   (setf (gethash key map) command)

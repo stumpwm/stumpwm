@@ -384,7 +384,7 @@ single char keys are supported.")
   "Call each function in HOOK and pass args to it"
   (dolist (fn hook)
     (handler-case (apply fn args)
-      (error (c) (message "Error in function ~S on hook ~S!~% ~A" fn hook c) (values nil c)))))
+      (error (c) (message "^B^1*Error in function ^b~S^B on hook ^b~S^B!~% ^n~A" fn hook c) (values nil c)))))
 
 (defun run-hook (hook)
   "Call each function in HOOK."
@@ -669,7 +669,7 @@ Modifies the match data; use `save-match-data' if necessary."
                               (#\m fmt-window-marked))
   "an alist containing format character format function pairs for formatting window lists.")
 
-(defvar *window-format* "%m%n%s%50t"
+(defvar *window-format* "%m%n^B%s^b%50t"
   "The format string for echoing the window list. Note the title
 is cropped to 50 characters.")
 
@@ -678,7 +678,7 @@ is cropped to 50 characters.")
 			      (#\t group-name))
   "an alist containing format character format function pairs for formatting window lists.")
 
-(defvar *group-format* "%n%s%t"
+(defvar *group-format* "%n^B%s^b%t"
   "The format string for echoing the window list.")
 
 (defvar *list-hidden-groups* t
@@ -800,7 +800,7 @@ the new window, and return the prefered frame.")
   #-sbcl
   (map 'list #'char-code string))
 
-(defvar *startup-message* "Welcome to The Stump Window Manager!"
+(defvar *startup-message* "^2*Welcome to The ^BStump^b ^BW^bindow ^BM^banager!"
   "StumpWM's startup message. Set to NIL to suppress.")
 
 (defvar *default-package* (find-package "CL-USER")
