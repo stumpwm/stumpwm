@@ -96,15 +96,13 @@
 	 (get-fg-color screen nil)
 	 (get-bg-color screen nil))
 	(#\b ; bright off
-	 (setf r 1
-	       (color-map-current (screen-colors screen)) (color-map-norm (screen-colors screen)))
+	 (setf (color-map-current (screen-colors screen)) (color-map-norm (screen-colors screen)))
 	 (update-colors)
-	 (return-from set-color r))
+	 (return-from set-color 1))
 	(#\B ; bright on
-	 (setf r 1
-	       (color-map-current (screen-colors screen)) (color-map-bright (screen-colors screen)))
+	 (setf (color-map-current (screen-colors screen)) (color-map-bright (screen-colors screen)))
 	 (update-colors)
-	 (return-from set-color r))
+	 (return-from set-color 1))
 	(#\^ ; circumflex
 	 (return-from set-color 1)))
       (let ((fg (if (equal f "*") (progn (get-fg-color screen nil) (get-fg-color-pixel screen)) (get-fg-color screen (parse-integer f))))
