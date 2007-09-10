@@ -1291,19 +1291,18 @@ function expects to be wrapped in a with-state for win."
 		       (setf (xlib:drawable-y win) (max (head-y (current-head)) (+ (head-y (current-head)) y))
 			     (xlib:drawable-x win) (max (head-x (current-head)) (+ (head-x (current-head)) x)))))))
 
-(defun setup-message-window (screen l)
-  (let ((height (* (length l)
+(defun setup-message-window (screen lines width)
+  (let ((height (* lines
 		   (+ (xlib:font-ascent (screen-font screen))
 		      (xlib:font-descent (screen-font screen)))))
-	(width (max-width (screen-font screen) l))
 	(win (screen-message-window screen)))
     ;; Now that we know the dimensions, raise and resize it.
     (xlib:map-window (screen-message-window screen))
     (xlib:with-state (win)
-      (setf (xlib:drawable-height win) height
-            (xlib:drawable-width win) (+ width (* *message-window-padding* 2))
-            (xlib:window-priority win) :above)
-      (setup-win-gravity screen win *message-window-gravity*))
+		     (setf (xlib:drawable-height win) height
+			   (xlib:drawable-width win) (+ width (* *message-window-padding* 2))
+			   (xlib:window-priority win) :above)
+		     (setup-win-gravity screen win *message-window-gravity*))
     ;; Clear the window
     (xlib:clear-area win)))
 
@@ -2110,38 +2109,46 @@ windows used to draw the numbers in. The caller must destroy them."
   (let ((*record-last-msg-override* t))
     (apply 'echo-string-list screen (nth n (screen-last-msg screen)) (nth n (screen-last-msg-highlights screen)))))
 
-(defun echo-string-list (screen strings &rest highlights)
-  "Draw each string in l in the screen's message window. HIGHLIGHT is
-  the nth entry to highlight."
+(defun render-strings (screen strings highlights &optional (draw t))
   (let* ((height (+ (xlib:font-descent (screen-font screen))
 		    (xlib:font-ascent (screen-font screen))))
+	 (width 0)
 	 (gcontext (screen-message-gc screen))
 	 (message-win (screen-message-window screen)))
-    (setup-message-window screen strings)
     (loop for s in strings
 	  ;; We need this so we can track the row for each element
 	  for i from 0 to (length strings)
-	  do (let ((x 0))
+	  do (let ((x 0) (off 0))
 	       (loop
-		 for st = 0 then (+ en 3)
+		 for st = 0 then (+ en (1+ off))
 		 as en = (position #\^ s :start st)
 		 do (progn 
-		      (xlib:draw-image-glyphs message-win gcontext
-					      (+ *message-window-padding* x)
-					      (+ (* i height)
-						 (xlib:font-ascent (screen-font screen)))
-					      (subseq s st en)
-					      :translate #'translate-id
-					      :size 16)
+		      (when draw
+			(xlib:draw-image-glyphs message-win gcontext
+						(+ *message-window-padding* x)
+						(+ (* i height)
+						   (xlib:font-ascent (screen-font screen)))
+						(subseq s st en)
+						:translate #'translate-id
+						:size 16))
 		      (setf x (+ x (xlib:text-width (screen-font screen) (subseq s st en) :translate #'translate-id)))
 		      (when en
-			(set-color screen gcontext (subseq s (1+ en) (+ en 3)))))
+			(setf off (set-color screen gcontext s (1+ en))))
+		      (setf width (max width x)))
 		 while en))
 	  when (find i highlights :test 'eql)
-	  do (invert-rect screen message-win
-			  0 (* i height)
-			  (xlib:drawable-width message-win)
-			  height)))
+	  do (when draw (invert-rect screen message-win
+				     0 (* i height)
+				     (xlib:drawable-width message-win)
+				     height)))
+    width))
+
+(defun echo-string-list (screen strings &rest highlights)
+  "Draw each string in l in the screen's message window. HIGHLIGHT is
+  the nth entry to highlight."
+  (let ((width (render-strings screen strings '() nil)))
+    (setup-message-window screen (length strings) width)
+    (render-strings screen strings highlights))
   (xlib:display-finish-output *display*)
   (push-last-message screen strings highlights)
   ;; Set a timer to hide the message after a number of seconds
@@ -2213,7 +2220,7 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 
 ;; The C color code is as follows:
 ;;
-;; ^B bold
+;; ^B bright
 ;; ^n normal (sgr0)
 ;;
 ;; ^00 black black
@@ -2237,35 +2244,61 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
     "white"))
 
 (defvar *color-map* '())
+(defvar *color-map-norm* '())
+(defvar *color-map-bright* '())
+(defvar *fg-color* '())
+(defvar *bg-color* '())
 
 (defun update-color-map (screen)
-  (setf *color-map*
-	(loop for c in *colors*
-	      collect (xlib:alloc-color (xlib:screen-default-colormap (screen-number screen)) c))))
+  (let ((scm (xlib:screen-default-colormap (screen-number screen))))
+    (setf *color-map-norm*
+	  (loop for c in *colors*
+		as color = (xlib:lookup-color scm c)
+		do (setf (xlib:color-red color) (max 0 (- (xlib:color-red color) 0.25))
+			 (xlib:color-green color) (max 0 (- (xlib:color-green color) 0.25))
+			 (xlib:color-blue color) (max 0 (- (xlib:color-blue color) 0.25)))
+		collect (xlib:alloc-color scm color)))
+    (setf *color-map-bright*
+	  (loop for c in *colors*
+		collect (xlib:alloc-color scm c)))
+    (setf *color-map* *color-map-norm*)))
 
-#|
-(defun get-gc (screen colorpair)
-  (let* ((cp colorpair)
-	 (gc (gethash cp (screen-gc screen))))
-    (unless gc
-      (let ((fg (parse-integer cp :start 0 :end 1))
-	    (bg (parse-integer cp :start 1 :end 2)))
-	(setf gc (xlib:create-gcontext
-		   :drawable (screen-message-window screen)
-		   :font (screen-font screen)
-		   :foreground (xlib:alloc-color (xlib:screen-default-colormap (screen-number screen)) (elt *color-map* fg))
-		   :background (xlib:alloc-color (xlib:screen-default-colormap (screen-number screen)) (elt *color-map* bg))))
-	(gethash cp (screen-gc screen)) gc)) gc))
-|#
+(defun get-color (screen color)
+  (elt *color-map* color))
 
-(defun set-color (screen gc cp)
-  (let* ((f (subseq cp 0 1))
-	 (b (subseq cp 1 2))
-	 (fg (if (equal f "*") (get-fg-color-pixel screen) (elt *color-map* (parse-integer f))))
-	 (bg (if (equal b "*") (get-bg-color-pixel screen) (elt *color-map* (parse-integer b)))))
-    (dformat 3 "setting color ~a,~a~%" f b)
-    (setf (xlib:gcontext-foreground gc) fg
-	  (xlib:gcontext-background gc) bg)))
+(defun get-bg-color (screen color)
+  (setf *bg-color* color)
+  (get-color screen color))
+
+(defun get-fg-color (screen color)
+  (setf *fg-color* color)
+  (get-color screen color))
+
+(defun set-color (screen gc s i)
+  (let ((l 2)
+	(f (subseq s i (1+ i)))
+	(b (subseq s (1+ i) (+ i 2))))
+    (case (elt f 0)
+      (#\n ; normal
+       (setf f "*" b "*" l 1
+	     *color-map* *color-map-norm*))
+      (#\b ; bright off
+       (setf l 1
+	     *color-map* *color-map-norm*
+	     (xlib:gcontext-foreground gc) (get-fg-color screen *fg-color*)
+	     (xlib:gcontext-background gc) (get-bg-color screen *bg-color*))
+       (return-from set-color l))
+      (#\B ; bright on
+       (setf l 1
+	     *color-map* *color-map-bright*
+	     (xlib:gcontext-foreground gc) (get-fg-color screen *fg-color*)
+	     (xlib:gcontext-background gc) (get-bg-color screen *bg-color*))
+       (return-from set-color l)))
+    (let ((fg (if (equal f "*") (get-fg-color-pixel screen) (get-fg-color screen (parse-integer f))))
+	  (bg (if (equal b "*") (get-bg-color-pixel screen) (get-bg-color screen (parse-integer b)))))
+      (setf (xlib:gcontext-foreground gc) fg
+	    (xlib:gcontext-background gc) bg)
+      l)))
 
 (defun init-screen (screen-number id host)
   "Given a screen number, returns a screen structure with initialized members"
@@ -2303,6 +2336,7 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 	 (message-window (xlib:create-window :parent (xlib:screen-root screen-number)
 					     :x 0 :y 0 :width 1 :height 1
 					     :background bg
+					     :bit-gravity :north-east
 					     :border border
 					     :border-width 1
 					     :colormap (xlib:screen-default-colormap
