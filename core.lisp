@@ -753,7 +753,7 @@ than the root window's width and height."
 	(stacking (xlib:get-property (screen-root screen) :_NET_CLIENT_LIST_STACKING)))
     (when stacking
       ;; sort by _NET_CLIENT_LIST_STACKING
-      (setf children (sort #'> children :key (lambda (xwin)
+      (setf children (sort children #'> :key (lambda (xwin)
 					       (position (xlib:drawable-id xwin) stacking)))))
     (dolist (win children)
       (let ((map-state (xlib:window-map-state win))
