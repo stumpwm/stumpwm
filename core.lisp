@@ -1297,12 +1297,12 @@ function expects to be wrapped in a with-state for win."
 		      (xlib:font-descent (screen-font screen)))))
 	(win (screen-message-window screen)))
     ;; Now that we know the dimensions, raise and resize it.
-    (xlib:map-window (screen-message-window screen))
     (xlib:with-state (win)
 		     (setf (xlib:drawable-height win) height
 			   (xlib:drawable-width win) (+ width (* *message-window-padding* 2))
 			   (xlib:window-priority win) :above)
 		     (setup-win-gravity screen win *message-window-gravity*))
+    (xlib:map-window (screen-message-window screen))
     ;; Clear the window
     (xlib:clear-area win)))
 
