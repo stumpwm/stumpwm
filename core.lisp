@@ -2624,34 +2624,39 @@ KMAP and return the binding or nil if the user hit an unbound sequence."
   "Find the command mapped to the (code state) and return it."
   ;; a symbol is assumed to have a hashtable as a value.
   (dformat 1 "Awaiting key ~a~%" kmap)
-  (when (and (symbolp kmap)
-	     (boundp kmap)
-	     (hash-table-p (symbol-value kmap)))
-    (setf kmap (symbol-value kmap)))
-  (check-type kmap hash-table)
-  (let* ((key (code-state->key code state))
-	 (cmd (lookup-key kmap key))
-	 (key-seq (cons key key-seq)))
-    (dformat 1 "key-press: ~S ~S ~S~%" key state cmd)
-    (run-hook-with-args *key-press-hook* key key-seq cmd)
-    (when update-fn
-      (funcall update-fn key-seq))
-    (if cmd
+  (let ((keymap '()))
+    (when (and (symbolp kmap)
+	       (boundp kmap)
+	       (hash-table-p (symbol-value kmap)))
+      (setf
+	keymap kmap
+	kmap (symbol-value kmap)))
+    (check-type kmap hash-table)
+    (let* ((key (code-state->key code state))
+	   (cmd (lookup-key kmap key))
+	   (key-seq (cons key key-seq)))
+      (dformat 1 "key-press: ~S ~S ~S~%" key state cmd)
+      (run-hook-with-args *key-press-hook* key key-seq cmd)
+      (when update-fn
+	(funcall update-fn key-seq))
+      (if cmd
 	(cond
 	  ((or (hash-table-p cmd)
 	       (and (symbolp cmd)
 		    (boundp cmd)
 		    (hash-table-p (symbol-value cmd))))
-           (when grab
-             (grab-pointer (current-screen))
-;;              (grab-keyboard (current-screen))
-             )
+	   (when grab
+	     (grab-pointer (current-screen))
+	     ;;              (grab-keyboard (current-screen))
+	     )
 	   (let* ((code-state (read-key-no-modifiers))
 		  (code (car code-state))
 		  (state (cdr code-state)))
 	     (handle-keymap cmd code state key-seq nil update-fn)))
 	  (t (values cmd key-seq)))
-	(values nil key-seq))))
+	(if (equalp key (kbd "?"))
+	  (progn (display-keybinding keymap) (values t key-seq))
+	  (values nil key-seq))))))
 
 (define-stump-event-handler :key-press (code state #|window|#)
   ;; modifiers can sneak in with a race condition. so avoid that.
@@ -2675,10 +2680,12 @@ KMAP and return the binding or nil if the user hit an unbound sequence."
                       ;; ungrabbed.
                       (ungrab-keyboard))))
            (multiple-value-bind (cmd key-seq) (get-cmd code state)
-             (unmap-message-window (current-screen))
-             (if cmd
-                 (interactive-command cmd)
-                 (message "~{~a ~}not bound." (mapcar 'print-key (nreverse key-seq)))))))))
+             (cond
+	       ((eq cmd t))
+	       (cmd
+		 (unmap-message-window (current-screen))
+		 (interactive-command cmd) t)
+	       (t (message "~{~a ~}not bound." (mapcar 'print-key (nreverse key-seq))))))))))
 
 (defun bytes-to-window (bytes)
   "A sick hack to assemble 4 bytes into a 32 bit number. This is
