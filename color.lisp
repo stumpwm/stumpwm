@@ -105,11 +105,12 @@
 	 (return-from set-color 1))
 	(#\^ ; circumflex
 	 (return-from set-color 1)))
-      (let ((fg (if (equal f "*") (progn (get-fg-color screen nil) (get-fg-color-pixel screen)) (get-fg-color screen (parse-integer f))))
-	    (bg (if (equal b "*") (progn (get-bg-color screen nil) (get-bg-color-pixel screen)) (get-bg-color screen (parse-integer b)))))
-	(setf (xlib:gcontext-foreground gc) fg
-	      (xlib:gcontext-background gc) bg)
-	r))))
+      (handler-case 
+	(let ((fg (if (equal f "*") (progn (get-fg-color screen nil) (get-fg-color-pixel screen)) (get-fg-color screen (parse-integer f))))
+	      (bg (if (equal b "*") (progn (get-bg-color screen nil) (get-bg-color-pixel screen)) (get-bg-color screen (parse-integer b)))))
+	  (setf (xlib:gcontext-foreground gc) fg
+		(xlib:gcontext-background gc) bg))
+	(error (c) (dformat 1 "Invalid color code: ~A" c)))) r))
 
 (defun render-strings (screen strings highlights &optional (draw t))
   (let* ((height (+ (xlib:font-descent (screen-font screen))
