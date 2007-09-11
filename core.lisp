@@ -282,7 +282,7 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 		     :frame-tree heads
 		     :current-frame (first heads)
 		     :screen screen
-		     :number (find-free-group-number screen (if (equal (elt name 0) #\.) -1 0))
+		     :number (find-free-group-number screen (if (equal (elt name 0) #\.) -1 1))
 		     :name name)))
 	  (setf (screen-groups screen) (append (screen-groups screen) (list ng)))
 	  (netwm-set-group-properties screen)
