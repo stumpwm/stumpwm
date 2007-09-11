@@ -375,9 +375,27 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
    (xwin-net-wm-name win)
    (xlib:wm-name win)))
 
+(defun move-window-to-frame-head (window)
+  "Like move-window-to-head, but instead of moving it to the head of the list,
+  just move it ahead of the frame's current window"
+  (let ((group (window-group window))
+	(frame (window-frame window)))
+    (labels ((append-it ()
+			(setf (group-windows group) (append (group-windows group) (list window)))))
+      (unless (eq (frame-window frame) window)
+	(setf (group-windows group) (delete window (group-windows group)))
+	(if (frame-window frame)
+	  (let ((i (position (frame-window frame) (group-windows group))))
+	    (if i
+	      (setf (elt (group-windows group) i) (cons window (elt (group-windows group) i)))
+	      (append-it)))
+	  (append-it))))))
+
 ;; FIXME: should we raise the window or its parent?
 (defun raise-window (win)
   "Map the window if needed and bring it to the top of the stack. Does not affect focus."
+  ;; Move window head of others in it's frame.
+;  (move-window-to-frame-head win)
   (when (window-hidden-p win)
     (unhide-window win)
     (update-configuration win))
@@ -750,11 +768,13 @@ than the root window's width and height."
   "Windows present when stumpwm starts up must be absorbed by stumpwm."
   (let ((children (xlib:query-tree (screen-root screen)))
 	(*processing-existing-windows* t)
-	(stacking (xlib:get-property (screen-root screen) :_NET_CLIENT_LIST_STACKING)))
+	(stacking (xlib:get-property (screen-root screen) :_NET_CLIENT_LIST_STACKING :type :window)))
     (when stacking
+      (dformat 3 "Using window stacking: ~{~X ~}~%" stacking)
       ;; sort by _NET_CLIENT_LIST_STACKING
-      (setf children (sort children #'> :key (lambda (xwin)
-					       (position (xlib:drawable-id xwin) stacking)))))
+      (setf children (stable-sort children #'< :key
+				  (lambda (xwin)
+				    (or (position (xlib:drawable-id xwin) stacking :test #'=) 0)))))
     (dolist (win children)
       (let ((map-state (xlib:window-map-state win))
 	    (wm-state (xwin-state win)))
@@ -1144,7 +1164,8 @@ needed."
   (declare (type window window))
   ;(assert (member window (screen-mapped-windows screen)))
   (setf (group-windows group) (delete window (group-windows group)))
-  (push window (group-windows group)))
+  (push window (group-windows group))
+  (netwm-update-client-list-stacking (group-screen group)))
 
 (defun no-focus (group last-win)
   "don't focus any window but still read keyboard events."
@@ -1160,6 +1181,7 @@ needed."
 (defun focus-window (window)
   "Give the window focus. This means the window will be visible,
 maximized, and given focus."
+  (dformat 3 "focus-window!~%")
   (let* ((group (window-group window))
 	 (screen (group-screen group))
 	 (cw (screen-focus screen)))
@@ -1341,8 +1363,7 @@ function expects to be wrapped in a with-state for win."
     (unless (and w (eq oldw w))
       (if w
 	(raise-window w)
-	(mapc 'hide-window (frame-windows g f)))
-      (netwm-update-client-list-stacking (group-screen g)))
+	(mapc 'hide-window (frame-windows g f))))
     (when focus
       (focus-frame g f))))
 
@@ -1859,13 +1880,14 @@ windows used to draw the numbers in. The caller must destroy them."
 ;;; Screen functions
 
 (defun netwm-update-client-list-stacking (screen)
-  (xlib:change-property (screen-root screen)
-			:_NET_CLIENT_LIST_STACKING
-			;; Order is bottom to top.
-			(reverse (mapcar 'window-xwin (all-windows)))
-			:window 32
-                        :transform #'xlib:drawable-id
-			:mode :replace))
+  (unless *initializing*
+    (xlib:change-property (screen-root screen)
+			  :_NET_CLIENT_LIST_STACKING
+			  ;; Order is bottom to top.
+			  (reverse (mapcar 'window-xwin (all-windows)))
+			  :window 32
+			  :transform #'xlib:drawable-id
+			  :mode :replace)))
 
 (defun netwm-update-client-list (screen)
   (xlib:change-property (screen-root screen)
@@ -2156,11 +2178,6 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 
     ;; _NET_CLIENT_LIST
     (xlib:change-property root :_NET_CLIENT_LIST
-                          () :window 32
-                          :transform #'xlib:drawable-id)
-
-    ;; _NET_CLIENT_LIST_STACKING
-    (xlib:change-property root :_NET_CLIENT_LIST_STACKING
                           () :window 32
                           :transform #'xlib:drawable-id)
 
