@@ -2852,20 +2852,21 @@ chunks."
 	   (when our-window
 	     (delete-window our-window))))
 	(:_NET_WM_STATE
-	 (let ((our-window (find-window window)))
-	   (when our-window
-	     (destructuring-bind (action p1 p2 source &rest foo) data
-	       (declare (ignore source foo))
-	       (dolist (p (list p1 p2))
-		 (unless (= p 0)
-			 (case (xlib:atom-name *display* p)
-			   (:_NET_WM_STATE_FULLSCREEN
-			     (update-fullscreen our-window action)))))))))
+	  (let ((our-window (find-window window)))
+	    (when our-window
+	      (let ((action (elt data 0))
+		    (p1 (elt data 1))
+		    (p2 (elt data 2)))
+		(dolist (p (list p1 p2))
+		  (unless (= p 0)
+		    (case (xlib:atom-name *display* p)
+		      (:_NET_WM_STATE_FULLSCREEN
+			(update-fullscreen our-window action)))))))))
 	(:_NET_MOVERESIZE_WINDOW
 	  (let ((our-window (find-window window)))
 	    (when our-window
-	      (destructuring-bind (gravity x y width height) data
-		(declare (ignore gravity width height))
+	      (let ((x (elt data 1))
+		    (y (elt data 2)))
 		(dformat 3 "!!! Data: ~S~%" data)
 		(hanlde-window-move our-window x y :relative :root)))))
 	(t
