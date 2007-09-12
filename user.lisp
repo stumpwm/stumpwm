@@ -1274,7 +1274,9 @@ aborted."
   (when *resize-hides-windows*
     (dolist (w (reverse (head-windows (current-group) (current-head))))
       (setf (frame-window (window-frame w)) w)
-      (raise-window w))))
+      (raise-window w))
+    (when (current-window)
+      (focus-window (current-window)))))
 
 (define-stumpwm-command "abort-iresize" ()
   (resize-unhide)
