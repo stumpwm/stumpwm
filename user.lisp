@@ -704,7 +704,7 @@ select one. Returns the selected frame or nil if aborted."
     	(clear-frame-outlines group)
         (resize-frame group f w :width)
 	(resize-frame group f h :height)
-	(draw-frame-outlines group)))))
+	(draw-frame-outlines group (current-head))))))
 
 (defun eval-line (cmd)
   (handler-case 
@@ -1263,7 +1263,7 @@ aborted."
 	(when *resize-hides-windows*
 	  (dolist (f (head-frames (current-group) (current-head)))
 	    (clear-frame f (current-group))))
-	(draw-frame-outlines (current-group))
+	(draw-frame-outlines (current-group) (current-head))
 	(message "Resize Frame")
 	(push-top-map *resize-map*))
       ;;   (setf *resize-backup* (copy-frame-tree (current-group)))

@@ -1801,15 +1801,15 @@ depending on the tree's split direction."
           (unhide-window (frame-window f2)))
         t))))
 
-(defun draw-frame-outlines (group)
+(defun draw-frame-outlines (group &optional head)
   "Draw an outline around all frames in GROUP."
   (let* ((screen (group-screen group))
 	 (width (if (oddp *frame-outline-width*) (1+ *frame-outline-width*) *frame-outline-width*))
-         (gc (xlib:create-gcontext :drawable (screen-root screen)
-                                   :font (screen-font screen)
-                                   :foreground (get-fg-color-pixel screen)
-                                   :background (get-bg-color-pixel screen)
-                                   :line-style :double-dash
+	 (gc (xlib:create-gcontext :drawable (screen-root screen)
+				   :font (screen-font screen)
+				   :foreground (get-fg-color-pixel screen)
+				   :background (get-bg-color-pixel screen)
+				   :line-style :double-dash
 				   :line-width width))
 	 (halfwidth (/ width 2)))
     ;; Outline frames (left, top)
@@ -1822,7 +1822,9 @@ depending on the tree's split direction."
 			      x (+ halfwidth y) w 0 t)
 	      (xlib:draw-line (screen-root screen) gc
 			      (+ halfwidth x) y 0 h t)))
-	  (group-frames group))
+	  (if head
+	    (head-frames group head)
+	    (group-frames group)))
     ;; Outline heads (bottom, right)
     (mapc (lambda (f) 
 	    (let ((x (frame-x f))
@@ -1833,7 +1835,9 @@ depending on the tree's split direction."
 			      (+ x (- w halfwidth)) y 0 h t)
 	      (xlib:draw-line (screen-root screen) gc
 			      x (+ y (- h halfwidth)) w 0 t)))
-	  (group-heads group))))
+	  (if head
+	    (list head)
+	    (group-heads group)))))
 
 (defun clear-frame-outlines (group)
   "Clear the outlines drawn with DRAW-FRAME-OUTLINES."
