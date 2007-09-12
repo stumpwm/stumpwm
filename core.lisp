@@ -502,7 +502,7 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
   (setf	(xwin-state xwin) +iconic-state+)
   (let ((window (find-window xwin)))
     (when window
-      (incf (window-unmap-ignores window))))
+      (incf (window-unmap-ignores window) 1)))
   ;; FIXME: I'm pretty sure we're supposed to unmap the subwindows too
   ;; (xlib:unmap-subwindows parent)
   (xlib:unmap-window parent)

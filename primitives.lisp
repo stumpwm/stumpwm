@@ -713,6 +713,9 @@ recommended this is assigned using LET.")
 (defvar *honor-window-moves* t
   "Allow windows to move between frames.")
 
+(defvar *resize-hides-windows* nil
+  "Set to T to hide windows during interactive resize")
+
 (defun deny-request-p (window deny-list)
   (or (eq deny-list t)
       (and
@@ -721,6 +724,8 @@ recommended this is assigned using LET.")
                   (apply 'window-matches-properties-p window props))
                 deny-list)
        t)))
+
+
 
 (defun list-splice-replace (item list &rest replacements)
   "splice REPLACEMENTS into LIST where ITEM is, removing

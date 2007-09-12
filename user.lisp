@@ -701,8 +701,10 @@ select one. Returns the selected frame or nil if aborted."
     (if (atom (tile-group-frame-tree group))
 	(message "No more frames!")
       (progn
+    	(clear-frame-outlines group)
         (resize-frame group f w :width)
-	(resize-frame group f h :height)))))
+	(resize-frame group f h :height)
+	(draw-frame-outlines group)))))
 
 (defun eval-line (cmd)
   (handler-case 
@@ -1258,19 +1260,32 @@ aborted."
     (if	(atom (tile-group-frame-head (current-group) (frame-head (current-group) frame)))
       (message "There's only 1 frame!")
       (progn
+	(when *resize-hides-windows*
+	  (dolist (f (head-frames (current-group) (current-head)))
+	    (clear-frame f (current-group))))
+	(draw-frame-outlines (current-group))
 	(message "Resize Frame")
 	(push-top-map *resize-map*))
       ;;   (setf *resize-backup* (copy-frame-tree (current-group)))
       )))
 
+(defun resize-unhide ()
+  (clear-frame-outlines (current-group))
+  (when *resize-hides-windows*
+    (dolist (w (reverse (head-windows (current-group) (current-head))))
+      (setf (frame-window (window-frame w)) w)
+      (raise-window w))))
+
 (define-stumpwm-command "abort-iresize" ()
+  (resize-unhide)
   (message "Abort resize")
   ;; TODO: actually revert the frames
   (pop-top-map))
 
 (define-stumpwm-command "exit-iresize" ()
- (message "Resize Complete")
- (pop-top-map))
+  (resize-unhide)
+  (message "Resize Complete")
+  (pop-top-map))
 
 ;;; group commands
 
