@@ -1196,12 +1196,6 @@ aborted."
 	(goto-win win)
 	(run-shell-command cmd)))))
 
-(define-stumpwm-command "shell" ()
-  (run-or-raise "xterm -title '*shell*'" :title "*shell*"))
-
-(define-stumpwm-command "web" ()
-  (run-or-raise "firefox" :class "Firefox-bin"))
-
 (define-stumpwm-command "escape" ((key :string "Key: "))
   (set-prefix-key (kbd key)))
 
