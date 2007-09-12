@@ -375,27 +375,10 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
    (xwin-net-wm-name win)
    (xlib:wm-name win)))
 
-(defun move-window-to-frame-head (window)
-  "Like move-window-to-head, but instead of moving it to the head of the list,
-  just move it ahead of the frame's current window"
-  (let ((group (window-group window))
-	(frame (window-frame window)))
-    (labels ((append-it ()
-			(setf (group-windows group) (append (group-windows group) (list window)))))
-      (unless (eq (frame-window frame) window)
-	(setf (group-windows group) (delete window (group-windows group)))
-	(if (frame-window frame)
-	  (let ((i (position (frame-window frame) (group-windows group))))
-	    (if i
-	      (setf (elt (group-windows group) i) (cons window (elt (group-windows group) i)))
-	      (append-it)))
-	  (append-it))))))
-
 ;; FIXME: should we raise the window or its parent?
 (defun raise-window (win)
   "Map the window if needed and bring it to the top of the stack. Does not affect focus."
   ;; Move window head of others in it's frame.
-;  (move-window-to-frame-head win)
   (when (window-hidden-p win)
     (unhide-window win)
     (update-configuration win))
@@ -1024,19 +1007,8 @@ than the root window's width and height."
 		     (place-existing-window screen xwin)
 		     (place-window screen xwin))))
 
-(defun netwm-remove-window (screen window)
-  ;; update _NET_CLIENT_LIST
-  (let ((client-list (xlib:get-property (screen-root screen)
-					:_NET_CLIENT_LIST
-					:type :window)))
-    (xlib:change-property (screen-root screen)
-			  :_NET_CLIENT_LIST
-			  (remove (xlib:drawable-id (window-xwin window))
-				  client-list)
-			  :window 32
-			  :mode :replace)
-    ;; remove _NET_WM_DESKTOP property
-    (xlib:delete-property (window-xwin window) :_NET_WM_DESKTOP)))
+(defun netwm-remove-window (window)
+  (xlib:delete-property (window-xwin window) :_NET_WM_DESKTOP))
 
 (defun process-mapped-window (screen xwin)
   "Add the window to the screen's mapped window list and process it as
@@ -1133,7 +1105,7 @@ needed."
     (when (window-in-current-group-p window)
       ;; since the window doesn't exist, it doesn't have focus.
       (setf (screen-focus screen) nil))
-    (netwm-remove-window screen window)
+    (netwm-remove-window window)
     ;; If the current window was removed, then refocus the frame it
     ;; was in, since it has a new current window
     (when (eq (tile-group-current-frame group) f)
