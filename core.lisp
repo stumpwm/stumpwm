@@ -1371,6 +1371,9 @@ function expects to be wrapped in a with-state for win."
 (defun group-frames (group)
   (tree-accum-fn (tile-group-frame-tree group) 'nconc 'list))
 
+(defun head-frames (group head)
+  (tree-accum-fn (tile-group-frame-head group head) 'nconc 'list))
+
 (defun find-free-frame-number (group)
   (find-free-number (mapcar (lambda (f) (frame-number f))
 			    (group-frames group))))
@@ -1637,10 +1640,16 @@ one."
 	(group-windows group)))
 
 (defun sync-all-frame-windows (group)
+  "synchronize all frames in GROUP."
   (let ((tree (tile-group-frame-tree group)))
     (tree-iterate tree
 		  (lambda (f)
 		    (sync-frame-windows group f)))))
+
+(defun sync-head-frame-windows (group head)
+  "synchronize all frames in GROUP and HEAD."
+  (dolist (f (head-frames group head))
+    (sync-frame-windows group f)))
 
 (defun offset-frames (group x y)
   "move the screen's frames around."

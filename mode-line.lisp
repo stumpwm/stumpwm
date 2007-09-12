@@ -211,7 +211,7 @@ current group.")
 
 (defun sync-mode-line (ml)
   (dolist (group (screen-groups (mode-line-screen ml)))
-    (sync-all-frame-windows group)))
+    (sync-head-frame-windows group (mode-line-head ml))))
 
 (defun set-mode-line-window (ml xwin)
   "Use an external window as mode-line."
@@ -317,7 +317,7 @@ current group.")
 	;; setup the timer
 	(turn-on-mode-line-timer)))
     (dolist (group (screen-groups screen))
-      (sync-all-frame-windows group))))
+      (sync-head-frame-windows group head))))
 
 (define-stumpwm-command "mode-line" ()
   (toggle-mode-line (current-screen) (current-head)))
