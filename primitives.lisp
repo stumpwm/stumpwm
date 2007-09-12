@@ -693,6 +693,12 @@ recommended this is assigned using LET.")
   for a running instance. Set it to NIL to search only the
   current group.")
 
+(defvar *run-or-raise-all-screens* nil
+  "When this is T the run-or-raise function searches all screens
+  for a running instance. Set it to NIL to search only the
+  current screen. If *run-or-raise-all-groups* is NIL
+  this variable has no effect.")
+
 (defvar *deny-map-request* nil
   "A list of window properties that stumpwm should deny matching windows'
   requests to become mapped for the first time.")

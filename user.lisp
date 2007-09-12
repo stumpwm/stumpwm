@@ -1164,7 +1164,7 @@ aborted."
 (define-stumpwm-command "move-window" ((dir :string "Direction: "))
   (move-focus-and-or-window dir t))
 
-(defun run-or-raise (cmd props &optional (all-groups *run-or-raise-all-groups*))
+(defun run-or-raise (cmd props &optional (all-groups *run-or-raise-all-groups*) (all-screens *run-or-raise-all-screens*))
   "If a window matching PROPS can be found, select it.  Otherwise simply run cmd."
   (labels
     ;; Raise the window win and select its frame.  For now, it
@@ -1173,25 +1173,30 @@ aborted."
 	       (let* ((group (window-group win))
 		      (frame (window-frame win))
 		      (old-frame (tile-group-current-frame group)))
-		 (switch-to-group group)
 		 (frame-raise-window group frame win)
-		 (focus-frame group frame)
+		 (focus-all win)
 		 (unless (eq frame old-frame)
 		   (show-frame-indicator group))))
      (find-window (group)
 		  (find-if (lambda (w)
 			     (apply 'window-matches-properties-p w props))
 			   (group-windows group))))
-    (let ((win
-	    ;; If no qualifiers are set don't bother looking for a match.
-	    ;; search all groups
-	    (if all-groups
-	      (loop
-		for g in (screen-groups (current-screen))
-		for win = (find-window g)
-		when win
-		return win)
-	      (find-window (current-group)))))
+    (let*
+      ((screens (if all-screens
+		  *screen-list*
+		  (list (current-screen))))
+       (win
+	 ;; If no qualifiers are set don't bother looking for a match.
+	 ;; search all groups
+	 (if all-groups
+	   (loop named outer
+		 for s in screens
+		 do (loop
+		      for g in (screen-groups s)
+		      for win = (find-window g)
+		      when win
+		      do (return-from outer win)))
+	   (find-window (current-group)))))
       (if win
 	(goto-win win)
 	(run-shell-command cmd)))))
