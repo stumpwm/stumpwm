@@ -2555,21 +2555,64 @@ list of modifier symbols."
 			       (frame-x f) (round (* (frame-x f) wf)))))
     (dformat 4 "resize-tree ~Dx~D -> ~Dx~D~%" tw th (tree-width tree) (tree-height tree))))
 
+(defun scale-head (screen oh nh)
+  "Scales head OH to match the dimensions of NH."
+  (dolist (group (screen-groups screen))
+    (resize-tree (tile-group-frame-head group oh) (head-width nh) (head-height nh)))
+  (setf (head-x oh) (head-x nh)
+	(head-y oh) (head-y nh)
+	(head-width oh) (head-width nh)
+	(head-height oh) (head-height nh)))
+
+(defun remove-head (screen head)
+  (dformat 1 "Removing head #~D~%" (head-number head))
+  (dolist (group (screen-groups screen))
+    ;; Hide its windows.
+    (let ((windows (head-windows group head)))
+      ;; Remove it from the frame tree.
+      (setf (tile-group-frame-tree group) (delete (tile-group-frame-head group head) (tile-group-frame-tree group)))
+      ;; Just set current frame to whatever.
+      (let ((frame (first (group-frames group))))
+	(setf (tile-group-current-frame group) frame)
+	(dolist (window windows)
+	  (hide-window window)
+	  (setf (window-frame window) frame)))))
+  ;; Remove it from SCREEN's head list.
+  (setf (screen-heads screen) (delete head (screen-heads screen))))
+
+(defun add-head (screen head)
+  (dformat 1 "Adding head #~D~%" (head-number head))
+  (setf (screen-heads screen) (sort (push head (screen-heads screen)) #'< :key 'head-number))
+  (dolist (group (screen-groups screen))
+    (setf (tile-group-frame-tree group)
+	  (sort (push (copy-frame head) (tile-group-frame-tree group))
+		#'< :key (lambda (tile)
+			   (if (atom tile)
+			     (frame-number tile)
+			     (frame-number (car tile))))))))
+
 (defun scale-screen (screen heads)
   "Scale all frames of all groups of SCREEN to match the dimensions
   of HEADS."
-  ;; FIXME: handle added/deleted heads
-  (dolist (group (screen-groups screen))
-    (loop
-      for oh in (screen-heads screen)
-      as nh = (find (head-number oh) heads :key 'head-number)
-      do (progn
-	   (resize-tree (tile-group-frame-head group oh) (head-width nh) (head-height nh))
-	   (setf (head-x oh) (head-x nh)
-		 (head-y oh) (head-y nh)
-		 (head-width oh) (head-width nh)
-		 (head-height oh) (head-height nh))))
-    (dformat 4 "New frame tree: ~S~%" (tile-group-frame-tree group))))
+  (when (< (length heads) (length (screen-heads screen)))
+    ;; Some heads were removed (or cloned), try to guess which.
+    (dolist (oh (screen-heads screen))
+      (dolist (nh heads)
+	(when (and (= (head-x nh) (head-x oh))
+		   (= (head-y nh) (head-y oh)))
+	  ;; Same screen position; probably the same head.
+	  (setf (head-number nh) (head-number oh)))))
+    ;; Actually remove the missing heads.
+    (dolist (head (set-difference (screen-heads screen) heads :key 'head-number))
+      (remove-head screen head)))
+  (loop
+    for nh in heads
+    as oh = (find (head-number nh) (screen-heads screen) :key 'head-number)
+    do (if oh
+	 (scale-head screen oh nh)
+	 (add-head screen nh))))
+;	 (rplacd (elt (screen-heads screen) i) (cons nh (member (elt (screen-heads screen) (1+ i))))))))
+
 
 (define-stump-event-handler :configure-notify (stack-mode #|parent|# window #|above-sibling|# x y width height border-width value-mask)
   (dformat 4 "CONFIGURE NOTIFY ~@{~S ~}~%" stack-mode window x y width height border-width value-mask)
@@ -2583,8 +2626,8 @@ list of modifier symbols."
 	  (cond
 	    ((equalp old-heads new-heads)
 	     (dformat 3 "Bogus configure-notify on root window of ~S~%" screen) t)
-	    ((not (= (length old-heads) (length new-heads)))
-	     (message "Error! I don't know how to add/remove heads!") t)
+;	    ((not (= (length old-heads) (length new-heads)))
+;	     (message "Error! I don't know how to add/remove heads!") t)
 	    (t
 	      (dformat 1 "Updating Xinerama configuration for ~S.~%" screen)
 	      (if new-heads
