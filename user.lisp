@@ -1054,7 +1054,7 @@ aborted."
   (let* ((screen (current-screen))
          (data (mapcar-hash (lambda (k v) (format nil "~5a ~a" (print-key k) v)) (symbol-value kmap-var)))
          (cols (ceiling (length data)
-                        (truncate (screen-height screen)
+			(truncate (head-height (current-head))
                                   (font-height (screen-font screen))))))
     (message-no-timeout "Prefix: ~{~a~^ | ~}~%~{~a~^~%~}"
                         (mapcar 'print-key-seq (search-kmap kmap-var *top-map*))
