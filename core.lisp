@@ -2190,7 +2190,8 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
   (setf (xlib:window-event-mask (xlib:screen-root screen-number))
 	'(:substructure-redirect
 	  :substructure-notify
-	  :property-change))
+	  :property-change
+	  :structure-notify))
   (xlib:display-finish-output *display*)
   ;; Initialize the screen structure
   (let* ((screen (make-screen))
@@ -2540,6 +2541,34 @@ list of modifier symbols."
 	(handle-managed-window win width height stack-mode value-mask))
       ((handle-mode-line-window window x y width height))
       (t (handle-unmanaged-window window x y width height border-width value-mask)))))
+
+(define-stump-event-handler :configure-notify (stack-mode #|parent|# window #|above-sibling|# x y width height border-width value-mask)
+  (dformat 3 "CONFIGURE NOTIFY ~@{~S ~}~%" stack-mode window x y width height border-width value-mask)
+  (let ((screen (find-screen window)))
+    (when screen
+	;; Even in on a root window; Looks like a RandR change
+	(let ((old-heads (copy-list (screen-heads screen))))
+	  (setf (screen-heads screen) nil)
+	  (let ((new-heads (make-heads screen)))
+	    (if (equalp old-heads new-heads)
+	      (progn
+		(dformat 3 "Bogus configure-notify on root window of ~S~%" screen)
+		(setf (screen-heads screen) old-heads))
+	      (progn
+		(dformat 3 "Updating Xinerama configuration for ~S.~%" screen)
+		(if new-heads
+		  (progn
+		    ;; FIXME: all frames in all groups of SCREEN must be adjusted!
+		    (setf (screen-heads screen) new-heads)
+		    (dolist (g (screen-groups screen))
+		      (let ((tree (heads-frames (screen-heads screen))))
+			(setf (tile-group-frame-tree g) tree
+			      (tile-group-current-frame g) (first tree))
+			(dolist (w (group-windows g))
+			  (setf (window-frame w) (tile-group-current-frame g)))
+			(sync-all-frame-windows g))))
+		  (dformat 3 "Invalid configuration! ~S~%" new-heads)
+		  ))))))))
 
 (define-stump-event-handler :map-request (parent send-event-p window)
   (unless send-event-p
