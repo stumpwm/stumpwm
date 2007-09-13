@@ -300,6 +300,11 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 (defun all-windows ()
   (mapcan (lambda (s) (copy-list (screen-windows s))) *screen-list*))
 
+(defun visible-windows ()
+  "Return a list of visible windows (on all screens)"
+  (loop for s in *screen-list*
+	nconc (delete-if 'window-hidden-p (copy-list (group-windows (screen-current-group s))))))
+
 (defun window-name (window)
   (or (window-user-title window)
       (case *window-name-source*
@@ -2896,7 +2901,7 @@ chunks."
 (define-stump-event-handler :button-press (window time)
   ;; Pass click to client
   (xlib:allow-events *display* :replay-pointer time)
-  (let ((win (find-window-by-parent window (group-windows (current-group)))))
+  (let ((win (find-window-by-parent window (visible-windows))))
     (when (and win (eq *focus-policy* :on-click))
       (focus-all win))))
 
