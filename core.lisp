@@ -2542,33 +2542,57 @@ list of modifier symbols."
       ((handle-mode-line-window window x y width height))
       (t (handle-unmanaged-window window x y width height border-width value-mask)))))
 
+(defun resize-tree (tree w h)
+  "Scale TREE to width W and height H, ignoring aspect."
+  (let* ((tw (tree-width tree))
+	 (th (tree-height tree))
+	 (wf (/ 1 (/ tw w)))
+	 (hf (/ 1 (/ th h))))
+    (dformat 4 "resize-tree ~Dx~D -> " tw th)
+    (tree-iterate tree (lambda (f)
+			 (setf (frame-height f) (round (* (frame-height f) hf))
+			       (frame-y f) (round (* (frame-y f) hf))
+			       (frame-width f) (round (* (frame-width f) wf))
+			       (frame-x f) (round (* (frame-x f) wf)))))
+    (dformat 4 "~Dx~D~%" (tree-width tree) (tree-height tree))))
+
+(defun scale-screen (screen heads)
+  "Scale all frames of all groups of SCREEN to match the dimensions
+  of HEADS."
+  ;; FIXME: handle added/deleted heads
+  (dolist (group (screen-groups screen))
+
+    (dolist (old-head (screen-heads screen))
+      (let ((new-head (find (head-number old-head) heads :key 'head-number)))
+	(resize-tree (tile-group-frame-head group old-head) (head-width new-head) (head-height new-head))))
+    (dformat 4 "New frame tree: ~S~%" (tile-group-frame-tree group))))
+
 (define-stump-event-handler :configure-notify (stack-mode #|parent|# window #|above-sibling|# x y width height border-width value-mask)
   (dformat 3 "CONFIGURE NOTIFY ~@{~S ~}~%" stack-mode window x y width height border-width value-mask)
   (let ((screen (find-screen window)))
     (when screen
-	;; Even in on a root window; Looks like a RandR change
-	(let ((old-heads (copy-list (screen-heads screen))))
-	  (setf (screen-heads screen) nil)
-	  (let ((new-heads (make-heads screen)))
-	    (if (equalp old-heads new-heads)
-	      (progn
-		(dformat 3 "Bogus configure-notify on root window of ~S~%" screen)
-		(setf (screen-heads screen) old-heads))
-	      (progn
-		(dformat 3 "Updating Xinerama configuration for ~S.~%" screen)
-		(if new-heads
-		  (progn
-		    ;; FIXME: all frames in all groups of SCREEN must be adjusted!
-		    (setf (screen-heads screen) new-heads)
-		    (dolist (g (screen-groups screen))
-		      (let ((tree (heads-frames (screen-heads screen))))
-			(setf (tile-group-frame-tree g) tree
-			      (tile-group-current-frame g) (first tree))
-			(dolist (w (group-windows g))
-			  (setf (window-frame w) (tile-group-current-frame g)))
-			(sync-all-frame-windows g))))
-		  (dformat 3 "Invalid configuration! ~S~%" new-heads)
-		  ))))))))
+      ;; Even in on a root window; Looks like a RandR change
+      (let ((old-heads (copy-list (screen-heads screen))))
+	(setf (screen-heads screen) nil)
+	(let ((new-heads (make-heads screen)))
+	  (setf (screen-heads screen) old-heads)
+	  (if (equalp old-heads new-heads)
+	    (dformat 3 "Bogus configure-notify on root window of ~S~%" screen)
+	    (progn
+	      (dformat 3 "Updating Xinerama configuration for ~S.~%" screen)
+	      (if new-heads
+		(progn
+		  ;; FIXME: all frames in all groups of SCREEN must be adjusted!
+		  (scale-screen screen new-heads)
+		  (loop
+		    for oh in old-heads
+		    for nh in new-heads
+		    do (setf (frame-x oh) (frame-x nh)
+			     (frame-y oh) (frame-y nh)
+			     (frame-width oh) (frame-width nh)
+			     (frame-height oh) (frame-height nh)))
+		  (mapc 'sync-all-frame-windows (screen-groups screen)))
+		(dformat 3 "Invalid configuration! ~S~%" new-heads)))))))))
 
 (define-stump-event-handler :map-request (parent send-event-p window)
   (unless send-event-p
