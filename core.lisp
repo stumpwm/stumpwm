@@ -2871,7 +2871,7 @@ chunks."
 	      (let ((x (elt data 1))
 		    (y (elt data 2)))
 		(dformat 3 "!!! Data: ~S~%" data)
-		(hanlde-window-move our-window x y :relative :root)))))
+		(handle-window-move our-window x y :relative :root)))))
 	(t
 	 (dformat 2 "ignored message~%"))))
 
