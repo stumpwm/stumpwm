@@ -2548,27 +2548,31 @@ list of modifier symbols."
 	 (th (tree-height tree))
 	 (wf (/ 1 (/ tw w)))
 	 (hf (/ 1 (/ th h))))
-    (dformat 4 "resize-tree ~Dx~D -> " tw th)
     (tree-iterate tree (lambda (f)
 			 (setf (frame-height f) (round (* (frame-height f) hf))
 			       (frame-y f) (round (* (frame-y f) hf))
 			       (frame-width f) (round (* (frame-width f) wf))
 			       (frame-x f) (round (* (frame-x f) wf)))))
-    (dformat 4 "~Dx~D~%" (tree-width tree) (tree-height tree))))
+    (dformat 4 "resize-tree ~Dx~D -> ~Dx~D~%" tw th (tree-width tree) (tree-height tree))))
 
 (defun scale-screen (screen heads)
   "Scale all frames of all groups of SCREEN to match the dimensions
   of HEADS."
   ;; FIXME: handle added/deleted heads
   (dolist (group (screen-groups screen))
-
-    (dolist (old-head (screen-heads screen))
-      (let ((new-head (find (head-number old-head) heads :key 'head-number)))
-	(resize-tree (tile-group-frame-head group old-head) (head-width new-head) (head-height new-head))))
+    (loop
+      for oh in (screen-heads screen)
+      as nh = (find (head-number oh) heads :key 'head-number)
+      do (progn
+	   (resize-tree (tile-group-frame-head group oh) (head-width nh) (head-height nh))
+	   (setf (head-x oh) (head-x nh)
+		 (head-y oh) (head-y nh)
+		 (head-width oh) (head-width nh)
+		 (head-height oh) (head-height nh))))
     (dformat 4 "New frame tree: ~S~%" (tile-group-frame-tree group))))
 
 (define-stump-event-handler :configure-notify (stack-mode #|parent|# window #|above-sibling|# x y width height border-width value-mask)
-  (dformat 3 "CONFIGURE NOTIFY ~@{~S ~}~%" stack-mode window x y width height border-width value-mask)
+  (dformat 4 "CONFIGURE NOTIFY ~@{~S ~}~%" stack-mode window x y width height border-width value-mask)
   (let ((screen (find-screen window)))
     (when screen
       ;; Even in on a root window; Looks like a RandR change
@@ -2576,23 +2580,18 @@ list of modifier symbols."
 	(setf (screen-heads screen) nil)
 	(let ((new-heads (make-heads screen)))
 	  (setf (screen-heads screen) old-heads)
-	  (if (equalp old-heads new-heads)
-	    (dformat 3 "Bogus configure-notify on root window of ~S~%" screen)
-	    (progn
-	      (dformat 3 "Updating Xinerama configuration for ~S.~%" screen)
+	  (cond
+	    ((equalp old-heads new-heads)
+	     (dformat 3 "Bogus configure-notify on root window of ~S~%" screen) t)
+	    ((not (= (length old-heads) (length new-heads)))
+	     (message "Error! I don't know how to add/remove heads!") t)
+	    (t
+	      (dformat 1 "Updating Xinerama configuration for ~S.~%" screen)
 	      (if new-heads
 		(progn
-		  ;; FIXME: all frames in all groups of SCREEN must be adjusted!
 		  (scale-screen screen new-heads)
-		  (loop
-		    for oh in old-heads
-		    for nh in new-heads
-		    do (setf (frame-x oh) (frame-x nh)
-			     (frame-y oh) (frame-y nh)
-			     (frame-width oh) (frame-width nh)
-			     (frame-height oh) (frame-height nh)))
 		  (mapc 'sync-all-frame-windows (screen-groups screen)))
-		(dformat 3 "Invalid configuration! ~S~%" new-heads)))))))))
+		(dformat 1 "Invalid configuration! ~S~%" new-heads)))))))))
 
 (define-stump-event-handler :map-request (parent send-event-p window)
   (unless send-event-p
