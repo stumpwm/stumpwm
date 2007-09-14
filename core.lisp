@@ -2578,10 +2578,13 @@ list of modifier symbols."
       (setf (tile-group-frame-tree group) (delete (tile-group-frame-head group head) (tile-group-frame-tree group)))
       ;; Just set current frame to whatever.
       (let ((frame (first (group-frames group))))
-	(setf (tile-group-current-frame group) frame)
+	(setf (tile-group-current-frame group) frame
+	      (tile-group-last-frame group) nil)
 	(dolist (window windows)
 	  (hide-window window)
-	  (setf (window-frame window) frame)))))
+	  (setf (window-frame window) frame))))
+    ;; Try to do something with the orphaned windows
+    (populate-frames group))
   ;; Remove it from SCREEN's head list.
   (setf (screen-heads screen) (delete head (screen-heads screen))))
 
@@ -2594,7 +2597,12 @@ list of modifier symbols."
 		#'< :key (lambda (tile)
 			   (if (atom tile)
 			     (frame-number tile)
-			     (frame-number (car tile))))))))
+			     (frame-number (car tile))))))
+    ;; Try to put something in the new frame
+    (let ((frame (tile-group-frame-head group head)))
+      (choose-new-frame-window frame group)
+      (when (frame-window frame)
+	(unhide-window (frame-window frame))))))
 
 (defun scale-screen (screen heads)
   "Scale all frames of all groups of SCREEN to match the dimensions
@@ -2616,8 +2624,6 @@ list of modifier symbols."
     do (if oh
 	 (scale-head screen oh nh)
 	 (add-head screen nh))))
-;	 (rplacd (elt (screen-heads screen) i) (cons nh (member (elt (screen-heads screen) (1+ i))))))))
-
 
 (define-stump-event-handler :configure-notify (stack-mode #|parent|# window #|above-sibling|# x y width height border-width value-mask)
   (dformat 4 "CONFIGURE NOTIFY ~@{~S ~}~%" stack-mode window x y width height border-width value-mask)
@@ -2631,8 +2637,6 @@ list of modifier symbols."
 	  (cond
 	    ((equalp old-heads new-heads)
 	     (dformat 3 "Bogus configure-notify on root window of ~S~%" screen) t)
-;	    ((not (= (length old-heads) (length new-heads)))
-;	     (message "Error! I don't know how to add/remove heads!") t)
 	    (t
 	      (dformat 1 "Updating Xinerama configuration for ~S.~%" screen)
 	      (if new-heads
