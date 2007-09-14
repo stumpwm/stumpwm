@@ -2542,23 +2542,28 @@ list of modifier symbols."
       ((handle-mode-line-window window x y width height))
       (t (handle-unmanaged-window window x y width height border-width value-mask)))))
 
-(defun resize-tree (tree w h)
-  "Scale TREE to width W and height H, ignoring aspect."
+(defun resize-tree (tree w h &optional x y)
+  "Scale TREE to width W and height H, ignoring aspect. If X and Y are
+  provided, reposition the TREE as well."
   (let* ((tw (tree-width tree))
 	 (th (tree-height tree))
 	 (wf (/ 1 (/ tw w)))
-	 (hf (/ 1 (/ th h))))
+	 (hf (/ 1 (/ th h)))
+	 (xo (if x (- x (tree-x tree)) 0))
+	 (yo (if y (- y (tree-y tree)) 0)))
     (tree-iterate tree (lambda (f)
 			 (setf (frame-height f) (round (* (frame-height f) hf))
 			       (frame-y f) (round (* (frame-y f) hf))
 			       (frame-width f) (round (* (frame-width f) wf))
-			       (frame-x f) (round (* (frame-x f) wf)))))
+			       (frame-x f) (round (* (frame-x f) wf)))
+			 (incf (frame-y f) yo)
+			 (incf (frame-x f) xo)))
     (dformat 4 "resize-tree ~Dx~D -> ~Dx~D~%" tw th (tree-width tree) (tree-height tree))))
 
 (defun scale-head (screen oh nh)
   "Scales head OH to match the dimensions of NH."
   (dolist (group (screen-groups screen))
-    (resize-tree (tile-group-frame-head group oh) (head-width nh) (head-height nh)))
+    (resize-tree (tile-group-frame-head group oh) (head-width nh) (head-height nh) (head-x nh) (head-y nh)))
   (setf (head-x oh) (head-x nh)
 	(head-y oh) (head-y nh)
 	(head-width oh) (head-width nh)
