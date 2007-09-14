@@ -51,33 +51,34 @@
     "cyan"
     "white"))
 
+;; Normal colors are dimmed and bright colors are intensified in order
+;; to more closely resemble the VGA pallet.
 (defun update-color-map (screen)
   (let ((scm (xlib:screen-default-colormap (screen-number screen))))
-    (setf (color-map-norm (screen-colors screen))
-	  (loop for c in *colors*
-		as color = (xlib:lookup-color scm c)
-		do (setf (xlib:color-red color) (max 0 (- (xlib:color-red color) 0.25))
-			 (xlib:color-green color) (max 0 (- (xlib:color-green color) 0.25))
-			 (xlib:color-blue color) (max 0 (- (xlib:color-blue color) 0.25)))
-		collect (xlib:alloc-color scm color)))
-    (setf (color-map-bright (screen-colors screen))
-	  (loop for c in *colors*
-		collect (xlib:alloc-color scm c)))
-    (setf (color-map-current (screen-colors screen)) (color-map-norm (screen-colors screen)))))
-
-(defun get-color (screen color)
-    (elt (color-map-current (screen-colors screen)) color))
+    (labels ((max-min (x y) (max 0 (min 1 (+ x y))))
+	     (adj-color (color amt)
+			(setf (xlib:color-red color) (max-min (xlib:color-red color) amt)
+			      (xlib:color-green color) (max-min (xlib:color-green color) amt)
+			      (xlib:color-blue color) (max-min (xlib:color-blue color) amt)))
+	     (map-colors (amt)
+			 (loop for c in *colors*
+			       as color = (xlib:lookup-color scm c)
+			       do (adj-color color amt)
+			       collect (xlib:alloc-color scm color))))
+      (setf (color-map-norm (screen-colors screen)) (map-colors -0.25)
+	    (color-map-bright (screen-colors screen)) (map-colors 0.25)
+	    (color-map-current (screen-colors screen)) (color-map-norm (screen-colors screen))))))
 
 (defun get-bg-color (screen color)
   (setf (color-bg (screen-colors screen)) color)
   (if color
-    (get-color screen color)
+    (elt (color-map-norm (screen-colors screen)) color)
     (get-bg-color-pixel screen)))
 
 (defun get-fg-color (screen color)
   (setf (color-fg (screen-colors screen)) color)
   (if color
-    (get-color screen color)
+    (elt (color-map-current (screen-colors screen)) color)
     (get-fg-color-pixel screen)))
 
 (defun set-color (screen gc s i)
