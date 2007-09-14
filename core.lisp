@@ -1626,6 +1626,24 @@ LEAF. Return tree with leaf removed."
     (expand-tree newtree amt dir)
     newtree))
 
+(defun resize-tree (tree w h &optional x y)
+  "Scale TREE to width W and height H, ignoring aspect. If X and Y are
+  provided, reposition the TREE as well."
+  (let* ((tw (tree-width tree))
+	 (th (tree-height tree))
+	 (wf (/ 1 (/ tw w)))
+	 (hf (/ 1 (/ th h)))
+	 (xo (if x (- x (tree-x tree)) 0))
+	 (yo (if y (- y (tree-y tree)) 0)))
+    (tree-iterate tree (lambda (f)
+			 (setf (frame-height f) (round (* (frame-height f) hf))
+			       (frame-y f) (round (* (frame-y f) hf))
+			       (frame-width f) (round (* (frame-width f) wf))
+			       (frame-x f) (round (* (frame-x f) wf)))
+			 (incf (frame-y f) yo)
+			 (incf (frame-x f) xo)))
+    (dformat 4 "resize-tree ~Dx~D -> ~Dx~D~%" tw th (tree-width tree) (tree-height tree))))
+
 (defun remove-frame (tree leaf)
   "Return a new tree with LEAF and it's sibling merged into
 one."
@@ -2340,6 +2358,52 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 (defun frame-is-head (group frame)
   (< (frame-number frame) (length (group-heads group))))
 
+(defun add-head (screen head)
+  (dformat 1 "Adding head #~D~%" (head-number head))
+  (setf (screen-heads screen) (sort (push head (screen-heads screen)) #'< :key 'head-number))
+  (dolist (group (screen-groups screen))
+    (setf (tile-group-frame-tree group)
+	  (sort (push (copy-frame head) (tile-group-frame-tree group))
+		#'< :key (lambda (tile)
+			   (if (atom tile)
+			     (frame-number tile)
+			     (frame-number (car tile))))))
+    ;; Try to put something in the new frame
+    (let ((frame (tile-group-frame-head group head)))
+      (choose-new-frame-window frame group)
+      (when (frame-window frame)
+	(unhide-window (frame-window frame))))))
+
+(defun remove-head (screen head)
+  (dformat 1 "Removing head #~D~%" (head-number head))
+  (dolist (group (screen-groups screen))
+    ;; Hide its windows.
+    (let ((windows (head-windows group head)))
+      ;; Remove it from the frame tree.
+      (setf (tile-group-frame-tree group) (delete (tile-group-frame-head group head) (tile-group-frame-tree group)))
+      ;; Just set current frame to whatever.
+      (let ((frame (first (group-frames group))))
+	(setf (tile-group-current-frame group) frame
+	      (tile-group-last-frame group) nil)
+	(dolist (window windows)
+	  (hide-window window)
+	  (setf (window-frame window) frame))))
+    ;; Try to do something with the orphaned windows
+    (populate-frames group))
+  (when (head-mode-line head)
+    (toggle-mode-line screen head))
+  ;; Remove it from SCREEN's head list.
+  (setf (screen-heads screen) (delete head (screen-heads screen))))
+
+(defun scale-head (screen oh nh)
+  "Scales head OH to match the dimensions of NH."
+  (dolist (group (screen-groups screen))
+    (resize-tree (tile-group-frame-head group oh) (head-width nh) (head-height nh) (head-x nh) (head-y nh)))
+  (setf (head-x oh) (head-x nh)
+	(head-y oh) (head-y nh)
+	(head-width oh) (head-width nh)
+	(head-height oh) (head-height nh)))
+
 
 ;;; keyboard helper functions
 
@@ -2542,70 +2606,6 @@ list of modifier symbols."
       ((handle-mode-line-window window x y width height))
       (t (handle-unmanaged-window window x y width height border-width value-mask)))))
 
-(defun resize-tree (tree w h &optional x y)
-  "Scale TREE to width W and height H, ignoring aspect. If X and Y are
-  provided, reposition the TREE as well."
-  (let* ((tw (tree-width tree))
-	 (th (tree-height tree))
-	 (wf (/ 1 (/ tw w)))
-	 (hf (/ 1 (/ th h)))
-	 (xo (if x (- x (tree-x tree)) 0))
-	 (yo (if y (- y (tree-y tree)) 0)))
-    (tree-iterate tree (lambda (f)
-			 (setf (frame-height f) (round (* (frame-height f) hf))
-			       (frame-y f) (round (* (frame-y f) hf))
-			       (frame-width f) (round (* (frame-width f) wf))
-			       (frame-x f) (round (* (frame-x f) wf)))
-			 (incf (frame-y f) yo)
-			 (incf (frame-x f) xo)))
-    (dformat 4 "resize-tree ~Dx~D -> ~Dx~D~%" tw th (tree-width tree) (tree-height tree))))
-
-(defun scale-head (screen oh nh)
-  "Scales head OH to match the dimensions of NH."
-  (dolist (group (screen-groups screen))
-    (resize-tree (tile-group-frame-head group oh) (head-width nh) (head-height nh) (head-x nh) (head-y nh)))
-  (setf (head-x oh) (head-x nh)
-	(head-y oh) (head-y nh)
-	(head-width oh) (head-width nh)
-	(head-height oh) (head-height nh)))
-
-(defun remove-head (screen head)
-  (dformat 1 "Removing head #~D~%" (head-number head))
-  (dolist (group (screen-groups screen))
-    ;; Hide its windows.
-    (let ((windows (head-windows group head)))
-      ;; Remove it from the frame tree.
-      (setf (tile-group-frame-tree group) (delete (tile-group-frame-head group head) (tile-group-frame-tree group)))
-      ;; Just set current frame to whatever.
-      (let ((frame (first (group-frames group))))
-	(setf (tile-group-current-frame group) frame
-	      (tile-group-last-frame group) nil)
-	(dolist (window windows)
-	  (hide-window window)
-	  (setf (window-frame window) frame))))
-    ;; Try to do something with the orphaned windows
-    (populate-frames group))
-  (when (head-mode-line head)
-    (toggle-mode-line screen head))
-  ;; Remove it from SCREEN's head list.
-  (setf (screen-heads screen) (delete head (screen-heads screen))))
-
-(defun add-head (screen head)
-  (dformat 1 "Adding head #~D~%" (head-number head))
-  (setf (screen-heads screen) (sort (push head (screen-heads screen)) #'< :key 'head-number))
-  (dolist (group (screen-groups screen))
-    (setf (tile-group-frame-tree group)
-	  (sort (push (copy-frame head) (tile-group-frame-tree group))
-		#'< :key (lambda (tile)
-			   (if (atom tile)
-			     (frame-number tile)
-			     (frame-number (car tile))))))
-    ;; Try to put something in the new frame
-    (let ((frame (tile-group-frame-head group head)))
-      (choose-new-frame-window frame group)
-      (when (frame-window frame)
-	(unhide-window (frame-window frame))))))
-
 (defun scale-screen (screen heads)
   "Scale all frames of all groups of SCREEN to match the dimensions
   of HEADS."
@@ -2631,7 +2631,6 @@ list of modifier symbols."
   (dformat 4 "CONFIGURE NOTIFY ~@{~S ~}~%" stack-mode window x y width height border-width value-mask)
   (let ((screen (find-screen window)))
     (when screen
-      ;; Even in on a root window; Looks like a RandR change
       (let ((old-heads (copy-list (screen-heads screen))))
 	(setf (screen-heads screen) nil)
 	(let ((new-heads (make-heads screen)))
