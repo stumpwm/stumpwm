@@ -2585,6 +2585,8 @@ list of modifier symbols."
 	  (setf (window-frame window) frame))))
     ;; Try to do something with the orphaned windows
     (populate-frames group))
+  (when (head-mode-line head)
+    (toggle-mode-line screen head))
   ;; Remove it from SCREEN's head list.
   (setf (screen-heads screen) (delete head (screen-heads screen))))
 
