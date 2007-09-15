@@ -65,20 +65,20 @@
 			       as color = (xlib:lookup-color scm c)
 			       do (adj-color color amt)
 			       collect (xlib:alloc-color scm color))))
-      (setf (color-map-norm (screen-colors screen)) (map-colors -0.25)
-	    (color-map-bright (screen-colors screen)) (map-colors 0.25)
+      (setf (color-map-norm (screen-colors screen)) (apply #'vector (map-colors -0.25))
+	    (color-map-bright (screen-colors screen)) (apply #'vector (map-colors 0.25))
 	    (color-map-current (screen-colors screen)) (color-map-norm (screen-colors screen))))))
 
 (defun get-bg-color (screen color)
   (setf (color-bg (screen-colors screen)) color)
   (if color
-    (elt (color-map-norm (screen-colors screen)) color)
+    (svref (color-map-norm (screen-colors screen)) color)
     (get-bg-color-pixel screen)))
 
 (defun get-fg-color (screen color)
   (setf (color-fg (screen-colors screen)) color)
   (if color
-    (elt (color-map-current (screen-colors screen)) color)
+    (svref (color-map-current (screen-colors screen)) color)
     (get-fg-color-pixel screen)))
 
 (defun set-color (screen gc s i)
