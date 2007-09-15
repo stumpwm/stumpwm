@@ -325,8 +325,8 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 	 (screen (group-screen group)))
     (let ((c (if (and (> (length (group-frames group)) 1)
                       (eq (group-current-window group) window))
-                 (get-color-pixel screen *focus-color*)
-                 (get-color-pixel screen *unfocus-color*))))
+                 (alloc-color screen *focus-color*)
+                 (alloc-color screen *unfocus-color*))))
       (setf (xlib:window-border (window-parent window)) c
             ;; windows that dont fill the entire screen have a transparent background.
             (xlib:window-background (window-parent window))
@@ -739,7 +739,7 @@ than the root window's width and height."
 			   :background (if (eq (window-type window) :normal)
                                            (get-bg-color-pixel screen)
                                            :none)
-			   :border (get-color-pixel screen *unfocus-color*)
+			   :border (alloc-color screen *unfocus-color*)
 			   :border-width (default-border-width-for-type (window-type window))
 			   :event-mask *window-parent-events*)))
       (unless (eq (xlib:window-map-state (window-xwin window)) :unmapped)
@@ -1197,33 +1197,28 @@ maximized, and given focus."
   ;; if we can list the font then it exists
   (plusp (length (xlib:list-font-names *display* font-name :max-fonts 1))))
 
+(defun alloc-color (screen color)
+  (xlib:alloc-color (xlib:screen-default-colormap (screen-number screen)) color))
+
+(defmacro set-any-color (val color)
+  `(progn (dolist (s *screen-list*)
+	    (setf (,val s) (alloc-color s color)))
+	  (update-colors-all-screens)))
+
 (defun set-fg-color (color)
-  (when (color-exists-p color)
-    (dolist (i *screen-list*)
-      (setf (screen-fg-color i) color))
-    (update-colors-all-screens)
-    t))
+  (set-any-color screen-fg-color color))
 
 (defun set-bg-color (color)
-  (when (color-exists-p color)
-    (dolist (i *screen-list*)
-      (setf (screen-bg-color i) color))
-    (update-colors-all-screens)
-    t))
+  (set-any-color screen-bg-color color))
 
 (defun set-border-color (color)
-  (when (color-exists-p color)
-    (dolist (i *screen-list*)
-      (setf (screen-border-color i) color))
-    (update-colors-all-screens)
-    t))
+  (set-any-color screen-border-color color))
 
 (defun set-win-bg-color (color)
-  (when (color-exists-p color)
-    (dolist (i *screen-list*)
-      (setf (screen-win-bg-color i) color))
-    (update-colors-all-screens)
-    t))
+  (set-any-color screen-win-bg-color color))
+
+(defun set-win-bg-color (color)
+  (set-any-color screen-win-bg-color color))
 
 (defun set-msg-border-width (width)
   (check-type width (integer 0))
@@ -1241,20 +1236,17 @@ maximized, and given focus."
 	      (xlib:gcontext-font (screen-message-gc i)) fobj)))
     t))
 
-(defun get-color-pixel (screen color)
-  (xlib:alloc-color (xlib:screen-default-colormap (screen-number screen)) color))
-
 (defun get-fg-color-pixel (screen)
-  (get-color-pixel screen (screen-fg-color screen)))
+  (screen-fg-color screen))
 
 (defun get-bg-color-pixel (screen)
-  (get-color-pixel screen (screen-bg-color screen)))
-
-(defun get-win-bg-color-pixel (screen)
-  (get-color-pixel screen (screen-win-bg-color screen)))
+  (screen-bg-color screen))
 
 (defun get-border-color-pixel (screen)
-  (get-color-pixel screen (screen-border-color screen)))
+  (screen-border-color screen))
+
+(defun get-win-bg-color-pixel (screen)
+  (screen-win-bg-color screen))
 
 (defun max-width (font l)
   "Return the width of the longest string in L using FONT."
@@ -2240,10 +2232,10 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 	  (screen-groups screen) (list group)
 	  (screen-current-group screen) group
 	  (screen-font screen) font
-	  (screen-fg-color screen) +default-foreground-color+
-	  (screen-bg-color screen) +default-background-color+
+	  (screen-fg-color screen) fg
+	  (screen-bg-color screen) bg
 	  (screen-win-bg-color screen) +default-window-background-color+
-	  (screen-border-color screen) +default-border-color+
+	  (screen-border-color screen) border
 	  (screen-msg-border-width screen) 1
 	  (screen-message-window screen) message-window
 	  (screen-input-window screen) input-window

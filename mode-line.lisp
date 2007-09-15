@@ -93,8 +93,8 @@ current group.")
   (xlib:create-window
    :parent parent
    :x 0 :y 0 :width 1 :height 1
-   :background (get-color-pixel screen *mode-line-background-color*)
-   :border (get-color-pixel screen *mode-line-border-color*)
+   :background (alloc-color screen *mode-line-background-color*)
+   :border (alloc-color screen *mode-line-border-color*)
    :border-width *mode-line-border-width*
    ;; You can click the modeline
    :event-mask (xlib:make-event-mask :button-press :exposure)
@@ -172,8 +172,8 @@ current group.")
 (defun make-mode-line-gc (window screen)
   (xlib:create-gcontext :drawable window
 			:font (screen-font screen)
-			:foreground (get-color-pixel screen *mode-line-foreground-color*)
-			:background (get-color-pixel screen *mode-line-background-color*)))
+			:foreground (alloc-color screen *mode-line-foreground-color*)
+			:background (alloc-color screen *mode-line-background-color*)))
 
 (defun make-head-mode-line (screen head format)
   (let ((w (make-mode-line-window (screen-root screen) screen)))
