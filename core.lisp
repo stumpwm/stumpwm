@@ -2103,9 +2103,11 @@ windows used to draw the numbers in. The caller must destroy them."
 (defun echo-string-list (screen strings &rest highlights)
   "Draw each string in l in the screen's message window. HIGHLIGHT is
   the nth entry to highlight."
-  (let ((width (render-strings screen strings '() nil)))
-    (setup-message-window screen (length strings) width)
-    (render-strings screen strings highlights))
+ (let* ((gcontext (screen-message-gc screen))
+	(message-win (screen-message-window screen))
+	(width (render-strings screen message-win gcontext *message-window-padding* 0 strings '() nil)))
+   (setup-message-window screen (length strings) width)
+   (render-strings screen message-win gcontext *message-window-padding* 0 strings highlights))
   (xlib:display-finish-output *display*)
   (push-last-message screen strings highlights)
   ;; Set a timer to hide the message after a number of seconds

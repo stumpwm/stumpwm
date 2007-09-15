@@ -113,13 +113,11 @@
 		(xlib:gcontext-background gc) bg))
 	(error (c) (dformat 1 "Invalid color code: ~A" c)))) r))
 
-(defun render-strings (screen strings highlights &optional (draw t))
+(defun render-strings (screen win gc padx pady strings highlights &optional (draw t))
   (let* ((height (+ (xlib:font-descent (screen-font screen))
 		    (xlib:font-ascent (screen-font screen))))
-	 (width 0)
-	 (gcontext (screen-message-gc screen))
-	 (message-win (screen-message-window screen)))
-    (set-color screen gcontext "n" 0)
+	 (width 0))
+    (set-color screen gc "n" 0)
     (loop for s in strings
 	  ;; We need this so we can track the row for each element
 	  for i from 0 to (length strings)
@@ -130,22 +128,22 @@
 		 do (progn
 		      (let ((en (if (and en (eq #\^ (elt s (1+ en)))) (1+ en) en)))
 			(when draw
-			  (xlib:draw-image-glyphs message-win gcontext
-						  (+ *message-window-padding* x)
-						  (+ (* i height)
+			  (xlib:draw-image-glyphs win gc
+						  (+ padx x)
+						  (+ pady (* i height)
 						     (xlib:font-ascent (screen-font screen)))
 						  (subseq s st en)
 						  :translate #'translate-id
 						  :size 16))
 			(setf x (+ x (xlib:text-width (screen-font screen) (subseq s st en) :translate #'translate-id))))
 		      (when en
-			(setf off (set-color screen gcontext s (1+ en))))
+			(setf off (set-color screen gc s (1+ en))))
 		      (setf width (max width x)))
 		 while en))
 	  when (find i highlights :test 'eql)
-	  do (when draw (invert-rect screen message-win
+	  do (when draw (invert-rect screen win
 				     0 (* i height)
-				     (xlib:drawable-width message-win)
+				     (xlib:drawable-width win)
 				     height)))
     width))
 

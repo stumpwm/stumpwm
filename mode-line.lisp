@@ -188,19 +188,11 @@ current group.")
   (when (eq (mode-line-mode ml) :stump)
     (let* ((*current-mode-line-formatters* *screen-mode-line-formatters*)
 	   (*current-mode-line-formatter-args* (list (screen-current-group (mode-line-screen ml)) (mode-line-head ml)))
-	   (string (mode-line-format-string ml)))
-      (xlib:draw-image-glyphs (mode-line-window ml) (mode-line-gc ml)
-			      *mode-line-pad-x*
-			      (+ (xlib:font-ascent (xlib:gcontext-font (mode-line-gc ml)))
-				 *mode-line-pad-y*)
-			      string
-			      :translate #'translate-id
-			      :size 16)
+	   (string (mode-line-format-string ml))
+	   (width (render-strings (mode-line-screen ml) (mode-line-window ml) (mode-line-gc ml)
+				  *mode-line-pad-x*	*mode-line-pad-y* (list string) '())))
       ;; Just clear what we need to. This reduces flicker.
-      (xlib:clear-area (mode-line-window ml)
-		       :x (+ *mode-line-pad-x*
-			     (xlib:text-width (xlib:gcontext-font (mode-line-gc ml)) string
-					      :translate #'translate-id))))))
+      (xlib:clear-area (mode-line-window ml):x (+ *mode-line-pad-x* width)))))
 
 (defun find-mode-line-window (xwin)
   (dolist (s *screen-list*)
