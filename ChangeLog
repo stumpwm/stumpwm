@@ -1,5 +1,7 @@
 2007-09-16  Shawn  <sabetts@hardcopy.local>
 
+	* core.lisp (netwm-set-group-properties): sort groups for _NET_DESKTOP_NAMES
+
 	* user.lisp (move-focus-and-or-window): new function
 	("move-focus"): use move-focus-and-or-window
 	("move-window"): new command
