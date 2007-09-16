@@ -1,5 +1,10 @@
 2007-09-16  Shawn  <sabetts@hardcopy.local>
 
+	* user.lisp (move-focus-and-or-window): new function
+	("move-focus"): use move-focus-and-or-window
+	("move-window"): new command
+	(*root-map*): new bindings M-Up, M-Down, M-Left, M-Right
+
 	* primitives.lisp (*frame-outline-width*): new global var
 
 	* core.lisp (draw-frame-outlines): improve frame outlining

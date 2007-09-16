@@ -1133,7 +1133,7 @@ aborted."
     (when new-frame
       (focus-frame group new-frame)
       (when win-p
-	      (pull-window window)))
+	(pull-window window)))
     (show-frame-indicator group)))
 
 (define-stumpwm-command "move-focus" ((dir :string "Direction: "))
