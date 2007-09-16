@@ -1,6 +1,10 @@
 2007-09-16  Shawn  <sabetts@hardcopy.local>
 
+	* primitives.lisp (+netwm-supported+): add _NET_ACTIVE_WINDOW
+
 	* core.lisp (netwm-set-group-properties): sort groups for _NET_DESKTOP_NAMES
+	(screen-set-focus): set _NET_ACTIVE_WINDOW property
+	(:client-message): handle _NET_ACTIVE_WINDOW
 
 	* user.lisp (move-focus-and-or-window): new function
 	("move-focus"): use move-focus-and-or-window
