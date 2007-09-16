@@ -1027,7 +1027,7 @@ needed."
     (maximize-window window)
     (grab-keys-on-window window)
     ;; quite often the modeline displays the window list, so update it
-    (update-screen-mode-lines)
+    (update-all-mode-lines)
     ;; Set allowed actions
     (xlib:change-property xwin :_NET_WM_ALLOWED_ACTIONS
 			  (mapcar (lambda (a)
@@ -1116,7 +1116,7 @@ needed."
     (when (eq (tile-group-current-frame group) f)
       (focus-frame (window-group window) f))
     ;; quite often the modeline displays the window list, so update it
-    (update-screen-mode-lines)
+    (update-all-mode-lines)
     ;; Run the unmap hook on the window
     (run-hook-with-args *unmap-window-hook* window)))
 
@@ -2643,7 +2643,8 @@ list of modifier symbols."
 	      (if new-heads
 		(progn
 		  (scale-screen screen new-heads)
-		  (mapc 'sync-all-frame-windows (screen-groups screen)))
+		  (mapc 'sync-all-frame-windows (screen-groups screen))
+		  (update-mode-lines screen))
 		(dformat 1 "Invalid configuration! ~S~%" new-heads)))))))))
 
 (define-stump-event-handler :map-request (parent send-event-p window)
@@ -2889,7 +2890,7 @@ chunks."
 			 *screen-list*)))
     (when (and screen
 	       (zerop count))
-      (update-screen-mode-lines))))
+      (update-all-mode-lines))))
 |#
 
 (define-stump-event-handler :reparent-notify (window parent)

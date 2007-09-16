@@ -269,19 +269,23 @@ current group.")
       (xlib:map-window xwin)
       (sync-mode-line ml))))
 
-(defun update-screen-mode-lines ()
-  (dolist (s *screen-list*)
-    (dolist (h (screen-heads s))
-      (let ((mode-line (head-mode-line h)))
-	(when mode-line
-	  (redraw-mode-line mode-line))))))
+(defun update-mode-lines (screen)
+  "Update all mode lines on SCREEN"
+  (dolist (h (screen-heads screen))
+    (let ((mode-line (head-mode-line h)))
+      (when mode-line
+	(redraw-mode-line mode-line)))))
+
+(defun update-all-mode-lines ()
+  "Update all mode lines."
+  (mapc 'update-mode-lines *screen-list*))
 
 (defun turn-on-mode-line-timer ()
   (when (timer-p *mode-line-timer*)
     (cancel-timer *mode-line-timer*))
   (setf *mode-line-timer* (run-with-timer *mode-line-timeout*
                                           *mode-line-timeout*
-                                          'update-screen-mode-lines)))
+                                          'update-all-mode-lines)))
 
 (defun maybe-cancel-mode-line-timer ()
   (unless (find-if 'head-mode-line (mapcan 'screen-heads *screen-list*))
