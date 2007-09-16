@@ -262,7 +262,7 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 					(lambda (group)
 					  (list (string-to-utf8 (group-name group))
 						'(0)))
-					(screen-groups screen))))
+					(sort-groups screen))))
 			    (apply #'concatenate 'list names))
 			  :UTF8_STRING 8)))
 
