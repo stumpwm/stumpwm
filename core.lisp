@@ -1718,7 +1718,7 @@ depending on the tree's split direction."
 (defun draw-frame-outlines (group)
   "Draw an outline around all frames in GROUP."
   (let* ((screen (group-screen group))
-	 (width (if (oddp *frame-outline-width*) (1+ *frame-outline-width) *frame-outline-width*))
+	 (width (if (oddp *frame-outline-width*) (1+ *frame-outline-width*) *frame-outline-width*))
          (gc (xlib:create-gcontext :drawable (screen-root screen)
                                    :font (screen-font screen)
                                    :foreground (get-fg-color-pixel screen)
