@@ -169,7 +169,7 @@ at 0. Return a netwm compliant group id."
       ;; restore the visible windows
       (dolist (w (group-windows old-group))
 	(when (eq (window-state w) +normal-state+)
-	  (xwin-hide (window-xwin w) (window-parent w))))
+	  (xwin-hide w)))
       (dolist (w (group-windows new-group))
 	(when (eq (window-state w) +normal-state+)
 	  (xwin-unhide (window-xwin w) (window-parent w))))
@@ -475,22 +475,22 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
     (xwin-unhide (window-xwin window) (window-parent window)))
   (setf (window-state window) +normal-state+))
 
-(defun xwin-hide (xwin parent)
-  (setf	(xwin-state xwin) +iconic-state+)
-  (let ((window (find-window xwin)))
-    (when window
-      (incf (window-unmap-ignores window))))
-  ;; FIXME: I'm pretty sure we're supposed to unmap the subwindows too
+;; Despite the naming convention, this function takes a window struct,
+;; not an xlib:window.
+(defun xwin-hide (window)
+  (declare (type window window))
+  (setf (xwin-state (window-xwin window)) +iconic-state+)
+  (incf (window-unmap-ignores window))
+  (xlib:unmap-window (window-parent window))
   ;; (xlib:unmap-subwindows parent)
-  (xlib:unmap-window parent)
-  (xlib:unmap-window xwin))
+  (xlib:unmap-window (window-xwin window)))
 
 (defun hide-window (window)
   (dformat 2 "hide window: ~a~%" (window-name window))
   (unless (eql (window-state window) +iconic-state+)
     (setf (window-state window) +iconic-state+)
     (when (window-in-current-group-p window)
-      (xwin-hide (window-xwin window) (window-parent window)))))
+      (xwin-hide window))))
 
 (defun xwin-type (win)
   "Return one of :desktop, :dock, :toolbar, :utility, :splash,
@@ -2644,7 +2644,7 @@ chunks."
     (focus-frame (window-group win) (window-frame win))))
 
 (define-stump-event-handler :enter-notify (window mode)
-  (when (and window (eq mode :normal) (eq *focus-policy* :sloppy))
+  (when (and window (eq mode :normal) (eq *mouse-focus-policy* :sloppy))
     (let ((win (find-window window)))
       (when win
 	(focus-all win)))))
@@ -2655,7 +2655,7 @@ chunks."
   ;; Pass click to client
   (xlib:allow-events *display* :replay-pointer time)
   (let ((win (find-window-by-parent window (group-windows (current-group)))))
-    (when (and win (eq *focus-policy* :on-click))
+    (when (and win (eq *mouse-focus-policy* :click))
       (focus-all win))))
 
 ;; Handling event :KEY-PRESS

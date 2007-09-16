@@ -792,5 +792,9 @@ define-frame-preference to add rules.")
   `(dolist (x ',frames)
      (push (cons ,group x) *window-placement-rules*)))
 
-(defvar *focus-policy* :manual
-  "Choose focus policy, one of: :manual :sloppy :on-click")
+(defvar *mouse-focus-policy* :ignore
+  "The mouse focus policy decides how the mouse affects input
+focus. Possible values are :ignore, :sloppy, and :click. :ignore means
+stumpwm ignores the mouse. :sloppy means input focus follows the
+mouse; the window that the mouse is in gets the focus. :click means
+input focus is transfered to the window you click on.")

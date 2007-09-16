@@ -1,5 +1,11 @@
 2007-09-16  Shawn  <sabetts@hardcopy.local>
 
+	* primitives.lisp (*mouse-focus-policy*): renamed from
+	*focus-policy*. all callers updated.
+
+	* core.lisp (xwin-hide): take a window as argument. unmap the xwin
+	and the parent. all callers updated.
+
 	* stumpwm.asd (:stumpwm): add cl-ppcre dependency
 
 	* configure.ac: add xdpyinfo test
