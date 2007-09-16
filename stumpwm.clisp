@@ -10,7 +10,7 @@
 ;; environment variable.
 
 ;; specify where asdf.lisp is.
-(load "/path/to/asdf.lisp")
+(load "/usr/share/common-lisp/source/asdf/asdf.lisp")
 (push (merge-pathnames  #p".asdf-system/" (user-homedir-pathname)) asdf:*central-registry*)
 
 ;; Note: The first time stumpwm is loaded it will be compiled. This
