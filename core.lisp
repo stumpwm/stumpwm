@@ -250,12 +250,10 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
     (xlib:change-property root :_NET_NUMBER_OF_DESKTOPS
 			  (list (length (screen-groups screen)))
 			  :cardinal 32)
-
     ;; _NET_CURRENT_DESKTOP
     (xlib:change-property root :_NET_CURRENT_DESKTOP
 			  (list (netwm-group-id (screen-current-group screen)))
 			  :cardinal 32)
-
     ;; _NET_DESKTOP_NAMES
     (xlib:change-property root :_NET_DESKTOP_NAMES
 			  (let ((names (mapcan
@@ -468,12 +466,20 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 (defun xwin-unhide (xwin parent)
   (xlib:map-window parent)
   (xlib:map-subwindows parent)
-  (setf	(xwin-state xwin) +normal-state+))
-
+  (setf	(xwin-state xwin) +normal-state+)
+  ;; Mark window as unhiden
+  (xlib:change-property xwin :_NET_WM_STATE
+			'()
+			:atom 32))
+  
 (defun unhide-window (window)
   (when (window-in-current-group-p window)
     (xwin-unhide (window-xwin window) (window-parent window)))
-  (setf (window-state window) +normal-state+))
+  (setf (window-state window) +normal-state+)
+  ;; Mark as non-hidden
+  (xlib:change-property (window-xwin window) :_NET_WM_STATE
+			'()
+			:atom 32))
 
 ;; Despite the naming convention, this function takes a window struct,
 ;; not an xlib:window.
@@ -489,8 +495,13 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
   (dformat 2 "hide window: ~a~%" (window-name window))
   (unless (eql (window-state window) +iconic-state+)
     (setf (window-state window) +iconic-state+)
+    ;; Mark window as hidden
+    (xlib:change-property (window-xwin window) :_NET_WM_STATE
+			  (list (xlib:intern-atom *display* :_NET_WM_STATE_HIDDEN))
+			  :atom 32)
     (when (window-in-current-group-p window)
       (xwin-hide window))))
+
 
 (defun xwin-type (win)
   "Return one of :desktop, :dock, :toolbar, :utility, :splash,
@@ -959,6 +970,12 @@ needed."
     ;; quite often the modeline displays the window list, so update it
     (when (screen-mode-line screen)
       (redraw-mode-line-for (screen-mode-line screen) screen))
+    ;; Set allowed actions
+    (xlib:change-property xwin :_NET_WM_ALLOWED_ACTIONS
+                          (mapcar (lambda (a)
+                                    (xlib:intern-atom *display* a))
+                                  +netwm-allowed-actions+)
+                          :atom 32)
     ;; Run the map window hook on it
     (run-hook-with-args *map-window-hook* window)
     window))
@@ -2655,9 +2672,18 @@ chunks."
 	 (move-window-to-group our-window group))))
     (:_NET_ACTIVE_WINDOW
       (let ((our-window (find-window window)))
-	(message "~S ~S" window our-window)
 	(when our-window
 	  (focus-all our-window))))
+    (:_NET_CLOSE_WINDOW
+      (let ((our-window (find-window window)))
+	(when our-window
+	  (delete-window our-window))))
+    (:_NET_WM_STATE
+      (let ((our-window (find-window window))
+	   (atom (elt data 0)))
+	(when our-window
+	  ;; FIXME: actually do something here (NET_WM_STATE_FULLSCREEN)!
+	  (message "~S ~S" atom our-window))))
     (t
      (dformat 2 "ignored message~%"))))
 
@@ -2670,7 +2696,11 @@ chunks."
   "Focus the window, frame and screen belonging to WIN"
   (when (and win (window-frame win))
     (switch-to-screen (window-screen win))
-    (focus-frame (window-group win) (window-frame win))))
+    (let ((frame (window-frame win))
+	  (group (window-group win)))
+      (switch-to-group group)
+      (setf (frame-window frame) win)
+      (focus-frame group frame))))
 
 (define-stump-event-handler :enter-notify (window mode)
   (when (and window (eq mode :normal) (eq *mouse-focus-policy* :sloppy))
