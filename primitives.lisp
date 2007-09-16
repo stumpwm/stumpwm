@@ -125,7 +125,8 @@ run before the error is dealt with according to
     :_NET_DESKTOP_GEOMETRY
     :_NET_DESKTOP_VIEWPORT
     :_NET_CURRENT_DESKTOP
-    :_NET_WM_WINDOW_TYPE)
+    :_NET_WM_WINDOW_TYPE
+    :_NET_ACTIVE_WINDOW)
   "Supported NETWM properties.
 Window types are in +WINDOW-TYPES+.")
 
