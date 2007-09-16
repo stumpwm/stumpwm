@@ -46,6 +46,11 @@ if test "$MAKEINFO" = "no"; then
    AC_MSG_ERROR([Please install makeinfo for the manual.])
 fi
 
+AC_CHECK_PROG(XDPYINFO,xdpyinfo,yes,no)
+if test "$XDPINFO" = "no"; then
+   AC_MSG_WARN([xdpyinfo is needed for xinerama support.])
+fi
+
 # Checks for libraries.
 
 # Checks for header files.

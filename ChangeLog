@@ -1,3 +1,38 @@
+2007-09-16  Shawn  <sabetts@hardcopy.local>
+
+	* stumpwm.asd (:stumpwm): add cl-ppcre dependency
+
+	* configure.ac: add xdpyinfo test
+
+	* user.lisp (banish-pointer): use the current head to get mouse warp coordinates
+	(remove-split): add message when no frames can be removed. handle xinerama heads
+	("only"): handle xinerama heads
+	("resize"): change error message when no frames can be resized.
+	("iresize"): add message when no frames can be resized
+
+	* primitives.lisp (screen): add heads slot
+
+	* core.lisp (add-group): create xinerama heads
+	(setup-win-gravity): use head-x, head-y, head-width and head-height
+	(make-initial-frame): remove function
+	(copy-frame-tree): use frame's head to limit resizing
+	(split-frame): handle xinerama heads
+	(init-screen): create xinerama heads
+	(head-width): new function
+	(head-height): likewise
+	(head-x): likewise
+	(head-y): likewise
+	(parse-xinerama-head): likewise
+	(make-screen-heads): likewise
+	(copy-heads): likewise
+	(frame-head): likewise
+	(group-heads): likewise
+	(tile-group-frame-head): likewise
+	(setf tile-group-frame-head): likewise
+	(current-head): likewise
+	(head-windows): likewise
+	(frame-is-head): likewise
+
 2007-09-08  Shawn  <sabetts@hardcopy.local>
 
 	* user.lisp ("gnew"): add an error message when adding failed.

@@ -274,7 +274,7 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
   (unless (or (string= name "") 
               (string= name "."))
     (or (find-group screen name)
-        (let* ((heads (make-heads screen))
+        (let* ((heads (copy-heads screen))
                (ng (make-tile-group
                     :frame-tree heads
                     :current-frame (first heads)
@@ -1182,8 +1182,8 @@ function expects to be wrapped in a with-state for win."
   (xlib:with-state ((screen-root screen))
     (let ((w (xlib:drawable-width win))
           (h (xlib:drawable-height win))
-			 (screen-width (head-width))
-			 (screen-height (head-height)))
+          (screen-width (head-width))
+          (screen-height (head-height)))
       (let ((x (case gravity
                  ((:top-left :bottom-left) 0)
                  (:center (truncate (- screen-width w (* (xlib:drawable-border-width win) 2)) 2))
@@ -1579,30 +1579,30 @@ either :width or :height"
       ;; normalize amount
       (let* ((max (ecase dim
                     (:width
-				(if (>= (frame-width frame) (frame-width (frame-head group frame)))
-				    0
-                     (if (eq split-type :column)
-                         (max-amount parent frame *min-frame-width* 'tree-width)
-				    (max-amount gparent parent *min-frame-width* 'tree-width))))
+                     (if (>= (frame-width frame) (frame-width (frame-head group frame)))
+                         0
+                         (if (eq split-type :column)
+                             (max-amount parent frame *min-frame-width* 'tree-width)
+                             (max-amount gparent parent *min-frame-width* 'tree-width))))
                     (:height
-				(if (>= (frame-height frame) (frame-height (frame-head group frame)))
-				    0
-                     (if (eq split-type :row)
-                         (max-amount parent frame *min-frame-height* 'tree-height)
-				    (max-amount gparent parent *min-frame-height* 'tree-height))))))
+                     (if (>= (frame-height frame) (frame-height (frame-head group frame)))
+                         0
+                         (if (eq split-type :row)
+                             (max-amount parent frame *min-frame-height* 'tree-height)
+                             (max-amount gparent parent *min-frame-height* 'tree-height))))))
              (min (ecase dim
-			       ;; Frames taking up the entire HEAD in one
+                    ;; Frames taking up the entire HEAD in one
                     ;; dimension can't be resized in that dimension.
                     (:width
                      (if (and (eq split-type :row)
-					 (or (null gparent)
-					     (>= (frame-width frame) (frame-width (frame-head group frame)))))
+                              (or (null gparent)
+                                  (>= (frame-width frame) (frame-width (frame-head group frame)))))
                          0
                          (- *min-frame-width* (frame-width frame))))
                     (:height
                      (if (and (eq split-type :column)
-					 (or (null gparent)
-					     (>= (frame-height frame) (frame-height (frame-head group frame)))))
+                              (or (null gparent)
+                                  (>= (frame-height frame) (frame-height (frame-head group frame)))))
                          0
                          (- *min-frame-height* (frame-height frame)))))))
         (setf amount (max (min amount max) min))
@@ -1660,7 +1660,7 @@ depending on the tree's split direction."
   "split the current frame into 2 frames. return T if it succeeded. NIL otherwise."
   (check-type how (member :row :column))
   (let* ((frame (tile-group-current-frame group))
-		 (head (frame-head group frame)))
+         (head (frame-head group frame)))
     ;; don't create frames smaller than the minimum size
     (when (or (and (eq how :row)
                    (>= (frame-height frame) (* *min-frame-height* 2)))
@@ -1986,6 +1986,11 @@ the nth entry to highlight."
   (let ((*suppress-echo-timeout* t))
     (apply 'message fmt args)))
 
+(defmacro with-current-screen (screen &body body)
+  "A macro to help us out with early set up."
+  `(let ((*screen-list* (list ,screen)))
+     ,@body))
+
 (defun current-screen ()
   "Return the current screen."
   (car *screen-list*))
@@ -2110,8 +2115,8 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 				     :subwindow-mode :include-inferiors
 				     :foreground  (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-foreground-color+)
 				     :background (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-background-color+)))
-    (setf (screen-heads screen) (make-heads screen)
-	  (tile-group-frame-tree group) (make-heads screen)
+    (setf (screen-heads screen) (make-screen-heads screen (xlib:screen-root screen-number))
+	  (tile-group-frame-tree group) (copy-heads screen)
 	  (tile-group-current-frame group) (first (tile-group-frame-tree group)))
     (netwm-set-properties screen focus-window)
     screen))
@@ -2131,21 +2136,34 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 (defun head-y ()
   (frame-y (current-head)))
 
-;; Use xdpyinfo to query the xinerama extension, if it's enabled.
-(defun make-heads (screen)
-  (if (screen-heads screen)
-      (mapcar #'copy-frame (screen-heads screen))
-    (if (xlib:query-extension *display* "XINERAMA")
-	(let ((*package* (find-package :stumpwm)))
-	  (read-from-string
-	   (let ((*screen-list* (list screen)))
-	     (run-prog-collect-output "/bin/sh" "-c" "echo -n '\('; xdpyinfo -ext XINERAMA | sed -n 's/^\\s\\+head #\\([[:digit:]]\\):\\s\\+\\([[:digit:]]\\+\\)x\\([[:digit:]]\\+\\)\\s*@\\s*\\([[:digit:]]\\+\\),\\([[:digit:]]\\+\\).*$/#S(frame :number \\1 :width \\2 :height \\3 :x \\4 :y \\5)/p'; echo -n '\)'"))))
+(defun parse-xinerama-head (line)
+  (ppcre:register-groups-bind (('parse-integer number width height x y))
+      ("^ +head #([0-9]+): ([0-9]+)x([0-9]+) @ ([0-9]+),([0-9]+)" line :sharedp t)
+    (handler-case
+        (make-frame :number number
+                    :x x :y y
+                    :width width
+                    :height height)
+      (parse-error ()
+        nil))))
+
+(defun make-screen-heads (screen root)
+  "or use xdpyinfo to query the xinerama extension, if it's enabled."
+  (or (and (xlib:query-extension *display* "XINERAMA")
+           (with-current-screen screen
+             (loop for i in (split-string (run-shell-command "xdpyinfo -ext XINERAMA" t))
+                   for head = (parse-xinerama-head i)
+                   when head
+                   collect head)))
       (list (make-frame :number 0
-			:x (screen-x screen)
-			:y (screen-y screen)
-			:width (screen-width screen)
-			:height (screen-height screen)
-			:window nil)))))
+                        :x 0 :y 0
+                        :width (xlib:drawable-width root)
+                        :height (xlib:drawable-height root)
+                        :window nil))))
+
+(defun copy-heads (screen)
+  "Return a copy of screen's heads."
+  (mapcar #'copy-frame (screen-heads screen)))
 
 ;; Determining a frame's head based on position probably won't
 ;; work with overlapping heads. Would it be better to walk

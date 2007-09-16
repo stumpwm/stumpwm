@@ -271,8 +271,8 @@ frame."
     (warp-pointer (group-screen group)
 		  (1- (+ (head-x) (head-width)))
 		  (1- (+ (head-y) (head-height))))))
-					;		  (1- (screen-width (current-screen)))
-					;		  (1- (screen-true-height (current-screen))))))
+;; (1- (screen-width (current-screen)))
+;; (1- (screen-true-height (current-screen))))))
 
 (define-stumpwm-command "banish" ()
   (banish-pointer))
@@ -577,7 +577,6 @@ returns..which could be forever if you're not careful."
 (define-stumpwm-command "remove" ()
   (remove-split (current-group)))
 
-
 (define-stumpwm-command "only" ()
   (let* ((screen (current-screen))
 	 (group (screen-current-group screen))
@@ -670,13 +669,13 @@ select one. Returns the selected frame or nil if aborted."
 
 (define-stumpwm-command "resize" ((w :number "+ Width: ")
 				  (h :number "+ Height: "))
-      (let* ((group (current-group))
-             (f (tile-group-current-frame group)))  
+  (let* ((group (current-group))
+         (f (tile-group-current-frame group)))  
     (if (atom (tile-group-frame-tree group))
 	(message "No more frames!")
-      (progn
-        (resize-frame group f w :width)
-	(resize-frame group f h :height)))))
+        (progn
+          (resize-frame group f w :width)
+          (resize-frame group f h :height)))))
 
 (defun eval-line (cmd)
   (handler-case 
@@ -1242,13 +1241,13 @@ be found, select it.  Otherwise simply run cmd."
 
 (define-stumpwm-command "iresize" ()
   (let ((frame (tile-group-current-frame (current-group))))
-    (if	(atom (tile-group-frame-head (current-group) (frame-head (current-group) frame)))
-      (message "There's only 1 frame!")
-      (progn
-	(message "Resize Frame")
-	(push-top-map *resize-map*))
-      ;;   (setf *resize-backup* (copy-frame-tree (current-group)))
-      )))
+    (if (atom (tile-group-frame-head (current-group) (frame-head (current-group) frame)))
+        (message "There's only 1 frame!")
+        (progn
+          (message "Resize Frame")
+          (push-top-map *resize-map*))
+        ;;   (setf *resize-backup* (copy-frame-tree (current-group)))
+        )))
 
 (define-stumpwm-command "abort-iresize" ()
   (message "Abort resize")
