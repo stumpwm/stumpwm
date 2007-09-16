@@ -1072,6 +1072,10 @@ direction. The following are valid directions:
 
 @end deffn
 
+@deffn {Command} move-window @var{direction}
+Just like move-focus except that the current is pulled along.
+@end deffn
+
 @deffn {Command} next-in-frame
 Go to the next window in the current frame.
 @end deffn
