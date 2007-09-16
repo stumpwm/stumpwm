@@ -121,6 +121,9 @@ run before the error is dealt with according to
 (defvar *focus-color* "gray"
   "The color a window's border becomes when it is focused")
 
+(defvar *text-color* "white"
+  "The color of message text.")
+
 (defvar *unfocus-color* "Black"
   "The border color of an unfocused window")
 
@@ -294,25 +297,36 @@ name. :title, :resource-name, :class are valid values.")
   ;; they were in when they were unmapped unless that group doesn't
   ;; exist, in which case they go into the current group.
   withdrawn-windows
-  message-window
   input-window
   frame-window
   ;; The window that gets focus when no window has focus
   focus-window
-  ;; graphic contexts
-  message-gc
-  colors
+  ;; color contexts
+  message-cc
+  mode-line-cc
+  ;; color maps
+  color-map-normal
+  color-map-bright
   ;; the window that has focus
   focus
   last-msg
   last-msg-highlights)
 
-(defstruct color
-  map-current
-  map-norm
-  map-bright
+(defstruct ccontext
+  win
+  gc
+  current-map
   fg
-  bg)
+  bg
+  default-fg
+  default-bright
+  default-bg)
+
+(defun screen-message-window (screen)
+  (ccontext-win (screen-message-cc screen)))
+
+(defun screen-message-gc (screen)
+  (ccontext-gc (screen-message-cc screen)))
 
 (defmethod print-object ((object frame) stream)
   (format stream "#S(frame ~d ~a ~d ~d ~d ~d)"

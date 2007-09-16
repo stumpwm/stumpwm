@@ -1202,10 +1202,11 @@ maximized, and given focus."
 
 (defmacro set-any-color (val color)
   `(progn (dolist (s *screen-list*)
-	    (setf (,val s) (alloc-color s color)))
+	    (setf (,val s) (alloc-color s ,color)))
 	  (update-colors-all-screens)))
 
 (defun set-fg-color (color)
+  (setf *text-color* color)
   (set-any-color screen-fg-color color))
 
 (defun set-bg-color (color)
@@ -1213,9 +1214,6 @@ maximized, and given focus."
 
 (defun set-border-color (color)
   (set-any-color screen-border-color color))
-
-(defun set-win-bg-color (color)
-  (set-any-color screen-win-bg-color color))
 
 (defun set-win-bg-color (color)
   (set-any-color screen-win-bg-color color))
@@ -1973,8 +1971,12 @@ windows used to draw the numbers in. The caller must destroy them."
   (xlib:screen-root (screen-number screen)))
 
 (defun update-colors-for-screen (screen)
-  (setf (xlib:gcontext-foreground (screen-message-gc screen)) (get-fg-color-pixel screen)
-	(xlib:gcontext-background (screen-message-gc screen)) (get-bg-color-pixel screen))
+  (let ((fg (get-fg-color-pixel screen))
+	(bg (get-bg-color-pixel screen)))
+    (setf (xlib:gcontext-foreground (screen-message-gc screen)) fg
+	  (xlib:gcontext-background (screen-message-gc screen)) bg 
+	  (ccontext-default-fg (screen-message-cc screen)) fg
+	  (ccontext-default-bg (screen-message-cc screen)) bg))
   (dolist (i (list (screen-message-window screen)
 		   (screen-frame-window screen)
 		   (screen-input-window screen)))
@@ -1988,7 +1990,8 @@ windows used to draw the numbers in. The caller must destroy them."
         (xlib:clear-area (window-parent w)))))
   (dolist (i (screen-withdrawn-windows screen))
     (setf (xlib:window-background (window-parent i)) (get-win-bg-color-pixel screen))
-    (xlib:clear-area (window-parent i))))
+    (xlib:clear-area (window-parent i)))
+  (update-screen-color-context screen))
 
 (defun update-colors-all-screens ()
   "After setting the fg, bg, or border colors. call this to sync any existing windows."
@@ -2103,11 +2106,9 @@ windows used to draw the numbers in. The caller must destroy them."
 (defun echo-string-list (screen strings &rest highlights)
   "Draw each string in l in the screen's message window. HIGHLIGHT is
   the nth entry to highlight."
- (let* ((gcontext (screen-message-gc screen))
-	(message-win (screen-message-window screen))
-	(width (render-strings screen message-win gcontext *message-window-padding* 0 strings '() nil)))
+  (let ((width (render-strings screen (screen-message-cc screen) *message-window-padding* 0 strings '() nil)))
    (setup-message-window screen (length strings) width)
-   (render-strings screen message-win gcontext *message-window-padding* 0 strings highlights))
+   (render-strings screen (screen-message-cc screen) *message-window-padding* 0 strings highlights))
   (xlib:display-finish-output *display*)
   (push-last-message screen strings highlights)
   ;; Set a timer to hide the message after a number of seconds
@@ -2239,16 +2240,15 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 	  (screen-win-bg-color screen) +default-window-background-color+
 	  (screen-border-color screen) border
 	  (screen-msg-border-width screen) 1
-	  (screen-message-window screen) message-window
 	  (screen-input-window screen) input-window
 	  (screen-frame-window screen) frame-window
 	  (screen-focus-window screen) focus-window
-	  (screen-message-gc screen) (xlib:create-gcontext
-				       :drawable message-window
-				       :font font
-				       :foreground fg
-				       :background bg)
-	  (screen-colors screen) (make-color))
+	  (screen-message-cc screen) (make-ccontext :win message-window
+						    :gc (xlib:create-gcontext
+							  :drawable message-window
+							  :font font
+							  :foreground fg
+							  :background bg)))
     (setf (screen-heads screen) (make-heads screen)
 	  (tile-group-frame-tree group) (heads-frames (screen-heads screen))
 	  (tile-group-current-frame group) (first (tile-group-frame-tree group)))

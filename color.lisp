@@ -51,73 +51,90 @@
     "cyan"
     "white"))
 
+(defun adjust-color (color amt)
+  (labels ((max-min (x y) (max 0 (min 1 (+ x y)))))
+    (setf (xlib:color-red color) (max-min (xlib:color-red color) amt)
+	  (xlib:color-green color) (max-min (xlib:color-green color) amt)
+	  (xlib:color-blue color) (max-min (xlib:color-blue color) amt))))
+
 ;; Normal colors are dimmed and bright colors are intensified in order
 ;; to more closely resemble the VGA pallet.
 (defun update-color-map (screen)
-  (let ((scm (xlib:screen-default-colormap (screen-number screen))))
-    (labels ((max-min (x y) (max 0 (min 1 (+ x y))))
-	     (adj-color (color amt)
-			(setf (xlib:color-red color) (max-min (xlib:color-red color) amt)
-			      (xlib:color-green color) (max-min (xlib:color-green color) amt)
-			      (xlib:color-blue color) (max-min (xlib:color-blue color) amt)))
-	     (map-colors (amt)
+  (let ((cc (screen-message-cc screen))
+	(scm (xlib:screen-default-colormap (screen-number screen))))
+    (labels ((map-colors (amt)
 			 (loop for c in *colors*
 			       as color = (xlib:lookup-color scm c)
-			       do (adj-color color amt)
+			       do (adjust-color color amt)
 			       collect (xlib:alloc-color scm color))))
-      (setf (color-map-norm (screen-colors screen)) (apply #'vector (map-colors -0.25))
-	    (color-map-bright (screen-colors screen)) (apply #'vector (map-colors 0.25))
-	    (color-map-current (screen-colors screen)) (color-map-norm (screen-colors screen))))))
+      (setf (screen-color-map-normal screen) (apply #'vector (map-colors -0.25))
+	    (screen-color-map-bright screen) (apply #'vector (map-colors 0.25))
+	    (ccontext-current-map cc) (screen-color-map-normal screen)))))
 
-(defun get-bg-color (screen color)
-  (setf (color-bg (screen-colors screen)) color)
+(defun update-screen-color-context (screen)
+  (let* ((scm (xlib:screen-default-colormap (screen-number screen)))
+	 (cc (screen-message-cc screen))
+	 (bright (xlib:lookup-color scm *text-color*)))
+    (setf
+      (ccontext-default-fg cc) (screen-fg-color screen)
+      (ccontext-default-bg cc) (screen-bg-color screen))
+    (adjust-color bright 0.25)
+    (setf (ccontext-default-bright cc) (alloc-color screen bright))))
+
+(defun get-bg-color (screen cc color)
+  (setf (ccontext-bg cc) color)
   (if color
-    (svref (color-map-norm (screen-colors screen)) color)
-    (get-bg-color-pixel screen)))
+    (svref (screen-color-map-normal screen) color)
+    (ccontext-default-bg cc)))
 
-(defun get-fg-color (screen color)
-  (setf (color-fg (screen-colors screen)) color)
+(defun get-fg-color (screen cc color)
+  (setf (ccontext-fg cc) color)
   (if color
-    (svref (color-map-current (screen-colors screen)) color)
-    (get-fg-color-pixel screen)))
+    (svref (ccontext-current-map cc) color)
+    (if (eq (ccontext-current-map cc) (screen-color-map-bright screen))
+      (ccontext-default-bright cc)
+      (ccontext-default-fg cc))))
 
-(defun set-color (screen gc s i)
-  (let* ((l (- (length s) i))
+(defun set-color (screen cc s i)
+  (let* ((gc (ccontext-gc cc))
+	 (l (- (length s) i))
 	 (r 2)
 	 (f (subseq s i (1+ i)))
 	 (b (if (< l 2) "*" (subseq s (1+ i) (+ i 2)))))
     (labels ((update-colors ()
 			    (setf
-			      (xlib:gcontext-foreground gc) (get-fg-color screen (color-fg (screen-colors screen)))
-			      (xlib:gcontext-background gc) (get-bg-color screen (color-bg (screen-colors screen))))))
+			      (xlib:gcontext-foreground gc) (get-fg-color screen cc (ccontext-fg cc))
+			      (xlib:gcontext-background gc) (get-bg-color screen cc (ccontext-bg cc)))))
       (case (elt f 0)
 	(#\n ; normal
 	 (setf f "*" b "*" r 1
-	       (color-map-current (screen-colors screen)) (color-map-norm (screen-colors screen)))
-	 (get-fg-color screen nil)
-	 (get-bg-color screen nil))
+	       (ccontext-current-map cc) (screen-color-map-normal screen))
+	 (get-fg-color screen cc nil)
+	 (get-bg-color screen cc nil))
 	(#\b ; bright off
-	 (setf (color-map-current (screen-colors screen)) (color-map-norm (screen-colors screen)))
+	 (setf (ccontext-current-map cc) (screen-color-map-normal screen))
 	 (update-colors)
 	 (return-from set-color 1))
 	(#\B ; bright on
-	 (setf (color-map-current (screen-colors screen)) (color-map-bright (screen-colors screen)))
+	 (setf (ccontext-current-map cc) (screen-color-map-bright screen))
 	 (update-colors)
 	 (return-from set-color 1))
 	(#\^ ; circumflex
 	 (return-from set-color 1)))
       (handler-case 
-	(let ((fg (if (equal f "*") (progn (get-fg-color screen nil) (get-fg-color-pixel screen)) (get-fg-color screen (parse-integer f))))
-	      (bg (if (equal b "*") (progn (get-bg-color screen nil) (get-bg-color-pixel screen)) (get-bg-color screen (parse-integer b)))))
+	(let ((fg (if (equal f "*") (progn (get-fg-color screen cc nil) (ccontext-default-fg cc)) (get-fg-color screen cc (parse-integer f))))
+	      (bg (if (equal b "*") (progn (get-bg-color screen cc nil) (ccontext-default-bg cc)) (get-bg-color screen cc (parse-integer b)))))
 	  (setf (xlib:gcontext-foreground gc) fg
 		(xlib:gcontext-background gc) bg))
 	(error (c) (dformat 1 "Invalid color code: ~A" c)))) r))
 
-(defun render-strings (screen win gc padx pady strings highlights &optional (draw t))
+(defun render-strings (screen cc padx pady strings highlights &optional (draw t))
   (let* ((height (+ (xlib:font-descent (screen-font screen))
 		    (xlib:font-ascent (screen-font screen))))
-	 (width 0))
-    (set-color screen gc "n" 0)
+	 (width 0)
+	 (gc (ccontext-gc cc))
+	 (win (ccontext-win cc)))
+    (set-color screen cc "n" 0)
     (loop for s in strings
 	  ;; We need this so we can track the row for each element
 	  for i from 0 to (length strings)
@@ -137,7 +154,7 @@
 						  :size 16))
 			(setf x (+ x (xlib:text-width (screen-font screen) (subseq s st en) :translate #'translate-id))))
 		      (when en
-			(setf off (set-color screen gc s (1+ en))))
+			(setf off (set-color screen cc s (1+ en))))
 		      (setf width (max width x)))
 		 while en))
 	  when (find i highlights :test 'eql)

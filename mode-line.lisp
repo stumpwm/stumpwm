@@ -25,10 +25,13 @@
   window
   format
   position
-  gc
+  cc
   height
   factor
   (mode :stump))
+
+(defun mode-line-gc (ml)
+  (ccontext-gc (mode-line-cc ml)))
 
 (defvar *mode-line-position* :top
   "Where should the mode line be displayed? :top or :bottom.")
@@ -176,20 +179,26 @@ current group.")
 			:background (alloc-color screen *mode-line-background-color*)))
 
 (defun make-head-mode-line (screen head format)
-  (let ((w (make-mode-line-window (screen-root screen) screen)))
+  (let* ((w (make-mode-line-window (screen-root screen) screen))
+	 (gc (make-mode-line-gc w screen)))
     (make-mode-line :window w
 		    :screen screen
 		    :head head
 		    :format format
 		    :position *mode-line-position*
-		    :gc (make-mode-line-gc w screen))))
+		    :cc (make-ccontext :gc gc
+				       :win w
+				       :current-map (screen-color-map-normal screen)
+				       :default-fg (xlib:gcontext-foreground gc)
+				       :default-bg (xlib:gcontext-background gc)))))
 
 (defun redraw-mode-line (ml)
   (when (eq (mode-line-mode ml) :stump)
+
     (let* ((*current-mode-line-formatters* *screen-mode-line-formatters*)
 	   (*current-mode-line-formatter-args* (list (screen-current-group (mode-line-screen ml)) (mode-line-head ml)))
 	   (string (mode-line-format-string ml))
-	   (width (render-strings (mode-line-screen ml) (mode-line-window ml) (mode-line-gc ml)
+	   (width (render-strings (mode-line-screen ml) (mode-line-cc ml)
 				  *mode-line-pad-x*	*mode-line-pad-y* (list string) '())))
       ;; Just clear what we need to. This reduces flicker.
       (xlib:clear-area (mode-line-window ml):x (+ *mode-line-pad-x* width)))))
