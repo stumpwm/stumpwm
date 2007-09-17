@@ -555,44 +555,40 @@ returns..which could be forever if you're not careful."
   (split-frame-in-dir (current-group) :row))
 
 (defun remove-split (group)
-  (let* ((s (closest-sibling (tile-group-frame-tree group)
-                             (tile-group-current-frame group)))
+  (let* ((frame (tile-group-current-frame group))
+	 (head (frame-head group frame))
+	 (tree (tile-group-frame-head group head))
+	 (s (closest-sibling (list tree) frame))
 	 ;; grab a leaf of the siblings. The siblings doesn't have to be
 	 ;; a frame.
 	 (l (tree-accum-fn s
-                           (lambda (&rest siblings)
-                             (car siblings))
-                           #'identity)))
-
-    (if (frame-is-head group l)
-	(message "No more frames!")
-      (progn
+			   (lambda (&rest siblings)
+			     (car siblings))
+			   #'identity)))
     ;; Only remove the current frame if it has a sibling
-    (dformat 3 "~S~%" s)
-    (when s
-	  (when (frame-is-head group (tile-group-current-frame group))
-	    (setf (frame-number l) (frame-number (tile-group-current-frame group))))
-      (dformat 3 "~S~%" l)
-      ;; Move the windows from the removed frame to its sibling
-      (migrate-frame-windows group (tile-group-current-frame group) l)
-      ;; If the frame has no window, give it the current window of
-      ;; the current frame.
-      (unless (frame-window l)
-	(setf (frame-window l)
-	      (frame-window (tile-group-current-frame group))))
-      ;; Unsplit
-      (setf (tile-group-frame-tree group)
-	    (remove-frame (tile-group-frame-tree group)
-			  (tile-group-current-frame group)))
-      ;; update the current frame and sync all windows
-      (setf (tile-group-current-frame group) l)
-      (tree-iterate (tile-group-frame-tree group)
-		    (lambda (leaf)
-		      (sync-frame-windows group leaf)))
-      (frame-raise-window group l (frame-window l))
-      (when (frame-window l)
-	(update-window-border (frame-window l)))
-	  (show-frame-indicator group))))))
+    (if (atom tree)
+      (message "No more frames!")
+      (when s
+	(when (frame-is-head group frame)
+	  (setf (frame-number l) (frame-number frame)))
+	;; Move the windows from the removed frame to its sibling
+	(migrate-frame-windows group frame l)
+	;; If the frame has no window, give it the current window of
+	;; the current frame.
+	(unless (frame-window l)
+	  (setf (frame-window l)
+		(frame-window frame)))
+	;; Unsplit
+	(setf (tile-group-frame-head group head) (remove-frame tree frame))
+	;; update the current frame and sync all windows
+	(setf (tile-group-current-frame group) l)
+	(tree-iterate tree
+		      (lambda (leaf)
+			(sync-frame-windows group leaf)))
+	(frame-raise-window group l (frame-window l))
+	(when (frame-window l)
+	  (update-window-border (frame-window l)))
+	(show-frame-indicator group)))))
 
 (define-stumpwm-command "remove" ()
   (remove-split (current-group)))
