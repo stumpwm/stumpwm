@@ -444,8 +444,8 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
        when (window-marked i)
        collect i))
 
-(defun clear-window-marks (group)
-  (dolist (w (group-windows group))
+(defun clear-window-marks (group &optional (windows (group-windows group)))
+  (dolist (w windows)
     (setf (window-marked w) nil)))
 
 (defun (setf xwin-state) (state xwin)
