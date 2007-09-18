@@ -776,7 +776,7 @@ than the root window's width and height."
 			    :modifiers :any
 			    :owner-p nil
 			    :sync-pointer-p t
-			    :sync-keyboard-p t)))
+			    :sync-keyboard-p nil)))
 
 
 (defun xwin-ungrab-buttons (win)
