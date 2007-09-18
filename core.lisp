@@ -592,6 +592,8 @@ than the root window's width and height."
 	 (width fwidth)
 	 (height fheight)
 	 (hints (window-normal-hints win))
+	 (hints-min-width (and hints (xlib:wm-size-hints-min-width hints)))
+	 (hints-min-height (and hints (xlib:wm-size-hints-min-height hints)))
 	 (hints-max-width (and hints (xlib:wm-size-hints-max-width hints)))
 	 (hints-max-height (and hints (xlib:wm-size-hints-max-height hints)))
 	 (hints-width (and hints (xlib:wm-size-hints-base-width hints)))
@@ -607,6 +609,8 @@ than the root window's width and height."
       ;; Adjust the defaults if the window is a transient_for window.
       ((find (window-type win) '(:transient :dialog))
        (setf center t
+	     (window-width win) (or hints-min-width (window-width win))
+	     (window-height win) (or hints-min-height (window-height win))
 	     width (min (window-width win) width)
 	     height (min (window-height win) height)))
       ;; aspect hints are handled similar to max size hints
