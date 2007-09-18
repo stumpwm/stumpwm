@@ -137,7 +137,7 @@ Window types are in +WINDOW-TYPES+.")
 
 (defparameter +netwm-allowed-actions+
   '(:_NET_WM_ACTION_CHANGE_DESKTOP
-;    :_NET_WM_ACTION_FULLSCREEN
+    ;; :_NET_WM_ACTION_FULLSCREEN
     :_NET_WM_ACTION_CLOSE)
   "Allowed NETWM actions for managed windows")
 

@@ -467,7 +467,7 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
   (xlib:map-window parent)
   (xlib:map-subwindows parent)
   (setf	(xwin-state xwin) +normal-state+)
-  ;; Mark window as unhiden
+  ;; Mark window as unhidden
   (xlib:change-property xwin :_NET_WM_STATE
 			'()
 			:atom 32))
@@ -501,7 +501,6 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 			  :atom 32)
     (when (window-in-current-group-p window)
       (xwin-hide window))))
-
 
 (defun xwin-type (win)
   "Return one of :desktop, :dock, :toolbar, :utility, :splash,
@@ -2693,7 +2692,8 @@ chunks."
 ;;; Mouse focus
 
 (defun focus-all (win)
-  "Focus the window, frame and screen belonging to WIN"
+  "Focus the window, frame, group and screen belonging to WIN. Raise
+the window in it's frame."
   (when (and win (window-frame win))
     (switch-to-screen (window-screen win))
     (let ((frame (window-frame win))

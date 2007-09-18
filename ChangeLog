@@ -1,5 +1,14 @@
 2007-09-16  Shawn  <sabetts@hardcopy.local>
 
+	* primitives.lisp (+netwm-supported+): add _NET_WM_STATE,
+	_NET_WM_FULL_WINDOW_PLACEMENT, _NET_CLOSE_WINDOW,
+	_NET_WM_ALLOWED_ACTIONS
+	(+netwm-allowed-actions+): new constant
+
+	* core.lisp (process-mapped-window): set allowed actions
+	(:client-message): handle _NET_CLOSE_WINDOW and _NET_WM_STATE
+	(focus-all): switch to window's group and raise the window in its frame
+
 	* primitives.lisp (+netwm-supported+): add _NET_ACTIVE_WINDOW
 
 	* core.lisp (netwm-set-group-properties): sort groups for _NET_DESKTOP_NAMES
