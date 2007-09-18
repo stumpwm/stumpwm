@@ -118,14 +118,8 @@ run before the error is dealt with according to
 (defvar *frame-outline-width* 2
   "The default width of frame outlines.")
 
-(defvar *focus-color* "gray"
-  "The color a window's border becomes when it is focused")
-
 (defvar *text-color* "white"
   "The color of message text.")
-
-(defvar *unfocus-color* "Black"
-  "The border color of an unfocused window")
 
 (defparameter +netwm-supported+
   '(:_NET_SUPPORTING_WM_CHECK
@@ -202,7 +196,10 @@ Include only those we are ready to support.")
 (defparameter +default-background-color+ "Black")
 (defparameter +default-window-background-color+ "Black")
 (defparameter +default-border-color+ "White")
+(defparameter +default-focus-color+ "White")
+(defparameter +default-unfocus-color+ "Black")
 (defparameter +default-font-name+ "9x15bold")
+
 
 ;; Don't set these variables directly, use set-<var name> instead
 (defvar *normal-gravity* :center)
@@ -283,10 +280,13 @@ name. :title, :resource-name, :class are valid values.")
   ;; the list of groups available on this screen
   groups
   current-group
+  ;; various colors (as returned by alloc-color)
   border-color
   fg-color
   bg-color
   win-bg-color
+  focus-color
+  unfocus-color
   msg-border-width
   font
   ;; A list of all mapped windows. These are the raw

@@ -325,8 +325,8 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 	 (screen (group-screen group)))
     (let ((c (if (and (> (length (group-frames group)) 1)
                       (eq (group-current-window group) window))
-                 (alloc-color screen *focus-color*)
-                 (alloc-color screen *unfocus-color*))))
+                 (screen-focus-color screen)
+                 (screen-unfocus-color screen))))
       (setf (xlib:window-border (window-parent window)) c
             ;; windows that dont fill the entire screen have a transparent background.
             (xlib:window-background (window-parent window))
@@ -737,9 +737,9 @@ than the root window's width and height."
 			   :height (window-height window)
 			   ;; normal windows get a black background
 			   :background (if (eq (window-type window) :normal)
-                                           (get-bg-color-pixel screen)
+                                           (screen-bg-color screen)
                                            :none)
-			   :border (alloc-color screen *unfocus-color*)
+			   :border (screen-unfocus-color screen)
 			   :border-width (default-border-width-for-type (window-type window))
 			   :event-mask *window-parent-events*)))
       (unless (eq (xlib:window-map-state (window-xwin window)) :unmapped)
@@ -1197,14 +1197,15 @@ maximized, and given focus."
   ;; if we can list the font then it exists
   (plusp (length (xlib:list-font-names *display* font-name :max-fonts 1))))
 
-(defun alloc-color (screen color)
-  (xlib:alloc-color (xlib:screen-default-colormap (screen-number screen)) color))
-
 (defmacro set-any-color (val color)
   `(progn (dolist (s *screen-list*)
 	    (setf (,val s) (alloc-color s ,color)))
 	  (update-colors-all-screens)))
 
+;; FIXME: I don't like any of this.  Isn't there a way to define
+;; a setf method to call (update-colors-all-screens) when the user
+;; does eg. (setf *foreground-color* "green") instead of having 
+;; these redundant set-foo functions?
 (defun set-fg-color (color)
   (setf *text-color* color)
   (set-any-color screen-fg-color color))
@@ -1217,6 +1218,12 @@ maximized, and given focus."
 
 (defun set-win-bg-color (color)
   (set-any-color screen-win-bg-color color))
+
+(defun set-focus-color (color)
+  (set-any-color screen-focus-color color))
+
+(defun set-unfocus-color (color)
+  (set-any-color screen-unfocus-color color))
 
 (defun set-msg-border-width (width)
   (check-type width (integer 0))
@@ -1233,18 +1240,6 @@ maximized, and given focus."
 	(setf (screen-font i) fobj
 	      (xlib:gcontext-font (screen-message-gc i)) fobj)))
     t))
-
-(defun get-fg-color-pixel (screen)
-  (screen-fg-color screen))
-
-(defun get-bg-color-pixel (screen)
-  (screen-bg-color screen))
-
-(defun get-border-color-pixel (screen)
-  (screen-border-color screen))
-
-(defun get-win-bg-color-pixel (screen)
-  (screen-win-bg-color screen))
 
 (defun max-width (font l)
   "Return the width of the longest string in L using FONT."
@@ -1299,10 +1294,10 @@ function expects to be wrapped in a with-state for win."
 (defun invert-rect (screen win x y width height)
   "invert the color in the rectangular area. Used for highlighting text."
   (let ((gcontext (xlib:create-gcontext :drawable win
-					:foreground (get-fg-color-pixel screen)
+					:foreground (screen-fg-color screen)
 					:function boole-xor)))
     (xlib:draw-rectangle win gcontext x y width height t)
-    (setf (xlib:gcontext-foreground gcontext) (get-bg-color-pixel screen))
+    (setf (xlib:gcontext-foreground gcontext) (screen-bg-color screen))
     (xlib:draw-rectangle win gcontext x y width height t)))
 
 
@@ -1814,8 +1809,8 @@ depending on the tree's split direction."
 	 (width (if (oddp *frame-outline-width*) (1+ *frame-outline-width*) *frame-outline-width*))
 	 (gc (xlib:create-gcontext :drawable (screen-root screen)
 				   :font (screen-font screen)
-				   :foreground (get-fg-color-pixel screen)
-				   :background (get-bg-color-pixel screen)
+				   :foreground (screen-fg-color screen)
+				   :background (screen-bg-color screen)
 				   :line-style :double-dash
 				   :line-width width))
 	 (halfwidth (/ width 2)))
@@ -1858,15 +1853,15 @@ windows used to draw the numbers in. The caller must destroy them."
 	      (let ((w (xlib:create-window
 			:parent (screen-root screen)
 			:x (frame-x f) :y (frame-display-y group f) :width 1 :height 1
-			:background (get-fg-color-pixel screen)
-			:border (get-border-color-pixel screen)
+			:background (screen-fg-color screen)
+			:border (screen-border-color screen)
 			:border-width 1
 			:event-mask '())))
 		(xlib:map-window w)
 		(setf (xlib:window-priority w) :above)
 		(echo-in-window w (screen-font screen)
-				(get-fg-color-pixel screen)
-				(get-bg-color-pixel screen)
+				(screen-fg-color screen)
+				(screen-bg-color screen)
 				(string (get-frame-number-translation f)))
 		(xlib:display-finish-output *display*)
 		(dformat 3 "mapped ~S~%" (frame-number f))
@@ -1971,8 +1966,8 @@ windows used to draw the numbers in. The caller must destroy them."
   (xlib:screen-root (screen-number screen)))
 
 (defun update-colors-for-screen (screen)
-  (let ((fg (get-fg-color-pixel screen))
-	(bg (get-bg-color-pixel screen)))
+  (let ((fg (screen-fg-color screen))
+	(bg (screen-bg-color screen)))
     (setf (xlib:gcontext-foreground (screen-message-gc screen)) fg
 	  (xlib:gcontext-background (screen-message-gc screen)) bg 
 	  (ccontext-default-fg (screen-message-cc screen)) fg
@@ -1980,16 +1975,16 @@ windows used to draw the numbers in. The caller must destroy them."
   (dolist (i (list (screen-message-window screen)
 		   (screen-frame-window screen)
 		   (screen-input-window screen)))
-    (setf (xlib:window-border i) (get-border-color-pixel screen)
-	  (xlib:window-background i) (get-bg-color-pixel screen)))
+    (setf (xlib:window-border i) (screen-border-color screen)
+	  (xlib:window-background i) (screen-bg-color screen)))
   ;; update the backgrounds of all the managed windows
   (dolist (g (screen-groups screen))
     (dolist (w (group-windows g))
       (unless (eq w (group-current-window g))
-        (setf (xlib:window-background (window-parent w)) (get-win-bg-color-pixel screen))
+        (setf (xlib:window-background (window-parent w)) (screen-win-bg-color screen))
         (xlib:clear-area (window-parent w)))))
   (dolist (i (screen-withdrawn-windows screen))
-    (setf (xlib:window-background (window-parent i)) (get-win-bg-color-pixel screen))
+    (setf (xlib:window-background (window-parent i)) (screen-win-bg-color screen))
     (xlib:clear-area (window-parent i)))
   (update-screen-color-context screen))
 
@@ -2066,8 +2061,8 @@ windows used to draw the numbers in. The caller must destroy them."
               (xlib:drawable-y w) (+ (frame-display-y group cf) (truncate (- (frame-display-height group cf) height) 2))
               (xlib:window-priority w) :above))
       (echo-in-window w (screen-font screen)
-		      (get-fg-color-pixel screen)
-		      (get-bg-color-pixel screen)
+		      (screen-fg-color screen)
+		      (screen-bg-color screen)
 		      s)
       (xlib:display-finish-output *display*)
       (reset-frame-indicator-timer))))
@@ -2184,77 +2179,84 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
   (dformat 1 "Initializing screen: ~a ~a~%" host id)
   (setf (xlib:window-event-mask (xlib:screen-root screen-number))
 	'(:substructure-redirect
-	  :substructure-notify
-	  :property-change
-	  :structure-notify))
+	   :substructure-notify
+	   :property-change
+	   :structure-notify))
   (xlib:display-finish-output *display*)
   ;; Initialize the screen structure
-  (let* ((screen (make-screen))
-	 (fg (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-foreground-color+))
-	 (bg (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-background-color+))
-	 (border (xlib:alloc-color (xlib:screen-default-colormap screen-number) +default-border-color+))
-	 (input-window (xlib:create-window :parent (xlib:screen-root screen-number)
-					   :x 0 :y 0 :width 20 :height 20
-					   :background bg
-					   :border border
-					   :border-width 1
-					   :colormap (xlib:screen-default-colormap
-						      screen-number)
-					   :event-mask '(:key-press)))
-	 (focus-window (xlib:create-window :parent (xlib:screen-root screen-number)
-					   :x 0 :y 0 :width 1 :height 1))
-	 (frame-window (xlib:create-window :parent (xlib:screen-root screen-number)
-					   :x 0 :y 0 :width 1 :height 1
-					   :background fg
-					   :border border
-					   :border-width 1
-					   :colormap (xlib:screen-default-colormap
-						      screen-number)
-					   :event-mask '()))
-	 (message-window (xlib:create-window :parent (xlib:screen-root screen-number)
-					     :x 0 :y 0 :width 1 :height 1
+  (labels ((ac (color)
+	       (xlib:alloc-color (xlib:screen-default-colormap screen-number) color)))
+    (let* ((screen (make-screen))
+	   (fg (ac +default-foreground-color+))
+	   (bg (ac +default-background-color+))
+	   (border (ac +default-border-color+))
+	   (focus (ac +default-focus-color+))
+	   (unfocus (ac +default-unfocus-color+))
+	   (win-bg (ac +default-window-background-color+))
+	   (input-window (xlib:create-window :parent (xlib:screen-root screen-number)
+					     :x 0 :y 0 :width 20 :height 20
 					     :background bg
-					     :bit-gravity :north-east
 					     :border border
 					     :border-width 1
 					     :colormap (xlib:screen-default-colormap
-							screen-number)
+							 screen-number)
+					     :event-mask '(:key-press)))
+	   (focus-window (xlib:create-window :parent (xlib:screen-root screen-number)
+					     :x 0 :y 0 :width 1 :height 1))
+	   (frame-window (xlib:create-window :parent (xlib:screen-root screen-number)
+					     :x 0 :y 0 :width 1 :height 1
+					     :background fg
+					     :border border
+					     :border-width 1
+					     :colormap (xlib:screen-default-colormap
+							 screen-number)
 					     :event-mask '()))
-	 (font (xlib:open-font *display* +default-font-name+))
-	 (group (make-tile-group
-		 :screen screen
-		 :number 1
-		 :name "Default")))
-    ;; Create our screen structure
-    ;; The focus window is mapped at all times
-    (xlib:map-window focus-window)
-    (xwin-grab-keys focus-window)
-    (setf (screen-number screen) screen-number
-	  (screen-id screen) id
-	  (screen-host screen) host
-	  (screen-groups screen) (list group)
-	  (screen-current-group screen) group
-	  (screen-font screen) font
-	  (screen-fg-color screen) fg
-	  (screen-bg-color screen) bg
-	  (screen-win-bg-color screen) +default-window-background-color+
-	  (screen-border-color screen) border
-	  (screen-msg-border-width screen) 1
-	  (screen-input-window screen) input-window
-	  (screen-frame-window screen) frame-window
-	  (screen-focus-window screen) focus-window
-	  (screen-message-cc screen) (make-ccontext :win message-window
-						    :gc (xlib:create-gcontext
-							  :drawable message-window
-							  :font font
-							  :foreground fg
-							  :background bg)))
-    (setf (screen-heads screen) (make-heads screen)
-	  (tile-group-frame-tree group) (heads-frames (screen-heads screen))
-	  (tile-group-current-frame group) (first (tile-group-frame-tree group)))
-    (netwm-set-properties screen focus-window)
-    (update-color-map screen)
-    screen))
+	   (message-window (xlib:create-window :parent (xlib:screen-root screen-number)
+					       :x 0 :y 0 :width 1 :height 1
+					       :background bg
+					       :bit-gravity :north-east
+					       :border border
+					       :border-width 1
+					       :colormap (xlib:screen-default-colormap
+							   screen-number)
+					       :event-mask '()))
+	   (font (xlib:open-font *display* +default-font-name+))
+	   (group (make-tile-group
+		    :screen screen
+		    :number 1
+		    :name "Default")))
+      ;; Create our screen structure
+      ;; The focus window is mapped at all times
+      (xlib:map-window focus-window)
+      (xwin-grab-keys focus-window)
+      (setf (screen-number screen) screen-number
+	    (screen-id screen) id
+	    (screen-host screen) host
+	    (screen-groups screen) (list group)
+	    (screen-current-group screen) group
+	    (screen-font screen) font
+	    (screen-fg-color screen) fg
+	    (screen-bg-color screen) bg
+	    (screen-win-bg-color screen) win-bg
+	    (screen-border-color screen) border
+	    (screen-focus-color screen) focus
+	    (screen-unfocus-color screen) unfocus
+	    (screen-msg-border-width screen) 1
+	    (screen-input-window screen) input-window
+	    (screen-frame-window screen) frame-window
+	    (screen-focus-window screen) focus-window
+	    (screen-message-cc screen) (make-ccontext :win message-window
+						      :gc (xlib:create-gcontext
+							    :drawable message-window
+							    :font font
+							    :foreground fg
+							    :background bg)))
+      (setf (screen-heads screen) (make-heads screen)
+	    (tile-group-frame-tree group) (heads-frames (screen-heads screen))
+	    (tile-group-current-frame group) (first (tile-group-frame-tree group)))
+      (netwm-set-properties screen focus-window)
+      (update-color-map screen)
+      screen)))
 
 
 ;;; Head functions

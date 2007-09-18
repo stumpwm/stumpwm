@@ -57,6 +57,12 @@
 	  (xlib:color-green color) (max-min (xlib:color-green color) amt)
 	  (xlib:color-blue color) (max-min (xlib:color-blue color) amt))))
 
+(defun alloc-color (screen color)
+  (xlib:alloc-color (xlib:screen-default-colormap (screen-number screen)) color))
+
+(defun lookup-color (screen color)
+  (xlib:lookup-color (xlib:screen-default-colormap (screen-number screen)) color))
+
 ;; Normal colors are dimmed and bright colors are intensified in order
 ;; to more closely resemble the VGA pallet.
 (defun update-color-map (screen)
@@ -72,9 +78,8 @@
 	    (ccontext-current-map cc) (screen-color-map-normal screen)))))
 
 (defun update-screen-color-context (screen)
-  (let* ((scm (xlib:screen-default-colormap (screen-number screen)))
-	 (cc (screen-message-cc screen))
-	 (bright (xlib:lookup-color scm *text-color*)))
+  (let* ((cc (screen-message-cc screen))
+	 (bright (lookup-color screen *text-color*)))
     (setf
       (ccontext-default-fg cc) (screen-fg-color screen)
       (ccontext-default-bg cc) (screen-bg-color screen))
