@@ -2,6 +2,8 @@
 
 	* core.lisp (clear-window-marks): take optional windows arg.
 	(:client-message): comment out _NET_WM_STATE section
+	(geometry-hints): use min-width/height hints for transients if it
+	exists.
 
 	* user.lisp ("gmove-marked"): new command
 
