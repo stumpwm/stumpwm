@@ -2801,7 +2801,9 @@ chunks."
 (defun update-window-properties (window atom)
   (case atom
     (:wm_name
-     (setf (window-title window) (xwin-name (window-xwin window))))
+     (setf (window-title window) (xwin-name (window-xwin window)))
+     ;; Let the mode line know about the new name.
+     (update-all-mode-lines))
     (:wm_normal_hints
      (setf (window-normal-hints window) (xlib:wm-normal-hints (window-xwin window))
            (window-type window) (xwin-type (window-xwin window)))
