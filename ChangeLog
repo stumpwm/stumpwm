@@ -1,6 +1,7 @@
 2007-09-18  Shawn  <sabetts@hardcopy.local>
 
 	* core.lisp (clear-window-marks): take optional windows arg.
+	(:client-message): comment out _NET_WM_STATE section
 
 	* user.lisp ("gmove-marked"): new command
 
