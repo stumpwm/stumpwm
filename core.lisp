@@ -2677,12 +2677,12 @@ chunks."
       (let ((our-window (find-window window)))
 	(when our-window
 	  (delete-window our-window))))
-    (:_NET_WM_STATE
-      (let ((our-window (find-window window))
-	   (atom (elt data 0)))
-	(when our-window
-	  ;; FIXME: actually do something here (NET_WM_STATE_FULLSCREEN)!
-	  (message "~S ~S" atom our-window))))
+;;    (:_NET_WM_STATE
+;;      (let ((our-window (find-window window))
+;;	   (atom (elt data 0)))
+;;	(when our-window
+;;	  ;; FIXME: actually do something here (NET_WM_STATE_FULLSCREEN)!
+;;	  )))
     (t
      (dformat 2 "ignored message~%"))))
 
