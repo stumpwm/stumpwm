@@ -1,3 +1,9 @@
+2007-09-18  Shawn  <sabetts@hardcopy.local>
+
+	* core.lisp (clear-window-marks): take optional windows arg.
+
+	* user.lisp ("gmove-marked"): new command
+
 2007-09-16  Shawn  <sabetts@hardcopy.local>
 
 	* primitives.lisp (+netwm-supported+): add _NET_WM_STATE,
