@@ -4,6 +4,7 @@
 	(:client-message): comment out _NET_WM_STATE section
 	(geometry-hints): use min-width/height hints for transients if it
 	exists.
+	(xwin-grab-buttons): set :sync-keyboard-p to nil
 
 	* user.lisp ("gmove-marked"): new command
 
