@@ -1147,13 +1147,13 @@ aborted."
 
 (defun move-focus-and-or-window (dir &optional win-p)
   (let* ((group (current-group))
-         (direction (intern (string-upcase dir) :keyword))
-         (new-frame (neighbour direction (tile-group-current-frame group) (group-frames group)))
-    	 (window (current-window)))
+	 (direction (intern (string-upcase dir) :keyword))
+	 (new-frame (neighbour direction (tile-group-current-frame group) (group-frames group)))
+	 (window (current-window)))
     (when new-frame
       (focus-frame group new-frame)
-      (when win-p
-	      (pull-window window)))
+      (when (and win-p window)
+	(pull-window window)))
     (show-frame-indicator group)))
 
 (define-stumpwm-command "move-focus" ((dir :string "Direction: "))
