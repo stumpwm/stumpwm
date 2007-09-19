@@ -2255,6 +2255,7 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 	    (tile-group-frame-tree group) (heads-frames (screen-heads screen))
 	    (tile-group-current-frame group) (first (tile-group-frame-tree group)))
       (netwm-set-properties screen focus-window)
+      (update-colors-for-screen screen)
       (update-color-map screen)
       screen)))
 
