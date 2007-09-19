@@ -487,8 +487,8 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
     (find (xlib:find-atom *display* state) (xlib:get-property xwin :_NET_WM_STATE))))
 
 (defun xwin-unhide (xwin parent)
-  (xlib:map-window parent)
   (xlib:map-subwindows parent)
+  (xlib:map-window parent)
   (setf	(xwin-state xwin) +normal-state+))
 
 (defun unhide-window (window)
@@ -503,10 +503,8 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
   (let ((window (find-window xwin)))
     (when window
       (incf (window-unmap-ignores window) 1)))
-  ;; FIXME: I'm pretty sure we're supposed to unmap the subwindows too
-  ;; (xlib:unmap-subwindows parent)
   (xlib:unmap-window parent)
-  (xlib:unmap-window xwin))
+  (xlib:unmap-subwindows parent))
 
 (defun hide-window (window)
   (dformat 2 "hide window: ~a~%" (window-name window))
