@@ -374,11 +374,11 @@ frame."
     (#\h . ,(time-lambda (mon) (subseq (aref *month-names* (- mon 1)) 0 3)))
     (#\H . ,(time-lambda (hour) (format nil "~2,'0D" hour)))
     (#\I . ,(time-lambda (hour)
-	     (format nil "~2,'0D" (if (> hour 12) (- hour 12) hour))))
+	     (format nil "~2,'0D" (if (> hour 12) (- hour 12) (if (zerop hour) 12 hour)))))
     ;; %j   day of year (001..366)
     (#\k . ,(time-lambda (hour) (format nil "~2,D" hour)))
     (#\l . ,(time-lambda (hour)
-	     (format nil "~2,D" (if (> hour 12) (- hour 12) hour))))
+	     (format nil "~2,D" (if (> hour 12) (- hour 12) (if (zerop hour) 12 hour)))))
     (#\m . ,(time-lambda (mon) (format nil "~2,'0D" mon)))
     (#\M . ,(time-lambda (min) (format nil "~2,'0D" min)))
     (#\n . ,(time-lambda () "~%%")) ;; two % to avoid parsing errors
@@ -393,7 +393,7 @@ frame."
                  ((= hour 12)
                   (setf hour-local hour am-pm "PM"))
                  (t
-                  (setf hour-local hour am-pm "AM")))
+                  (setf hour-local (if (zerop hour) 12 hour) am-pm "AM")))
 	       (format nil "~2,'0D:~2,'0D:~2,'0D ~A"
 		       hour-local min sec am-pm))))
     (#\R . ,(time-lambda (hour min) (format nil "~2,'0D:~2,'0D" hour min)))
