@@ -315,9 +315,6 @@ name. :title, :resource-name, :class are valid values.")
 (defstruct ccontext
   win
   gc
-  current-map
-  fg
-  bg
   default-fg
   default-bright
   default-bg)

@@ -197,7 +197,6 @@ current group.")
 		    :position *mode-line-position*
 		    :cc (make-ccontext :gc gc
 				       :win w
-				       :current-map (screen-color-map-normal screen)
 				       :default-fg (xlib:gcontext-foreground gc)
 				       :default-bg (xlib:gcontext-background gc)))))
 

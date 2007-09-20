@@ -37,7 +37,7 @@
 
 (in-package :stumpwm)
 
-(export '(*colors* update-color-map))
+(export '(*colors* update-color-map adjust-color update-screen-color-context))
 
 ;; Eight colors. You can redefine these to whatever you like (and
 ;; then call (update-color-map)).
@@ -50,6 +50,10 @@
     "magenta"
     "cyan"
     "white"))
+
+(defvar *color-map* nil)
+(defvar *foreground* nil)
+(defvar *background* nil)
 
 (defun adjust-color (color amt)
   (labels ((max-min (x y) (max 0 (min 1 (+ x y)))))
@@ -74,8 +78,7 @@
 			       do (adjust-color color amt)
 			       collect (xlib:alloc-color scm color))))
       (setf (screen-color-map-normal screen) (apply #'vector (map-colors -0.25))
-	    (screen-color-map-bright screen) (apply #'vector (map-colors 0.25))
-	    (ccontext-current-map cc) (screen-color-map-normal screen)))))
+	    (screen-color-map-bright screen) (apply #'vector (map-colors 0.25))))))
 
 (defun update-screen-color-context (screen)
   (let* ((cc (screen-message-cc screen))
@@ -87,16 +90,16 @@
     (setf (ccontext-default-bright cc) (alloc-color screen bright))))
 
 (defun get-bg-color (screen cc color)
-  (setf (ccontext-bg cc) color)
+  (setf *background* color)
   (if color
     (svref (screen-color-map-normal screen) color)
     (ccontext-default-bg cc)))
 
 (defun get-fg-color (screen cc color)
-  (setf (ccontext-fg cc) color)
+  (setf *foreground* color)
   (if color
-    (svref (ccontext-current-map cc) color)
-    (if (eq (ccontext-current-map cc) (screen-color-map-bright screen))
+    (svref *color-map* color)
+    (if (eq *color-map* (screen-color-map-bright screen))
       (ccontext-default-bright cc)
       (ccontext-default-fg cc))))
 
@@ -108,20 +111,20 @@
 	 (b (if (< l 2) "*" (subseq s (1+ i) (+ i 2)))))
     (labels ((update-colors ()
 			    (setf
-			      (xlib:gcontext-foreground gc) (get-fg-color screen cc (ccontext-fg cc))
-			      (xlib:gcontext-background gc) (get-bg-color screen cc (ccontext-bg cc)))))
+			      (xlib:gcontext-foreground gc) (get-fg-color screen cc *foreground*)
+			      (xlib:gcontext-background gc) (get-bg-color screen cc *background*))))
       (case (elt f 0)
 	(#\n ; normal
 	 (setf f "*" b "*" r 1
-	       (ccontext-current-map cc) (screen-color-map-normal screen))
+	       *color-map* (screen-color-map-normal screen))
 	 (get-fg-color screen cc nil)
 	 (get-bg-color screen cc nil))
 	(#\b ; bright off
-	 (setf (ccontext-current-map cc) (screen-color-map-normal screen))
+	 (setf *color-map* (screen-color-map-normal screen))
 	 (update-colors)
 	 (return-from set-color 1))
 	(#\B ; bright on
-	 (setf (ccontext-current-map cc) (screen-color-map-bright screen))
+	 (setf *color-map* (screen-color-map-bright screen))
 	 (update-colors)
 	 (return-from set-color 1))
 	(#\^ ; circumflex
@@ -138,8 +141,10 @@
 		    (xlib:font-ascent (screen-font screen))))
 	 (width 0)
 	 (gc (ccontext-gc cc))
-	 (win (ccontext-win cc)))
-    (set-color screen cc "n" 0)
+	 (win (ccontext-win cc))
+	 (*foreground* nil)
+	 (*background* nil)
+	 (*color-map* (screen-color-map-normal screen)))
     (loop for s in strings
 	  ;; We need this so we can track the row for each element
 	  for i from 0 to (length strings)
@@ -167,5 +172,6 @@
 				     0 (* i height)
 				     (xlib:drawable-width win)
 				     height)))
+    (set-color screen cc "n" 0)
     width))
 
