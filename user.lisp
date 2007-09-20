@@ -319,6 +319,10 @@ frame."
   (declare (ignore group))
   (format nil "~d" (head-number head)))
 
+(defun fmt-group (group head)
+  (declare (ignore head))
+  (format nil "~a" (group-name group)))
+
 (defun fmt-head-window-list (group head)
   "Using *window-format*, return a 1 line list of the windows, space seperated."
   (format nil "~{~a~^ ~}"
