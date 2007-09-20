@@ -54,7 +54,7 @@
 (defvar *mode-line-border-color* "Gray30"
   "mode line border color")
 
-(defvar *screen-mode-line-format* "%w"
+(defvar *screen-mode-line-format* "%n %W"
   "A template for displaying mode line for each screen. Turn it
 on with the function TOGGLE-MODE-LINE or the mode-line command.
 
