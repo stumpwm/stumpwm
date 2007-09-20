@@ -878,23 +878,29 @@ string between them."
          (gravity (second (assoc (string-trim " " (argument-pop-or-read input prompt values)) values :test 'string-equal))))
     (or gravity
         (throw 'error "No matching gravity."))))
-    
-(define-stumpwm-type :group-name (input prompt)
-  (or (argument-pop input)
-      (completing-read (current-screen) prompt
-		       (mapcar 'group-name
-			       (screen-groups (current-screen))))))
+
+(defun select-group (screen query)
+  "Attempt to match string QUERY against group number or partial name."
+  (let (match
+	(num (ignore-errors (parse-integer query))))
+    (labels ((match (grp)
+	       (let* ((name (group-name grp))
+		      (end (min (length name) (length query))))
+		 ;; try by name or number
+		 (or (string-equal name query :end1 end :end2 end)
+		     (eql (group-number grp) num)))))
+      (unless (null query)
+	(setf match (find-if #'match (screen-groups screen))))
+      match)))
 
 (define-stumpwm-type :group (input prompt)
-  (or 
-   (find (string-trim " " (or (argument-pop input)
-			     (completing-read (current-screen) prompt
-					      (mapcar 'group-name
-						      (screen-groups (current-screen))))))
-	(screen-groups (current-screen))
-	:test 'string=
-	:key 'group-name)
-   (throw 'error "No Such Group.")))
+      (let ((match (select-group (current-screen)
+				 (or (argument-pop input)
+				     (completing-read (current-screen) prompt
+						      (mapcar 'group-name
+							      (screen-groups (current-screen))))))))
+	(or match
+	    (throw 'error "No Such Group."))))
 
 (define-stumpwm-type :frame (input prompt)
   (declare (ignore prompt))
@@ -1382,23 +1388,10 @@ aborted."
 	       (or gfmt *group-format*)
 	       t (or wfmt *window-format*)))
 
-(defun select-group (screen query)
-  "Read input from the user and go to the selected window."
-  (let (match
-	(num (ignore-errors (parse-integer query))))
-    (labels ((match (grp)
-	       (let* ((name (group-name grp))
-		      (end (min (length name) (length query))))
-		 ;; try by name or number
-		 (or (string-equal name query :end1 end :end2 end)
-		     (eql (group-number grp) num)))))
-      (unless (null query)
-	(setf match (find-if #'match (screen-groups screen))))
-      (when match
-	(switch-to-group match)))))
 
-(define-stumpwm-command "gselect" ((query :group-name "Select Group: "))
-  (select-group (current-screen) query))
+(define-stumpwm-command "gselect" ((to-group :group "Select Group: "))
+  (when to-group
+    (switch-to-group to-group)))
 
 (define-stumpwm-command "gmove" ((to-group :group "To Group: "))
   (when (and to-group
