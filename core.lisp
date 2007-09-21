@@ -2892,7 +2892,8 @@ chunks."
   (remove-wm-state (window-xwin window) :_NET_WM_STATE_FULLSCREEN)
   (setf (xlib:drawable-border-width (window-parent window)) (default-border-width-for-type (window-type window)))
   (maximize-window window)
-  (update-window-border window))
+  (update-window-border window)
+  (update-mode-lines (current-screen)))
 
 (defun update-fullscreen (window action)
   (let ((fullscreen-p (window-fullscreen window)))
