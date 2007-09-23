@@ -19,9 +19,6 @@
 
 ### STUMPwm Interactive Shell.
 
-IFS='
-'
-
 function wait_result ()
 {
 	while true
@@ -57,19 +54,21 @@ function send_cmd ()
 function usage ()
 {
 cat <<EOF
-Usage: stumpish [command]
+Usage: stumpish [[-e] command [args...]]
 
-StumpIsh is the StumpWM shell. Use it to interact a running
-StumpWM instnace.  When run from a terminal with no
-arguments, stumpish accepts commands interactively and
-prints each result.  If standard input is a pipe, stumpish
-executes any number of commands and prints the concatenated
-results. If an arugment is given on the command line,
-stumpish executes it as a stumpwm command and returns one
-result.
+StumpIsh is the StumpWM shell. Use it to interact a running StumpWM
+instance.  When run from a terminal with no arguments, stumpish
+accepts commands interactively and prints each result.  If standard
+input is a pipe, stumpish executes any number of commands and prints
+the concatenated results. If the '-e' option and one argument are
+given on the command line, stumpish reads any number of lines from
+standard input and uses them as the argument to the named command.
+Otherwise if one or more arguments are provided on the command line,
+the first is considered the name of the command to execute, and the
+remainder are concatenated to form the argument.
 
 Example:
-	echo 'eval (group-windows (current-group))' | stumpish
+	echo '(group-windows (current-group))' | stumpish eval
 EOF
 exit 0;
 }
@@ -77,9 +76,24 @@ exit 0;
 if [ $# -gt 0 ]
 then
 	[ "$1" == "--help" ] && usage
-
-	send_cmd "$1"
+	if [ $1 == "-e" ]
+	then
+		if [ $# -ne 2 ]
+		then
+			echo "'-e' require exactly one argument!"
+			exit
+		fi
+		shift 1
+		IFS=''
+		ARGS=`cat /dev/stdin`
+		send_cmd "$1 $ARGS"
+	else
+		IFS=' '
+		send_cmd "$*"
+	fi
 else
+IFS='
+'
 	if [ -t 0 ]
 	then
 		echo -e '\e[1;35mWelcome to the StumpWM Interactive Shell.\n\e[37mType \e[32mcommands\e[37m for a list of commands.\e[0m'
