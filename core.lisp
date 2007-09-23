@@ -2201,12 +2201,8 @@ windows used to draw the numbers in. The caller must destroy them."
     (push highlights (screen-last-msg-highlights screen))
     ;; crop for size
     (when (>= (length (screen-last-msg screen)) *max-last-message-size*)
-      (setf (screen-last-msg screen) (butlast (screen-last-msg screen)
-					      (- (length (screen-last-msg screen))
-						 *max-last-message-size*))
-	    (screen-last-msg-highlights screen) (butlast (screen-last-msg-highlights screen)
-							 (- (length (screen-last-msg screen))
-							    *max-last-message-size*))))))
+      (setf (screen-last-msg screen) (butlast (screen-last-msg screen)))
+      (setf (screen-last-msg-highlights screen) (butlast (screen-last-msg-highlights screen))))))
 
 (defun echo-nth-last-message (screen n)
   (let ((*record-last-msg-override* t))
@@ -2215,10 +2211,11 @@ windows used to draw the numbers in. The caller must destroy them."
 (defun echo-string-list (screen strings &rest highlights)
   "Draw each string in l in the screen's message window. HIGHLIGHT is
   the nth entry to highlight."
-  (let ((width (render-strings screen (screen-message-cc screen) *message-window-padding* 0 strings '() nil)))
-   (setup-message-window screen (length strings) width)
-   (render-strings screen (screen-message-cc screen) *message-window-padding* 0 strings highlights))
-  (xlib:display-finish-output *display*)
+  (unless *executing-stumpwm-command*
+    (let ((width (render-strings screen (screen-message-cc screen) *message-window-padding* 0 strings '() nil)))
+      (setup-message-window screen (length strings) width)
+      (render-strings screen (screen-message-cc screen) *message-window-padding* 0 strings highlights))
+    (xlib:display-finish-output *display*))
   (push-last-message screen strings highlights)
   ;; Set a timer to hide the message after a number of seconds
   (if *suppress-echo-timeout*
@@ -2913,6 +2910,23 @@ chunks."
 	       bytes-after)))
     (loop while (> (one-cmd) 0))))
 
+(defun handle-stumpwm-commands (root)
+  "Handle a StumpWM style command request."
+  (let* ((win root)
+	 (screen (find-screen root))
+	 (data (xlib:get-property win :stumpwm_command :delete-p t))
+	 (cmd (map 'string 'code-char data)))
+    (let ((msgs (screen-last-msg screen))
+	  (hlts (screen-last-msg-highlights screen))
+	  (*executing-stumpwm-command* t))
+      (setf (screen-last-msg screen) '()
+	    (screen-last-msg-highlights screen) '())
+      (interactive-command cmd)
+      (xlib:change-property win :stumpwm_command_result (map 'list 'char-code (format nil "~{~{~a~%~}~}" (nreverse (screen-last-msg screen)))) :string 8)
+      (setf (screen-last-msg screen) msgs
+	    (screen-last-msg-highlights screen) hlts))
+    (xlib:display-finish-output *display*)))
+
 (defun update-window-properties (window atom)
   (case atom
     (:wm_name
@@ -2952,6 +2966,12 @@ chunks."
        (when (and (eq state :new-value)
 		  screen)
 	 (handle-rp-commands window))))
+    (:stumpwm_command
+      ;; RP commands are too weird and problematic, KISS.
+     (let* ((screen (find-screen window)))
+       (when (and (eq state :new-value)
+		  screen)
+	 (handle-stumpwm-commands window))))
      (t
       (let ((window (find-window window)))
 	(when window

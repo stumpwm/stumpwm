@@ -708,17 +708,19 @@ select one. Returns the selected frame or nil if aborted."
 
 (defun eval-line (cmd)
   (handler-case 
-      (message "~{~a~^~%~}"
-               (mapcar 'prin1-to-string
+      (message "^20~{~a~^~%~}"
+              (mapcar 'prin1-to-string
                        (multiple-value-list (eval (read-from-string cmd)))))
     (error (c)
-      (message "~A" c))))
+      (message "^B^1*~A" c))))
 
 (define-stumpwm-command "eval" ((cmd :rest "Eval: "))
   (eval-line cmd))
 
 (define-stumpwm-command "echo" ((s :rest "Echo: "))
-  (message "~a" s))
+ ;; The purpose of echo is always to pop up a message window.
+ (let ((*executing-stumpwm-command* nil))
+  (message "~a" s)))
 
 ;; Simple command & arg parsing
 (defun split-by-one-space (string)
@@ -1070,6 +1072,15 @@ aborted."
 
 (define-stumpwm-command "help" ()
   (display-keybinding '*root-map*))
+
+(define-stumpwm-command "commands" ()
+  (let* ((screen (current-screen))
+         (data (all-commands))
+         (cols (ceiling (length data)
+			(truncate (head-height (current-head))
+                                  (font-height (screen-font screen))))))
+    (message-no-timeout "~{~a~^~%~}"
+                        (columnize data cols))))
 
 ;; Trivial function
 (define-stumpwm-command "abort" ()

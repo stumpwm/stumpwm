@@ -376,6 +376,9 @@ single char keys are supported.")
 (defvar *processing-existing-windows* nil
   "True when processing pre-existing windows at startup.")
 
+(defvar *executing-stumpwm-command* nil
+  "True when executing external commands.")
+
 ;;; Hook functionality
 
 (defun run-hook-with-args (hook &rest args)
