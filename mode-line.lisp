@@ -202,14 +202,14 @@ current group.")
 
 (defun redraw-mode-line (ml)
   (when (eq (mode-line-mode ml) :stump)
-
+    (xlib:display-finish-output *display*)
     (let* ((*current-mode-line-formatters* *screen-mode-line-formatters*)
 	   (*current-mode-line-formatter-args* (list (screen-current-group (mode-line-screen ml)) (mode-line-head ml)))
 	   (string (mode-line-format-string ml))
 	   (width (render-strings (mode-line-screen ml) (mode-line-cc ml)
 				  *mode-line-pad-x*	*mode-line-pad-y* (list string) '())))
       ;; Just clear what we need to. This reduces flicker.
-      (xlib:clear-area (mode-line-window ml):x (+ *mode-line-pad-x* width)))))
+      (xlib:clear-area (mode-line-window ml) :x (+ *mode-line-pad-x* width)))))
 
 (defun find-mode-line-window (xwin)
   (dolist (s *screen-list*)

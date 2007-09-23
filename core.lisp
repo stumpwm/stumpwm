@@ -1398,7 +1398,10 @@ function expects to be wrapped in a with-state for win."
 		     (setup-win-gravity screen win *message-window-gravity*))
     (xlib:map-window (screen-message-window screen))
     ;; Clear the window
-    (xlib:clear-area win)))
+    (xlib:clear-area win)
+    ;; Have to flush this or the window might get cleared
+    ;; after we've already started drawing it.
+    (xlib:display-finish-output *display*)))
 
 (defun invert-rect (screen win x y width height)
   "invert the color in the rectangular area. Used for highlighting text."
@@ -2178,7 +2181,6 @@ windows used to draw the numbers in. The caller must destroy them."
 		      (screen-fg-color screen)
 		      (screen-bg-color screen)
 		      s)
-      (xlib:display-finish-output *display*)
       (reset-frame-indicator-timer))))
 
 (defun echo-in-window (win font fg bg string)
@@ -2192,6 +2194,7 @@ windows used to draw the numbers in. The caller must destroy them."
       (setf (xlib:drawable-height win) height
             (xlib:drawable-width win) width))
     (xlib:clear-area win)
+    (xlib:display-finish-output *display*)
     (xlib:draw-image-glyphs win gcontext 0 (xlib:font-ascent font) string)))
 
 (defun push-last-message (screen strings highlights)
@@ -2214,9 +2217,9 @@ windows used to draw the numbers in. The caller must destroy them."
   (unless *executing-stumpwm-command*
     (let ((width (render-strings screen (screen-message-cc screen) *message-window-padding* 0 strings '() nil)))
       (setup-message-window screen (length strings) width)
-      (render-strings screen (screen-message-cc screen) *message-window-padding* 0 strings highlights))
-    (xlib:display-finish-output *display*))
+      (render-strings screen (screen-message-cc screen) *message-window-padding* 0 strings highlights)))
   (push-last-message screen strings highlights)
+  (xlib:display-finish-output *display*)
   ;; Set a timer to hide the message after a number of seconds
   (if *suppress-echo-timeout*
     ;; any left over timers need to be canceled.
