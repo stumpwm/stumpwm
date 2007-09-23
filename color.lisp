@@ -70,8 +70,7 @@
 ;; Normal colors are dimmed and bright colors are intensified in order
 ;; to more closely resemble the VGA pallet.
 (defun update-color-map (screen)
-  (let ((cc (screen-message-cc screen))
-	(scm (xlib:screen-default-colormap (screen-number screen))))
+  (let ((scm (xlib:screen-default-colormap (screen-number screen))))
     (labels ((map-colors (amt)
 			 (loop for c in *colors*
 			       as color = (xlib:lookup-color scm c)
