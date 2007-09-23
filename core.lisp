@@ -183,36 +183,51 @@ at 0. Return a netwm compliant group id."
       (run-hook-with-args *focus-group-hook* new-group old-group))))
 
 (defun move-window-to-group (window to-group)
-  (unless (eq (window-group window) to-group)
-    (let ((old-group (window-group window))
-	  (old-frame (window-frame window)))
-      (hide-window window)
-      ;; house keeping
-      (setf (group-windows (window-group window))
-	    (remove window (group-windows (window-group window))))
-      (setf (window-frame window) (tile-group-current-frame to-group)
-	    (window-group window) to-group
-	    (window-number window) (find-free-window-number to-group))
-      ;; try to put the window in the appropriate frame for the group
-      (multiple-value-bind (placed-group frame raise) (get-window-placement (window-screen window) window)
-			   (declare (ignore placed-group))
-			   (when frame
-			     (setf (window-frame window) frame))
-			   (when raise
-			     (setf (tile-group-current-frame to-group) frame
-				   (frame-window frame) nil)))
-      (push window (group-windows to-group))
-      (sync-frame-windows to-group (tile-group-current-frame to-group))
-      ;; maybe pick a new window for the old frame
-      (when (eq (frame-window old-frame) window)
-	(setf (frame-window old-frame) (first (frame-windows old-group old-frame)))
-	(focus-frame old-group old-frame))
-      ;; maybe show the window in its new frame
-      (when (null (frame-window (window-frame window)))
-        (frame-raise-window (window-group window) (window-frame window) window))
-      (xlib:change-property (window-xwin window) :_NET_WM_DESKTOP
-			    (list (netwm-group-id to-group))
-			    :cardinal 32))))
+  (labels ((really-move-window (window to-group)
+    (unless (eq (window-group window) to-group)
+      (let ((old-group (window-group window))
+	    (old-frame (window-frame window)))
+	(hide-window window)
+	;; house keeping
+	(setf (group-windows (window-group window))
+	      (remove window (group-windows (window-group window))))
+	(setf (window-frame window) (tile-group-current-frame to-group)
+	      (window-group window) to-group
+	      (window-number window) (find-free-window-number to-group))
+	;; try to put the window in the appropriate frame for the group
+	(multiple-value-bind (placed-group frame raise) (get-window-placement (window-screen window) window)
+	  (declare (ignore placed-group))
+	  (when frame
+	    (setf (window-frame window) frame))
+	  (when raise
+	    (setf (tile-group-current-frame to-group) frame
+		  (frame-window frame) nil)))
+	(push window (group-windows to-group))
+	(sync-frame-windows to-group (tile-group-current-frame to-group))
+	;; maybe pick a new window for the old frame
+	(when (eq (frame-window old-frame) window)
+	  (setf (frame-window old-frame) (first (frame-windows old-group old-frame)))
+	  (focus-frame old-group old-frame))
+	;; maybe show the window in its new frame
+	(when (null (frame-window (window-frame window)))
+	  (frame-raise-window (window-group window) (window-frame window) window))
+	(xlib:change-property (window-xwin window) :_NET_WM_DESKTOP
+			      (list (netwm-group-id to-group))
+			      :cardinal 32)))))
+    ;; When a modal window is moved, all the windows it shadows must be moved
+    ;; as well. When a shadowed window is moved, the modal shadowing it must
+    ;; be moved.
+    (cond
+      ((window-modal-p window)
+       (mapc (lambda (w)
+	       (really-move-window w to-group))
+	     (append (list window) (shadows-of window))))
+      ((modals-of window)
+       (mapc (lambda (w)
+	       (move-window-to-group w to-group))
+	     (modals-of window)))
+      (t
+	(really-move-window window to-group)))))
 
 (defun next-group (current &optional (list (screen-groups (group-screen current))))
   (let*
@@ -296,6 +311,100 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 
 
 ;;; Window functions
+
+
+;; Since StumpWM already uses the term 'group' to refer to Virtual Desktops,
+;; we'll call the grouped windows of an application a 'gang'
+
+;; maybe follow transient_for to find leader.
+(defun window-leader (window)
+  (or (first (window-property window :WM_CLIENT_LEADER))
+      (let ((id (first (window-property window :WM_TRANSIENT_FOR))))
+	(when id
+	  (window-leader (window-by-id id))))))
+
+;; A modal dialog can either shadow a single window, or all windows
+;; in its gang, depending on the value of WM_TRANSIENT_FOR
+
+;; If a window is shadowed by a modal dialog, so are any other
+;; transients belonging to that window.
+
+(defun window-transient-for (window)
+  (first (window-property window :WM_TRANSIENT_FOR)))
+
+(defun window-modal-p (window)
+   (find-wm-state (window-xwin window) :_NET_WM_STATE_MODAL))
+
+(defun window-transient-p (window)
+  (find (window-type window) '(:transient :dialog)))
+
+;; FIXME: use WM_HINTS.group_leader
+(defun window-gang (window)
+  "Return a list of other windows in WINDOW's gang."
+  (let ((leader (window-leader window))
+	(screen (window-screen window)))
+    (when leader
+      (loop for w in (screen-windows screen)
+	    as l = (window-leader w)
+	    if (and (not (eq w window)) l (= leader l))
+	    collect w))))
+
+(defun only-modals (windows)
+  "Out of WINDOWS, return a list of those which are modal."
+  (remove-if-not 'window-modal-p (copy-list windows)))
+
+(defun x-of (window filter)
+  (let* ((root (screen-root (window-screen window)))
+	 (root-id (xlib:drawable-id root))
+         (win-id (xlib:window-id (window-xwin window))))
+    (loop for w in (funcall filter (window-gang window))
+	  as tr = (window-transient-for w)
+	  when (or (not tr)		; modal for group
+		   (eq tr root-id)	; ditto
+		   (eq tr win-id))	; modal for win
+	  collect w)))
+
+
+;; The modals of a transient are the modals of the window
+;; the transient belongs to.
+(defun modals-of (window)
+  "Given WINDOW return the modal dialogs which are shadowing it, if any."
+ (loop for m in (only-modals (window-gang window))
+       when (find window (shadows-of m))
+       collect m))
+
+(defun transients-of (window)
+  "Return the transient dialogs belonging to WINDOW"
+  (x-of window 'only-transients))
+
+(defun shadows-of (window)
+  "Given modal window WINDOW return the list of windows in its shadow."
+  (let* ((root (screen-root (window-screen window)))
+	 (root-id (xlib:drawable-id root))
+	 (tr (window-transient-for window)))
+    (cond
+      ((or (not tr)
+	   (eq tr root-id))
+       (window-gang window))
+      (t
+       (let ((w (window-by-id tr)))
+	 (append (list w) (transients-of w)))))))
+
+(defun only-transients (windows)
+  "Out of WINDOWS, return a list of those which are transient."
+  (remove-if-not 'window-transient-p (copy-list windows)))
+
+(defun really-raise-window (window)
+ (frame-raise-window (window-group window) (window-frame window) window))
+
+(defun raise-modals-of (window)
+  (mapc 'really-raise-window (modals-of window)))
+
+(defun raise-modals-of-gang (window)
+  (mapc 'really-raise-window (only-modals (window-gang window))))
+
+(defun raise-transients-of-gang (window)
+  (mapc 'really-raise-window (only-transients (window-gang window))))
 
 (defun all-windows ()
   (mapcan (lambda (s) (copy-list (screen-windows s))) *screen-list*))
@@ -472,7 +581,6 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 
 (defun add-wm-state (xwin state)
   (xlib:change-property xwin :_NET_WM_STATE
-;	 (list (xlib:intern-atom *display* state))
 	 (list (xlib:find-atom *display* state))
 	 :atom 32
 	 :mode :append))
@@ -482,9 +590,11 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 	(delete (xlib:find-atom *display* state) (xlib:get-property xwin :_NET_WM_STATE))
 	 :atom 32))
 
-(defun find-wm-state (xwin &rest states)
-  (dolist (state states)
-    (find (xlib:find-atom *display* state) (xlib:get-property xwin :_NET_WM_STATE))))
+(defun window-property (window prop)
+  (xlib:get-property (window-xwin window) prop))
+
+(defun find-wm-state (xwin state)
+  (find (xlib:find-atom *display* state) (xlib:get-property xwin :_NET_WM_STATE) :test #'=))
 
 (defun xwin-unhide (xwin parent)
   (xlib:map-subwindows parent)
@@ -1320,12 +1430,14 @@ function expects to be wrapped in a with-state for win."
   (let ((oldw (frame-window f)))
     ;; nothing to do when W is nil
     (setf (frame-window f) w)
+    (when focus
+      (focus-frame g f))
     (unless (and w (eq oldw w))
       (if w
-	(raise-window w)
-	(mapc 'hide-window (frame-windows g f))))
-    (when focus
-      (focus-frame g f))))
+	  (raise-window w)
+	  (mapc 'hide-window (frame-windows g f))))
+    (when (and w (not (window-modal-p w)))
+      (raise-modals-of w))))
 
 (defun focus-frame (group f)
   (let ((w (frame-window f))
@@ -1954,8 +2066,11 @@ windows used to draw the numbers in. The caller must destroy them."
 (defun unregister-window (xwin)
   (remhash (xlib:window-id xwin) *xwin-to-window*))
 
+(defun window-by-id (id)
+  (gethash id *xwin-to-window*))
+
 (defun find-window (xwin)
-  (gethash (xlib:window-id xwin) *xwin-to-window*))
+  (window-by-id (xlib:window-id xwin)))
 
 (defun find-window-by-parent (xwin &optional (windows (all-windows)))
   (dformat 3 "find-window-by-parent!~%")
@@ -2972,8 +3087,7 @@ chunks."
     (let ((frame (window-frame win))
 	  (group (window-group win)))
       (switch-to-group group)
-      (setf (frame-window frame) win)
-      (focus-frame group frame))))
+      (frame-raise-window group frame win))))
 
 (define-stump-event-handler :enter-notify (window mode)
   (when (and window (eq mode :normal) (eq *focus-policy* :sloppy))
