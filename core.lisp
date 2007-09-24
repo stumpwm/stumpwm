@@ -198,10 +198,10 @@ at 0. Return a netwm compliant group id."
 	(multiple-value-bind (placed-group frame raise) (get-window-placement (window-screen window) window)
 	  (declare (ignore placed-group))
 	  (when frame
-	    (setf (window-frame window) frame))
-	  (when raise
-	    (setf (tile-group-current-frame to-group) frame
-		  (frame-window frame) nil)))
+	    (setf (window-frame window) frame)
+	    (when raise
+	      (setf (tile-group-current-frame to-group) frame
+		    (frame-window frame) nil))))
 	(push window (group-windows to-group))
 	(sync-frame-windows to-group (tile-group-current-frame to-group))
 	;; maybe pick a new window for the old frame
