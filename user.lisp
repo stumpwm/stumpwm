@@ -1336,6 +1336,7 @@ aborted."
 	  (define-key m (kbd "C-SPC") "gnext")
 	  (define-key m (kbd "p") "gprev")
 	  (define-key m (kbd "C-p") "gprev")
+	  (define-key m (kbd "o") "gother")
 	  (define-key m (kbd "'") "gselect")
 	  (define-key m (kbd "m") "gmove")
 	  (define-key m (kbd "M") "gmove-marked")
@@ -1374,6 +1375,12 @@ aborted."
 (define-stumpwm-command "gprev" ()
   (group-forward (current-group)
 		 (reverse (sort-groups (current-screen)))))
+
+(define-stumpwm-command "gother" ()
+ "Go back to the last group."
+ (let ((groups (screen-groups (current-screen))))
+   (when (> (length groups) 1)
+     (switch-to-group (second groups)))))
 
 (defun echo-groups (screen fmt &optional verbose (wfmt *window-format*))
   "Print a list of the windows to the screen."
