@@ -115,9 +115,6 @@ run before the error is dealt with according to
 (defvar *normal-border-width* 1
   "The default border width for normal windows.")
 
-(defvar *frame-outline-width* 2
-  "The default width of frame outlines.")
-
 (defvar *text-color* "white"
   "The color of message text.")
 
@@ -200,6 +197,7 @@ Include only those we are ready to support.")
 (defparameter +default-focus-color+ "White")
 (defparameter +default-unfocus-color+ "Black")
 (defparameter +default-font-name+ "9x15bold")
+(defparameter +default-frame-outline-width+ 2)
 
 
 ;; Don't set these variables directly, use set-<var name> instead
@@ -289,6 +287,7 @@ name. :title, :resource-name, :class are valid values.")
   focus-color
   unfocus-color
   msg-border-width
+  frame-outline-width
   font
   ;; A list of all mapped windows. These are the raw
   ;; xlib:window's. window structures are stored in groups.
@@ -299,9 +298,10 @@ name. :title, :resource-name, :class are valid values.")
   ;; exist, in which case they go into the current group.
   withdrawn-windows
   input-window
-  frame-window
   ;; The window that gets focus when no window has focus
   focus-window
+  ;;
+  frame-outline-gc
   ;; color contexts
   message-cc
   mode-line-cc
@@ -826,3 +826,6 @@ add rules"
 
 (defvar *xwin-to-window* (make-hash-table)
   "Hash table for looking up windows quickly.")
+
+(defvar *resize-map* nil
+  "The keymap used for resizing a window")

@@ -232,7 +232,6 @@ frame."
   ;; The window with focus is the "current" window, so find it in the
   ;; list and give that window focus
   (let* ((w (group-current-window group))
-	 (old-frame (tile-group-current-frame group))
 	 (wins (remove-if-not predicate (cdr (member w window-list))))
 	 (nw (if (null wins)
 		 ;; If the last window in the list is focused, then
@@ -245,11 +244,8 @@ frame."
     (if (and nw
              (not (eq w nw)))
 	(if pull-p
-	    (pull-window nw)
-	    (progn
-	      (frame-raise-window group (window-frame nw) nw)
-	      (unless (eq (window-frame nw) old-frame)
-		(show-frame-indicator group))))
+	  (pull-window nw)
+	  (frame-raise-window group (window-frame nw) nw))
 	(message "No other window."))))
 
 (defun delete-current-window ()
@@ -504,11 +500,7 @@ the 'date' command options except the following ones: %g, %G, %j, %N,
 	(echo-string (group-screen group) "No other window."))))
 
 (define-stumpwm-command "other" ()
-  (let* ((group (current-group))
-	 (old-frame (tile-group-current-frame group)))
-    (other-window (current-group))
-    (unless (eq old-frame (tile-group-current-frame group))
-      (show-frame-indicator group))))
+ (other-window (current-group)))
 
 (defun programs-in-path (base &optional full-path (path (split-string (getenv "PATH") ":")))
   "Return a list of programs in the path that start with BASE. if
@@ -644,8 +636,7 @@ using SDL."
   ;; make sure the last frame still exists in the frame tree
   (when (and (tile-group-last-frame group)
 	     (find (tile-group-last-frame group) (group-frames group)))
-    (focus-frame group (tile-group-last-frame group))
-    (show-frame-indicator group)))
+    (focus-frame group (tile-group-last-frame group))))
 
 (defun focus-frame-after (group frames)
   "Given a list of frames focus the next one in the list after
@@ -657,12 +648,10 @@ the current frame."
 		     (car rest)))))
 
 (defun focus-next-frame (group)
-  (focus-frame-after group (group-frames group))
-  (show-frame-indicator group))
+  (focus-frame-after group (group-frames group)))
 
 (defun focus-prev-frame (group)
-  (focus-frame-after group (nreverse (group-frames group)))
-  (show-frame-indicator group))
+  (focus-frame-after group (nreverse (group-frames group))))
 
 (define-stumpwm-command "fnext" ()
   (focus-next-frame (current-group)))
@@ -691,8 +680,7 @@ select one. Returns the selected frame or nil if aborted."
 
 (define-stumpwm-command "fselect" ((f :frame t))
   (let ((group (current-group)))
-    (focus-frame group f)
-    (show-frame-indicator group)))
+    (focus-frame group f)))
 
 (define-stumpwm-command "resize" ((w :number "+ Width: ")
 				  (h :number "+ Height: "))
@@ -1174,8 +1162,7 @@ aborted."
     (when new-frame
       (focus-frame group new-frame)
       (when (and win-p window)
-	(pull-window window)))
-    (show-frame-indicator group)))
+	(pull-window window)))))
 
 (define-stumpwm-command "move-focus" ((dir :string "Direction: "))
   (move-focus-and-or-window dir))
@@ -1240,9 +1227,6 @@ aborted."
 ;;; A resize minor mode. Something a bit better should probably be
 ;;; written. But it's an interesting way of doing it.
 
-(defvar *resize-map* nil
-  "The keymap used for resizing a window")
-
 (defvar *resize-backup* nil)
 
 (defvar *resize-increment* 10
@@ -1290,9 +1274,9 @@ aborted."
 	(when *resize-hides-windows*
 	  (dolist (f (head-frames (current-group) (current-head)))
 	    (clear-frame f (current-group))))
-	(draw-frame-outlines (current-group) (current-head))
 	(message "Resize Frame")
-	(push-top-map *resize-map*))
+	(push-top-map *resize-map*)
+	(draw-frame-outlines (current-group) (current-head)))
       ;;   (setf *resize-backup* (copy-frame-tree (current-group)))
       )))
 
@@ -1548,15 +1532,15 @@ commands or don't know lisp very well."
 
 (define-stumpwm-command "snext" ()
   (switch-to-screen (next-screen))
-  (show-frame-indicator (current-group) t))
+  (show-frame-indicator (current-group)))
 
 (define-stumpwm-command "sprev" ()
   (switch-to-screen (next-screen (reverse (sort-screens))))
-  (show-frame-indicator (current-group) t))
+  (show-frame-indicator (current-group)))
 
 (define-stumpwm-command "sother" ()
   (switch-to-screen (cadr *screen-list*))
-  (show-frame-indicator (current-group) t))
+  (show-frame-indicator (current-group)))
 
 (defun window-send-string (window string)
   "Send the string of characters to the window as if they'd been typed."

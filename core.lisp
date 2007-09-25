@@ -176,7 +176,6 @@ at 0. Return a netwm compliant group id."
       ;; restore the focus
       (setf (screen-focus screen) nil)
       (focus-frame new-group (tile-group-current-frame new-group))
-      (show-frame-indicator new-group)
       (xlib:change-property (screen-root screen) :_NET_CURRENT_DESKTOP
 			    (list (netwm-group-id new-group))
                             :cardinal 32)
@@ -1341,6 +1340,14 @@ maximized, and given focus."
   (update-border-all-screens)
   t)
 
+(defun set-frame-outline-width (width)
+  (check-type width (integer 0))
+  (dolist (i *screen-list*)
+    (setf (screen-frame-outline-width i) (if (oddp width) (1+ width) width)
+	  (xlib:gcontext-line-width (screen-frame-outline-gc i)) (screen-frame-outline-width i)))
+  (update-border-all-screens)
+  t)
+
 (defun set-font (font)
   (when (font-exists-p font)
     (dolist (i *screen-list*)
@@ -1396,7 +1403,8 @@ function expects to be wrapped in a with-state for win."
 			   (xlib:drawable-width win) (+ width (* *message-window-padding* 2))
 			   (xlib:window-priority win) :above)
 		     (setup-win-gravity screen win *message-window-gravity*))
-    (xlib:map-window (screen-message-window screen))
+    (show-frame-indicator (screen-current-group screen))
+    (xlib:map-window win)
     ;; Clear the window
     (xlib:clear-area win)
     ;; Have to flush this or the window might get cleared
@@ -1452,8 +1460,8 @@ function expects to be wrapped in a with-state for win."
       (run-hook-with-args *focus-frame-hook* f last))
     (if w
       (focus-window w)
-      (no-focus group (frame-window last)))))
-
+      (no-focus group (frame-window last))))
+  (show-frame-indicator group))
 
 (defun frame-windows (group f)
   (remove-if-not (lambda (w) (eq (window-frame w) f))
@@ -1917,43 +1925,35 @@ depending on the tree's split direction."
           (unhide-window (frame-window f2)))
         t))))
 
+(defun draw-frame-outline (group f tl br)
+  "Draw an outline around FRAME."
+  (let* ((screen (group-screen group))
+	 (win (if (frame-window f) (window-xwin (frame-window f)) (screen-root screen)))
+	 (width (screen-frame-outline-width screen))
+	 (gc (screen-frame-outline-gc screen))
+	 (halfwidth (/ width 2)))
+    (let ((x (frame-x f))
+	  (y (frame-display-y group f))
+	  (w (frame-width f))
+	  (h (frame-display-height group f)))
+      (when tl
+	(xlib:draw-line win gc
+			x (+ halfwidth y) w 0 t)
+	(xlib:draw-line win gc
+			(+ halfwidth x) y 0 h t))
+      (when br
+	(xlib:draw-line win gc
+			(+ x (- w halfwidth)) y 0 h t)
+	(xlib:draw-line win gc
+			x (+ y (- h halfwidth)) w 0 t)))))
+
 (defun draw-frame-outlines (group &optional head)
   "Draw an outline around all frames in GROUP."
-  (let* ((screen (group-screen group))
-	 (width (if (oddp *frame-outline-width*) (1+ *frame-outline-width*) *frame-outline-width*))
-	 (gc (xlib:create-gcontext :drawable (screen-root screen)
-				   :font (screen-font screen)
-				   :foreground (screen-fg-color screen)
-				   :background (screen-bg-color screen)
-				   :line-style :double-dash
-				   :line-width width))
-	 (halfwidth (/ width 2)))
-    ;; Outline frames (left, top)
-    (mapc (lambda (f)
-	    (let ((x (frame-x f))
-		  (y (frame-display-y group f))
-		  (w (frame-width f))
-		  (h (frame-display-height group f)))
-	      (xlib:draw-line (screen-root screen) gc
-			      x (+ halfwidth y) w 0 t)
-	      (xlib:draw-line (screen-root screen) gc
-			      (+ halfwidth x) y 0 h t)))
-	  (if head
-	    (head-frames group head)
-	    (group-frames group)))
-    ;; Outline heads (bottom, right)
-    (mapc (lambda (f) 
-	    (let ((x (frame-x f))
-		  (y (frame-display-y group f))
-		  (w (frame-width f))
-		  (h (frame-display-height group f)))
-	      (xlib:draw-line (screen-root screen) gc
-			      (+ x (- w halfwidth)) y 0 h t)
-	      (xlib:draw-line (screen-root screen) gc
-			      x (+ y (- h halfwidth)) w 0 t)))
-	  (if head
-	    (list head)
-	    (group-heads group)))))
+  (clear-frame-outlines group)
+  (dolist (h (if head (list head) (group-heads group)))
+    (draw-frame-outline group h nil t)
+    (tree-iterate (tile-group-frame-head group h) (lambda (f)
+						       (draw-frame-outline group f t nil)))))
 
 (defun clear-frame-outlines (group)
   "Clear the outlines drawn with DRAW-FRAME-OUTLINES."
@@ -2086,11 +2086,12 @@ windows used to draw the numbers in. The caller must destroy them."
   (let ((fg (screen-fg-color screen))
 	(bg (screen-bg-color screen)))
     (setf (xlib:gcontext-foreground (screen-message-gc screen)) fg
-	  (xlib:gcontext-background (screen-message-gc screen)) bg 
+	  (xlib:gcontext-background (screen-message-gc screen)) bg
+	  (xlib:gcontext-foreground (screen-frame-outline-gc screen)) fg
+	  (xlib:gcontext-background (screen-frame-outline-gc screen)) bg
 	  (ccontext-default-fg (screen-message-cc screen)) fg
 	  (ccontext-default-bg (screen-message-cc screen)) bg))
   (dolist (i (list (screen-message-window screen)
-		   (screen-frame-window screen)
 		   (screen-input-window screen)))
     (setf (xlib:window-border i) (screen-border-color screen)
 	  (xlib:window-background i) (screen-bg-color screen)))
@@ -2121,29 +2122,19 @@ windows used to draw the numbers in. The caller must destroy them."
   "Return t if win is a window used by stumpwm"
   (or (xlib:window-equal (screen-message-window screen) win)
       (xlib:window-equal (screen-input-window screen) win)
-      (xlib:window-equal (screen-frame-window screen) win)
       (xlib:window-equal (screen-focus-window screen) win)))
 
 (defun unmap-message-window (screen)
   "Unmap the screen's message window, if it is mapped."
   (unless (eq (xlib:window-map-state (screen-message-window screen)) :unmapped)
-    (xlib:unmap-window (screen-message-window screen))))
+    (xlib:unmap-window (screen-message-window screen)))
+  (show-frame-indicator (current-group)))
 
 (defun unmap-all-message-windows ()
   (mapc #'unmap-message-window *screen-list*)
   (when (timer-p *message-window-timer*)
     (cancel-timer *message-window-timer*)
     (setf *message-window-timer* nil)))
-
-(defun unmap-frame-indicator (screen)
-  (unless (eq (xlib:window-map-state (screen-frame-window screen)) :unmapped)
-    (xlib:unmap-window (screen-frame-window screen))))
-
-(defun unmap-all-frame-indicators ()
-  (mapc #'unmap-frame-indicator *screen-list*)
-  (when (timer-p *frame-indicator-timer*)
-    (cancel-timer *frame-indicator-timer*)
-    (setf *frame-indicator-timer* nil)))
 
 (defun reset-message-window-timer ()
   "Set the message window timer to timeout in *timeout-wait* seconds."
@@ -2152,36 +2143,14 @@ windows used to draw the numbers in. The caller must destroy them."
   (setf *message-window-timer* (run-with-timer *timeout-wait* nil
                                                'unmap-all-message-windows)))
 
-(defun reset-frame-indicator-timer ()
-  "Set the frame indicator timer to timeout in
-*timeout-frame-indicator-wait* seconds."
-  (when (timer-p *frame-indicator-timer*)
-    (cancel-timer *frame-indicator-timer*))
-  (setf *frame-indicator-timer* (run-with-timer *timeout-frame-indicator-wait* nil
-                                                'unmap-all-frame-indicators)))
-
-(defun show-frame-indicator (group &optional force-draw)
-  (let* ((screen (group-screen group))
-	 (w (screen-frame-window screen))
-	 (s "Current Frame")
-	 (height (font-height (screen-font screen)))
-	 (width (xlib:text-width (screen-font screen) s))
-	 (cf (tile-group-current-frame group)))
-    ;; first thing, make sure its not being displayed somewhere else
-    (unmap-all-frame-indicators)
-    ;; don't bother drawing it if there's only one frame.
-    (when (or force-draw
-	      (consp (tile-group-frame-tree group)))
-      (xlib:map-window w)
-      (xlib:with-state (w)
-        (setf (xlib:drawable-x w) (+ (frame-x cf) (truncate (- (frame-width cf) width) 2))
-              (xlib:drawable-y w) (+ (frame-display-y group cf) (truncate (- (frame-display-height group cf) height) 2))
-              (xlib:window-priority w) :above))
-      (echo-in-window w (screen-font screen)
-		      (screen-fg-color screen)
-		      (screen-bg-color screen)
-		      s)
-      (reset-frame-indicator-timer))))
+(defun show-frame-indicator (group)
+  ;; *resize-hides-windows* uses the frame outlines for display,
+  ;; so try not to interfere.
+  (unless (eq *top-map* *resize-map*)
+    (clear-frame-outlines group)
+    (let ((frame (tile-group-current-frame group)))
+      (unless (frame-window frame)
+	(draw-frame-outline group frame t t)))))
 
 (defun echo-in-window (win font fg bg string)
   (let* ((height (font-height font))
@@ -2317,14 +2286,6 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 					     :event-mask '(:key-press)))
 	   (focus-window (xlib:create-window :parent (xlib:screen-root screen-number)
 					     :x 0 :y 0 :width 1 :height 1))
-	   (frame-window (xlib:create-window :parent (xlib:screen-root screen-number)
-					     :x 0 :y 0 :width 1 :height 1
-					     :background fg
-					     :border border
-					     :border-width 1
-					     :colormap (xlib:screen-default-colormap
-							 screen-number)
-					     :event-mask '()))
 	   (message-window (xlib:create-window :parent (xlib:screen-root screen-number)
 					       :x 0 :y 0 :width 1 :height 1
 					       :background bg
@@ -2356,15 +2317,21 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 	    (screen-focus-color screen) focus
 	    (screen-unfocus-color screen) unfocus
 	    (screen-msg-border-width screen) 1
+	    (screen-frame-outline-width screen) +default-frame-outline-width+
 	    (screen-input-window screen) input-window
-	    (screen-frame-window screen) frame-window
 	    (screen-focus-window screen) focus-window
 	    (screen-message-cc screen) (make-ccontext :win message-window
 						      :gc (xlib:create-gcontext
 							    :drawable message-window
 							    :font font
 							    :foreground fg
-							    :background bg)))
+							    :background bg))
+	    (screen-frame-outline-gc screen) (xlib:create-gcontext :drawable (screen-root screen)
+							    :font font
+							    :foreground fg
+							    :background fg
+							    :line-style :double-dash
+							    :line-width +default-frame-outline-width+))
       (setf (screen-heads screen) (make-heads screen)
 	    (tile-group-frame-tree group) (heads-frames (screen-heads screen))
 	    (tile-group-current-frame group) (first (tile-group-frame-tree group)))
