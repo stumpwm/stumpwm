@@ -5,6 +5,7 @@
 	(geometry-hints): remove useless (or ..)
 	(geometry-hints): use the window's height/width and min hint to
 	calculate default height/width.
+	(make-screen-heads): remove duplicate heads
 
 2007-09-18  Shawn  <sabetts@hardcopy.local>
 
