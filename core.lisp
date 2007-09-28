@@ -2209,6 +2209,7 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 (defun head-y ()
   (frame-y (current-head)))
 
+<<<<<<< HEAD:core.lisp
 (defun parse-xinerama-head (line)
   (ppcre:register-groups-bind (('parse-integer number width height x y))
       ("^ +head #([0-9]+): ([0-9]+)x([0-9]+) @ ([0-9]+),([0-9]+)" line :sharedp t)
@@ -2224,10 +2225,17 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
   "or use xdpyinfo to query the xinerama extension, if it's enabled."
   (or (and (xlib:query-extension *display* "XINERAMA")
            (with-current-screen screen
-             (loop for i in (split-string (run-shell-command "xdpyinfo -ext XINERAMA" t))
-                   for head = (parse-xinerama-head i)
-                   when head
-                   collect head)))
+	     ;; Ignore 'clone' heads.
+	     (delete-duplicates
+	      (loop for i in (split-string (run-shell-command "xdpyinfo -ext XINERAMA" t))
+		 for head = (parse-xinerama-head i)
+		 when head
+		 collect head)
+	      :test (lambda (h1 h2)
+		      (and (= (frame-height h1) (frame-height h2))
+			   (= (frame-width h1) (frame-width h2))
+			   (= (frame-x h1) (frame-x h2))
+			   (= (frame-y h1) (frame-y h2)))))))
       (list (make-frame :number 0
                         :x 0 :y 0
                         :width (xlib:drawable-width root)
