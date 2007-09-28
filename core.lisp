@@ -471,23 +471,33 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 (defun window-hidden-p (window)
   (eql (window-state window) +iconic-state+))
 
+(defun add-wm-state (xwin state)
+  (xlib:change-property xwin :_NET_WM_STATE
+;	 (list (xlib:intern-atom *display* state))
+	 (list (xlib:find-atom *display* state))
+	 :atom 32
+	 :mode :append))
+
+(defun remove-wm-state (xwin state)
+  (xlib:change-property xwin :_NET_WM_STATE
+	(delete (xlib:find-atom *display* state) (xlib:get-property xwin :_NET_WM_STATE))
+	 :atom 32))
+
+(defun find-wm-state (xwin &rest states)
+  (dolist (state states)
+    (find (xlib:find-atom *display* state) (xlib:get-property xwin :_NET_WM_STATE))))
+
 (defun xwin-unhide (xwin parent)
   (xlib:map-window parent)
   (xlib:map-subwindows parent)
-  (setf	(xwin-state xwin) +normal-state+)
-  ;; Mark window as unhidden
-  (xlib:change-property xwin :_NET_WM_STATE
-			'()
-			:atom 32))
-  
+  (setf	(xwin-state xwin) +normal-state+))
+
 (defun unhide-window (window)
   (when (window-in-current-group-p window)
     (xwin-unhide (window-xwin window) (window-parent window)))
   (setf (window-state window) +normal-state+)
-  ;; Mark as non-hidden
-  (xlib:change-property (window-xwin window) :_NET_WM_STATE
-			'()
-			:atom 32))
+  ;; Mark window as unhiden
+  (remove-wm-state (window-xwin window) :_NET_WM_STATE_HIDDEN))
 
 ;; Despite the naming convention, this function takes a window struct,
 ;; not an xlib:window.
@@ -504,9 +514,7 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
   (unless (eql (window-state window) +iconic-state+)
     (setf (window-state window) +iconic-state+)
     ;; Mark window as hidden
-    (xlib:change-property (window-xwin window) :_NET_WM_STATE
-			  (list (xlib:intern-atom *display* :_NET_WM_STATE_HIDDEN))
-			  :atom 32)
+    (add-wm-state (window-xwin window) :_NET_WM_STATE_HIDDEN)
     (when (window-in-current-group-p window)
       (xwin-hide window))))
 
@@ -614,6 +622,16 @@ than the root window's width and height."
     ;;    (dformat 4 "hints: ~s~%" hints)
     ;; determine what the width and height should be
     (cond
+     ;; handle specially fullscreen windows.
+     ((window-fullscreen win)
+      (let ((head (frame-head (window-group win) f)))
+       (setf x (frame-x head)
+	     y (frame-y head)
+	     width (frame-width head)
+	     height (frame-height head)
+	     (xlib:window-priority (window-parent win)) :above
+	     (xlib:drawable-border-width (window-parent win)) 0))
+      (return-from geometry-hints (values x y 0 0 width height t)))
      ;; Adjust the defaults if the window is a transient_for window.
      ((find (window-type win) '(:transient :dialog))
       (setf center t
@@ -860,7 +878,7 @@ than the root window's width and height."
                      :test '=))))
     (let ((match
 	   (dolist (rule *window-placement-rules*)
-	     (when (window-matches-rule? window rule) (return rule)))))
+	     (when (window-matches-rule-p window rule) (return rule)))))
       (if match
 	  (destructuring-bind (group-name frame raise lock &rest props) match
 	    (declare (ignore lock props))
@@ -967,6 +985,7 @@ than the root window's width and height."
   "Add the window to the screen's mapped window list and process it as
 needed."
   (let ((window (add-window screen xwin)))
+    (register-window window)
     (setf (xlib:window-event-mask (window-xwin window)) *window-events*)
     ;; windows always have border width 0. Their parents provide the
     ;; border.
@@ -1227,8 +1246,8 @@ function expects to be wrapped in a with-state for win."
   (xlib:with-state ((screen-root screen))
     (let ((w (xlib:drawable-width win))
           (h (xlib:drawable-height win))
-          (screen-width (head-width))
-          (screen-height (head-height)))
+          (screen-width (head-width (current-head)))
+          (screen-height (head-height (current-head))))
       (let ((x (case gravity
                  ((:top-left :bottom-left) 0)
                  (:center (truncate (- screen-width w (* (xlib:drawable-border-width win) 2)) 2))
@@ -1237,8 +1256,8 @@ function expects to be wrapped in a with-state for win."
                  ((:bottom-right :bottom-left) (- screen-height h (* (xlib:drawable-border-width win) 2)))
                  (:center (truncate (- screen-height h (* (xlib:drawable-border-width win) 2)) 2))
                  (t 0))))
-		       (setf (xlib:drawable-y win) (max (head-y) (+ (head-y) y))
-			     (xlib:drawable-x win) (max (head-x) (+ (head-x) x)))))))
+	(setf (xlib:drawable-y win) (max (head-y (current-head)) (+ (head-y (current-head)) y))
+	      (xlib:drawable-x win) (max (head-x (current-head)) (+ (head-x (current-head)) x)))))))
 
 (defun setup-message-window (screen l)
   (let ((height (* (length l)
@@ -1302,15 +1321,13 @@ T (default) then also focus the frame."
   (remove-if-not (lambda (w) (eq (window-frame w) f))
 		 (sort-windows group)))
 
-(defun copy-frame-tree (group)
+(defun copy-frame-tree (tree)
   "Return a copy of the frame tree."
-  (labels ((copy (tree)
-	     (cond ((null tree) tree)
-		   ((typep tree 'frame)
-		    (copy-structure tree))
-		   (t
-		    (mapcar #'copy tree)))))
-    (copy (tile-group-frame-tree group))))
+     (cond ((null tree) tree)
+	   ((typep tree 'frame)
+	    (copy-structure tree))
+	   (t
+	    (mapcar #'copy-frame-tree tree))))
 
 (defun group-frames (group)
   (tree-accum-fn (tile-group-frame-tree group) 'nconc 'list))
@@ -1816,6 +1833,7 @@ windows used to draw the numbers in. The caller must destroy them."
   (netwm-update-client-list screen))
 
 (defun screen-remove-mapped-window (screen xwin)
+  (unregister-window xwin)
   (setf (screen-mapped-windows screen)
         (remove xwin (screen-mapped-windows screen)))
   (netwm-update-client-list screen))
@@ -1868,14 +1886,14 @@ windows used to draw the numbers in. The caller must destroy them."
 (defun current-window ()
   (screen-current-window (current-screen)))
 
-;;; TODO: Will windows exist in multiple groups, one day?
+(defun register-window (window)
+  (setf (gethash (xlib:window-id (window-xwin window)) *xwin-to-window*) window))
+
+(defun unregister-window (xwin)
+  (remhash (xlib:window-id xwin) *xwin-to-window*))
+
 (defun find-window (xwin)
-  (dformat 3 "find-window!~%")
-  (dolist (i *screen-list*)
-    (dolist (g (screen-groups i))
-      (let ((w (find xwin (group-windows g) :key 'window-xwin :test 'xlib:window-equal)))
-       (when w
-         (return-from find-window w))))))
+  (gethash (xlib:window-id xwin) *xwin-to-window*))
 
 (defun find-window-by-parent (xwin &optional (windows (all-windows)))
   (dformat 3 "find-window-by-parent!~%")
@@ -2197,27 +2215,14 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 
 ;;; Head functions
 
-(defun head-width ()
-  (frame-width (current-head)))
-
-(defun head-height ()
-  (frame-height (current-head)))
-
-(defun head-x ()
-  (frame-x (current-head)))
-
-(defun head-y ()
-  (frame-y (current-head)))
-
-<<<<<<< HEAD:core.lisp
 (defun parse-xinerama-head (line)
   (ppcre:register-groups-bind (('parse-integer number width height x y))
       ("^ +head #([0-9]+): ([0-9]+)x([0-9]+) @ ([0-9]+),([0-9]+)" line :sharedp t)
     (handler-case
-        (make-frame :number number
-                    :x x :y y
-                    :width width
-                    :height height)
+        (make-head :number number
+		   :x x :y y
+		   :width width
+		   :height height)
       (parse-error ()
         nil))))
 
@@ -2236,15 +2241,15 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 			   (= (frame-width h1) (frame-width h2))
 			   (= (frame-x h1) (frame-x h2))
 			   (= (frame-y h1) (frame-y h2)))))))
-      (list (make-frame :number 0
-                        :x 0 :y 0
-                        :width (xlib:drawable-width root)
-                        :height (xlib:drawable-height root)
-                        :window nil))))
+      (list (make-head :number 0
+		       :x 0 :y 0
+		       :width (xlib:drawable-width root)
+		       :height (xlib:drawable-height root)
+		       :window nil))))
 
 (defun copy-heads (screen)
   "Return a copy of screen's heads."
-  (mapcar #'copy-frame (screen-heads screen)))
+  (mapcar #'copy-structure (screen-heads screen)))
 
 ;; Determining a frame's head based on position probably won't
 ;; work with overlapping heads. Would it be better to walk
@@ -2615,7 +2620,15 @@ chunks."
      (setf (window-role window) (xwin-role (window-xwin window))))
     (:wm_transient_for
      (setf (window-type window) (xwin-type (window-xwin window)))
-     (maximize-window window))))
+     (maximize-window window))
+    (:_NET_WM_STATE
+      ;; Client is broken and sets this property itself instead of sending a
+      ;; client request to the root window. Try to make do.
+      (dolist (p (xlib:get-property (window-xwin window) :_NET_WM_STATE))
+	(case (xlib:atom-name *display* p)
+	  (:_NET_WM_STATE_FULLSCREEN
+	    ;; FIXME: what about when properties are REMOVED?
+	    (update-fullscreen window 1)))))))
 
 (define-stump-event-handler :property-notify (window atom state)
   (dformat 2 "property notify ~s ~s ~s~%" window atom state)
@@ -2664,43 +2677,80 @@ chunks."
 	(incf (window-unmap-ignores win)))
       (xlib:reparent-window (window-xwin win) (window-parent win) 0 0))))
 
+
+;;; Fullscreen functions
+
+(defun activate-fullscreen (window)
+  (dformat 2 "client requests to go fullscreen~%")
+  (add-wm-state (window-xwin window) :_NET_WM_STATE_FULLSCREEN)
+  (setf (window-fullscreen window) t)
+  (maximize-window window)
+  (focus-window window))
+
+(defun deactivate-fullscreen (window)
+  (setf (window-fullscreen window) nil)
+  (dformat 2 "client requests to leave fullscreen~%")
+  (remove-wm-state (window-xwin window) :_NET_WM_STATE_FULLSCREEN)
+  (setf (xlib:drawable-border-width (window-parent window)) (default-border-width-for-type (window-type window)))
+  (maximize-window window)
+  (update-window-border window))
+
+(defun update-fullscreen (window action)
+  (let ((fullscreen-p (window-fullscreen window)))
+    (case action
+      (0 ; _NET_WM_STATE_REMOVE
+       (when fullscreen-p
+	 (deactivate-fullscreen window)))
+      (1 ; _NET_WM_STATE_ADD
+       (unless fullscreen-p
+	 (activate-fullscreen window)))
+      (2 ; _NET_WM_STATE_TOGGLE
+       (if fullscreen-p
+	 (deactivate-fullscreen window)
+	 (activate-fullscreen window))))))
+
+
 (define-stump-event-handler :client-message (window type #|format|# data)
   (dformat 2 "client message: ~s ~s~%" type data)
   (case type
-    (:_NET_CURRENT_DESKTOP		;switch desktop
-     (let* ((screen (find-screen window))
-            (n (elt data 0))
-            (group (and screen
-                        (< n (length (screen-groups screen)))
-                        (elt (sort-groups screen) n))))
-       (when group
-         (switch-to-group group))))
-    (:_NET_WM_DESKTOP			;move window to desktop
-     (let* ((our-window (find-window window))
-	    (screen (when our-window
-		      (window-screen our-window)))
-            (n (elt data 0))
-            (group (and screen
-                        (< n (length (screen-groups screen)))
-                        (elt (sort-groups screen) n))))
-       (when (and our-window group)
-	 (move-window-to-group our-window group))))
-    (:_NET_ACTIVE_WINDOW
-      (let ((our-window (find-window window)))
-	(when our-window
-	  (focus-all our-window))))
-    (:_NET_CLOSE_WINDOW
-      (let ((our-window (find-window window)))
-	(when our-window
-	  (delete-window our-window))))
-;;    (:_NET_WM_STATE
-;;      (let ((our-window (find-window window))
-;;	   (atom (elt data 0)))
-;;	(when our-window
-;;	  ;; FIXME: actually do something here (NET_WM_STATE_FULLSCREEN)!
-;;	  )))
-    (t
-     (dformat 2 "ignored message~%"))))
+	(:_NET_CURRENT_DESKTOP		;switch desktop
+	 (let* ((screen (find-screen window))
+		(n (elt data 0))
+		(group (and screen
+			    (< n (length (screen-groups screen)))
+			    (elt (sort-groups screen) n))))
+	   (when group
+	     (switch-to-group group))))
+	(:_NET_WM_DESKTOP		;move window to desktop
+	 (let* ((our-window (find-window window))
+		(screen (when our-window
+			  (window-screen our-window)))
+		(n (elt data 0))
+		(group (and screen
+			    (< n (length (screen-groups screen)))
+			    (elt (sort-groups screen) n))))
+	   (when (and our-window group)
+	     (move-window-to-group our-window group))))
+	(:_NET_ACTIVE_WINDOW
+	 (let ((our-window (find-window window)))
+	   (when our-window
+	     (focus-all our-window))))
+	(:_NET_CLOSE_WINDOW
+	 (let ((our-window (find-window window)))
+	   (when our-window
+	     (delete-window our-window))))
+	(:_NET_WM_STATE
+	 (let ((our-window (find-window window)))
+	   (when our-window
+	     (destructuring-bind (action p1 p2 source &rest foo) data
+	       (declare (ignore source foo))
+	       (dolist (p (list p1 p2))
+		 (unless (= p 0)
+			 (case (xlib:atom-name *display* p)
+			   (:_NET_WM_STATE_FULLSCREEN
+			     (update-fullscreen our-window action)))))))))
+	(t
+	 (dformat 2 "ignored message~%"))))
 
 (define-stump-event-handler :focus-out (window mode kind)
   (dformat 5 "~@{~s ~}~%" window mode kind))
