@@ -2144,13 +2144,15 @@ windows used to draw the numbers in. The caller must destroy them."
                                                'unmap-all-message-windows)))
 
 (defun show-frame-indicator (group)
-  ;; *resize-hides-windows* uses the frame outlines for display,
-  ;; so try not to interfere.
-  (unless (eq *top-map* *resize-map*)
-    (clear-frame-outlines group)
-    (let ((frame (tile-group-current-frame group)))
-      (unless (frame-window frame)
-	(draw-frame-outline group frame t t)))))
+  ;; Don't draw if this isn't a current group!
+  (when (find group (mapcar 'screen-current-group *screen-list*))
+    ;; *resize-hides-windows* uses the frame outlines for display,
+    ;; so try not to interfere.
+    (unless (eq *top-map* *resize-map*)
+      (clear-frame-outlines group)
+      (let ((frame (tile-group-current-frame group)))
+	(unless (frame-window frame)
+	  (draw-frame-outline group frame t t))))))
 
 (defun echo-in-window (win font fg bg string)
   (let* ((height (font-height font))
