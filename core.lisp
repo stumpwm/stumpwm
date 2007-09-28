@@ -196,13 +196,13 @@ at 0. Return a netwm compliant group id."
 	    (window-group window) to-group
 	    (window-number window) (find-free-window-number to-group))
       ;; try to put the window in the appropriate frame for the group
-      (let ((placement (get-window-placement (window-screen window) window)))
-	(when placement
-	  (multiple-value-bind (to-group frame raise) placement
-	    (when frame
-	      (setf (window-frame window) frame))
-	    (when raise
-	      (setf (tile-group-current-frame to-group) frame)))))
+      (multiple-value-bind (placed-group frame raise) (get-window-placement (window-screen window) window)
+	(declare (ignore placed-group))
+	(when frame
+	  (setf (window-frame window) frame))
+	(when raise
+	  (setf (tile-group-current-frame to-group) frame
+		(frame-window frame) nil)))
       (push window (group-windows to-group))
       (sync-frame-windows to-group (tile-group-current-frame to-group))
       ;; maybe pick a new window for the old frame
@@ -605,7 +605,7 @@ than the root window's width and height."
 	 (hints-max-width (and hints (xlib:wm-size-hints-max-width hints)))
 	 (hints-max-height (and hints (xlib:wm-size-hints-max-height hints)))
 	 (hints-width (and hints (xlib:wm-size-hints-base-width hints)))
-	 (hints-height (and hints (or (xlib:wm-size-hints-base-height hints))))
+	 (hints-height (and hints (xlib:wm-size-hints-base-height hints)))
 	 (hints-inc-x (and hints (xlib:wm-size-hints-width-inc hints)))
 	 (hints-inc-y (and hints (xlib:wm-size-hints-height-inc hints)))
 	 (hints-min-aspect (and hints (xlib:wm-size-hints-min-aspect hints)))
@@ -614,52 +614,56 @@ than the root window's width and height."
     ;;    (dformat 4 "hints: ~s~%" hints)
     ;; determine what the width and height should be
     (cond
-      ;; Adjust the defaults if the window is a transient_for window.
-      ((find (window-type win) '(:transient :dialog))
-       (setf center t
-	     (window-width win) (or hints-min-width (window-width win))
-	     (window-height win) (or hints-min-height (window-height win))
-	     width (min (window-width win) width)
-	     height (min (window-height win) height)))
-      ;; aspect hints are handled similar to max size hints
-      ((and hints-min-aspect hints-max-aspect)
-       (let ((ratio (/ width height)))
-	 (cond ((< ratio hints-min-aspect)
-		(setf height (ceiling width hints-min-aspect)))
-	       ((> ratio hints-max-aspect)
-		(setf width  (ceiling (* height hints-max-aspect)))))
-	 (setf center t)))
-      ;; Update our defaults if the window has the maxsize hints
-      ((or hints-max-width hints-max-height)
-       (when (and hints-max-width
-		  (< hints-max-width width))
-	 (setf width hints-max-width))
-       (when (and hints-max-height
-		  (< hints-max-height height))
-	 (setf height hints-max-height))
-       (setf center t))
-      (t
-       ;; if they have inc hints then start with the size and adjust
-       ;; based on those increments until the window fits in the frame
-       (when hints-inc-x
-	 (let ((w (or hints-width (window-width win))))
-	   (setf width (+ w (* hints-inc-x
-			       (+ (floor (- fwidth w) hints-inc-x)))))))
-       (when hints-inc-y
-	 (let ((h (or hints-height (window-height win))))
-	   (setf height (+ h (* hints-inc-y
-				(+ (floor (- fheight h -1) hints-inc-y)))))))))
+     ;; Adjust the defaults if the window is a transient_for window.
+     ((find (window-type win) '(:transient :dialog))
+      (setf center t
+	    width (min (max (or hints-width 0)
+			    (or hints-min-width 0)
+			    (window-width win))
+		       width)
+	    height (min (max (or hints-height 0)
+			     (or hints-min-height 0)
+			     (window-height win))
+			height)))
+     ;; aspect hints are handled similar to max size hints
+     ((and hints-min-aspect hints-max-aspect)
+      (let ((ratio (/ width height)))
+	(cond ((< ratio hints-min-aspect)
+	       (setf height (ceiling width hints-min-aspect)))
+	      ((> ratio hints-max-aspect)
+	       (setf width  (ceiling (* height hints-max-aspect)))))
+	(setf center t)))
+     ;; Update our defaults if the window has the maxsize hints
+     ((or hints-max-width hints-max-height)
+      (when (and hints-max-width
+		 (< hints-max-width width))
+	(setf width hints-max-width))
+      (when (and hints-max-height
+		 (< hints-max-height height))
+	(setf height hints-max-height))
+      (setf center t))
+     (t
+      ;; if they have inc hints then start with the size and adjust
+      ;; based on those increments until the window fits in the frame
+      (when hints-inc-x
+	(let ((w (or hints-width (window-width win))))
+	  (setf width (+ w (* hints-inc-x
+			      (+ (floor (- fwidth w) hints-inc-x)))))))
+      (when hints-inc-y
+	(let ((h (or hints-height (window-height win))))
+	  (setf height (+ h (* hints-inc-y
+			       (+ (floor (- fheight h -1) hints-inc-y)))))))))
     ;; adjust for gravity
     (multiple-value-bind (wx wy) (get-gravity-coords (gravity-for-window win)
                                                      width height
                                                      0 0
                                                      fwidth fheight)
-      (when center
-        (setf x (+ wx (frame-x f))
-              y (+ wy (frame-y f))
-              wx 0 wy 0))
-      ;; Now return our findings
-      (values x y wx wy width height center))))
+			 (when center
+			   (setf x (+ wx (frame-x f))
+				 y (+ wy (frame-y f))
+				 wx 0 wy 0))
+			 ;; Now return our findings
+			 (values x y wx wy width height center))))
 
 (defun set-window-geometry (win &key x y width height border-width)
   (macrolet ((update (xfn wfn v)
@@ -855,67 +859,59 @@ than the root window's width and height."
                      :key 'frame-number
                      :test '=))))
     (let ((match
-           (dolist (rule *window-placement-rules*)
-             (when (window-matches-rule-p window rule) (return rule)))))
-      (if (null match)
-          (values '())
-          (destructuring-bind (group-name frame raise lock &rest props) match
-            (declare (ignore lock props))
-            (let ((group (find-group screen group-name)))
-              (if group
-                  (values (list group (frame-by-number group frame) raise))
-                  (progn
-                    (message "Error placing window, group \"~a\" does not exist." group-name)
-                    (values '())))))))))
+	   (dolist (rule *window-placement-rules*)
+	     (when (window-matches-rule? window rule) (return rule)))))
+      (if match
+	  (destructuring-bind (group-name frame raise lock &rest props) match
+	    (declare (ignore lock props))
+	    (let ((group (find-group screen group-name)))
+	      (if group
+		  (values group (frame-by-number group frame) raise)
+		  (progn
+		    (message "Error placing window, group \"~a\" does not exist." group-name)
+		    (values)))))
+	  (values)))))
 
 (defun sync-window-placement ()
   "Re-arrange existing windows according to placement rules"
   (dolist (screen *screen-list*)
     (dolist (window (screen-windows screen))
-      (let ((placement (get-window-placement screen window)))
-        (when placement
-          (destructuring-bind (to-group frame raise) placement
-            (declare (ignore raise))
-            (unless (eq (window-group window) to-group)
-              (move-window-to-group window to-group))
-            (unless (eq (window-frame window) frame)
-              (pull-window window frame))))))))
+      (multiple-value-bind (to-group frame raise) (get-window-placement screen window)
+	(declare (ignore raise))
+	(when to-group
+	  (unless (eq (window-group window) to-group)
+	    (move-window-to-group window to-group))
+	  (unless (eq (window-frame window) frame)
+	    (pull-window window frame)))))))
 
 (defun place-window (screen xwin)
   "Pick a group and frame for XWIN."
   (let* ((window (xwin-to-window xwin))
-         (placement (get-window-placement screen window))
-         (group (screen-current-group screen))
-         (frame nil)
-         (raise nil))
-    (when placement
-      (destructuring-bind (to-group to-frame to-raise) placement
-        (setf group to-group
-              frame to-frame
-              raise to-raise)))
-    ;;(push window (group-windows group)))
-    (setf
-     (window-group window) group
-     (window-number window) (find-free-window-number group)
-     (window-frame window) (or frame (pick-prefered-frame window)))
-
-    (setf (group-windows group) (append (group-windows group) (list window)))
-
-    (setf (xwin-state xwin) +iconic-state+)
+	 (group (screen-current-group screen))
+	 (frame nil)
+	 (raise nil))
+    (multiple-value-bind (to-group to-frame to-raise) (get-window-placement screen window)
+      (setf group (or to-group group)
+	    frame to-frame
+	    raise to-raise))
+    (setf (window-group window) group
+	  (window-number window) (find-free-window-number group)
+	  (window-frame window) (or frame (pick-prefered-frame window))
+	  (group-windows group) (append (group-windows group) (list window))
+	  (xwin-state xwin) +iconic-state+)
     (xlib:change-property xwin :_NET_WM_DESKTOP
-                          (list (netwm-group-id group))
-                          :cardinal 32)
-
+			  (list (netwm-group-id group))
+			  :cardinal 32)
     (when frame
       (unless (eq (current-group) group)
-        (if raise
-            (progn
-              (switch-to-group group)
-              (focus-frame group frame))
-            (message "Placing window ~a in frame ~d of group ~a"
-                     (window-name window) (frame-number frame) (group-name group))))
-      (when placement
-        (run-hook-with-args *place-window-hook* window group frame)))
+	(if raise
+	    (switch-to-group group)
+	    (message "Placing window ~a in frame ~d of group ~a"
+		     (window-name window) (frame-number frame) (group-name group))))
+      (when raise
+	(switch-to-screen (group-screen group))
+	(focus-frame group frame))
+      (run-hook-with-args *place-window-hook* window group frame))
     window))
 
 (defun pick-prefered-frame (window)
