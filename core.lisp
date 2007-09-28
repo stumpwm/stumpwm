@@ -195,6 +195,14 @@ at 0. Return a netwm compliant group id."
       (setf (window-frame window) (tile-group-current-frame to-group)
 	    (window-group window) to-group
 	    (window-number window) (find-free-window-number to-group))
+      ;; try to put the window in the appropriate frame for the group
+      (let ((placement (get-window-placement (window-screen window) window)))
+	(unless (null placement)
+	  (multiple-value-bind (to-group frame raise) placement
+			       (when frame
+				 (setf (window-frame window) frame))
+			       (when raise
+				 (setf (tile-group-current-frame to-group) frame)))))
       (push window (group-windows to-group))
       (sync-frame-windows to-group (tile-group-current-frame to-group))
       ;; maybe pick a new window for the old frame
