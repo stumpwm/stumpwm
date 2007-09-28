@@ -1,3 +1,8 @@
+2007-09-28  Shawn  <sabetts@hardcopy.local>
+
+	* core.lisp (move-window-to-group): try to put the window in the
+	appropriate frame for the group.
+
 2007-09-18  Shawn  <sabetts@hardcopy.local>
 
 	* core.lisp (clear-window-marks): take optional windows arg.
