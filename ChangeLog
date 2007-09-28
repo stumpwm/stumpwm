@@ -2,6 +2,9 @@
 
 	* core.lisp (move-window-to-group): try to put the window in the
 	appropriate frame for the group.
+	(geometry-hints): remove useless (or ..)
+	(geometry-hints): use the window's height/width and min hint to
+	calculate default height/width.
 
 2007-09-18  Shawn  <sabetts@hardcopy.local>
 
