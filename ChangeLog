@@ -1,11 +1,43 @@
 2007-09-28  Shawn  <sabetts@hardcopy.local>
 
+	* user.lisp (*root-map*): bind F11 to fullscreen
+	(split-frame-in-dir): move let outside if
+	("only"): add message when there is only 1 frame
+	("fullscreen"): new command
+
+	* primitives.lisp (+netwm-supported+): add :_NET_WM_STATE_FULLSCREEN :_NET_WM_STATE_HIDDEN
+	(+netwm-allowed-actions+): add :_NET_WM_ACTION_FULLSCREEN
+	(window): add fullscreen slot
+	(head): new structure. all callers updated
+	(*xwin-to-window*): new global variable
+
 	* core.lisp (move-window-to-group): try to put the window in the
 	appropriate frame for the group.
 	(geometry-hints): remove useless (or ..)
 	(geometry-hints): use the window's height/width and min hint to
 	calculate default height/width.
 	(make-screen-heads): remove duplicate heads
+	(add-wm-state): new function
+	(remove-wm-state): likewise
+	(find-wm-state): likewise
+	(xwin-unhide): dont change _NET_WM_STATE
+	(unhide-window): call remove-wm-state
+	(hide-window): use add-wm-state
+	(geometry-hints): handle fullscreen windows
+	(process-mapped-window): call register-window
+	(copy-frame-tree): remove helper function
+	(screen-remove-mapped-window): call unregister-window
+	(register-window): new function
+	(unregister-window): likewise
+	(find-window): use *xwin-to-window* hash lookup
+	(head-width, head-height, head-x, head-y): remove functions
+	(parse-xinerama-head): create a head structure
+	(make-screen-heads): likewise
+	(update-window-properties): handle _NET_WM_STATE
+	(activate-fullscreen): new function
+	(deactivate-fullscreen): likewise
+	(update-fullscreen): likewise
+	(:client-message): handle _NET_WM_STATE
 
 2007-09-18  Shawn  <sabetts@hardcopy.local>
 
