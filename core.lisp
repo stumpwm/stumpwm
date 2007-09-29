@@ -966,7 +966,7 @@ than the root window's width and height."
 
 (defun add-window (screen xwin)
   (screen-add-mapped-window screen xwin)
-  (place-window screen xwin))
+  (register-window (place-window screen xwin)))
 
 (defun netwm-remove-window (screen window)
   ;; update _NET_CLIENT_LIST
@@ -986,7 +986,6 @@ than the root window's width and height."
   "Add the window to the screen's mapped window list and process it as
 needed."
   (let ((window (add-window screen xwin)))
-    (register-window window)
     (setf (xlib:window-event-mask (window-xwin window)) *window-events*)
     ;; windows always have border width 0. Their parents provide the
     ;; border.
@@ -1038,6 +1037,7 @@ needed."
           (group-windows (window-group window)) (append (group-windows (window-group window)) (list window))
           (window-frame window) (pick-prefered-frame window))
     (screen-add-mapped-window screen (window-xwin window))
+    (register-window window)
     ;; give it focus
     (if (deny-request-p window *deny-map-request*)
         (unless *suppress-deny-messages*
