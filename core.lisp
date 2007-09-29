@@ -26,7 +26,8 @@
 
 (in-package :stumpwm)
 
-(defvar *processing-existing-windows* nil)
+(defvar *processing-existing-windows* nil
+  "Set to T when inside process-existing-windows.")
 
 ;; Do it this way so its easier to wipe the map and get a clean one.
 (when (null *top-map*)

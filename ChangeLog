@@ -1,7 +1,29 @@
+2007-09-29  Shawn  <sabetts@hardcopy.local>
+
+	* stumpwm.lisp (stumpwm): process existing windows after the rc file
+
+	* mode-line.lisp (mode-line-add-systray-window): remove function
+
+	* core.lisp (place-window): call assign-window
+	(add-window): call place-existing-window or place-window depending
+	or whether we're processing existing windows or not.
+	(maybe-hide-windows): remove function
+	(find-frame): new function
+	(frame-raise-window): hide frame windows when w in nil
+	(netwm-update-client-list-stacking): new function
+	(netwm-update-client-list): call netwm-update-client-list-stacking
+	(:map-request): dont call mode-line-add-systray-window
+
 2007-09-28  Shawn  <sabetts@hardcopy.local>
 
 	* core.lisp (screen-windows): copy the group-windows list
 	(all-windows): likewise for screen-windows
+	(*processing-existing-windows*): new global variable
+	(process-existing-windows): set *processing-existing-windows* to
+	T. dont hide the processed windows; just set their state to
+	normal.
+	(assign-window): new function
+	(place-existing-window): likewise
 
 	* user.lisp (*root-map*): bind M to gmove-marked
 
