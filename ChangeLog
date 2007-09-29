@@ -1,5 +1,7 @@
 2007-09-28  Shawn  <sabetts@hardcopy.local>
 
+	* core.lisp (add-group): call netwm-update-groups
+
 	* user.lisp (*root-map*): bind F11 to fullscreen
 	(split-frame-in-dir): move let outside if
 	("only"): add message when there is only 1 frame
