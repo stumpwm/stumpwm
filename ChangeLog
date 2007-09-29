@@ -1,9 +1,26 @@
 2007-09-28  Shawn  <sabetts@hardcopy.local>
 
+	* mode-line.lisp (mode-line): add screen, head and height slots
+	(*mode-line-position*): rename from *mode-line-screen-position*
+	(*mode-line-frame-position*): remove global
+	(resize-mode-line): rename from resize-mode-line-for
+	(resize-mode-line): set mode-line-height. use height of
+	mode-line-head to calculate modeline height.
+	(make-head-mode-line): rename from make-screen-mode-line
+	(redraw-mode-line): rename from redraw-mode-line-for
+	(update-screen-mode-lines): update all heads on all screens
+	(toggle-mode-line): dont call maybe-cancel-mode-line-timer
+	(maybe-cancel-mode-line-timer): remove
+
 	* core.lisp (add-group): call netwm-update-groups
 	(add-window): call register-window
 	(process-mapped-window): dont call register-window
 	(restore-window): call register-window
+	(screen-y): set to 0
+	(screen-height): return the height of the root window
+	(process-mapped-window): call update-screen-mode-lines
+	(withdraw-window): likewise
+	(:exposure): remove event handler
 
 	* user.lisp (*root-map*): bind F11 to fullscreen
 	(split-frame-in-dir): move let outside if

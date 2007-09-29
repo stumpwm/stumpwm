@@ -218,5 +218,16 @@ current group.")
         ;; setup the timer
         (turn-on-mode-line-timer))))
 
+(defun screen-mode-line-mode (screen head arg &optional (format '*screen-mode-line-format*))
+  "Turn on the mode line for SCREEN's HEAD if and only if ARG is non-nil."
+  ;; only do something if the state they want and the current state
+  ;; differ.
+  (check-type screen screen)
+  (check-type head head)
+  (check-type format (or symbol list string))
+  (unless (eq (and arg t)
+	      (and (head-mode-line head) t))
+    (toggle-mode-line screen head format)))
+
 (define-stumpwm-command "mode-line" ()
   (toggle-mode-line (current-screen) (current-head)))
