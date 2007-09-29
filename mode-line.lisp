@@ -181,7 +181,6 @@ current group.")
 
 (defun make-head-mode-line (screen head format)
   (let ((w (make-mode-line-window (screen-root screen) screen)))
-    (xlib:map-window w)
     (make-mode-line :window w
 		    :screen screen
 		    :head head
@@ -263,7 +262,7 @@ current group.")
 	(unless (eq ml (head-mode-line head))
 	  (move-mode-line-to-head ml head))
 	(when (mode-line-head ml)
-	  (setf (mode-line-position ml) (if (= y (head-y (mode-line-head ml))) :top :bottom))))
+	  (setf (mode-line-position ml) (if (< y (/ (head-height (mode-line-head ml)) 2)) :top :bottom))))
       nil)))
 
 (defun place-mode-line-window (screen xwin)
@@ -288,13 +287,11 @@ current group.")
                                           *mode-line-timeout*
                                           'update-screen-mode-lines)))
 
-#|
 (defun maybe-cancel-mode-line-timer ()
-  (unless (find-if 'screen-mode-line *screen-list*)
+  (unless (find-if 'head-mode-line (mapcan 'screen-heads *screen-list*))
     (when (timer-p *mode-line-timer*)
       (cancel-timer *mode-line-timer*)
       (setf *mode-line-timer* nil))))
-|#
 
 (defun toggle-mode-line (screen head &optional (format '*screen-mode-line-format*))
   (check-type format (or symbol list string))
@@ -314,17 +311,15 @@ current group.")
 	  (xlib:destroy-window (mode-line-window ml))
 	  (xlib:free-gcontext (mode-line-gc ml))
 	  (setf (head-mode-line head) nil)
-	  ;;        (maybe-cancel-mode-line-timer)
-	  ))
+	  (maybe-cancel-mode-line-timer)))
       (progn
 	(setf (head-mode-line head) (make-head-mode-line screen head format))
 	(resize-mode-line (head-mode-line head))
+	(xlib:map-window (mode-line-window (head-mode-line head)))
 	(redraw-mode-line (head-mode-line head))
-	;; move the frames
 	(dformat 3 "modeline: ~s~%" (head-mode-line head))
 	;; setup the timer
 	(turn-on-mode-line-timer)))
-
     (dolist (group (screen-groups screen))
       (sync-all-frame-windows group))))
 
