@@ -733,7 +733,6 @@ than the root window's width and height."
                   (xlib:drawable-height (window-parent win)) (- (frame-display-height (window-group win) frame)
                                                                 (* 2 (xlib:drawable-border-width (window-parent win))))))))))
 
-
 (defun find-free-window-number (group)
   "Return a free window number for GROUP."
   (find-free-number (mapcar 'window-number (group-windows group))))

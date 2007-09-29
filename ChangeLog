@@ -1,5 +1,18 @@
 2007-09-29  Shawn  <sabetts@hardcopy.local>
 
+	* stumpwm.lisp (stumpwm): map current groups windows in
+	reverse. update groups in reverse.
+
+	* core.lisp (raise-window): call update-configuration when it's
+	hidden
+	(assign-window): add optional arg, where. put window on front or back of
+	group-windows list based on value.
+	(place-existing-window): pass :head to assign-window
+	(update-configuration): new function
+	(handle-managed-window): call update-configuration
+	(handle-window-move): call pull-window
+	(:map-request): return T for _KDE_NET_WM_SYSTEM_TRAY_WINDOW_FOR
+
 	* stumpwm.lisp (stumpwm): set *initializing* to T during initialization
 
 	* primitives.lisp (window): add x y slots
