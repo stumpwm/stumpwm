@@ -118,7 +118,7 @@ identity with a range check."
 	   *screen-list*))
 
 (defun screen-windows (screen)
-  (mapcan 'group-windows (screen-groups screen)))
+  (mapcan (lambda (g) (copy-list (group-windows g))) (screen-groups screen)))
 
 
 ;;; Group function
@@ -314,7 +314,7 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 ;;; Window functions
 
 (defun all-windows ()
-  (mapcan 'screen-windows *screen-list*))
+  (mapcan (lambda (s) (copy-list (screen-windows s))) *screen-list*))
 
 (defun window-name (window)
   (or (window-user-title window)
