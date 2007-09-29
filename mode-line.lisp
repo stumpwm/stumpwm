@@ -101,10 +101,49 @@ current group.")
   (setf (xlib:drawable-width (mode-line-window ml)) (- (frame-width (mode-line-head ml)) (* 2 (xlib:drawable-border-width (mode-line-window ml))))
 	(xlib:drawable-height (mode-line-window ml)) (+ (font-height (xlib:gcontext-font (mode-line-gc ml))) (* *mode-line-pad-y* 2))
 	(mode-line-height ml) (xlib:drawable-height (mode-line-window ml))
-	(xlib:drawable-x (mode-line-window ml)) 0
+	(xlib:drawable-x (mode-line-window ml)) (head-x (mode-line-head ml))
 	(xlib:drawable-y (mode-line-window ml)) (if (eq (mode-line-position ml) :top)
 						    0 
-						    (frame-height (mode-line-head ml)))))
+						    (- (head-height (mode-line-head ml)) (mode-line-height ml)))))
+
+
+(defun frame-display-y (group frame)
+  "Return a Y for frame that doesn't overlap the mode-line."
+  (let* ((head (frame-head group frame))
+	 (ml (head-mode-line head)))
+    (if ml
+      (progn
+	(case (mode-line-position ml)
+	  (:top
+	    (if (<= (frame-y frame)
+		    (+ (head-y head) (mode-line-height ml)))
+	      (+ (frame-y frame) (- (+ (head-y head) (mode-line-height ml)) (frame-y frame)))
+	      (+ (frame-y frame) (mode-line-height ml))))
+	  (:bottom
+	    (if (> (+ (frame-y frame) (frame-height frame))
+		   (+ (head-y head) (head-height head)) (mode-line-height ml))
+	      (- (frame-y frame) (mode-line-height ml))
+	      (frame-y frame)))))
+      (frame-y frame))))
+
+(defun frame-display-height (group frame)
+  "Return a HEIGHT for frame that doesn't overlap the mode-line."
+  (let* ((head (frame-head group frame))
+	 (ml (head-mode-line head)))
+    (if ml
+      (progn
+	(case (mode-line-position ml)
+	  (:top
+	    (if (> (+ (frame-y frame) (frame-height frame) (mode-line-height ml))
+		   (+ (head-y head) (head-height head)))
+	      (- (frame-height frame) (mode-line-height ml))
+	      (frame-height frame)))
+	  (:bottom
+	    (if (> (+ (frame-y frame) (frame-height frame))
+		   (- (+ (head-y head) (head-height head)) (mode-line-height ml)))
+	      (- (frame-height frame) (mode-line-height ml))
+	      (frame-height frame)))))
+      (frame-height frame))))
 
 (defgeneric mode-line-format-elt (elt))
 
@@ -200,12 +239,12 @@ current group.")
   (check-type format (or symbol list string))
   (if (head-mode-line head)
       (progn
-	(dolist (group (screen-groups screen))
-	  (sync-all-frame-windows group))
 	(xlib:destroy-window (mode-line-window (head-mode-line head)))
 	(xlib:free-gcontext (mode-line-gc (head-mode-line head)))
-;        (maybe-cancel-mode-line-timer))
 	(setf (head-mode-line head) nil)
+	(dolist (group (screen-groups screen))
+	  (sync-all-frame-windows group))
+;        (maybe-cancel-mode-line-timer))
         )
       (progn
 	(setf (head-mode-line head) (make-head-mode-line screen head format))

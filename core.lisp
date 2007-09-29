@@ -610,10 +610,10 @@ hints have been modified to always be defined and never be greater
 than the root window's width and height."
   (let* ((f (window-frame win))
 	 (x (frame-x f))
-	 (y (frame-y f))
+	 (y (frame-display-y (window-group win) f))
          (border (xlib:drawable-border-width (window-parent win)))
 	 (fwidth (- (frame-width f) (* 2 border)))
-	 (fheight (- (frame-height f)
+	 (fheight (- (frame-display-height (window-group win) f)
 		     (* 2 border)))
 	 (width fwidth)
 	 (height fheight)
@@ -726,7 +726,7 @@ than the root window's width and height."
           (let ((frame (window-frame win)))
             (setf (xlib:drawable-width (window-parent win)) (- (frame-width frame)
                                                                (* 2 (xlib:drawable-border-width (window-parent win))))
-                  (xlib:drawable-height (window-parent win)) (- (frame-height frame)
+                  (xlib:drawable-height (window-parent win)) (- (frame-display-height (window-group win) frame)
                                                                 (* 2 (xlib:drawable-border-width (window-parent win))))))))))
 
 (defun find-free-window-number (group)
@@ -1781,9 +1781,9 @@ depending on the tree's split direction."
     ;; Outline frames (left, top)
     (mapc (lambda (f)
 	    (let ((x (frame-x f))
-		  (y (frame-y f))
+		  (y (frame-display-y group f))
 		  (w (frame-width f))
-		  (h (frame-height f)))
+		  (h (frame-display-height group f)))
 	      (xlib:draw-line (screen-root screen) gc
 			      x (+ halfwidth y) w 0 t)
 	      (xlib:draw-line (screen-root screen) gc
@@ -1792,9 +1792,9 @@ depending on the tree's split direction."
     ;; Outline heads (bottom, right)
     (mapc (lambda (f) 
 	    (let ((x (frame-x f))
-		  (y (frame-y f))
+		  (y (frame-display-y group f))
 		  (w (frame-width f))
-		  (h (frame-height f)))
+		  (h (frame-display-height group f)))
 	      (xlib:draw-line (screen-root screen) gc
 			      (+ x (- w halfwidth)) y 0 h t)
 	      (xlib:draw-line (screen-root screen) gc
@@ -1812,7 +1812,7 @@ windows used to draw the numbers in. The caller must destroy them."
     (mapcar (lambda (f)
 	      (let ((w (xlib:create-window
 			:parent (screen-root screen)
-			:x (frame-x f) :y (frame-y f) :width 1 :height 1
+			:x (frame-x f) :y (frame-display-y group f) :width 1 :height 1
 			:background (get-fg-color-pixel screen)
 			:border (get-border-color-pixel screen)
 			:border-width 1
