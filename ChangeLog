@@ -1,5 +1,20 @@
 2007-09-28  Shawn  <sabetts@hardcopy.local>
 
+	* core.lisp (draw-frame-outlines): use frame-display-y and
+	frame-display-height for frame outlines.
+
+	* mode-line.lisp (resize-mode-line): when modeline is on bottom
+	set y to head-height - mode-line-height
+	(frame-display-y): new function
+	(frame-display-height): new function
+	(toggle-mode-line): call sync-all-frame-windows after destroying
+	themodeline.
+	(resize-mode-line): use the modeline head's head-x for modeline x
+	location
+
+	* core.lisp (draw-frame-outlines, geometry-hints): use
+	frame-display-y, and frame-display-height
+
 	* mode-line.lisp (mode-line): add screen, head and height slots
 	(*mode-line-position*): rename from *mode-line-screen-position*
 	(*mode-line-frame-position*): remove global
