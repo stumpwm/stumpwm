@@ -300,10 +300,11 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 
 ;; maybe follow transient_for to find leader.
 (defun window-leader (window)
-  (or (first (window-property window :WM_CLIENT_LEADER))
-      (let ((id (first (window-property window :WM_TRANSIENT_FOR))))
-        (when id
-          (window-leader (window-by-id id))))))
+  (when window
+    (or (first (window-property window :WM_CLIENT_LEADER))
+        (let ((id (window-transient-for window)))
+          (when id
+            (window-leader (window-by-id id)))))))
 
 ;; A modal dialog can either shadow a single window, or all windows
 ;; in its gang, depending on the value of WM_TRANSIENT_FOR
