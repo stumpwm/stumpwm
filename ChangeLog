@@ -1,5 +1,9 @@
 2007-09-28  Shawn  <sabetts@hardcopy.local>
 
+	* user.lisp (*root-map*): bind M to gmove-marked
+
+	* core.lisp (process-existing-windows): improve debug output
+
 	* mode-line.lisp (resize-mode-line): use head-y, not 0 for the top of the modeline.
 
 	* core.lisp (show-frame-indicator): use frame-display-y and frame-display-height
