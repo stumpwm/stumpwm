@@ -294,6 +294,7 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
                     :name name)))
           (setf (screen-groups screen) (append (screen-groups screen) (list ng)))
           (netwm-set-group-properties screen)
+	  (netwm-update-groups screen)
           ng))))
 
 (defun find-group (screen name)
@@ -2215,6 +2216,7 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 
 ;;; Head functions
 
+<<<<<<< HEAD:core.lisp
 (defun parse-xinerama-head (line)
   (ppcre:register-groups-bind (('parse-integer number width height x y))
       ("^ +head #([0-9]+): ([0-9]+)x([0-9]+) @ ([0-9]+),([0-9]+)" line :sharedp t)
@@ -2225,7 +2227,13 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 		   :height height)
       (parse-error ()
         nil))))
+=======
+(defun heads-frames (heads)
+ "Return frames for heads."
+ (mapcar #'copy-frame heads))
+>>>>>>> dd3047e100ab6e6103614de83e2d1fc39b19d454:core.lisp
 
+<<<<<<< HEAD:core.lisp
 (defun make-screen-heads (screen root)
   "or use xdpyinfo to query the xinerama extension, if it's enabled."
   (or (and (xlib:query-extension *display* "XINERAMA")
@@ -2250,6 +2258,36 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 (defun copy-heads (screen)
   "Return a copy of screen's heads."
   (mapcar #'copy-structure (screen-heads screen)))
+=======
+;; Use xdpyinfo to query the xinerama extension, if it's enabled.
+(defun make-heads (screen)
+  (if (screen-heads screen)
+    (mapcar #'copy-head (screen-heads screen))
+    (cond
+      ((and
+	 (xlib:query-extension *display* "XINERAMA")
+	 (let* ((*package* (find-package :stumpwm))
+		(heads (read-from-string
+			 (let ((*screen-list* (list screen)))
+			   ;; For compatibility with NetBSD sed, don't use the + operator.
+			   (run-prog-collect-output "/bin/sh" "-c" "echo -n '\('; xdpyinfo -ext XINERAMA | sed -n 's/^[[:space:]][[:space:]]*head #\\([[:digit:]]\\):[[:space:]][[:space:]]*\\([[:digit:]][[:digit:]]*\\)x\\([[:digit:]][[:digit:]]*\\)[[:space:]]*@[[:space:]]*\\([[:digit:]][[:digit:]]*\\),\\([[:digit:]][[:digit:]]*\\).*$/#S(head :number \\1 :width \\2 :height \\3 :x \\4 :y \\5)/p'; echo -n '\)'")))))
+	   ;; Ignore 'clone' heads.
+	   (setf heads (delete-duplicates heads
+					  :test (lambda (h1 h2) (and (= (frame-height h1) (frame-height h2))
+								     (= (frame-width h1) (frame-width h2))
+								     (= (frame-x h1) (frame-x h2))
+								     (= (frame-y h1) (frame-y h2))))))
+	   heads)))
+      (t
+	;; Xinerama not supported, or we got no information about
+	;; heads for some other reason.
+	(list (make-head :number 0
+			 :x (screen-x screen)
+			 :y (screen-y screen)
+			 :width (screen-width screen)
+			 :height (screen-height screen)
+			 :window nil))))))
+>>>>>>> dd3047e100ab6e6103614de83e2d1fc39b19d454:core.lisp
 
 ;; Determining a frame's head based on position probably won't
 ;; work with overlapping heads. Would it be better to walk
