@@ -1,5 +1,15 @@
 2007-09-28  Shawn  <sabetts@hardcopy.local>
 
+	* mode-line.lisp (make-head-mode-line): dont map the modeline
+	window
+	(update-mode-line-position): if y is in the top half of the head
+	set the mode-line-position to :top, otherwise :bottom.
+	(maybe-cancel-mode-line-timer): uncomment. cancel timers for all heads
+	(toggle-mode-line): call maybe-cancel-mode-line-timer
+	(toggle-mode-line): when creating the modeline, map the mode-line-window
+
+	* core.lisp (restore-window): update _NET_WM_DESKTOP property
+
 	* mode-line.lisp (mode-line): add factor slot
 	(resize-mode-line): initialize mode-line-factor
 	(frame-display-y): use mode-line-factor in calculation
