@@ -1,5 +1,13 @@
 2007-09-28  Shawn  <sabetts@hardcopy.local>
 
+	* mode-line.lisp (mode-line): add factor slot
+	(resize-mode-line): initialize mode-line-factor
+	(frame-display-y): use mode-line-factor in calculation
+	(frame-display-height): likewise
+
+	* core.lisp (geometry-hints): use frame-display-y for centered
+	window's y coordinate
+
 	* user.lisp (fmt-window-list): take a head as optional argument
 	(fmt-group-list): likewise
 	(fmt-head): new function
