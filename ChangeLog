@@ -1,7 +1,29 @@
 2007-09-28  Shawn  <sabetts@hardcopy.local>
 
+	* primitives.lisp (+netwm-window-types+): add :dock type
+
+	* mode-line.lisp (mode-line): add mode slot
+	(netwm-remove-systray-window): new function
+	(mode-line-add-systray-window): likewise
+	(resize-mode-line): only set the modeline height for stumpwm modelines
+	(frame-display-y): only adjust for the modeline when its present.
+	(frame-display-height): likewise
+	(find-mode-line-window): new function
+	(sync-mode-line): likewise
+	(set-mode-line-window): likewise
+	(move-mode-line-to-head): likewise
+	(update-mode-line-position): likewise
+	(toggle-mode-line): handle :visible and :hidden modeline types/states
+	(toggle-mode-line): sync the frame windows at the end of the function
+
 	* core.lisp (draw-frame-outlines): use frame-display-y and
 	frame-display-height for frame outlines.
+	(default-border-width-for-type): handle :dock type
+	(gravity-for-window): likewise
+	(:map-request): handle :dock window
+	(handle-mode-line-window): new function
+	(:configure-request): handle :dock window
+	(place-mode-line-window): new function
 
 	* mode-line.lisp (resize-mode-line): when modeline is on bottom
 	set y to head-height - mode-line-height
