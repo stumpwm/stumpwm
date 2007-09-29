@@ -399,7 +399,8 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 (defun raise-window (win)
   "Map the window if needed and bring it to the top of the stack. Does not affect focus."
   (when (window-hidden-p win)
-    (unhide-window win))
+    (unhide-window win)
+    (update-configuration win))
   (when (window-in-current-group-p win)
     (setf (xlib:window-priority (window-parent win)) :top-if)))
 
@@ -732,6 +733,7 @@ than the root window's width and height."
                   (xlib:drawable-height (window-parent win)) (- (frame-display-height (window-group win) frame)
                                                                 (* 2 (xlib:drawable-border-width (window-parent win))))))))))
 
+
 (defun find-free-window-number (group)
   "Return a free window number for GROUP."
   (find-free-number (mapcar 'window-number (group-windows group))))
@@ -926,12 +928,13 @@ than the root window's width and height."
 	  (unless (eq (window-frame window) frame)
 	    (pull-window window frame)))))))
 
-(defun assign-window (window group frame)
+(defun assign-window (window group frame &optional (where :tail))
   (setf (window-group window) group
 	(window-number window) (find-free-window-number group)
 	(window-frame window) (or frame (pick-prefered-frame window)))
-  (push window (group-windows group))
-  (dformat 3 "Group windows: ~S~%" (group-windows group)))
+  (if (eq where :head)
+    (push window (group-windows group))
+    (setf (group-windows group) (append (group-windows group) (list window)))))
 
 (defun place-existing-window (screen xwin)
   "Called for windows existing at startup."
@@ -941,7 +944,8 @@ than the root window's width and height."
 		  (elt (sort-groups screen) netwm-id)
 		  (screen-current-group screen))))
     (dformat 3 "Assigning pre-existing window ~S to group ~S~%" (window-name window) (group-name group))
-    (assign-window window group (find-frame group (xlib:drawable-x xwin) (xlib:drawable-y xwin)))
+    (assign-window window group (find-frame group (xlib:drawable-x xwin) (xlib:drawable-y xwin)) :head)
+    (setf (frame-window (window-frame window)) window)
     window))
 
 (defun place-window (screen xwin)
@@ -2501,31 +2505,37 @@ list of modifier symbols."
 		     (when (has-bw value-mask)
 		       (setf (xlib:drawable-border-width xwin) border-width)))))
 
+(defun update-configuration (win)
+  ;; Send a synthetic configure-notify event so that the window
+  ;; knows where it is onscreen.
+  (xwin-send-configuration-notify (window-xwin win)
+				  (xlib:drawable-x (window-parent win))
+				  (xlib:drawable-y (window-parent win))
+				  (window-width win) (window-height win) 0))
+
 (defun handle-managed-window (window width height stack-mode value-mask)
   "This is a managed window so deal with it appropriately."
   ;; Grant the stack-mode change (if it's mapped)
   (set-window-geometry window :width width :height height)
   (maximize-window window)
-  ;; Send a synthetic configure-notify event so that the window
-  ;; knows where it is onscreen. This fixes problems with drop-down
-  ;; menus, etc.
-  (xwin-send-configuration-notify (window-xwin window) (frame-x (window-frame window)) (frame-y (window-frame window)) (window-height window) (window-width window) 0)
   (when (and (window-in-current-group-p window)
 	     ;; stack-mode change?
 	     (= 64 (logand value-mask 64)))
     (case stack-mode
       (:above
-       (if (deny-request-p window *deny-raise-request*)
-           (unless (or *suppress-deny-messages*
-                       ;; don't mention windows that are already visible
-                       (eql (window-state window) +normal-state+))
-             (if (eq (window-group window) (current-group))
-                 (echo-string (window-screen window) (format nil "'~a' denied raises request" (window-name window)))
-                 (echo-string (window-screen window) (format nil "'~a' denied raises request in group ~a" (window-name window) (group-name (window-group window))))))
-           (let ((oldf (tile-group-current-frame (window-group window))))
-             (frame-raise-window (window-group window) (window-frame window) window)
-             (unless (eq (window-frame window) oldf)
-               (show-frame-indicator (window-group window)))))))))
+	(if (deny-request-p window *deny-raise-request*)
+	  (unless (or *suppress-deny-messages*
+		      ;; don't mention windows that are already visible
+		      (eql (window-state window) +normal-state+))
+	    (if (eq (window-group window) (current-group))
+	      (echo-string (window-screen window) (format nil "'~a' denied raises request" (window-name window)))
+	      (echo-string (window-screen window) (format nil "'~a' denied raises request in group ~a" (window-name window) (group-name (window-group window))))))
+	  (let ((oldf (tile-group-current-frame (window-group window))))
+	    (frame-raise-window (window-group window) (window-frame window) window)
+	    (unless (eq (window-frame window) oldf)
+	      (show-frame-indicator (window-group window))))))))
+  (update-configuration window))
+
 
 (defun handle-window-move (win x y relative-to &optional (value-mask -1))
   (when *honor-window-moves*
@@ -2541,8 +2551,7 @@ list of modifier symbols."
 		       (list x y)))
 	       (frame (apply #'find-frame group pos)))
 	  (when frame
-	    (setf (window-frame win) frame)
-	    (frame-raise-window group frame win nil)))))))
+	    (pull-window win frame)))))))
 
 (define-stump-event-handler :configure-request (stack-mode #|parent|# window #|above-sibling|# x y width height border-width value-mask)
   ;; Grant the configure request but then maximize the window after the granting.
@@ -2580,7 +2589,7 @@ list of modifier symbols."
 	 ;; will handle it, if there is one, and, if there isn't the
 	 ;; user doesn't want this popping up as a managed window
 	 ;; anyway.
-	 )
+	 t)
 	(t
 	 (let ((window (process-mapped-window screen window)))
 	   ;; Give it focus
@@ -2878,6 +2887,7 @@ chunks."
 	    (when our-window
 	      (destructuring-bind (gravity x y width height) data
 		(declare (ignore gravity width height))
+		(dformat 3 "!!! Data: ~S~%" data)
 		(hanlde-window-move our-window x y :relative :root)))))
 	(t
 	 (dformat 2 "ignored message~%"))))
