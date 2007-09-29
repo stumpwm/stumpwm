@@ -790,7 +790,7 @@ than the root window's width and height."
 		(process-mapped-window screen win))))))))
   (dolist (w (screen-windows screen))
     (setf (window-state w) +normal-state+)
-    (xwin-hide (window-xwin w) (window-parent w))))
+    (xwin-hide w)))
 
 (defun xwin-grab-keys (win)
   (labels ((grabit (w key)

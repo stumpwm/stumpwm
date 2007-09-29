@@ -1,5 +1,24 @@
 2007-09-29  Shawn  <sabetts@hardcopy.local>
 
+	* stumpwm.lisp (stumpwm): set *initializing* to T during initialization
+
+	* primitives.lisp (window): add x y slots
+	(*initializing*): new global variable
+	(*honor-window-moves*): likewise
+
+	* core.lisp (*processing-existing-windows*): move to primitives.lisp
+	(netwm-set-group-properties): set current desktop unless *initializing* is non-nil
+	(process-existing-windows): handle _NET_CLIENT_LIST_STACKING
+	(process-existing-windows): hide processed windows
+	(xwin-to-window): fill in x, y slots
+	(assign-window): push window onto group-windows list
+	(place-existing-window): honour _net_wm_desktop
+	(pick-prefered-frame): handle :choice 
+	(handle-managed-window): send synthetic configure notify
+	(handle-window-move): new function
+	(:configure-request): call handle-window-move
+	(:client-message): handle _NET_MOVERESIZE_WINDOW
+
 	* stumpwm.lisp (stumpwm): process existing windows after the rc file
 
 	* mode-line.lisp (mode-line-add-systray-window): remove function
