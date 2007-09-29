@@ -36,6 +36,13 @@
 (define-key *root-map* (kbd "M-s") "google")
 (define-key *root-map* (kbd "i") "imdb")
 
+
+;; Using run-or-raise
+(define-stumpwm-command "emacs" ()
+  (run-or-raise "emacs" '(:class "Emacs")))
+
+(define-key *root-map* (kbd "E") "emacs")
+
 ;; Message window font
 (set-font "-xos4-terminus-medium-r-normal--14-140-72-72-c-80-iso8859-15")
 

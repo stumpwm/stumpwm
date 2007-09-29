@@ -1366,11 +1366,12 @@ T (default) then also focus the frame."
     (setf (tile-group-current-frame group) f)
     ;; record the last frame to be used in the fother command.
     (unless (eq f last)
-      (setf (tile-group-last-frame group) last))
+      (setf (tile-group-last-frame group) last)
+      (run-hook-with-args *focus-frame-hook* f last))
     (if w
-	(focus-window w)
-      (no-focus group (frame-window last)))
-    (run-hook-with-args *focus-frame-hook* f last)))
+      (focus-window w)
+      (no-focus group (frame-window last)))))
+
 
 (defun frame-windows (group f)
   (remove-if-not (lambda (w) (eq (window-frame w) f))
