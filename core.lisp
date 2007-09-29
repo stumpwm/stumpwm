@@ -1055,6 +1055,9 @@ needed."
 	    (window-frame window) (or frame (pick-prefered-frame window))))
     (screen-add-mapped-window screen (window-xwin window))
     (register-window window)
+    (xlib:change-property (window-xwin window) :_NET_WM_DESKTOP
+			  (list (netwm-group-id (window-group window)))
+			  :cardinal 32)
     ;; give it focus
     (if (deny-request-p window *deny-map-request*)
       (unless *suppress-deny-messages*
