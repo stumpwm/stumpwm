@@ -26,8 +26,8 @@
 ;; Web jump (works for Google and Imdb)
 (defmacro make-web-jump (name prefix)
   `(define-stumpwm-command ,name ((search :rest ,(concatenate 'string name " search: ")))
-     (substitute #\+ #\Space search)
-     (run-shell-command (concatenate 'string ,prefix search))))
+    (substitute #\+ #\Space search)
+    (run-shell-command (concatenate 'string ,prefix search))))
 
 (make-web-jump "google" "firefox http://www.google.fr/search?q=")
 (make-web-jump "imdb" "firefox http://www.imdb.com/find?q=")
@@ -54,29 +54,29 @@
 ;; Clear rules
 (setf *window-placement-rules* '())
 
-; Last rule to match takes precedence!
-; TIP: if the argument to :title or :role begins with an ellipsis, a substring
-; match is performed.
-; TIP: rules won't do anything if the target groups/frames don't exist! Save
-; your layout with "asfdump" and "asfrestore" will re-create everything for
-; you.
+;; Last rule to match takes precedence!
+;; TIP: if the argument to :title or :role begins with an ellipsis, a substring
+;; match is performed.
+;; TIP: rules won't do anything if the target groups/frames don't exist! Save
+;; your layout with "asfdump" and "asfrestore" will re-create everything for
+;; you.
 
 (define-frame-preference "Default"
-;; frame raise lock (lock AND raise == jumpto)
-	(0 t 0 :class "Konqueror" :role "...konqueror-mainwindow")
-	(1 t 0 :class "XTerm"))
+    ;; frame raise lock (lock AND raise == jumpto)
+    (0 t 0 :class "Konqueror" :role "...konqueror-mainwindow")
+  (1 t 0 :class "XTerm"))
 
 (define-frame-preference "Ardour"
-	(0	t t :instance "ardour_editor" :type :normal)
-	(0  t t :title "Ardour - Session Control")
-	(0	0 0 :class "XTerm")
-	(1  t 0 :type :normal)
-	(1	t t :instance "ardour_mixer")
-	(2	t t :instance "jvmetro")
-	(1  t t :instance "qjackctl")
-	(3	t t :instance "qjackctl" :role "qjackctlMainForm"))
+    (0  t t :instance "ardour_editor" :type :normal)
+  (0 t t :title "Ardour - Session Control")
+  (0 0 0 :class "XTerm")
+  (1 t 0 :type :normal)
+  (1 t t :instance "ardour_mixer")
+  (2 t t :instance "jvmetro")
+  (1 t t :instance "qjackctl")
+  (3 t t :instance "qjackctl" :role "qjackctlMainForm"))
 
 (define-frame-preference "Shareland"
-	(0  t 0 :calss "XTerm")
-	(1  0 t :class "aMule"))
+    (0 t 0 :calss "XTerm")
+  (1 0 t :class "aMule"))
 

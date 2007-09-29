@@ -3,7 +3,7 @@
 (progn
   (require 'asdf)
   (require 'stumpwm))
-#+sbcl 
+#+sbcl
 (progn
   (load "stumpwm.asd")
   (sb-ext:save-lisp-and-die "stumpwm" :toplevel (lambda ()

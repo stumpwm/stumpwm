@@ -6,12 +6,12 @@
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation; either version 2, or (at your option)
 ;; any later version.
- 
+
 ;; stumpwm is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
- 
+
 ;; You should have received a copy of the GNU General Public License
 ;; along with this software; see the file COPYING.  If not, write to
 ;; the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
@@ -32,92 +32,92 @@
 ;; Do it this way so its easier to wipe the map and get a clean one.
 (when (null *root-map*)
   (setf *root-map*
-	(let ((m (make-sparse-keymap)))
-	  (define-key m (kbd "c") "exec xterm")
-	  (define-key m (kbd "C-c") "exec xterm")
-	  (define-key m (kbd "e") "exec emacs")
-	  (define-key m (kbd "C-e") "exec emacs")
-	  (define-key m (kbd "n") "pull-hidden-next")
-	  (define-key m (kbd "C-n") "pull-hidden-next")
-	  (define-key m (kbd "M-n") "next")
-	  (define-key m (kbd "C-M-n") "next-in-frame")
-	  (define-key m (kbd "SPC") "pull-hidden-next")
-	  (define-key m (kbd "C-SPC") "pull-hidden-next")
-	  (define-key m (kbd "p") "pull-hidden-previous")
-	  (define-key m (kbd "C-p") "pull-hidden-previous")
-	  (define-key m (kbd "M-p") "prev")
-	  (define-key m (kbd "C-M-p") "prev-in-frame")
-	  (define-key m (kbd "w") "windows")
-	  (define-key m (kbd "C-w") "windows")
-	  (define-key m (kbd "W") "syncplace")
-	  (define-key m (kbd "k") "delete")
-	  (define-key m (kbd "C-k") "delete")
-	  (define-key m (kbd "K") "kill")
-	  (define-key m (kbd "b") "banish")
-	  (define-key m (kbd "C-b") "banish")
-	  (define-key m (kbd "a") "time")
-	  (define-key m (kbd "C-a") "time")
-	  (define-key m (kbd "'") "select")
-	  (define-key m (kbd "\"") "windowlist")
-	  (define-key m (kbd "C-t") "pull-hidden-other")
-	  (define-key m (kbd "M-t") "other-in-frame")
-	  (define-key m (kbd "!") "exec")
-	  (define-key m (kbd "C-g") "abort")
-	  (define-key m (kbd "0") "pull 0")
-	  (define-key m (kbd "1") "pull 1")
-	  (define-key m (kbd "2") "pull 2")
-	  (define-key m (kbd "3") "pull 3")
-	  (define-key m (kbd "4") "pull 4")
-	  (define-key m (kbd "5") "pull 5")
-	  (define-key m (kbd "6") "pull 6")
-	  (define-key m (kbd "7") "pull 7")
-	  (define-key m (kbd "8") "pull 8")
-	  (define-key m (kbd "9") "pull 9")
-	  (define-key m (kbd "R") "remove")
-	  (define-key m (kbd "s") "vsplit")
-	  (define-key m (kbd "S") "hsplit")
-	  (define-key m (kbd "r") "iresize")
-	  (define-key m (kbd "o") "fnext")
-	  (define-key m (kbd "TAB") "fother")
-	  (define-key m (kbd "f") "fselect")
-	  (define-key m (kbd "F") "curframe")
-	  (define-key m (kbd "t") "meta C-t")
-	  (define-key m (kbd "C-N") "number")
-	  (define-key m (kbd ";") "colon")
-	  (define-key m (kbd ":") "eval")
-	  (define-key m (kbd "C-h") "help")
-	  (define-key m (kbd "-") "fclear")
-	  (define-key m (kbd "Q") "only")
-	  (define-key m (kbd "Up") "move-focus up")
-	  (define-key m (kbd "Down") "move-focus down")
-	  (define-key m (kbd "Left") "move-focus left")
-	  (define-key m (kbd "Right") "move-focus right")
-	  (define-key m (kbd "M-Up") "move-window up")
-	  (define-key m (kbd "M-Down") "move-window down")
-	  (define-key m (kbd "M-Left") "move-window left")
-	  (define-key m (kbd "M-Right") "move-window right")
-	  (define-key m (kbd "v") "version")
-	  (define-key m (kbd "#") "mark")
-	  (define-key m (kbd "m") "lastmsg")
-	  (define-key m (kbd "C-m") "lastmsg")
-	  (define-key m (kbd "G") "vgroups")
-	  (define-key m (kbd "g") '*groups-map*)
-	  (define-key m (kbd "F1") "gselect 1")
-	  (define-key m (kbd "F2") "gselect 2")
-	  (define-key m (kbd "F3") "gselect 3")
-	  (define-key m (kbd "F4") "gselect 4")
-	  (define-key m (kbd "F5") "gselect 5")
-	  (define-key m (kbd "F6") "gselect 6")
-	  (define-key m (kbd "F7") "gselect 7")
-	  (define-key m (kbd "F8") "gselect 8")
-	  (define-key m (kbd "F9") "gselect 9")
-	  (define-key m (kbd "F10") "gselect 10")
-	  (define-key m (kbd "F11") "fullscreen")
-	  (define-key m (kbd "?") "help")
-	  (define-key m (kbd "+") "balance-frames")
-	  (define-key m (kbd "A") "title")
-	  (define-key m (kbd "h") '*help-map*)
-	  m)))
+        (let ((m (make-sparse-keymap)))
+          (define-key m (kbd "c") "exec xterm")
+          (define-key m (kbd "C-c") "exec xterm")
+          (define-key m (kbd "e") "exec emacs")
+          (define-key m (kbd "C-e") "exec emacs")
+          (define-key m (kbd "n") "pull-hidden-next")
+          (define-key m (kbd "C-n") "pull-hidden-next")
+          (define-key m (kbd "M-n") "next")
+          (define-key m (kbd "C-M-n") "next-in-frame")
+          (define-key m (kbd "SPC") "pull-hidden-next")
+          (define-key m (kbd "C-SPC") "pull-hidden-next")
+          (define-key m (kbd "p") "pull-hidden-previous")
+          (define-key m (kbd "C-p") "pull-hidden-previous")
+          (define-key m (kbd "M-p") "prev")
+          (define-key m (kbd "C-M-p") "prev-in-frame")
+          (define-key m (kbd "w") "windows")
+          (define-key m (kbd "C-w") "windows")
+          (define-key m (kbd "W") "syncplace")
+          (define-key m (kbd "k") "delete")
+          (define-key m (kbd "C-k") "delete")
+          (define-key m (kbd "K") "kill")
+          (define-key m (kbd "b") "banish")
+          (define-key m (kbd "C-b") "banish")
+          (define-key m (kbd "a") "time")
+          (define-key m (kbd "C-a") "time")
+          (define-key m (kbd "'") "select")
+          (define-key m (kbd "\"") "windowlist")
+          (define-key m (kbd "C-t") "pull-hidden-other")
+          (define-key m (kbd "M-t") "other-in-frame")
+          (define-key m (kbd "!") "exec")
+          (define-key m (kbd "C-g") "abort")
+          (define-key m (kbd "0") "pull 0")
+          (define-key m (kbd "1") "pull 1")
+          (define-key m (kbd "2") "pull 2")
+          (define-key m (kbd "3") "pull 3")
+          (define-key m (kbd "4") "pull 4")
+          (define-key m (kbd "5") "pull 5")
+          (define-key m (kbd "6") "pull 6")
+          (define-key m (kbd "7") "pull 7")
+          (define-key m (kbd "8") "pull 8")
+          (define-key m (kbd "9") "pull 9")
+          (define-key m (kbd "R") "remove")
+          (define-key m (kbd "s") "vsplit")
+          (define-key m (kbd "S") "hsplit")
+          (define-key m (kbd "r") "iresize")
+          (define-key m (kbd "o") "fnext")
+          (define-key m (kbd "TAB") "fother")
+          (define-key m (kbd "f") "fselect")
+          (define-key m (kbd "F") "curframe")
+          (define-key m (kbd "t") "meta C-t")
+          (define-key m (kbd "C-N") "number")
+          (define-key m (kbd ";") "colon")
+          (define-key m (kbd ":") "eval")
+          (define-key m (kbd "C-h") "help")
+          (define-key m (kbd "-") "fclear")
+          (define-key m (kbd "Q") "only")
+          (define-key m (kbd "Up") "move-focus up")
+          (define-key m (kbd "Down") "move-focus down")
+          (define-key m (kbd "Left") "move-focus left")
+          (define-key m (kbd "Right") "move-focus right")
+          (define-key m (kbd "M-Up") "move-window up")
+          (define-key m (kbd "M-Down") "move-window down")
+          (define-key m (kbd "M-Left") "move-window left")
+          (define-key m (kbd "M-Right") "move-window right")
+          (define-key m (kbd "v") "version")
+          (define-key m (kbd "#") "mark")
+          (define-key m (kbd "m") "lastmsg")
+          (define-key m (kbd "C-m") "lastmsg")
+          (define-key m (kbd "G") "vgroups")
+          (define-key m (kbd "g") '*groups-map*)
+          (define-key m (kbd "F1") "gselect 1")
+          (define-key m (kbd "F2") "gselect 2")
+          (define-key m (kbd "F3") "gselect 3")
+          (define-key m (kbd "F4") "gselect 4")
+          (define-key m (kbd "F5") "gselect 5")
+          (define-key m (kbd "F6") "gselect 6")
+          (define-key m (kbd "F7") "gselect 7")
+          (define-key m (kbd "F8") "gselect 8")
+          (define-key m (kbd "F9") "gselect 9")
+          (define-key m (kbd "F10") "gselect 10")
+          (define-key m (kbd "F11") "fullscreen")
+          (define-key m (kbd "?") "help")
+          (define-key m (kbd "+") "balance-frames")
+          (define-key m (kbd "A") "title")
+          (define-key m (kbd "h") '*help-map*)
+          m)))
 
 (defvar *help-map* nil
   "Help related bindings hang from this keymap")
@@ -139,18 +139,18 @@
 
 (defmacro define-stumpwm-command (name (&rest args) &body body)
   `(setf (gethash ,name *command-hash*)
-	 (make-command :name ,name
-		       :args ',args
-		       :fn (lambda (,@(mapcar 'first args))
-			      ,@body))))
+    (make-command :name ,name
+     :args ',args
+     :fn (lambda (,@(mapcar 'first args))
+           ,@body))))
 
 (defun all-commands ()
   "Return a list of all interactive commands."
   (let (acc)
     (maphash (lambda (k v)
-	       (declare (ignore v))
-	       (push k acc))
-	     *command-hash*)
+               (declare (ignore v))
+               (push k acc))
+             *command-hash*)
     (sort acc 'string<)))
 
 (defun restarts-menu (err)
@@ -158,7 +158,7 @@
 choose. Run the selected restart."
   (let ((restart (select-from-menu (current-screen)
                                    (mapcar (lambda (r)
-                                             (list (format nil "[~a] ~a" 
+                                             (list (format nil "[~a] ~a"
                                                            (restart-name r)
                                                            (substitute #\Space
                                                                        #\Newline
@@ -171,7 +171,7 @@ choose. Run the selected restart."
                                            (reverse (member 'top-level
                                                             (reverse (compute-restarts))
                                                             :key 'restart-name)))
-                                   (format nil "Error: ~a" 
+                                   (format nil "Error: ~a"
                                            (substitute #\Space
                                                        #\Newline
                                                        (write-to-string err :escape nil))))))
@@ -184,35 +184,35 @@ restart from a menu of possible restarts. If a restart is not
 chosen, resignal the error."
   (let ((c (gensym)))
     `(handler-bind
-         ((error 
-           (lambda (,c)
-             (restarts-menu ,c)
-             (signal ,c))))
-       ,@body)))
+      ((error
+        (lambda (,c)
+          (restarts-menu ,c)
+          (signal ,c))))
+      ,@body)))
 
 (defun focus-next-window (group)
   (focus-forward group (sort-windows group)))
 
 (defun focus-prev-window (group)
   (focus-forward group
-		 (reverse
-		  (sort-windows group))))
+                 (reverse
+                  (sort-windows group))))
 
 (define-stumpwm-command "next" ()
   (let ((group (current-group)))
     (if (group-current-window group)
-	(focus-next-window group)
-	(other-window group))))
+        (focus-next-window group)
+        (other-window group))))
 
 (define-stumpwm-command "prev" ()
   (let ((group (current-group)))
     (if (group-current-window group)
-	(focus-prev-window group)
-	(other-window group))))
+        (focus-prev-window group)
+        (other-window group))))
 
 (defun pull-window (win &optional (to-frame (tile-group-current-frame (window-group win))))
   (let ((f (window-frame win))
-	(group (window-group win)))
+        (group (window-group win)))
     (setf (window-frame win) to-frame)
     (sync-frame-windows group to-frame)
     (frame-raise-window group to-frame win)
@@ -226,27 +226,27 @@ chosen, resignal the error."
 ;; In the future, this window will raise the window into the current
 ;; frame.
 (defun focus-forward (group window-list &optional pull-p (predicate (constantly t)))
- "Set the focus to the next item in window-list from the focused
+  "Set the focus to the next item in window-list from the focused
 window. If PULL-P is T then pull the window into the current
 frame."
   ;; The window with focus is the "current" window, so find it in the
   ;; list and give that window focus
   (let* ((w (group-current-window group))
-	 (wins (remove-if-not predicate (cdr (member w window-list))))
-	 (nw (if (null wins)
-		 ;; If the last window in the list is focused, then
-		 ;; focus the first one.
-		 (car (remove-if-not predicate window-list))
+         (wins (remove-if-not predicate (cdr (member w window-list))))
+         (nw (if (null wins)
+                 ;; If the last window in the list is focused, then
+                 ;; focus the first one.
+                 (car (remove-if-not predicate window-list))
                  ;; Otherwise, focus the next one in the list.
                  (first wins))))
     ;; there's still the case when the window is the only one in the
     ;; list, so make sure its not the same as the current window.
     (if (and nw
              (not (eq w nw)))
-	(if pull-p
-	  (pull-window nw)
-	  (frame-raise-window group (window-frame nw) nw))
-	(message "No other window."))))
+        (if pull-p
+            (pull-window nw)
+            (frame-raise-window group (window-frame nw) nw))
+        (message "No other window."))))
 
 (defun delete-current-window ()
   "Send a delete event to the current window."
@@ -270,8 +270,8 @@ frame."
   "Move the pointer to the lower right corner of the head"
   (let ((group (current-group)))
     (warp-pointer (group-screen group)
-		  (1- (+ (head-x (current-head)) (head-width (current-head))))
-		  (1- (+ (head-y (current-head)) (head-height (current-head)))))))
+                  (1- (+ (head-x (current-head)) (head-width (current-head))))
+                  (1- (+ (head-y (current-head)) (head-height (current-head)))))))
 
 (define-stumpwm-command "banish" ()
   (banish-pointer))
@@ -290,26 +290,26 @@ frame."
 (defun echo-windows (group fmt windows)
   "Print a list of the windows to the screen."
   (let* ((wins (sort1 windows #'< :key #'window-number))
-	 (highlight (position (group-current-window group) wins))
-	 (names (mapcar (lambda (w)
-			  (format-expand *window-formatters* fmt w)) wins)))
+         (highlight (position (group-current-window group) wins))
+         (names (mapcar (lambda (w)
+                          (format-expand *window-formatters* fmt w)) wins)))
     (if (null wins)
-	(echo-string (group-screen group) "No Managed Windows")
-      (echo-string-list (group-screen group) names highlight))))
+        (echo-string (group-screen group) "No Managed Windows")
+        (echo-string-list (group-screen group) names highlight))))
 
 (defun fmt-window-list (group &optional head)
   (declare (ignore head))
   "Using *window-format*, return a 1 line list of the windows, space seperated."
   (format nil "~{~a~^ ~}"
-	  (mapcar (lambda (w)
-		    (format-expand *window-formatters* *window-format* w)) (sort-windows group))))
+          (mapcar (lambda (w)
+                    (format-expand *window-formatters* *window-format* w)) (sort-windows group))))
 
 (defun fmt-group-list (group &optional head)
   (declare (ignore head))
   "Given a group list all the groups in the group's screen."
   (format nil "~{~a~^ ~}"
-	  (mapcar (lambda (w)
-		    (format-expand *group-formatters* *group-format* w)) (sort-windows group))))
+          (mapcar (lambda (w)
+                    (format-expand *group-formatters* *group-format* w)) (sort-windows group))))
 
 (defun fmt-head (group head)
   (declare (ignore group))
@@ -322,15 +322,15 @@ frame."
 (defun fmt-head-window-list (group head)
   "Using *window-format*, return a 1 line list of the windows, space seperated."
   (format nil "~{~a~^ ~}"
-	  (mapcar (lambda (w)
-		    (format-expand *window-formatters* *window-format* w)) (sort1 (head-windows group head) #'< :key #'window-number))))
+          (mapcar (lambda (w)
+                    (format-expand *window-formatters* *window-format* w)) (sort1 (head-windows group head) #'< :key #'window-number))))
 
 (define-stumpwm-command "windows" ((fmt :rest))
   (echo-windows (current-group) (or fmt *window-format*) (group-windows (current-group))))
 
 (define-stumpwm-command "framewindows" ((fmt :rest))
   (echo-windows (current-group) (or fmt *window-format*) (frame-windows (current-group)
-									(tile-group-current-frame (current-group)))))
+                                                                        (tile-group-current-frame (current-group)))))
 
 (define-stumpwm-command "title" ((title :rest "Set window's title to: "))
   (if (current-window)
@@ -339,9 +339,9 @@ frame."
 
 ;;; (format-time-stringc ...) section
 (defmacro time-lambda (used-var &body body)
-  `(lambda (sec min hour dom mon year dow dstp tz) 
-     (declare (ignore ,@(set-difference '(sec min hour dom mon year dow dstp tz) used-var)))
-     ,@body))
+  `(lambda (sec min hour dom mon year dow dstp tz)
+    (declare (ignore ,@(set-difference '(sec min hour dom mon year dow dstp tz) used-var)))
+    ,@body))
 
 (defvar *month-names*
   #("January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December"))
@@ -358,15 +358,15 @@ frame."
     (#\b . ,(time-lambda (mon) (subseq (aref *month-names* (- mon 1)) 0 3)))
     (#\B . ,(time-lambda (mon) (aref *month-names* (- mon 1))))
     (#\c . ,(time-lambda (dow mon dom hour min sec year)
-	     (format nil "~A ~A ~2,'0D ~2,'0D:~2,'0D:~2,'0D ~D"
-		     (subseq (aref *day-names* dow) 0 3)
-		     (subseq (aref *month-names* (- mon 1)) 0 3)
-		     dom hour min sec year)))
+                         (format nil "~A ~A ~2,'0D ~2,'0D:~2,'0D:~2,'0D ~D"
+                                 (subseq (aref *day-names* dow) 0 3)
+                                 (subseq (aref *month-names* (- mon 1)) 0 3)
+                                 dom hour min sec year)))
     (#\C . ,(time-lambda (year) (subseq (format nil "~D" year) 0 2)))
     (#\d . ,(time-lambda (dom) (format nil "~2,'0D" dom)))
     (#\D . ,(time-lambda (mon dom year)
-	     (format nil "~2,'0D/~2,'0D/~A"
-		     mon dom (subseq (format nil "~D" year) 2 4))))
+                         (format nil "~2,'0D/~2,'0D/~A"
+                                 mon dom (subseq (format nil "~D" year) 2 4))))
     (#\e . ,(time-lambda (dom) (format nil "~2,' D" dom)))
     (#\F . ,(time-lambda (year mon dom) (format nil "~D-~2,'0D-~2,'0D" year mon dom)))
     ;; %g   last two digits of year of ISO week number (see %G)
@@ -374,11 +374,11 @@ frame."
     (#\h . ,(time-lambda (mon) (subseq (aref *month-names* (- mon 1)) 0 3)))
     (#\H . ,(time-lambda (hour) (format nil "~2,'0D" hour)))
     (#\I . ,(time-lambda (hour)
-	     (format nil "~2,'0D" (if (> hour 12) (- hour 12) (if (zerop hour) 12 hour)))))
+                         (format nil "~2,'0D" (if (> hour 12) (- hour 12) (if (zerop hour) 12 hour)))))
     ;; %j   day of year (001..366)
     (#\k . ,(time-lambda (hour) (format nil "~2,D" hour)))
     (#\l . ,(time-lambda (hour)
-	     (format nil "~2,D" (if (> hour 12) (- hour 12) (if (zerop hour) 12 hour)))))
+                         (format nil "~2,D" (if (> hour 12) (- hour 12) (if (zerop hour) 12 hour)))))
     (#\m . ,(time-lambda (mon) (format nil "~2,'0D" mon)))
     (#\M . ,(time-lambda (min) (format nil "~2,'0D" min)))
     (#\n . ,(time-lambda () "~%%")) ;; two % to avoid parsing errors
@@ -386,26 +386,26 @@ frame."
     (#\p . ,(time-lambda (hour) (if (>= hour 12) "PM" "AM")))
     (#\P . ,(time-lambda (hour) (if (>= hour 12) "pm" "am")))
     (#\r . ,(time-lambda (hour min sec)
-	     (let (hour-local am-pm)
-               (cond
-                 ((> hour 12)
-                  (setf hour-local (- hour 12) am-pm "PM"))
-                 ((= hour 12)
-                  (setf hour-local hour am-pm "PM"))
-                 (t
-                  (setf hour-local (if (zerop hour) 12 hour) am-pm "AM")))
-	       (format nil "~2,'0D:~2,'0D:~2,'0D ~A"
-		       hour-local min sec am-pm))))
+                         (let (hour-local am-pm)
+                           (cond
+                             ((> hour 12)
+                              (setf hour-local (- hour 12) am-pm "PM"))
+                             ((= hour 12)
+                              (setf hour-local hour am-pm "PM"))
+                             (t
+                              (setf hour-local (if (zerop hour) 12 hour) am-pm "AM")))
+                           (format nil "~2,'0D:~2,'0D:~2,'0D ~A"
+                                   hour-local min sec am-pm))))
     (#\R . ,(time-lambda (hour min) (format nil "~2,'0D:~2,'0D" hour min)))
     (#\s . ,(time-lambda ( sec min hour dom mon year)
-	     (format nil "~D"
-		     (- (encode-universal-time
-			 sec min hour dom mon year)
-			(encode-universal-time 0 0 0 1 1 1970 0)))))
+                         (format nil "~D"
+                                 (- (encode-universal-time
+                                     sec min hour dom mon year)
+                                    (encode-universal-time 0 0 0 1 1 1970 0)))))
     (#\S . ,(time-lambda (sec) (format nil "~2,'0D" sec)))
     (#\t . ,(time-lambda () "~T"))
     (#\T . ,(time-lambda (hour min sec)
-	     (format nil "~2,'0D:~2,'0D:~2,'0D" hour min sec)))
+                         (format nil "~2,'0D:~2,'0D:~2,'0D" hour min sec)))
     (#\u . ,(time-lambda (dow) (format nil "~D" (+ dow 1))))
     ;; %U   week number of  year, with Sunday as first  day of week (00..53)
     ;; %V   ISO  week number,  with  Monday as  first  day of  week (01..53)
@@ -416,12 +416,12 @@ frame."
     (#\y . ,(time-lambda (year) (subseq (format nil "~D" year) 2 4)))
     (#\Y . ,(time-lambda (year) (format nil "~D" year)))
     (#\z . ,(time-lambda (tz dstp)
-	     (multiple-value-bind (hour-local decimal-local)
-		 (truncate (+ (* (float tz) -1) (if dstp 1 0)))
-	       (format nil "~A~2,'0D~2,'0D"
-		       (if (> hour-local 0) '+ '-) (abs hour-local)
-		       (truncate (if (/= decimal-local 0)
-				     (* 60 decimal-local) 0))))))
+                         (multiple-value-bind (hour-local decimal-local)
+                             (truncate (+ (* (float tz) -1) (if dstp 1 0)))
+                           (format nil "~A~2,'0D~2,'0D"
+                                   (if (> hour-local 0) '+ '-) (abs hour-local)
+                                   (truncate (if (/= decimal-local 0)
+                                                 (* 60 decimal-local) 0))))))
     ;; %:z  +hh:mm numeric timezone (e.g., -04:00)
     ;; %::z +hh:mm:ss numeric time zone (e.g., -04:00:00)
     ;; %:::z numeric time zone with  : to necessary precision (e.g., -04, +05:30)
@@ -439,89 +439,89 @@ FORMAT-STRING defaults to `*format-time-string-default*' and accepts
 the 'date' command options except the following ones: %g, %G, %j, %N,
 %U, %V, %W, %x, %X, %:z, %::z, %:::z and %Z."
   (let* ((time-string (or format-string
-			  *format-time-string-default*)))
+                          *format-time-string-default*)))
     (when (> 2 (length time-string))
       (error "FORMAT-STRING should contains at least two characters."))
     (multiple-value-bind (sec min hour dom mon year dow dstp tz)
-	(or time (get-decoded-time))
-      (loop 
-         for format-position = (position #\% time-string :start (or format-position 0))
-	 while format-position do
-         (let* ((format-character (aref time-string (+ format-position 1)))
-                (action (or (cdr (assoc format-character
-                                        *format-time-string-alist*))
-                            (error "Invalid format option %~C"
-                                   format-character))))
-           (setf time-string (concatenate 'string
-                                          (subseq time-string 0 format-position)
-                                          (funcall action sec min hour dom mon year dow dstp tz)
-                                          (subseq time-string (+ format-position 2))))
-           (when (char-equal #\% format-character) ; escape character
-             (incf format-position)))))
+        (or time (get-decoded-time))
+      (loop
+       for format-position = (position #\% time-string :start (or format-position 0))
+       while format-position do
+       (let* ((format-character (aref time-string (+ format-position 1)))
+              (action (or (cdr (assoc format-character
+                                      *format-time-string-alist*))
+                          (error "Invalid format option %~C"
+                                 format-character))))
+         (setf time-string (concatenate 'string
+                                        (subseq time-string 0 format-position)
+                                        (funcall action sec min hour dom mon year dow dstp tz)
+                                        (subseq time-string (+ format-position 2))))
+         (when (char-equal #\% format-character) ; escape character
+           (incf format-position)))))
     (format nil time-string)))
 
 (defun echo-date ()
   "Print the output of the 'date' command to the screen."
-    (message "~a" (format-time-string)))
+  (message "~a" (format-time-string)))
 
 (define-stumpwm-command "time" ()
   (echo-date))
 
 (defun select-window (group query)
   "Read input from the user and go to the selected window."
-    (let (match)
-      (labels ((match (win)
-		      (let* ((wname (window-name win))
-			     (end (min (length wname) (length query))))
-			(string-equal wname query :end1 end :end2 end))))
-	(unless (null query)
-	  (setf match (find-if #'match (group-windows group))))
-	(when match
-	  (frame-raise-window group (window-frame match) match)))))
+  (let (match)
+    (labels ((match (win)
+               (let* ((wname (window-name win))
+                      (end (min (length wname) (length query))))
+                 (string-equal wname query :end1 end :end2 end))))
+      (unless (null query)
+        (setf match (find-if #'match (group-windows group))))
+      (when match
+        (frame-raise-window group (window-frame match) match)))))
 
 (define-stumpwm-command "select" ((win :window-name "Select: "))
   (select-window (current-group) win))
 
 (defun select-window-number (group num)
   (labels ((match (win)
-		  (= (window-number win) num)))
+             (= (window-number win) num)))
     (let ((win (find-if #'match (group-windows group))))
       (when win
-	(frame-raise-window group (window-frame win) win)))))
+        (frame-raise-window group (window-frame win) win)))))
 
 (defun other-window (group)
   (let* ((wins (group-windows group))
-	 ;; the frame could be empty
-	 (win (if (group-current-window group)
-		  (second wins)
-		  (first wins))))
+         ;; the frame could be empty
+         (win (if (group-current-window group)
+                  (second wins)
+                  (first wins))))
     (if win
-	(frame-raise-window group (window-frame win) win)
-	(echo-string (group-screen group) "No other window."))))
+        (frame-raise-window group (window-frame win) win)
+        (echo-string (group-screen group) "No other window."))))
 
 (define-stumpwm-command "other" ()
- (other-window (current-group)))
+  (other-window (current-group)))
 
 (defun programs-in-path (base &optional full-path (path (split-string (getenv "PATH") ":")))
   "Return a list of programs in the path that start with BASE. if
 FULL-PATH is T then return the full path, otherwise just return
 the filename."
   (loop
-     for p in path
-     for dir = (probe-path p)
-     when dir
-     nconc (loop
-	      for file in (directory (merge-pathnames (make-pathname :name :wild) dir))
-	      for namestring = (file-namestring file)
-	      when (and (string= base namestring
-				 :end1 (min (length base)
-					    (length namestring))
-				 :end2 (min (length base)
-					    (length namestring)))
-			(pathname-is-executable-p file))
-	      collect (if full-path 
-			  (namestring file)
-			  namestring))))
+   for p in path
+   for dir = (probe-path p)
+   when dir
+   nconc (loop
+          for file in (directory (merge-pathnames (make-pathname :name :wild) dir))
+          for namestring = (file-namestring file)
+          when (and (string= base namestring
+                             :end1 (min (length base)
+                                        (length namestring))
+                             :end2 (min (length base)
+                                        (length namestring)))
+                    (pathname-is-executable-p file))
+          collect (if full-path
+                      (namestring file)
+                      namestring))))
 
 (defun run-shell-command (cmd &optional collect-output-p)
   "Run a shell command in the background or wait for it to finish
@@ -537,12 +537,12 @@ returns..which could be forever if you're not careful."
 
 (defun split-frame-in-dir (group dir)
   (let ((f (tile-group-current-frame group)))
-      (if (split-frame group dir)
-	  (progn
-	    (when (frame-window f)
-	      (update-window-border (frame-window f)))
-	    (show-frame-indicator group))
-	(message "Cannot split smaller than minimum size."))))
+    (if (split-frame group dir)
+        (progn
+          (when (frame-window f)
+            (update-window-border (frame-window f)))
+          (show-frame-indicator group))
+        (message "Cannot split smaller than minimum size."))))
 
 (define-stumpwm-command "hsplit" ()
   (split-frame-in-dir (current-group) :column))
@@ -552,65 +552,65 @@ returns..which could be forever if you're not careful."
 
 (defun remove-split (group)
   (let* ((frame (tile-group-current-frame group))
-	 (head (frame-head group frame))
-	 (tree (tile-group-frame-head group head))
-	 (s (closest-sibling (list tree) frame))
-	 ;; grab a leaf of the siblings. The siblings doesn't have to be
-	 ;; a frame.
-	 (l (tree-accum-fn s
-			   (lambda (&rest siblings)
-			     (car siblings))
-			   #'identity)))
+         (head (frame-head group frame))
+         (tree (tile-group-frame-head group head))
+         (s (closest-sibling (list tree) frame))
+         ;; grab a leaf of the siblings. The siblings doesn't have to be
+         ;; a frame.
+         (l (tree-accum-fn s
+                           (lambda (&rest siblings)
+                             (car siblings))
+                           #'identity)))
     ;; Only remove the current frame if it has a sibling
     (if (atom tree)
-      (message "No more frames!")
-      (when s
-	(when (frame-is-head group frame)
-	  (setf (frame-number l) (frame-number frame)))
-	;; Move the windows from the removed frame to its sibling
-	(migrate-frame-windows group frame l)
-	;; If the frame has no window, give it the current window of
-	;; the current frame.
-	(unless (frame-window l)
-	  (setf (frame-window l)
-		(frame-window frame)))
-	;; Unsplit
-	(setf (tile-group-frame-head group head) (remove-frame tree frame))
-	;; update the current frame and sync all windows
-	(setf (tile-group-current-frame group) l)
-	(tree-iterate tree
-		      (lambda (leaf)
-			(sync-frame-windows group leaf)))
-	(frame-raise-window group l (frame-window l))
-	(when (frame-window l)
-	  (update-window-border (frame-window l)))
-	(show-frame-indicator group)))))
+        (message "No more frames!")
+        (when s
+          (when (frame-is-head group frame)
+            (setf (frame-number l) (frame-number frame)))
+          ;; Move the windows from the removed frame to its sibling
+          (migrate-frame-windows group frame l)
+          ;; If the frame has no window, give it the current window of
+          ;; the current frame.
+          (unless (frame-window l)
+            (setf (frame-window l)
+                  (frame-window frame)))
+          ;; Unsplit
+          (setf (tile-group-frame-head group head) (remove-frame tree frame))
+          ;; update the current frame and sync all windows
+          (setf (tile-group-current-frame group) l)
+          (tree-iterate tree
+                        (lambda (leaf)
+                          (sync-frame-windows group leaf)))
+          (frame-raise-window group l (frame-window l))
+          (when (frame-window l)
+            (update-window-border (frame-window l)))
+          (show-frame-indicator group)))))
 
 (define-stumpwm-command "remove" ()
   (remove-split (current-group)))
 
 (define-stumpwm-command "only" ()
   (let* ((screen (current-screen))
-	 (group (screen-current-group screen))
-	 (win (frame-window (tile-group-current-frame group)))
-	 (head (current-head group))
-	 (frame (copy-frame head)))
+         (group (screen-current-group screen))
+         (win (frame-window (tile-group-current-frame group)))
+         (head (current-head group))
+         (frame (copy-frame head)))
     (if (atom (tile-group-frame-head group head))
-	(message "There's only one frame.")
-      (progn
-	(mapc (lambda (w)
-		;; windows in other frames disappear
-		(unless (eq (window-frame w) (tile-group-current-frame group))
-		  (hide-window w))
-		(setf (window-frame w) frame))
-	      (head-windows group head))
-	(setf (frame-window frame) win
-	      (tile-group-frame-head group head) frame 
-	      (tile-group-current-frame group) frame)
-	(focus-frame group frame)
-	(when (frame-window frame)
-	  (update-window-border (frame-window frame)))
-	(sync-frame-windows group (tile-group-current-frame group))))))
+        (message "There's only one frame.")
+        (progn
+          (mapc (lambda (w)
+                  ;; windows in other frames disappear
+                  (unless (eq (window-frame w) (tile-group-current-frame group))
+                    (hide-window w))
+                  (setf (window-frame w) frame))
+                (head-windows group head))
+          (setf (frame-window frame) win
+                (tile-group-frame-head group head) frame
+                (tile-group-current-frame group) frame)
+          (focus-frame group frame)
+          (when (frame-window frame)
+            (update-window-border (frame-window frame)))
+          (sync-frame-windows group (tile-group-current-frame group))))))
 
 (define-stumpwm-command "fullscreen" ()
   "Toggle the fullscreen mode of the current widnow. Use this for clients
@@ -635,7 +635,7 @@ using SDL."
 (defun focus-last-frame (group)
   ;; make sure the last frame still exists in the frame tree
   (when (and (tile-group-last-frame group)
-	     (find (tile-group-last-frame group) (group-frames group)))
+             (find (tile-group-last-frame group) (group-frames group)))
     (focus-frame group (tile-group-last-frame group))))
 
 (defun focus-frame-after (group frames)
@@ -643,9 +643,9 @@ using SDL."
 the current frame."
   (let ((rest (cdr (member (tile-group-current-frame group) frames :test 'eq))))
     (focus-frame group
-		 (if (null rest)
-		     (car frames)
-		     (car rest)))))
+                 (if (null rest)
+                     (car frames)
+                     (car rest)))))
 
 (defun focus-next-frame (group)
   (focus-frame-after group (group-frames group)))
@@ -666,16 +666,16 @@ the current frame."
   "show a number in the corner of each frame and wait for the user to
 select one. Returns the selected frame or nil if aborted."
   (let* ((wins (progn
-		 (draw-frame-outlines group)
-		 (draw-frame-numbers group)))
-	 (ch (read-one-char (group-screen group)))
-	 (num (read-from-string (string ch) nil nil)))
+                 (draw-frame-outlines group)
+                 (draw-frame-numbers group)))
+         (ch (read-one-char (group-screen group)))
+         (num (read-from-string (string ch) nil nil)))
     (dformat 3 "read ~S ~S~%" ch num)
     (mapc #'xlib:destroy-window wins)
     (clear-frame-outlines group)
     (find ch (group-frames group)
-	  :test 'char=
-	  :key 'get-frame-number-translation)))
+          :test 'char=
+          :key 'get-frame-number-translation)))
 
 
 (define-stumpwm-command "fselect" ((f :frame t))
@@ -683,21 +683,21 @@ select one. Returns the selected frame or nil if aborted."
     (focus-frame group f)))
 
 (define-stumpwm-command "resize" ((w :number "+ Width: ")
-				  (h :number "+ Height: "))
-      (let* ((group (current-group))
-             (f (tile-group-current-frame group)))  
+                                  (h :number "+ Height: "))
+  (let* ((group (current-group))
+         (f (tile-group-current-frame group)))
     (if (atom (tile-group-frame-tree group))
-	(message "No more frames!")
-      (progn
-    	(clear-frame-outlines group)
-        (resize-frame group f w :width)
-	(resize-frame group f h :height)
-	(draw-frame-outlines group (current-head))))))
+        (message "No more frames!")
+        (progn
+          (clear-frame-outlines group)
+          (resize-frame group f w :width)
+          (resize-frame group f h :height)
+          (draw-frame-outlines group (current-head))))))
 
 (defun eval-line (cmd)
-  (handler-case 
+  (handler-case
       (message "^20~{~a~^~%~}"
-              (mapcar 'prin1-to-string
+               (mapcar 'prin1-to-string
                        (multiple-value-list (eval (read-from-string cmd)))))
     (error (c)
       (message "^B^1*~A" c))))
@@ -706,9 +706,9 @@ select one. Returns the selected frame or nil if aborted."
   (eval-line cmd))
 
 (define-stumpwm-command "echo" ((s :rest "Echo: "))
- ;; The purpose of echo is always to pop up a message window.
- (let ((*executing-stumpwm-command* nil))
-  (message "~a" s)))
+  ;; The purpose of echo is always to pop up a message window.
+  (let ((*executing-stumpwm-command* nil))
+    (message "~a" s)))
 
 ;; Simple command & arg parsing
 (defun split-by-one-space (string)
@@ -716,9 +716,9 @@ select one. Returns the selected frame or nil if aborted."
 Note: Two consecutive spaces will be seen as if there were an empty
 string between them."
   (loop for i = 0 then (1+ j)
-	as j = (position #\Space string :start i)
-	collect (subseq string i j)
-	while j))
+        as j = (position #\Space string :start i)
+        collect (subseq string i j)
+        while j))
 
 (defstruct argument-line
   string start)
@@ -735,42 +735,42 @@ string between them."
   "Pop the next argument off."
   (unless (argument-line-end-p input)
     (let* ((p1 (position-if-not (lambda (ch)
-				  (char= ch #\Space))
-				(argument-line-string input)
-				:start (argument-line-start input)))
-	   (p2 (or (and p1 (position #\Space (argument-line-string input) :start p1))
-		   (length (argument-line-string input)))))
+                                  (char= ch #\Space))
+                                (argument-line-string input)
+                                :start (argument-line-start input)))
+           (p2 (or (and p1 (position #\Space (argument-line-string input) :start p1))
+                   (length (argument-line-string input)))))
       (prog1
-	  ;; we wanna return nil if they're the same
-	  (unless (= p1 p2)
-	    (subseq (argument-line-string input) p1 p2))
-	(setf (argument-line-start input) (1+ p2))))))
+          ;; we wanna return nil if they're the same
+          (unless (= p1 p2)
+            (subseq (argument-line-string input) p1 p2))
+        (setf (argument-line-start input) (1+ p2))))))
 
 (defun argument-pop-or-read (input prompt &optional completions)
   (or (argument-pop input)
       (if completions
-	  (completing-read (current-screen) prompt completions)
-	  (read-one-line (current-screen) prompt))
+          (completing-read (current-screen) prompt completions)
+          (read-one-line (current-screen) prompt))
       (throw 'error :abort)))
 
 (defun argument-pop-rest (input)
   "Return the remainder of the argument text."
   (unless (argument-line-end-p input)
     (prog1
-	(subseq (argument-line-string input) (argument-line-start input))
+        (subseq (argument-line-string input) (argument-line-start input))
       (setf (argument-line-start input) (length (argument-line-string input))))))
 
 (defun argument-pop-rest-or-read (input prompt &optional completions)
   (or (argument-pop-rest input)
       (if completions
-	  (completing-read (current-screen) prompt completions)
-	  (read-one-line (current-screen) prompt))
+          (completing-read (current-screen) prompt completions)
+          (read-one-line (current-screen) prompt))
       (throw 'error :abort)))
 
 (defmacro define-stumpwm-type (type (input prompt) &body body)
-  `(setf (gethash ,type *command-type-hash*) 
-	 (lambda (,input ,prompt)
-	   ,@body)))
+  `(setf (gethash ,type *command-type-hash*)
+    (lambda (,input ,prompt)
+      ,@body)))
 
 (defun lookup-symbol (string)
   ;; FIXME: should we really use string-upcase?
@@ -800,7 +800,7 @@ string between them."
 
 (define-stumpwm-type :key-seq (input prompt)
   (labels ((update (seq)
-             (message "~a: ~{~a ~}" 
+             (message "~a: ~{~a ~}"
                       prompt
                       (mapcar 'print-key (reverse seq)))))
     (let ((rest (argument-pop-rest input)))
@@ -816,28 +816,28 @@ string between them."
 
 (define-stumpwm-type :window-number (input prompt)
   (let ((n (or (argument-pop input)
-	       (completing-read (current-screen)
-				prompt
-				(mapcar 'prin1-to-string
-					(mapcar 'window-number 
-						(group-windows (current-group))))))))
+               (completing-read (current-screen)
+                                prompt
+                                (mapcar 'prin1-to-string
+                                        (mapcar 'window-number
+                                                (group-windows (current-group))))))))
     (when n
       (handler-case
-	  (parse-integer n)
-	(parse-error (c)
-	  (declare (ignore c))
-	  (throw 'error "Number required."))))))
+          (parse-integer n)
+        (parse-error (c)
+          (declare (ignore c))
+          (throw 'error "Number required."))))))
 
 (define-stumpwm-type :number (input prompt)
   (let ((n (or (argument-pop input)
-	       (read-one-line (current-screen) prompt))))
+               (read-one-line (current-screen) prompt))))
     (when n
       (handler-case
-	  (parse-integer n)
-	(parse-error (c)
-	  (declare (ignore c))
-	  (throw 'error "Number required."))))))
-  
+          (parse-integer n)
+        (parse-error (c)
+          (declare (ignore c))
+          (throw 'error "Number required."))))))
+
 
 (define-stumpwm-type :string (input prompt)
   (or (argument-pop input)
@@ -845,22 +845,22 @@ string between them."
 
 (define-stumpwm-type :key (input prompt)
   (let ((s (or (argument-pop input)
-	       (read-one-line (current-screen) prompt))))
+               (read-one-line (current-screen) prompt))))
     (when s
       (kbd s))))
 
 (define-stumpwm-type :window-name (input prompt)
   (or (argument-pop input)
       (completing-read (current-screen) prompt
-		       (mapcar 'window-name 
-			       (group-windows (current-group))))))
+                       (mapcar 'window-name
+                               (group-windows (current-group))))))
 
 (define-stumpwm-type :gravity (input prompt)
   (let* ((values '(("center" :center)
                    ("top" :top)
                    ("right" :right)
                    ("bottom" :bottom)
-                   ("left" :left) 
+                   ("left" :left)
                    ("top-right" :top-right)
                    ("top-left" :top-left)
                    ("bottom-right" :bottom-right)
@@ -872,37 +872,37 @@ string between them."
 (defun select-group (screen query)
   "Attempt to match string QUERY against group number or partial name."
   (let (match
-	(num (ignore-errors (parse-integer query))))
+        (num (ignore-errors (parse-integer query))))
     (labels ((match (grp)
-	       (let* ((name (group-name grp))
-		      (end (min (length name) (length query))))
-		 ;; try by name or number
-		 (or (string-equal name query :end1 end :end2 end)
-		     (eql (group-number grp) num)))))
+               (let* ((name (group-name grp))
+                      (end (min (length name) (length query))))
+                 ;; try by name or number
+                 (or (string-equal name query :end1 end :end2 end)
+                     (eql (group-number grp) num)))))
       (unless (null query)
-	(setf match (find-if #'match (screen-groups screen))))
+        (setf match (find-if #'match (screen-groups screen))))
       match)))
 
 (define-stumpwm-type :group (input prompt)
-      (let ((match (select-group (current-screen)
-				 (or (argument-pop input)
-				     (completing-read (current-screen) prompt
-						      (mapcar 'group-name
-							      (screen-groups (current-screen))))))))
-	(or match
-	    (throw 'error "No Such Group."))))
+  (let ((match (select-group (current-screen)
+                             (or (argument-pop input)
+                                 (completing-read (current-screen) prompt
+                                                  (mapcar 'group-name
+                                                          (screen-groups (current-screen))))))))
+    (or match
+        (throw 'error "No Such Group."))))
 
 (define-stumpwm-type :frame (input prompt)
   (declare (ignore prompt))
   (let ((arg (argument-pop input)))
     (if arg
-	(or (find arg (group-frames (current-group))
-		  :key (lambda (f)
-			 (string (get-frame-number-translation f)))
-		  :test 'string=)
-	    (throw 'error "Frame not found."))
-	(or (choose-frame-by-number (current-group))
-	    (throw 'error :abort)))))
+        (or (find arg (group-frames (current-group))
+                  :key (lambda (f)
+                         (string (get-frame-number-translation f)))
+                  :test 'string=)
+            (throw 'error "Frame not found."))
+        (or (choose-frame-by-number (current-group))
+            (throw 'error :abort)))))
 
 (define-stumpwm-type :shell (input prompt)
   (or (argument-pop-rest input)
@@ -919,40 +919,40 @@ aborted."
   ;; Catch parse errors
   (catch 'error
     (let* ((arg-line (make-argument-line :string input
-					 :start 0))
-	   (cmd-str (argument-pop arg-line))
-	   (cmd (or (gethash cmd-str *command-hash*)
-		    (throw 'error (format nil "Command '~a' not found." cmd-str))))
-	   (arg-specs (command-args cmd))
-	   ;; Create a list of args to pass to the function. If the
-	   ;; input is snarfed and we have more args, then prompt the
-	   ;; user for a value.
-	   (args (mapcar (lambda (spec)
-			   (let* ((type (second spec))
-				  (prompt (third spec))
-				  (fn (gethash type *command-type-hash*)))
-			     (unless fn
-			       (throw 'error (format nil "Bad argument type: ~s" type)))
-			     ;; If the prompt is NIL then it's
-			     ;; considered an optional argument
-			     ;; whose value is nil.
-			     (if (and (null prompt)
-				      (argument-line-end-p arg-line))
-				 nil
-				 ;; FIXME: Is it presumptuous to assume NIL means abort?
-				 (or (funcall fn arg-line prompt)
-				     (throw 'error :abort)))))
-			 arg-specs)))
+                                         :start 0))
+           (cmd-str (argument-pop arg-line))
+           (cmd (or (gethash cmd-str *command-hash*)
+                    (throw 'error (format nil "Command '~a' not found." cmd-str))))
+           (arg-specs (command-args cmd))
+           ;; Create a list of args to pass to the function. If the
+           ;; input is snarfed and we have more args, then prompt the
+           ;; user for a value.
+           (args (mapcar (lambda (spec)
+                           (let* ((type (second spec))
+                                  (prompt (third spec))
+                                  (fn (gethash type *command-type-hash*)))
+                             (unless fn
+                               (throw 'error (format nil "Bad argument type: ~s" type)))
+                             ;; If the prompt is NIL then it's
+                             ;; considered an optional argument
+                             ;; whose value is nil.
+                             (if (and (null prompt)
+                                      (argument-line-end-p arg-line))
+                                 nil
+                                 ;; FIXME: Is it presumptuous to assume NIL means abort?
+                                 (or (funcall fn arg-line prompt)
+                                     (throw 'error :abort)))))
+                         arg-specs)))
       (dformat 3 "arguments: ~S~%" args)
       ;; Did the whole string get parsed?
       (unless (or (argument-line-end-p arg-line)
-		  (position-if 'alphanumericp (argument-line-string arg-line) :start (argument-line-start arg-line)))
-	(throw 'error (format nil "Trailing garbage: ~{~A~^ ~}" (subseq (argument-line-string arg-line) 
-									(argument-line-start arg-line)))))
+                  (position-if 'alphanumericp (argument-line-string arg-line) :start (argument-line-start arg-line)))
+        (throw 'error (format nil "Trailing garbage: ~{~A~^ ~}" (subseq (argument-line-string arg-line)
+                                                                        (argument-line-start arg-line)))))
       ;; Success
       (prog1
-	  (apply (command-fn cmd) args)
-	(setf *last-command* (command-name cmd))))))
+          (apply (command-fn cmd) args)
+        (setf *last-command* (command-name cmd))))))
 
 (defun interactive-command (cmd)
   "exec cmd and echo the result."
@@ -994,17 +994,17 @@ aborted."
 (defun renumber (group nt)
   "Renumber the current window"
   (let ((nf (window-number (group-current-window group)))
-	(win (find-if #'(lambda (win)
-			  (= (window-number win) nt))
-		      (group-windows group))))
+        (win (find-if #'(lambda (win)
+                          (= (window-number win) nt))
+                      (group-windows group))))
     ;; Is it already taken?
     (if win
-	(progn
-	  ;; swap the window numbers
-	  (setf (window-number win) nf)
-	  (setf (window-number (group-current-window group)) nt))
-      ;; Just give the window the number
-      (setf (window-number (group-current-window group)) nt))))
+        (progn
+          ;; swap the window numbers
+          (setf (window-number win) nf)
+          (setf (window-number (group-current-window group)) nt))
+        ;; Just give the window the number
+        (setf (window-number (group-current-window group)) nt))))
 
 (define-stumpwm-command "number" ((n :number "Number: "))
   (renumber (current-group) n))
@@ -1028,7 +1028,7 @@ aborted."
   ;; only somewhat nasty
   (let* ((rows (truncate (length list) columns))
          (data (loop for i from 0 below (length list) by rows
-                  collect (subseq list i (min (+ i rows) (length list)))))
+                     collect (subseq list i (min (+ i rows) (length list)))))
          (max (mapcar (lambda (col)
                         (reduce 'max col :key 'length :initial-value 0))
                       data))
@@ -1036,23 +1036,23 @@ aborted."
     (apply 'mapcar 'concat
            ;; normalize width
            (loop
-              for i in data
-              for j in max
-              for c from 0
-              collect (loop
-                         for k from 0 below rows
-                         for s = (or (nth k i) "")
-                         for len = (make-string (- j (length s))
-                                                :initial-element char)
-                         collect (ecase (or (nth c col-aligns) align)
-                                   (:left (format nil "~a~a~a" (if (= c 0) "" padstr) s len))
-                                   (:right (format nil "~a~a~a" (if (= c 0) "" padstr) len s))))))))
+            for i in data
+            for j in max
+            for c from 0
+            collect (loop
+                     for k from 0 below rows
+                     for s = (or (nth k i) "")
+                     for len = (make-string (- j (length s))
+                                            :initial-element char)
+                     collect (ecase (or (nth c col-aligns) align)
+                               (:left (format nil "~a~a~a" (if (= c 0) "" padstr) s len))
+                               (:right (format nil "~a~a~a" (if (= c 0) "" padstr) len s))))))))
 
 (defun display-keybinding (kmap-var)
   (let* ((screen (current-screen))
          (data (mapcar-hash (lambda (k v) (format nil "^5*~5a^n ~a" (print-key k) v)) (symbol-value kmap-var)))
          (cols (ceiling (length data)
-			(truncate (head-height (current-head))
+                        (truncate (head-height (current-head))
                                   (font-height (screen-font screen))))))
     (message-no-timeout "Prefix: ~{~a~^ | ~}~%~{~a~^~%~}"
                         (mapcar 'print-key-seq (search-kmap kmap-var *top-map*))
@@ -1065,7 +1065,7 @@ aborted."
   (let* ((screen (current-screen))
          (data (all-commands))
          (cols (ceiling (length data)
-			(truncate (head-height (current-head))
+                        (truncate (head-height (current-head))
                                   (font-height (screen-font screen))))))
     (message-no-timeout "~{~a~^~%~}"
                         (columnize data cols))))
@@ -1085,10 +1085,10 @@ aborted."
       (undefine-key *top-map* i))
     (define-key *top-map* key '*root-map*)
     (let* ((meta (make-key :keysym (key-keysym key)))
-	   (old-cmd (concatenate 'string "meta " (print-key prefix)))
-	   (cmd (concatenate 'string "meta " (print-key key))))
+           (old-cmd (concatenate 'string "meta " (print-key prefix)))
+           (cmd (concatenate 'string "meta " (print-key key))))
       (dolist (i (lookup-command *root-map* old-cmd))
-	(undefine-key *root-map* i))
+        (undefine-key *root-map* i))
       (define-key *root-map* meta cmd))
     (define-key *root-map* key "other")
     (sync-keys)))
@@ -1150,19 +1150,19 @@ aborted."
             ;; overlap.  We want to find the neighbour that overlaps the most.
             (when (and (= src-offset offset)
                        (>= overlap best-overlap))
-                (setf best-frame f)
-                (setf best-overlap overlap))))))
+              (setf best-frame f)
+              (setf best-overlap overlap))))))
     best-frame))
 
 (defun move-focus-and-or-window (dir &optional win-p)
   (let* ((group (current-group))
-	 (direction (intern (string-upcase dir) :keyword))
-	 (new-frame (neighbour direction (tile-group-current-frame group) (group-frames group)))
-	 (window (current-window)))
+         (direction (intern (string-upcase dir) :keyword))
+         (new-frame (neighbour direction (tile-group-current-frame group) (group-frames group)))
+         (window (current-window)))
     (when new-frame
       (focus-frame group new-frame)
       (when (and win-p window)
-	(pull-window window)))))
+        (pull-window window)))))
 
 (define-stumpwm-command "move-focus" ((dir :string "Direction: "))
   (move-focus-and-or-window dir))
@@ -1173,39 +1173,39 @@ aborted."
 (defun run-or-raise (cmd props &optional (all-groups *run-or-raise-all-groups*) (all-screens *run-or-raise-all-screens*))
   "If a window matching PROPS can be found, select it.  Otherwise simply run cmd."
   (labels
-    ;; Raise the window win and select its frame.  For now, it
-    ;; does not select the screen.
-    ((goto-win (win)
-	       (let* ((group (window-group win))
-		      (frame (window-frame win))
-		      (old-frame (tile-group-current-frame group)))
-		 (frame-raise-window group frame win)
-		 (focus-all win)
-		 (unless (eq frame old-frame)
-		   (show-frame-indicator group))))
-     (find-window (group)
-		  (find-if (lambda (w)
-			     (apply 'window-matches-properties-p w props))
-			   (group-windows group))))
+      ;; Raise the window win and select its frame.  For now, it
+      ;; does not select the screen.
+      ((goto-win (win)
+         (let* ((group (window-group win))
+                (frame (window-frame win))
+                (old-frame (tile-group-current-frame group)))
+           (frame-raise-window group frame win)
+           (focus-all win)
+           (unless (eq frame old-frame)
+             (show-frame-indicator group))))
+       (find-window (group)
+         (find-if (lambda (w)
+                    (apply 'window-matches-properties-p w props))
+                  (group-windows group))))
     (let*
-      ((screens (if all-screens
-		  *screen-list*
-		  (list (current-screen))))
-       (win
-	 ;; If no qualifiers are set don't bother looking for a match.
-	 ;; search all groups
-	 (if all-groups
-	   (loop named outer
-		 for s in screens
-		 do (loop
-		      for g in (screen-groups s)
-		      for win = (find-window g)
-		      when win
-		      do (return-from outer win)))
-	   (find-window (current-group)))))
+        ((screens (if all-screens
+                      *screen-list*
+                      (list (current-screen))))
+         (win
+          ;; If no qualifiers are set don't bother looking for a match.
+          ;; search all groups
+          (if all-groups
+              (loop named outer
+                    for s in screens
+                    do (loop
+                        for g in (screen-groups s)
+                        for win = (find-window g)
+                        when win
+                        do (return-from outer win)))
+              (find-window (current-group)))))
       (if win
-	(goto-win win)
-	(run-shell-command cmd)))))
+          (goto-win win)
+          (run-shell-command cmd)))))
 
 (define-stumpwm-command "escape" ((key :string "Key: "))
   (set-prefix-key (kbd key)))
@@ -1216,9 +1216,9 @@ aborted."
   ;; Allow the user to go back through the message history
   (if (string= *last-command* "lastmsg")
       (progn
-	(incf *lastmsg-nth*)
-	(if (>= *lastmsg-nth* (length (screen-last-msg (current-screen))))
-	    (setf *lastmsg-nth* 0)))
+        (incf *lastmsg-nth*)
+        (if (>= *lastmsg-nth* (length (screen-last-msg (current-screen))))
+            (setf *lastmsg-nth* 0)))
       (setf *lastmsg-nth* 0))
   (if (screen-last-msg (current-screen))
       (echo-nth-last-message (current-screen) *lastmsg-nth*)
@@ -1240,45 +1240,45 @@ aborted."
   (let ((m (or *resize-map* (setf *resize-map* (make-sparse-keymap)))))
     (let ((i *resize-increment*))
       (labels ((dk (m k c)
-		   (define-key m k (format nil c i))))
-	(dk m (kbd "Up") "resize 0 -~D")
-	(dk m (kbd "C-p") "resize 0 -~D")
-	(dk m (kbd "p") "resize 0 -~D")
-	(dk m (kbd "k") "resize 0 -~D")
+                 (define-key m k (format nil c i))))
+        (dk m (kbd "Up") "resize 0 -~D")
+        (dk m (kbd "C-p") "resize 0 -~D")
+        (dk m (kbd "p") "resize 0 -~D")
+        (dk m (kbd "k") "resize 0 -~D")
 
-	(dk m (kbd "Down") "resize 0 ~D")
-	(dk m (kbd "C-n") "resize 0 ~D")
-	(dk m (kbd "n") "resize 0 ~D")
-	(dk m (kbd "j") "resize 0 ~D")
+        (dk m (kbd "Down") "resize 0 ~D")
+        (dk m (kbd "C-n") "resize 0 ~D")
+        (dk m (kbd "n") "resize 0 ~D")
+        (dk m (kbd "j") "resize 0 ~D")
 
-	(dk m (kbd "Left") "resize -~D 0")
-	(dk m (kbd "C-b") "resize -~D 0")
-	(dk m (kbd "b") "resize -~D 0")
-	(dk m (kbd "h") "resize -~D 0")
+        (dk m (kbd "Left") "resize -~D 0")
+        (dk m (kbd "C-b") "resize -~D 0")
+        (dk m (kbd "b") "resize -~D 0")
+        (dk m (kbd "h") "resize -~D 0")
 
-	(dk m (kbd "Right") "resize ~D 0")
-	(dk m (kbd "C-f") "resize ~D 0")
-	(dk m (kbd "f") "resize ~D 0")
-	(dk m (kbd "l") "resize ~D 0")
-	(define-key m (kbd "RET") "exit-iresize")
-	(define-key m (kbd "C-g") "abort-iresize")
-	(define-key m (kbd "ESC") "abort-iresize")))))
+        (dk m (kbd "Right") "resize ~D 0")
+        (dk m (kbd "C-f") "resize ~D 0")
+        (dk m (kbd "f") "resize ~D 0")
+        (dk m (kbd "l") "resize ~D 0")
+        (define-key m (kbd "RET") "exit-iresize")
+        (define-key m (kbd "C-g") "abort-iresize")
+        (define-key m (kbd "ESC") "abort-iresize")))))
 
 (update-resize-map)
 
 (define-stumpwm-command "iresize" ()
   (let ((frame (tile-group-current-frame (current-group))))
-    (if	(atom (tile-group-frame-head (current-group) (frame-head (current-group) frame)))
-      (message "There's only 1 frame!")
-      (progn
-	(when *resize-hides-windows*
-	  (dolist (f (head-frames (current-group) (current-head)))
-	    (clear-frame f (current-group))))
-	(message "Resize Frame")
-	(push-top-map *resize-map*)
-	(draw-frame-outlines (current-group) (current-head)))
-      ;;   (setf *resize-backup* (copy-frame-tree (current-group)))
-      )))
+    (if (atom (tile-group-frame-head (current-group) (frame-head (current-group) frame)))
+        (message "There's only 1 frame!")
+        (progn
+          (when *resize-hides-windows*
+            (dolist (f (head-frames (current-group) (current-head)))
+              (clear-frame f (current-group))))
+          (message "Resize Frame")
+          (push-top-map *resize-map*)
+          (draw-frame-outlines (current-group) (current-head)))
+        ;;   (setf *resize-backup* (copy-frame-tree (current-group)))
+        )))
 
 (defun resize-unhide ()
   (clear-frame-outlines (current-group))
@@ -1311,31 +1311,31 @@ aborted."
 
 (when (null *groups-map*)
   (setf *groups-map*
-	(let ((m (make-sparse-keymap)))
-	  (define-key m (kbd "g") "groups")
-	  (define-key m (kbd "c") "gnew")
-	  (define-key m (kbd "n") "gnext")
-	  (define-key m (kbd "C-n") "gnext")
-	  (define-key m (kbd "SPC") "gnext")
-	  (define-key m (kbd "C-SPC") "gnext")
-	  (define-key m (kbd "p") "gprev")
-	  (define-key m (kbd "C-p") "gprev")
-	  (define-key m (kbd "o") "gother")
-	  (define-key m (kbd "'") "gselect")
-	  (define-key m (kbd "m") "gmove")
-	  (define-key m (kbd "M") "gmove-marked")
-	  (define-key m (kbd "k") "gkill")
-	  (define-key m (kbd "1") "gselect 1")
-	  (define-key m (kbd "2") "gselect 2")
-	  (define-key m (kbd "3") "gselect 3")
-	  (define-key m (kbd "4") "gselect 4")
-	  (define-key m (kbd "5") "gselect 5")
-	  (define-key m (kbd "6") "gselect 6")
-	  (define-key m (kbd "7") "gselect 7")
-	  (define-key m (kbd "8") "gselect 8")
-	  (define-key m (kbd "9") "gselect 9")
-	  (define-key m (kbd "0") "gselect 10")
-	  m)))
+        (let ((m (make-sparse-keymap)))
+          (define-key m (kbd "g") "groups")
+          (define-key m (kbd "c") "gnew")
+          (define-key m (kbd "n") "gnext")
+          (define-key m (kbd "C-n") "gnext")
+          (define-key m (kbd "SPC") "gnext")
+          (define-key m (kbd "C-SPC") "gnext")
+          (define-key m (kbd "p") "gprev")
+          (define-key m (kbd "C-p") "gprev")
+          (define-key m (kbd "o") "gother")
+          (define-key m (kbd "'") "gselect")
+          (define-key m (kbd "m") "gmove")
+          (define-key m (kbd "M") "gmove-marked")
+          (define-key m (kbd "k") "gkill")
+          (define-key m (kbd "1") "gselect 1")
+          (define-key m (kbd "2") "gselect 2")
+          (define-key m (kbd "3") "gselect 3")
+          (define-key m (kbd "4") "gselect 4")
+          (define-key m (kbd "5") "gselect 5")
+          (define-key m (kbd "6") "gselect 6")
+          (define-key m (kbd "7") "gselect 7")
+          (define-key m (kbd "8") "gselect 8")
+          (define-key m (kbd "9") "gselect 9")
+          (define-key m (kbd "0") "gselect 10")
+          m)))
 
 (defun group-forward (current list)
   (let ((ng (next-group current list)))
@@ -1345,8 +1345,8 @@ aborted."
 (define-stumpwm-command "gnew" ((name :string "Group Name: "))
   (let ((group (add-group (current-screen) name)))
     (if group
-      (switch-to-group group)
-      (message "^B^3*Groups must have a name!"))))
+        (switch-to-group group)
+        (message "^B^3*Groups must have a name!"))))
 
 (define-stumpwm-command "gnewbg" ((name :string "Group Name: "))
   (unless (find-group (current-screen) name)
@@ -1354,32 +1354,32 @@ aborted."
 
 (define-stumpwm-command "gnext" ()
   (group-forward (current-group)
-		 (sort-groups (current-screen))))
+                 (sort-groups (current-screen))))
 
 (define-stumpwm-command "gprev" ()
   (group-forward (current-group)
-		 (reverse (sort-groups (current-screen)))))
+                 (reverse (sort-groups (current-screen)))))
 
 (define-stumpwm-command "gother" ()
- "Go back to the last group."
- (let ((groups (screen-groups (current-screen))))
-   (when (> (length groups) 1)
-     (switch-to-group (second groups)))))
+  "Go back to the last group."
+  (let ((groups (screen-groups (current-screen))))
+    (when (> (length groups) 1)
+      (switch-to-group (second groups)))))
 
 (defun echo-groups (screen fmt &optional verbose (wfmt *window-format*))
   "Print a list of the windows to the screen."
   (let* ((groups (sort-groups screen))
-	 (names (reduce 'nconc 
-			(mapcar (lambda (g)
-				  (list*
-				   (format-expand *group-formatters* fmt g)
-				   (when verbose
-				     (mapcar (lambda (w)
-					       (format-expand *window-formatters*
-							      (concatenate 'string "  " wfmt)
-							      w))
-					     (sort-windows g)))))
-				(if *list-hidden-groups* groups (remove 1 groups :test #'> :key #'group-number))))))
+         (names (reduce 'nconc
+                        (mapcar (lambda (g)
+                                  (list*
+                                   (format-expand *group-formatters* fmt g)
+                                   (when verbose
+                                     (mapcar (lambda (w)
+                                               (format-expand *window-formatters*
+                                                              (concatenate 'string "  " wfmt)
+                                                              w))
+                                             (sort-windows g)))))
+                                (if *list-hidden-groups* groups (remove 1 groups :test #'> :key #'group-number))))))
     (echo-string-list screen names)))
 
 (define-stumpwm-command "groups" ((fmt :rest))
@@ -1387,8 +1387,8 @@ aborted."
 
 (define-stumpwm-command "vgroups" ((gfmt :string) (wfmt :rest))
   (echo-groups (current-screen)
-	       (or gfmt *group-format*)
-	       t (or wfmt *window-format*)))
+               (or gfmt *group-format*)
+               t (or wfmt *window-format*)))
 
 
 (define-stumpwm-command "gselect" ((to-group :group "Select Group: "))
@@ -1397,19 +1397,19 @@ aborted."
 
 (define-stumpwm-command "gmove" ((to-group :group "To Group: "))
   (when (and to-group
-	     (current-window))
+             (current-window))
     (move-window-to-group (current-window) to-group)))
 
 (define-stumpwm-command "gmove-marked" ((to-group :group "To Group: "))
   (when to-group
     (let ((group (current-group)))
       (dolist (i (marked-windows group))
-	(setf (window-marked i) nil)
-	(move-window-to-group i to-group)))))
+        (setf (window-marked i) nil)
+        (move-window-to-group i to-group)))))
 
 (define-stumpwm-command "gkill" ()
   (let ((dead-group (current-group))
-	(to-group (next-group (current-group))))
+        (to-group (next-group (current-group))))
     (switch-to-group to-group)
     (kill-group dead-group to-group)))
 
@@ -1425,30 +1425,30 @@ aborted."
 
 (when (null *menu-map*)
   (setf *menu-map*
-	(let ((m (make-sparse-keymap)))
-	  (define-key m (kbd "C-p") 'menu-up)
-	  (define-key m (kbd "Up") 'menu-up)
-	  (define-key m (kbd "k") 'menu-up)
+        (let ((m (make-sparse-keymap)))
+          (define-key m (kbd "C-p") 'menu-up)
+          (define-key m (kbd "Up") 'menu-up)
+          (define-key m (kbd "k") 'menu-up)
 
-	  (define-key m (kbd "C-n") 'menu-down)
-	  (define-key m (kbd "Down") 'menu-down)
-	  (define-key m (kbd "j") 'menu-down)
-	  (define-key m (kbd "C-g") 'menu-abort)
-	  (define-key m (kbd "ESC") 'menu-abort)
-	  (define-key m (kbd "RET") 'menu-finish)
-	  m)))
+          (define-key m (kbd "C-n") 'menu-down)
+          (define-key m (kbd "Down") 'menu-down)
+          (define-key m (kbd "j") 'menu-down)
+          (define-key m (kbd "C-g") 'menu-abort)
+          (define-key m (kbd "ESC") 'menu-abort)
+          (define-key m (kbd "RET") 'menu-finish)
+          m)))
 
 (defstruct menu-state
   table prompt selected)
 
 (defun bound-check-menu (menu)
   (setf (menu-state-selected menu)
-	(cond ((< (menu-state-selected menu) 0)
-	       (1- (length (menu-state-table menu))))
-	      ((>= (menu-state-selected menu) (length (menu-state-table menu)))
-	       0)
-	      (t (menu-state-selected menu)))))
-  
+        (cond ((< (menu-state-selected menu) 0)
+               (1- (length (menu-state-table menu))))
+              ((>= (menu-state-selected menu) (length (menu-state-table menu)))
+               0)
+              (t (menu-state-selected menu)))))
+
 (defun menu-up (menu)
   (decf (menu-state-selected menu))
   (bound-check-menu menu))
@@ -1476,31 +1476,31 @@ See *menu-map* for menu bindings."
   (check-type prompt (or null string))
   (check-type initial-selection integer)
   (let* ((menu (make-menu-state
-	       :table table
-	       :prompt prompt
-	       :selected initial-selection))
-        (menu-options (mapcar (lambda (elt)
-                                (if (listp elt)
-                                    (first elt)
-                                    elt))
-                              table))
-        (menu-text (if prompt 
-                       (cons prompt menu-options)
-                       menu-options))
-	(*record-last-msg-override* t)
-	(*suppress-echo-timeout* t))
+                :table table
+                :prompt prompt
+                :selected initial-selection))
+         (menu-options (mapcar (lambda (elt)
+                                 (if (listp elt)
+                                     (first elt)
+                                     elt))
+                               table))
+         (menu-text (if prompt
+                        (cons prompt menu-options)
+                        menu-options))
+         (*record-last-msg-override* t)
+         (*suppress-echo-timeout* t))
     (bound-check-menu menu)
     (catch :menu-quit
       (grab-keyboard screen)
       (unwind-protect
-	   (loop
-	      (echo-string-list screen menu-text
-                                (+ (menu-state-selected menu) (if prompt 1 0)))
-	      (let ((action (read-from-keymap *menu-map*)))
-		(when action
-		  (funcall action menu))))
-	(ungrab-keyboard)
-	(unmap-all-message-windows)))))
+           (loop
+            (echo-string-list screen menu-text
+                              (+ (menu-state-selected menu) (if prompt 1 0)))
+            (let ((action (read-from-keymap *menu-map*)))
+              (when action
+                (funcall action menu))))
+        (ungrab-keyboard)
+        (unmap-all-message-windows)))))
 
 (define-stumpwm-command "windowlist" ((fmt :rest))
   (if (null (group-windows (current-group)))
@@ -1528,7 +1528,7 @@ See *menu-map* for menu bindings."
 you're used to ratpoison's rc file and you just want to run
 commands or don't know lisp very well."
   (loop for i in commands do
-       (interactive-command i)))
+        (interactive-command i)))
 
 (define-stumpwm-command "snext" ()
   (switch-to-screen (next-screen))
@@ -1545,20 +1545,20 @@ commands or don't know lisp very well."
 (defun window-send-string (window string)
   "Send the string of characters to the window as if they'd been typed."
   (when window
-    (map nil (lambda (ch) 
-	       ;; exploit the fact that keysyms for ascii characters
-	       ;; are the same as their ascii value.
-	       (let ((sym (cond ((<= 32 (char-code ch) 127)
-				 (char-code ch))
-				((char= ch #\Tab)
-				 (stumpwm-name->keysym "TAB"))
-				((char= ch #\Newline)
-				 (stumpwm-name->keysym "RET"))
-				(t nil))))
-		 (when sym
-		   (send-fake-key window
-				  (make-key :keysym sym)))))
-	 string)))
+    (map nil (lambda (ch)
+               ;; exploit the fact that keysyms for ascii characters
+               ;; are the same as their ascii value.
+               (let ((sym (cond ((<= 32 (char-code ch) 127)
+                                 (char-code ch))
+                                ((char= ch #\Tab)
+                                 (stumpwm-name->keysym "TAB"))
+                                ((char= ch #\Newline)
+                                 (stumpwm-name->keysym "RET"))
+                                (t nil))))
+                 (when sym
+                   (send-fake-key window
+                                  (make-key :keysym sym)))))
+         string)))
 
 (define-stumpwm-command "insert" ((string :rest "Insert: "))
   (window-send-string (current-window) string))
@@ -1580,18 +1580,18 @@ commands or don't know lisp very well."
 current frame and raise it."
   (let ((win (other-hidden-window group)))
     (if win
-	(pull-window win)
-	(echo-string (group-screen group) "No other window."))))
+        (pull-window win)
+        (echo-string (group-screen group) "No other window."))))
 
 (defun other-window-in-frame (group)
   (let* ((f (tile-group-current-frame group))
-	 (wins (frame-windows group f))
-	 (win (if (frame-window f)
-		  (second wins)
-		  (first wins))))
+         (wins (frame-windows group f))
+         (win (if (frame-window f)
+                  (second wins)
+                  (first wins))))
     (if win
-	(frame-raise-window group (window-frame win) win)
-	(echo-string (group-screen group) "No other window."))))  
+        (frame-raise-window group (window-frame win) win)
+        (echo-string (group-screen group) "No other window."))))
 
 (define-stumpwm-command "pull-hidden-next" ()
   (let ((group (current-group)))
@@ -1608,14 +1608,14 @@ current frame and raise it."
 (define-stumpwm-command "next-in-frame" ()
   (let ((group (current-group)))
     (if (group-current-window group)
-	(focus-forward group (frame-sort-windows group (tile-group-current-frame group)))
-	(other-window-in-frame group))))
+        (focus-forward group (frame-sort-windows group (tile-group-current-frame group)))
+        (other-window-in-frame group))))
 
 (define-stumpwm-command "prev-in-frame" ()
   (let ((group (current-group)))
     (if (group-current-window group)
-	(focus-forward group (reverse (frame-sort-windows group (tile-group-current-frame group))))
-	(other-window-in-frame group))))
+        (focus-forward group (reverse (frame-sort-windows group (tile-group-current-frame group))))
+        (other-window-in-frame group))))
 
 (define-stumpwm-command "other-in-frame" ()
   (other-window-in-frame (current-group)))
@@ -1678,27 +1678,27 @@ current frame and raise it."
 
 (defun frame-dumper (f)
   (format nil "#S(frame :number ~d :x ~d :y ~d :width ~d :height ~d)"
-	  (frame-number f)
-	  (frame-x f)
-	  (frame-y f)
-	  (frame-width f)
-	  (frame-height f)))
+          (frame-number f)
+          (frame-x f)
+          (frame-y f)
+          (frame-width f)
+          (frame-height f)))
 
 (defun frame-dump (tree)
   (labels ((copy (tree)
-		 (cond ((null tree) tree)
-		       ((typep tree 'frame)
-			(frame-dumper tree))
-		       (t
-			(mapcar 'frame-dump tree)))))
-	  (copy tree)))
+             (cond ((null tree) tree)
+                   ((typep tree 'frame)
+                    (frame-dumper tree))
+                   (t
+                    (mapcar 'frame-dump tree)))))
+    (copy tree)))
 
 (defun dump-to-file (foo name)
   (with-open-file (fp name :direction :output :if-exists :supersede)
-		  (with-standard-io-syntax
-		   (let ((*package* (find-package :stumpwm))
-			 (*print-pretty* t))
-		     (princ foo fp)))))
+    (with-standard-io-syntax
+      (let ((*package* (find-package :stumpwm))
+            (*print-pretty* t))
+        (princ foo fp)))))
 
 (define-stumpwm-command "fdump" ((file :rest))
   "Dumps the frames of the current group of the current screen to the named file."
@@ -1706,9 +1706,9 @@ current frame and raise it."
   (message "Frames dumped"))
 
 (defun dump-all-groups-in-screen (screen)
-  (mapcar (lambda (group) 
-	    (list (format nil "\"~a\"" (group-name group)) (frame-dump (tile-group-frame-tree group))))
-	  (sort (copy-list (screen-groups screen)) '< :key 'group-number)))
+  (mapcar (lambda (group)
+            (list (format nil "\"~a\"" (group-name group)) (frame-dump (tile-group-frame-tree group))))
+          (sort (copy-list (screen-groups screen)) '< :key 'group-number)))
 
 (define-stumpwm-command "afdump" ((file :rest))
   "Dumps the frames of all groups of the current screen to the named file"
@@ -1719,16 +1719,16 @@ current frame and raise it."
   "Dumps the frames of all groups of all screens to the named file"
   (dump-to-file
    (mapcar (lambda (screen)
-	     (list (screen-id screen) (dump-all-groups-in-screen screen)))
-	   *screen-list*)
+             (list (screen-id screen) (dump-all-groups-in-screen screen)))
+           *screen-list*)
    file)
   (message "Frames dumped"))
 
 (defun restore-from-file (file)
   (with-open-file (fp file :direction :input)
-		  (with-standard-io-syntax
-		   (let ((*package* (find-package :stumpwm)))
-		     (read fp)))))
+    (with-standard-io-syntax
+      (let ((*package* (find-package :stumpwm)))
+        (read fp)))))
 
 (defun populate-frames (group)
   "Try to fill empty frames in GROUP with hidden windows"
@@ -1736,42 +1736,42 @@ current frame and raise it."
     (unless (frame-window f)
       (choose-new-frame-window f group)
       (when (frame-window f)
-	(unhide-window (frame-window f))))))
+        (unhide-window (frame-window f))))))
 
 (defun frame-restore (group frames)
-  (labels 
-   ((tree-frames (tree)
-		 (tree-accum-fn tree 'nconc 'list))
-    (get-frame-by-number (tree n)
-			 (find n
-			       (tree-frames tree)
-			       :key (lambda (f)
-				      (frame-number f))
-			       :test '=)))
-   (let ((default (get-frame-by-number frames 0))
-	 (focused-window (group-current-window group)))
-     ;; Do a frame-number-wise mapping of windows before and
-     ;; after the restore.
-     (dolist (w (group-windows group))
-       (setf (window-frame w)
-	     (or
-	      (dolist (f2 (tree-frames frames))
-		(when (= (frame-number f2) (frame-number (window-frame w)))
-		  (when (eq (frame-window (window-frame w)) w)
-		    (setf (frame-window f2) w))
-		  (return f2)))
-	      default))
-       (message "Assigning window ~d to frame ~d of group ~a" (window-number w)
-		(frame-number (window-frame w)) (group-name group)))
-     (setf (tile-group-current-frame group) default
-	   (tile-group-last-frame group) default)
-     ;; FIXME: call new-window-prefered-frame hook?
-     ;; restore the tree
-     (setf (tile-group-frame-tree group) frames)
-     ;; ensure that the same window which had focus before the restore gets it afterwards.
-     (when focused-window
-       (setf (tile-group-current-frame group) (window-frame focused-window))
-       (focus-window focused-window))))
+  (labels
+      ((tree-frames (tree)
+         (tree-accum-fn tree 'nconc 'list))
+       (get-frame-by-number (tree n)
+         (find n
+               (tree-frames tree)
+               :key (lambda (f)
+                      (frame-number f))
+               :test '=)))
+    (let ((default (get-frame-by-number frames 0))
+          (focused-window (group-current-window group)))
+      ;; Do a frame-number-wise mapping of windows before and
+      ;; after the restore.
+      (dolist (w (group-windows group))
+        (setf (window-frame w)
+              (or
+               (dolist (f2 (tree-frames frames))
+                 (when (= (frame-number f2) (frame-number (window-frame w)))
+                   (when (eq (frame-window (window-frame w)) w)
+                     (setf (frame-window f2) w))
+                   (return f2)))
+               default))
+        (message "Assigning window ~d to frame ~d of group ~a" (window-number w)
+                 (frame-number (window-frame w)) (group-name group)))
+      (setf (tile-group-current-frame group) default
+            (tile-group-last-frame group) default)
+      ;; FIXME: call new-window-prefered-frame hook?
+      ;; restore the tree
+      (setf (tile-group-frame-tree group) frames)
+      ;; ensure that the same window which had focus before the restore gets it afterwards.
+      (when focused-window
+        (setf (tile-group-current-frame group) (window-frame focused-window))
+        (focus-window focused-window))))
   (populate-frames group)
   ;; update windows
   (sync-all-frame-windows group))
@@ -1786,8 +1786,8 @@ current frame and raise it."
  they don't already exist."
   (dolist (gdesc group_list)
     (destructuring-bind (group-name frames) gdesc
-			(frame-restore (or	(find-group screen group-name)
-						(add-group screen group-name)) frames))))
+      (frame-restore (or        (find-group screen group-name)
+                                (add-group screen group-name)) frames))))
 
 (define-stumpwm-command "afrestore" ((file :rest))
   "Restores frames in all groups of current screen from named file."
@@ -1796,10 +1796,10 @@ current frame and raise it."
 
 (defun screen-by-id (id)
   (find id
-	*screen-list*
-	:key (lambda (s)
-	       (screen-id s))
-	:test '=))
+        *screen-list*
+        :key (lambda (s)
+               (screen-id s))
+        :test '=))
 
 (define-stumpwm-command "asfrestore" ((file :rest))
   "Restores frames in all groups of all screens from named file."
