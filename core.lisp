@@ -85,23 +85,6 @@ identity with a range check."
   (let ((root (screen-root screen)))
     (xlib:drawable-height root)))
 
-                                        #|
-(defun screen-y (screen)
-  (let ((ml (screen-mode-line screen)))
-    (if (and ml
-             (eq (mode-line-position ml) :top))
-        (xlib:with-state ((mode-line-window ml))
-          (+ (xlib:drawable-height (mode-line-window ml))
-             (* 2 (xlib:drawable-border-width (mode-line-window ml)))))
-        0)))
-
-(defun screen-height (screen)
-  (let ((root (screen-root screen))
-        (ml (screen-mode-line screen)))
-    (- (xlib:drawable-height root)
-       (or (and ml (true-height (mode-line-window ml)))
-           0))))
-|#
 (defun screen-true-height (screen)
   "Return the height of the screen regardless of the modeline"
   (let ((root (screen-root screen)))
@@ -2962,17 +2945,10 @@ chunks."
 (define-stump-event-handler :selection-clear ()
   (setf *x-selection* nil))
 
-                                        #|
 (define-stump-event-handler :exposure (window x y width height count)
-  (declare (ignore x y width height))
-  (let ((screen (find-if (lambda (s)
-  (and (screen-mode-line s)
-       (xlib:window-equal window (mode-line-window (screen-mode-line s)))))
-                         *screen-list*)))
-    (when (and screen
-               (zerop count))
-      (update-all-mode-lines))))
-|#
+  (declare (ignore window x y width height))
+  (when (zerop count)
+    (update-all-mode-lines)))
 
 (define-stump-event-handler :reparent-notify (window parent)
   (let ((win (find-window window)))
