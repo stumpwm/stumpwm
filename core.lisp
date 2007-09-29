@@ -420,6 +420,7 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 
 (defun default-border-width-for-type (type)
   (ecase type
+    (:dock 0)
     (:normal *normal-border-width*)
     (:maxsize *maxsize-border-width*)
     ((:transient :dialog) *transient-border-width*)))
@@ -600,6 +601,7 @@ and bottom_end_x."
 (defun gravity-for-window (win)
   (or (window-gravity win)
       (ecase (window-type win)
+	(:dock *normal-gravity*)
         (:normal *normal-gravity*)
         (:maxsize *maxsize-gravity*)
         ((:transient :dialog) *transient-gravity*))))
@@ -770,11 +772,15 @@ than the root window's width and height."
 	;; Don't process override-redirect windows.
 	(unless (or (eq (xlib:window-override-redirect win) :on)
 		    (internal-window-p screen win))
-	  (if (or (eql map-state :viewable)
-		  (eql wm-state +iconic-state+))
+	  (if (eq (xwin-type win) :dock)
+	    (progn
+	      (dformat 1 "window is dock-type. placing in mode-line.")
+	      (place-mode-line-window screen win))
+	    (if (or (eql map-state :viewable)
+		    (eql wm-state +iconic-state+))
 	      (progn
 		(dformat 1 "Processing ~S ~S~%" (xwin-name win) win)
-		(process-mapped-window screen win)))))))
+		(process-mapped-window screen win))))))))
   ;; Once processing them, hide them all. Later one will be mapped and
   ;; focused. We can do this because on start up there is only 1 group.
   (mapcar 'hide-window (group-windows (screen-current-group screen))))
@@ -2410,9 +2416,17 @@ list of modifier symbols."
 ;(define-stump-event-handler :map-notify (event-window window override-redirect-p)
 ;  )
 
+(defun handle-mode-line-window (xwin x y width height)
+  (let ((ml (find-mode-line-window xwin)))
+    (when ml
+      (setf (xlib:drawable-height xwin) height)
+      (update-mode-line-position ml x y)
+      (resize-mode-line ml)
+      (sync-mode-line ml))))
+
 (defun handle-unmanaged-window (xwin x y width height border-width value-mask)
   "Call this function for windows that stumpwm isn't
-managing. Basically just give the window what it wants."
+  managing. Basically just give the window what it wants."
   (labels ((has-x (mask) (= 1 (logand mask 1)))
 	   (has-y (mask) (= 2 (logand mask 2)))
 	   (has-w (mask) (= 4 (logand mask 4)))
@@ -2421,16 +2435,16 @@ managing. Basically just give the window what it wants."
 	   ;; (has-stackmode (mask) (= 64 (logand mask 64)))
 	   )
     (xlib:with-state (xwin)
-      (when (has-x value-mask)
-	(setf (xlib:drawable-x xwin) x))
-      (when (has-y value-mask)
-	(setf (xlib:drawable-y xwin) y))
-      (when (has-h value-mask)
-	(setf (xlib:drawable-height xwin) height))
-      (when (has-w value-mask)
-	(setf (xlib:drawable-width xwin) width))
-      (when (has-bw value-mask)
-      	(setf (xlib:drawable-border-width xwin) border-width)))))
+		     (when (has-x value-mask)
+		       (setf (xlib:drawable-x xwin) x))
+		     (when (has-y value-mask)
+		       (setf (xlib:drawable-y xwin) y))
+		     (when (has-h value-mask)
+		       (setf (xlib:drawable-height xwin) height))
+		     (when (has-w value-mask)
+		       (setf (xlib:drawable-width xwin) width))
+		     (when (has-bw value-mask)
+		       (setf (xlib:drawable-border-width xwin) border-width)))))
 
 (defun handle-managed-window (window width height stack-mode value-mask)
   "This is a managed window so deal with it appropriately."
@@ -2460,7 +2474,22 @@ managing. Basically just give the window what it wants."
   (let ((win (find-window window)))
     (if win
 	(handle-managed-window win width height stack-mode value-mask)
-	(handle-unmanaged-window window x y width height border-width value-mask))))
+	(if (eq (xwin-type window) :dock)
+	  (handle-mode-line-window window x y width height)
+	  (handle-unmanaged-window window x y width height border-width value-mask)))))
+
+(defun place-mode-line-window (screen xwin)
+  (let ((head 
+	  (if (head-mode-line (current-head))
+	    (find-if-not #'head-mode-line (screen-heads screen))
+	    (current-head))))
+    (when head
+      (toggle-mode-line screen head)
+      (xlib:reparent-window xwin (screen-root screen) 0 0)
+      (set-mode-line-window (head-mode-line head) xwin)
+      (update-mode-line-position (head-mode-line head) (xlib:drawable-x xwin) (xlib:drawable-y xwin))
+      (xlib:map-window xwin))))
+
 
 (define-stump-event-handler :map-request (parent send-event-p window)
   (unless send-event-p
@@ -2473,6 +2502,10 @@ managing. Basically just give the window what it wants."
       (cond
 	(win (dformat 1 "map request for mapped window ~a~%" win))
 	(wwin (restore-window wwin))
+	((eq (xwin-type window) :dock)
+	 (dformat 1 "window is dock-type. placing in mode-line.")
+	 (place-mode-line-window screen window))
+	((mode-line-add-systray-window screen window))
 	(t
 	 (let ((window (process-mapped-window screen window)))
 	   ;; Give it focus
