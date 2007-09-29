@@ -1,5 +1,9 @@
 2007-09-28  Shawn  <sabetts@hardcopy.local>
 
+	* mode-line.lisp (resize-mode-line): use head-y, not 0 for the top of the modeline.
+
+	* core.lisp (show-frame-indicator): use frame-display-y and frame-display-height
+
 	* mode-line.lisp (make-head-mode-line): dont map the modeline
 	window
 	(update-mode-line-position): if y is in the top half of the head
