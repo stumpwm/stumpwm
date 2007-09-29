@@ -115,8 +115,8 @@ current group.")
 	(mode-line-factor ml) (/ 1 (/ (head-height (mode-line-head ml)) (- (head-height (mode-line-head ml)) (mode-line-height ml))))
 	(xlib:drawable-x (mode-line-window ml)) (head-x (mode-line-head ml))
 	(xlib:drawable-y (mode-line-window ml)) (if (eq (mode-line-position ml) :top)
-						  0 
-						  (- (head-height (mode-line-head ml)) (mode-line-height ml)))))
+						  (head-y (mode-line-head ml)) 
+						  (- (+ (head-y (mode-line-head ml)) (head-height (mode-line-head ml))) (mode-line-height ml)))))
 
 (defun frame-display-y (group frame)
   "Return a Y for frame that doesn't overlap the mode-line."

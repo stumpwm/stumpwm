@@ -2015,7 +2015,7 @@ windows used to draw the numbers in. The caller must destroy them."
       (xlib:map-window w)
       (xlib:with-state (w)
         (setf (xlib:drawable-x w) (+ (frame-x cf) (truncate (- (frame-width cf) width) 2))
-              (xlib:drawable-y w) (+ (frame-y cf) (truncate (- (frame-height cf) height) 2))
+              (xlib:drawable-y w) (+ (frame-display-y group cf) (truncate (- (frame-display-height group cf) height) 2))
               (xlib:window-priority w) :above))
       (echo-in-window w (screen-font screen)
 		      (get-fg-color-pixel screen)
