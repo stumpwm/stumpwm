@@ -1,5 +1,34 @@
 2007-09-28  Shawn  <sabetts@hardcopy.local>
 
+	* user.lisp (fmt-window-list): take a head as optional argument
+	(fmt-group-list): likewise
+	(fmt-head): new function
+	(fmt-head-window-list): likewise
+
+	* primitives.lisp (+netwm-supported+): add :_NET_CLIENT_LIST_STACKING, :_NET_ACTIVE_WINDOW, :_KDE_NET_WM_SYSTEM_TRAY_WINDOW_FOR
+
+	* mode-line.lisp (*screen-mode-line-formatters*): add #\W
+	formatter
+	(netwm-remove-systray-window): remove function
+	(mode-line-add-systray-window): simplify.
+	(resize-mode-line): make sure the height doesnt exceed 1/4 the
+	head height.
+	(redraw-mode-line): only redraw the modeline when its a stump mode
+	line.
+	(destroy-mode-line-window): new function
+	(move-mode-line-to-head): swap head modelines when destination
+	head has a modeline already.
+	(update-mode-line-position): finda head without a modeline when
+	searching based on x and y fails
+
+	* core.lisp (netwm-update-client-list): set _NET_CLIENT_LIST_STACKING property
+	(netwm-set-properties): init _NET_CLIENT_LIST_STACKING property
+	(handle-mode-line-window): ignore width
+	(place-mode-line-window): move to mode-line.lisp
+	(:configure-request): simplify by calling handle-mode-line-window 
+	(:map-request): handle wint
+	(:destroy-notify): handle window modelines (dock) 
+
 	* primitives.lisp (+netwm-window-types+): add :dock type
 
 	* mode-line.lisp (mode-line): add mode slot
