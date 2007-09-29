@@ -199,23 +199,25 @@ of those expired."
                         (xlib:display-finish-output *display*))
                (xlib:access-error ()
                  (return-from stumpwm (write-line "Another window manager is running."))))
-             (mapc 'process-existing-windows *screen-list*)
-             ;; We need to setup each screen with its current window. Go
-             ;; through them in reverse so the first screen's frame ends up
-             ;; with focus.
-             (dolist (s (reverse *screen-list*))
-               (let ((group (screen-current-group s)))
-                 (when (group-windows group)
-                   (frame-raise-window group (tile-group-current-frame group) (car (group-windows group))))
-                 (focus-frame group (tile-group-current-frame group))))
              ;; Load rc file
              (let ((*package* (find-package *default-package*)))
                (multiple-value-bind (success err rc) (load-rc-file)
                  (if success
                      (and *startup-message* (message "~a" *startup-message*))
                      (message "Error loading ~A: ~A" rc err))))
+             (mapc 'process-existing-windows *screen-list*)
+             ;; We need to setup each screen with its current window. Go
+             ;; through them in reverse so the first screen's frame ends up
+             ;; with focus.
+             (dolist (s (reverse *screen-list*))
+	       (let ((netwm-id (first (xlib:get-property (screen-root s) :_NET_WM_CURRENT_DESKTOP))))
+		 (if (and netwm-id (< netwm-id (length (screen-groups s))))
+		   (switch-to-group (elt (sort-groups s) netwm-id))
+		   (switch-to-group (find-group s "Default"))))
+	       (dolist (w (group-windows (screen-current-group s)))
+		 (xwin-unhide (window-xwin w) (window-parent w))))
              ;; Let's manage.
-             (let ((*package* (find-package *default-package*)))
-               (run-hook *start-hook*)
-               (stumpwm-internal-loop)))
-        (xlib:close-display *display*)))))
+	     (let ((*package* (find-package *default-package*)))
+	       (run-hook *start-hook*)
+	       (stumpwm-internal-loop)))
+	(xlib:close-display *display*)))))

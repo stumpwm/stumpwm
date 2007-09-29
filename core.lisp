@@ -26,6 +26,8 @@
 
 (in-package :stumpwm)
 
+(defvar *processing-existing-windows* nil)
+
 ;; Do it this way so its easier to wipe the map and get a clean one.
 (when (null *top-map*)
   (setf *top-map*
@@ -765,7 +767,8 @@ than the root window's width and height."
 
 (defun process-existing-windows (screen)
   "Windows present when stumpwm starts up must be absorbed by stumpwm."
-  (let ((children (xlib:query-tree (screen-root screen))))
+  (let ((children (xlib:query-tree (screen-root screen)))
+	(*processing-existing-windows* t))
     (dolist (win children)
       (let ((map-state (xlib:window-map-state win))
 	    (wm-state (xwin-state win)))
@@ -781,9 +784,8 @@ than the root window's width and height."
 	      (progn
 		(dformat 1 "Processing ~S ~S~%" (xwin-name win) win)
 		(process-mapped-window screen win))))))))
-  ;; Once processing them, hide them all. Later one will be mapped and
-  ;; focused. We can do this because on start up there is only 1 group.
-  (mapcar 'hide-window (group-windows (screen-current-group screen))))
+  (dolist (w (screen-windows screen))
+    (setf (window-state w) +normal-state+)))
 
 (defun xwin-grab-keys (win)
   (labels ((grabit (w key)
@@ -918,6 +920,26 @@ than the root window's width and height."
 	  (unless (eq (window-frame window) frame)
 	    (pull-window window frame)))))))
 
+(defun assign-window (window group frame)
+  (setf (window-group window) group
+	(window-number window) (find-free-window-number group)
+	(window-frame window) (or frame (pick-prefered-frame window))
+	(group-windows group) (append (group-windows group) (list window))))
+
+(defun place-existing-window (screen xwin)
+  "Called for windows existing at startup."
+  (let ((window (xwin-to-window xwin))
+	(netwm-id (first (xlib:get-property xwin :_NET_WM_DESKTOP)))
+	(group (screen-current-group screen))
+	(frame nil))
+    (when (and netwm-id (< netwm-id (length (screen-groups screen))))
+      (setf group (elt (sort-groups screen) netwm-id)))
+    (let ((to-frame (find-frame group (xlib:drawable-x xwin) (xlib:drawable-y xwin))))
+      (when to-frame
+	(setf frame to-frame)))
+  (assign-window window group frame)
+  window))
+
 (defun place-window (screen xwin)
   "Pick a group and frame for XWIN."
   (let* ((window (xwin-to-window xwin))
@@ -928,11 +950,8 @@ than the root window's width and height."
       (setf group (or to-group group)
 	    frame to-frame
 	    raise to-raise))
-    (setf (window-group window) group
-	  (window-number window) (find-free-window-number group)
-	  (window-frame window) (or frame (pick-prefered-frame window))
-	  (group-windows group) (append (group-windows group) (list window))
-	  (xwin-state xwin) +iconic-state+)
+    (assign-window window group frame)
+    (setf (xwin-state xwin) +iconic-state+)
     (xlib:change-property xwin :_NET_WM_DESKTOP
 			  (list (netwm-group-id group))
 			  :cardinal 32)
@@ -950,50 +969,52 @@ than the root window's width and height."
 
 (defun pick-prefered-frame (window)
   (let* ((group (window-group window))
-         (frames (group-frames group))
-         (default (tile-group-current-frame group)))
+	 (frames (group-frames group))
+	 (default (tile-group-current-frame group)))
     (or
      (if (or (functionp *new-window-prefered-frame*)
-             (and (symbolp *new-window-prefered-frame*)
-                  (fboundp *new-window-prefered-frame*)))
-         (handler-case
-             (funcall *new-window-prefered-frame* window)
-           (error (c)
-             (message "Error while calling *new-window-prefered-frame*: ~a" c)
-             nil))
-         (loop for i in *new-window-prefered-frame*
-            thereis (case i
-                      (:last
-                       ;; last-frame can be stale
-                       (and (> (length frames) 1)
-                            (tile-group-last-frame group)))
-                      (:unfocused
-                       (find-if (lambda (f)
-                                  (not (eq f (tile-group-current-frame group))))
-                                frames))
-                      (:empty
-                       (find-if (lambda (f)
-                                  (null (frame-window f)))
-                                frames))
-                      (t                ; :focused
-                       (tile-group-current-frame group)))))
+	     (and (symbolp *new-window-prefered-frame*)
+		  (fboundp *new-window-prefered-frame*)))
+	 (handler-case
+	     (funcall *new-window-prefered-frame* window)
+	   (error (c)
+	     (message "Error while calling *new-window-prefered-frame*: ~a" c)
+	     nil))
+	 (loop for i in *new-window-prefered-frame*
+	       thereis (case i
+			 (:last
+			  ;; last-frame can be stale
+			  (and (> (length frames) 1)
+			       (tile-group-last-frame group)))
+			 (:unfocused
+			  (find-if (lambda (f)
+				     (not (eq f (tile-group-current-frame group))))
+				   frames))
+			 (:empty
+			  (find-if (lambda (f)
+				     (null (frame-window f)))
+				   frames))
+			 (t		; :focused
+			  (tile-group-current-frame group)))))
      default)))
 
 (defun add-window (screen xwin)
   (screen-add-mapped-window screen xwin)
-  (register-window (place-window screen xwin)))
+  (register-window (if *processing-existing-windows* 
+		     (place-existing-window screen xwin)
+		     (place-window screen xwin))))
 
 (defun netwm-remove-window (screen window)
   ;; update _NET_CLIENT_LIST
   (let ((client-list (xlib:get-property (screen-root screen)
-                                        :_NET_CLIENT_LIST
-                                        :type :window)))
+					:_NET_CLIENT_LIST
+					:type :window)))
     (xlib:change-property (screen-root screen)
-                          :_NET_CLIENT_LIST
-                          (remove (xlib:drawable-id (window-xwin window))
-                                  client-list)
-                          :window 32
-                          :mode :replace)
+			  :_NET_CLIENT_LIST
+			  (remove (xlib:drawable-id (window-xwin window))
+				  client-list)
+			  :window 32
+			  :mode :replace)
     ;; remove _NET_WM_DESKTOP property
     (xlib:delete-property (window-xwin window) :_NET_WM_DESKTOP)))
 
@@ -1012,10 +1033,10 @@ needed."
     (update-screen-mode-lines)
     ;; Set allowed actions
     (xlib:change-property xwin :_NET_WM_ALLOWED_ACTIONS
-                          (mapcar (lambda (a)
-                                    (xlib:intern-atom *display* a))
-                                  +netwm-allowed-actions+)
-                          :atom 32)
+			  (mapcar (lambda (a)
+				    (xlib:intern-atom *display* a))
+				  +netwm-allowed-actions+)
+			  :atom 32)
     ;; Run the map window hook on it
     (run-hook-with-args *map-window-hook* window)
     window))
@@ -1135,14 +1156,6 @@ needed."
       (move-screen-to-head screen))
     (when last-win
       (update-window-border last-win))))
-
-(defun maybe-hide-windows (new-window group frame)
-  "Hide windows in FRAME depending on what kind of window NEW-WINDOW is. if
-NEW-WINDOW is nil then the windows will be hidden."
-  (when (or (null new-window)
-	    (and (eql frame (window-frame new-window))
-		 (eq (window-type new-window) :normal)))
-    (mapc 'hide-window (remove new-window (frame-windows group frame)))))
 
 (defun focus-window (window)
   "Give the window focus. This means the window will be visible,
@@ -1307,6 +1320,18 @@ function expects to be wrapped in a with-state for win."
  
 ;;; Frame functions
 
+(defun find-frame (group x y)
+  "Return the frame of GROUP containing the pixel at X Y"
+  (dolist (f (group-frames group))
+    (let* ((fy (frame-y f))
+	   (fx (frame-x f))
+	   (fwx (+ fx (frame-width f)))
+	   (fhy (+ fy (frame-height f))))
+      (when (and
+	     (>= y fy) (<= y fhy)
+	     (>= x fx) (<= x fwx)
+	     (return f))))))
+
 (defun frame-raise-window (g f w &optional (focus t))
   "Raise the window w in frame f in group g. if FOCUS is
 T (default) then also focus the frame."
@@ -1314,10 +1339,10 @@ T (default) then also focus the frame."
     ;; nothing to do when W is nil
     (setf (frame-window f) w)
     (unless (and w (eq oldw w))
-      (when w
-	(raise-window w))
-      ;; The old ones might need to be hidden
-      (maybe-hide-windows w g f))
+      (if w
+	(raise-window w)
+	(mapc 'hide-window (frame-windows g f)))
+      (netwm-update-client-list-stacking (group-screen g)))
     (when focus
       (focus-frame g f))))
 
@@ -1840,6 +1865,15 @@ windows used to draw the numbers in. The caller must destroy them."
 
 ;;; Screen functions
 
+(defun netwm-update-client-list-stacking (screen)
+  (xlib:change-property (screen-root screen)
+			:_NET_CLIENT_LIST_STACKING
+			;; Order is bottom to top.
+			(reverse (mapcar 'window-xwin (all-windows)))
+			:window 32
+                        :transform #'xlib:drawable-id
+			:mode :replace))
+
 (defun netwm-update-client-list (screen)
   (xlib:change-property (screen-root screen)
                         :_NET_CLIENT_LIST
@@ -1847,11 +1881,8 @@ windows used to draw the numbers in. The caller must destroy them."
                         :window 32
                         :transform #'xlib:drawable-id
                         :mode :replace)
-  (xlib:change-property (screen-root screen)
-			:_NET_CLIENT_LIST_STACKING
-			(xlib:get-property (screen-root screen) :_NET_CLIENT_LIST)
-			:window 32
-			:mode :replace))
+  (netwm-update-client-list-stacking screen))
+
 
 (defun screen-add-mapped-window (screen xwin)
   (push xwin (screen-mapped-windows screen))
@@ -2510,7 +2541,12 @@ list of modifier symbols."
 	   (setf (screen-withdrawn-windows screen) (delete wwin (screen-withdrawn-windows screen))))
 	 t)
 	(wwin (restore-window wwin))
-	((mode-line-add-systray-window screen window))
+	((xlib:get-property window :_KDE_NET_WM_SYSTEM_TRAY_WINDOW_FOR)
+	 ;; Do nothing if this is a systray window (the system tray
+	 ;; will handle it, if there is one, and, if there isn't the
+	 ;; user doesn't want this popping up as a managed window
+	 ;; anyway.
+	 )
 	(t
 	 (let ((window (process-mapped-window screen window)))
 	   ;; Give it focus
