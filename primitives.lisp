@@ -219,6 +219,7 @@ name. :title, :resource-name, :class are valid values.")
 (defstruct window
   xwin
   width height
+  x y	; these are only used to hold the requested map location.
   gravity
   group
   frame
@@ -344,6 +345,12 @@ single char keys are supported.")
 
 (defvar *screen-list* '()
   "List of screens")
+
+(defvar *initializing* nil
+  "True when starting stumpwm.")
+
+(defvar *processing-existing-windows* nil
+  "True when processing pre-existing windows at startup.")
 
 ;;; Hook functionality
 
@@ -720,6 +727,9 @@ then only the class ID is matched.")
 (defvar *suppress-deny-messages* nil
   "Set this to T so stumpwm doesn't notify you of denied raise/map requests.")
 
+(defvar *honor-window-moves* t
+  "Allow windows to move between frames.")
+
 ;; FIXME: maybe this should be a method to allow user customizable matching?
 (defun match-res-or-type (window res)
   (or (and (stringp res)
@@ -767,7 +777,7 @@ value.")
 (defvar *new-window-prefered-frame* '(:focused)
   "Controls where new windows appear. It's a list where the more
 prefered possibilities are closer to the head. Valid list
-elements are :focused, :last, :empty, :unfocused. This can also
+elements are :focused, :last, :empty, :choice, :unfocused. This can also
 be a function, in which case the function should take 1 argument,
 the new window, and return the prefered frame.")
 

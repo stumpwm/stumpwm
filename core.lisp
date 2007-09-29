@@ -26,9 +26,6 @@
 
 (in-package :stumpwm)
 
-(defvar *processing-existing-windows* nil
-  "Set to T when inside process-existing-windows.")
-
 ;; Do it this way so its easier to wipe the map and get a clean one.
 (when (null *top-map*)
   (setf *top-map*
@@ -270,10 +267,11 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
     (xlib:change-property root :_NET_NUMBER_OF_DESKTOPS
 			  (list (length (screen-groups screen)))
 			  :cardinal 32)
-    ;; _NET_CURRENT_DESKTOP
-    (xlib:change-property root :_NET_CURRENT_DESKTOP
-			  (list (netwm-group-id (screen-current-group screen)))
-			  :cardinal 32)
+    (unless *initializing*
+      ;; _NET_CURRENT_DESKTOP
+      (xlib:change-property root :_NET_CURRENT_DESKTOP
+			    (list (netwm-group-id (screen-current-group screen)))
+			    :cardinal 32))
     ;; _NET_DESKTOP_NAMES
     (xlib:change-property root :_NET_DESKTOP_NAMES
 			  (let ((names (mapcan
@@ -769,7 +767,12 @@ than the root window's width and height."
 (defun process-existing-windows (screen)
   "Windows present when stumpwm starts up must be absorbed by stumpwm."
   (let ((children (xlib:query-tree (screen-root screen)))
-	(*processing-existing-windows* t))
+	(*processing-existing-windows* t)
+	(stacking (xlib:get-property (screen-root screen) :_NET_CLIENT_LIST_STACKING)))
+    (when stacking
+      ;; sort by _NET_CLIENT_LIST_STACKING
+      (setf children (sort #'> children :key (lambda (xwin)
+					       (position (xlib:drawable-id xwin) stacking)))))
     (dolist (win children)
       (let ((map-state (xlib:window-map-state win))
 	    (wm-state (xwin-state win)))
@@ -786,7 +789,8 @@ than the root window's width and height."
 		(dformat 1 "Processing ~S ~S~%" (xwin-name win) win)
 		(process-mapped-window screen win))))))))
   (dolist (w (screen-windows screen))
-    (setf (window-state w) +normal-state+)))
+    (setf (window-state w) +normal-state+)
+    (xwin-hide (window-xwin w) (window-parent w))))
 
 (defun xwin-grab-keys (win)
   (labels ((grabit (w key)
@@ -851,6 +855,7 @@ than the root window's width and height."
   (make-window
    :xwin xwin
    :width (xlib:drawable-width xwin) :height (xlib:drawable-height xwin)
+   :x (xlib:drawable-x xwin) :y (xlib:drawable-y xwin)
    :title (xwin-name xwin)
    :class (xwin-class xwin)
    :res (xwin-res-name xwin)
@@ -924,22 +929,20 @@ than the root window's width and height."
 (defun assign-window (window group frame)
   (setf (window-group window) group
 	(window-number window) (find-free-window-number group)
-	(window-frame window) (or frame (pick-prefered-frame window))
-	(group-windows group) (append (group-windows group) (list window))))
+	(window-frame window) (or frame (pick-prefered-frame window)))
+  (push window (group-windows group))
+  (dformat 3 "Group windows: ~S~%" (group-windows group)))
 
 (defun place-existing-window (screen xwin)
   "Called for windows existing at startup."
-  (let ((window (xwin-to-window xwin))
-	(netwm-id (first (xlib:get-property xwin :_NET_WM_DESKTOP)))
-	(group (screen-current-group screen))
-	(frame nil))
-    (when (and netwm-id (< netwm-id (length (screen-groups screen))))
-      (setf group (elt (sort-groups screen) netwm-id)))
-    (let ((to-frame (find-frame group (xlib:drawable-x xwin) (xlib:drawable-y xwin))))
-      (when to-frame
-	(setf frame to-frame)))
-  (assign-window window group frame)
-  window))
+  (let* ((window (xwin-to-window xwin))
+	 (netwm-id (first (xlib:get-property xwin :_NET_WM_DESKTOP)))
+	 (group (if (and netwm-id (< netwm-id (length (screen-groups screen))))
+		  (elt (sort-groups screen) netwm-id)
+		  (screen-current-group screen))))
+    (dformat 3 "Assigning pre-existing window ~S to group ~S~%" (window-name window) (group-name group))
+    (assign-window window group (find-frame group (xlib:drawable-x xwin) (xlib:drawable-y xwin)))
+    window))
 
 (defun place-window (screen xwin)
   "Pick a group and frame for XWIN."
@@ -995,13 +998,20 @@ than the root window's width and height."
 			  (find-if (lambda (f)
 				     (null (frame-window f)))
 				   frames))
+			 (:choice
+			   ;; Transient windows sometimes specify a location
+			   ;; relative to the TRANSIENT_FOR window. Just ignore
+			   ;; these hints.
+			   (unless (find (window-type window) '(:transient :dialog))
+			     (when (xlib:wm-size-hints-user-specified-position-p (window-normal-hints window))
+			       (find-frame group (window-x window) (window-y window)))))
 			 (t		; :focused
 			  (tile-group-current-frame group)))))
      default)))
 
 (defun add-window (screen xwin)
   (screen-add-mapped-window screen xwin)
-  (register-window (if *processing-existing-windows* 
+  (register-window (if *processing-existing-windows*
 		     (place-existing-window screen xwin)
 		     (place-window screen xwin))))
 
@@ -2496,6 +2506,10 @@ list of modifier symbols."
   ;; Grant the stack-mode change (if it's mapped)
   (set-window-geometry window :width width :height height)
   (maximize-window window)
+  ;; Send a synthetic configure-notify event so that the window
+  ;; knows where it is onscreen. This fixes problems with drop-down
+  ;; menus, etc.
+  (xwin-send-configuration-notify (window-xwin window) (frame-x (window-frame window)) (frame-y (window-frame window)) (window-height window) (window-width window) 0)
   (when (and (window-in-current-group-p window)
 	     ;; stack-mode change?
 	     (= 64 (logand value-mask 64)))
@@ -2513,12 +2527,31 @@ list of modifier symbols."
              (unless (eq (window-frame window) oldf)
                (show-frame-indicator (window-group window)))))))))
 
+(defun handle-window-move (win x y relative-to &optional (value-mask -1))
+  (when *honor-window-moves*
+    (dformat 3 "Window requested new position ~D,~D relative to ~S~%" x y relative-to)
+    (labels ((has-x (mask) (= 1 (logand mask 1)))
+	     (has-y (mask) (= 2 (logand mask 2))))
+      (when (or (eq relative-to :root) (has-x value-mask) (has-y value-mask))
+	(let* ((group (window-group win))
+	       (pos  (if (eq relative-to :parent)
+		       (list
+			 (+ (xlib:drawable-x (window-parent win)) x)
+			 (+ (xlib:drawable-y (window-parent win)) y))
+		       (list x y)))
+	       (frame (apply #'find-frame group pos)))
+	  (when frame
+	    (setf (window-frame win) frame)
+	    (frame-raise-window group frame win nil)))))))
+
 (define-stump-event-handler :configure-request (stack-mode #|parent|# window #|above-sibling|# x y width height border-width value-mask)
   ;; Grant the configure request but then maximize the window after the granting.
   (dformat 3 "CONFIGURE REQUEST ~@{~S ~}~%" stack-mode window x y width height border-width value-mask)
   (let ((win (find-window window)))
     (cond
-      (win (handle-managed-window win width height stack-mode value-mask))
+      (win
+	(handle-window-move win x y :parent value-mask)
+	(handle-managed-window win width height stack-mode value-mask))
       ((handle-mode-line-window window x y width height))
       (t (handle-unmanaged-window window x y width height border-width value-mask)))))
 
@@ -2840,6 +2873,12 @@ chunks."
 			 (case (xlib:atom-name *display* p)
 			   (:_NET_WM_STATE_FULLSCREEN
 			     (update-fullscreen our-window action)))))))))
+	(:_NET_MOVERESIZE_WINDOW
+	  (let ((our-window (find-window window)))
+	    (when our-window
+	      (destructuring-bind (gravity x y width height) data
+		(declare (ignore gravity width height))
+		(hanlde-window-move our-window x y :relative :root)))))
 	(t
 	 (dformat 2 "ignored message~%"))))
 
