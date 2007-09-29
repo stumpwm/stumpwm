@@ -690,7 +690,7 @@ than the root window's width and height."
                                                      fwidth fheight)
 			 (when center
 			   (setf x (+ wx (frame-x f))
-				 y (+ wy (frame-y f))
+				 y (+ wy (frame-display-y (window-group win) f))
 				 wx 0 wy 0))
 			 ;; Now return our findings
 			 (values x y wx wy width height center))))

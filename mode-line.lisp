@@ -27,6 +27,7 @@
   position
   gc
   height
+  factor
   (mode :stump))
 
 (defvar *mode-line-position* :top
@@ -111,6 +112,7 @@ current group.")
   (setf (xlib:drawable-width (mode-line-window ml)) (- (frame-width (mode-line-head ml)) (* 2 (xlib:drawable-border-width (mode-line-window ml))))
 	(xlib:drawable-height (mode-line-window ml)) (min (xlib:drawable-height (mode-line-window ml)) (/ (head-height (mode-line-head ml)) 4))
 	(mode-line-height ml) (xlib:drawable-height (mode-line-window ml))
+	(mode-line-factor ml) (/ 1 (/ (head-height (mode-line-head ml)) (- (head-height (mode-line-head ml)) (mode-line-height ml))))
 	(xlib:drawable-x (mode-line-window ml)) (head-x (mode-line-head ml))
 	(xlib:drawable-y (mode-line-window ml)) (if (eq (mode-line-position ml) :top)
 						  0 
@@ -121,18 +123,11 @@ current group.")
   (let* ((head (frame-head group frame))
 	 (ml (head-mode-line head)))
     (if (and ml (not (eq (mode-line-mode ml) :hidden)))
-      (progn
-	(case (mode-line-position ml)
-	  (:top
-	    (if (<= (frame-y frame)
-		    (+ (head-y head) (mode-line-height ml)))
-	      (+ (frame-y frame) (- (+ (head-y head) (mode-line-height ml)) (frame-y frame)))
-	      (+ (frame-y frame) (mode-line-height ml))))
-	  (:bottom
-	    (if (> (+ (frame-y frame) (frame-height frame))
-		   (+ (head-y head) (head-height head)) (mode-line-height ml))
-	      (- (frame-y frame) (mode-line-height ml))
-	      (frame-y frame)))))
+      (case (mode-line-position ml)
+	(:top
+	  (+ (mode-line-height ml) (round (* (frame-y frame) (mode-line-factor ml)))))
+	(:bottom
+	  (round (* (frame-y frame) (mode-line-factor ml)))))
       (frame-y frame))))
 
 (defun frame-display-height (group frame)
@@ -140,18 +135,7 @@ current group.")
   (let* ((head (frame-head group frame))
 	 (ml (head-mode-line head)))
     (if (and ml (not (eq (mode-line-mode ml) :hidden)))
-      (progn
-	(case (mode-line-position ml)
-	  (:top
-	    (if (> (+ (frame-y frame) (frame-height frame) (mode-line-height ml))
-		   (+ (head-y head) (head-height head)))
-	      (- (frame-height frame) (mode-line-height ml))
-	      (frame-height frame)))
-	  (:bottom
-	    (if (> (+ (frame-y frame) (frame-height frame))
-		   (- (+ (head-y head) (head-height head)) (mode-line-height ml)))
-	      (- (frame-height frame) (mode-line-height ml))
-	      (frame-height frame)))))
+      (round (* (frame-height frame) (mode-line-factor ml)))
       (frame-height frame))))
 
 (defgeneric mode-line-format-elt (elt))
