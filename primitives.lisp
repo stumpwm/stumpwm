@@ -243,7 +243,11 @@ name. :title, :resource-name, :class are valid values.")
   height
   window)
 
-(defstruct (head (:include frame)))
+(defstruct (head (:include frame))
+  ;; point back to the screen this head belongs to
+  screen 
+  ;; a bar along the top or bottom that displays anything you want.
+  mode-line)
 
 (defstruct group
   ;; A list of all windows in this group. They are of the window
@@ -287,8 +291,6 @@ name. :title, :resource-name, :class are valid values.")
   frame-window
   ;; The window that gets focus when no window has focus
   focus-window
-  ;; a bar along the top or bottom that displays anything you want.
-  mode-line
   ;; graphic contexts
   message-gc
   marked-gc

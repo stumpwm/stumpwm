@@ -78,6 +78,15 @@ identity with a range check."
   0)
 
 (defun screen-y (screen)
+  (declare (ignore screen))
+  0)
+
+(defun screen-height (screen)
+  (let ((root (screen-root screen)))
+    (xlib:drawable-height root)))
+
+#|
+(defun screen-y (screen)
   (let ((ml (screen-mode-line screen)))
     (if (and ml
 	     (eq (mode-line-position ml) :top))
@@ -92,7 +101,7 @@ identity with a range check."
     (- (xlib:drawable-height root)
        (or (and ml (true-height (mode-line-window ml)))
 	   0))))
-
+|#
 (defun screen-true-height (screen)
   "Return the height of the screen regardless of the modeline"
   (let ((root (screen-root screen)))
@@ -994,8 +1003,7 @@ needed."
     (maximize-window window)
     (grab-keys-on-window window)
     ;; quite often the modeline displays the window list, so update it
-    (when (screen-mode-line screen)
-      (redraw-mode-line-for (screen-mode-line screen) screen))
+    (update-screen-mode-lines)
     ;; Set allowed actions
     (xlib:change-property xwin :_NET_WM_ALLOWED_ACTIONS
                           (mapcar (lambda (a)
@@ -1019,35 +1027,38 @@ needed."
   (declare (type window window))
   ;; put it in a valid group
   (let ((screen (window-screen window)))
-    (unless (find (window-group window)
-                  (screen-groups screen))
-      (setf (window-group window) (screen-current-group screen)))
-    ;; FIXME: somehow it feels like this could be merged with add-window
-    (setf (window-title window) (xwin-name (window-xwin window))
-          (window-class window) (xwin-class (window-xwin window))
-          (window-res window) (xwin-res-name (window-xwin window))
-          (window-role window) (xwin-role (window-xwin window))
-          (window-type window) (xwin-type (window-xwin window))
-          (window-normal-hints window) (xlib:wm-normal-hints (window-xwin window))
-          (window-number window) (find-free-window-number (window-group window))
-          (window-state window) +iconic-state+
-          (xwin-state (window-xwin window)) +iconic-state+
-          (screen-withdrawn-windows screen) (delete window (screen-withdrawn-windows screen))
-          ;; put the window at the end of the list
-          (group-windows (window-group window)) (append (group-windows (window-group window)) (list window))
-          (window-frame window) (pick-prefered-frame window))
+    ;; Use window plaecment rules
+    (multiple-value-bind (group frame raise) (get-window-placement screen window)
+      (declare (ignore raise))
+      (unless (find (window-group window)
+		    (screen-groups screen))
+	(setf (window-group window) (or group (screen-current-group screen))))
+      ;; FIXME: somehow it feels like this could be merged with group-add-window
+      (setf (window-title window) (xwin-name (window-xwin window))
+	    (window-class window) (xwin-class (window-xwin window))
+	    (window-res window) (xwin-res-name (window-xwin window))
+	    (window-role window) (xwin-role (window-xwin window))
+	    (window-type window) (xwin-type (window-xwin window))
+	    (window-normal-hints window) (xlib:wm-normal-hints (window-xwin window))
+	    (window-number window) (find-free-window-number (window-group window))
+	    (window-state window) +iconic-state+
+	    (xwin-state (window-xwin window)) +iconic-state+
+	    (screen-withdrawn-windows screen) (delete window (screen-withdrawn-windows screen))
+	    ;; put the window at the end of the list
+	    (group-windows (window-group window)) (append (group-windows (window-group window)) (list window))
+	    (window-frame window) (or frame (pick-prefered-frame window))))
     (screen-add-mapped-window screen (window-xwin window))
     (register-window window)
     ;; give it focus
     (if (deny-request-p window *deny-map-request*)
-        (unless *suppress-deny-messages*
-          (if (eq (window-group window) (current-group))
-              (echo-string (window-screen window) (format nil "'~a' denied map request" (window-name window)))
-              (echo-string (window-screen window) (format nil "'~a' denied map request in group ~a" (window-name window) (group-name (window-group window))))))
-        (frame-raise-window (window-group window) (window-frame window) window
-                            (if (eq (window-frame window)
-                                    (tile-group-current-frame (window-group window)))
-                                t nil)))))
+      (unless *suppress-deny-messages*
+	(if (eq (window-group window) (current-group))
+	  (echo-string (window-screen window) (format nil "'~a' denied map request" (window-name window)))
+	  (echo-string (window-screen window) (format nil "'~a' denied map request in group ~a" (window-name window) (group-name (window-group window))))))
+      (frame-raise-window (window-group window) (window-frame window) window
+			  (if (eq (window-frame window)
+				  (tile-group-current-frame (window-group window)))
+			    t nil)))))
 
 (defun withdraw-window (window)
   "Withdrawing a window means just putting it in a list til we get a destroy event."
@@ -1078,8 +1089,7 @@ needed."
     (when (eq (tile-group-current-frame group) f)
       (focus-frame (window-group window) f))
     ;; quite often the modeline displays the window list, so update it
-    (when (screen-mode-line screen)
-      (redraw-mode-line-for (screen-mode-line screen) screen))
+    (update-screen-mode-lines)
     ;; Run the unmap hook on the window
     (run-hook-with-args *unmap-window-hook* window)))
 
@@ -2216,7 +2226,6 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 
 ;;; Head functions
 
-<<<<<<< HEAD:core.lisp
 (defun parse-xinerama-head (line)
   (ppcre:register-groups-bind (('parse-integer number width height x y))
       ("^ +head #([0-9]+): ([0-9]+)x([0-9]+) @ ([0-9]+),([0-9]+)" line :sharedp t)
@@ -2227,13 +2236,7 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 		   :height height)
       (parse-error ()
         nil))))
-=======
-(defun heads-frames (heads)
- "Return frames for heads."
- (mapcar #'copy-frame heads))
->>>>>>> dd3047e100ab6e6103614de83e2d1fc39b19d454:core.lisp
 
-<<<<<<< HEAD:core.lisp
 (defun make-screen-heads (screen root)
   "or use xdpyinfo to query the xinerama extension, if it's enabled."
   (or (and (xlib:query-extension *display* "XINERAMA")
@@ -2258,36 +2261,6 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 (defun copy-heads (screen)
   "Return a copy of screen's heads."
   (mapcar #'copy-structure (screen-heads screen)))
-=======
-;; Use xdpyinfo to query the xinerama extension, if it's enabled.
-(defun make-heads (screen)
-  (if (screen-heads screen)
-    (mapcar #'copy-head (screen-heads screen))
-    (cond
-      ((and
-	 (xlib:query-extension *display* "XINERAMA")
-	 (let* ((*package* (find-package :stumpwm))
-		(heads (read-from-string
-			 (let ((*screen-list* (list screen)))
-			   ;; For compatibility with NetBSD sed, don't use the + operator.
-			   (run-prog-collect-output "/bin/sh" "-c" "echo -n '\('; xdpyinfo -ext XINERAMA | sed -n 's/^[[:space:]][[:space:]]*head #\\([[:digit:]]\\):[[:space:]][[:space:]]*\\([[:digit:]][[:digit:]]*\\)x\\([[:digit:]][[:digit:]]*\\)[[:space:]]*@[[:space:]]*\\([[:digit:]][[:digit:]]*\\),\\([[:digit:]][[:digit:]]*\\).*$/#S(head :number \\1 :width \\2 :height \\3 :x \\4 :y \\5)/p'; echo -n '\)'")))))
-	   ;; Ignore 'clone' heads.
-	   (setf heads (delete-duplicates heads
-					  :test (lambda (h1 h2) (and (= (frame-height h1) (frame-height h2))
-								     (= (frame-width h1) (frame-width h2))
-								     (= (frame-x h1) (frame-x h2))
-								     (= (frame-y h1) (frame-y h2))))))
-	   heads)))
-      (t
-	;; Xinerama not supported, or we got no information about
-	;; heads for some other reason.
-	(list (make-head :number 0
-			 :x (screen-x screen)
-			 :y (screen-y screen)
-			 :width (screen-width screen)
-			 :height (screen-height screen)
-			 :window nil))))))
->>>>>>> dd3047e100ab6e6103614de83e2d1fc39b19d454:core.lisp
 
 ;; Determining a frame's head based on position probably won't
 ;; work with overlapping heads. Would it be better to walk
@@ -2696,6 +2669,7 @@ chunks."
 (define-stump-event-handler :selection-clear ()
   (setf *x-selection* nil))
 
+#|
 (define-stump-event-handler :exposure (window x y width height count)
   (declare (ignore x y width height))
   (let ((screen (find-if (lambda (s)
@@ -2704,7 +2678,8 @@ chunks."
 			 *screen-list*)))
     (when (and screen
 	       (zerop count))
-      (redraw-mode-line-for (screen-mode-line screen) screen))))
+      (update-screen-mode-lines))))
+|#
 
 (define-stump-event-handler :reparent-notify (window parent)
   (let ((win (find-window window)))
