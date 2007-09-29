@@ -1843,7 +1843,12 @@ windows used to draw the numbers in. The caller must destroy them."
                         (screen-mapped-windows screen)
                         :window 32
                         :transform #'xlib:drawable-id
-                        :mode :replace))
+                        :mode :replace)
+  (xlib:change-property (screen-root screen)
+			:_NET_CLIENT_LIST_STACKING
+			(xlib:get-property (screen-root screen) :_NET_CLIENT_LIST)
+			:window 32
+			:mode :replace))
 
 (defun screen-add-mapped-window (screen xwin)
   (push xwin (screen-mapped-windows screen))
@@ -2131,7 +2136,11 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
     (xlib:change-property root :_NET_CLIENT_LIST
                           () :window 32
                           :transform #'xlib:drawable-id)
-    ;; TODO: _NET_CLIENT_LIST_STACKING
+
+    ;; _NET_CLIENT_LIST_STACKING
+    (xlib:change-property root :_NET_CLIENT_LIST_STACKING
+                          () :window 32
+                          :transform #'xlib:drawable-id)
 
     ;; _NET_DESKTOP_GEOMETRY
     (xlib:change-property root :_NET_DESKTOP_GEOMETRY
@@ -2417,6 +2426,7 @@ list of modifier symbols."
 ;  )
 
 (defun handle-mode-line-window (xwin x y width height)
+  (declare (ignore width))
   (let ((ml (find-mode-line-window xwin)))
     (when ml
       (setf (xlib:drawable-height xwin) height)
@@ -2472,24 +2482,10 @@ list of modifier symbols."
   ;; Grant the configure request but then maximize the window after the granting.
   (dformat 3 "CONFIGURE REQUEST ~@{~S ~}~%" stack-mode window x y width height border-width value-mask)
   (let ((win (find-window window)))
-    (if win
-	(handle-managed-window win width height stack-mode value-mask)
-	(if (eq (xwin-type window) :dock)
-	  (handle-mode-line-window window x y width height)
-	  (handle-unmanaged-window window x y width height border-width value-mask)))))
-
-(defun place-mode-line-window (screen xwin)
-  (let ((head 
-	  (if (head-mode-line (current-head))
-	    (find-if-not #'head-mode-line (screen-heads screen))
-	    (current-head))))
-    (when head
-      (toggle-mode-line screen head)
-      (xlib:reparent-window xwin (screen-root screen) 0 0)
-      (set-mode-line-window (head-mode-line head) xwin)
-      (update-mode-line-position (head-mode-line head) (xlib:drawable-x xwin) (xlib:drawable-y xwin))
-      (xlib:map-window xwin))))
-
+    (cond
+      (win (handle-managed-window win width height stack-mode value-mask))
+      ((handle-mode-line-window window x y width height))
+      (t (handle-unmanaged-window window x y width height border-width value-mask)))))
 
 (define-stump-event-handler :map-request (parent send-event-p window)
   (unless send-event-p
@@ -2501,10 +2497,16 @@ list of modifier symbols."
       ;; only absorb it if it's not already managed (it could be iconic)
       (cond
 	(win (dformat 1 "map request for mapped window ~a~%" win))
-	(wwin (restore-window wwin))
 	((eq (xwin-type window) :dock)
-	 (dformat 1 "window is dock-type. placing in mode-line.")
-	 (place-mode-line-window screen window))
+	 (when wwin
+	   (setf screen (window-screen wwin)))
+	 (dformat 1 "window is dock-type. attempting to place in mode-line.")
+	 (place-mode-line-window screen window)
+	 ;; Some panels are broken and only set the dock type after they map and withdraw.
+	 (when wwin
+	   (setf (screen-withdrawn-windows screen) (delete wwin (screen-withdrawn-windows screen))))
+	 t)
+	(wwin (restore-window wwin))
 	((mode-line-add-systray-window screen window))
 	(t
 	 (let ((window (process-mapped-window screen window)))
@@ -2551,8 +2553,11 @@ list of modifier symbols."
     ;; event-window is the window's parent.
     (let ((win (or (find-window window)
 		   (find-withdrawn-window window))))
-      (when win
-	(destroy-window win)))))
+      (if win
+	(destroy-window win)
+	(progn
+	  (let ((ml (find-mode-line-window window)))
+	    (when ml (destroy-mode-line-window ml))))))))
 
 (defun read-from-keymap (kmap &optional update-fn)
   "Read a sequence of keys from the user, guided by the keymap,

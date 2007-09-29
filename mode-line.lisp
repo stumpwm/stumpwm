@@ -68,7 +68,9 @@ A string is printed verbatim in the mode line except for
 ")
 
 (defvar *screen-mode-line-formatters* '((#\w fmt-window-list)
-					(#\g fmt-group-list))
+					(#\g fmt-group-list)
+					(#\h fmt-head)
+					(#\W fmt-head-window-list))
   "An alist containing format character format function pairs for
 formatting screen mode-lines. functions are passed the screen's
 current group.")
@@ -85,28 +87,9 @@ current group.")
 (defvar *mode-line-timer* nil
   "The timer that updates the modeline")
 
-(defun netwm-remove-systray-window (screen xwin)
-  ;; update _KDE_NET_WM_SYSTRAY_WINDOWS
-  (let ((windows (xlib:get-property (screen-root screen)
-                                        :_KDE_NET_WM_SYSTRAY_WINDOWS
-                                        :type :window)))
-    (xlib:change-property (screen-root screen)
-                          :_KDE_NET_WM_SYSTRAY_WINDOWS
-                          (remove (xlib:drawable-id xwin)
-                                  windows)
-                          :window 32
-                          :mode :replace)))
-
 (defun mode-line-add-systray-window (screen xwin)
-  (cond
-    ((xlib:get-property xwin :_KDE_NET_WM_SYSTEM_TRAY_WINDOW_FOR)
-     (xlib:change-property (screen-root screen)
-			   :_KDE_NET_WM_SYSTRAY_WINDOWS
-			   (list (xlib:drawable-id xwin))
-			   :window 32
-			   :mode :append)
-     t)
-    (t nil)))
+  (declare (ignore screen))
+  (xlib:get-property xwin :_KDE_NET_WM_SYSTEM_TRAY_WINDOW_FOR))
 
 (defun make-mode-line-window (parent screen)
   "Create a window suitable for a modeline."
@@ -126,6 +109,7 @@ current group.")
     ;; This is a StumpWM mode-line
     (setf (xlib:drawable-height (mode-line-window ml)) (+ (font-height (xlib:gcontext-font (mode-line-gc ml))) (* *mode-line-pad-y* 2))))
   (setf (xlib:drawable-width (mode-line-window ml)) (- (frame-width (mode-line-head ml)) (* 2 (xlib:drawable-border-width (mode-line-window ml))))
+	(xlib:drawable-height (mode-line-window ml)) (min (xlib:drawable-height (mode-line-window ml)) (/ (head-height (mode-line-head ml)) 4))
 	(mode-line-height ml) (xlib:drawable-height (mode-line-window ml))
 	(xlib:drawable-x (mode-line-window ml)) (head-x (mode-line-head ml))
 	(xlib:drawable-y (mode-line-window ml)) (if (eq (mode-line-position ml) :top)
@@ -222,21 +206,22 @@ current group.")
 		    :gc (make-mode-line-gc w screen))))
 
 (defun redraw-mode-line (ml)
-  (let* ((*current-mode-line-formatters* *screen-mode-line-formatters*)
-	 (*current-mode-line-formatter-args* (list (screen-current-group (mode-line-screen ml))))
-	 (string (mode-line-format-string ml)))
-    (xlib:draw-image-glyphs (mode-line-window ml) (mode-line-gc ml)
-			    *mode-line-pad-x*
-			    (+ (xlib:font-ascent (xlib:gcontext-font (mode-line-gc ml)))
-			       *mode-line-pad-y*)
-			    string
-			    :translate #'translate-id
-			    :size 16)
-    ;; Just clear what we need to. This reduces flicker.
-    (xlib:clear-area (mode-line-window ml)
-		     :x (+ *mode-line-pad-x*
-			   (xlib:text-width (xlib:gcontext-font (mode-line-gc ml)) string
-					    :translate #'translate-id)))))
+  (when (eq (mode-line-mode ml) :stump)
+    (let* ((*current-mode-line-formatters* *screen-mode-line-formatters*)
+	   (*current-mode-line-formatter-args* (list (screen-current-group (mode-line-screen ml)) (mode-line-head ml)))
+	   (string (mode-line-format-string ml)))
+      (xlib:draw-image-glyphs (mode-line-window ml) (mode-line-gc ml)
+			      *mode-line-pad-x*
+			      (+ (xlib:font-ascent (xlib:gcontext-font (mode-line-gc ml)))
+				 *mode-line-pad-y*)
+			      string
+			      :translate #'translate-id
+			      :size 16)
+      ;; Just clear what we need to. This reduces flicker.
+      (xlib:clear-area (mode-line-window ml)
+		       :x (+ *mode-line-pad-x*
+			     (xlib:text-width (xlib:gcontext-font (mode-line-gc ml)) string
+					      :translate #'translate-id))))))
 
 (defun find-mode-line-window (xwin)
   (dolist (s *screen-list*)
@@ -258,22 +243,52 @@ current group.")
   (resize-mode-line ml)
   (sync-mode-line ml))
 
+(defun destroy-mode-line-window (ml)
+  (xlib:destroy-window (mode-line-window ml))
+  (setf (head-mode-line (mode-line-head ml)) nil)
+  (sync-mode-line ml))
+
 (defun move-mode-line-to-head (ml head)
   (if (head-mode-line head)
-    ;; FIXME: head already has a mode-line
-    nil
-    (setf
-	  (head-mode-line head) ml
-	  (head-mode-line (mode-line-head ml)) nil
-   	  (mode-line-head ml) head)))
+    (when (mode-line-head ml)
+      ;; head already has a mode-line. Try swapping them.
+      (let ((old-head (mode-line-head ml)))
+	(setf (mode-line-head ml) head
+	      (head-mode-line old-head) (head-mode-line head)
+	      (mode-line-head (head-mode-line head)) old-head
+	      (head-mode-line head) ml)))
+    (progn
+      (when (mode-line-head ml)
+	(setf (head-mode-line (mode-line-head ml)) nil))
+      (setf (head-mode-line head) ml
+	    (mode-line-head ml) head))))
 
 (defun update-mode-line-position (ml x y)
-  ;; Find the appropriate head
-  (dolist (head (screen-heads (mode-line-screen ml)))
-    (when (and (not (eq head (mode-line-head ml)))
-	       (eq (head-x head) x))
-      (move-mode-line-to-head ml head)))
-  (setf (mode-line-position ml) (if (eq y (head-y (mode-line-head ml))) :top :bottom)))
+  (let ((head
+	  ;; Find the appropriate head
+	  (find-if (lambda (h) (and (= x (head-x h))
+				    (>= y (head-y h))
+				    (< y (+ (head-y h) (head-height h)))))
+		   (screen-heads (mode-line-screen ml)))))
+    (when (or (not head)
+	      (not (eq (head-mode-line head) ml)))
+      ;; No luck. Just try to find a head without a mode-line already.
+      (setf head (find-if-not #'head-mode-line (screen-heads (mode-line-screen ml)))))
+    (if head
+      (progn
+	(unless (eq ml (head-mode-line head))
+	  (move-mode-line-to-head ml head))
+	(when (mode-line-head ml)
+	  (setf (mode-line-position ml) (if (= y (head-y (mode-line-head ml))) :top :bottom))))
+      nil)))
+
+(defun place-mode-line-window (screen xwin)
+  (let ((ml (make-mode-line :window xwin :screen screen :mode :visible :position *mode-line-position*)))
+    (xlib:reparent-window xwin (screen-root screen) 0 0)
+    (when (update-mode-line-position ml (xlib:drawable-x xwin) (xlib:drawable-y xwin))
+      (resize-mode-line ml)
+      (xlib:map-window xwin)
+      (sync-mode-line ml))))
 
 (defun update-screen-mode-lines ()
   (dolist (s *screen-list*)

@@ -133,7 +133,9 @@ run before the error is dealt with according to
     :_NET_WM_FULL_WINDOW_PLACEMENT
     :_NET_CLOSE_WINDOW
     :_NET_CLIENT_LIST
-    :_NET_ACTIVE_WINDOW)
+    :_NET_CLIENT_LIST_STACKING
+    :_NET_ACTIVE_WINDOW
+    :_KDE_NET_SYSTEM_TRAY_WINDOW_FOR)
   "Supported NETWM properties.
 Window types are in +WINDOW-TYPES+.")
 
