@@ -1,5 +1,8 @@
 2007-09-28  Shawn  <sabetts@hardcopy.local>
 
+	* core.lisp (screen-windows): copy the group-windows list
+	(all-windows): likewise for screen-windows
+
 	* user.lisp (*root-map*): bind M to gmove-marked
 
 	* core.lisp (process-existing-windows): improve debug output
