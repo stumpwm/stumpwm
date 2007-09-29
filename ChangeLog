@@ -1,6 +1,9 @@
 2007-09-28  Shawn  <sabetts@hardcopy.local>
 
 	* core.lisp (add-group): call netwm-update-groups
+	(add-window): call register-window
+	(process-mapped-window): dont call register-window
+	(restore-window): call register-window
 
 	* user.lisp (*root-map*): bind F11 to fullscreen
 	(split-frame-in-dir): move let outside if
