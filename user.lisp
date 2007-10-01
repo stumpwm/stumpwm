@@ -213,6 +213,7 @@ chosen, resignal the error."
 (defun pull-window (win &optional (to-frame (tile-group-current-frame (window-group win))))
   (let ((f (window-frame win))
         (group (window-group win)))
+    (hide-window win)
     (setf (window-frame win) to-frame)
     (sync-frame-windows group to-frame)
     (frame-raise-window group to-frame win)
