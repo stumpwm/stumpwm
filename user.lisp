@@ -1160,9 +1160,9 @@ aborted."
          (new-frame (neighbour direction (tile-group-current-frame group) (group-frames group)))
          (window (current-window)))
     (when new-frame
-      (focus-frame group new-frame)
       (when (and win-p window)
-        (pull-window window)))))
+        (pull-window window new-frame))
+      (focus-frame group new-frame))))
 
 (define-stumpwm-command "move-focus" ((dir :string "Direction: "))
   (move-focus-and-or-window dir))
