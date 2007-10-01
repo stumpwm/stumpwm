@@ -310,7 +310,7 @@ frame."
   "Given a group list all the groups in the group's screen."
   (format nil "~{~a~^ ~}"
           (mapcar (lambda (w)
-                    (format-expand *group-formatters* *group-format* w)) (sort-windows group))))
+                    (format-expand *group-formatters* *group-format* w)) (sort-groups (group-screen group)))))
 
 (defun fmt-head (group head)
   (declare (ignore group))
