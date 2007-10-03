@@ -93,6 +93,11 @@ run before the error is dealt with according to
 (defvar *focus-group-hook* '()
   "A hook called whenever stumpwm switches groups. It is called with 2 arguments: the current group and the last group.")
 
+(defvar *key-press-hook* '()
+  "A hook called whenever a key under *top-map* is pressed.
+  It is called with 3 argument: the key, the (possibly incomplete)
+  key sequence it is a part of, and command value bound to the key.")
+
 ;; Data types and globals used by stumpwm
 
 (defvar *display* nil
@@ -110,14 +115,8 @@ run before the error is dealt with according to
 (defvar *normal-border-width* 1
   "The default border width for normal windows.")
 
-(defvar *frame-outline-width* 2
-  "The default width of frame outlines.")
-
-(defvar *focus-color* "gray"
-  "The color a window's border becomes when it is focused")
-
-(defvar *unfocus-color* "Black"
-  "The border color of an unfocused window")
+(defvar *text-color* "white"
+  "The color of message text.")
 
 (defparameter +netwm-supported+
   '(:_NET_SUPPORTING_WM_CHECK
@@ -127,6 +126,7 @@ run before the error is dealt with according to
     :_NET_CURRENT_DESKTOP
     :_NET_WM_WINDOW_TYPE
     :_NET_WM_STATE
+    :_NET_WM_STATE_MODAL
     :_NET_WM_ALLOWED_ACTIONS
     :_NET_WM_STATE_FULLSCREEN
     :_NET_WM_STATE_HIDDEN
@@ -164,14 +164,14 @@ Include only those we are ready to support.")
 (defconstant +iconic-state+ 3)
 
 (defvar *window-events* '(:structure-notify
-			  :property-change
-			  :colormap-change
-			  :focus-change
-			  :enter-window)
+                          :property-change
+                          :colormap-change
+                          :focus-change
+                          :enter-window)
   "The events to listen for on managed windows.")
 
 (defvar *window-parent-events* '(:substructure-notify
-				 :substructure-redirect)
+                                 :substructure-redirect)
 
   "The events to listen for on managed windows' parents.")
 
@@ -195,6 +195,9 @@ Include only those we are ready to support.")
 (defparameter +default-window-background-color+ "Black")
 (defparameter +default-border-color+ "White")
 (defparameter +default-font-name+ "9x15bold")
+(defparameter +default-focus-color+ "White")
+(defparameter +default-unfocus-color+ "Black")
+(defparameter +default-frame-outline-width+ 2)
 
 ;; Don't set these variables directly, use set-<var name> instead
 (defvar *normal-gravity* :center)
@@ -219,7 +222,7 @@ name. :title, :resource-name, :class are valid values.")
 (defstruct window
   xwin
   width height
-  x y	; these are only used to hold the requested map location.
+  x y        ; these are only used to hold the requested map location.
   gravity
   group
   frame
@@ -248,7 +251,7 @@ name. :title, :resource-name, :class are valid values.")
 
 (defstruct (head (:include frame))
   ;; point back to the screen this head belongs to
-  screen 
+  screen
   ;; a bar along the top or bottom that displays anything you want.
   mode-line)
 
@@ -275,11 +278,15 @@ name. :title, :resource-name, :class are valid values.")
   ;; the list of groups available on this screen
   groups
   current-group
+  ;; various colors (as returned by alloc-color)
   border-color
   fg-color
   bg-color
   win-bg-color
+  focus-color
+  unfocus-color
   msg-border-width
+  frame-outline-width
   font
   ;; A list of all mapped windows. These are the raw
   ;; xlib:window's. window structures are stored in groups.
@@ -289,22 +296,38 @@ name. :title, :resource-name, :class are valid values.")
   ;; they were in when they were unmapped unless that group doesn't
   ;; exist, in which case they go into the current group.
   withdrawn-windows
-  message-window
   input-window
-  frame-window
   ;; The window that gets focus when no window has focus
   focus-window
-  ;; graphic contexts
-  message-gc
-  marked-gc
+  ;;
+  frame-outline-gc
+  ;; color contexts
+  message-cc
+  mode-line-cc
+  ;; color maps
+  color-map-normal
+  color-map-bright
   ;; the window that has focus
   focus
   last-msg
   last-msg-highlights)
 
+(defstruct ccontext
+  win
+  gc
+  default-fg
+  default-bright
+  default-bg)
+
+(defun screen-message-window (screen)
+  (ccontext-win (screen-message-cc screen)))
+
+(defun screen-message-gc (screen)
+  (ccontext-gc (screen-message-cc screen)))
+
 (defmethod print-object ((object frame) stream)
   (format stream "#S(frame ~d ~a ~d ~d ~d ~d)"
-	  (frame-number object) (frame-window object) (frame-x object) (frame-y object) (frame-width object) (frame-height object)))
+          (frame-number object) (frame-window object) (frame-x object) (frame-y object) (frame-width object) (frame-height object)))
 
 (defmethod print-object ((object window) stream)
   (format stream "#S(window ~s)" (window-name object)))
@@ -323,9 +346,9 @@ single char keys are supported.")
   "Given a frame return its number translation using *frame-number-map* as a char."
   (let ((num (frame-number frame)))
     (or (and (< num (length *frame-number-map*))
-	     (char *frame-number-map* num))
-	;; translate the frame number to a char. FIXME: it loops after 9
-	(char (prin1-to-string num) 0))))
+             (char *frame-number-map* num))
+        ;; translate the frame number to a char. FIXME: it loops after 9
+        (char (prin1-to-string num) 0))))
 
 (defstruct modifiers
   (meta nil)
@@ -352,17 +375,20 @@ single char keys are supported.")
 (defvar *processing-existing-windows* nil
   "True when processing pre-existing windows at startup.")
 
+(defvar *executing-stumpwm-command* nil
+  "True when executing external commands.")
+
 ;;; Hook functionality
 
 (defun run-hook-with-args (hook &rest args)
   "Call each function in HOOK and pass args to it"
   (dolist (fn hook)
     (handler-case (apply fn args)
-      (error (c) (message "Error in function ~S on hook ~S!~% ~A" fn hook c) (values nil c)))))
+      (error (c) (message "^B^1*Error in function ^b~S^B on hook ^b~S^B!~% ^n~A" fn hook c) (values nil c)))))
 
 (defun run-hook (hook)
   "Call each function in HOOK."
-    (run-hook-with-args hook))
+  (run-hook-with-args hook))
 
 (defmacro add-hook (hook fn)
   "Add a function to a hook."
@@ -396,23 +422,23 @@ single char keys are supported.")
 look for a free number in the negative direction. anything else means
 positive direction."
   (let* ((dirfn (if (eq dir :negative) '> '<))
-	 ;; sort it and crop numbers below/above min depending on dir
-	 (nums (sort (remove-if (lambda (n)
-				  (funcall dirfn n min))
-				l) dirfn))
-	 (max (car (last nums)))
-	 (inc (if (eq dir :negative) -1 1))
-	 (new-num (loop for n = min then (+ n inc)
-		     for i in nums
-		     when (/= n i)
-		     do (return n))))
+         ;; sort it and crop numbers below/above min depending on dir
+         (nums (sort (remove-if (lambda (n)
+                                  (funcall dirfn n min))
+                                l) dirfn))
+         (max (car (last nums)))
+         (inc (if (eq dir :negative) -1 1))
+         (new-num (loop for n = min then (+ n inc)
+                        for i in nums
+                        when (/= n i)
+                        do (return n))))
     (dformat 3 "Free number: ~S~%" nums)
     (if new-num
-	new-num
-	;; there was no space between the numbers, so use the max+inc
-	(if max
-	    (+ inc max)
-	    min))))
+        new-num
+        ;; there was no space between the numbers, so use the max+inc
+        (if max
+            (+ inc max)
+            min))))
 
 (defun remove-plist (plist &rest keys)
   "Remove the keys from the plist.
@@ -427,9 +453,9 @@ Useful for re-using the &REST arg after removing some options."
 
 (defun screen-display-string (screen)
   (format nil "DISPLAY=~a:~d.~d"
-	  (screen-host screen)
-	  (xlib:display-display *display*)
-	  (screen-id screen)))
+          (screen-host screen)
+          (xlib:display-display *display*)
+          (screen-id screen)))
 
 ;;; XXX: DISPLAY env var isn't set for cmucl
 (defun run-prog (prog &rest opts &key args (wait t) &allow-other-keys)
@@ -443,9 +469,9 @@ Useful for re-using the &REST arg after removing some options."
     ;; Arg. We can't pass in an environment so just set the DISPLAY
     ;; variable so it's inherited by the child process.
     (setf (getenv "DISPLAY") (format nil "~a:~d.~d"
-				     (screen-host (current-screen))
-				     (xlib:display-display *display*)
-				     (screen-id (current-screen))))
+                                     (screen-host (current-screen))
+                                     (xlib:display-display *display*)
+                                     (screen-id (current-screen))))
     (apply #'ext:run-program prog :arguments args :wait wait opts))
   #+(and clisp (not lisp=cl))
   (if wait
@@ -459,13 +485,13 @@ Useful for re-using the &REST arg after removing some options."
                      opts)
   #+lucid (apply #'lcl:run-program prog :wait wait :arguments args opts)
   #+sbcl (apply #'sb-ext:run-program prog args :output t :error t :wait wait
-		;; inject the DISPLAY variable in so programs show up
-		;; on the right screen.
-		:environment (cons (screen-display-string (current-screen))
-				   (remove-if (lambda (str)
-						(string= "DISPLAY=" str :end2 (min 8 (length str))))
-					      (sb-ext:posix-environ)))
-		opts)
+                ;; inject the DISPLAY variable in so programs show up
+                ;; on the right screen.
+                :environment (cons (screen-display-string (current-screen))
+                                   (remove-if (lambda (str)
+                                                (string= "DISPLAY=" str :end2 (min 8 (length str))))
+                                              (sb-ext:posix-environ)))
+                opts)
   #-(or allegro clisp cmu gcl liquid lispworks lucid sbcl)
   (error 'not-implemented :proc (list 'run-prog prog opts)))
 
@@ -477,25 +503,25 @@ Useful for re-using the &REST arg after removing some options."
                                       :output s :wait t))
   ;; FIXME: this is a dumb hack but I don't care right now.
   #+clisp (with-output-to-string (s)
-	    ;; Arg. We can't pass in an environment so just set the DISPLAY
-	    ;; variable so it's inherited by the child process.
-	    (setf (getenv "DISPLAY") (format nil "~a:~d.~d"
-					     (screen-host (current-screen))
-					     (xlib:display-display *display*)
-					     (screen-id (current-screen))))
-	    (let ((out (ext:run-program prog :arguments args :wait t :output :stream)))
-	      (loop for i = (read-char out nil out)
-		 until (eq i out)
-		 do (write-char i s))))
+            ;; Arg. We can't pass in an environment so just set the DISPLAY
+            ;; variable so it's inherited by the child process.
+            (setf (getenv "DISPLAY") (format nil "~a:~d.~d"
+                                             (screen-host (current-screen))
+                                             (xlib:display-display *display*)
+                                             (screen-id (current-screen))))
+            (let ((out (ext:run-program prog :arguments args :wait t :output :stream)))
+              (loop for i = (read-char out nil out)
+                    until (eq i out)
+                    do (write-char i s))))
   #+cmu (with-output-to-string (s) (ext:run-program prog args :output s :error s :wait t))
   #+sbcl (with-output-to-string (s)
-	   (sb-ext:run-program prog args :output s :error s :wait t
-			       ;; inject the DISPLAY variable in so programs show up
-			       ;; on the right screen.
-			       :environment (cons (screen-display-string (current-screen))
-						  (remove-if (lambda (str)
-							       (string= "DISPLAY=" str :end2 (min 8 (length str))))
-							     (sb-ext:posix-environ)))))
+           (sb-ext:run-program prog args :output s :error s :wait t
+                               ;; inject the DISPLAY variable in so programs show up
+                               ;; on the right screen.
+                               :environment (cons (screen-display-string (current-screen))
+                                                  (remove-if (lambda (str)
+                                                               (string= "DISPLAY=" str :end2 (min 8 (length str))))
+                                                             (sb-ext:posix-environ)))))
   #-(or allegro clisp cmu sbcl)
   (error 'not-implemented :proc (list 'pipe-input prog args)))
 
@@ -536,7 +562,7 @@ Useful for re-using the &REST arg after removing some options."
   #+sbcl
   (let ((filename (coerce (sb-int:unix-namestring pathname) 'base-string)))
     (and (eq (sb-unix:unix-file-kind filename) :file)
-	 (sb-unix:unix-access filename sb-unix:x_ok)))
+         (sb-unix:unix-access filename sb-unix:x_ok)))
   ;; FIXME: add the code for clisp
   #-sbcl t)
 
@@ -573,16 +599,16 @@ Modifies the match data; use `save-match-data' if necessary."
   ;; FIXME: This let is here because movitz doesn't 'lend optional'
   (let ((seps separators))
     (labels ((sep (c)
-	       (find c seps :test #'char=)))
+               (find c seps :test #'char=)))
       (or (loop for i = (position-if (complement #'sep) string)
-	     then (position-if (complement #'sep) string :start j)
-	     as j = (position-if #'sep string :start (or i 0))
-	     while i
-	     collect (subseq string i j)
-	     while j)
-	  ;; the empty string causes the above to return NIL, so help
-	  ;; it out a little.
-	  '("")))))
+                then (position-if (complement #'sep) string :start j)
+                as j = (position-if #'sep string :start (or i 0))
+                while i
+                collect (subseq string i j)
+                while j)
+          ;; the empty string causes the above to return NIL, so help
+          ;; it out a little.
+          '("")))))
 
 (defvar *debug-level* 0
   "Set this to a number > 0 and debugging output will be
@@ -607,37 +633,37 @@ Modifies the match data; use `save-match-data' if necessary."
 
 (defun format-expand (fmt-alist fmt &rest args)
   (let* ((chars (coerce fmt 'list))
-	 (output "")
-	 (cur chars))
+         (output "")
+         (cur chars))
     ;; FIXME: this is horribly inneficient
     (loop
-       (cond ((null cur)
-              (return-from format-expand output))
-             ;; if % is the last char in the string then it's a literal.
-             ((and (char= (car cur) #\%)
-                   (cdr cur))
-              (setf cur (cdr cur))
-              (let* ((tmp (loop while (and cur (char<= #\0 (car cur) #\9))
-                             collect (pop cur)))
-                     (len (and tmp (parse-integer (coerce tmp 'string)))))
-                (if (null cur)
-                    (format t "%~a" len)
-                    (let* ((fmt (cadr (assoc (car cur) fmt-alist :test 'char=)))
-                           (str (cond (fmt
-                                       ;; it can return any type, not jut as string.
-                                       (format nil "~a" (apply fmt args)))
-                                      ((char= (car cur) #\%)
-                                       (string #\%))
-                                      (t
-                                       (concatenate 'string (string #\%) (string (car cur)))))))
-                      ;; crop string if needed
-                      (setf output (concatenate 'string output (if len
-                                                                   (subseq str 0 (min len (length str)))
-                                                                   str)))
-                      (setf cur (cdr cur))))))
-             (t
-              (setf output (concatenate 'string output (string (car cur)))
-                    cur (cdr cur)))))))
+     (cond ((null cur)
+            (return-from format-expand output))
+           ;; if % is the last char in the string then it's a literal.
+           ((and (char= (car cur) #\%)
+                 (cdr cur))
+            (setf cur (cdr cur))
+            (let* ((tmp (loop while (and cur (char<= #\0 (car cur) #\9))
+                              collect (pop cur)))
+                   (len (and tmp (parse-integer (coerce tmp 'string)))))
+              (if (null cur)
+                  (format t "%~a" len)
+                  (let* ((fmt (cadr (assoc (car cur) fmt-alist :test 'char=)))
+                         (str (cond (fmt
+                                     ;; it can return any type, not jut as string.
+                                     (format nil "~a" (apply fmt args)))
+                                    ((char= (car cur) #\%)
+                                     (string #\%))
+                                    (t
+                                     (concatenate 'string (string #\%) (string (car cur)))))))
+                    ;; crop string if needed
+                    (setf output (concatenate 'string output (if len
+                                                                 (subseq str 0 (min len (length str)))
+                                                                 str)))
+                    (setf cur (cdr cur))))))
+           (t
+            (setf output (concatenate 'string output (string (car cur)))
+                  cur (cdr cur)))))))
 
 (defvar *window-formatters* '((#\n window-number)
                               (#\s fmt-window-status)
@@ -653,8 +679,8 @@ Modifies the match data; use `save-match-data' if necessary."
 is cropped to 50 characters.")
 
 (defvar *group-formatters* '((#\n group-number)
-			      (#\s fmt-group-status)
-			      (#\t group-name))
+                             (#\s fmt-group-status)
+                             (#\t group-name))
   "an alist containing format character format function pairs for formatting window lists.")
 
 (defvar *group-format* "%n%s%t"
@@ -693,6 +719,12 @@ recommended this is assigned using LET.")
   for a running instance. Set it to NIL to search only the
   current group.")
 
+(defvar *run-or-raise-all-screens* nil
+  "When this is T the run-or-raise function searches all screens
+  for a running instance. Set it to NIL to search only the
+  current screen. If *run-or-raise-all-groups* is NIL
+  this variable has no effect.")
+
 (defvar *deny-map-request* nil
   "A list of window properties that stumpwm should deny matching windows'
   requests to become mapped for the first time.")
@@ -706,6 +738,9 @@ recommended this is assigned using LET.")
 
 (defvar *honor-window-moves* t
   "Allow windows to move between frames.")
+
+(defvar *resize-hides-windows* nil
+  "Set to T to hide windows during interactive resize")
 
 (defun deny-request-p (window deny-list)
   (or (eq deny-list t)
@@ -762,13 +797,13 @@ the new window, and return the prefered frame.")
 (defun string-to-utf8 (string)
   "Convert the string to a vector of octets."
   #+sbcl (sb-ext:string-to-octets
-	  string
-	  :external-format :utf-8)
+          string
+          :external-format :utf-8)
   ;; TODO: handle UTF-8 for other lisps
   #-sbcl
   (map 'list #'char-code string))
 
-(defvar *startup-message* "Welcome to The Stump Window Manager!"
+(defvar *startup-message* "^2*Welcome to The ^BStump^b ^BW^bindow ^BM^banager!"
   "StumpWM's startup message. Set to NIL to suppress.")
 
 (defvar *default-package* (find-package "CL-USER")
@@ -780,13 +815,13 @@ with IN-PACKAGE.")
 (defun concat (&rest strings)
   (apply 'concatenate 'string strings))
 
-(defvar *window-placement-rules* '()
-  "List of rules governing window placement. Use
-define-frame-preference to add rules.")
+(defvar *window-placement-rules* '())
+"List of rules governing window placement. Use define-frame-preference to
+add rules"
 
 (defmacro define-frame-preference (group &rest frames)
   `(dolist (x ',frames)
-     (push (cons ,group x) *window-placement-rules*)))
+    (push (cons ,group x) *window-placement-rules*)))
 
 (defvar *mouse-focus-policy* :ignore
   "The mouse focus policy decides how the mouse affects input
@@ -797,3 +832,6 @@ input focus is transfered to the window you click on.")
 
 (defvar *xwin-to-window* (make-hash-table)
   "Hash table for looking up windows quickly.")
+
+(defvar *resize-map* nil
+  "The keymap used for resizing a window")

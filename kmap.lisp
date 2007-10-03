@@ -6,12 +6,12 @@
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation; either version 2, or (at your option)
 ;; any later version.
- 
+
 ;; stumpwm is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
- 
+
 ;; You should have received a copy of the GNU General Public License
 ;; along with this software; see the file COPYING.  If not, write to
 ;; the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
@@ -35,15 +35,15 @@
   "Return a list of keys that are bound to command"
   (let (acc)
     (maphash (lambda (k v)
-	       (when (equal command v)
-		 (push k acc)))
-	     keymap)
+               (when (equal command v)
+                 (push k acc)))
+             keymap)
     acc))
 
 (defun lookup-key (keymap key &optional accept-default)
   (or (gethash key keymap)
       (and accept-default
-	   (gethash t keymap))))
+           (gethash t keymap))))
 
 (defun key-mods-p (key)
   (or (key-shift key)
@@ -76,28 +76,28 @@ for passing as the last argument to (apply #'make-key ...)"
   (unless (evenp end)
     (signal 'kbd-parse))
   (apply #'nconc (loop for i from 0 below end by 2
-		       if (char/= (char mods (1+ i)) #\-)
-		       do (signal 'kbd-parse)
-		       collect (case (char mods i)
-				 (#\M (list :meta t))
-				 (#\A (list :alt t))
-				 (#\C (list :control t))
-				 (#\H (list :hyper t))
-				 (#\s (list :super t))
-				 (#\S (list :shift t))
-				 (t (signal 'kbd-parse))))))
+                       if (char/= (char mods (1+ i)) #\-)
+                       do (signal 'kbd-parse)
+                       collect (case (char mods i)
+                                 (#\M (list :meta t))
+                                 (#\A (list :alt t))
+                                 (#\C (list :control t))
+                                 (#\H (list :hyper t))
+                                 (#\s (list :super t))
+                                 (#\S (list :shift t))
+                                 (t (signal 'kbd-parse))))))
 
 (defun parse-key (string)
   "Parse STRING and return a key structure."
   ;; FIXME: we want to return NIL when we get a kbd-parse error
   ;;(ignore-errors
   (let* ((p (when (> (length string) 2)
-	      (position #\- string :from-end t :end (- (length string) 1))))
-	 (mods (parse-mods string (if p (1+ p) 0)))
-	 (keysym (stumpwm-name->keysym (subseq string (if p (1+ p) 0)))))
+              (position #\- string :from-end t :end (- (length string) 1))))
+         (mods (parse-mods string (if p (1+ p) 0)))
+         (keysym (stumpwm-name->keysym (subseq string (if p (1+ p) 0)))))
     (and keysym
-	 (apply 'make-key :keysym keysym mods))))
-  
+         (apply 'make-key :keysym keysym mods))))
+
 (defun parse-key-seq (keys)
   "KEYS is a key sequence. Parse it and return the list of keys."
   (mapcar 'parse-key (split-string keys)))
@@ -111,20 +111,20 @@ saving keyboard macros ***(see `insert-kbd-macro')."
 
 (defun print-mods (key)
   (concatenate 'string
-	       (when (key-control key) "C-")
-	       (when (key-meta key) "M-")
-	       (when (key-alt key) "A-")
-	       (when (key-shift key) "S-")
-	       (when (key-super key) "s-")
-	       (when (key-hyper key) "H-")))
+               (when (key-control key) "C-")
+               (when (key-meta key) "M-")
+               (when (key-alt key) "A-")
+               (when (key-shift key) "S-")
+               (when (key-super key) "s-")
+               (when (key-hyper key) "H-")))
 
 (defun print-key (key)
   (format nil "~a~a"
-	  (print-mods key)
-	  (keysym->stumpwm-name (key-keysym key))))
+          (print-mods key)
+          (keysym->stumpwm-name (key-keysym key))))
 
 (defun print-key-seq (seq)
-  (format nil "~{~a~^ ~}" (mapcar 'print-key seq)))
+  (format nil "^5*~{~a~^ ~}^n" (mapcar 'print-key seq)))
 
 (defun define-key (map key command)
   (setf (gethash key map) command)
@@ -138,12 +138,12 @@ saving keyboard macros ***(see `insert-kbd-macro')."
 (defun lookup-key-sequence (kmap key-seq)
   "Return the command bound to the key sequenc, KEY-SEQ, in keymap KMAP."
   (when (and (symbolp kmap)
-	     (boundp kmap)
-	     (hash-table-p (symbol-value kmap)))
+             (boundp kmap)
+             (hash-table-p (symbol-value kmap)))
     (setf kmap (symbol-value kmap)))
   (check-type kmap hash-table)
   (let* ((key (car key-seq))
-	 (cmd (lookup-key kmap key)))
+         (cmd (lookup-key kmap key)))
     (cond ((null (cdr key-seq))
            cmd)
           (cmd

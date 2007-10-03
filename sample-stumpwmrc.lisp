@@ -26,8 +26,8 @@
 ;; Web jump (works for Google and Imdb)
 (defmacro make-web-jump (name prefix)
   `(define-stumpwm-command ,name ((search :rest ,(concatenate 'string name " search: ")))
-     (substitute #\+ #\Space search)
-     (run-shell-command (concatenate 'string ,prefix search))))
+    (substitute #\+ #\Space search)
+    (run-shell-command (concatenate 'string ,prefix search))))
 
 (make-web-jump "google" "firefox http://www.google.fr/search?q=")
 (make-web-jump "imdb" "firefox http://www.imdb.com/find?q=")
@@ -59,12 +59,12 @@
 ;; you.
 
 (define-frame-preference "Default"
-  ;; frame raise lock (lock AND raise == jumpto)
-  (0 t nil :class "Konqueror" :role "...konqueror-mainwindow")
+    ;; frame raise lock (lock AND raise == jumpto)
+    (0 t nil :class "Konqueror" :role "...konqueror-mainwindow")
   (1 t nil :class "XTerm"))
 
 (define-frame-preference "Ardour"
-  (0 t   t   :instance "ardour_editor" :type :normal)
+    (0 t   t   :instance "ardour_editor" :type :normal)
   (0 t   t   :title "Ardour - Session Control")
   (0 nil nil :class "XTerm")
   (1 t   nil :type :normal)
@@ -74,6 +74,6 @@
   (3 t   t   :instance "qjackctl" :role "qjackctlMainForm"))
 
 (define-frame-preference "Shareland"
-  (0 t   nil :calss "XTerm")
+    (0 t   nil :calss "XTerm")
   (1 nil t   :class "aMule"))
 

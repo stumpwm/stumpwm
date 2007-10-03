@@ -3,7 +3,7 @@
 (progn
   (require 'asdf)
   (require 'stumpwm))
-#+sbcl 
+#+sbcl
 (progn
   (load "stumpwm.asd")
   (sb-ext:save-lisp-and-die "stumpwm" :toplevel (lambda ()
@@ -17,7 +17,7 @@
 
 ;; a custom loader for clisp. It beats trying to look for asdf, for now.
 #+clisp
-(let ((files '("package.lisp" "primitives.lisp" "keysyms.lisp" "keytrans.lisp" "kmap.lisp" "input.lisp" "core.lisp" "user.lisp" "mode-line.lisp" "stumpwm.lisp" "version.lisp")))
+(let ((files '("package.lisp" "primitives.lisp" "keysyms.lisp" "keytrans.lisp" "kmap.lisp" "input.lisp" "core.lisp" "user.lisp" "mode-line.lisp" "color.lisp" "stumpwm.lisp" "version.lisp")))
   (dolist (f files)
     (load (compile-file f))))
 

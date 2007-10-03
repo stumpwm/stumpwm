@@ -1,0 +1,113 @@
+#!/bin/sh
+
+# Copyright (C) 2007 Jonathan Moore Liles
+#
+# stumpish is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+#
+# stumpish is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this software; see the file COPYING.  If not, write to
+# the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
+# Boston, MA 02111-1307 USA
+
+### STUMPwm Interactive Shell.
+
+function wait_result ()
+{
+	while true
+	do
+		RESULT=`xprop -root -f STUMPWM_COMMAND_RESULT 8s STUMPWM_COMMAND_RESULT 2>/dev/null`
+
+		if echo "$RESULT" | grep -v -q 'not found.$'
+		then
+			break;
+		fi
+
+		sleep 1;
+	done
+
+	xprop -root -remove STUMPWM_COMMAND_RESULT
+
+	if echo "$RESULT" | grep -q '= $'
+	then
+		return 1;
+	fi
+
+	echo $RESULT | sed 's/[^"]*"//;s/"$//;s/\\n/\n/g;s/\\"/"/g;s/\n\+$//;
+			s/\^[*[:digit:]]\{2\}//g;s/\^[Bbn]//g;'
+}
+
+function send_cmd ()
+{
+	xprop -root -f STUMPWM_COMMAND 8s -set STUMPWM_COMMAND "$1"
+
+	wait_result
+}
+
+function usage ()
+{
+cat <<EOF
+Usage: stumpish [[-e] command [args...]]
+
+StumpIsh is the StumpWM shell. Use it to interact a running StumpWM
+instance.  When run from a terminal with no arguments, stumpish
+accepts commands interactively and prints each result.  If standard
+input is a pipe, stumpish executes any number of commands and prints
+the concatenated results. If the '-e' option and one argument are
+given on the command line, stumpish reads any number of lines from
+standard input and uses them as the argument to the named command.
+Otherwise if one or more arguments are provided on the command line,
+the first is considered the name of the command to execute, and the
+remainder are concatenated to form the argument.
+
+Example:
+	echo '(group-windows (current-group))' | stumpish eval
+EOF
+exit 0;
+}
+
+if [ $# -gt 0 ]
+then
+	[ "$1" == "--help" ] && usage
+	if [ $1 == "-e" ]
+	then
+		if [ $# -ne 2 ]
+		then
+			echo "'-e' require exactly one argument!"
+			exit
+		fi
+		shift 1
+		IFS=''
+		ARGS=`cat /dev/stdin`
+		send_cmd "$1 $ARGS"
+	else
+		IFS=' '
+		send_cmd "$*"
+	fi
+else
+IFS='
+'
+	if [ -t 0 ]
+	then
+		echo -e '\e[1;35mWelcome to the StumpWM Interactive Shell.\n\e[37mType \e[32mcommands\e[37m for a list of commands.\e[0m'
+		while read -p "> "
+		do
+			echo -ne '\e[1;32m'
+			send_cmd "$REPLY"
+			echo -ne '\e[0m'
+		done
+	else
+		while read
+		do
+			send_cmd "$REPLY"
+		done
+	fi
+fi
+

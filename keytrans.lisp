@@ -6,12 +6,12 @@
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation; either version 2, or (at your option)
 ;; any later version.
- 
+
 ;; stumpwm is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
- 
+
 ;; You should have received a copy of the GNU General Public License
 ;; along with this software; see the file COPYING.  If not, write to
 ;; the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
@@ -33,7 +33,7 @@
 This function is used to translate Emacs-like names to keysym
 names."
   (setf (gethash stumpwm-name *stumpwm-name->keysym-name-translations*)
-	keysym-name))
+        keysym-name))
 
 (defun stumpwm-name->keysym-name (stumpwm-name)
   (multiple-value-bind (value present-p)
@@ -43,9 +43,9 @@ names."
 
 (defun keysym-name->stumpwm-name (keysym-name)
   (maphash (lambda (k v)
-	     (when (equal v keysym-name)
-	       (return-from keysym-name->stumpwm-name k)))
-	   *stumpwm-name->keysym-name-translations*))
+             (when (equal v keysym-name)
+               (return-from keysym-name->stumpwm-name k)))
+           *stumpwm-name->keysym-name-translations*))
 
 (defun stumpwm-name->keysym (stumpwm-name)
   "Return the keysym corresponding to STUMPWM-NAME.
@@ -60,7 +60,7 @@ If no mapping for the stumpwm key name exists, then fall back by
 calling KEYSYM->KEYSYM-NAME."
   (let ((keysym-name (keysym->keysym-name keysym)))
     (or (keysym-name->stumpwm-name keysym-name)
-	keysym-name)))
+        keysym-name)))
 
 (define-keysym-name "RET" "Return")
 (define-keysym-name "ESC" "Escape")
@@ -70,11 +70,11 @@ calling KEYSYM->KEYSYM-NAME."
 (define-keysym-name "!" "exclam")
 (define-keysym-name "\"" "quotedbl")
 (define-keysym-name "$" "dollar")
-(define-keysym-name "%" "dollar")
+(define-keysym-name "%" "percent")
 (define-keysym-name "&" "ampersand")
-(define-keysym-name "'" "quoteright")		;deprecated
+(define-keysym-name "'" "quoteright")   ;deprecated
 (define-keysym-name "'" "apostrophe")
-(define-keysym-name "`" "quoteleft")            ;deprecated 
+(define-keysym-name "`" "quoteleft")    ;deprecated
 (define-keysym-name "`" "grave")
 (define-keysym-name "&" "ampersand")
 (define-keysym-name "(" "parenleft")

@@ -65,12 +65,12 @@
 
 (defun dump-screen (screen)
   (make-sdump :number (screen-id screen)
-	      :current (group-number (screen-current-group screen))
-	      :groups (mapcar 'dump-group (sort-groups screen))))
+              :current (group-number (screen-current-group screen))
+              :groups (mapcar 'dump-group (sort-groups screen))))
 
 (defun dump-desktop ()
   (make-ddump :screens (mapcar 'dump-screen *screen-list*)
-	      :current (screen-id (current-screen))))
+              :current (screen-id (current-screen))))
 
 (defun dump-to-file (foo name)
   (with-open-file (fp name :direction :output :if-exists :supersede)
@@ -142,7 +142,7 @@
       (dolist (w windows)
         (unless (window-frame w)
           (setf (window-frame w) (tile-group-current-frame group))))
-      ;; FIXME: if the current window was blank in the dump, this does not honour that. 
+      ;; FIXME: if the current window was blank in the dump, this does not honour that.
       (give-frame-a-window (tile-group-current-frame group))
       ;; raise the curtains
       (dolist (w windows)
@@ -157,19 +157,19 @@
  they don't already exist."
   (dolist (gdump (sdump-groups sdump))
     (restore-group (or (find-group screen (gdump-name gdump))
-		       ;; FIXME: if the group doesn't exist then
-		       ;; windows won't be migrated from existing
-		       ;; groups
-		       (add-group screen (gdump-name gdump)))
-		   gdump)))
+                       ;; FIXME: if the group doesn't exist then
+                       ;; windows won't be migrated from existing
+                       ;; groups
+                       (add-group screen (gdump-name gdump)))
+                   gdump)))
 
 (defun restore-desktop (ddump)
   "Restore all frames, all groups, and all screens."
   (dolist (sdump (ddump-screens))
-    (let ((screen (find (sdump-number sdump) *screen-list* 
-			:key 'screen-id :test '=)))
+    (let ((screen (find (sdump-number sdump) *screen-list*
+                        :key 'screen-id :test '=)))
       (when screen
-	(restore-screen screen sdump)))))
+        (restore-screen screen sdump)))))
 
 (defun restore-from-file (file)
   (let ((dump (read-dump-from-file file)))
