@@ -981,12 +981,14 @@ than the root window's width and height."
 
 ;; TODO: add rules allowing matched windows to create their own groups/frames
 
+(defun rule-matching-window (window)
+  (dolist (rule *window-placement-rules*)
+    (when (window-matches-rule-p window rule) (return rule))))
+
 (defun get-window-placement (screen window)
   "Returns the ideal group and frame that WINDOW should belong to and whether
   the window should be raised."
-  (let ((match
-         (dolist (rule *window-placement-rules*)
-           (when (window-matches-rule-p window rule) (return rule)))))
+  (let ((match (rule-matching-window window)))
     (if (null match)
         (values)
         (destructuring-bind (group-name frame raise lock &rest props) match

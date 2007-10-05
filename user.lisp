@@ -1811,3 +1811,49 @@ current frame and raise it."
   (dolist (screen (restore-from-file file))
     (restore-all-groups-in-screen (screen-by-id (first screen)) (second screen))
     (message "Frames restored")))
+
+(define-stumpwm-type :y-n (input prompt)
+  (let ((s (or (argument-pop input)
+               (read-one-line (current-screen) (concatenate 'string prompt "(y/n): ")))))
+    (when s
+      (values (list (equal s "y"))))))
+
+(defun make-rule-for-window (window &optional lock title)
+  "Guess at a placement rule for WINDOW and add it to the current set."
+  (let* ((group (window-group window))
+         (group-name (group-name group))
+         (frame-number (frame-number (window-frame window)))
+         (role (window-role window)))
+    (push (list group-name frame-number t lock
+                :class (window-class window)
+                :instance (window-res window)
+                :title (and title (window-name window))
+                :role (and (not (equal role "")) role))
+          *window-placement-rules*)))
+
+(define-stumpwm-command "remember" ((lock :y-n "Lock to group? ") (title :y-n "Use title? "))
+  "Make a generic placement rule for the current window. Might be too specific/not specific enough!"
+  (make-rule-for-window (current-window) (first lock) (first title)))
+
+(define-stumpwm-command "forget" ()
+  (let* ((window (current-window))
+         (match (rule-matching-window window)))
+    (if match
+        (progn
+          (setf *window-placement-rules* (delete match *window-placement-rules*))
+          (message "Rule forgotten"))
+        (message "No matching rule"))))
+
+(defun dump-window-placement-rules (file)
+  "Dump *window-placement-rules* to FILE."
+  (dump-to-file (mapcar (lambda (r) (format nil "~S" r)) *window-placement-rules*) file))
+
+(define-stumpwm-command "dump-rules" ((file :rest "Filename: "))
+  (dump-window-placement-rules file))
+
+(defun restore-window-placement-rules (file)
+  "Restore *window-placement-rules* from FILE."
+  (setf *window-placement-rules* (read-from-string (restore-from-file file))))
+
+(define-stumpwm-command "restore-rules" ((file :rest "Filename: "))
+  (restore-window-placement-rules file))
