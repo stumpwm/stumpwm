@@ -947,9 +947,11 @@ than the root window's width and height."
    :unmap-ignores 0))
 
 (defun string-match (string pat)
-  (if (equal (subseq pat 0 3) "...")
-      (search (subseq pat 3 (length pat)) string)
-    (equal string pat)))
+  (let ((l (length pat)))
+    (when (> l 0)
+      (if (and (> l 3) (equal (subseq pat 0 3) "..."))
+          (search (subseq pat 3 l) string)
+          (equal string pat)))))
 
 (defun window-matches-properties-p (window &key class instance type role title)
   "Returns T if window matches all the given properties"
@@ -963,14 +965,10 @@ than the root window's width and height."
 (defun window-matches-rule-p (w rule)
   "Returns T if window matches rule"
   (destructuring-bind (group-name frame raise lock &rest props) rule
-                      (declare (ignore frame raise))
-                      (if
-                          (or
-                           (eq lock t)
-                                        ;(equal group-name (group-name (current-group))))
-                                        ; FIXME: should be screen current group?
-                           (equal group-name (group-name (or (window-group w) (current-group)))))
-                          (apply 'window-matches-properties-p w props))))
+    (declare (ignore frame raise))
+    (if (or (eq lock t)
+            (equal group-name (group-name (or (window-group w) (current-group)))))
+        (apply 'window-matches-properties-p w props))))
 
 (defun frame-by-number (group n)
   (unless (eq n nil)
