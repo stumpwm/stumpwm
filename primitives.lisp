@@ -846,3 +846,6 @@ input focus is transfered to the window you click on.")
 
 (defvar *resize-map* nil
   "The keymap used for resizing a window")
+
+(defvar *highlight-color-code* "^07"
+  "The color code to use for the current/highlighted thing when printing out a list.")

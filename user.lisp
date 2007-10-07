@@ -306,15 +306,19 @@ frame."
   (declare (ignore head))
   "Using *window-format*, return a 1 line list of the windows, space seperated."
   (format nil "~{~a~^ ~}"
-          (mapcar (lambda (w)
-                    (format-expand *window-formatters* *window-format* w)) (sort-windows group))))
+          (mapcar (lambda (w) (format-expand *window-formatters* *window-format* w))
+                  (sort-windows group))))
 
 (defun fmt-group-list (group &optional head)
   (declare (ignore head))
   "Given a group list all the groups in the group's screen."
   (format nil "~{~a~^ ~}"
           (mapcar (lambda (w)
-                    (format-expand *group-formatters* *group-format* w)) (sort-windows group))))
+                    (let* ((str (format-expand *group-formatters* *group-format* w)))
+                      (if (eq w (current-group))
+                          (fmt-highlight str)
+                          str)))
+                  (sort-groups (group-screen group)))))
 
 (defun fmt-head (group head)
   (declare (ignore group))
@@ -324,11 +328,18 @@ frame."
   (declare (ignore head))
   (format nil "~a" (group-name group)))
 
+(defun fmt-highlight (s)
+  (concat *highlight-color-code* s "^**"))
+
 (defun fmt-head-window-list (group head)
   "Using *window-format*, return a 1 line list of the windows, space seperated."
   (format nil "~{~a~^ ~}"
           (mapcar (lambda (w)
-                    (format-expand *window-formatters* *window-format* w)) (sort1 (head-windows group head) #'< :key #'window-number))))
+                    (let ((str (format-expand *window-formatters* *window-format* w)))
+                      (if (eq w (current-window))
+                          (fmt-highlight str)
+                          str)))
+                  (sort1 (head-windows group head) #'< :key #'window-number))))
 
 (define-stumpwm-command "windows" ((fmt :rest))
   (echo-windows (current-group) (or fmt *window-format*)))

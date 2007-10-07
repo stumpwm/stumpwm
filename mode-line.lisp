@@ -54,7 +54,7 @@
 (defvar *mode-line-border-color* "Gray30"
   "mode line border color")
 
-(defvar *screen-mode-line-format* "%n %W"
+(defvar *screen-mode-line-format* "[^B%n^b] %W"
   "A template for displaying mode line for each screen. Turn it
 on with the function TOGGLE-MODE-LINE or the mode-line command.
 
@@ -69,6 +69,10 @@ A string is printed verbatim in the mode line except for
 %-constructs:
 
 %w -- print the window list
+%g -- print the group list
+%h -- print the current head
+%n -- print the current group name
+%W -- print the head's list of windows
 ")
 
 (defvar *screen-mode-line-formatters* '((#\w fmt-window-list)
