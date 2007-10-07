@@ -49,7 +49,7 @@
 ;;; Define window placement policy...
 
 ;; Clear rules
-(setf *window-placement-rules* '())
+(clear-window-placement-rules)
 
 ;; Last rule to match takes precedence!
 ;; TIP: if the argument to :title or :role begins with an ellipsis, a substring
@@ -59,12 +59,12 @@
 ;; you.
 
 (define-frame-preference "Default"
-    ;; frame raise lock (lock AND raise == jumpto)
-    (0 t nil :class "Konqueror" :role "...konqueror-mainwindow")
+  ;; frame raise lock (lock AND raise == jumpto)
+  (0 t nil :class "Konqueror" :role "...konqueror-mainwindow")
   (1 t nil :class "XTerm"))
 
 (define-frame-preference "Ardour"
-    (0 t   t   :instance "ardour_editor" :type :normal)
+  (0 t   t   :instance "ardour_editor" :type :normal)
   (0 t   t   :title "Ardour - Session Control")
   (0 nil nil :class "XTerm")
   (1 t   nil :type :normal)
@@ -74,6 +74,6 @@
   (3 t   t   :instance "qjackctl" :role "qjackctlMainForm"))
 
 (define-frame-preference "Shareland"
-    (0 t   nil :calss "XTerm")
+  (0 t   nil :calss "XTerm")
   (1 nil t   :class "aMule"))
 

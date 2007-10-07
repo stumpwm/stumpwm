@@ -824,9 +824,15 @@ with IN-PACKAGE.")
 "List of rules governing window placement. Use define-frame-preference to
 add rules"
 
+;; FIXME: this macro doesnt use gensym, though it's also low risk
 (defmacro define-frame-preference (group &rest frames)
   `(dolist (x ',frames)
-    (push (cons ,group x) *window-placement-rules*)))
+     ;; verify the correct structure
+     (destructuring-bind (frame-number raise lock &rest keys &key class role instance type) x
+       (push (list* ,group frame-number raise lock keys) *window-placement-rules*))))
+
+(defun clear-window-placement-rules ()
+  (setf *window-placement-rules* nil))
 
 (defvar *mouse-focus-policy* :ignore
   "The mouse focus policy decides how the mouse affects input
