@@ -27,6 +27,7 @@
            #:set-msg-border-width
            #:echo-string
            #:message
+           #:err
            #:*timeout-wait*
            #:*timeout-frame-indicator-wait*
            #:*message-window-padding*

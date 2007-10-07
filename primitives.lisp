@@ -778,6 +778,11 @@ elements are :focused, :last, :empty, :choice, :unfocused. This can also
 be a function, in which case the function should take 1 argument,
 the new window, and return the prefered frame.")
 
+(defun backtrace-string ()
+  "Similar to print-backtrace, but return the backtrace as a string."
+  (with-output-to-string (*standard-output*)
+    (print-backtrace)))
+
 (defun print-backtrace (&optional (frames 100))
   "print a backtrace of FRAMES number of frames to standard-output"
   #+sbcl (sb-debug:backtrace frames *standard-output*)

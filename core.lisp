@@ -2225,6 +2225,15 @@ windows used to draw the numbers in. The caller must destroy them."
   "run FMT and ARGS through format and echo the result to the current screen."
   (echo-string (current-screen) (apply 'format nil fmt args)))
 
+(defun err (fmt &rest args)
+  "run FMT and ARGS through format and echo the result to the
+current screen along with a backtrace. For careful study, the
+message does not time out."
+  (let ((*suppress-echo-timeout* t))
+    (echo-string (current-screen) 
+                 (concat (apply 'format nil fmt args)
+                         (backtrace-string)))))
+
 (defun message-no-timeout (fmt &rest args)
   "Like message, but the window doesn't disappear after a few seconds."
   (let ((*suppress-echo-timeout* t))

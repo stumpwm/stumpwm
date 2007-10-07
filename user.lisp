@@ -705,7 +705,7 @@ select one. Returns the selected frame or nil if aborted."
                (mapcar 'prin1-to-string
                        (multiple-value-list (eval (read-from-string cmd)))))
     (error (c)
-      (message "^B^1*~A" c))))
+      (err "^B^1*~A" c))))
 
 (define-stumpwm-command "eval" ((cmd :rest "Eval: "))
   (eval-line cmd))
@@ -961,13 +961,23 @@ aborted."
 
 (defun interactive-command (cmd)
   "exec cmd and echo the result."
-  (let ((result (handler-case (parse-and-run-command cmd)
-                  (error (c)
-                    (format nil "^B^1*Error In Command '^b~a^B': ^n~A" cmd c)))))
+  (multiple-value-bind (result error-p)
+      ;; this fancy footwork lets us grab the backtrace from where the
+      ;; error actually happened.
+      (restart-case
+          (handler-bind 
+              ((error (lambda (c)
+                        (invoke-restart 'interactive-command-error
+                                        (format nil "^B^1*Error In Command '^b~a^B': ^n~A~a" cmd c (backtrace-string))))))
+            (parse-and-run-command cmd))
+        (interactive-command-error (err-text)
+          (values err-text t)))
     ;; interactive commands update the modeline
     (update-all-mode-lines)
     (cond ((stringp result)
-           (message "~a" result))
+           (if error-p
+               (message-no-timeout "~a" result)
+               (message "~a" result)))
           ((eq result :abort)
            (unless *suppress-abort-messages*
              (message "Abort."))))))
