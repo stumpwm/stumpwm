@@ -1735,14 +1735,14 @@ current frame and raise it."
 
 (defun dump-window-placement-rules (file)
   "Dump *window-placement-rules* to FILE."
-  (dump-to-file (mapcar (lambda (r) (format nil "~S" r)) *window-placement-rules*) file))
+  (dump-to-file *window-placement-rules* file))
 
 (define-stumpwm-command "dump-rules" ((file :rest "Filename: "))
   (dump-window-placement-rules file))
 
 (defun restore-window-placement-rules (file)
   "Restore *window-placement-rules* from FILE."
-  (setf *window-placement-rules* (read-from-string (restore-from-file file))))
+  (setf *window-placement-rules* (read-dump-from-file file)))
 
 (define-stumpwm-command "restore-rules" ((file :rest "Filename: "))
   (restore-window-placement-rules file))
