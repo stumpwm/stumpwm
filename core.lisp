@@ -988,6 +988,11 @@ than the root window's width and height."
         (apply 'window-matches-properties-p w props))))
 
 ;; TODO: add rules allowing matched windows to create their own groups/frames
+
+(defun rule-matching-window (window)
+  (dolist (rule *window-placement-rules*)
+    (when (window-matches-rule-p window rule) (return rule))))
+
 (defun get-window-placement (screen window)
   "Returns the ideal group and frame that WINDOW should belong to and whether
   the window should be raised."
@@ -996,9 +1001,7 @@ than the root window's width and height."
                (find n (group-frames group)
                      :key 'frame-number
                      :test '=))))
-    (let ((match
-           (dolist (rule *window-placement-rules*)
-             (when (window-matches-rule-p window rule) (return rule)))))
+    (let ((match (rule-matching-window window)))
       (if match
           (destructuring-bind (group-name frame raise lock &rest props) match
             (declare (ignore lock props))
@@ -1007,7 +1010,8 @@ than the root window's width and height."
                   (values group (frame-by-number group frame) raise)
                   (progn
                     (message "^B^1*Error placing window, group \"^b~a^B\" does not exist." group-name)
-                    (values)))))))))
+                    (values)))))
+          (values)))))
 
 (defun sync-window-placement ()
   "Re-arrange existing windows according to placement rules"

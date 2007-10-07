@@ -49,7 +49,7 @@
           (define-key m (kbd "C-M-p") "prev-in-frame")
           (define-key m (kbd "w") "windows")
           (define-key m (kbd "C-w") "windows")
-          (define-key m (kbd "W") "syncplace")
+          (define-key m (kbd "W") "place-existing-windows")
           (define-key m (kbd "k") "delete")
           (define-key m (kbd "C-k") "delete")
           (define-key m (kbd "K") "kill")
@@ -802,6 +802,12 @@ string between them."
         (values ret pkg var)
         (throw 'error (format nil "No such symbol: ~a::~a."
                               (package-name pkg) var)))))
+
+(define-stumpwm-type :y-or-n (input prompt)
+  (let ((s (or (argument-pop input)
+               (read-one-line (current-screen) (concat prompt "(y/n): ")))))
+    (when s
+      (values (list (equal s "y"))))))
 
 (define-stumpwm-type :variable (input prompt)
   (lookup-symbol (argument-pop-or-read input prompt)))
@@ -1697,3 +1703,46 @@ current frame and raise it."
   (message-no-timeout "\"~a\" is on ~{~a~^, ~}"
                       cmd
                       (mapcar 'print-key-seq (search-kmap cmd *top-map*))))
+
+
+;;; window placement commands
+
+(defun make-rule-for-window (window &optional lock title)
+  "Guess at a placement rule for WINDOW and add it to the current set."
+  (let* ((group (window-group window))
+         (group-name (group-name group))
+         (frame-number (frame-number (window-frame window)))
+         (role (window-role window)))
+    (push (list group-name frame-number t lock
+                :class (window-class window)
+                :instance (window-res window)
+                :title (and title (window-name window))
+                :role (and (not (equal role "")) role))
+          *window-placement-rules*)))
+
+(define-stumpwm-command "remember" ((lock :y-or-n "Lock to group? ") (title :y-or-n "Use title? "))
+  "Make a generic placement rule for the current window. Might be too specific/not specific enough!"
+  (make-rule-for-window (current-window) (first lock) (first title)))
+
+(define-stumpwm-command "forget" ()
+  (let* ((window (current-window))
+         (match (rule-matching-window window)))
+    (if match
+        (progn
+          (setf *window-placement-rules* (delete match *window-placement-rules*))
+          (message "Rule forgotten"))
+        (message "No matching rule"))))
+
+(defun dump-window-placement-rules (file)
+  "Dump *window-placement-rules* to FILE."
+  (dump-to-file (mapcar (lambda (r) (format nil "~S" r)) *window-placement-rules*) file))
+
+(define-stumpwm-command "dump-rules" ((file :rest "Filename: "))
+  (dump-window-placement-rules file))
+
+(defun restore-window-placement-rules (file)
+  "Restore *window-placement-rules* from FILE."
+  (setf *window-placement-rules* (read-from-string (restore-from-file file))))
+
+(define-stumpwm-command "restore-rules" ((file :rest "Filename: "))
+  (restore-window-placement-rules file))
