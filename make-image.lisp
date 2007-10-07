@@ -17,7 +17,7 @@
 
 ;; a custom loader for clisp. It beats trying to look for asdf, for now.
 #+clisp
-(let ((files '("package.lisp" "primitives.lisp" "keysyms.lisp" "keytrans.lisp" "kmap.lisp" "input.lisp" "core.lisp" "user.lisp" "mode-line.lisp" "color.lisp" "stumpwm.lisp" "version.lisp")))
+(let ((files '("package.lisp" "primitives.lisp" "keysyms.lisp" "keytrans.lisp" "kmap.lisp" "input.lisp" "core.lisp" "user.lisp" "mode-line.lisp" "color.lisp" "fdump.lisp" "stumpwm.lisp" "version.lisp")))
   (dolist (f files)
     (load (compile-file f))))
 
