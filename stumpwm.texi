@@ -345,7 +345,7 @@ Switch to the last window to have focus in the current frame.
 @item C-t !
 Prompt for a shell command to run via @file{/bin/sh}. All output is discarded.
 
-@item C-t r
+@item C-t R
 If the screen is split into multiple frames, one split will be
 undone. If there is only one split, the effect will be the same as @kbd{C-t Q}.
 
