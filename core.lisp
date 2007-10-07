@@ -1351,21 +1351,6 @@ maximized, and given focus."
               (xlib:gcontext-font (screen-message-gc i)) fobj)))
     t))
 
-(defun get-color-pixel (screen color)
-  (xlib:alloc-color (xlib:screen-default-colormap (screen-number screen)) color))
-
-(defun get-fg-color-pixel (screen)
-  (get-color-pixel screen (screen-fg-color screen)))
-
-(defun get-bg-color-pixel (screen)
-  (get-color-pixel screen (screen-bg-color screen)))
-
-(defun get-win-bg-color-pixel (screen)
-  (get-color-pixel screen (screen-win-bg-color screen)))
-
-(defun get-border-color-pixel (screen)
-  (get-color-pixel screen (screen-border-color screen)))
-
 (defun max-width (font l)
   "Return the width of the longest string in L using FONT."
   (loop for i in l
@@ -1984,15 +1969,15 @@ windows used to draw the numbers in. The caller must destroy them."
               (let ((w (xlib:create-window
                         :parent (screen-root screen)
                         :x (frame-x f) :y (frame-display-y group f) :width 1 :height 1
-                        :background (get-fg-color-pixel screen)
-                        :border (get-border-color-pixel screen)
+                        :background (screen-fg-color screen)
+                        :border (screen-border-color screen)
                         :border-width 1
                         :event-mask '())))
                 (xlib:map-window w)
                 (setf (xlib:window-priority w) :above)
                 (echo-in-window w (screen-font screen)
-                                (get-fg-color-pixel screen)
-                                (get-bg-color-pixel screen)
+                                (screen-fg-color screen)
+                                (screen-bg-color screen)
                                 (string (get-frame-number-translation f)))
                 (xlib:display-finish-output *display*)
                 (dformat 3 "mapped ~S~%" (frame-number f))
