@@ -39,8 +39,6 @@
 
 (export '(*colors* update-color-map adjust-color update-screen-color-context))
 
-;; Eight colors. You can redefine these to whatever you like (and
-;; then call (update-color-map)).
 (defvar *colors*
   '("black"
     "red"
@@ -49,7 +47,9 @@
     "blue"
     "magenta"
     "cyan"
-    "white"))
+    "white")
+  "Eight colors by default. You can redefine these to whatever you like (and
+then call (update-color-map)).")
 
 (defvar *color-map* nil)
 (defvar *foreground* nil)
