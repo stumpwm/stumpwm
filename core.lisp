@@ -966,18 +966,21 @@ than the root window's width and height."
    :plist (make-hash-table)
    :unmap-ignores 0))
 
+(defun string-match (string pat)
+  (let ((l (length pat)))
+    (when (> l 0)
+      (if (and (> l 3) (equal (subseq pat 0 3) "..."))
+          (search (subseq pat 3 l) string)
+          (equal string pat)))))
+
 (defun window-matches-properties-p (window &key class instance type role title)
   "Returns T if window matches all the given properties"
-  (labels ((string-match? (string pat)
-             (if (equal (subseq pat 0 3) "...")
-                 (search (subseq pat 3 (length pat)) string)
-                 (equal string pat))))
-    (and
-     (if class (equal (window-class window) class) t)
-     (if instance (equal (window-res window) instance) t)
-     (if type (equal (window-type window) type) t)
-     (if role (string-match? (window-role window) role) t)
-     (if title (string-match? (window-title window) title) t) t)))
+  (and
+   (if class (equal (window-class window) class) t)
+   (if instance (equal (window-res window) instance) t)
+   (if type (equal (window-type window) type) t)
+   (if role (string-match (window-role window) role) t)
+   (if title (string-match (window-title window) title) t) t))
 
 (defun window-matches-rule-p (w rule)
   "Returns T if window matches rule"
