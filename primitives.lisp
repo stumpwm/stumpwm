@@ -828,7 +828,7 @@ add rules"
 (defmacro define-frame-preference (group &rest frames)
   `(dolist (x ',frames)
      ;; verify the correct structure
-     (destructuring-bind (frame-number raise lock &rest keys &key class role instance type) x
+     (destructuring-bind (frame-number raise lock &rest keys &key class instance type role title) x
        (push (list* ,group frame-number raise lock keys) *window-placement-rules*))))
 
 (defun clear-window-placement-rules ()
