@@ -233,7 +233,6 @@ frame."
   ;; The window with focus is the "current" window, so find it in the
   ;; list and give that window focus
   (let* ((w (group-current-window group))
-         (old-frame (tile-group-current-frame group))
          (wins (remove-if-not predicate (cdr (member w window-list))))
          (nw (if (null wins)
                  ;; If the last window in the list is focused, then
@@ -247,10 +246,7 @@ frame."
              (not (eq w nw)))
         (if pull-p
             (pull-window nw)
-            (progn
-              (frame-raise-window group (window-frame nw) nw)
-              (unless (eq (window-frame nw) old-frame)
-                (show-frame-indicator group))))
+            (frame-raise-window group (window-frame nw) nw))
         (message "No other window."))))
 
 (defun delete-current-window ()
