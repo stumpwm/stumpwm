@@ -154,7 +154,7 @@ of those expired."
        (let ((timeout (get-next-timeout *timer-list*)))
          (dformat 10 "timeout: ~a~%" timeout)
          (if timeout
-             (let* ((nevents (xlib:event-listen *display* timeout)))
+             (let* ((nevents (xlib:event-listen *display* (ceiling timeout))))
                (setf *timer-list* (run-expired-timers *timer-list*))
                (when nevents
                  (xlib:process-event *display* :handler #'handle-event)))
