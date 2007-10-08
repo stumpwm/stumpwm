@@ -414,6 +414,11 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
   (loop for s in *screen-list*
         nconc (delete-if 'window-hidden-p (copy-list (group-windows (screen-current-group s))))))
 
+(defun top-windows ()
+  "Return a list of windows on top (on all screen)"
+  (loop for s in *screen-list*
+        nconc (mapcar 'frame-window (group-frames (screen-current-group s)))))
+
 (defun window-name (window)
   (or (window-user-title window)
       (case *window-name-source*
@@ -3104,7 +3109,7 @@ the window in it's frame."
 (define-stump-event-handler :enter-notify (window mode)
   (when (and window (eq mode :normal) (eq *mouse-focus-policy* :sloppy))
     (let ((win (find-window window)))
-      (when win
+      (when (find win (top-windows))
         (focus-all win)))))
 
 ;; TODO: determine if the press was on the root window, and, if so, locate
