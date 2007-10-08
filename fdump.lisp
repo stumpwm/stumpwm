@@ -77,7 +77,7 @@
     (with-standard-io-syntax
       (let ((*package* (find-package :stumpwm))
             (*print-pretty* t))
-        (princ foo fp)))))
+        (prin1 foo fp)))))
 
 (define-stumpwm-command "dump-group" ((file :rest "Dump To File: "))
   "Dumps the frames of the current group of the current screen to the named file."
@@ -86,12 +86,12 @@
 
 (define-stumpwm-command "dump-screen" ((file :rest "Dump To File: "))
   "Dumps the frames of all groups of the current screen to the named file"
-  (dump-to-file (dump-all-groups-in-screen (current-screen)) file)
+  (dump-to-file (dump-screen (current-screen)) file)
   (message "Screen dumped"))
 
 (define-stumpwm-command "dump-desktop" ((file :rest "Dump To File: "))
   "Dumps the frames of all groups of all screens to the named file"
-  (dump-to-file (dump-all-screens) file)
+  (dump-to-file (dump-desktop) file)
   (message "Desktop dumped"))
 
 
@@ -165,7 +165,7 @@
 
 (defun restore-desktop (ddump)
   "Restore all frames, all groups, and all screens."
-  (dolist (sdump (ddump-screens))
+  (dolist (sdump (ddump-screens ddump))
     (let ((screen (find (sdump-number sdump) *screen-list*
                         :key 'screen-id :test '=)))
       (when screen

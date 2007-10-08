@@ -414,6 +414,11 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
   (loop for s in *screen-list*
         nconc (delete-if 'window-hidden-p (copy-list (group-windows (screen-current-group s))))))
 
+(defun top-windows ()
+  "Return a list of windows on top (on all screen)"
+  (loop for s in *screen-list*
+        nconc (mapcar 'frame-window (group-frames (screen-current-group s)))))
+
 (defun window-name (window)
   (or (window-user-title window)
       (case *window-name-source*
@@ -966,18 +971,21 @@ than the root window's width and height."
    :plist (make-hash-table)
    :unmap-ignores 0))
 
+(defun string-match (string pat)
+  (let ((l (length pat)))
+    (when (> l 0)
+      (if (and (> l 3) (equal (subseq pat 0 3) "..."))
+          (search (subseq pat 3 l) string)
+          (equal string pat)))))
+
 (defun window-matches-properties-p (window &key class instance type role title)
   "Returns T if window matches all the given properties"
-  (labels ((string-match? (string pat)
-             (if (equal (subseq pat 0 3) "...")
-                 (search (subseq pat 3 (length pat)) string)
-                 (equal string pat))))
-    (and
-     (if class (equal (window-class window) class) t)
-     (if instance (equal (window-res window) instance) t)
-     (if type (equal (window-type window) type) t)
-     (if role (string-match? (window-role window) role) t)
-     (if title (string-match? (window-title window) title) t) t)))
+  (and
+   (if class (equal (window-class window) class) t)
+   (if instance (equal (window-res window) instance) t)
+   (if type (equal (window-type window) type) t)
+   (if role (string-match (window-role window) role) t)
+   (if title (string-match (window-title window) title) t) t))
 
 (defun window-matches-rule-p (w rule)
   "Returns T if window matches rule"
@@ -1270,6 +1278,7 @@ maximized, and given focus."
          (cw (screen-focus screen)))
     ;; If window to focus is already focused then our work is done.
     (unless (eq window cw)
+      (update-all-mode-lines)
       (raise-window window)
       (screen-set-focus screen window)
       ;;(send-client-message window :WM_PROTOCOLS +wm-take-focus+)
@@ -1439,12 +1448,12 @@ T (default) then also focus the frame."
   (let ((oldw (frame-window f)))
     ;; nothing to do when W is nil
     (setf (frame-window f) w)
-    (when focus
-      (focus-frame g f))
     (unless (and w (eq oldw w))
       (if w
           (raise-window w)
           (mapc 'hide-window (frame-windows g f))))
+    (when focus
+      (focus-frame g f))
     (when (and w (not (window-modal-p w)))
       (raise-modals-of w))))
 
@@ -3100,7 +3109,7 @@ the window in it's frame."
 (define-stump-event-handler :enter-notify (window mode)
   (when (and window (eq mode :normal) (eq *mouse-focus-policy* :sloppy))
     (let ((win (find-window window)))
-      (when win
+      (when (find win (top-windows))
         (focus-all win)))))
 
 ;; TODO: determine if the press was on the root window, and, if so, locate
@@ -3108,7 +3117,7 @@ the window in it's frame."
 (define-stump-event-handler :button-press (window time)
   ;; Pass click to client
   (xlib:allow-events *display* :replay-pointer time)
-  (let ((win (find-window-by-parent window (group-windows (current-group)))))
+  (let ((win (find-window-by-parent window (visible-windows))))
     (when (and win (eq *mouse-focus-policy* :click))
       (focus-all win))))
 

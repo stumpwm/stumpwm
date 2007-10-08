@@ -54,6 +54,7 @@ then call (update-color-map)).")
 (defvar *color-map* nil)
 (defvar *foreground* nil)
 (defvar *background* nil)
+(defvar *reverse* nil)
 
 (defun adjust-color (color amt)
   (labels ((max-min (x y) (max 0 (min 1 (+ x y)))))
@@ -108,14 +109,23 @@ then call (update-color-map)).")
          (r 2)
          (f (subseq s i (1+ i)))
          (b (if (< l 2) "*" (subseq s (1+ i) (+ i 2)))))
-    (labels ((update-colors ()
+    (labels
+        ((set-fg-bg (fg bg)
+           (if *reverse*
                (setf
-                (xlib:gcontext-foreground gc) (get-fg-color screen cc *foreground*)
-                (xlib:gcontext-background gc) (get-bg-color screen cc *background*))))
+                (xlib:gcontext-foreground gc) bg
+                (xlib:gcontext-background gc) fg)
+               (setf
+                (xlib:gcontext-foreground gc) fg
+                (xlib:gcontext-background gc) bg)))
+         (update-colors ()
+           (set-fg-bg (get-fg-color screen cc *foreground*)
+                      (get-bg-color screen cc *background*))))
       (case (elt f 0)
         (#\n                            ; normal
          (setf f "*" b "*" r 1
-               *color-map* (screen-color-map-normal screen))
+               *color-map* (screen-color-map-normal screen)
+               *reverse* nil)
          (get-fg-color screen cc nil)
          (get-bg-color screen cc nil))
         (#\b                            ; bright off
@@ -126,13 +136,20 @@ then call (update-color-map)).")
          (setf *color-map* (screen-color-map-bright screen))
          (update-colors)
          (return-from set-color 1))
+        (#\R
+         (setf *reverse* t)
+         (update-colors)
+         (return-from set-color 1))
+        (#\r
+         (setf *reverse* nil)
+         (update-colors)
+         (return-from set-color 1))
         (#\^                            ; circumflex
          (return-from set-color 1)))
       (handler-case
           (let ((fg (if (equal f "*") (progn (get-fg-color screen cc nil) (ccontext-default-fg cc)) (get-fg-color screen cc (parse-integer f))))
                 (bg (if (equal b "*") (progn (get-bg-color screen cc nil) (ccontext-default-bg cc)) (get-bg-color screen cc (parse-integer b)))))
-            (setf (xlib:gcontext-foreground gc) fg
-                  (xlib:gcontext-background gc) bg))
+            (set-fg-bg fg bg))
         (error (c) (dformat 1 "Invalid color code: ~A" c)))) r))
 
 (defun render-strings (screen cc padx pady strings highlights &optional (draw t))
@@ -143,6 +160,7 @@ then call (update-color-map)).")
          (win (ccontext-win cc))
          (*foreground* nil)
          (*background* nil)
+         (*reverse* nil)
          (*color-map* (screen-color-map-normal screen)))
     (loop for s in strings
           ;; We need this so we can track the row for each element

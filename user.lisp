@@ -233,7 +233,6 @@ frame."
   ;; The window with focus is the "current" window, so find it in the
   ;; list and give that window focus
   (let* ((w (group-current-window group))
-         (old-frame (tile-group-current-frame group))
          (wins (remove-if-not predicate (cdr (member w window-list))))
          (nw (if (null wins)
                  ;; If the last window in the list is focused, then
@@ -247,10 +246,7 @@ frame."
              (not (eq w nw)))
         (if pull-p
             (pull-window nw)
-            (progn
-              (frame-raise-window group (window-frame nw) nw)
-              (unless (eq (window-frame nw) old-frame)
-                (show-frame-indicator group))))
+            (frame-raise-window group (window-frame nw) nw))
         (message "No other window."))))
 
 (defun delete-current-window ()
@@ -329,7 +325,7 @@ frame."
   (format nil "~a" (group-name group)))
 
 (defun fmt-highlight (s)
-  (concat *highlight-color-code* s "^**"))
+  (format nil "^R~A^r" s))
 
 (defun fmt-head-window-list (group head)
   "Using *window-format*, return a 1 line list of the windows, space seperated."
@@ -1735,14 +1731,14 @@ current frame and raise it."
 
 (defun dump-window-placement-rules (file)
   "Dump *window-placement-rules* to FILE."
-  (dump-to-file (mapcar (lambda (r) (format nil "~S" r)) *window-placement-rules*) file))
+  (dump-to-file *window-placement-rules* file))
 
 (define-stumpwm-command "dump-rules" ((file :rest "Filename: "))
   (dump-window-placement-rules file))
 
 (defun restore-window-placement-rules (file)
   "Restore *window-placement-rules* from FILE."
-  (setf *window-placement-rules* (read-from-string (restore-from-file file))))
+  (setf *window-placement-rules* (read-dump-from-file file)))
 
 (define-stumpwm-command "restore-rules" ((file :rest "Filename: "))
   (restore-window-placement-rules file))

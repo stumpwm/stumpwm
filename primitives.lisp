@@ -828,7 +828,7 @@ add rules"
 (defmacro define-frame-preference (group &rest frames)
   `(dolist (x ',frames)
      ;; verify the correct structure
-     (destructuring-bind (frame-number raise lock &rest keys &key class role instance type) x
+     (destructuring-bind (frame-number raise lock &rest keys &key class instance type role title) x
        (push (list* ,group frame-number raise lock keys) *window-placement-rules*))))
 
 (defun clear-window-placement-rules ()
@@ -846,6 +846,3 @@ input focus is transfered to the window you click on.")
 
 (defvar *resize-map* nil
   "The keymap used for resizing a window")
-
-(defvar *highlight-color-code* "^07"
-  "The color code to use for the current/highlighted thing when printing out a list.")
