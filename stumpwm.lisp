@@ -207,6 +207,8 @@ of those expired."
                ;; through them in reverse so the first screen's frame ends up
                ;; with focus.
                (dolist (s (reverse *screen-list*))
+                 ;; map the current group's windows
+                 (mapc 'unhide-window (reverse (group-windows (screen-current-group s))))
                  ;; update groups
                  (dolist (g (reverse (screen-groups s)))
                    ;; raise the current window and frame.
@@ -218,9 +220,7 @@ of those expired."
                  ;; switch to the (old) current group.
                  (let ((netwm-id (first (xlib:get-property (screen-root s) :_NET_CURRENT_DESKTOP))))
                    (when (and netwm-id (< netwm-id (length (screen-groups s))))
-                     (switch-to-group (elt (sort-groups s) netwm-id))))
-                 ;; map the current group's windows
-                 (mapc 'unhide-window (reverse (group-windows (screen-current-group s))))))
+                     (switch-to-group (elt (sort-groups s) netwm-id))))))
              ;; Let's manage.
              (let ((*package* (find-package *default-package*)))
                (run-hook *start-hook*)
