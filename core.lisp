@@ -3109,7 +3109,7 @@ the window in it's frame."
 (define-stump-event-handler :enter-notify (window mode)
   (when (and window (eq mode :normal) (eq *mouse-focus-policy* :sloppy))
     (let ((win (find-window window)))
-      (when (find win (top-windows))
+      (when (and win (find win (top-windows)))
         (focus-all win)))))
 
 ;; TODO: determine if the press was on the root window, and, if so, locate
