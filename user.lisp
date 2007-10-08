@@ -329,7 +329,7 @@ frame."
   (format nil "~a" (group-name group)))
 
 (defun fmt-highlight (s)
-  (concat *highlight-color-code* s "^**"))
+  (format nil "^R~A^r" s))
 
 (defun fmt-head-window-list (group head)
   "Using *window-format*, return a 1 line list of the windows, space seperated."
