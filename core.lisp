@@ -3112,7 +3112,7 @@ the window in it's frame."
 (define-stump-event-handler :button-press (window time)
   ;; Pass click to client
   (xlib:allow-events *display* :replay-pointer time)
-  (let ((win (find-window-by-parent window (group-windows (current-group)))))
+  (let ((win (find-window-by-parent window (visible-windows))))
     (when (and win (eq *mouse-focus-policy* :click))
       (focus-all win))))
 
