@@ -1443,12 +1443,12 @@ T (default) then also focus the frame."
   (let ((oldw (frame-window f)))
     ;; nothing to do when W is nil
     (setf (frame-window f) w)
-    (when focus
-      (focus-frame g f))
     (unless (and w (eq oldw w))
       (if w
           (raise-window w)
           (mapc 'hide-window (frame-windows g f))))
+    (when focus
+      (focus-frame g f))
     (when (and w (not (window-modal-p w)))
       (raise-modals-of w))))
 
