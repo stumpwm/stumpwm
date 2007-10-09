@@ -288,7 +288,6 @@ Go to a window by name
 @item C-t "
 Select a window from a list and focus the window.
 
-@item C-t g
 @itemx C-t C-g
 Abort the current command. This is useful if you accidentally hit @kbd{C-t}
 
