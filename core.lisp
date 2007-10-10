@@ -625,7 +625,7 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
   (xlib:unmap-subwindows (window-parent window)))
 
 (defun hide-window (window)
-  (dformat 2 "hide window: ~a~%" (window-name window))
+  (dformat 2 "hide window: ~s~%" window)
   (unless (eql (window-state window) +iconic-state+)
     (setf (window-state window) +iconic-state+)
     ;; Mark window as hidden
@@ -1272,7 +1272,7 @@ needed."
 (defun focus-window (window)
   "Give the window focus. This means the window will be visible,
 maximized, and given focus."
-  (dformat 3 "focus-window!~%")
+  (dformat 3 "focus-window: ~s~%" window)
   (let* ((group (window-group window))
          (screen (group-screen group))
          (cw (screen-focus screen)))

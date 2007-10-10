@@ -330,7 +330,7 @@ name. :title, :resource-name, :class are valid values.")
           (frame-number object) (frame-window object) (frame-x object) (frame-y object) (frame-width object) (frame-height object)))
 
 (defmethod print-object ((object window) stream)
-  (format stream "#S(window ~s)" (window-name object)))
+  (format stream "#S(window ~s #x~x)" (window-name object) (window-id object)))
 
 (defvar *frame-number-map* nil
   "Set this to a string to remap the regular frame numbers to more convenient keys.
