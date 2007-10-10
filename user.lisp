@@ -213,9 +213,13 @@ chosen, resignal the error."
 (defun pull-window (win &optional (to-frame (tile-group-current-frame (window-group win))))
   (let ((f (window-frame win))
         (group (window-group win)))
-    (hide-window win)
+    (xwin-hide win)
     (setf (window-frame win) to-frame)
-    (sync-frame-windows group to-frame)
+    (maximize-window win)
+    (xwin-unhide (window-xwin win) (window-parent win))
+    ;; We have to restore the focus after hiding.
+    (when (eq win (screen-focus (window-screen win)))
+        (screen-set-focus (window-screen win) win))
     (frame-raise-window group to-frame win)
     ;; if win was focused in its old frame then give the old
     ;; frame the frame's last focused window.
