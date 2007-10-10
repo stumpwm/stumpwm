@@ -631,7 +631,14 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
     ;; Mark window as hidden
     (add-wm-state (window-xwin window) :_NET_WM_STATE_HIDDEN)
     (when (window-in-current-group-p window)
-      (xwin-hide window))))
+      (xwin-hide window)
+      (when (eq window (current-window))
+        ;; If this window had the focus, try to avoid losing it.
+        (let ((group (window-group window))
+              (frame (window-frame window)))
+          (setf (frame-window frame)
+                (first (remove-if 'window-hidden-p (frame-windows group frame))))
+          (focus-frame group (tile-group-current-frame group)))))))
 
 (defun xwin-type (win)
   "Return one of :desktop, :dock, :toolbar, :utility, :splash,

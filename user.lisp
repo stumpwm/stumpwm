@@ -1189,12 +1189,8 @@ aborted."
          (window (current-window)))
     (when new-frame
       (if (and win-p window)
-          (progn
-            (pull-window window new-frame)
-            ;; Dirty hack!
-            (screen-set-focus (window-screen window) window))
+          (pull-window window new-frame)
           (focus-frame group new-frame)))))
-
 
 (define-stumpwm-command "move-focus" ((dir :string "Direction: "))
   (move-focus-and-or-window dir))
