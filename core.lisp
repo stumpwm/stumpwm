@@ -625,13 +625,20 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
   (xlib:unmap-subwindows (window-parent window)))
 
 (defun hide-window (window)
-  (dformat 2 "hide window: ~a~%" (window-name window))
+  (dformat 2 "hide window: ~s~%" window)
   (unless (eql (window-state window) +iconic-state+)
     (setf (window-state window) +iconic-state+)
     ;; Mark window as hidden
     (add-wm-state (window-xwin window) :_NET_WM_STATE_HIDDEN)
     (when (window-in-current-group-p window)
-      (xwin-hide window))))
+      (xwin-hide window)
+      (when (eq window (current-window))
+        ;; If this window had the focus, try to avoid losing it.
+        (let ((group (window-group window))
+              (frame (window-frame window)))
+          (setf (frame-window frame)
+                (first (remove-if 'window-hidden-p (frame-windows group frame))))
+          (focus-frame group (tile-group-current-frame group)))))))
 
 (defun xwin-type (win)
   "Return one of :desktop, :dock, :toolbar, :utility, :splash,
@@ -1272,7 +1279,7 @@ needed."
 (defun focus-window (window)
   "Give the window focus. This means the window will be visible,
 maximized, and given focus."
-  (dformat 3 "focus-window!~%")
+  (dformat 3 "focus-window: ~s~%" window)
   (let* ((group (window-group window))
          (screen (group-screen group))
          (cw (screen-focus screen)))
@@ -3109,7 +3116,7 @@ the window in it's frame."
 (define-stump-event-handler :enter-notify (window mode)
   (when (and window (eq mode :normal) (eq *mouse-focus-policy* :sloppy))
     (let ((win (find-window window)))
-      (when (find win (top-windows))
+      (when (and win (find win (top-windows)))
         (focus-all win)))))
 
 ;; TODO: determine if the press was on the root window, and, if so, locate
