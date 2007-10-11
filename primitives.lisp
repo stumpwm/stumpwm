@@ -98,6 +98,14 @@ run before the error is dealt with according to
   It is called with 3 argument: the key, the (possibly incomplete)
   key sequence it is a part of, and command value bound to the key.")
 
+(defvar *root-click-hook* '()
+  "A hook called whenever there is a mouse click on the root window. Called
+  with 2 arguments, the screen containing the root window and the button clicked.")
+
+(defvar *mode-line-click-hook* '()
+  "Called whenever the a mode-line is clicked. It is called with 2 arguments,
+  the mode-line and the button clicked.")
+
 ;; Data types and globals used by stumpwm
 
 (defvar *display* nil

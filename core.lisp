@@ -2302,7 +2302,8 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
         '(:substructure-redirect
           :substructure-notify
           :property-change
-          :structure-notify))
+          :structure-notify
+          :button-press))
   (xlib:display-finish-output *display*)
   ;; Initialize the screen structure
   (labels ((ac (color)
@@ -3121,12 +3122,18 @@ the window in it's frame."
 
 ;; TODO: determine if the press was on the root window, and, if so, locate
 ;; and focus the frame containing the pointer.
-(define-stump-event-handler :button-press (window time)
+(define-stump-event-handler :button-press (window code time)
   ;; Pass click to client
   (xlib:allow-events *display* :replay-pointer time)
-  (let ((win (find-window-by-parent window (visible-windows))))
-    (when (and win (eq *mouse-focus-policy* :click))
-      (focus-all win))))
+  (let (screen ml win)
+    (cond
+      ((setf screen (find-screen window))
+       (run-hook-with-args *root-click-hook* screen code))
+      ((setf ml (find-mode-line-window window))
+       (run-hook-with-args *mode-line-click-hook* ml code))
+      ((setf win (find-window-by-parent window (visible-windows)))
+       (when (eq *mouse-focus-policy* :click)
+         (focus-all win))))))
 
 ;; Handling event :KEY-PRESS
 ;; (:DISPLAY #<XLIB:DISPLAY :0 (The X.Org Foundation R60700000)> :EVENT-KEY :KEY-PRESS :EVENT-CODE 2 :SEND-EVENT-P NIL :CODE 45 :SEQUENCE 1419 :TIME 98761213 :ROOT #<XLIB:WINDOW :0 96> :WINDOW #<XLIB:WINDOW :0 6291484> :EVENT-WINDOW #<XLIB:WINDOW :0 6291484> :CHILD
