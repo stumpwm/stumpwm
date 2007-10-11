@@ -1536,19 +1536,37 @@ then describes the symbol.
 
 @end defmac
 
-@defun run-or-raise @var{command} @var{props} @var{all-groups}
+@defun run-or-raise @var{command} @var{props} @var{all-groups} @var{all-screens}
 Run the shell command, @var{command}, unless an existing window
-matches @var{props}
+matches @var{props}. @var{props} is a property list with the following keys:
+
+@table @code
+@item :class
+Match the window's class.
+@item :instance
+Match the window's instance or resource-name.
+@item :role
+Match the window's @code{WM_WINDOW_ROLE}.
+@item :title
+Match the window's title.
+@end @table
 
 By default, the global @var{*run-or-raise-all-groups*} decides whether
 to search all groups or the current one for a running
-instance. @var{all-groups} overrides this default.
+instance. @var{all-groups} overrides this default. Similarily for
+@var{*run-or-raise-all-screens*} and @var{all-screens}.
 
 @end defun
 
 @defvar *run-or-raise-all-groups*
-When this is T the @code{run-or-raise} function searches all groups for a
+When this is @code{T} the @code{run-or-raise} function searches all groups for a
 running instance. Set it to NIL to search only the current group.
+@end defvar
+
+@defvar *run-or-raise-all-screens*
+When this is @code{T} the @code{run-or-raise} function searches all screens for a
+running instance. Set it to @code{NIL} to search only the current screen. If
+@var{*run-or-raise-all-groups*} is @code{NIL} this variable has no effect.
 @end defvar
 
 @defun restarts-menu @var{error}
