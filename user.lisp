@@ -640,8 +640,9 @@ returns..which could be forever if you're not careful."
                 (tile-group-frame-head group head) frame
                 (tile-group-current-frame group) frame)
           (focus-frame group frame)
-          (when (frame-window frame)
-            (update-window-border (frame-window frame)))
+          (if (frame-window frame)
+            (update-window-border (frame-window frame))
+            (show-frame-indicator group))
           (sync-frame-windows group (tile-group-current-frame group))))))
 
 (define-stumpwm-command "fullscreen" ()
