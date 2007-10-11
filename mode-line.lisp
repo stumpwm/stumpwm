@@ -300,8 +300,13 @@ current group.")
                                           *mode-line-timeout*
                                           'update-all-mode-lines)))
 
+(defun all-heads ()
+  "Return all heads on all screens."
+  (loop for s in *screen-list*
+        nconc (copy-list (screen-heads s))))
+
 (defun maybe-cancel-mode-line-timer ()
-  (unless (find-if 'head-mode-line (mapcan 'screen-heads *screen-list*))
+  (unless (find-if 'head-mode-line (all-heads))
     (when (timer-p *mode-line-timer*)
       (cancel-timer *mode-line-timer*)
       (setf *mode-line-timer* nil))))
