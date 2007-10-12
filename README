@@ -12,10 +12,30 @@ customizable lisp based systems.
 Build & Start Stumpwm
 ---------------------
 
+Prerequisites
+=============
+
+* a common lisp distribution. clisp or SBCL both worth.
+* clx
+* cl-ppcre
+
 If you intend to use sbcl you need to install portable-clx. If you're
 using clisp, make sure it has been compiled with mit-clx. As of clisp
 1.41, new-clx is too buggy to run stumpwm. If you want to use new-clx,
 build clisp from CVS where the problems have been resolved.
+
+You can use asdf-install to install lisp libraries:
+$ sbcl
+* (require 'asdf)
+* (require 'asdf-install)
+* (asdf-install:install 'clx)
+* (asdf-install:install 'cl-ppcre)
+
+Your operating system distribution may also have these libraries
+available.
+
+Building
+========
 
 Building stumpwm from CVS requires that you build the configure script:
 
@@ -23,11 +43,11 @@ $ autoconf
 
 If there's already a configure script then just run it.
 
-$ configure
+$ ./configure
 
 By default stumpwm elects sbcl. You can explicitely use clisp this way:
 
-$ configure --with-lisp=clisp
+$ ./configure --with-lisp=clisp
 
 If your lisps are in strange places you may need to tell the script where to find them:
 
@@ -48,6 +68,14 @@ $ startx
 
 Hopefully that will put you in X running stumpwm!
 
+SBCL And Threads
+----------------
+
+SBCL compiled with threads causes problems with stumpwm. The most
+common is sluggishness. It may also cause stumpwm to become
+unresponsive. If you use SBCL, consider using a version built without
+threads.
+
 Help
 ----
 
@@ -56,7 +84,7 @@ info file you can read in emacs or with the `info' program.
 
 For other stuff visit the stumpwm wiki: 
 
-http://stumpwm.elektrubadur.se/
+http://stumpwm.antidesktop.net/
 
 There's a #stumpwm channel on irc.freenode.net, too.
 

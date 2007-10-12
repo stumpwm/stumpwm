@@ -162,21 +162,26 @@ environment.
 
 @enumerate
 @item
-Install @samp{SBCL} and the @samp{portable-clx} package. In Debian,
-@samp{portable-clx} is the @samp{cl-clx-sbcl} package. You can also use
-@samp{asdf-install} to download and install clx:
+Install @samp{SBCL}, the @samp{portable-clx} package, and
+@samp{cl-ppcre}. In Debian, @samp{portable-clx} is the
+@samp{cl-clx-sbcl} package. You can also use @samp{asdf-install} to
+download and install clx:
 
 @example
 $ sbcl
 * (require :asdf)
 * (require :asdf-install)
 * (asdf-install:install :clx)
+* (asdf-install:install :cl-ppcre)
 @end example
 
 Note that asdf-install requires @samp{gnupg}.
 
 @item
-In the @file{stumpwm} directory, run @samp{make}. If all goes well,
+In the @file{stumpwm} directory, run @samp{./configure}.
+
+@item
+run @samp{make}. If all goes well,
 this should create a @file{stumpwm} executable.
 
 @item
