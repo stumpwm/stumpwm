@@ -619,10 +619,11 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 ;; not an xlib:window.
 (defun xwin-hide (window)
   (declare (type window window))
-  (setf (xwin-state (window-xwin window)) +iconic-state+)
-  (incf (window-unmap-ignores window))
-  (xlib:unmap-window (window-parent window))
-  (xlib:unmap-subwindows (window-parent window)))
+  (unless (eq (xlib:window-map-state (window-xwin window)) :unmapped)
+    (setf (xwin-state (window-xwin window)) +iconic-state+)
+    (incf (window-unmap-ignores window))
+    (xlib:unmap-window (window-parent window))
+    (xlib:unmap-subwindows (window-parent window))))
 
 (defun hide-window (window)
   (dformat 2 "hide window: ~s~%" window)
