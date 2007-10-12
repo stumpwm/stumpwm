@@ -3123,17 +3123,21 @@ the window in it's frame."
       (when (and win (find win (top-windows)))
         (focus-all win)))))
 
-;; TODO: determine if the press was on the root window, and, if so, locate
-;; and focus the frame containing the pointer.
-(define-stump-event-handler :button-press (window code time)
+(define-stump-event-handler :button-press (window code x y child time)
   ;; Pass click to client
   (xlib:allow-events *display* :replay-pointer time)
   (let (screen ml win)
     (cond
-      ((setf screen (find-screen window))
-       (run-hook-with-args *root-click-hook* screen code))
+      ((and (setf screen (find-screen window)) (not child))
+       (when (and (eq *mouse-focus-policy* :click)
+                  *root-click-focuses-frame*)
+         (let* ((group (screen-current-group screen))
+                (frame (find-frame group x y)))
+           (when frame
+             (focus-frame group frame))))
+       (run-hook-with-args *root-click-hook* screen code x y))
       ((setf ml (find-mode-line-window window))
-       (run-hook-with-args *mode-line-click-hook* ml code))
+       (run-hook-with-args *mode-line-click-hook* ml code x y))
       ((setf win (find-window-by-parent window (visible-windows)))
        (when (eq *mouse-focus-policy* :click)
          (focus-all win))))))

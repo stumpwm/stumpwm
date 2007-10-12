@@ -100,11 +100,12 @@ run before the error is dealt with according to
 
 (defvar *root-click-hook* '()
   "A hook called whenever there is a mouse click on the root window. Called
-  with 2 arguments, the screen containing the root window and the button clicked.")
+  with 4 arguments, the screen containing the root window, the button clicked,
+  and the x and y of the pointer.")
 
 (defvar *mode-line-click-hook* '()
-  "Called whenever the a mode-line is clicked. It is called with 2 arguments,
-  the mode-line and the button clicked.")
+  "Called whenever the a mode-line is clicked. It is called with 4 arguments,
+  the mode-line, the button clicked, and the x and y of the pointer.")
 
 ;; Data types and globals used by stumpwm
 
@@ -848,6 +849,10 @@ focus. Possible values are :ignore, :sloppy, and :click. :ignore means
 stumpwm ignores the mouse. :sloppy means input focus follows the
 mouse; the window that the mouse is in gets the focus. :click means
 input focus is transfered to the window you click on.")
+
+(defvar *root-click-focuses-frame* t
+  "Set to NIL if you don't want clicking the root window to focus the frame
+  containing the pointer when *mouse-focus-policy* is :click.")
 
 (defvar *xwin-to-window* (make-hash-table)
   "Hash table for looking up windows quickly.")
