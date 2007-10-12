@@ -2174,7 +2174,9 @@ windows used to draw the numbers in. The caller must destroy them."
     (unless (eq *top-map* *resize-map*)
       (clear-frame-outlines group)
       (let ((frame (tile-group-current-frame group)))
-        (unless (frame-window frame)
+        (unless (or (frame-window frame)
+                    (and (= 1 (length (tile-group-frame-tree group)))
+                         (atom (first (tile-group-frame-tree group)))))
           (draw-frame-outline group frame t t))))))
 
 (defun echo-in-window (win font fg bg string)
