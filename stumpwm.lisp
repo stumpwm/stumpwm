@@ -168,17 +168,25 @@ of those expired."
 
 (defun parse-display-string (display)
   "Parse an X11 DISPLAY string and return the host and display from it."
-  (let* ((colon (position #\: display))
-         (host (subseq display 0 colon))
-         (rest (subseq display (1+ colon)))
-         (dot (position #\. rest))
-         (num (parse-integer (subseq rest 0 dot))))
-    (values host num)))
+  (ppcre:register-groups-bind (protocol host ('parse-integer display screen))
+			      ("^(?:(.*?)/)?(.*?)?:(\\d+)(?:\\.(\\d+))?" display :sharedp t)
+    (values 
+     ;; clx doesn't like (vector character *)
+     (coerce (or host "")
+	     '(simple-array character (*)))
+     display screen
+     (cond (protocol
+	    (intern (string-upcase protocol) :keyword))
+	   ((or (string= host "")
+		(string-equal host "unix"))
+	    :local)
+	   (t :internet)))))
 
 ;; Usage: (stumpwm)
-(defun stumpwm (&optional (display-str (or (getenv "DISPLAY") ":0")) protocol)
+(defun stumpwm (&optional (display-str (or (getenv "DISPLAY") ":0")))
   "Start the stump window manager."
-  (multiple-value-bind (host display) (parse-display-string display-str)
+  (multiple-value-bind (host display screen protocol) (parse-display-string display-str)
+    (declare (ignore screen))
     (setf *display* (xlib:open-display host :display display :protocol protocol)
           (xlib:display-error-handler *display*) 'error-handler)
     (with-simple-restart (quit-stumpwm "Quit Stumpwm")

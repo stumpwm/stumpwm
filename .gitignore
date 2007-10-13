@@ -1,3 +1,5 @@
+*.fas
+*.lib
 *.fasl
 *~
 configure

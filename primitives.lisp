@@ -829,9 +829,9 @@ with IN-PACKAGE.")
 (defun concat (&rest strings)
   (apply 'concatenate 'string strings))
 
-(defvar *window-placement-rules* '())
-"List of rules governing window placement. Use define-frame-preference to
-add rules"
+(defvar *window-placement-rules* '()
+  "List of rules governing window placement. Use define-frame-preference to
+add rules")
 
 ;; FIXME: this macro doesnt use gensym, though it's also low risk
 (defmacro define-frame-preference (group &rest frames)
