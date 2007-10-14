@@ -183,12 +183,12 @@ at 0. Return a netwm compliant group id."
          (old-group (screen-current-group screen)))
     (unless (eq new-group old-group)
       ;; restore the visible windows
-      (dolist (w (group-windows old-group))
-        (when (eq (window-state w) +normal-state+)
-          (xwin-hide w)))
       (dolist (w (group-windows new-group))
         (when (eq (window-state w) +normal-state+)
           (xwin-unhide (window-xwin w) (window-parent w))))
+      (dolist (w (reverse (group-windows old-group)))
+        (when (eq (window-state w) +normal-state+)
+          (xwin-hide w)))
       (setf (screen-current-group screen) new-group)
       (move-group-to-head screen new-group)
       ;; restore the focus
