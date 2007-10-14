@@ -104,7 +104,7 @@ run before the error is dealt with according to
   and the x and y of the pointer.")
 
 (defvar *mode-line-click-hook* '()
-  "Called whenever the a mode-line is clicked. It is called with 4 arguments,
+  "Called whenever the mode-line is clicked. It is called with 4 arguments,
   the mode-line, the button clicked, and the x and y of the pointer.")
 
 ;; Data types and globals used by stumpwm
