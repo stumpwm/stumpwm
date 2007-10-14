@@ -25,6 +25,13 @@
 
 (in-package stumpwm)
 
+(export '(define-key
+	  kbd
+	  lookup-command
+	  lookup-key
+	  make-sparse-keymap
+	  undefine-key))
+
 (defstruct key
   keysym shift control meta alt hyper super)
 

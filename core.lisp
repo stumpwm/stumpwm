@@ -26,6 +26,30 @@
 
 (in-package :stumpwm)
 
+(export '(*top-map*
+	  current-group
+	  current-screen
+	  current-srceen
+	  current-window
+	  def-window-attr
+	  echo-string
+	  err
+	  get-x-selection
+	  message
+	  save-frame-excursion
+	  screen-current-window
+	  set-bg-color
+	  set-border-color
+	  set-fg-color
+	  set-font
+	  set-maxsize-gravity
+	  set-msg-border-width
+	  set-normal-gravity
+	  set-transient-gravity
+	  set-win-bg-color
+	  set-x-selection
+	  window-send-string))
+
 ;; Do it this way so its easier to wipe the map and get a clean one.
 (when (null *top-map*)
   (setf *top-map*

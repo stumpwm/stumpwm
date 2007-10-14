@@ -26,6 +26,50 @@
 
 (in-package :stumpwm)
 
+(export '(*debug-level*
+	  *default-package*
+	  *deny-map-request*
+	  *deny-raise-request*
+	  *destroy-window-hook*
+	  *focus-frame-hook*
+	  *focus-window-hook*
+	  *frame-number-map*
+	  *input-window-gravity*
+	  *internal-loop-hook*
+	  *map-window-hook*
+	  *maxsize-border-width*
+	  *message-window-gravity*
+	  *message-window-padding*
+	  *min-frame-height*
+	  *min-frame-width*
+	  *new-frame-action*
+	  *new-frame-hook*
+	  *new-window-hook*
+	  *new-window-prefered-frame*
+	  *normal-border-width*
+	  *run-or-raise-all-groups*
+	  *screen-list*
+	  *shell-program*
+	  *start-hook*
+	  *startup-message*
+	  *suppress-abort-messages*
+	  *suppress-deny-messages*
+	  *timeout-frame-indicator-wait*
+	  *timeout-wait*
+	  *top-level-error-action*
+	  *top-level-error-hook*
+	  *transient-border-width*
+	  *unmap-window-hook*
+	  *window-format*
+	  *window-formatters*
+	  add-hook
+	  dformat
+	  getenv
+	  remove-hook
+	  run-hook
+	  run-hook-with-args
+	  split-string))
+
 
 ;;; Message Timer
 (defvar *suppress-abort-messages* nil

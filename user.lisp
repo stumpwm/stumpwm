@@ -26,6 +26,22 @@
 
 (in-package :stumpwm)
 
+(export '(*root-map*
+	  argument-line-end-p
+	  argument-pop
+	  argument-pop-or-read
+	  argument-pop-rest
+	  define-stumpwm-command
+	  define-stumpwm-type
+	  pathname-is-executable-p
+	  programs-in-path
+	  restarts-menu
+	  run-commands
+	  run-or-raise
+	  run-shell-command
+	  set-prefix-key
+	  with-restarts-menu))
+
 (defvar *root-map* nil
   "The default bindings that hang off the prefix key.")
 

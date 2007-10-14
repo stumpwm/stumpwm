@@ -24,6 +24,18 @@
 ;; Code:
 (in-package :stumpwm)
 
+(export '(*input-map*
+	  completing-read
+	  input-delete-region
+	  input-goto-char
+	  input-insert-char
+	  input-insert-string
+	  input-point
+	  input-substring
+	  input-validate-region
+	  read-one-char
+	  read-one-line))
+
 (defstruct input-line
   string position history history-bk)
 
