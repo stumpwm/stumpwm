@@ -74,6 +74,6 @@
   (3 t   t   :instance "qjackctl" :role "qjackctlMainForm"))
 
 (define-frame-preference "Shareland"
-  (0 t   nil :calss "XTerm")
+  (0 t   nil :class "XTerm")
   (1 nil t   :class "aMule"))
 
