@@ -153,21 +153,21 @@
 (defvar *command-hash* (make-hash-table :test 'equal)
   "A list of interactive stumpwm commands.")
 
-(defun rip-docstring (body)
-  (loop for i in body
-       while (or (stringp i)
-		 (and (listp i)
-		      (eq (first i) 'declare)))
-       if (stringp i)
-       return i))
 
 (defmacro define-stumpwm-command (name (&rest args) &body body)
-  `(setf (gethash ,name *command-hash*)
-    (make-command :name ,name
-     :args ',args
-     :docstring ,(rip-docstring body)
-     :fn (lambda (,@(mapcar 'first args))
-           ,@body))))
+  (labels ((rip-docstring (body)
+	     (loop for i in body
+		while (or (stringp i)
+			  (and (listp i)
+			       (eq (first i) 'declare)))
+		if (stringp i)
+		return i)))
+    `(setf (gethash ,name *command-hash*)
+	   (make-command :name ,name
+			 :args ',args
+			 :docstring ,(rip-docstring body)
+			 :fn (lambda (,@(mapcar 'first args))
+			       ,@body)))))
 
 (defun all-commands ()
   "Return a list of all interactive commands."
