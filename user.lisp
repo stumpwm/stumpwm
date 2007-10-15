@@ -43,7 +43,7 @@
 	  with-restarts-menu))
 
 (defvar *root-map* nil
-  "The default bindings that hang off the prefix key.")
+  "This is the keymap by default bound to @kbd{C-t}. It is known as the @dfn{prefix map}.")
 
 ;; Do it this way so its easier to wipe the map and get a clean one.
 (when (null *root-map*)
@@ -1382,7 +1382,7 @@ instance. @var{all-groups} overrides this default. Similarily for
 ;; together.
 
 (defvar *groups-map* nil
-  "The default group related bindings hang off this map.")
+  "The keymap that group related key bindings sit on. It is bound to @kbd{C-t g} by default.")
 
 (when (null *groups-map*)
   (setf *groups-map*

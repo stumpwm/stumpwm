@@ -41,12 +41,14 @@
 				t)))
 
 (defun generate-macro-doc (s line)
-  (declare (ignore s line))
-  )
+  (declare (ignore s line)))
 
 (defun generate-variable-doc (s line)
-  (declare (ignore s line))
-  )
+  (ppcre:register-groups-bind (name) ("^### (.*)" line)
+			      (let ((sym (find-symbol (string-upcase name) :stumpwm)))
+				(format s "@defvar ~a~%~a~&@end defvar~%~%"
+					name (documentation sym 'variable))
+				t)))
 
 (defun generate-manual (&key (in #p"stumpwm.texi.in") (out #p"stumpwm.texi"))
   (with-open-file (os out :direction :output :if-exists :supersede)

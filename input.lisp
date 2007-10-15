@@ -40,7 +40,7 @@
   string position history history-bk)
 
 (defvar *input-map* nil
-  "Input window bindings")
+  "This is the keymap containing all input editing key bindings.")
 
 (when (null *input-map*)
   (setf *input-map*

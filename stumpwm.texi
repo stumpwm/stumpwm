@@ -528,9 +528,10 @@ The top level key map. This is where you'll find the binding for the
 @dfn{prefix map}.
 @end defvar
 
-@defvar *group-map*
+@defvar *groups-map*
 The keymap that group related key bindings sit on. It is bound to @kbd{C-t g} by default.
 @end defvar
+
  
 @node Message and Input Bar, Windows, Key Bindings, Top
 @chapter Message and Input Bar
@@ -614,6 +615,7 @@ are valid values.
 @item :center
 @end table
 @end defvar
+
 
 @node Using The Input Bar, Programming The Message Bar, Customizing The Bar, Message and Input Bar
 @section Using The Input Bar
@@ -742,6 +744,7 @@ functions are passed this structure as their first argument.
 This is the keymap containing all input editing key bindings.
 @end defvar
 
+
 @node Windows, Frames, Message and Input Bar, Top
 @chapter Windows
 
@@ -828,7 +831,6 @@ Draw a # if the window is marked.
 Note, a prefix number can be used to crop the argument to a specified
 size. For instance, @samp{%20t} crops the window's title to 20
 characters.
-
 @end defvar
 
 @defvar *window-name-source*
@@ -869,6 +871,7 @@ Alternatively, it can be set to a function that takes one argument,
 the new window, and returns the prefered frame.
 @end defvar
 
+
 @menu
 * Window Marks::                
 * Customizing Window Appearance::  
@@ -908,13 +911,6 @@ The width in pixels given to the borders of transient or pop-up windows.
 The width in pixels given to the borders of regular windows.
 @end defvar
 
-@defvar *focus-color*
-The color given to the border of the focused window.
-@end defvar
-
-@defvar *unfocus-color*
-The color given to the border of all windows without focus.
-@end defvar
 
 @defun set-win-bg-color COLOR
 Set the background color of the window. The background color will only
@@ -932,7 +928,6 @@ Set the default gravity for normal windows. Possible values are
 @defun set-maxsize-gravity GRAVITY
 Set the default gravity for maxsize windows.
 @end defun
-
 
 @defun set-transient-gravity GRAVITY
 Set the default gravity for transient/pop-up windows.
@@ -969,6 +964,7 @@ Note that no denial message is displayed if the window is already visible.
 For complete focus on the task at hand, set this to @code{T} and no
 raise/map denial messages will be seen.
 @end defvar
+
 
 Some examples follow.
 
@@ -1115,6 +1111,7 @@ frame. This is the default.
 @end table
 @end defvar
 
+
 @node Mode-line, Groups, Frames, Top
 @chapter The Mode Line
 The mode line is a bar that runs across either the top or bottom of
@@ -1162,9 +1159,18 @@ Toggle the state of the mode line for the specified screen
 
 
 @defvar *screen-mode-line-format*
-This variable describes what will be displayed on the modeline. It can
-be a string or a list. If it is a string the string is printed with
-the following formatting options:
+This variable describes what will be displayed on the modeline for each screen. 
+Turn it on with the function TOGGLE-MODE-LINE or the mode-line command. 
+
+It is a list where each element may be a string, a symbol, or a list.
+
+For a symbol its value is used.
+
+For a list of the form (:eval FORM) FORM is evaluated and the
+result is used as a mode line element.
+
+If it is a string the string is printed with the following formatting
+options:
 
 @table @asis
 @item %h
@@ -1182,6 +1188,7 @@ List the groups using @var{*group-format*}
 @end table
 @end defvar
 
+
 The following variables control the color, position, and size of the
 mode line.
 
@@ -1190,36 +1197,37 @@ Specifies where the mode line is displayed. Valid values are :top and :bottom.
 @end defvar
 
 @defvar *mode-line-border-width* 1
-Specifies how thick the mode line's border will be. Integer value.
+NIL
 @end defvar
 
 @defvar *mode-line-pad-x* 
-Specifies the number of padding pixels between the text and the side of the mode line. Integer value.
+NIL
 @end defvar
 
 @defvar *mode-line-pad-y* 
-The number of padding pixels between the modeline text and the top/bottom of the modeline? Integer value.
+NIL
 @end defvar
 
 @defvar *mode-line-background-color* 
-The mode line background color.
+NIL
 @end defvar
 
 @defvar *mode-line-foreground-color* 
-The mode line foreground color.
+NIL
 @end defvar
 
 @defvar *mode-line-border-color* 
-The mode line border color.
+NIL
 @end defvar
 
 @defvar *mode-line-timeout*
 The modeline updates after each command, when a new window appears or
 an existing one disappears, and on a timer. This variable controls how
 many seconds elapse between each update. If this variable is changed
-dwhile the modeline is visible, you must toggle the modeline to update
+while the modeline is visible, you must toggle the modeline to update
 timer.
 @end defvar
+
 
 @node Groups, Screens, Mode-line, Top
 @chapter Groups
@@ -1310,15 +1318,11 @@ The group's name.
 @end table
 @end defvar
 
-@defvar *groups-map*
-All group related keybindings hang from this keymap.
-@end defvar
 
 @defun current-group &OPTIONAL (SCREEN (CURRENT-SCREEN))
 Return the current group for the current screen, unless
 otherwise specified.
 @end defun
-
 
 
 @node Screens, Interacting With Unix, Groups, Top
@@ -1372,6 +1376,7 @@ Return the current window on the current screen
 @defvar *screen-list*
 The list of screens managed by stumpwm.
 @end defvar
+
         
 @node Interacting With Unix, Interacting With X11, Screens, Top
 @chapter Interacting With Unix
@@ -1408,6 +1413,7 @@ Return T if the pathname describes an executable file.
 @defvar *shell-program*
 The shell program used by @code{run-shell-command}.
 @end defvar
+
 
 @defun getenv VAR
 Return the value of the environment variable.
@@ -1590,6 +1596,7 @@ running instance. Set it to @code{NIL} to search only the current screen. If
 @var{*run-or-raise-all-groups*} is @code{NIL} this variable has no effect.
 @end defvar
 
+
 @defun restarts-menu ERR
 Display a menu with the active restarts and let the user pick
 one. Error is the error being recovered from. If the user aborts the
@@ -1617,6 +1624,7 @@ this to @code{:stumpwm} if you find yourself using a lot of internal
 stumpwm symbols. Setting this variable anywhere but in your rc file
 will have no effect.
 @end defvar
+
 
 @menu
 * Menus::                       
@@ -1661,6 +1669,7 @@ This is the stream debugging output is sent to. It defaults to
 *error-output*. It may be more convenient for you to pipe debugging
 output directly to a file.
 @end defvar
+
 
 @node Timers, Getting Help, Debugging StumpWM, Miscellaneous Commands
 @section Timers

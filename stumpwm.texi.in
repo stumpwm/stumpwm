@@ -475,18 +475,9 @@ List all key sequences that are bound to the specified command
 
 @@@ make-sparse-keymap
 
-@defvar *root-map*
-This is the keymap by default bound to @kbd{C-t}. It is known as the @dfn{prefix map}.
-@end defvar
-
-@defvar *top-map*
-The top level key map. This is where you'll find the binding for the
-@dfn{prefix map}.
-@end defvar
-
-@defvar *group-map*
-The keymap that group related key bindings sit on. It is bound to @kbd{C-t g} by default.
-@end defvar
+### *root-map*
+### *top-map*
+### *groups-map*
  
 @node Message and Input Bar, Windows, Key Bindings, Top
 @chapter Message and Input Bar
@@ -519,38 +510,10 @@ functions and variables.
 @@@ set-msg-border-width
 @@@ set-font
 
-@defvar *message-window-padding*
-The number of pixels that pad the text in the message window.
-@end defvar
-
-@defvar *message-window-gravity*
-This variable controls where the message window appears. The follow
-are valid values.
-@table @asis
-@item :top-left
-@item :top-right
-@item :bottom-left
-@item :bottom-right
-@item :center
-@end table
-@end defvar
-
-@defvar *timeout-wait*
-Specifies, in seconds, how long a message will appear for. This must
-be an integer.
-@end defvar
-
-@defvar *input-window-gravity*
-This variable controls where the input window appears. The follow
-are valid values.
-@table @asis
-@item :top-left
-@item :top-right
-@item :bottom-left
-@item :bottom-right
-@item :center
-@end table
-@end defvar
+### *message-window-padding*
+### *message-window-gravity*
+### *timeout-wait*
+### *input-window-gravity*
 
 @node Using The Input Bar, Programming The Message Bar, Customizing The Bar, Message and Input Bar
 @section Using The Input Bar
@@ -646,9 +609,7 @@ An input function takes 2 arguments: the input structure and the key pressed.
 @@@ input-insert-string
 @@@ input-insert-char
 
-@defvar *input-map*
-This is the keymap containing all input editing key bindings.
-@end defvar
+### *input-map*
 
 @node Windows, Frames, Message and Input Bar, Top
 @chapter Windows
@@ -713,69 +674,9 @@ the selected window. For information of menu bindings
 override the default window formatting.
 @end deffn
 
-@defvar *window-format*
-This variable decides how the window list is formatted. It is a string
-with the following formatting options:
-
-@table @asis
-@item %n
-Substitute the window number.
-@item %s
-Substitute the window's status. * means current window, + means last
-window, and - means any other window.
-@item %t
-Substitute the window's name.
-@item %c
-Substitute the window's class.
-@item %i
-Substitute the window's resource ID.
-@item %m
-Draw a # if the window is marked.
-@end table
-
-Note, a prefix number can be used to crop the argument to a specified
-size. For instance, @samp{%20t} crops the window's title to 20
-characters.
-
-@end defvar
-
-@defvar *window-name-source*
-This variable controls what is used for the window's name. The default is @code{:title}.
-
-@table @code
-@item :title
-Use the window's title given to it by its owner.
-
-@item :class
-Use the window's resource class.
-
-@item :resource-name
-Use the window's resource name.
-@end table
-@end defvar
-
-@defvar *new-window-prefered-frame*
-This variable controls what frame a new window appears in. It is a
-list of preferences. The first preference that is satisfied is
-used. Valid list elements are as follows:
-
-@table @code
-@item :focused
-Choose the focused frame.
-
-@item :last
-Choose the last focused frame.
-
-@item :empty
-Choose any empty frame.
-
-@item :unfocused
-Choose any unfocused frame.
-@end table
-
-Alternatively, it can be set to a function that takes one argument,
-the new window, and returns the prefered frame.
-@end defvar
+### *window-format*
+### *window-name-source*
+### *new-window-prefered-frame*
 
 @menu
 * Window Marks::                
@@ -804,30 +705,13 @@ Pull all marked windows into the current frame and clear the marks.
 @node Customizing Window Appearance, Controlling Raise And Map Requests, Window Marks, Windows
 @section Customizing Window Appearance
 
-@defvar *maxsize-border-width*
-The width in pixels given to the borders of windows with maxsize or ratio hints.
-@end defvar
-
-@defvar *transient-border-width*
-The width in pixels given to the borders of transient or pop-up windows.
-@end defvar
-
-@defvar *normal-border-width*
-The width in pixels given to the borders of regular windows.
-@end defvar
-
-@defvar *focus-color*
-The color given to the border of the focused window.
-@end defvar
-
-@defvar *unfocus-color*
-The color given to the border of all windows without focus.
-@end defvar
+### *maxsize-border-width*
+### *transient-border-width*
+### *normal-border-width*
 
 @@@ set-win-bg-color
 @@@ set-normal-gravity
 @@@ set-maxsize-gravity
-
 @@@ set-transient-gravity
 
 @deffn {Command} gravity @var{gravity}
@@ -845,21 +729,9 @@ mapped for the first time.
 A raise request occurs when a client asks the window manager to give
 an existing window focus.
 
-@defvar *deny-map-request*
-A list of window properties that stumpwm should deny matching windows'
-requests to become mapped for the first time.
-@end defvar
-
-@defvar *deny-raise-request*
-Exactly the same as @var{*deny-map-request*} but for raise requests.
-
-Note that no denial message is displayed if the window is already visible.
-@end defvar
-
-@defvar *suppress-deny-messages*
-For complete focus on the task at hand, set this to @code{T} and no
-raise/map denial messages will be seen.
-@end defvar
+### *deny-map-request*
+### *deny-raise-request*
+### *suppress-deny-messages*
 
 Some examples follow.
 
@@ -977,31 +849,9 @@ Go to the previous window in the current frame.
 Go to the last accessed window in the current frame.
 @end deffn
 
-@defvar *min-frame-width*
-The minimum width a frame can be. A frame will not shrink below this
-width. Splitting will not affect frames if the new frame widths are
-less than this value.
-@end defvar
-
-@defvar *min-frame-height*
-The minimum height a frame can be. A frame will not shrink below this
-height. Splitting will not affect frames if the new frame heights are
-less than this value.
-@end defvar
-
-@defvar *new-frame-action*
-When a new frame is created, this variable controls what is put in the
-new frame. Valid values are 
-
-@table @code
-@item :empty
-The frame is left empty
-
-@item :last-window
-The last focused window that is not currently visible is placed in the
-frame. This is the default.
-@end table
-@end defvar
+### *min-frame-width*
+### *min-frame-height*
+### *new-frame-action*
 
 @node Mode-line, Groups, Frames, Top
 @chapter The Mode Line
@@ -1046,65 +896,19 @@ A command to toggle the mode line visibility.
 
 @@@ toggle-mode-line
 
-@defvar *screen-mode-line-format*
-This variable describes what will be displayed on the modeline. It can
-be a string or a list. If it is a string the string is printed with
-the following formatting options:
-
-@table @asis
-@item %h
-List the number of the head the mode-line belongs to
-
-@item %w
-List all windows in the current group windows using @var{*window-format*}
-
-@item %W
-List all windows on the current head of the current group using
-@var{*window-format*}
-
-@item %g
-List the groups using @var{*group-format*}
-@end table
-@end defvar
+### *screen-mode-line-format*
 
 The following variables control the color, position, and size of the
 mode line.
 
-@defvar *mode-line-position*
-Specifies where the mode line is displayed. Valid values are :top and :bottom.
-@end defvar
-
-@defvar *mode-line-border-width* 1
-Specifies how thick the mode line's border will be. Integer value.
-@end defvar
-
-@defvar *mode-line-pad-x* 
-Specifies the number of padding pixels between the text and the side of the mode line. Integer value.
-@end defvar
-
-@defvar *mode-line-pad-y* 
-The number of padding pixels between the modeline text and the top/bottom of the modeline? Integer value.
-@end defvar
-
-@defvar *mode-line-background-color* 
-The mode line background color.
-@end defvar
-
-@defvar *mode-line-foreground-color* 
-The mode line foreground color.
-@end defvar
-
-@defvar *mode-line-border-color* 
-The mode line border color.
-@end defvar
-
-@defvar *mode-line-timeout*
-The modeline updates after each command, when a new window appears or
-an existing one disappears, and on a timer. This variable controls how
-many seconds elapse between each update. If this variable is changed
-dwhile the modeline is visible, you must toggle the modeline to update
-timer.
-@end defvar
+### *mode-line-position*
+### *mode-line-border-width* 1
+### *mode-line-pad-x* 
+### *mode-line-pad-y* 
+### *mode-line-background-color* 
+### *mode-line-foreground-color* 
+### *mode-line-border-color* 
+### *mode-line-timeout*
 
 @node Groups, Screens, Mode-line, Top
 @chapter Groups
@@ -1170,37 +974,10 @@ to the next group.
 @node Customizing Groups,  , Groups, Groups
 @section Customizing Groups
 
-@defvar *group-formatters*
-An alist of characters and formatter functions. The character can be
-used as a format character in @var{*group-format*}. When the character
-is encountered in the string, the corresponding function is called
-with a group as an argument. The functions return value is inserted
-into the string. If the return value isn't a string it is converted to
-one using @code{prin1-to-string}.
-@end defvar
-
-@defvar *group-format*
-The format string that decides what information will show up in the
-group listing. The following format options are available:
-
-@table @asis
-@item %n
-The group's number.
-
-@item %s
-The group's status. Similar to a window's status.
-
-@item %t
-The group's name.
-@end table
-@end defvar
-
-@defvar *groups-map*
-All group related keybindings hang from this keymap.
-@end defvar
+### *group-formatters*
+### *group-format*
 
 @@@ current-group
-
 
 @node Screens, Interacting With Unix, Groups, Top
 @chapter Screens
@@ -1241,9 +1018,7 @@ currently focused frame belongs.
 
 @@@ current-window
 
-@defvar *screen-list*
-The list of screens managed by stumpwm.
-@end defvar
+### *screen-list*
         
 @node Interacting With Unix, Interacting With X11, Screens, Top
 @chapter Interacting With Unix
@@ -1261,9 +1036,7 @@ Open an xterm or raise an xterm if one is already running.
 @@@ programs-in-path
 @@@ pathname-is-executable-p
 
-@defvar *shell-program*
-The shell program used by @code{run-shell-command}.
-@end defvar
+### *shell-program*
 
 @@@ getenv
 @@@ (setf getenv)
@@ -1391,16 +1164,8 @@ then describes the symbol.
 
 @@@ run-or-raise
 
-@defvar *run-or-raise-all-groups*
-When this is @code{T} the @code{run-or-raise} function searches all groups for a
-running instance. Set it to NIL to search only the current group.
-@end defvar
-
-@defvar *run-or-raise-all-screens*
-When this is @code{T} the @code{run-or-raise} function searches all screens for a
-running instance. Set it to @code{NIL} to search only the current screen. If
-@var{*run-or-raise-all-groups*} is @code{NIL} this variable has no effect.
-@end defvar
+### *run-or-raise-all-groups*
+### *run-or-raise-all-screens*
 
 @@@ restarts-menu
 
@@ -1409,21 +1174,9 @@ Execute @var{body}. If an error occurs inside @var{body} then call
 restarts-menu on it.
 @end defmac
 
-@defvar *startup-message*
-This is the message StumpWM displays when it starts. Set it to NIL to
-suppress.
-@end defvar
-
-@defvar *suppress-abort-messages*
-Suppress abort message when non-nil.
-@end defvar
-
-@defvar *default-package*
-This is the package eval reads and executes in. You might want to set
-this to @code{:stumpwm} if you find yourself using a lot of internal
-stumpwm symbols. Setting this variable anywhere but in your rc file
-will have no effect.
-@end defvar
+### *startup-message*
+### *suppress-abort-messages*
+### *default-package*
 
 @menu
 * Menus::                       
@@ -1459,15 +1212,8 @@ Select the highlighted option.
 @node Debugging StumpWM, Timers, Menus, Miscellaneous Commands
 @section Debugging StumpWM
 
-@defvar *debug-level*
-Set this variable to a number > 0 to turn on debugging. The greater the number the more debugging output.
-@end defvar
-
-@defvar *debug-stream*
-This is the stream debugging output is sent to. It defaults to
-*error-output*. It may be more convenient for you to pipe debugging
-output directly to a file.
-@end defvar
+### *debug-level*
+### *debug-stream*
 
 @node Timers, Getting Help, Debugging StumpWM, Miscellaneous Commands
 @section Timers
