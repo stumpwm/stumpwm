@@ -50,6 +50,13 @@
 					name (documentation sym 'variable))
 				t)))
 
+(defun generate-command-doc (s line)
+  (ppcre:register-groups-bind (name) ("^!!! (.*)" line)
+			      (let ((cmd (gethash name *command-hash*)))
+				(format s "@deffn {Command} ~a ~{~a~^ ~}~%~a~&@end defvar~%~%"
+					name (mapcar 'first (command-args cmd)) (command-docstring cmd))
+				t)))
+
 (defun generate-manual (&key (in #p"stumpwm.texi.in") (out #p"stumpwm.texi"))
   (with-open-file (os out :direction :output :if-exists :supersede)
     (with-open-file (is in :direction :input)
@@ -58,5 +65,6 @@
 	   (or (generate-function-doc os line)
 	       (generate-macro-doc os line)
 	       (generate-variable-doc os line)
+	       (generate-command-doc os line)
 	       (write-line line os))))))
 				       

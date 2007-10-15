@@ -379,4 +379,5 @@ timer.")
     (toggle-mode-line screen head format)))
 
 (define-stumpwm-command "mode-line" ()
+  "A command to toggle the mode line visibility."
   (toggle-mode-line (current-screen) (current-head)))
