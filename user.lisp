@@ -170,8 +170,9 @@
     (sort acc 'string<)))
 
 (defun restarts-menu (err)
-  "Present a menu of restarts to the user and let them
-choose. Run the selected restart."
+  "Display a menu with the active restarts and let the user pick
+one. Error is the error being recovered from. If the user aborts the
+menu, the error is re-signalled."
   (let ((restart (select-from-menu (current-screen)
                                    (mapcar (lambda (r)
                                              (list (format nil "[~a] ~a"
@@ -535,9 +536,11 @@ the 'date' command options except the following ones: %g, %G, %j, %N,
   (other-window (current-group)))
 
 (defun programs-in-path (base &optional full-path (path (split-string (getenv "PATH") ":")))
-  "Return a list of programs in the path that start with BASE. if
-FULL-PATH is T then return the full path, otherwise just return
-the filename."
+  "Return a list of programs in the path that start with @var{base}. if
+@var{full-path} is @var{t} then return the full path, otherwise just
+return the filename. @var{path} is by default the @env{PATH}
+evironment variable but can be specified. It should be a string containing
+each directory seperated by a colon."
   (loop
    for p in path
    for dir = (probe-path p)
@@ -556,10 +559,10 @@ the filename."
                       namestring))))
 
 (defun run-shell-command (cmd &optional collect-output-p)
-  "Run a shell command in the background or wait for it to finish
-and collect the output if COLLECT-OUTPUT-P is T. Warning! if
-COLLECT-OUTPUT-P is stumpwm will hang until your command
-returns..which could be forever if you're not careful."
+  "Run the specified shell command. If @var{collect-output-p} is @code{T}
+then run the command synchonously and collect the output. Be
+careful. If the shell command doesn't return, it will hang StumpWM. In
+such a case, kill the shell command to resume StumpWM."
   (if collect-output-p
       (run-prog-collect-output *shell-program* "-c" cmd)
       (run-prog *shell-program* :args (list "-c" cmd) :wait nil)))
@@ -1125,7 +1128,14 @@ aborted."
     (message "Exited.")))
 
 (defun set-prefix-key (key)
-  "Change the stumpwm prefix key to KEY."
+  "Change the stumpwm prefix key to KEY.
+@example
+\(stumpwm:set-prefix-key (stumpwm:kbd \"C-M-H-s-z\"))
+@end example
+
+This will change the prefix key to @key{Control} + @key{Meta} + @key{Hyper} + @key{Super} +
+the @key{z} key. By most standards, a terrible prefix key but it makes a
+great example."
   (check-type key key)
   (let (prefix)
     (dolist (i (lookup-command *top-map* '*root-map*))
@@ -1219,7 +1229,24 @@ aborted."
   (move-focus-and-or-window dir t))
 
 (defun run-or-raise (cmd props &optional (all-groups *run-or-raise-all-groups*) (all-screens *run-or-raise-all-screens*))
-  "If a window matching PROPS can be found, select it.  Otherwise simply run cmd."
+  "Run the shell command, @var{cmd}, unless an existing window
+matches @var{props}. @var{props} is a property list with the following keys:
+
+@table @code
+@item :class
+Match the window's class.
+@item :instance
+Match the window's instance or resource-name.
+@item :role
+Match the window's @code{WM_WINDOW_ROLE}.
+@item :title
+Match the window's title.
+@end table
+
+By default, the global @var{*run-or-raise-all-groups*} decides whether
+to search all groups or the current one for a running
+instance. @var{all-groups} overrides this default. Similarily for
+@var{*run-or-raise-all-screens*} and @var{all-screens}."
   (labels
       ;; Raise the window win and select its frame.  For now, it
       ;; does not select the screen.
@@ -1570,9 +1597,16 @@ See *menu-map* for menu bindings."
   #+asdf (message "Reloading StumpWM...^B^2*Done^n."))
 
 (defun run-commands (&rest commands)
-  "Run each stumpwm command in sequence. This could be used if
-you're used to ratpoison's rc file and you just want to run
-commands or don't know lisp very well."
+  "Run each stumpwm command in sequence. This could be used if you're
+used to ratpoison's rc file and you just want to run commands or don't
+know lisp very well. One might put the following in one's rc file:
+
+@example
+\(stumpwm:run-commands
+  \"escape C-z\"
+  \"exec firefox\"
+  \"split\")
+@end example"
   (loop for i in commands do
         (interactive-command i)))
 

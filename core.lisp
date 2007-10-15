@@ -720,7 +720,10 @@ and bottom_end_x."
       (mapc 'maximize-window (group-windows g)))))
 
 (defun set-normal-gravity (gravity)
-  "Set the default gravity for normal windows."
+  "Set the default gravity for normal windows. Possible values are
+@code{:center} @code{:top} @code{:left} @code{:right} @code{:bottom}
+@code{:top-left} @code{:top-right} @code{:bottom-left} and
+@code{:bottom-right}."
   (setf *normal-gravity* gravity)
   (update-window-gravity))
 
@@ -1354,16 +1357,25 @@ maximized, and given focus."
 ;; does eg. (setf *foreground-color* "green") instead of having
 ;; these redundant set-foo functions?
 (defun set-fg-color (color)
+  "Set the foreground color for the message bar and input
+bar. @var{color} can be any color recognized by X."
   (setf *text-color* color)
   (set-any-color screen-fg-color color))
 
 (defun set-bg-color (color)
+  "Set the background color for the message bar and input
+bar. @var{color} can be any color recognized by X."
   (set-any-color screen-bg-color color))
 
 (defun set-border-color (color)
+  "Set the border color for the message bar and input
+bar. @var{color} can be any color recognized by X."
   (set-any-color screen-border-color color))
 
 (defun set-win-bg-color (color)
+  "Set the background color of the window. The background color will only
+be visible for windows with size increment hints such as @samp{emacs}
+and @samp{xterm}."
   (set-any-color screen-win-bg-color color))
 
 (defun set-focus-color (color)
@@ -1373,6 +1385,8 @@ maximized, and given focus."
   (set-any-color screen-unfocus-color color))
 
 (defun set-msg-border-width (width)
+  "Set the border width for the message bar and input
+bar."
   (check-type width (integer 0))
   (dolist (i *screen-list*)
     (setf (screen-msg-border-width i) width))
@@ -1388,6 +1402,7 @@ maximized, and given focus."
   t)
 
 (defun set-font (font)
+  "Set the font for the message bar and input bar."
   (when (font-exists-p font)
     (dolist (i *screen-list*)
       (let ((fobj (xlib:open-font *display* (first (xlib:list-font-names *display* font :max-fonts 1)))))
@@ -2105,9 +2120,11 @@ windows used to draw the numbers in. The caller must destroy them."
     (move-screen-to-head screen)))
 
 (defun screen-current-window (screen)
+  "Return the current window on the specified screen"
   (group-current-window (screen-current-group screen)))
 
 (defun current-window ()
+  "Return the current window on the current screen"
   (screen-current-window (current-screen)))
 
 (defun register-window (window)
@@ -2250,11 +2267,11 @@ windows used to draw the numbers in. The caller must destroy them."
   (apply 'run-hook-with-args *message-hook* strings))
 
 (defun echo-string (screen msg)
-  "Print msg to SCREEN's message window."
+  "Display @var{string} in the message bar on @var{screen}. You almost always want to use @command{message}."
   (echo-string-list screen (split-string msg (string #\Newline))))
 
 (defun message (fmt &rest args)
-  "run FMT and ARGS through format and echo the result to the current screen."
+  "run FMT and ARGS through `format' and echo the result to the current screen."
   (echo-string (current-screen) (apply 'format nil fmt args)))
 
 (defun err (fmt &rest args)
@@ -3212,6 +3229,7 @@ the window in it's frame."
                           :mode :replace)))
 
 (defun set-x-selection (text)
+  "Set the X11 selection string to @var{string}."
   (setf *x-selection* text)
   (export-selection))
 

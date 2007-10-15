@@ -594,7 +594,7 @@ Useful for re-using the &REST arg after removing some options."
   (error 'not-implemented :proc (list 'getenv var)))
 
 (defun (setf getenv) (val var)
-  "Set an environment variable."
+  "Set the value of the environment variable, @var{var} to @var{val}."
   #+allegro (setf (sys::getenv (string var)) (string val))
   #+clisp (setf (ext:getenv (string var)) (string val))
   #+(or cmu scl)
@@ -612,6 +612,7 @@ Useful for re-using the &REST arg after removing some options."
   (error 'not-implemented :proc (list '(setf getenv) var)))
 
 (defun pathname-is-executable-p (pathname)
+  "Return T if the pathname describes an executable file."
   #+sbcl
   (let ((filename (coerce (sb-int:unix-namestring pathname) 'base-string)))
     (and (eq (sb-unix:unix-file-kind filename) :file)

@@ -468,56 +468,12 @@ List all key sequences that are bound to the specified command
 @node Binding Keys,  , List of Default Keybindings, Key Bindings
 @section Binding Keys
 
-@defun define-key MAP KEY COMMAND
-Add a keybinding mapping the key, @var{key}, to the command,
-@var{command}, in the specified keymap. For example,
+@@@ define-key
+@@@ undefine-key
+@@@ kbd
+@@@ set-prefix-key
 
-@example
-(stumpwm:define-key stumpwm:*root-map* (stumpwm:kbd "C-z") "echo Zzzzz...")
-@end example
-
-Now when you type C-t C-z, you'll see the text ``Zzzzz...'' pop up.
-@end defun
-
-@defun undefine-key MAP KEY
-Clear the key binding in the specified keybinding.
-@end defun
-
-@defun kbd KEYS
-This compiles a key string into a key structure used by
-`define-key', `undefine-key', `set-prefix-key' and
-others.
-@end defun
-
-@defun set-prefix-key KEY
-Change the stumpwm prefix key to KEY.
-@example
-(stumpwm:set-prefix-key (stumpwm:kbd "C-M-H-s-z"))
-@end example
-
-This will change the prefix key to @key{Control} + @key{Meta} + @key{Hyper} + @key{Super} +
-the @key{z} key. By most standards, a terrible prefix key but it makes a
-great example.
-@end defun
-
-
-@defun make-sparse-keymap 
-Create an empty keymap. If you want to create a new list of bindings
-in the key binding tree, this is where you start. To hang frame
-related bindings off @kbd{C-t C-f} one might use the following code:
-
-@example
-(defvar *my-frame-bindings*
-  (let ((m (stumpwm:make-sparse-keymap)))
-    (stumpwm:define-key m (stumpwm:kbd "f") "curframe")
-    (stumpwm:define-key m (stumpwm:kbd "M-b") "move-focus left")
-    m ; NOTE: this is important
-  ))
-
-(stumpwm:define-key stumpwm:*root-map* (stumpwm:kbd "C-f") '*my-frame-bindings*)
-@end example
-@end defun
-
+@@@ make-sparse-keymap
 
 @defvar *root-map*
 This is the keymap by default bound to @kbd{C-t}. It is known as the @dfn{prefix map}.
@@ -557,30 +513,11 @@ supplied, the text will appear in the prompt.
 The bar's appearance and behavior can be modified with the following
 functions and variables.
 
-@defun set-fg-color COLOR
-Set the foreground color for the message bar and input
-bar. @var{color} can be any color recognized by X.
-@end defun
-
-@defun set-bg-color COLOR
-Set the background color for the message bar and input
-bar. @var{color} can be any color recognized by X.
-@end defun
-
-@defun set-border-color COLOR
-Set the border color for the message bar and input
-bar. @var{color} can be any color recognized by X.
-@end defun
-
-@defun set-msg-border-width WIDTH
-Set the border width for the message bar and input
-bar.
-@end defun
-
-@defun set-font FONT
-Set the font for the message bar and input bar.
-@end defun
-
+@@@ set-fg-color
+@@@ set-bg-color
+@@@ set-border-color
+@@@ set-msg-border-width
+@@@ set-font
 
 @defvar *message-window-padding*
 The number of pixels that pad the text in the message window.
@@ -692,14 +629,8 @@ cycle through completions.
 @node Programming The Message Bar, Programming the Input Bar, Using The Input Bar, Message and Input Bar
 @section Programming The Message Bar
 
-@defun echo-string SCREEN MSG
-Display @var{string} in the message bar on @var{screen}. You almost always want to use @command{message}.
-@end defun
-
-@defun message FMT &REST ARGS
-run FMT and ARGS through `format' and echo the result to the current screen.
-@end defun
-
+@@@ echo-string
+@@@ message
 
 @node Programming the Input Bar,  , Programming The Message Bar, Message and Input Bar
 @section Programming the Input Bar
@@ -709,34 +640,11 @@ functions and binding them to keys in the @var{*input-map*} using
 
 An input function takes 2 arguments: the input structure and the key pressed.
 
-@defun read-one-line SCREEN PROMPT &OPTIONAL (INITIAL-INPUT )
-Read a line of input through stumpwm and return it. returns nil if the user aborted.
-@end defun
-
-@defun read-one-char SCREEN
-Read a single character from the user.
-@end defun
-
-@defun completing-read SCREEN PROMPT COMPLETIONS &OPTIONAL (INITIAL-INPUT )
-Read a line of input through stumpwm and return it with TAB
-completion. completions can be a list, an fbound symbol, or a
-function. if its an fbound symbol or a function then that
-function is passed the substring to complete on and is expected
-to return a list of matches.
-@end defun
-
-@defun input-insert-string INPUT STRING
-Insert @var{string} into the input at the current
-position. @var{input} must be of type @var{input-line}. Input
-functions are passed this structure as their first argument.
-@end defun
-
-@defun input-insert-char INPUT CHAR
-Insert @var{char} into the input at the current
-position. @var{input} must be of type @var{input-line}. Input
-functions are passed this structure as their first argument.
-@end defun
-
+@@@ read-one-line
+@@@ read-one-char
+@@@ completing-read
+@@@ input-insert-string
+@@@ input-insert-char
 
 @defvar *input-map*
 This is the keymap containing all input editing key bindings.
@@ -916,28 +824,11 @@ The color given to the border of the focused window.
 The color given to the border of all windows without focus.
 @end defvar
 
-@defun set-win-bg-color COLOR
-Set the background color of the window. The background color will only
-be visible for windows with size increment hints such as @samp{emacs}
-and @samp{xterm}.
-@end defun
+@@@ set-win-bg-color
+@@@ set-normal-gravity
+@@@ set-maxsize-gravity
 
-@defun set-normal-gravity GRAVITY
-Set the default gravity for normal windows. Possible values are
-@code{:center} @code{:top} @code{:left} @code{:right} @code{:bottom}
-@code{:top-left} @code{:top-right} @code{:bottom-left} and
-@code{:bottom-right}.
-@end defun
-
-@defun set-maxsize-gravity GRAVITY
-Set the default gravity for maxsize windows.
-@end defun
-
-
-@defun set-transient-gravity GRAVITY
-Set the default gravity for transient/pop-up windows.
-@end defun
-
+@@@ set-transient-gravity
 
 @deffn {Command} gravity @var{gravity}
 Set the current window's gravity.
@@ -993,10 +884,7 @@ Some examples follow.
 Create a new window attribute and corresponding get/set functions.
 @end defmac
 
-@defun window-send-string WINDOW STRING
-Send the string of characters to the window as if they'd been typed.
-@end defun
-
+@@@ window-send-string
 
 @node Frames, Mode-line, Windows, Top
 @chapter Frames
@@ -1156,10 +1044,7 @@ might do the following:
 A command to toggle the mode line visibility.
 @end deffn
 
-@defun toggle-mode-line SCREEN HEAD &OPTIONAL (FORMAT (QUOTE *SCREEN-MODE-LINE-FORMAT*))
-Toggle the state of the mode line for the specified screen
-@end defun
-
+@@@ toggle-mode-line
 
 @defvar *screen-mode-line-format*
 This variable describes what will be displayed on the modeline. It can
@@ -1314,11 +1199,7 @@ The group's name.
 All group related keybindings hang from this keymap.
 @end defvar
 
-@defun current-group &OPTIONAL (SCREEN (CURRENT-SCREEN))
-Return the current group for the current screen, unless
-otherwise specified.
-@end defun
-
+@@@ current-group
 
 
 @node Screens, Interacting With Unix, Groups, Top
@@ -1354,20 +1235,11 @@ currently focused frame belongs.
 @node Programming With Screens,  , Xinerama, Screens
 @section Programming With Screens
 
-@defun current-screen 
-Return the current screen.
-@end defun
+@@@ current-screen
 
+@@@ screen-current-window
 
-@defun screen-current-window SCREEN
-Return the current window on the specified screen
-@end defun
-
-
-@defun current-window 
-Return the current window on the current screen
-@end defun
-
+@@@ current-window
 
 @defvar *screen-list*
 The list of screens managed by stumpwm.
@@ -1385,50 +1257,22 @@ Run the shell command asynchronously. Output is discarded.
 Open an xterm or raise an xterm if one is already running.
 @end deffn
 
-@defun run-shell-command CMD &OPTIONAL COLLECT-OUTPUT-P
-Run the specified shell command. If @var{collect-output-p} is @code{T}
-then run the command synchonously and collect the output. Be
-careful. If the shell command doesn't return, it will hang StumpWM. In
-such a case, kill the shell command to resume StumpWM.
-@end defun
-
-@defun programs-in-path BASE &OPTIONAL FULL-PATH (PATH (SPLIT-STRING (GETENV PATH) :))
-Return a list of programs in the path that start with @var{base}. if
-@var{full-path} is @var{t} then return the full path, otherwise just
-return the filename. @var{path} is by default the @env{PATH}
-evironment variable but can be specified. It should be a string containing
-each directory seperated by a colon.
-@end defun
-
-@defun pathname-is-executable-p PATHNAME
-Return T if the pathname describes an executable file.
-@end defun
-
+@@@ run-shell-command
+@@@ programs-in-path
+@@@ pathname-is-executable-p
 
 @defvar *shell-program*
 The shell program used by @code{run-shell-command}.
 @end defvar
 
-@defun getenv VAR
-Return the value of the environment variable.
-@end defun
-
-@defun (setf getenv) VAL VAR
-Set the value of the environment variable, @var{var} to @var{val}.
-@end defun
-
+@@@ getenv
+@@@ (setf getenv)
 
 @node Interacting With X11, Miscellaneous Commands, Interacting With Unix, Top
 @chapter Interacting With X11
 
-@defun set-x-selection TEXT
-Set the X11 selection string to @var{string}.
-@end defun
-
-@defun get-x-selection &OPTIONAL TIMEOUT
-Return the x selection no matter what client own it.
-@end defun
-
+@@@ set-x-selection
+@@@ get-x-selection
 
 @node Miscellaneous Commands, Hooks, Interacting With X11, Top
 @chapter Miscellaneous Commands
@@ -1499,19 +1343,7 @@ Command mode allows you to type ratpoison commands without needing the
 current window. To exit command mode, type @key{C-g}.
 @end deffn
 
-@defun run-commands &REST COMMANDS
-Run each stumpwm command in sequence. This could be used if you're
-used to ratpoison's rc file and you just want to run commands or don't
-know lisp very well. One might put the following in one's rc file:
-
-@example
-(stumpwm:run-commands
-  "escape C-z"
-  "exec firefox"
-  "split")
-@end example
-@end defun
-
+@@@ run-commands
 
 
 @defmac define-stumpwm-command @var{name} ((@var{var} @var{type} @var{prompt}) ...) &body @var{body}
@@ -1557,27 +1389,7 @@ then describes the symbol.
 
 @end defmac
 
-@defun run-or-raise CMD PROPS &OPTIONAL (ALL-GROUPS *RUN-OR-RAISE-ALL-GROUPS*) (ALL-SCREENS *RUN-OR-RAISE-ALL-SCREENS*)
-Run the shell command, @var{cmd}, unless an existing window
-matches @var{props}. @var{props} is a property list with the following keys:
-
-@table @code
-@item :class
-Match the window's class.
-@item :instance
-Match the window's instance or resource-name.
-@item :role
-Match the window's @code{WM_WINDOW_ROLE}.
-@item :title
-Match the window's title.
-@end table
-
-By default, the global @var{*run-or-raise-all-groups*} decides whether
-to search all groups or the current one for a running
-instance. @var{all-groups} overrides this default. Similarily for
-@var{*run-or-raise-all-screens*} and @var{all-screens}.
-@end defun
-
+@@@ run-or-raise
 
 @defvar *run-or-raise-all-groups*
 When this is @code{T} the @code{run-or-raise} function searches all groups for a
@@ -1590,12 +1402,7 @@ running instance. Set it to @code{NIL} to search only the current screen. If
 @var{*run-or-raise-all-groups*} is @code{NIL} this variable has no effect.
 @end defvar
 
-@defun restarts-menu ERR
-Display a menu with the active restarts and let the user pick
-one. Error is the error being recovered from. If the user aborts the
-menu, the error is re-signalled.
-@end defun
-
+@@@ restarts-menu
 
 @defmac with-restarts-menu &body @var{body}
 Execute @var{body}. If an error occurs inside @var{body} then call
@@ -1666,17 +1473,8 @@ output directly to a file.
 @section Timers
 StumpWM has a timer system similar to that of @dfn{Emacs}.
 
-@defun run-with-timer SECS REPEAT FUNCTION &REST ARGS
-Perform an action after a delay of SECS seconds.
-Repeat the action every REPEAT seconds, if repeat is non-nil.
-SECS and REPEAT may be reals.
-The action is to call FUNCTION with arguments ARGS.
-@end defun
-
-@defun cancel-timer TIMER
-Remove TIMER from the list of active timers.
-@end defun
-
+@@@ run-with-timer
+@@@ cancel-timer
 
 @defun timer-p @var{timer}
 Return T if TIMER is a timer structure.

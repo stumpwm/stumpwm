@@ -324,6 +324,7 @@ current group.")
       (setf *mode-line-timer* nil))))
 
 (defun toggle-mode-line (screen head &optional (format '*screen-mode-line-format*))
+  "Toggle the state of the mode line for the specified screen"
   (check-type format (or symbol list string))
   (let ((ml (head-mode-line head)))
     (if ml
