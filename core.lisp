@@ -1933,12 +1933,13 @@ either :width or :height"
           (expand-tree to-shrink (- amount) (ecase dim
                                               (:width (if lastp :right :left))
                                               (:height (if lastp :bottom :top))))
-          (tree-iterate to-resize
-                        (lambda (leaf)
-                          (sync-frame-windows group leaf)))
-          (tree-iterate to-shrink
-                        (lambda (leaf)
-                          (sync-frame-windows group leaf))))))))
+          (unless (and *resize-hides-windows* (eq *top-map* *resize-map*))
+            (tree-iterate to-resize
+                          (lambda (leaf)
+                            (sync-frame-windows group leaf)))
+            (tree-iterate to-shrink
+                          (lambda (leaf)
+                            (sync-frame-windows group leaf)))))))))
 
 (defun balance-frames (group tree)
   "Resize all the children of tree to be of equal width or height
