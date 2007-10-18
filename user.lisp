@@ -880,6 +880,13 @@ string between them."
         (throw 'error (format nil "the symbol ~a::~a has no function."
                               (package-name pkg) var)))))
 
+(define-stumpwm-type :command (input prompt)
+  (or (argument-pop input)
+      (string-trim " "
+                   (completing-read (current-screen)
+                                    prompt
+                                    (all-commands)))))
+
 (define-stumpwm-type :key-seq (input prompt)
   (labels ((update (seq)
              (message "~a: ~{~a ~}"
@@ -1861,6 +1868,11 @@ command prints the command bound to the specified key sequence."
   (message-no-timeout "~a"
                       (with-output-to-string (s)
                         (describe fn s))))
+
+(define-stumpwm-command "describe-command" ((com :command "Describe Command: "))
+  "Print the online help associated with the specified command."
+  (message-no-timeout "Command \"~a\":~%~a" com
+                      (command-docstring (gethash com *command-hash*))))
 
 (define-stumpwm-command "where-is" ((cmd :rest "Where is command: "))
 "Print the key sequences bound to the specified command."
