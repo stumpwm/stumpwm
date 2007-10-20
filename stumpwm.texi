@@ -265,7 +265,7 @@ Set the prefix key. Here's how you would change the prefix key to @kbd{C-z}.
 @example
 escape C-z
 @end example
-@end defvar
+@end deffn
 
 
 
@@ -539,12 +539,12 @@ The keymap that group related key bindings sit on. It is bound to @kbd{C-t g} by
 
 @deffn {Command} echo STRING
 Display @var{string} in the message bar.
-@end defvar
+@end deffn
 
 @deffn {Command} colon INITIAL-INPUT
 Read a command from the user. @var{initial-text} is optional. When
 supplied, the text will appear in the prompt.
-@end defvar
+@end deffn
 
 
 @menu
@@ -751,63 +751,63 @@ This is the keymap containing all input editing key bindings.
 
 @deffn {Command} next 
 Go to the next window in the window list.
-@end defvar
+@end deffn
 
 @deffn {Command} pull-hidden-next 
 Pull the next hidden window into the current frame.
-@end defvar
+@end deffn
 
 @deffn {Command} prev 
 Go to the previous window in the window list.
-@end defvar
+@end deffn
 
 @deffn {Command} pull-hidden-previous 
 Pull the next hidden window into the current frame.
-@end defvar
+@end deffn
 
 @deffn {Command} delete 
 Delete the current window. This is a request sent to the window. The
 window's client may decide not to grant the request or may not be able
 to if it is unresponsive.
-@end defvar
+@end deffn
 
 @deffn {Command} kill 
 `Tell X to disconnect the client that owns the current window.if
 @command{delete} didn't work, try this.
-@end defvar
+@end deffn
 
 @deffn {Command} windows FMT
 Display a list of managed windows. The optional argument @var{fmt} can
 be used to override the default window formatting.
-@end defvar
+@end deffn
 
 @deffn {Command} other 
 Switch to the window last focused.
-@end defvar
+@end deffn
 
 @deffn {Command} pull-hidden-other 
 Pull the last focused, hidden window into the current frame.
-@end defvar
+@end deffn
 
 @deffn {Command} number N
 Change the window's number to the specified number. If another window
 is using the number, then the windows swap numbers.
-@end defvar
+@end deffn
 
 @deffn {Command} meta KEY
 Send a fake key to the current window. @var{key} is a typical StumpWM key, like @kbd{C-M-o}.
-@end defvar
+@end deffn
 
 @deffn {Command} select WIN
 Switch to the first window that starts with @var{win}.
-@end defvar
+@end deffn
 
 @deffn {Command} windowlist FMT
 Allow the user to Select a window from the list of windows and focus
 the selected window. For information of menu bindings
 @xref{Menus}. The optional argument @var{fmt} can be specified to
 override the default window formatting.
-@end defvar
+@end deffn
 
 
 @defvar *window-format*
@@ -888,15 +888,15 @@ list. Some commands operate only on marked windows.
 
 @deffn {Command} mark 
 Toggle the current window's mark.
-@end defvar
+@end deffn
 
 @deffn {Command} clear-marks 
 Clear all marks in the current group.
-@end defvar
+@end deffn
 
 @deffn {Command} pull-marked 
 Pull all marked windows into the current frame and clear the marks.
-@end defvar
+@end deffn
 
 
 @node Customizing Window Appearance, Controlling Raise And Map Requests, Window Marks, Windows
@@ -939,7 +939,7 @@ Set the default gravity for transient/pop-up windows.
 
 @deffn {Command} gravity GRAVITY
 NIL
-@end defvar
+@end deffn
 
 
 
@@ -1008,59 +1008,59 @@ window pool, where windows and frames are not so tightly connected.
 
 @deffn {Command} pull WINDOW-NUMBER
 Move the window whose number is @var{window-number} to the current frame.
-@end defvar
+@end deffn
 
 @deffn {Command} hsplit 
 Split the current frame into 2 side-by-side frames.
-@end defvar
+@end deffn
 
 @deffn {Command} vsplit 
 Split the current frame into 2 frames, one on top of the other.
-@end defvar
+@end deffn
 
 @deffn {Command} remove 
 Remove the current frame. Windows in the frame are migrated to the
 frame taking up its space.
-@end defvar
+@end deffn
 
 @deffn {Command} only 
 Delete all the frames but the current one and grow it to take up the entire head.
-@end defvar
+@end deffn
 
 @deffn {Command} curframe 
 Display a window indicating which frame is focused.
-@end defvar
+@end deffn
 
 @deffn {Command} fnext 
 Cycle through the frame tree to the next frame.
-@end defvar
+@end deffn
 
 @deffn {Command} sibling 
 Jump to the frame's sibling. If a frame is split into twe frames,
 these two frames are siblings.
-@end defvar
+@end deffn
 
 @deffn {Command} fother 
 Jump to the last frame that had focus.
-@end defvar
+@end deffn
 
 @deffn {Command} fselect FRAME-NUMBER
 Display a number in the corner of each frame and let the user to
 select a frame by number. If @var{frame-number} is specified, just
 jump to that frame.
-@end defvar
+@end deffn
 
 @deffn {Command} resize WIDTH HEIGHT
 Resize the current frame by @var{width} and @var{height} pixels
-@end defvar
+@end deffn
 
 @deffn {Command} balance-frames 
 Make frames the same height or width in the current frame's subtree.
-@end defvar
+@end deffn
 
 @deffn {Command} fclear 
 Clear the current frame.
-@end defvar
+@end deffn
 
 @deffn {Command} move-focus DIR
 Focus the frame adjacent to the current one in the specified
@@ -1071,23 +1071,23 @@ direction. The following are valid directions:
 @item left
 @item right
 @end table
-@end defvar
+@end deffn
 
 @deffn {Command} move-window DIR
 Just like move-focus except that the current is pulled along.
-@end defvar
+@end deffn
 
 @deffn {Command} next-in-frame 
 Go to the next window in the current frame.
-@end defvar
+@end deffn
 
 @deffn {Command} prev-in-frame 
 Go to the previous window in the current frame.
-@end defvar
+@end deffn
 
 @deffn {Command} other-in-frame 
 Go to the last accessed window in the current frame.
-@end defvar
+@end deffn
 
 
 @defvar *min-frame-width*
@@ -1155,8 +1155,8 @@ might do the following:
 @command{date} and returns its output as a string.
 
 @deffn {Command} mode-line 
-NIL
-@end defvar
+A command to toggle the mode line visibility.
+@end deffn
 
 
 @defun toggle-mode-line SCREEN HEAD &OPTIONAL (FORMAT (QUOTE *SCREEN-MODE-LINE-FORMAT*))
@@ -1246,51 +1246,51 @@ current group. If @var{name} begins with a dot (``.'') the group new
 group will be created in the hidden state. Hidden groups have group
 numbers less than one and are invisible to from gprev, gnext, and, optionally,
 groups and vgroups commands.
-@end defvar
+@end deffn
 
 @deffn {Command} gnewbg NAME
 Create a new group but do not switch to it.
-@end defvar
+@end deffn
 
 @deffn {Command} gnext 
 Cycle to the next group in the group list.
-@end defvar
+@end deffn
 
 @deffn {Command} gprev 
 Cycle to the previous group in the group list.
-@end defvar
+@end deffn
 
 @deffn {Command} gmerge FROM
 Merge @var{from} into the current group. @var{from} is not deleted.
-@end defvar
+@end deffn
 
 @deffn {Command} groups FMT
 Display the list of groups with their number and
 name. @var{*group-format*} controls the formatting. The optional
 argument @var{fmt} can be used to override the default group
 formatting.
-@end defvar
+@end deffn
 
 @deffn {Command} vgroups GFMT WFMT
 Like @command{groups} but also display the windows in each group. The
 optional arguments @var{gfmt} and @var{wfmt} can be used to override
 the default group formatting and window formatting, respectively.
-@end defvar
+@end deffn
 
 @deffn {Command} gselect TO-GROUP
 Select the first group that starts with
 @var{substring}. @var{substring} can also be a number, in which case
 @command{gselect} selects the group with that number.
-@end defvar
+@end deffn
 
 @deffn {Command} gmove TO-GROUP
 Move the current window to the specified group.
-@end defvar
+@end deffn
 
 @deffn {Command} gkill 
 Kill the current group. All windows in the current group are migrated
 to the next group.
-@end defvar
+@end deffn
 
 
 @menu
@@ -1338,15 +1338,15 @@ StumpWM handles multiple screens.
 
 @deffn {Command} snext 
 Go to the next screen.
-@end defvar
+@end deffn
 
 @deffn {Command} sprev 
 Go to the previous screen.
-@end defvar
+@end deffn
 
 @deffn {Command} sother 
 Go to the last screen.
-@end defvar
+@end deffn
 
 
 @menu
@@ -1391,7 +1391,7 @@ The list of screens managed by stumpwm.
 
 @deffn {Command} exec CMD
 Run the shell command asynchronously. Output is discarded.
-@end defvar
+@end deffn
 
 
 @defun run-shell-command CMD &OPTIONAL COLLECT-OUTPUT-P
@@ -1447,61 +1447,61 @@ section.
 
 @deffn {Command} banish 
 Warp the mouse the lower right corner of the current head.
-@end defvar
+@end deffn
 
 @deffn {Command} ratwarp X Y
 Warp the mouse to the specified location.
-@end defvar
+@end deffn
 
 @deffn {Command} ratrelwarp DX DY
 Warp the mouse by the specified amount from its current position.
-@end defvar
+@end deffn
 
 @deffn {Command} time 
 Display time.
-@end defvar
+@end deffn
 
 @deffn {Command} eval CMD
 Evaluate the lisp s-expression and display the result.
-@end defvar
+@end deffn
 
 @deffn {Command} insert STRING
 Send the string of characters to the current window as if they'd been typed.
-@end defvar
+@end deffn
 
 @deffn {Command} reload 
 Reload StumpWM using @code{asdf}.
-@end defvar
+@end deffn
 
 @deffn {Command} loadrc 
 Reload the @file{~/.stumpwmrc} file.
-@end defvar
+@end deffn
 
 @deffn {Command} help 
 Display all the bindings in @var{*root-map*}.
-@end defvar
+@end deffn
 
 @deffn {Command} abort 
 Do nothing.
-@end defvar
+@end deffn
 
 @deffn {Command} quit 
 Quit StumpWM.
-@end defvar
+@end deffn
 
 @deffn {Command} getsel 
 Echo the X selection.
-@end defvar
+@end deffn
 
 @deffn {Command} putsel STRING
 Stuff the string @var{string} into the X selection.
-@end defvar
+@end deffn
 
 @deffn {Command} command-mode 
 Command mode allows you to type ratpoison commands without needing the
 @key{C-t} prefix. Keys not bound in StumpWM will still get sent to the
 current window. To exit command mode, type @key{C-g}.
-@end defvar
+@end deffn
 
 @defun run-commands &REST COMMANDS
 Run each stumpwm command in sequence. This could be used if you're
@@ -1694,19 +1694,19 @@ Return T if TIMER is a timer structure.
 @deffn {Command} describe-key KEYS
 Either interactively type the key sequence or supply it as text. This
 command prints the command bound to the specified key sequence.
-@end defvar
+@end deffn
 
 @deffn {Command} describe-variable VAR
 Print the online help associated with the specified variable.
-@end defvar
+@end deffn
 
 @deffn {Command} describe-function FN
 Print the online help associated with the specified function.
-@end defvar
+@end deffn
 
 @deffn {Command} where-is CMD
 Print the key sequences bound to the specified command.
-@end defvar
+@end deffn
 
 
 @node Hooks, Command and Function Index, Miscellaneous Commands, Top

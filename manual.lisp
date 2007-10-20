@@ -53,7 +53,7 @@
 (defun generate-command-doc (s line)
   (ppcre:register-groups-bind (name) ("^!!! (.*)" line)
 			      (let ((cmd (gethash name *command-hash*)))
-				(format s "@deffn {Command} ~a ~{~a~^ ~}~%~a~&@end defvar~%~%"
+				(format s "@deffn {Command} ~a ~{~a~^ ~}~%~a~&@end deffn~%~%"
 					name (mapcar 'first (command-args cmd)) (command-docstring cmd))
 				t)))
 
