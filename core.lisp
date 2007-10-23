@@ -2690,16 +2690,8 @@ list of modifier symbols."
              (= 64 (logand value-mask 64)))
     (case stack-mode
       (:above
-       (if (deny-request-p window *deny-raise-request*)
-           (unless (or *suppress-deny-messages*
-                       ;; don't mention windows that are already visible
-                       (eql (window-state window) +normal-state+))
-             (if (eq (window-group window) (current-group))
-                 (echo-string (window-screen window) (format nil "'~a' denied raises request" (window-name window)))
-                 (echo-string (window-screen window) (format nil "'~a' denied raises request in group ~a" (window-name window) (group-name (window-group window))))))
-           (frame-raise-window (window-group window) (window-frame window) window)))))
+       (maybe-raise-window window))))
   (update-configuration window))
-
 
 (defun handle-window-move (win x y relative-to &optional (value-mask -1))
   (when *honor-window-moves*
@@ -3081,6 +3073,16 @@ chunks."
            (activate-fullscreen window))))))
 
 
+(defun maybe-raise-window (window)
+  (if (deny-request-p window *deny-raise-request*)
+      (unless (or *suppress-deny-messages*
+                  ;; don't mention windows that are already visible
+                  (eq (frame-window (window-frame window)) window))
+        (if (eq (window-group window) (current-group))
+            (echo-string (window-screen window) (format nil "'~a' denied raise request" (window-name window)))
+            (echo-string (window-screen window) (format nil "'~a' denied raise request in group ~a" (window-name window) (group-name (window-group window))))))
+      (focus-all window)))
+
 (define-stump-event-handler :client-message (window type #|format|# data)
   (dformat 2 "client message: ~s ~s~%" type data)
   (case type
@@ -3105,7 +3107,7 @@ chunks."
     (:_NET_ACTIVE_WINDOW
      (let ((our-window (find-window window)))
        (when our-window
-         (focus-all our-window))))
+         (maybe-raise-window our-window))))
     (:_NET_CLOSE_WINDOW
      (let ((our-window (find-window window)))
        (when our-window
