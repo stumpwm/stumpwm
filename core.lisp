@@ -1037,22 +1037,17 @@ than the root window's width and height."
 (defun get-window-placement (screen window)
   "Returns the ideal group and frame that WINDOW should belong to and whether
   the window should be raised."
-  (labels ((frame-by-number (group n)
-             (unless (eq n nil)
-               (find n (group-frames group)
-                     :key 'frame-number
-                     :test '=))))
-    (let ((match (rule-matching-window window)))
-      (if match
-          (destructuring-bind (group-name frame raise lock &rest props) match
-            (declare (ignore lock props))
-            (let ((group (find-group screen group-name)))
-              (if group
-                  (values group (frame-by-number group frame) raise)
-                  (progn
-                    (message "^B^1*Error placing window, group \"^b~a^B\" does not exist." group-name)
-                    (values)))))
-          (values)))))
+  (let ((match (rule-matching-window window)))
+    (if match
+        (destructuring-bind (group-name frame raise lock &rest props) match
+          (declare (ignore lock props))
+          (let ((group (find-group screen group-name)))
+            (if group
+                (values group (frame-by-number group frame) raise)
+                (progn
+                  (message "^B^1*Error placing window, group \"^b~a^B\" does not exist." group-name)
+                  (values)))))
+        (values))))
 
 (defun sync-window-placement ()
   "Re-arrange existing windows according to placement rules"
@@ -1461,6 +1456,12 @@ function expects to be wrapped in a with-state for win."
 
 
 ;;; Frame functions
+
+(defun frame-by-number (group n)
+  (unless (eq n nil)
+    (find n (group-frames group)
+          :key 'frame-number
+          :test '=)))
 
 (defun find-frame (group x y)
   "Return the frame of GROUP containing the pixel at X Y"
@@ -2410,6 +2411,9 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 
 
 ;;; Head functions
+
+(defun head-by-number (screen n)
+  (find n (screen-heads screen) :key 'head-number))
 
 (defun parse-xinerama-head (line)
   (ppcre:register-groups-bind (('parse-integer number width height x y))
