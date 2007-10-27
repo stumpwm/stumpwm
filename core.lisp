@@ -3109,9 +3109,12 @@ chunks."
        (when (and our-window group)
          (move-window-to-group our-window group))))
     (:_NET_ACTIVE_WINDOW
-     (let ((our-window (find-window window)))
+     (let ((our-window (find-window window))
+           (source (elt data 0)))
        (when our-window
-         (maybe-raise-window our-window))))
+         (if (= source 2)               ;request is from a pager
+             (focus-all our-window)
+             (maybe-raise-window our-window)))))
     (:_NET_CLOSE_WINDOW
      (let ((our-window (find-window window)))
        (when our-window
