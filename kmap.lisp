@@ -36,6 +36,20 @@
   keysym shift control meta alt hyper super)
 
 (defun make-sparse-keymap ()
+  "Create an empty keymap. If you want to create a new list of bindings
+in the key binding tree, this is where you start. To hang frame
+related bindings off @kbd{C-t C-f} one might use the following code:
+
+@example
+\(defvar *my-frame-bindings*
+  (let ((m (stumpwm:make-sparse-keymap)))
+    (stumpwm:define-key m (stumpwm:kbd \"f\") \"curframe\")
+    (stumpwm:define-key m (stumpwm:kbd \"M-b\") \"move-focus left\")
+    m ; NOTE: this is important
+  ))
+
+\(stumpwm:define-key stumpwm:*root-map* (stumpwm:kbd \"C-f\") '*my-frame-bindings*)
+@end example"
   (make-hash-table :test 'equalp))
 
 (defun lookup-command (keymap command)
@@ -110,9 +124,9 @@ for passing as the last argument to (apply #'make-key ...)"
   (mapcar 'parse-key (split-string keys)))
 
 (defun kbd (keys)
-  "Convert KEYS to the internal Emacs key representation.
-KEYS should be a string constant in the format used for
-saving keyboard macros ***(see `insert-kbd-macro')."
+  "This compiles a key string into a key structure used by
+`define-key', `undefine-key', `set-prefix-key' and
+others."
   ;; XXX: define-key needs to be fixed to handle a list of keys
   (first (parse-key-seq keys)))
 
@@ -134,12 +148,21 @@ saving keyboard macros ***(see `insert-kbd-macro')."
   (format nil "^5*~{~a~^ ~}^n" (mapcar 'print-key seq)))
 
 (defun define-key (map key command)
+  "Add a keybinding mapping the key, @var{key}, to the command,
+@var{command}, in the specified keymap. For example,
+
+@example
+\(stumpwm:define-key stumpwm:*root-map* (stumpwm:kbd \"C-z\") \"echo Zzzzz...\")
+@end example
+
+Now when you type C-t C-z, you'll see the text ``Zzzzz...'' pop up."
   (setf (gethash key map) command)
   ;; We need to tell the X server when changing the top-map bindings.
   (when (eq map *top-map*)
     (sync-keys)))
 
 (defun undefine-key (map key)
+  "Clear the key binding in the specified keybinding."
   (remhash key map))
 
 (defun lookup-key-sequence (kmap key-seq)

@@ -46,29 +46,29 @@
   (ccontext-gc (mode-line-cc ml)))
 
 (defvar *mode-line-position* :top
-  "Where should the mode line be displayed? :top or :bottom.")
+  "Specifies where the mode line is displayed. Valid values are :top and :bottom.")
 
 (defvar *mode-line-border-width* 1
-  "How thick shall the mode line border be?")
+  "Specifies how thick the mode line's border will be. Integer value.")
 
 (defvar *mode-line-pad-x* 5
-  "How much padding should be between the modeline text and the sides")
+  "Specifies the number of padding pixels between the text and the side of the mode line. Integer value.")
 
 (defvar *mode-line-pad-y* 1
-  "How much padding should be between the modeline text and the top/bottom")
+  "The number of padding pixels between the modeline text and the top/bottom of the modeline? Integer value.")
 
 (defvar *mode-line-background-color* "Gray20"
-  "mode line background color")
+  "The mode line background color.")
 
 (defvar *mode-line-foreground-color* "Gray50"
-  "mode line foreground color")
+  "The mode line foreground color.")
 
 (defvar *mode-line-border-color* "Gray30"
-  "mode line border color")
+  "The mode line border color.")
 
 (defvar *screen-mode-line-format* "[^B%n^b] %W"
-  "A template for displaying mode line for each screen. Turn it
-on with the function TOGGLE-MODE-LINE or the mode-line command.
+  "This variable describes what will be displayed on the modeline for each screen. 
+Turn it on with the function TOGGLE-MODE-LINE or the mode-line command. 
 
 It is a list where each element may be a string, a symbol, or a list.
 
@@ -77,15 +77,23 @@ For a symbol its value is used.
 For a list of the form (:eval FORM) FORM is evaluated and the
 result is used as a mode line element.
 
-A string is printed verbatim in the mode line except for
-%-constructs:
+If it is a string the string is printed with the following formatting
+options:
 
-%w -- print the window list
-%g -- print the group list
-%h -- print the current head
-%n -- print the current group name
-%W -- print the head's list of windows
-")
+@table @asis
+@item %h
+List the number of the head the mode-line belongs to
+
+@item %w
+List all windows in the current group windows using @var{*window-format*}
+
+@item %W
+List all windows on the current head of the current group using
+@var{*window-format*}
+
+@item %g
+List the groups using @var{*group-format*}
+@end table")
 
 (defvar *screen-mode-line-formatters* '((#\w fmt-window-list)
                                         (#\g fmt-group-list)
@@ -103,7 +111,11 @@ current group.")
   "used in formatting modeline strings.")
 
 (defvar *mode-line-timeout* 60
-  "The amount of time between modeline updates.")
+  "The modeline updates after each command, when a new window appears or
+an existing one disappears, and on a timer. This variable controls how
+many seconds elapse between each update. If this variable is changed
+while the modeline is visible, you must toggle the modeline to update
+timer.")
 
 (defvar *mode-line-timer* nil
   "The timer that updates the modeline")
@@ -324,6 +336,7 @@ current group.")
       (setf *mode-line-timer* nil))))
 
 (defun toggle-mode-line (screen head &optional (format '*screen-mode-line-format*))
+  "Toggle the state of the mode line for the specified screen"
   (check-type format (or symbol list string))
   (let ((ml (head-mode-line head)))
     (if ml
@@ -366,4 +379,5 @@ current group.")
     (toggle-mode-line screen head format)))
 
 (define-stumpwm-command "mode-line" ()
+  "A command to toggle the mode line visibility."
   (toggle-mode-line (current-screen) (current-head)))
