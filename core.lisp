@@ -3067,7 +3067,7 @@ chunks."
 
 (define-stump-event-handler :exposure (window x y width height count)
   (declare (ignore x y width height))
-  (let (screen)
+  (let (screen ml)
     (when (zerop count)
       (cond
         ((setf screen (find-screen window))
@@ -3076,9 +3076,8 @@ chunks."
         ((setf screen (find-message-window-screen window))
          ;; message window exposed
          (echo-nth-last-message screen 0))
-        (t
-         ;; Only other windows we listen on are mode-lines
-         (update-all-mode-lines))))))
+        ((setf ml (find-mode-line-window window))
+         (redraw-mode-line ml t))))))
 
 (define-stump-event-handler :reparent-notify (window parent)
   (let ((win (find-window window)))

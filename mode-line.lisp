@@ -37,6 +37,7 @@
   window
   format
   position
+  contents
   cc
   height
   factor
@@ -228,16 +229,18 @@ timer.")
                                        :default-fg (xlib:gcontext-foreground gc)
                                        :default-bg (xlib:gcontext-background gc)))))
 
-(defun redraw-mode-line (ml)
+(defun redraw-mode-line (ml &optional force)
   (when (eq (mode-line-mode ml) :stump)
-    (xlib:display-finish-output *display*)
     (let* ((*current-mode-line-formatters* *screen-mode-line-formatters*)
            (*current-mode-line-formatter-args* (list (screen-current-group (mode-line-screen ml)) (mode-line-head ml)))
-           (string (mode-line-format-string ml))
-           (width (render-strings (mode-line-screen ml) (mode-line-cc ml)
-                                  *mode-line-pad-x*     *mode-line-pad-y* (list string) '())))
-      ;; Just clear what we need to. This reduces flicker.
-      (xlib:clear-area (mode-line-window ml) :x (+ *mode-line-pad-x* width)))))
+           (string (mode-line-format-string ml)))
+      (when (or force (not (string= (mode-line-contents ml) string)))
+        (setf (mode-line-contents ml) string)
+        (xlib:display-finish-output *display*)
+        (let ((width (render-strings (mode-line-screen ml) (mode-line-cc ml)
+                                     *mode-line-pad-x*     *mode-line-pad-y* (list string) '())))
+          ;; Just clear what we need to. This reduces flicker.
+          (xlib:clear-area (mode-line-window ml) :x (+ *mode-line-pad-x* width)))))))
 
 (defun find-mode-line-window (xwin)
   (dolist (s *screen-list*)
