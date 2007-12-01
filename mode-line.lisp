@@ -28,7 +28,7 @@
 	  *mode-line-position*
 	  *mode-line-timeout*
 	  *screen-mode-line-format*
-	  screen-mode-line-mode
+	  enable-mode-line
 	  toggle-mode-line))
 
 (defstruct mode-line
@@ -367,16 +367,19 @@ timer.")
     (dolist (group (screen-groups screen))
       (sync-head-frame-windows group head))))
 
-(defun screen-mode-line-mode (screen head arg &optional (format '*screen-mode-line-format*))
-  "Turn on the mode line for SCREEN's HEAD if and only if ARG is non-nil."
-  ;; only do something if the state they want and the current state
-  ;; differ.
+(defun enable-mode-line (screen head state &optional format)
+  "Set the state of SCREEN's HEAD's mode-line. If STATE is T and FORMAT is
+  specified, then the mode-line's format is updated."
   (check-type screen screen)
   (check-type head head)
   (check-type format (or symbol list string))
-  (unless (eq (and arg t)
-              (and (head-mode-line head) t))
-    (toggle-mode-line screen head format)))
+  (if state
+      (if (head-mode-line head)
+          (when format
+            (setf (mode-line-format (head-mode-line head)) format))
+          (toggle-mode-line screen head (or format *screen-mode-line-format)))
+      (when (head-mode-line head)
+        (toggle-mode-line screen head))))
 
 (define-stumpwm-command "mode-line" ()
   "A command to toggle the mode line visibility."
