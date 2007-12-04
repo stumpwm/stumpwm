@@ -1476,6 +1476,15 @@ function expects to be wrapped in a with-state for win."
 
 ;;; Frame functions
 
+(defun populate-frames (group)
+  "Try to fill empty frames in GROUP with hidden windows"
+  (dolist (f (group-frames group))
+    (unless (frame-window f)
+      (choose-new-frame-window f group)
+      (when (frame-window f)
+        (maximize-window (frame-window f))
+        (unhide-window (frame-window f))))))
+
 (defun frame-by-number (group n)
   (unless (eq n nil)
     (find n (group-frames group)
