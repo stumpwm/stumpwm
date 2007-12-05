@@ -360,45 +360,6 @@ to if it is unresponsive."
         (echo-string (group-screen group) "No Managed Windows")
         (echo-string-list (group-screen group) names highlight))))
 
-(defun fmt-window-list (group &optional head)
-  (declare (ignore head))
-  "Using *window-format*, return a 1 line list of the windows, space seperated."
-  (format nil "~{~a~^ ~}"
-          (mapcar (lambda (w) (format-expand *window-formatters* *window-format* w))
-                  (sort-windows group))))
-
-(defun fmt-group-list (group &optional head)
-  (declare (ignore head))
-  "Given a group list all the groups in the group's screen."
-  (format nil "~{~a~^ ~}"
-          (mapcar (lambda (w)
-                    (let* ((str (format-expand *group-formatters* *group-format* w)))
-                      (if (eq w (current-group))
-                          (fmt-highlight str)
-                          str)))
-                  (sort-groups (group-screen group)))))
-
-(defun fmt-head (group head)
-  (declare (ignore group))
-  (format nil "~d" (head-number head)))
-
-(defun fmt-group (group head)
-  (declare (ignore head))
-  (format nil "~a" (group-name group)))
-
-(defun fmt-highlight (s)
-  (format nil "^R~A^r" s))
-
-(defun fmt-head-window-list (group head)
-  "Using *window-format*, return a 1 line list of the windows, space seperated."
-  (format nil "~{~a~^ ~}"
-          (mapcar (lambda (w)
-                    (let ((str (format-expand *window-formatters* *window-format* w)))
-                      (if (eq w (current-window))
-                          (fmt-highlight str)
-                          str)))
-                  (sort1 (head-windows group head) #'< :key #'window-number))))
-
 (define-stumpwm-command "windows" ((fmt :rest))
   "Display a list of managed windows. The optional argument @var{fmt} can
 be used to override the default window formatting."
