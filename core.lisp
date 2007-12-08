@@ -2448,16 +2448,22 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
   (or (and (xlib:query-extension *display* "XINERAMA")
            (with-current-screen screen
              ;; Ignore 'clone' heads.
-             (delete-duplicates
-              (loop for i in (split-string (run-shell-command "xdpyinfo -ext XINERAMA" t))
-                    for head = (parse-xinerama-head i)
-                    when head
-                    collect head)
-              :test (lambda (h1 h2)
-                      (and (= (frame-height h1) (frame-height h2))
-                           (= (frame-width h1) (frame-width h2))
-                           (= (frame-x h1) (frame-x h2))
-                           (= (frame-y h1) (frame-y h2)))))))
+             (loop
+              for i = 0 then (1+ i)
+              for h in
+              (delete-duplicates
+               (loop for i in (split-string (run-shell-command "xdpyinfo -ext XINERAMA" t))
+                     for head = (parse-xinerama-head i)
+                     when head
+                     collect head)
+               :test (lambda (h1 h2)
+                       (and (= (frame-height h1) (frame-height h2))
+                            (= (frame-width h1) (frame-width h2))
+                            (= (frame-x h1) (frame-x h2))
+                            (= (frame-y h1) (frame-y h2)))))
+
+              do (setf (head-number h) i)
+              collect h)))
       (list (make-head :number 0
                        :x 0 :y 0
                        :width (xlib:drawable-width root)
