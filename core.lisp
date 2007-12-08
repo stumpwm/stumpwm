@@ -2393,7 +2393,7 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
                                                :border-width 1
                                                :colormap (xlib:screen-default-colormap
                                                           screen-number)
-                                               :event-mask '()))
+                                               :event-mask '(:exposure)))
            (font (xlib:open-font *display* +default-font-name+))
            (group (make-tile-group
                    :screen screen
@@ -3059,6 +3059,12 @@ chunks."
 (define-stump-event-handler :selection-clear ()
   (setf *x-selection* nil))
 
+(defun find-message-window-screen (win)
+  "Return the screen, if any, that message window WIN belongs."
+  (dolist (screen *screen-list*)
+    (when (xlib:window-equal (screen-message-window screen) win)
+      (return screen))))
+
 (define-stump-event-handler :exposure (window x y width height count)
   (declare (ignore x y width height))
   (let (screen)
@@ -3067,7 +3073,11 @@ chunks."
         ((setf screen (find-screen window))
          ;; root exposed
          (show-frame-indicator (screen-current-group screen) nil))
+        ((setf screen (find-message-window-screen window))
+         ;; message window exposed
+         (echo-nth-last-message screen 0))
         (t
+         ;; Only other windows we listen on are mode-lines
          (update-all-mode-lines))))))
 
 (define-stump-event-handler :reparent-notify (window parent)
