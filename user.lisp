@@ -1161,7 +1161,7 @@ is using the number, then the windows swap numbers."
   (let* ((screen (current-screen))
          (data (mapcar-hash (lambda (k v) (format nil "^5*~5a^n ~a" (print-key k) v)) (symbol-value kmap-var)))
          (cols (ceiling (length data)
-                        (truncate (head-height (current-head))
+                        (truncate (- (head-height (current-head)) (* 2 (screen-msg-border-width screen)))
                                   (font-height (screen-font screen))))))
     (message-no-timeout "Prefix: ~{~a~^ | ~}~%~{~a~^~%~}"
                         (mapcar 'print-key-seq (search-kmap kmap-var *top-map*))
