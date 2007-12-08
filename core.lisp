@@ -183,12 +183,12 @@ at 0. Return a netwm compliant group id."
          (old-group (screen-current-group screen)))
     (unless (eq new-group old-group)
       ;; restore the visible windows
-      (dolist (w (group-windows old-group))
-        (when (eq (window-state w) +normal-state+)
-          (xwin-hide w)))
       (dolist (w (group-windows new-group))
         (when (eq (window-state w) +normal-state+)
           (xwin-unhide (window-xwin w) (window-parent w))))
+      (dolist (w (reverse (group-windows old-group)))
+        (when (eq (window-state w) +normal-state+)
+          (xwin-hide w)))
       (setf (screen-current-group screen) new-group)
       (move-group-to-head screen new-group)
       ;; restore the focus
@@ -197,7 +197,8 @@ at 0. Return a netwm compliant group id."
       (xlib:change-property (screen-root screen) :_NET_CURRENT_DESKTOP
                             (list (netwm-group-id new-group))
                             :cardinal 32)
-      (run-hook-with-args *focus-group-hook* new-group old-group))))
+      (run-hook-with-args *focus-group-hook* new-group old-group)))
+  (show-frame-indicator new-group))
 
 (defun move-window-to-group (window to-group)
   (labels ((really-move-window (window to-group)
@@ -1039,22 +1040,17 @@ than the root window's width and height."
 (defun get-window-placement (screen window)
   "Returns the ideal group and frame that WINDOW should belong to and whether
   the window should be raised."
-  (labels ((frame-by-number (group n)
-             (unless (eq n nil)
-               (find n (group-frames group)
-                     :key 'frame-number
-                     :test '=))))
-    (let ((match (rule-matching-window window)))
-      (if match
-          (destructuring-bind (group-name frame raise lock &rest props) match
-            (declare (ignore lock props))
-            (let ((group (find-group screen group-name)))
-              (if group
-                  (values group (frame-by-number group frame) raise)
-                  (progn
-                    (message "^B^1*Error placing window, group \"^b~a^B\" does not exist." group-name)
-                    (values)))))
-          (values)))))
+  (let ((match (rule-matching-window window)))
+    (if match
+        (destructuring-bind (group-name frame raise lock &rest props) match
+          (declare (ignore lock props))
+          (let ((group (find-group screen group-name)))
+            (if group
+                (values group (frame-by-number group frame) raise)
+                (progn
+                  (message "^B^1*Error placing window, group \"^b~a^B\" does not exist." group-name)
+                  (values)))))
+        (values))))
 
 (defun sync-window-placement ()
   "Re-arrange existing windows according to placement rules"
@@ -1457,7 +1453,6 @@ function expects to be wrapped in a with-state for win."
             (xlib:drawable-width win) (+ width (* *message-window-padding* 2))
             (xlib:window-priority win) :above)
       (setup-win-gravity screen win *message-window-gravity*))
-    (show-frame-indicator (screen-current-group screen))
     (xlib:map-window win)
     ;; Clear the window
     (xlib:clear-area win)
@@ -1476,6 +1471,12 @@ function expects to be wrapped in a with-state for win."
 
 
 ;;; Frame functions
+
+(defun frame-by-number (group n)
+  (unless (eq n nil)
+    (find n (group-frames group)
+          :key 'frame-number
+          :test '=)))
 
 (defun find-frame (group x y)
   "Return the frame of GROUP containing the pixel at X Y"
@@ -1511,11 +1512,11 @@ T (default) then also focus the frame."
     ;; record the last frame to be used in the fother command.
     (unless (eq f last)
       (setf (tile-group-last-frame group) last)
-      (run-hook-with-args *focus-frame-hook* f last))
+      (run-hook-with-args *focus-frame-hook* f last)
+      (show-frame-indicator group))
     (if w
         (focus-window w)
-        (no-focus group (frame-window last))))
-  (show-frame-indicator group))
+        (no-focus group (frame-window last)))))
 
 (defun frame-windows (group f)
   (remove-if-not (lambda (w) (eq (window-frame w) f))
@@ -2191,8 +2192,7 @@ windows used to draw the numbers in. The caller must destroy them."
 (defun unmap-message-window (screen)
   "Unmap the screen's message window, if it is mapped."
   (unless (eq (xlib:window-map-state (screen-message-window screen)) :unmapped)
-    (xlib:unmap-window (screen-message-window screen)))
-  (show-frame-indicator (current-group)))
+    (xlib:unmap-window (screen-message-window screen))))
 
 (defun unmap-all-message-windows ()
   (mapc #'unmap-message-window *screen-list*)
@@ -2207,13 +2207,15 @@ windows used to draw the numbers in. The caller must destroy them."
   (setf *message-window-timer* (run-with-timer *timeout-wait* nil
                                                'unmap-all-message-windows)))
 
-(defun show-frame-indicator (group)
+(defun show-frame-indicator (group &optional (clear t))
   ;; Don't draw if this isn't a current group!
   (when (find group (mapcar 'screen-current-group *screen-list*))
+    (dformat 5 "show-frame-indicator!~%")
     ;; *resize-hides-windows* uses the frame outlines for display,
     ;; so try not to interfere.
     (unless (eq *top-map* *resize-map*)
-      (clear-frame-outlines group)
+      (when clear
+        (clear-frame-outlines group))
       (let ((frame (tile-group-current-frame group)))
         (unless (or (frame-window frame)
                     (and (= 1 (length (tile-group-frame-tree group)))
@@ -2347,7 +2349,8 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
           :substructure-notify
           :property-change
           :structure-notify
-          :button-press))
+          :button-press
+          :exposure))
   (xlib:display-finish-output *display*)
   ;; Initialize the screen structure
   (labels ((ac (color)
@@ -2425,6 +2428,9 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 
 
 ;;; Head functions
+
+(defun head-by-number (screen n)
+  (find n (screen-heads screen) :key 'head-number))
 
 (defun parse-xinerama-head (line)
   (ppcre:register-groups-bind (('parse-integer number width height x y))
@@ -2705,19 +2711,8 @@ list of modifier symbols."
              (= 64 (logand value-mask 64)))
     (case stack-mode
       (:above
-       (if (deny-request-p window *deny-raise-request*)
-           (unless (or *suppress-deny-messages*
-                       ;; don't mention windows that are already visible
-                       (eql (window-state window) +normal-state+))
-             (if (eq (window-group window) (current-group))
-                 (echo-string (window-screen window) (format nil "'~a' denied raises request" (window-name window)))
-                 (echo-string (window-screen window) (format nil "'~a' denied raises request in group ~a" (window-name window) (group-name (window-group window))))))
-           (let ((oldf (tile-group-current-frame (window-group window))))
-             (frame-raise-window (window-group window) (window-frame window) window)
-             (unless (eq (window-frame window) oldf)
-               (show-frame-indicator (window-group window))))))))
+       (maybe-raise-window window))))
   (update-configuration window))
-
 
 (defun handle-window-move (win x y relative-to &optional (value-mask -1))
   (when *honor-window-moves*
@@ -3046,9 +3041,15 @@ chunks."
   (setf *x-selection* nil))
 
 (define-stump-event-handler :exposure (window x y width height count)
-  (declare (ignore window x y width height))
-  (when (zerop count)
-    (update-all-mode-lines)))
+  (declare (ignore x y width height))
+  (let (screen)
+    (when (zerop count)
+      (cond
+        ((setf screen (find-screen window))
+         ;; root exposed
+         (show-frame-indicator (screen-current-group screen) nil))
+        (t
+         (update-all-mode-lines))))))
 
 (define-stump-event-handler :reparent-notify (window parent)
   (let ((win (find-window window)))
@@ -3093,6 +3094,16 @@ chunks."
            (activate-fullscreen window))))))
 
 
+(defun maybe-raise-window (window)
+  (if (deny-request-p window *deny-raise-request*)
+      (unless (or *suppress-deny-messages*
+                  ;; don't mention windows that are already visible
+                  (eq (frame-window (window-frame window)) window))
+        (if (eq (window-group window) (current-group))
+            (echo-string (window-screen window) (format nil "'~a' denied raise request" (window-name window)))
+            (echo-string (window-screen window) (format nil "'~a' denied raise request in group ~a" (window-name window) (group-name (window-group window))))))
+      (focus-all window)))
+
 (define-stump-event-handler :client-message (window type #|format|# data)
   (dformat 2 "client message: ~s ~s~%" type data)
   (case type
@@ -3115,9 +3126,12 @@ chunks."
        (when (and our-window group)
          (move-window-to-group our-window group))))
     (:_NET_ACTIVE_WINDOW
-     (let ((our-window (find-window window)))
+     (let ((our-window (find-window window))
+           (source (elt data 0)))
        (when our-window
-         (focus-all our-window))))
+         (if (= source 2)               ;request is from a pager
+             (focus-all our-window)
+             (maybe-raise-window our-window)))))
     (:_NET_CLOSE_WINDOW
      (let ((our-window (find-window window)))
        (when our-window

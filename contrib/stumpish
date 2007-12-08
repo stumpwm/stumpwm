@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # Copyright (C) 2007 Jonathan Moore Liles
 #
@@ -73,6 +73,14 @@ EOF
 exit 0;
 }
 
+READLINE=yes
+
+if [ "x$1" == "x-r" ]
+then
+	READLINE=no
+	shift 1
+fi
+
 if [ $# -gt 0 ]
 then
 	[ "$1" == "--help" ] && usage
@@ -92,16 +100,27 @@ then
 		send_cmd "$*"
 	fi
 else
-IFS='
-'
 	if [ -t 0 ]
 	then
+		if [ $READLINE == yes ] && [ -x `which rlwrap` ]
+		then
+			COMMANDS="$TEMP/stumpish.commands.$$"
+			echo `send_cmd "commands"` | sed 's/[[:space:]]\+/\n/g' | sort > "$COMMANDS"
+			rlwrap -f "$COMMANDS" stumpish -r
+			rm -f "$COMMANDS"
+			exit
+		fi
+		
 		echo -e '\e[1;35mWelcome to the StumpWM Interactive Shell.\n\e[37mType \e[32mcommands\e[37m for a list of commands.\e[0m'
+
+IFS='
+'
 		while read -p "> "
 		do
 			echo -ne '\e[1;32m'
 			send_cmd "$REPLY"
 			echo -ne '\e[0m'
+
 		done
 	else
 		while read
