@@ -245,7 +245,8 @@ chosen, resignal the error."
       (xwin-hide win)
       (setf (window-frame win) to-frame)
       (maximize-window win)
-      (xwin-unhide (window-xwin win) (window-parent win))
+      (when (eq (window-group win) (current-group))
+        (xwin-unhide (window-xwin win) (window-parent win)))
       ;; We have to restore the focus after hiding.
       (when (eq win (screen-focus (window-screen win)))
         (screen-set-focus (window-screen win) win))
