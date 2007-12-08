@@ -3195,6 +3195,7 @@ chunks."
   "Focus the window, frame, group and screen belonging to WIN. Raise
 the window in it's frame."
   (when (and win (window-frame win))
+    (unmap-message-window (window-screen win))
     (switch-to-screen (window-screen win))
     (let ((frame (window-frame win))
           (group (window-group win)))
