@@ -993,6 +993,10 @@ input focus is transfered to the window you click on.")
   "Set to NIL if you don't want clicking the root window to focus the frame
   containing the pointer when *mouse-focus-policy* is :click.")
 
+(defvar *banish-pointer-to* :head
+  "Where to put the pointer when no argument is given to (banish-pointer) or the banish
+  command. May be one of :screen :head :frame or :window")
+
 (defvar *xwin-to-window* (make-hash-table)
   "Hash table for looking up windows quickly.")
 

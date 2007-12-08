@@ -301,20 +301,40 @@ to if it is unresponsive."
       (xwin-kill (window-xwin (group-current-window group))))))
 
 (define-stumpwm-command "kill" ()
-"`Tell X to disconnect the client that owns the current window.if
+"`Tell X to disconnect the client that owns the current window. if
 @command{delete} didn't work, try this."
   (kill-current-window))
 
-(defun banish-pointer ()
-  "Move the pointer to the lower right corner of the head"
-  (let ((group (current-group)))
-    (warp-pointer (group-screen group)
-                  (1- (+ (head-x (current-head)) (head-width (current-head))))
-                  (1- (+ (head-y (current-head)) (head-height (current-head)))))))
+(defun banish-pointer (&optional (where *banish-pointer-to*))
+  "Move the pointer to the lower right corner of the head, or
+ WHEREever (one of :screen :head :frame or :window)"
+  (let* ((screen (current-screen))
+         (group (current-group))
+         (head (current-head))
+         (frame (tile-group-current-frame group))
+         (window (frame-window frame))
+         (x (1- (+ (frame-x frame) (frame-width frame))))
+         (y (1- (+ (frame-display-y group frame) (frame-display-height group frame)))))
+    (ecase where
+      (:screen
+       (setf x (1- (+ (screen-x screen) (screen-width screen)))
+             y (1- (+ (screen-y screen) (screen-height screen)))))
+      (:head
+       (setf x (1- (+ (head-x head) (head-width head)))
+             y (1- (+ (head-y head) (head-height head)))))
+      (:frame)
+      (:window
+       (when window
+         (let ((win (window-parent window)))
+           (setf x (1- (+ (xlib:drawable-x win) (xlib:drawable-width win)))
+                 y (1- (+ (xlib:drawable-y win) (xlib:drawable-height win))))))))
+    (warp-pointer (group-screen group) x y)))
 
-(define-stumpwm-command "banish" ()
+(define-stumpwm-command "banish" ((where :rest))
   "Warp the mouse the lower right corner of the current head."
-  (banish-pointer))
+  (if where
+      (banish-pointer (intern (string-upcase where) :keyword))
+      (banish-pointer)))
 
 (define-stumpwm-command "ratwarp" ((x :number "X: ") (y :number "Y: "))
   "Warp the mouse to the specified location."
