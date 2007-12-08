@@ -48,6 +48,7 @@
 	  *new-window-prefered-frame*
 	  *normal-border-width*
 	  *run-or-raise-all-groups*
+          *resize-hides-windows*
 	  *screen-list*
 	  *shell-program*
 	  *start-hook*
