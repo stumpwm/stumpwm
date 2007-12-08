@@ -241,20 +241,21 @@ chosen, resignal the error."
 (defun pull-window (win &optional (to-frame (tile-group-current-frame (window-group win))))
   (let ((f (window-frame win))
         (group (window-group win)))
-    (xwin-hide win)
-    (setf (window-frame win) to-frame)
-    (maximize-window win)
-    (xwin-unhide (window-xwin win) (window-parent win))
-    ;; We have to restore the focus after hiding.
-    (when (eq win (screen-focus (window-screen win)))
+    (unless (eq (frame-window to-frame) win)
+      (xwin-hide win)
+      (setf (window-frame win) to-frame)
+      (maximize-window win)
+      (xwin-unhide (window-xwin win) (window-parent win))
+      ;; We have to restore the focus after hiding.
+      (when (eq win (screen-focus (window-screen win)))
         (screen-set-focus (window-screen win) win))
-    (frame-raise-window group to-frame win)
-    ;; if win was focused in its old frame then give the old
-    ;; frame the frame's last focused window.
-    (when (eq (frame-window f) win)
-      ;; the current value is no longer valid.
-      (setf (frame-window f) nil)
-      (frame-raise-window group f (first (frame-windows group f)) nil))))
+      (frame-raise-window group to-frame win)
+      ;; if win was focused in its old frame then give the old
+      ;; frame the frame's last focused window.
+      (when (eq (frame-window f) win)
+        ;; the current value is no longer valid.
+        (setf (frame-window f) nil)
+        (frame-raise-window group f (first (frame-windows group f)) nil)))))
 
 ;; In the future, this window will raise the window into the current
 ;; frame.
