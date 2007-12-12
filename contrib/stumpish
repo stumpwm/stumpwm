@@ -110,16 +110,24 @@ else
 			rm -f "$COMMANDS"
 			exit
 		fi
-		
-		echo -e '\e[1;35mWelcome to the StumpWM Interactive Shell.\n\e[37mType \e[32mcommands\e[37m for a list of commands.\e[0m'
+
+		tput setaf 5
+                echo Welcome to the StumpWM Interactive Shell.
+                tput sgr0
+                echo -n 'Type '
+                tput setaf 2
+                echo -n commands
+                tput sgr0
+                echo \ for a list of commands.
 
 IFS='
 '
 		while read -p "> "
 		do
-			echo -ne '\e[1;32m'
+			tput bold
+			tput setaf 2
 			send_cmd "$REPLY"
-			echo -ne '\e[0m'
+			tput sgr0
 
 		done
 	else
