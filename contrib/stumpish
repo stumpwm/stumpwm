@@ -104,7 +104,9 @@ else
 	then
 		if [ $READLINE == yes ] && type rlwrap &>/dev/null
 		then
-			COMMANDS="$TEMP/stumpish.commands.$$"
+			## Note: $TEMP is not conventional; it is left
+			## here purely for backwards compatibility.
+			COMMANDS="${TEMP:-${TEMPDIR:-/var/tmp}}/stumpish.commands.$$"
 			echo `send_cmd "commands"` | sed 's/[[:space:]]\+/\n/g' | sort > "$COMMANDS"
 			rlwrap -f "$COMMANDS" stumpish -r
 			rm -f "$COMMANDS"
