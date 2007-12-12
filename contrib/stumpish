@@ -102,7 +102,7 @@ then
 else
 	if [ -t 0 ]
 	then
-		if [ $READLINE == yes ] && [ -x `which rlwrap` ]
+		if [ $READLINE == yes ] && type rlwrap &>/dev/null
 		then
 			COMMANDS="$TEMP/stumpish.commands.$$"
 			echo `send_cmd "commands"` | sed 's/[[:space:]]\+/\n/g' | sort > "$COMMANDS"
