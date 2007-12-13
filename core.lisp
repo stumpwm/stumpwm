@@ -1460,6 +1460,7 @@ function expects to be wrapped in a with-state for win."
     (xlib:map-window win)
     ;; Clear the window
     (xlib:clear-area win)
+    (incf (screen-ignore-msg-expose screen))
     ;; Have to flush this or the window might get cleared
     ;; after we've already started drawing it.
     (xlib:display-finish-output *display*)))
@@ -2259,6 +2260,11 @@ windows used to draw the numbers in. The caller must destroy them."
       (setf (screen-last-msg screen) (butlast (screen-last-msg screen)))
       (setf (screen-last-msg-highlights screen) (butlast (screen-last-msg-highlights screen))))))
 
+(defun redraw-current-message (screen)
+  (let ((*record-last-msg-override* t))
+    (dformat 5 "Redrawing message window!~%")
+    (apply 'echo-string-list screen (screen-current-msg screen) (screen-current-msg-highlights screen))))
+
 (defun echo-nth-last-message (screen n)
   (let ((*record-last-msg-override* t))
     (apply 'echo-string-list screen (nth n (screen-last-msg screen)) (nth n (screen-last-msg-highlights screen)))))
@@ -2269,17 +2275,21 @@ windows used to draw the numbers in. The caller must destroy them."
   (unless *executing-stumpwm-command*
     (let ((width (render-strings screen (screen-message-cc screen) *message-window-padding* 0 strings '() nil)))
       (setup-message-window screen (length strings) width)
-      (render-strings screen (screen-message-cc screen) *message-window-padding* 0 strings highlights)))
-  (push-last-message screen strings highlights)
-  (xlib:display-finish-output *display*)
-  ;; Set a timer to hide the message after a number of seconds
-  (if *suppress-echo-timeout*
-      ;; any left over timers need to be canceled.
-      (when (timer-p *message-window-timer*)
-        (cancel-timer *message-window-timer*)
-        (setf *message-window-timer* nil))
-      (reset-message-window-timer))
-  (apply 'run-hook-with-args *message-hook* strings))
+      (render-strings screen (screen-message-cc screen) *message-window-padding* 0 strings highlights))
+    (setf (screen-current-msg screen)
+          strings
+          (screen-current-msg-highlights screen)
+          highlights)
+    (push-last-message screen strings highlights)
+    (xlib:display-finish-output *display*)
+    ;; Set a timer to hide the message after a number of seconds
+    (if *suppress-echo-timeout*
+        ;; any left over timers need to be canceled.
+        (when (timer-p *message-window-timer*)
+          (cancel-timer *message-window-timer*)
+          (setf *message-window-timer* nil))
+        (reset-message-window-timer))
+    (apply 'run-hook-with-args *message-hook* strings)))
 
 (defun echo-string (screen msg)
   "Display @var{string} in the message bar on @var{screen}. You almost always want to use @command{message}."
@@ -2288,6 +2298,7 @@ windows used to draw the numbers in. The caller must destroy them."
 (defun message (fmt &rest args)
   "run FMT and ARGS through `format' and echo the result to the current screen."
   (echo-string (current-screen) (apply 'format nil fmt args)))
+
 
 (defun err (fmt &rest args)
   "run FMT and ARGS through format and echo the result to the
@@ -2419,6 +2430,7 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
             (screen-frame-outline-width screen) +default-frame-outline-width+
             (screen-input-window screen) input-window
             (screen-focus-window screen) focus-window
+            (screen-ignore-msg-expose screen) 0
             (screen-message-cc screen) (make-ccontext :win message-window
                                                       :gc (xlib:create-gcontext
                                                            :drawable message-window
@@ -3065,6 +3077,17 @@ chunks."
     (when (xlib:window-equal (screen-message-window screen) win)
       (return screen))))
 
+(defun draw-cross (screen window x y width height)
+  (xlib:draw-line window
+                  (screen-frame-outline-gc screen)
+                  x y
+                  width height
+                  t)
+  (xlib:draw-line window
+                  (screen-frame-outline-gc screen)
+                  x (+ y height)
+                  (+ x width) y))
+
 (define-stump-event-handler :exposure (window x y width height count)
   (declare (ignore x y width height))
   (let (screen ml)
@@ -3075,9 +3098,16 @@ chunks."
          (show-frame-indicator (screen-current-group screen) nil))
         ((setf screen (find-message-window-screen window))
          ;; message window exposed
-         (echo-nth-last-message screen 0))
+         (if (plusp (screen-ignore-msg-expose screen))
+             (decf (screen-ignore-msg-expose screen))
+             (redraw-current-message screen)))
         ((setf ml (find-mode-line-window window))
-         (redraw-mode-line ml t))))))
+         (setf screen (mode-line-screen ml))
+         (redraw-mode-line ml t)))
+      ;; Show the area.
+      (when (and *debug-expose-events* screen)
+        (draw-cross screen window x y width height)))))
+
 
 (define-stump-event-handler :reparent-notify (window parent)
   (let ((win (find-window window)))
