@@ -2279,17 +2279,17 @@ windows used to draw the numbers in. The caller must destroy them."
     (setf (screen-current-msg screen)
           strings
           (screen-current-msg-highlights screen)
-          highlights)
-    (push-last-message screen strings highlights)
-    (xlib:display-finish-output *display*)
-    ;; Set a timer to hide the message after a number of seconds
-    (if *suppress-echo-timeout*
-        ;; any left over timers need to be canceled.
-        (when (timer-p *message-window-timer*)
-          (cancel-timer *message-window-timer*)
-          (setf *message-window-timer* nil))
-        (reset-message-window-timer))
-    (apply 'run-hook-with-args *message-hook* strings)))
+          highlights))
+  (push-last-message screen strings highlights)
+  (xlib:display-finish-output *display*)
+  ;; Set a timer to hide the message after a number of seconds
+  (if *suppress-echo-timeout*
+      ;; any left over timers need to be canceled.
+      (when (timer-p *message-window-timer*)
+        (cancel-timer *message-window-timer*)
+        (setf *message-window-timer* nil))
+      (reset-message-window-timer))
+  (apply 'run-hook-with-args *message-hook* strings))
 
 (defun echo-string (screen msg)
   "Display @var{string} in the message bar on @var{screen}. You almost always want to use @command{message}."
