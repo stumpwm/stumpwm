@@ -3090,7 +3090,6 @@ chunks."
                   (+ x width) y))
 
 (define-stump-event-handler :exposure (window x y width height count)
-  (declare (ignore x y width height))
   (let (screen ml)
     (when (zerop count)
       (cond
