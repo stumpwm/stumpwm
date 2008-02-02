@@ -43,12 +43,12 @@
 (defun stumpwm-eval-region (start end)
   (interactive "r")
   (let ((s (buffer-substring-no-properties start end)))
-    (message
-     (with-temp-buffer
-       (call-process stumpwm-shell-program nil (current-buffer) nil
-                     "eval"
-                     s)
-       (buffer-string)))))
+    (message "%s"
+             (with-temp-buffer
+               (call-process stumpwm-shell-program nil (current-buffer) nil
+                             "eval"
+                             s)
+               (buffer-string)))))
 
 (defun stumpwm-eval-defun ()
   (interactive)
