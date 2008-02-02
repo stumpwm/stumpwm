@@ -72,6 +72,7 @@
           *processing-existing-windows*
           *executing-stumpwm-command*
           *debug-level*
+          *debug-expose-events*
           *debug-stream*
           *window-formatters*
           *window-format*
@@ -428,8 +429,12 @@ Use the window's resource name.
   ;; color maps
   color-map-normal
   color-map-bright
+  ;; used to ignore the first expose even when mapping the message window.
+  ignore-msg-expose
   ;; the window that has focus
   focus
+  current-msg
+  current-msg-highlights
   last-msg
   last-msg-highlights)
 
@@ -734,6 +739,9 @@ Modifies the match data; use `save-match-data' if necessary."
 
 (defvar *debug-level* 0
   "Set this variable to a number > 0 to turn on debugging. The greater the number the more debugging output.")
+
+(defvar *debug-expose-events* nil
+  "Set this variable for a visual indication of expose events on internal StumpWM windows.")
 
 (defvar *debug-stream* *error-output*
   "This is the stream debugging output is sent to. It defaults to

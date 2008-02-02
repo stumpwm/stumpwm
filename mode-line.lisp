@@ -37,6 +37,7 @@
   window
   format
   position
+  contents
   cc
   height
   factor
@@ -119,6 +120,112 @@ timer.")
 
 (defvar *mode-line-timer* nil
   "The timer that updates the modeline")
+
+;;; Formatters
+
+;; All mode-line formatters take the mode-line they are being invoked from
+;; as the first argument. Additional arguments (everything between the first
+;; ',' and the ';' are provided as strings [not yet implemented]).
+
+(defun fmt-window-list (ml)
+   "Using *window-format*, return a 1 line list of the windows, space seperated."
+  (format nil "~{~a~^ ~}"
+          (mapcar (lambda (w) (format-expand *window-formatters* *window-format* w))
+                  (sort-windows (mode-line-current-group ml)))))
+
+(defun fmt-group-list (ml)
+  "Given a group list all the groups in the group's screen."
+  (format nil "~{~a~^ ~}"
+          (mapcar (lambda (w)
+                    (let* ((str (format-expand *group-formatters* *group-format* w)))
+                      (if (eq w (current-group))
+                          (fmt-highlight str)
+                          str)))
+                  (sort-groups (group-screen (mode-line-current-group ml))))))
+
+(defun fmt-head (ml)
+  (format nil "~d" (head-number (mode-line-head ml))))
+
+(defun fmt-group (ml)
+  (format nil "~a" (group-name (mode-line-current-group ml))))
+
+(defun fmt-highlight (s)
+  (format nil "^R~A^r" s))
+
+(defun fmt-head-window-list (ml)
+  "Using *window-format*, return a 1 line list of the windows, space seperated."
+  (format nil "~{~a~^ ~}"
+          (mapcar (lambda (w)
+                    (let ((str (format-expand *window-formatters* *window-format* w)))
+                      (if (eq w (current-window))
+                          (fmt-highlight str)
+                          str)))
+                  (sort1 (head-windows (mode-line-current-group ml) (mode-line-head ml))
+                         #'< :key #'window-number))))
+
+(defvar *bar-med-color* "^B")
+(defvar *bar-hi-color* "^B^3*")
+(defvar *bar-crit-color* "^B^1*")
+
+(defun bar-zone-color (percent)
+  (concatenate 'string
+               (cond
+                 ((>= percent 90)
+                  *bar-crit-color*)
+                 ((>= percent 50)
+                  *bar-hi-color*)
+                 ((>= percent 20)
+                  *bar-med-color*)
+                 (t ""))))
+
+(defun repeat (n char)
+ (make-string n :initial-element char))
+
+(defun bar (percent width full empty)
+  "Return a progress bar string of WIDTH characters composed of characters FULL
+  and EMPTY at PERCENT complete."
+  (let ((chars (truncate (* (/ width 100) percent))))
+    (format nil "^[~A~A^]~A" (bar-zone-color percent)
+            (repeat chars full)
+            (repeat (- width chars) empty))))
+
+(defvar *alt-prev-index* 0)
+(defvar *alt-prev-time* 0)
+
+;; TODO: Figure out a way to objectify fmt-alternate and fmt-scroll so that
+;; multiple instances can coexist.
+
+(defun alternate (strings period)
+  "Show each of STRINGS, alternating at most once every PERIOD seconds."
+  (let ((now (/ (get-internal-real-time) internal-time-units-per-second)))
+    (when (>= (- now *alt-prev-time*) period)
+      (setf *alt-prev-time* now)
+      (if (< *alt-prev-index* (1- (length strings)))
+        (incf *alt-prev-index*)
+        (setf *alt-prev-index* 0))))
+  (elt strings *alt-prev-index*))
+
+(defvar *scroll-prev-index* 0)
+(defvar *scroll-prev-time* 0)
+(defvar *scroll-prev-dir* :forward)
+
+(defun scroll (string width delay)
+  "Scroll STRING within the space of WIDTH characters, with a step of DELAY"
+  (let ((now (/ (get-internal-real-time) internal-time-units-per-second)))
+    (when (>= (- now *scroll-prev-time*) delay)
+      (setf *scroll-prev-time* now)
+      (case *scroll-prev-dir*
+        (:forward
+         (if (< *scroll-prev-index* (- (length string) width))
+             (incf *scroll-prev-index*)
+             (setf *scroll-prev-dir* :backward)))
+        (:backward
+         (if (> *scroll-prev-index* 0)
+             (decf *scroll-prev-index*)
+             (setf *scroll-prev-dir* :forward))))))
+  (subseq string *scroll-prev-index* (+ *scroll-prev-index* width)))
+
+
 
 (defun make-mode-line-window (parent screen)
   "Create a window suitable for a modeline."
@@ -228,16 +335,21 @@ timer.")
                                        :default-fg (xlib:gcontext-foreground gc)
                                        :default-bg (xlib:gcontext-background gc)))))
 
-(defun redraw-mode-line (ml)
+(defun mode-line-current-group (ml)
+  (screen-current-group (mode-line-screen ml)))
+
+(defun redraw-mode-line (ml &optional force)
   (when (eq (mode-line-mode ml) :stump)
-    (xlib:display-finish-output *display*)
     (let* ((*current-mode-line-formatters* *screen-mode-line-formatters*)
-           (*current-mode-line-formatter-args* (list (screen-current-group (mode-line-screen ml)) (mode-line-head ml)))
-           (string (mode-line-format-string ml))
-           (width (render-strings (mode-line-screen ml) (mode-line-cc ml)
-                                  *mode-line-pad-x*     *mode-line-pad-y* (list string) '())))
-      ;; Just clear what we need to. This reduces flicker.
-      (xlib:clear-area (mode-line-window ml) :x (+ *mode-line-pad-x* width)))))
+           (*current-mode-line-formatter-args* (list ml))
+           (string (mode-line-format-string ml)))
+      (when (or force (not (string= (mode-line-contents ml) string)))
+        (setf (mode-line-contents ml) string)
+        (xlib:display-finish-output *display*)
+        (let ((width (render-strings (mode-line-screen ml) (mode-line-cc ml)
+                                     *mode-line-pad-x*     *mode-line-pad-y* (list string) '())))
+          ;; Just clear what we need to. This reduces flicker.
+          (xlib:clear-area (mode-line-window ml) :x (+ *mode-line-pad-x* width)))))))
 
 (defun find-mode-line-window (xwin)
   (dolist (s *screen-list*)
