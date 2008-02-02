@@ -17,10 +17,13 @@
 
 ;; a custom loader for clisp. It beats trying to look for asdf, for now.
 #+clisp
-(let ((files '("package.lisp" "primitives.lisp" "keysyms.lisp" "keytrans.lisp" "kmap.lisp" "input.lisp" "core.lisp" "user.lisp" "mode-line.lisp" "color.lisp" "fdump.lisp" "stumpwm.lisp" "version.lisp")))
-  (dolist (f files)
-    (load (compile-file f))))
-
+(progn
+  (load "asdf.lisp")
+  (load "stumpwm.asd"))
+#+clisp
+(progn
+  (push (merge-pathnames  #p".sbcl/systems/" (user-homedir-pathname)) asdf:*central-registry*)
+  (asdf:oos 'asdf:load-op 'stumpwm))
 #+clisp
 (progn
   (ext:saveinitmem "stumpwm" :init-function (lambda ()
