@@ -24,11 +24,23 @@
 ;; Code:
 (in-package :stumpwm)
 
+(export '(*input-map*
+	  completing-read
+	  input-delete-region
+	  input-goto-char
+	  input-insert-char
+	  input-insert-string
+	  input-point
+	  input-substring
+	  input-validate-region
+	  read-one-char
+	  read-one-line))
+
 (defstruct input-line
   string position history history-bk)
 
 (defvar *input-map* nil
-  "Input window bindings")
+  "This is the keymap containing all input editing key bindings.")
 
 (when (null *input-map*)
   (setf *input-map*
@@ -205,7 +217,7 @@ to return a list of matches."
           (shutdown-input-window screen))))))
 
 (defun read-one-char (screen)
-  "Read a single character."
+  "Read a single character from the user."
   (grab-keyboard screen)
   ;; FIXME: should this be in an unwind-protect to ungrab the kbd?
   (prog1
@@ -297,7 +309,9 @@ to return a list of matches."
                                          (length (input-line-string input)))))
 
 (defun input-insert-string (input string)
-  "Insert the string into the input string at the cursor position"
+  "Insert @var{string} into the input at the current
+position. @var{input} must be of type @var{input-line}. Input
+functions are passed this structure as their first argument."
   (check-type string string)
   ;; FIXME: obviously this is substandard
   (map nil (lambda (c) (input-insert-char input c))
@@ -332,7 +346,9 @@ second and neither excedes the bounds of the input string."
      (decf (input-line-position input) (- end start)))))
 
 (defun input-insert-char (input char)
-  "Insert the specified character into the input string at the cursor position."
+  "Insert @var{char} into the input at the current
+position. @var{input} must be of type @var{input-line}. Input
+functions are passed this structure as their first argument."
   (vector-push-extend #\_ (input-line-string input))
   (replace (input-line-string input) (input-line-string input)
            :start2 (input-line-position input) :start1 (1+ (input-line-position input)))

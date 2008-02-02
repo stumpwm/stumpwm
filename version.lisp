@@ -25,6 +25,8 @@
 
 (in-package :stumpwm)
 
+(export '(*version*))
+
 (defparameter *version* #.(concatenate 'string "0.0.6-CVS Compiled On " (format-time-string)))
 
 (defun echo-version (screen)

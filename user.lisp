@@ -26,8 +26,24 @@
 
 (in-package :stumpwm)
 
+(export '(*root-map*
+	  argument-line-end-p
+	  argument-pop
+	  argument-pop-or-read
+	  argument-pop-rest
+	  define-stumpwm-command
+	  define-stumpwm-type
+	  pathname-is-executable-p
+	  programs-in-path
+	  restarts-menu
+	  run-commands
+	  run-or-raise
+	  run-shell-command
+	  set-prefix-key
+	  with-restarts-menu))
+
 (defvar *root-map* nil
-  "The default bindings that hang off the prefix key.")
+  "This is the keymap by default bound to @kbd{C-t}. It is known as the @dfn{prefix map}.")
 
 ;; Do it this way so its easier to wipe the map and get a clean one.
 (when (null *root-map*)
@@ -132,17 +148,26 @@
           m)))
 
 (defstruct command
-  name args fn)
+  name args docstring fn)
 
 (defvar *command-hash* (make-hash-table :test 'equal)
   "A list of interactive stumpwm commands.")
 
+
 (defmacro define-stumpwm-command (name (&rest args) &body body)
-  `(setf (gethash ,name *command-hash*)
-    (make-command :name ,name
-     :args ',args
-     :fn (lambda (,@(mapcar 'first args))
-           ,@body))))
+  (labels ((rip-docstring (body)
+	     (loop for i in body
+		while (or (stringp i)
+			  (and (listp i)
+			       (eq (first i) 'declare)))
+		if (stringp i)
+		return i)))
+    `(setf (gethash ,name *command-hash*)
+	   (make-command :name ,name
+			 :args ',args
+			 :docstring ,(rip-docstring body)
+			 :fn (lambda (,@(mapcar 'first args))
+			       ,@body)))))
 
 (defun all-commands ()
   "Return a list of all interactive commands."
@@ -154,8 +179,9 @@
     (sort acc 'string<)))
 
 (defun restarts-menu (err)
-  "Present a menu of restarts to the user and let them
-choose. Run the selected restart."
+  "Display a menu with the active restarts and let the user pick
+one. Error is the error being recovered from. If the user aborts the
+menu, the error is re-signalled."
   (let ((restart (select-from-menu (current-screen)
                                    (mapcar (lambda (r)
                                              (list (format nil "[~a] ~a"
@@ -199,12 +225,14 @@ chosen, resignal the error."
                   (sort-windows group))))
 
 (define-stumpwm-command "next" ()
+  "Go to the next window in the window list."
   (let ((group (current-group)))
     (if (group-current-window group)
         (focus-next-window group)
         (other-window group))))
 
 (define-stumpwm-command "prev" ()
+  "Go to the previous window in the window list."
   (let ((group (current-group)))
     (if (group-current-window group)
         (focus-prev-window group)
@@ -213,20 +241,22 @@ chosen, resignal the error."
 (defun pull-window (win &optional (to-frame (tile-group-current-frame (window-group win))))
   (let ((f (window-frame win))
         (group (window-group win)))
-    (xwin-hide win)
-    (setf (window-frame win) to-frame)
-    (maximize-window win)
-    (xwin-unhide (window-xwin win) (window-parent win))
-    ;; We have to restore the focus after hiding.
-    (when (eq win (screen-focus (window-screen win)))
+    (unless (eq (frame-window to-frame) win)
+      (xwin-hide win)
+      (setf (window-frame win) to-frame)
+      (maximize-window win)
+      (when (eq (window-group win) (current-group))
+        (xwin-unhide (window-xwin win) (window-parent win)))
+      ;; We have to restore the focus after hiding.
+      (when (eq win (screen-focus (window-screen win)))
         (screen-set-focus (window-screen win) win))
-    (frame-raise-window group to-frame win)
-    ;; if win was focused in its old frame then give the old
-    ;; frame the frame's last focused window.
-    (when (eq (frame-window f) win)
-      ;; the current value is no longer valid.
-      (setf (frame-window f) nil)
-      (frame-raise-window group f (first (frame-windows group f)) nil))))
+      (frame-raise-window group to-frame win)
+      ;; if win was focused in its old frame then give the old
+      ;; frame the frame's last focused window.
+      (when (eq (frame-window f) win)
+        ;; the current value is no longer valid.
+        (setf (frame-window f) nil)
+        (frame-raise-window group f (first (frame-windows group f)) nil)))))
 
 ;; In the future, this window will raise the window into the current
 ;; frame.
@@ -260,6 +290,9 @@ frame."
       (delete-window (group-current-window group)))))
 
 (define-stumpwm-command "delete" ()
+  "Delete the current window. This is a request sent to the window. The
+window's client may decide not to grant the request or may not be able
+to if it is unresponsive."
   (delete-current-window))
 
 (defun kill-current-window ()
@@ -269,22 +302,47 @@ frame."
       (xwin-kill (window-xwin (group-current-window group))))))
 
 (define-stumpwm-command "kill" ()
+"`Tell X to disconnect the client that owns the current window. if
+@command{delete} didn't work, try this."
   (kill-current-window))
 
-(defun banish-pointer ()
-  "Move the pointer to the lower right corner of the head"
-  (let ((group (current-group)))
-    (warp-pointer (group-screen group)
-                  (1- (+ (head-x (current-head)) (head-width (current-head))))
-                  (1- (+ (head-y (current-head)) (head-height (current-head)))))))
+(defun banish-pointer (&optional (where *banish-pointer-to*))
+  "Move the pointer to the lower right corner of the head, or
+ WHEREever (one of :screen :head :frame or :window)"
+  (let* ((screen (current-screen))
+         (group (current-group))
+         (head (current-head))
+         (frame (tile-group-current-frame group))
+         (window (frame-window frame))
+         (x (1- (+ (frame-x frame) (frame-width frame))))
+         (y (1- (+ (frame-display-y group frame) (frame-display-height group frame)))))
+    (ecase where
+      (:screen
+       (setf x (1- (+ (screen-x screen) (screen-width screen)))
+             y (1- (+ (screen-y screen) (screen-height screen)))))
+      (:head
+       (setf x (1- (+ (head-x head) (head-width head)))
+             y (1- (+ (head-y head) (head-height head)))))
+      (:frame)
+      (:window
+       (when window
+         (let ((win (window-parent window)))
+           (setf x (1- (+ (xlib:drawable-x win) (xlib:drawable-width win)))
+                 y (1- (+ (xlib:drawable-y win) (xlib:drawable-height win))))))))
+    (warp-pointer (group-screen group) x y)))
 
-(define-stumpwm-command "banish" ()
-  (banish-pointer))
+(define-stumpwm-command "banish" ((where :rest))
+  "Warp the mouse the lower right corner of the current head."
+  (if where
+      (banish-pointer (intern (string-upcase where) :keyword))
+      (banish-pointer)))
 
 (define-stumpwm-command "ratwarp" ((x :number "X: ") (y :number "Y: "))
+  "Warp the mouse to the specified location."
   (warp-pointer (current-screen) x y))
 
 (define-stumpwm-command "ratrelwarp" ((dx :number "Delta X: ") (dy :number "Delta Y: "))
+  "Warp the mouse by the specified amount from its current position."
   (warp-pointer-relative dx dy))
 
 ;; FIXME: This function doesn't work.
@@ -342,6 +400,8 @@ frame."
                   (sort1 (head-windows group head) #'< :key #'window-number))))
 
 (define-stumpwm-command "windows" ((fmt :rest))
+  "Display a list of managed windows. The optional argument @var{fmt} can
+be used to override the default window formatting."
   (echo-windows (current-group) (or fmt *window-format*)))
 
 (define-stumpwm-command "frame-windows" ((fmt :rest))
@@ -481,6 +541,7 @@ the 'date' command options except the following ones: %g, %G, %j, %N,
   (message "~a" (format-time-string)))
 
 (define-stumpwm-command "time" ()
+  "Display time."
   (echo-date))
 
 (defun select-window (group query)
@@ -496,6 +557,7 @@ the 'date' command options except the following ones: %g, %G, %j, %N,
         (frame-raise-window group (window-frame match) match)))))
 
 (define-stumpwm-command "select" ((win :window-name "Select: "))
+  "Switch to the first window that starts with @var{win}."
   (select-window (current-group) win))
 
 (defun select-window-number (group num)
@@ -516,12 +578,15 @@ the 'date' command options except the following ones: %g, %G, %j, %N,
         (echo-string (group-screen group) "No other window."))))
 
 (define-stumpwm-command "other" ()
+  "Switch to the window last focused."
   (other-window (current-group)))
 
 (defun programs-in-path (base &optional full-path (path (split-string (getenv "PATH") ":")))
-  "Return a list of programs in the path that start with BASE. if
-FULL-PATH is T then return the full path, otherwise just return
-the filename."
+  "Return a list of programs in the path that start with @var{base}. if
+@var{full-path} is @var{t} then return the full path, otherwise just
+return the filename. @var{path} is by default the @env{PATH}
+evironment variable but can be specified. It should be a string containing
+each directory seperated by a colon."
   (loop
    for p in path
    for dir = (probe-path p)
@@ -540,15 +605,16 @@ the filename."
                       namestring))))
 
 (defun run-shell-command (cmd &optional collect-output-p)
-  "Run a shell command in the background or wait for it to finish
-and collect the output if COLLECT-OUTPUT-P is T. Warning! if
-COLLECT-OUTPUT-P is stumpwm will hang until your command
-returns..which could be forever if you're not careful."
+  "Run the specified shell command. If @var{collect-output-p} is @code{T}
+then run the command synchonously and collect the output. Be
+careful. If the shell command doesn't return, it will hang StumpWM. In
+such a case, kill the shell command to resume StumpWM."
   (if collect-output-p
       (run-prog-collect-output *shell-program* "-c" cmd)
       (run-prog *shell-program* :args (list "-c" cmd) :wait nil)))
 
 (define-stumpwm-command "exec" ((cmd :shell "/bin/sh -c "))
+"Run the shell command asynchronously. Output is discarded."
   (run-shell-command cmd))
 
 (defun split-frame-in-dir (group dir)
@@ -561,9 +627,11 @@ returns..which could be forever if you're not careful."
         (message "Cannot split smaller than minimum size."))))
 
 (define-stumpwm-command "hsplit" ()
+"Split the current frame into 2 side-by-side frames."
   (split-frame-in-dir (current-group) :column))
 
 (define-stumpwm-command "vsplit" ()
+"Split the current frame into 2 frames, one on top of the other."
   (split-frame-in-dir (current-group) :row))
 
 (defun remove-split (group)
@@ -603,9 +671,12 @@ returns..which could be forever if you're not careful."
           (show-frame-indicator group)))))
 
 (define-stumpwm-command "remove" ()
+"Remove the current frame. Windows in the frame are migrated to the
+frame taking up its space."
   (remove-split (current-group)))
 
 (define-stumpwm-command "only" ()
+"Delete all the frames but the current one and grow it to take up the entire head."
   (let* ((screen (current-screen))
          (group (screen-current-group screen))
          (win (frame-window (tile-group-current-frame group)))
@@ -624,8 +695,9 @@ returns..which could be forever if you're not careful."
                 (tile-group-frame-head group head) frame
                 (tile-group-current-frame group) frame)
           (focus-frame group frame)
-          (when (frame-window frame)
-            (update-window-border (frame-window frame)))
+          (if (frame-window frame)
+            (update-window-border (frame-window frame))
+            (show-frame-indicator group))
           (sync-frame-windows group (tile-group-current-frame group))))))
 
 (define-stumpwm-command "fullscreen" ()
@@ -635,6 +707,7 @@ using SDL."
   (update-fullscreen (current-window) 2))
 
 (define-stumpwm-command "curframe" ()
+"Display a window indicating which frame is focused."
   (show-frame-indicator (current-group)))
 
 (defun focus-frame-next-sibling (group)
@@ -670,12 +743,16 @@ the current frame."
   (focus-frame-after group (nreverse (group-frames group))))
 
 (define-stumpwm-command "fnext" ()
+"Cycle through the frame tree to the next frame."
   (focus-next-frame (current-group)))
 
 (define-stumpwm-command "sibling" ()
+"Jump to the frame's sibling. If a frame is split into twe frames,
+these two frames are siblings."
   (focus-frame-next-sibling (current-group)))
 
 (define-stumpwm-command "fother" ()
+"Jump to the last frame that had focus."
   (focus-last-frame (current-group)))
 
 (defun choose-frame-by-number (group)
@@ -694,20 +771,24 @@ select one. Returns the selected frame or nil if aborted."
           :key 'get-frame-number-translation)))
 
 
-(define-stumpwm-command "fselect" ((f :frame t))
+(define-stumpwm-command "fselect" ((frame-number :frame t))
+"Display a number in the corner of each frame and let the user to
+select a frame by number. If @var{frame-number} is specified, just
+jump to that frame."
   (let ((group (current-group)))
-    (focus-frame group f)))
+    (focus-frame group frame-number)))
 
-(define-stumpwm-command "resize" ((w :number "+ Width: ")
-                                  (h :number "+ Height: "))
+(define-stumpwm-command "resize" ((width :number "+ Width: ")
+                                  (height :number "+ Height: "))
+  "Resize the current frame by @var{width} and @var{height} pixels"
   (let* ((group (current-group))
          (f (tile-group-current-frame group)))
     (if (atom (tile-group-frame-tree group))
         (message "No more frames!")
         (progn
           (clear-frame-outlines group)
-          (resize-frame group f w :width)
-          (resize-frame group f h :height)
+          (resize-frame group f width :width)
+          (resize-frame group f height :height)
           (draw-frame-outlines group (current-head))))))
 
 (defun eval-line (cmd)
@@ -719,12 +800,14 @@ select one. Returns the selected frame or nil if aborted."
       (err "^B^1*~A" c))))
 
 (define-stumpwm-command "eval" ((cmd :rest "Eval: "))
+"Evaluate the lisp s-expression and display the result."
   (eval-line cmd))
 
-(define-stumpwm-command "echo" ((s :rest "Echo: "))
+(define-stumpwm-command "echo" ((string :rest "Echo: "))
+  "Display @var{string} in the message bar."
   ;; The purpose of echo is always to pop up a message window.
   (let ((*executing-stumpwm-command* nil))
-    (message "~a" s)))
+    (message "~a" string)))
 
 ;; Simple command & arg parsing
 (defun split-by-one-space (string)
@@ -820,6 +903,13 @@ string between them."
         (throw 'error (format nil "the symbol ~a::~a has no function."
                               (package-name pkg) var)))))
 
+(define-stumpwm-type :command (input prompt)
+  (or (argument-pop input)
+      (string-trim " "
+                   (completing-read (current-screen)
+                                    prompt
+                                    (all-commands)))))
+
 (define-stumpwm-type :key-seq (input prompt)
   (labels ((update (seq)
              (message "~a: ~{~a ~}"
@@ -878,6 +968,7 @@ string between them."
                                (group-windows (current-group))))))
 
 (define-stumpwm-type :gravity (input prompt)
+"Set the current window's gravity."
   (let* ((values '(("center" :center)
                    ("top" :top)
                    ("right" :right)
@@ -1000,6 +1091,8 @@ aborted."
              (message "Abort."))))))
 
 (define-stumpwm-command "colon" ((initial-input :rest))
+  "Read a command from the user. @var{initial-text} is optional. When
+supplied, the text will appear in the prompt."
   (let ((cmd (completing-read (current-screen) ": " (all-commands) (or initial-input ""))))
     (unless cmd
       (throw 'error :abort))
@@ -1012,8 +1105,9 @@ aborted."
     (when win
       (pull-window win))))
 
-(define-stumpwm-command "pull" ((n :window-number "Pull: "))
-  (pull-window-by-number (current-group) n))
+(define-stumpwm-command "pull" ((window-number :window-number "Pull: "))
+"Move the window whose number is @var{window-number} to the current frame."
+  (pull-window-by-number (current-group) window-number))
 
 (defun send-meta-key (screen key)
   "Send the prefix key"
@@ -1021,6 +1115,7 @@ aborted."
     (send-fake-key (screen-current-window screen) key)))
 
 (define-stumpwm-command "meta" ((key :key "Key: "))
+"Send a fake key to the current window. @var{key} is a typical StumpWM key, like @kbd{C-M-o}."
   (send-meta-key (current-screen) key))
 
 (defun renumber (group nt)
@@ -1039,6 +1134,8 @@ aborted."
         (setf (window-number (group-current-window group)) nt))))
 
 (define-stumpwm-command "number" ((n :number "Number: "))
+  "Change the window's number to the specified number. If another window
+is using the number, then the windows swap numbers."
   (renumber (current-group) n))
 
 (define-stumpwm-command "gravity" ((gravity :gravity "Gravity: "))
@@ -1047,6 +1144,7 @@ aborted."
     (maximize-window (current-window))))
 
 (define-stumpwm-command "loadrc" ()
+"Reload the @file{~/.stumpwmrc} file."
   (handler-case
       (progn
         (with-restarts-menu (load-rc-file nil)))
@@ -1084,13 +1182,14 @@ aborted."
   (let* ((screen (current-screen))
          (data (mapcar-hash (lambda (k v) (format nil "^5*~5a^n ~a" (print-key k) v)) (symbol-value kmap-var)))
          (cols (ceiling (length data)
-                        (truncate (head-height (current-head))
+                        (truncate (- (head-height (current-head)) (* 2 (screen-msg-border-width screen)))
                                   (font-height (screen-font screen))))))
     (message-no-timeout "Prefix: ~{~a~^ | ~}~%~{~a~^~%~}"
                         (mapcar 'print-key-seq (search-kmap kmap-var *top-map*))
                         (columnize data cols))))
 
 (define-stumpwm-command "help" ()
+"Display all the bindings in @var{*root-map*}."
   (display-keybinding '*root-map*))
 
 (define-stumpwm-command "commands" ()
@@ -1104,12 +1203,20 @@ aborted."
 
 ;; Trivial function
 (define-stumpwm-command "abort" ()
+"Do nothing."
   ;; This way you can exit from command mode
   (when (pop-top-map)
     (message "Exited.")))
 
 (defun set-prefix-key (key)
-  "Change the stumpwm prefix key to KEY."
+  "Change the stumpwm prefix key to KEY.
+@example
+\(stumpwm:set-prefix-key (stumpwm:kbd \"C-M-H-s-z\"))
+@end example
+
+This will change the prefix key to @key{Control} + @key{Meta} + @key{Hyper} + @key{Super} +
+the @key{z} key. By most standards, a terrible prefix key but it makes a
+great example."
   (check-type key key)
   (let (prefix)
     (dolist (i (lookup-command *top-map* '*root-map*))
@@ -1126,6 +1233,7 @@ aborted."
     (sync-keys)))
 
 (define-stumpwm-command "quit" ()
+"Quit StumpWM."
   (throw :quit nil))
 
 (defun clear-frame (frame group)
@@ -1133,6 +1241,7 @@ aborted."
   (frame-raise-window group frame nil (eq (tile-group-current-frame group) frame)))
 
 (define-stumpwm-command "fclear" ()
+"Clear the current frame."
   (clear-frame (tile-group-current-frame (current-group)) (current-group)))
 
 (defun get-edge (frame edge)
@@ -1197,13 +1306,39 @@ aborted."
           (focus-frame group new-frame)))))
 
 (define-stumpwm-command "move-focus" ((dir :string "Direction: "))
+"Focus the frame adjacent to the current one in the specified
+direction. The following are valid directions:
+@table @asis
+@item up
+@item down
+@item left
+@item right
+@end table"
   (move-focus-and-or-window dir))
 
 (define-stumpwm-command "move-window" ((dir :string "Direction: "))
+"Just like move-focus except that the current is pulled along."
   (move-focus-and-or-window dir t))
 
 (defun run-or-raise (cmd props &optional (all-groups *run-or-raise-all-groups*) (all-screens *run-or-raise-all-screens*))
-  "If a window matching PROPS can be found, select it.  Otherwise simply run cmd."
+  "Run the shell command, @var{cmd}, unless an existing window
+matches @var{props}. @var{props} is a property list with the following keys:
+
+@table @code
+@item :class
+Match the window's class.
+@item :instance
+Match the window's instance or resource-name.
+@item :role
+Match the window's @code{WM_WINDOW_ROLE}.
+@item :title
+Match the window's title.
+@end table
+
+By default, the global @var{*run-or-raise-all-groups*} decides whether
+to search all groups or the current one for a running
+instance. @var{all-groups} overrides this default. Similarily for
+@var{*run-or-raise-all-screens*} and @var{all-screens}."
   (labels
       ;; Raise the window win and select its frame.  For now, it
       ;; does not select the screen.
@@ -1240,6 +1375,11 @@ aborted."
           (run-shell-command cmd)))))
 
 (define-stumpwm-command "escape" ((key :string "Key: "))
+  "Set the prefix key. Here's how you would change the prefix key to @kbd{C-z}.
+
+@example
+escape C-z
+@end example"
   (set-prefix-key (kbd key)))
 
 (defvar *lastmsg-nth* nil)
@@ -1339,7 +1479,7 @@ aborted."
 ;; together.
 
 (defvar *groups-map* nil
-  "The default group related bindings hang off this map.")
+  "The keymap that group related key bindings sit on. It is bound to @kbd{C-t g} by default.")
 
 (when (null *groups-map*)
   (setf *groups-map*
@@ -1375,20 +1515,28 @@ aborted."
       (switch-to-group ng))))
 
 (define-stumpwm-command "gnew" ((name :string "Group Name: "))
+"Create a new group with the specified name. The new group becomes the
+current group. If @var{name} begins with a dot (``.'') the group new
+group will be created in the hidden state. Hidden groups have group
+numbers less than one and are invisible to from gprev, gnext, and, optionally,
+groups and vgroups commands."
   (let ((group (add-group (current-screen) name)))
     (if group
         (switch-to-group group)
         (message "^B^3*Groups must have a name!"))))
 
 (define-stumpwm-command "gnewbg" ((name :string "Group Name: "))
+"Create a new group but do not switch to it."
   (unless (find-group (current-screen) name)
     (add-group (current-screen) name)))
 
 (define-stumpwm-command "gnext" ()
+"Cycle to the next group in the group list."
   (group-forward (current-group)
                  (sort-groups (current-screen))))
 
 (define-stumpwm-command "gprev" ()
+"Cycle to the previous group in the group list."
   (group-forward (current-group)
                  (reverse (sort-groups (current-screen)))))
 
@@ -1414,18 +1562,29 @@ aborted."
     (echo-string-list screen names)))
 
 (define-stumpwm-command "groups" ((fmt :rest))
+"Display the list of groups with their number and
+name. @var{*group-format*} controls the formatting. The optional
+argument @var{fmt} can be used to override the default group
+formatting."
   (echo-groups (current-screen) (or fmt *group-format*)))
 
 (define-stumpwm-command "vgroups" ((gfmt :string) (wfmt :rest))
+"Like @command{groups} but also display the windows in each group. The
+optional arguments @var{gfmt} and @var{wfmt} can be used to override
+the default group formatting and window formatting, respectively."
   (echo-groups (current-screen)
                (or gfmt *group-format*)
                t (or wfmt *window-format*)))
 
 (define-stumpwm-command "gselect" ((to-group :group "Select Group: "))
+"Select the first group that starts with
+@var{substring}. @var{substring} can also be a number, in which case
+@command{gselect} selects the group with that number."
   (when to-group
     (switch-to-group to-group)))
 
 (define-stumpwm-command "gmove" ((to-group :group "To Group: "))
+"Move the current window to the specified group."
   (when (and to-group
              (current-window))
     (move-window-to-group (current-window) to-group)))
@@ -1438,12 +1597,15 @@ aborted."
         (move-window-to-group i to-group)))))
 
 (define-stumpwm-command "gkill" ()
+"Kill the current group. All windows in the current group are migrated
+to the next group."
   (let ((dead-group (current-group))
         (to-group (next-group (current-group))))
     (switch-to-group to-group)
     (kill-group dead-group to-group)))
 
 (define-stumpwm-command "gmerge" ((from :group "From Group: "))
+"Merge @var{from} into the current group. @var{from} is not deleted."
   (if (eq from (current-group))
       (message "^B^3*Cannot merge group with itself!")
       (merge-groups from (current-group))))
@@ -1533,6 +1695,10 @@ See *menu-map* for menu bindings."
         (unmap-all-message-windows)))))
 
 (define-stumpwm-command "windowlist" ((fmt :rest))
+"Allow the user to Select a window from the list of windows and focus
+the selected window. For information of menu bindings
+@xref{Menus}. The optional argument @var{fmt} can be specified to
+override the default window formatting."
   (if (null (group-windows (current-group)))
       (message "No Managed Windows")
       (let* ((group (current-group))
@@ -1547,6 +1713,7 @@ See *menu-map* for menu bindings."
             (throw 'error :abort)))))
 
 (define-stumpwm-command "reload" ()
+"Reload StumpWM using @code{asdf}."
   (message "Reloading StumpWM...")
   #+asdf (with-restarts-menu
              (asdf:operate 'asdf:load-op :stumpwm))
@@ -1554,21 +1721,31 @@ See *menu-map* for menu bindings."
   #+asdf (message "Reloading StumpWM...^B^2*Done^n."))
 
 (defun run-commands (&rest commands)
-  "Run each stumpwm command in sequence. This could be used if
-you're used to ratpoison's rc file and you just want to run
-commands or don't know lisp very well."
+  "Run each stumpwm command in sequence. This could be used if you're
+used to ratpoison's rc file and you just want to run commands or don't
+know lisp very well. One might put the following in one's rc file:
+
+@example
+\(stumpwm:run-commands
+  \"escape C-z\"
+  \"exec firefox\"
+  \"split\")
+@end example"
   (loop for i in commands do
         (interactive-command i)))
 
 (define-stumpwm-command "snext" ()
+"Go to the next screen."
   (switch-to-screen (next-screen))
   (show-frame-indicator (current-group)))
 
 (define-stumpwm-command "sprev" ()
+"Go to the previous screen."
   (switch-to-screen (next-screen (reverse (sort-screens))))
   (show-frame-indicator (current-group)))
 
 (define-stumpwm-command "sother" ()
+"Go to the last screen."
   (switch-to-screen (cadr *screen-list*))
   (show-frame-indicator (current-group)))
 
@@ -1591,13 +1768,16 @@ commands or don't know lisp very well."
          string)))
 
 (define-stumpwm-command "insert" ((string :rest "Insert: "))
+"Send the string of characters to the current window as if they'd been typed."
   (window-send-string (current-window) string))
 
 (define-stumpwm-command "putsel" ((string :rest "Text: "))
+"Stuff the string @var{string} into the X selection."
   (set-x-selection string))
 
 ;; FIXME: this function is basically useless atm.
 (define-stumpwm-command "getsel" ()
+"Echo the X selection."
   (message "~a" (get-x-selection)))
 
 (defun other-hidden-window (group)
@@ -1624,37 +1804,47 @@ current frame and raise it."
         (echo-string (group-screen group) "No other window."))))
 
 (define-stumpwm-command "pull-hidden-next" ()
+"Pull the next hidden window into the current frame."
   (let ((group (current-group)))
     (focus-forward group (sort-windows group) t (lambda (w) (not (eq (frame-window (window-frame w)) w))))))
 
 (define-stumpwm-command "pull-hidden-previous" ()
+"Pull the next hidden window into the current frame."
   (let ((group (current-group)))
     (focus-forward group (nreverse (sort-windows group)) t (lambda (w) (not (eq (frame-window (window-frame w)) w))))))
 
 (define-stumpwm-command "pull-hidden-other" ()
+"Pull the last focused, hidden window into the current frame."
   (let ((group (current-group)))
     (pull-other-hidden-window group)))
 
 (define-stumpwm-command "next-in-frame" ()
+"Go to the next window in the current frame."
   (let ((group (current-group)))
     (if (group-current-window group)
         (focus-forward group (frame-sort-windows group (tile-group-current-frame group)))
         (other-window-in-frame group))))
 
 (define-stumpwm-command "prev-in-frame" ()
+"Go to the previous window in the current frame."
   (let ((group (current-group)))
     (if (group-current-window group)
         (focus-forward group (reverse (frame-sort-windows group (tile-group-current-frame group))))
         (other-window-in-frame group))))
 
 (define-stumpwm-command "other-in-frame" ()
+"Go to the last accessed window in the current frame."
   (other-window-in-frame (current-group)))
 
 (define-stumpwm-command "command-mode" ()
+"Command mode allows you to type ratpoison commands without needing the
+@key{C-t} prefix. Keys not bound in StumpWM will still get sent to the
+current window. To exit command mode, type @key{C-g}."
   (message "Press C-g to exit command-mode.")
   (push-top-map *root-map*))
 
 (define-stumpwm-command "mark" ()
+"Toggle the current window's mark."
   (let ((win (current-window)))
     (when win
       (setf (window-marked win) (not (window-marked win)))
@@ -1663,16 +1853,19 @@ current frame and raise it."
                    "Unmarked!")))))
 
 (define-stumpwm-command "clear-marks" ()
+"Clear all marks in the current group."
   (let ((group (current-group)))
     (clear-window-marks group)))
 
 (define-stumpwm-command "pull-marked" ()
+"Pull all marked windows into the current frame and clear the marks."
   (let ((group (current-group)))
     (dolist (i (marked-windows group))
       (pull-window i))
     (clear-window-marks group)))
 
 (define-stumpwm-command "balance-frames" ()
+"Make frames the same height or width in the current frame's subtree."
   (let ((tree (tree-parent (tile-group-frame-tree (current-group))
                            (tile-group-current-frame (current-group)))))
     (if tree
@@ -1680,22 +1873,32 @@ current frame and raise it."
         (message "There's only 1 frame!"))))
 
 (define-stumpwm-command "describe-key" ((keys :key-seq "Describe Key: "))
+"Either interactively type the key sequence or supply it as text. This
+command prints the command bound to the specified key sequence."
   (let ((cmd (lookup-key-sequence *top-map* keys)))
     (if cmd
         (message "~{~a~^ ~} is bound to \"~a\"." (mapcar 'print-key keys)  cmd)
         (message "~{~a~^ ~} is not bound." (mapcar 'print-key keys)))))
 
 (define-stumpwm-command "describe-variable" ((var :variable "Describe Variable: "))
+"Print the online help associated with the specified variable."
   (message-no-timeout "~a"
                       (with-output-to-string (s)
                         (describe var s))))
 
 (define-stumpwm-command "describe-function" ((fn :function "Describe Function: "))
+"Print the online help associated with the specified function."
   (message-no-timeout "~a"
                       (with-output-to-string (s)
                         (describe fn s))))
 
+(define-stumpwm-command "describe-command" ((com :command "Describe Command: "))
+  "Print the online help associated with the specified command."
+  (message-no-timeout "Command \"~a\":~%~a" com
+                      (command-docstring (gethash com *command-hash*))))
+
 (define-stumpwm-command "where-is" ((cmd :rest "Where is command: "))
+"Print the key sequences bound to the specified command."
   (message-no-timeout "\"~a\" is on ~{~a~^, ~}"
                       cmd
                       (mapcar 'print-key-seq (search-kmap cmd *top-map*))))

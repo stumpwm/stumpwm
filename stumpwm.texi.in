@@ -259,14 +259,7 @@ StumpWM is controlled entirely by keystrokes and Lisp commands. It
 mimics GNU Screen's keyboard handling. StumpWM's default prefix key is
 @kbd{C-t}.
 
-@deffn {Command} escape KEY
-Set the prefix key. Here's how you would change the prefix key to @kbd{C-z}.
-
-@example
-escape C-z
-@end example
-@end deffn
-
+!!! escape
 
 
 @menu
@@ -469,83 +462,22 @@ List all key sequences that are bound to the specified command
 @node Binding Keys,  , List of Default Keybindings, Key Bindings
 @section Binding Keys
 
-@defun define-key MAP KEY COMMAND
-Add a keybinding mapping the key, @var{key}, to the command,
-@var{command}, in the specified keymap. For example,
+@@@ define-key
+@@@ undefine-key
+@@@ kbd
+@@@ set-prefix-key
 
-@example
-(stumpwm:define-key stumpwm:*root-map* (stumpwm:kbd "C-z") "echo Zzzzz...")
-@end example
+@@@ make-sparse-keymap
 
-Now when you type C-t C-z, you'll see the text ``Zzzzz...'' pop up.
-@end defun
-
-@defun undefine-key MAP KEY
-Clear the key binding in the specified keybinding.
-@end defun
-
-@defun kbd KEYS
-This compiles a key string into a key structure used by
-`define-key', `undefine-key', `set-prefix-key' and
-others.
-@end defun
-
-@defun set-prefix-key KEY
-Change the stumpwm prefix key to KEY.
-@example
-(stumpwm:set-prefix-key (stumpwm:kbd "C-M-H-s-z"))
-@end example
-
-This will change the prefix key to @key{Control} + @key{Meta} + @key{Hyper} + @key{Super} +
-the @key{z} key. By most standards, a terrible prefix key but it makes a
-great example.
-@end defun
-
-
-@defun make-sparse-keymap 
-Create an empty keymap. If you want to create a new list of bindings
-in the key binding tree, this is where you start. To hang frame
-related bindings off @kbd{C-t C-f} one might use the following code:
-
-@example
-(defvar *my-frame-bindings*
-  (let ((m (stumpwm:make-sparse-keymap)))
-    (stumpwm:define-key m (stumpwm:kbd "f") "curframe")
-    (stumpwm:define-key m (stumpwm:kbd "M-b") "move-focus left")
-    m ; NOTE: this is important
-  ))
-
-(stumpwm:define-key stumpwm:*root-map* (stumpwm:kbd "C-f") '*my-frame-bindings*)
-@end example
-@end defun
-
-
-@defvar *root-map*
-This is the keymap by default bound to @kbd{C-t}. It is known as the @dfn{prefix map}.
-@end defvar
-
-@defvar *top-map*
-The top level key map. This is where you'll find the binding for the
-@dfn{prefix map}.
-@end defvar
-
-@defvar *groups-map*
-The keymap that group related key bindings sit on. It is bound to @kbd{C-t g} by default.
-@end defvar
-
+### *root-map*
+### *top-map*
+### *groups-map*
  
 @node Message and Input Bar, Windows, Key Bindings, Top
 @chapter Message and Input Bar
 
-@deffn {Command} echo STRING
-Display @var{string} in the message bar.
-@end deffn
-
-@deffn {Command} colon INITIAL-INPUT
-Read a command from the user. @var{initial-text} is optional. When
-supplied, the text will appear in the prompt.
-@end deffn
-
+!!! echo
+!!! colon
 
 @menu
 * Customizing The Bar::         
@@ -559,64 +491,16 @@ supplied, the text will appear in the prompt.
 The bar's appearance and behavior can be modified with the following
 functions and variables.
 
-@defun set-fg-color COLOR
-Set the foreground color for the message bar and input
-bar. @var{color} can be any color recognized by X.
-@end defun
+@@@ set-fg-color
+@@@ set-bg-color
+@@@ set-border-color
+@@@ set-msg-border-width
+@@@ set-font
 
-@defun set-bg-color COLOR
-Set the background color for the message bar and input
-bar. @var{color} can be any color recognized by X.
-@end defun
-
-@defun set-border-color COLOR
-Set the border color for the message bar and input
-bar. @var{color} can be any color recognized by X.
-@end defun
-
-@defun set-msg-border-width WIDTH
-Set the border width for the message bar and input
-bar.
-@end defun
-
-@defun set-font FONT
-Set the font for the message bar and input bar.
-@end defun
-
-
-@defvar *message-window-padding*
-The number of pixels that pad the text in the message window.
-@end defvar
-
-@defvar *message-window-gravity*
-This variable controls where the message window appears. The follow
-are valid values.
-@table @asis
-@item :top-left
-@item :top-right
-@item :bottom-left
-@item :bottom-right
-@item :center
-@end table
-@end defvar
-
-@defvar *timeout-wait*
-Specifies, in seconds, how long a message will appear for. This must
-be an integer.
-@end defvar
-
-@defvar *input-window-gravity*
-This variable controls where the input window appears. The follow
-are valid values.
-@table @asis
-@item :top-left
-@item :top-right
-@item :bottom-left
-@item :bottom-right
-@item :center
-@end table
-@end defvar
-
+### *message-window-padding*
+### *message-window-gravity*
+### *timeout-wait*
+### *input-window-gravity*
 
 @node Using The Input Bar, Programming The Message Bar, Customizing The Bar, Message and Input Bar
 @section Using The Input Bar
@@ -695,14 +579,8 @@ cycle through completions.
 @node Programming The Message Bar, Programming the Input Bar, Using The Input Bar, Message and Input Bar
 @section Programming The Message Bar
 
-@defun echo-string SCREEN MSG
-Display @var{string} in the message bar on @var{screen}. You almost always want to use @command{message}.
-@end defun
-
-@defun message FMT &REST ARGS
-run FMT and ARGS through `format' and echo the result to the current screen.
-@end defun
-
+@@@ echo-string
+@@@ message
 
 @node Programming the Input Bar,  , Programming The Message Bar, Message and Input Bar
 @section Programming the Input Bar
@@ -712,167 +590,34 @@ functions and binding them to keys in the @var{*input-map*} using
 
 An input function takes 2 arguments: the input structure and the key pressed.
 
-@defun read-one-line SCREEN PROMPT &OPTIONAL (INITIAL-INPUT )
-Read a line of input through stumpwm and return it. returns nil if the user aborted.
-@end defun
+@@@ read-one-line
+@@@ read-one-char
+@@@ completing-read
+@@@ input-insert-string
+@@@ input-insert-char
 
-@defun read-one-char SCREEN
-Read a single character from the user.
-@end defun
-
-@defun completing-read SCREEN PROMPT COMPLETIONS &OPTIONAL (INITIAL-INPUT )
-Read a line of input through stumpwm and return it with TAB
-completion. completions can be a list, an fbound symbol, or a
-function. if its an fbound symbol or a function then that
-function is passed the substring to complete on and is expected
-to return a list of matches.
-@end defun
-
-@defun input-insert-string INPUT STRING
-Insert @var{string} into the input at the current
-position. @var{input} must be of type @var{input-line}. Input
-functions are passed this structure as their first argument.
-@end defun
-
-@defun input-insert-char INPUT CHAR
-Insert @var{char} into the input at the current
-position. @var{input} must be of type @var{input-line}. Input
-functions are passed this structure as their first argument.
-@end defun
-
-
-@defvar *input-map*
-This is the keymap containing all input editing key bindings.
-@end defvar
-
+### *input-map*
 
 @node Windows, Frames, Message and Input Bar, Top
 @chapter Windows
 
-@deffn {Command} next 
-Go to the next window in the window list.
-@end deffn
+!!! next
+!!! pull-hidden-next
+!!! prev
+!!! pull-hidden-previous
+!!! delete
+!!! kill
+!!! windows
+!!! other
+!!! pull-hidden-other
+!!! number
+!!! meta
+!!! select
+!!! windowlist
 
-@deffn {Command} pull-hidden-next 
-Pull the next hidden window into the current frame.
-@end deffn
-
-@deffn {Command} prev 
-Go to the previous window in the window list.
-@end deffn
-
-@deffn {Command} pull-hidden-previous 
-Pull the next hidden window into the current frame.
-@end deffn
-
-@deffn {Command} delete 
-Delete the current window. This is a request sent to the window. The
-window's client may decide not to grant the request or may not be able
-to if it is unresponsive.
-@end deffn
-
-@deffn {Command} kill 
-`Tell X to disconnect the client that owns the current window.if
-@command{delete} didn't work, try this.
-@end deffn
-
-@deffn {Command} windows FMT
-Display a list of managed windows. The optional argument @var{fmt} can
-be used to override the default window formatting.
-@end deffn
-
-@deffn {Command} other 
-Switch to the window last focused.
-@end deffn
-
-@deffn {Command} pull-hidden-other 
-Pull the last focused, hidden window into the current frame.
-@end deffn
-
-@deffn {Command} number N
-Change the window's number to the specified number. If another window
-is using the number, then the windows swap numbers.
-@end deffn
-
-@deffn {Command} meta KEY
-Send a fake key to the current window. @var{key} is a typical StumpWM key, like @kbd{C-M-o}.
-@end deffn
-
-@deffn {Command} select WIN
-Switch to the first window that starts with @var{win}.
-@end deffn
-
-@deffn {Command} windowlist FMT
-Allow the user to Select a window from the list of windows and focus
-the selected window. For information of menu bindings
-@xref{Menus}. The optional argument @var{fmt} can be specified to
-override the default window formatting.
-@end deffn
-
-
-@defvar *window-format*
-This variable decides how the window list is formatted. It is a string
-with the following formatting options:
-
-@table @asis
-@item %n
-Substitute the window number.
-@item %s
-Substitute the window's status. * means current window, + means last
-window, and - means any other window.
-@item %t
-Substitute the window's name.
-@item %c
-Substitute the window's class.
-@item %i
-Substitute the window's resource ID.
-@item %m
-Draw a # if the window is marked.
-@end table
-
-Note, a prefix number can be used to crop the argument to a specified
-size. For instance, @samp{%20t} crops the window's title to 20
-characters.
-@end defvar
-
-@defvar *window-name-source*
-This variable controls what is used for the window's name. The default is @code{:title}.
-
-@table @code
-@item :title
-Use the window's title given to it by its owner.
-
-@item :class
-Use the window's resource class.
-
-@item :resource-name
-Use the window's resource name.
-@end table
-@end defvar
-
-@defvar *new-window-prefered-frame*
-This variable controls what frame a new window appears in. It is a
-list of preferences. The first preference that is satisfied is
-used. Valid list elements are as follows:
-
-@table @code
-@item :focused
-Choose the focused frame.
-
-@item :last
-Choose the last focused frame.
-
-@item :empty
-Choose any empty frame.
-
-@item :unfocused
-Choose any unfocused frame.
-@end table
-
-Alternatively, it can be set to a function that takes one argument,
-the new window, and returns the prefered frame.
-@end defvar
-
+### *window-format*
+### *window-name-source*
+### *new-window-prefered-frame*
 
 @menu
 * Window Marks::                
@@ -886,61 +631,23 @@ the new window, and returns the prefered frame.
 Windows can be marked. A marked window has a # beside it in the window
 list. Some commands operate only on marked windows.
 
-@deffn {Command} mark 
-Toggle the current window's mark.
-@end deffn
-
-@deffn {Command} clear-marks 
-Clear all marks in the current group.
-@end deffn
-
-@deffn {Command} pull-marked 
-Pull all marked windows into the current frame and clear the marks.
-@end deffn
-
+!!! mark
+!!! clear-marks
+!!! pull-marked
 
 @node Customizing Window Appearance, Controlling Raise And Map Requests, Window Marks, Windows
 @section Customizing Window Appearance
 
-@defvar *maxsize-border-width*
-The width in pixels given to the borders of windows with maxsize or ratio hints.
-@end defvar
+### *maxsize-border-width*
+### *transient-border-width*
+### *normal-border-width*
 
-@defvar *transient-border-width*
-The width in pixels given to the borders of transient or pop-up windows.
-@end defvar
+@@@ set-win-bg-color
+@@@ set-normal-gravity
+@@@ set-maxsize-gravity
+@@@ set-transient-gravity
 
-@defvar *normal-border-width*
-The width in pixels given to the borders of regular windows.
-@end defvar
-
-
-@defun set-win-bg-color COLOR
-Set the background color of the window. The background color will only
-be visible for windows with size increment hints such as @samp{emacs}
-and @samp{xterm}.
-@end defun
-
-@defun set-normal-gravity GRAVITY
-Set the default gravity for normal windows. Possible values are
-@code{:center} @code{:top} @code{:left} @code{:right} @code{:bottom}
-@code{:top-left} @code{:top-right} @code{:bottom-left} and
-@code{:bottom-right}.
-@end defun
-
-@defun set-maxsize-gravity GRAVITY
-Set the default gravity for maxsize windows.
-@end defun
-
-@defun set-transient-gravity GRAVITY
-Set the default gravity for transient/pop-up windows.
-@end defun
-
-
-@deffn {Command} gravity GRAVITY
-NIL
-@end deffn
-
+!!! gravity
 
 
 @node Controlling Raise And Map Requests, Programming With Windows, Customizing Window Appearance, Windows
@@ -954,22 +661,9 @@ mapped for the first time.
 A raise request occurs when a client asks the window manager to give
 an existing window focus.
 
-@defvar *deny-map-request*
-A list of window properties that stumpwm should deny matching windows'
-requests to become mapped for the first time.
-@end defvar
-
-@defvar *deny-raise-request*
-Exactly the same as @var{*deny-map-request*} but for raise requests.
-
-Note that no denial message is displayed if the window is already visible.
-@end defvar
-
-@defvar *suppress-deny-messages*
-For complete focus on the task at hand, set this to @code{T} and no
-raise/map denial messages will be seen.
-@end defvar
-
+### *deny-map-request*
+### *deny-raise-request*
+### *suppress-deny-messages*
 
 Some examples follow.
 
@@ -994,10 +688,7 @@ Some examples follow.
 Create a new window attribute and corresponding get/set functions.
 @end defmac
 
-@defun window-send-string WINDOW STRING
-Send the string of characters to the window as if they'd been typed.
-@end defun
-
+@@@ window-send-string
 
 @node Frames, Mode-line, Windows, Top
 @chapter Frames
@@ -1006,116 +697,28 @@ Frames contain windows. All windows exist within a frame.
 Those used to ratpoison will notice that this differs from ratpoison's
 window pool, where windows and frames are not so tightly connected.
 
-@deffn {Command} pull WINDOW-NUMBER
-Move the window whose number is @var{window-number} to the current frame.
-@end deffn
+!!! pull
+!!! hsplit
+!!! vsplit
+!!! remove
+!!! only
+!!! curframe
+!!! fnext
+!!! sibling
+!!! fother
+!!! fselect
+!!! resize
+!!! balance-frames
+!!! fclear
+!!! move-focus
+!!! move-window
+!!! next-in-frame
+!!! prev-in-frame
+!!! other-in-frame
 
-@deffn {Command} hsplit 
-Split the current frame into 2 side-by-side frames.
-@end deffn
-
-@deffn {Command} vsplit 
-Split the current frame into 2 frames, one on top of the other.
-@end deffn
-
-@deffn {Command} remove 
-Remove the current frame. Windows in the frame are migrated to the
-frame taking up its space.
-@end deffn
-
-@deffn {Command} only 
-Delete all the frames but the current one and grow it to take up the entire head.
-@end deffn
-
-@deffn {Command} curframe 
-Display a window indicating which frame is focused.
-@end deffn
-
-@deffn {Command} fnext 
-Cycle through the frame tree to the next frame.
-@end deffn
-
-@deffn {Command} sibling 
-Jump to the frame's sibling. If a frame is split into twe frames,
-these two frames are siblings.
-@end deffn
-
-@deffn {Command} fother 
-Jump to the last frame that had focus.
-@end deffn
-
-@deffn {Command} fselect FRAME-NUMBER
-Display a number in the corner of each frame and let the user to
-select a frame by number. If @var{frame-number} is specified, just
-jump to that frame.
-@end deffn
-
-@deffn {Command} resize WIDTH HEIGHT
-Resize the current frame by @var{width} and @var{height} pixels
-@end deffn
-
-@deffn {Command} balance-frames 
-Make frames the same height or width in the current frame's subtree.
-@end deffn
-
-@deffn {Command} fclear 
-Clear the current frame.
-@end deffn
-
-@deffn {Command} move-focus DIR
-Focus the frame adjacent to the current one in the specified
-direction. The following are valid directions:
-@table @asis
-@item up
-@item down
-@item left
-@item right
-@end table
-@end deffn
-
-@deffn {Command} move-window DIR
-Just like move-focus except that the current is pulled along.
-@end deffn
-
-@deffn {Command} next-in-frame 
-Go to the next window in the current frame.
-@end deffn
-
-@deffn {Command} prev-in-frame 
-Go to the previous window in the current frame.
-@end deffn
-
-@deffn {Command} other-in-frame 
-Go to the last accessed window in the current frame.
-@end deffn
-
-
-@defvar *min-frame-width*
-The minimum width a frame can be. A frame will not shrink below this
-width. Splitting will not affect frames if the new frame widths are
-less than this value.
-@end defvar
-
-@defvar *min-frame-height*
-The minimum height a frame can be. A frame will not shrink below this
-height. Splitting will not affect frames if the new frame heights are
-less than this value.
-@end defvar
-
-@defvar *new-frame-action*
-When a new frame is created, this variable controls what is put in the
-new frame. Valid values are 
-
-@table @code
-@item :empty
-The frame is left empty
-
-@item :last-window
-The last focused window that is not currently visible is placed in the
-frame. This is the default.
-@end table
-@end defvar
-
+### *min-frame-width*
+### *min-frame-height*
+### *new-frame-action*
 
 @node Mode-line, Groups, Frames, Top
 @chapter The Mode Line
@@ -1154,144 +757,39 @@ might do the following:
 @code{(stumpwm:run-shell-command "date" t)} runs the command
 @command{date} and returns its output as a string.
 
-@deffn {Command} mode-line 
-A command to toggle the mode line visibility.
-@end deffn
+!!! mode-line
 
+@@@ toggle-mode-line
 
-@defun toggle-mode-line SCREEN HEAD &OPTIONAL (FORMAT (QUOTE *SCREEN-MODE-LINE-FORMAT*))
-Toggle the state of the mode line for the specified screen
-@end defun
-
-
-@defvar *screen-mode-line-format*
-This variable describes what will be displayed on the modeline for each screen. 
-Turn it on with the function TOGGLE-MODE-LINE or the mode-line command. 
-
-It is a list where each element may be a string, a symbol, or a list.
-
-For a symbol its value is used.
-
-For a list of the form (:eval FORM) FORM is evaluated and the
-result is used as a mode line element.
-
-If it is a string the string is printed with the following formatting
-options:
-
-@table @asis
-@item %h
-List the number of the head the mode-line belongs to
-
-@item %w
-List all windows in the current group windows using @var{*window-format*}
-
-@item %W
-List all windows on the current head of the current group using
-@var{*window-format*}
-
-@item %g
-List the groups using @var{*group-format*}
-@end table
-@end defvar
-
+### *screen-mode-line-format*
 
 The following variables control the color, position, and size of the
 mode line.
 
-@defvar *mode-line-position*
-Specifies where the mode line is displayed. Valid values are :top and :bottom.
-@end defvar
-
-@defvar *mode-line-border-width* 1
-NIL
-@end defvar
-
-@defvar *mode-line-pad-x* 
-NIL
-@end defvar
-
-@defvar *mode-line-pad-y* 
-NIL
-@end defvar
-
-@defvar *mode-line-background-color* 
-NIL
-@end defvar
-
-@defvar *mode-line-foreground-color* 
-NIL
-@end defvar
-
-@defvar *mode-line-border-color* 
-NIL
-@end defvar
-
-@defvar *mode-line-timeout*
-The modeline updates after each command, when a new window appears or
-an existing one disappears, and on a timer. This variable controls how
-many seconds elapse between each update. If this variable is changed
-while the modeline is visible, you must toggle the modeline to update
-timer.
-@end defvar
-
+### *mode-line-position*
+### *mode-line-border-width* 1
+### *mode-line-pad-x* 
+### *mode-line-pad-y* 
+### *mode-line-background-color* 
+### *mode-line-foreground-color* 
+### *mode-line-border-color* 
+### *mode-line-timeout*
 
 @node Groups, Screens, Mode-line, Top
 @chapter Groups
 Groups in StumpWM are more commonly known as @dfn{virtual desktops} or
 @dfn{workspaces}. Why not create a new term for it?
 
-@deffn {Command} gnew NAME
-Create a new group with the specified name. The new group becomes the
-current group. If @var{name} begins with a dot (``.'') the group new
-group will be created in the hidden state. Hidden groups have group
-numbers less than one and are invisible to from gprev, gnext, and, optionally,
-groups and vgroups commands.
-@end deffn
-
-@deffn {Command} gnewbg NAME
-Create a new group but do not switch to it.
-@end deffn
-
-@deffn {Command} gnext 
-Cycle to the next group in the group list.
-@end deffn
-
-@deffn {Command} gprev 
-Cycle to the previous group in the group list.
-@end deffn
-
-@deffn {Command} gmerge FROM
-Merge @var{from} into the current group. @var{from} is not deleted.
-@end deffn
-
-@deffn {Command} groups FMT
-Display the list of groups with their number and
-name. @var{*group-format*} controls the formatting. The optional
-argument @var{fmt} can be used to override the default group
-formatting.
-@end deffn
-
-@deffn {Command} vgroups GFMT WFMT
-Like @command{groups} but also display the windows in each group. The
-optional arguments @var{gfmt} and @var{wfmt} can be used to override
-the default group formatting and window formatting, respectively.
-@end deffn
-
-@deffn {Command} gselect TO-GROUP
-Select the first group that starts with
-@var{substring}. @var{substring} can also be a number, in which case
-@command{gselect} selects the group with that number.
-@end deffn
-
-@deffn {Command} gmove TO-GROUP
-Move the current window to the specified group.
-@end deffn
-
-@deffn {Command} gkill 
-Kill the current group. All windows in the current group are migrated
-to the next group.
-@end deffn
-
+!!! gnew
+!!! gnewbg
+!!! gnext
+!!! gprev
+!!! gmerge
+!!! groups
+!!! vgroups
+!!! gselect
+!!! gmove
+!!! gkill
 
 @menu
 * Customizing Groups::          
@@ -1300,54 +798,18 @@ to the next group.
 @node Customizing Groups,  , Groups, Groups
 @section Customizing Groups
 
-@defvar *group-formatters*
-An alist of characters and formatter functions. The character can be
-used as a format character in @var{*group-format*}. When the character
-is encountered in the string, the corresponding function is called
-with a group as an argument. The functions return value is inserted
-into the string. If the return value isn't a string it is converted to
-one using @code{prin1-to-string}.
-@end defvar
+### *group-formatters*
+### *group-format*
 
-@defvar *group-format*
-The format string that decides what information will show up in the
-group listing. The following format options are available:
-
-@table @asis
-@item %n
-The group's number.
-
-@item %s
-The group's status. Similar to a window's status.
-
-@item %t
-The group's name.
-@end table
-@end defvar
-
-
-@defun current-group &OPTIONAL (SCREEN (CURRENT-SCREEN))
-Return the current group for the current screen, unless
-otherwise specified.
-@end defun
-
+@@@ current-group
 
 @node Screens, Interacting With Unix, Groups, Top
 @chapter Screens
 StumpWM handles multiple screens.
 
-@deffn {Command} snext 
-Go to the next screen.
-@end deffn
-
-@deffn {Command} sprev 
-Go to the previous screen.
-@end deffn
-
-@deffn {Command} sother 
-Go to the last screen.
-@end deffn
-
+!!! snext
+!!! sprev
+!!! sother
 
 @menu
 * Xinerama::                    
@@ -1366,156 +828,54 @@ currently focused frame belongs.
 @node Programming With Screens,  , Xinerama, Screens
 @section Programming With Screens
 
-@defun current-screen 
-Return the current screen.
-@end defun
+@@@ current-screen
 
+@@@ screen-current-window
 
-@defun screen-current-window SCREEN
-Return the current window on the specified screen
-@end defun
+@@@ current-window
 
-
-@defun current-window 
-Return the current window on the current screen
-@end defun
-
-
-@defvar *screen-list*
-The list of screens managed by stumpwm.
-@end defvar
-
+### *screen-list*
         
 @node Interacting With Unix, Interacting With X11, Screens, Top
 @chapter Interacting With Unix
 
-@deffn {Command} exec CMD
-Run the shell command asynchronously. Output is discarded.
-@end deffn
+!!! exec
 
+@@@ run-shell-command
+@@@ programs-in-path
+@@@ pathname-is-executable-p
 
-@defun run-shell-command CMD &OPTIONAL COLLECT-OUTPUT-P
-Run the specified shell command. If @var{collect-output-p} is @code{T}
-then run the command synchonously and collect the output. Be
-careful. If the shell command doesn't return, it will hang StumpWM. In
-such a case, kill the shell command to resume StumpWM.
-@end defun
+### *shell-program*
 
-@defun programs-in-path BASE &OPTIONAL FULL-PATH (PATH (SPLIT-STRING (GETENV PATH) :))
-Return a list of programs in the path that start with @var{base}. if
-@var{full-path} is @var{t} then return the full path, otherwise just
-return the filename. @var{path} is by default the @env{PATH}
-evironment variable but can be specified. It should be a string containing
-each directory seperated by a colon.
-@end defun
-
-@defun pathname-is-executable-p PATHNAME
-Return T if the pathname describes an executable file.
-@end defun
-
-
-@defvar *shell-program*
-The shell program used by @code{run-shell-command}.
-@end defvar
-
-
-@defun getenv VAR
-Return the value of the environment variable.
-@end defun
-
-@defun (setf getenv) VAL VAR
-Set the value of the environment variable, @var{var} to @var{val}.
-@end defun
-
+@@@ getenv
+@@@ (setf getenv)
 
 @node Interacting With X11, Miscellaneous Commands, Interacting With Unix, Top
 @chapter Interacting With X11
 
-@defun set-x-selection TEXT
-Set the X11 selection string to @var{string}.
-@end defun
-
-@defun get-x-selection &OPTIONAL TIMEOUT
-Return the x selection no matter what client own it.
-@end defun
-
+@@@ set-x-selection
+@@@ get-x-selection
 
 @node Miscellaneous Commands, Hooks, Interacting With X11, Top
 @chapter Miscellaneous Commands
 The following is a list of commands that don't really fit in any other
 section.
 
-@deffn {Command} banish 
-Warp the mouse the lower right corner of the current head.
-@end deffn
-
-@deffn {Command} ratwarp X Y
-Warp the mouse to the specified location.
-@end deffn
-
-@deffn {Command} ratrelwarp DX DY
-Warp the mouse by the specified amount from its current position.
-@end deffn
-
-@deffn {Command} time 
-Display time.
-@end deffn
-
-@deffn {Command} eval CMD
-Evaluate the lisp s-expression and display the result.
-@end deffn
-
-@deffn {Command} insert STRING
-Send the string of characters to the current window as if they'd been typed.
-@end deffn
-
-@deffn {Command} reload 
-Reload StumpWM using @code{asdf}.
-@end deffn
-
-@deffn {Command} loadrc 
-Reload the @file{~/.stumpwmrc} file.
-@end deffn
-
-@deffn {Command} help 
-Display all the bindings in @var{*root-map*}.
-@end deffn
-
-@deffn {Command} abort 
-Do nothing.
-@end deffn
-
-@deffn {Command} quit 
-Quit StumpWM.
-@end deffn
-
-@deffn {Command} getsel 
-Echo the X selection.
-@end deffn
-
-@deffn {Command} putsel STRING
-Stuff the string @var{string} into the X selection.
-@end deffn
-
-@deffn {Command} command-mode 
-Command mode allows you to type ratpoison commands without needing the
-@key{C-t} prefix. Keys not bound in StumpWM will still get sent to the
-current window. To exit command mode, type @key{C-g}.
-@end deffn
-
-@defun run-commands &REST COMMANDS
-Run each stumpwm command in sequence. This could be used if you're
-used to ratpoison's rc file and you just want to run commands or don't
-know lisp very well. One might put the following in one's rc file:
-
-@example
-(stumpwm:run-commands
-  "escape C-z"
-  "exec firefox"
-  "split")
-@end example
-@end defun
-
+!!! banish
+!!! ratwarp
+!!! ratrelwarp
+!!! time
+!!! eval
+!!! insert
+!!! reload
+!!! loadrc
+!!! help
+!!! abort
+!!! quit
+!!! getsel
+!!! putsel
+!!! command-mode
+@@@ run-commands
 
 @defmac define-stumpwm-command @var{name} ((@var{var} @var{type} @var{prompt}) ...) &body @var{body}
 Create a new command with the name @var{name}. @var{prompt} is
@@ -1560,68 +920,21 @@ then describes the symbol.
 
 @end defmac
 
-@defun run-or-raise CMD PROPS &OPTIONAL (ALL-GROUPS *RUN-OR-RAISE-ALL-GROUPS*) (ALL-SCREENS *RUN-OR-RAISE-ALL-SCREENS*)
-Run the shell command, @var{cmd}, unless an existing window
-matches @var{props}. @var{props} is a property list with the following keys:
+@@@ run-or-raise
 
-@table @code
-@item :class
-Match the window's class.
-@item :instance
-Match the window's instance or resource-name.
-@item :role
-Match the window's @code{WM_WINDOW_ROLE}.
-@item :title
-Match the window's title.
-@end table
+### *run-or-raise-all-groups*
+### *run-or-raise-all-screens*
 
-By default, the global @var{*run-or-raise-all-groups*} decides whether
-to search all groups or the current one for a running
-instance. @var{all-groups} overrides this default. Similarily for
-@var{*run-or-raise-all-screens*} and @var{all-screens}.
-@end defun
-
-
-@defvar *run-or-raise-all-groups*
-When this is @code{T} the @code{run-or-raise} function searches all groups for a
-running instance. Set it to NIL to search only the current group.
-@end defvar
-
-@defvar *run-or-raise-all-screens*
-When this is @code{T} the @code{run-or-raise} function searches all screens for a
-running instance. Set it to @code{NIL} to search only the current screen. If
-@var{*run-or-raise-all-groups*} is @code{NIL} this variable has no effect.
-@end defvar
-
-
-@defun restarts-menu ERR
-Display a menu with the active restarts and let the user pick
-one. Error is the error being recovered from. If the user aborts the
-menu, the error is re-signalled.
-@end defun
-
+@@@ restarts-menu
 
 @defmac with-restarts-menu &body @var{body}
 Execute @var{body}. If an error occurs inside @var{body} then call
 restarts-menu on it.
 @end defmac
 
-@defvar *startup-message*
-This is the message StumpWM displays when it starts. Set it to NIL to
-suppress.
-@end defvar
-
-@defvar *suppress-abort-messages*
-Suppress abort message when non-nil.
-@end defvar
-
-@defvar *default-package*
-This is the package eval reads and executes in. You might want to set
-this to @code{:stumpwm} if you find yourself using a lot of internal
-stumpwm symbols. Setting this variable anywhere but in your rc file
-will have no effect.
-@end defvar
-
+### *startup-message*
+### *suppress-abort-messages*
+### *default-package*
 
 @menu
 * Menus::                       
@@ -1657,32 +970,15 @@ Select the highlighted option.
 @node Debugging StumpWM, Timers, Menus, Miscellaneous Commands
 @section Debugging StumpWM
 
-@defvar *debug-level*
-Set this variable to a number > 0 to turn on debugging. The greater the number the more debugging output.
-@end defvar
-
-@defvar *debug-stream*
-This is the stream debugging output is sent to. It defaults to
-*error-output*. It may be more convenient for you to pipe debugging
-output directly to a file.
-@end defvar
-
+### *debug-level*
+### *debug-stream*
 
 @node Timers, Getting Help, Debugging StumpWM, Miscellaneous Commands
 @section Timers
 StumpWM has a timer system similar to that of @dfn{Emacs}.
 
-@defun run-with-timer SECS REPEAT FUNCTION &REST ARGS
-Perform an action after a delay of SECS seconds.
-Repeat the action every REPEAT seconds, if repeat is non-nil.
-SECS and REPEAT may be reals.
-The action is to call FUNCTION with arguments ARGS.
-@end defun
-
-@defun cancel-timer TIMER
-Remove TIMER from the list of active timers.
-@end defun
-
+@@@ run-with-timer
+@@@ cancel-timer
 
 @defun timer-p @var{timer}
 Return T if TIMER is a timer structure.
@@ -1691,23 +987,10 @@ Return T if TIMER is a timer structure.
 @node Getting Help,  , Timers, Miscellaneous Commands
 @section Getting Help
 
-@deffn {Command} describe-key KEYS
-Either interactively type the key sequence or supply it as text. This
-command prints the command bound to the specified key sequence.
-@end deffn
-
-@deffn {Command} describe-variable VAR
-Print the online help associated with the specified variable.
-@end deffn
-
-@deffn {Command} describe-function FN
-Print the online help associated with the specified function.
-@end deffn
-
-@deffn {Command} where-is CMD
-Print the key sequences bound to the specified command.
-@end deffn
-
+!!! describe-key
+!!! describe-variable
+!!! describe-function
+!!! where-is
 
 @node Hooks, Command and Function Index, Miscellaneous Commands, Top
 @chapter Hooks

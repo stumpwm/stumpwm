@@ -28,6 +28,11 @@
 
 (in-package :stumpwm)
 
+(export '(cancel-timer
+	  run-with-timer
+	  stumpwm
+	  timer-p))
+
 
 ;;; Main
 

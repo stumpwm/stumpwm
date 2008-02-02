@@ -55,6 +55,7 @@ then call (update-color-map)).")
 (defvar *foreground* nil)
 (defvar *background* nil)
 (defvar *reverse* nil)
+(defvar *color-stack* '())
 
 (defun adjust-color (color amt)
   (labels ((max-min (x y) (max 0 (min 1 (+ x y)))))
@@ -144,6 +145,17 @@ then call (update-color-map)).")
          (setf *reverse* nil)
          (update-colors)
          (return-from set-color 1))
+        (#\[
+         (push (list *foreground* *background* *color-map*) *color-stack*)
+         (return-from set-color 1))
+        (#\]
+         (let ((colors (pop *color-stack*)))
+           (when colors
+             (setf *foreground* (first colors)
+                   *background* (second colors)
+                   *color-map* (third colors))))
+         (update-colors)
+         (return-from set-color 1))
         (#\^                            ; circumflex
          (return-from set-color 1)))
       (handler-case
@@ -161,6 +173,7 @@ then call (update-color-map)).")
          (*foreground* nil)
          (*background* nil)
          (*reverse* nil)
+         (*color-stack* '())
          (*color-map* (screen-color-map-normal screen)))
     (loop for s in strings
           ;; We need this so we can track the row for each element

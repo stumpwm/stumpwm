@@ -26,13 +26,99 @@
 
 (in-package :stumpwm)
 
+(export '(*suppress-abort-messages*
+          *timeout-wait*
+          *timeout-frame-indicator-wait*
+          *frame-indicator-timer*
+          *message-window-timer*
+          *map-window-hook*
+          *unmap-window-hook*
+          *new-window-hook*
+          *destroy-window-hook*
+          *focus-window-hook*
+          *place-window-hook*
+          *start-hook*
+          *internal-loop-hook*
+          *focus-frame-hook*
+          *new-frame-hook*
+          *message-hook*
+          *top-level-error-hook*
+          *focus-group-hook*
+          *key-press-hook*
+          *root-click-hook*
+          *mode-line-click-hook*
+          *display*
+          *shell-program*
+          *maxsize-border-width*
+          *transient-border-width*
+          *normal-border-width*
+          *text-color*
+          *window-events*
+          *window-parent-events*
+          *message-window-padding*
+          *message-window-gravity*
+          *editor-bindings*
+          *input-window-gravity*
+          *normal-gravity*
+          *maxsize-gravity*
+          *transient-gravity*
+          *top-level-error-action*
+          *window-name-source*
+          *frame-number-map*
+          *all-modifiers*
+          *modifiers*
+          *screen-list*
+          *initializing*
+          *processing-existing-windows*
+          *executing-stumpwm-command*
+          *debug-level*
+          *debug-stream*
+          *window-formatters*
+          *window-format*
+          *group-formatters*
+          *group-format*
+          *list-hidden-groups*
+          *x-selection*
+          *top-map*
+          *last-command*
+          *max-last-message-size*
+          *record-last-msg-override*
+          *suppress-echo-timeout*
+          *run-or-raise-all-groups*
+          *run-or-raise-all-screens*
+          *deny-map-request*
+          *deny-raise-request*
+          *suppress-deny-messages*
+          *honor-window-moves*
+          *resize-hides-windows*
+          *min-frame-width*
+          *min-frame-height*
+          *new-frame-action*
+          *new-window-prefered-frame*
+          *startup-message*
+          *default-package*
+          *window-placement-rules*
+          *mouse-focus-policy*
+          *root-click-focuses-frame*
+          *banish-pointer-to*
+          *xwin-to-window*
+          *resize-map*
+          add-hook
+          dformat
+          getenv
+          remove-hook
+          run-hook
+          run-hook-with-args
+          split-string))
+
 
 ;;; Message Timer
 (defvar *suppress-abort-messages* nil
   "Suppress abort message when non-nil.")
 
 (defvar *timeout-wait* 5
-  "The amount of time a timeout takes.")
+  "Specifies, in seconds, how long a message will appear for. This must
+be an integer.")
 
 (defvar *timeout-frame-indicator-wait* 1
   "The amount of time a frame indicator timeout takes.")
@@ -98,22 +184,31 @@ run before the error is dealt with according to
   It is called with 3 argument: the key, the (possibly incomplete)
   key sequence it is a part of, and command value bound to the key.")
 
+(defvar *root-click-hook* '()
+  "A hook called whenever there is a mouse click on the root window. Called
+  with 4 arguments, the screen containing the root window, the button clicked,
+  and the x and y of the pointer.")
+
+(defvar *mode-line-click-hook* '()
+  "Called whenever the mode-line is clicked. It is called with 4 arguments,
+  the mode-line, the button clicked, and the x and y of the pointer.")
+
 ;; Data types and globals used by stumpwm
 
 (defvar *display* nil
   "The display for the X server")
 
 (defvar *shell-program* "/bin/sh"
-  "The shell program used by SHELL-COMMAND.")
+  "The shell program used by @code{run-shell-command}.")
 
 (defvar *maxsize-border-width* 1
-  "The default border width for maxsize windows.")
+  "The width in pixels given to the borders of windows with maxsize or ratio hints.")
 
 (defvar *transient-border-width* 1
-  "The default border width for transient windows.")
+  "The width in pixels given to the borders of transient or pop-up windows.")
 
 (defvar *normal-border-width* 1
-  "The default border width for normal windows.")
+  "The width in pixels given to the borders of regular windows.")
 
 (defvar *text-color* "white"
   "The color of message text.")
@@ -176,18 +271,34 @@ Include only those we are ready to support.")
   "The events to listen for on managed windows' parents.")
 
 ;; Message window variables
-(defvar *message-window-padding* 5)
+(defvar *message-window-padding* 5
+  "The number of pixels that pad the text in the message window.")
 
 (defvar *message-window-gravity* :top-right
-  "Message window gravity. One of :top-left, :top-right, :bottom-left,
-:bottom-right or :center.")
+  "This variable controls where the message window appears. The follow
+are valid values.
+@table @asis
+@item :top-left
+@item :top-right
+@item :bottom-left
+@item :bottom-right
+@item :center
+@end table")
 
 ;; line editor
 (defvar *editor-bindings* nil
   "A list of key-bindings for line editing.")
 
 (defvar *input-window-gravity* :top-right
-  "input window gravity. see *message-window-gravity*.")
+  "This variable controls where the input window appears. The follow
+are valid values.
+@table @asis
+@item :top-left
+@item :top-right
+@item :bottom-left
+@item :bottom-right
+@item :center
+@end table")
 
 ;; default values. use the set-* functions to these attributes
 (defparameter +default-foreground-color+ "White")
@@ -216,8 +327,18 @@ mapped key the ENTIRE keyboard will be frozen and you will have
 to login remotely to regain control. :abort quits stumpmwm.")
 
 (defvar *window-name-source* :title
-  "This variable controls what is used for the window's
-name. :title, :resource-name, :class are valid values.")
+  "This variable controls what is used for the window's name. The default is @code{:title}.
+
+@table @code
+@item :title
+Use the window's title given to it by its owner.
+
+@item :class
+Use the window's resource class.
+
+@item :resource-name
+Use the window's resource name.
+@end table")
 
 (defstruct window
   xwin
@@ -367,7 +488,7 @@ single char keys are supported.")
   (format stream "#S<screen ~s>" (screen-number object)))
 
 (defvar *screen-list* '()
-  "List of screens")
+  "The list of screens managed by stumpwm.")
 
 (defvar *initializing* nil
   "True when starting stumpwm.")
@@ -541,7 +662,7 @@ Useful for re-using the &REST arg after removing some options."
   (error 'not-implemented :proc (list 'getenv var)))
 
 (defun (setf getenv) (val var)
-  "Set an environment variable."
+  "Set the value of the environment variable, @var{var} to @var{val}."
   #+allegro (setf (sys::getenv (string var)) (string val))
   #+clisp (setf (ext:getenv (string var)) (string val))
   #+(or cmu scl)
@@ -559,6 +680,7 @@ Useful for re-using the &REST arg after removing some options."
   (error 'not-implemented :proc (list '(setf getenv) var)))
 
 (defun pathname-is-executable-p (pathname)
+  "Return T if the pathname describes an executable file."
   #+sbcl
   (let ((filename (coerce (sb-int:unix-namestring pathname) 'base-string)))
     (and (eq (sb-unix:unix-file-kind filename) :file)
@@ -611,11 +733,12 @@ Modifies the match data; use `save-match-data' if necessary."
           '("")))))
 
 (defvar *debug-level* 0
-  "Set this to a number > 0 and debugging output will be
-  produced. The higher the number the more output.")
+  "Set this variable to a number > 0 to turn on debugging. The greater the number the more debugging output.")
 
 (defvar *debug-stream* *error-output*
-  "Where to send debugging output.")
+  "This is the stream debugging output is sent to. It defaults to
+*error-output*. It may be more convenient for you to pipe debugging
+output directly to a file.")
 
 (defun dformat (level fmt &rest args)
   (when (>= *debug-level* level)
@@ -676,16 +799,53 @@ Modifies the match data; use `save-match-data' if necessary."
   "an alist containing format character format function pairs for formatting window lists.")
 
 (defvar *window-format* "%m%n%s%50t"
-  "The format string for echoing the window list. Note the title
-is cropped to 50 characters.")
+  "This variable decides how the window list is formatted. It is a string
+with the following formatting options:
+
+@table @asis
+@item %n
+Substitute the window number.
+@item %s
+Substitute the window's status. * means current window, + means last
+window, and - means any other window.
+@item %t
+Substitute the window's name.
+@item %c
+Substitute the window's class.
+@item %i
+Substitute the window's resource ID.
+@item %m
+Draw a # if the window is marked.
+@end table
+
+Note, a prefix number can be used to crop the argument to a specified
+size. For instance, @samp{%20t} crops the window's title to 20
+characters.")
 
 (defvar *group-formatters* '((#\n group-number)
                              (#\s fmt-group-status)
                              (#\t group-name))
-  "an alist containing format character format function pairs for formatting window lists.")
+  "An alist of characters and formatter functions. The character can be
+used as a format character in @var{*group-format*}. When the character
+is encountered in the string, the corresponding function is called
+with a group as an argument. The functions return value is inserted
+into the string. If the return value isn't a string it is converted to
+one using @code{prin1-to-string}.")
 
 (defvar *group-format* "%n%s%t"
-  "The format string for echoing the window list.")
+  "The format string that decides what information will show up in the
+group listing. The following format options are available:
+
+@table @asis
+@item %n
+The group's number.
+
+@item %s
+The group's status. Similar to a window's status.
+
+@item %t
+The group's name.
+@end table")
 
 (defvar *list-hidden-groups* nil
   "Controls whether hidden groups are displayed by 'groups' and 'vgroups' commands")
@@ -700,7 +860,8 @@ when killing text in the input bar.")
 
 ;; This is here to avoid warnings
 (defvar *top-map* nil
-  "Top level bindings.")
+  "The top level key map. This is where you'll find the binding for the
+@dfn{prefix map}.")
 
 (defvar *last-command* nil
   "Set to the last interactive command run.")
@@ -716,26 +877,26 @@ recommended this is assigned using LET.")
   "Asign this T and messages will not time out. It is recommended this is assigned using LET.")
 
 (defvar *run-or-raise-all-groups* t
-  "When this is T the run-or-raise function searches all groups
-  for a running instance. Set it to NIL to search only the
-  current group.")
+  "When this is @code{T} the @code{run-or-raise} function searches all groups for a
+running instance. Set it to NIL to search only the current group.")
 
 (defvar *run-or-raise-all-screens* nil
-  "When this is T the run-or-raise function searches all screens
-  for a running instance. Set it to NIL to search only the
-  current screen. If *run-or-raise-all-groups* is NIL
-  this variable has no effect.")
+  "When this is @code{T} the @code{run-or-raise} function searches all screens for a
+running instance. Set it to @code{NIL} to search only the current screen. If
+@var{*run-or-raise-all-groups*} is @code{NIL} this variable has no effect.")
 
 (defvar *deny-map-request* nil
   "A list of window properties that stumpwm should deny matching windows'
-  requests to become mapped for the first time.")
+requests to become mapped for the first time.")
 
 (defvar *deny-raise-request* nil
-  "A list of window properties that stumpwm should deny matching windows'
-  requests to be raised and focused.")
+  "Exactly the same as @var{*deny-map-request*} but for raise requests.
+
+Note that no denial message is displayed if the window is already visible.")
 
 (defvar *suppress-deny-messages* nil
-  "Set this to T so stumpwm doesn't notify you of denied raise/map requests.")
+  "For complete focus on the task at hand, set this to @code{T} and no
+raise/map denial messages will be seen.")
 
 (defvar *honor-window-moves* t
   "Allow windows to move between frames.")
@@ -761,23 +922,49 @@ ITEM. Return the new list."
         list)))
 
 (defvar *min-frame-width* 50
-  "A frame will not shrink below this width. Splitting will not
-affect frames if the new frame widths are less than this value.")
+  "The minimum width a frame can be. A frame will not shrink below this
+width. Splitting will not affect frames if the new frame widths are
+less than this value.")
 
 (defvar *min-frame-height* 50
-  "A frame will not shrink below this height. Splitting will not
-affect frames if the new frame heights are less than this
-value.")
+  "The minimum height a frame can be. A frame will not shrink below this
+height. Splitting will not affect frames if the new frame heights are
+less than this value.")
 
 (defvar *new-frame-action* :last-window
-  "Controls what to do with new frame. Valid values are :last-window, :empty.")
+  "When a new frame is created, this variable controls what is put in the
+new frame. Valid values are 
+
+@table @code
+@item :empty
+The frame is left empty
+
+@item :last-window
+The last focused window that is not currently visible is placed in the
+frame. This is the default.
+@end table")
 
 (defvar *new-window-prefered-frame* '(:focused)
-  "Controls where new windows appear. It's a list where the more
-prefered possibilities are closer to the head. Valid list
-elements are :focused, :last, :empty, :choice, :unfocused. This can also
-be a function, in which case the function should take 1 argument,
-the new window, and return the prefered frame.")
+  "This variable controls what frame a new window appears in. It is a
+list of preferences. The first preference that is satisfied is
+used. Valid list elements are as follows:
+
+@table @code
+@item :focused
+Choose the focused frame.
+
+@item :last
+Choose the last focused frame.
+
+@item :empty
+Choose any empty frame.
+
+@item :unfocused
+Choose any unfocused frame.
+@end table
+
+Alternatively, it can be set to a function that takes one argument,
+the new window, and returns the prefered frame.")
 
 (defun backtrace-string ()
   "Similar to print-backtrace, but return the backtrace as a string."
@@ -810,13 +997,14 @@ the new window, and return the prefered frame.")
   (map 'list #'char-code string))
 
 (defvar *startup-message* "^2*Welcome to The ^BStump^b ^BW^bindow ^BM^banager!"
-  "StumpWM's startup message. Set to NIL to suppress.")
+  "This is the message StumpWM displays when it starts. Set it to NIL to
+suppress.")
 
 (defvar *default-package* (find-package "CL-USER")
-  "What package does stumpwm startup in? This affects the package
-symbols are read into in the eval command and the package the rc
-file is loaded in. Of course it can explicitely set in the rc
-with IN-PACKAGE.")
+  "This is the package eval reads and executes in. You might want to set
+this to @code{:stumpwm} if you find yourself using a lot of internal
+stumpwm symbols. Setting this variable anywhere but in your rc file
+will have no effect.")
 
 (defun concat (&rest strings)
   (apply 'concatenate 'string strings))
@@ -841,6 +1029,14 @@ focus. Possible values are :ignore, :sloppy, and :click. :ignore means
 stumpwm ignores the mouse. :sloppy means input focus follows the
 mouse; the window that the mouse is in gets the focus. :click means
 input focus is transfered to the window you click on.")
+
+(defvar *root-click-focuses-frame* t
+  "Set to NIL if you don't want clicking the root window to focus the frame
+  containing the pointer when *mouse-focus-policy* is :click.")
+
+(defvar *banish-pointer-to* :head
+  "Where to put the pointer when no argument is given to (banish-pointer) or the banish
+  command. May be one of :screen :head :frame or :window")
 
 (defvar *xwin-to-window* (make-hash-table)
   "Hash table for looking up windows quickly.")

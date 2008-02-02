@@ -26,6 +26,34 @@
 
 (in-package :stumpwm)
 
+(export '(*top-map*
+          current-group
+          current-screen
+          current-srceen
+          current-window
+          def-window-attr
+          echo-string
+          err
+          get-x-selection
+          message
+          save-frame-excursion
+          screen-current-window
+          set-normal-gravity
+          set-maxsize-gravity
+          set-transient-gravity
+          set-window-geometry
+          set-fg-color
+          set-bg-color
+          set-border-color
+          set-win-bg-color
+          set-focus-color
+          set-unfocus-color
+          set-msg-border-width
+          set-frame-outline-width
+          set-font
+          set-x-selection
+          window-send-string))
+
 ;; Do it this way so its easier to wipe the map and get a clean one.
 (when (null *top-map*)
   (setf *top-map*
@@ -159,12 +187,12 @@ at 0. Return a netwm compliant group id."
          (old-group (screen-current-group screen)))
     (unless (eq new-group old-group)
       ;; restore the visible windows
-      (dolist (w (group-windows old-group))
-        (when (eq (window-state w) +normal-state+)
-          (xwin-hide w)))
       (dolist (w (group-windows new-group))
         (when (eq (window-state w) +normal-state+)
           (xwin-unhide (window-xwin w) (window-parent w))))
+      (dolist (w (reverse (group-windows old-group)))
+        (when (eq (window-state w) +normal-state+)
+          (xwin-hide w)))
       (setf (screen-current-group screen) new-group)
       (move-group-to-head screen new-group)
       ;; restore the focus
@@ -173,7 +201,8 @@ at 0. Return a netwm compliant group id."
       (xlib:change-property (screen-root screen) :_NET_CURRENT_DESKTOP
                             (list (netwm-group-id new-group))
                             :cardinal 32)
-      (run-hook-with-args *focus-group-hook* new-group old-group))))
+      (run-hook-with-args *focus-group-hook* new-group old-group)))
+  (show-frame-indicator new-group))
 
 (defun move-window-to-group (window to-group)
   (labels ((really-move-window (window to-group)
@@ -619,10 +648,11 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 ;; not an xlib:window.
 (defun xwin-hide (window)
   (declare (type window window))
-  (setf (xwin-state (window-xwin window)) +iconic-state+)
-  (incf (window-unmap-ignores window))
-  (xlib:unmap-window (window-parent window))
-  (xlib:unmap-subwindows (window-parent window)))
+  (unless (eq (xlib:window-map-state (window-xwin window)) :unmapped)
+    (setf (xwin-state (window-xwin window)) +iconic-state+)
+    (incf (window-unmap-ignores window))
+    (xlib:unmap-window (window-parent window))
+    (xlib:unmap-subwindows (window-parent window))))
 
 (defun hide-window (window)
   (dformat 2 "hide window: ~s~%" window)
@@ -695,7 +725,10 @@ and bottom_end_x."
       (mapc 'maximize-window (group-windows g)))))
 
 (defun set-normal-gravity (gravity)
-  "Set the default gravity for normal windows."
+  "Set the default gravity for normal windows. Possible values are
+@code{:center} @code{:top} @code{:left} @code{:right} @code{:bottom}
+@code{:top-left} @code{:top-right} @code{:bottom-left} and
+@code{:bottom-right}."
   (setf *normal-gravity* gravity)
   (update-window-gravity))
 
@@ -1011,22 +1044,17 @@ than the root window's width and height."
 (defun get-window-placement (screen window)
   "Returns the ideal group and frame that WINDOW should belong to and whether
   the window should be raised."
-  (labels ((frame-by-number (group n)
-             (unless (eq n nil)
-               (find n (group-frames group)
-                     :key 'frame-number
-                     :test '=))))
-    (let ((match (rule-matching-window window)))
-      (if match
-          (destructuring-bind (group-name frame raise lock &rest props) match
-            (declare (ignore lock props))
-            (let ((group (find-group screen group-name)))
-              (if group
-                  (values group (frame-by-number group frame) raise)
-                  (progn
-                    (message "^B^1*Error placing window, group \"^b~a^B\" does not exist." group-name)
-                    (values)))))
-          (values)))))
+  (let ((match (rule-matching-window window)))
+    (if match
+        (destructuring-bind (group-name frame raise lock &rest props) match
+          (declare (ignore lock props))
+          (let ((group (find-group screen group-name)))
+            (if group
+                (values group (frame-by-number group frame) raise)
+                (progn
+                  (message "^B^1*Error placing window, group \"^b~a^B\" does not exist." group-name)
+                  (values)))))
+        (values))))
 
 (defun sync-window-placement ()
   "Re-arrange existing windows according to placement rules"
@@ -1329,16 +1357,25 @@ maximized, and given focus."
 ;; does eg. (setf *foreground-color* "green") instead of having
 ;; these redundant set-foo functions?
 (defun set-fg-color (color)
+  "Set the foreground color for the message bar and input
+bar. @var{color} can be any color recognized by X."
   (setf *text-color* color)
   (set-any-color screen-fg-color color))
 
 (defun set-bg-color (color)
+  "Set the background color for the message bar and input
+bar. @var{color} can be any color recognized by X."
   (set-any-color screen-bg-color color))
 
 (defun set-border-color (color)
+  "Set the border color for the message bar and input
+bar. @var{color} can be any color recognized by X."
   (set-any-color screen-border-color color))
 
 (defun set-win-bg-color (color)
+  "Set the background color of the window. The background color will only
+be visible for windows with size increment hints such as @samp{emacs}
+and @samp{xterm}."
   (set-any-color screen-win-bg-color color))
 
 (defun set-focus-color (color)
@@ -1348,6 +1385,8 @@ maximized, and given focus."
   (set-any-color screen-unfocus-color color))
 
 (defun set-msg-border-width (width)
+  "Set the border width for the message bar and input
+bar."
   (check-type width (integer 0))
   (dolist (i *screen-list*)
     (setf (screen-msg-border-width i) width))
@@ -1363,6 +1402,7 @@ maximized, and given focus."
   t)
 
 (defun set-font (font)
+  "Set the font for the message bar and input bar."
   (when (font-exists-p font)
     (dolist (i *screen-list*)
       (let ((fobj (xlib:open-font *display* (first (xlib:list-font-names *display* font :max-fonts 1)))))
@@ -1417,7 +1457,6 @@ function expects to be wrapped in a with-state for win."
             (xlib:drawable-width win) (+ width (* *message-window-padding* 2))
             (xlib:window-priority win) :above)
       (setup-win-gravity screen win *message-window-gravity*))
-    (show-frame-indicator (screen-current-group screen))
     (xlib:map-window win)
     ;; Clear the window
     (xlib:clear-area win)
@@ -1436,6 +1475,21 @@ function expects to be wrapped in a with-state for win."
 
 
 ;;; Frame functions
+
+(defun populate-frames (group)
+  "Try to fill empty frames in GROUP with hidden windows"
+  (dolist (f (group-frames group))
+    (unless (frame-window f)
+      (choose-new-frame-window f group)
+      (when (frame-window f)
+        (maximize-window (frame-window f))
+        (unhide-window (frame-window f))))))
+
+(defun frame-by-number (group n)
+  (unless (eq n nil)
+    (find n (group-frames group)
+          :key 'frame-number
+          :test '=)))
 
 (defun find-frame (group x y)
   "Return the frame of GROUP containing the pixel at X Y"
@@ -1471,11 +1525,11 @@ T (default) then also focus the frame."
     ;; record the last frame to be used in the fother command.
     (unless (eq f last)
       (setf (tile-group-last-frame group) last)
-      (run-hook-with-args *focus-frame-hook* f last))
+      (run-hook-with-args *focus-frame-hook* f last)
+      (show-frame-indicator group))
     (if w
         (focus-window w)
-        (no-focus group (frame-window last))))
-  (show-frame-indicator group))
+        (no-focus group (frame-window last)))))
 
 (defun frame-windows (group f)
   (remove-if-not (lambda (w) (eq (window-frame w) f))
@@ -2080,9 +2134,11 @@ windows used to draw the numbers in. The caller must destroy them."
     (move-screen-to-head screen)))
 
 (defun screen-current-window (screen)
+  "Return the current window on the specified screen"
   (group-current-window (screen-current-group screen)))
 
 (defun current-window ()
+  "Return the current window on the current screen"
   (screen-current-window (current-screen)))
 
 (defun register-window (window)
@@ -2149,8 +2205,7 @@ windows used to draw the numbers in. The caller must destroy them."
 (defun unmap-message-window (screen)
   "Unmap the screen's message window, if it is mapped."
   (unless (eq (xlib:window-map-state (screen-message-window screen)) :unmapped)
-    (xlib:unmap-window (screen-message-window screen)))
-  (show-frame-indicator (current-group)))
+    (xlib:unmap-window (screen-message-window screen))))
 
 (defun unmap-all-message-windows ()
   (mapc #'unmap-message-window *screen-list*)
@@ -2165,15 +2220,19 @@ windows used to draw the numbers in. The caller must destroy them."
   (setf *message-window-timer* (run-with-timer *timeout-wait* nil
                                                'unmap-all-message-windows)))
 
-(defun show-frame-indicator (group)
+(defun show-frame-indicator (group &optional (clear t))
   ;; Don't draw if this isn't a current group!
   (when (find group (mapcar 'screen-current-group *screen-list*))
+    (dformat 5 "show-frame-indicator!~%")
     ;; *resize-hides-windows* uses the frame outlines for display,
     ;; so try not to interfere.
     (unless (eq *top-map* *resize-map*)
-      (clear-frame-outlines group)
+      (when clear
+        (clear-frame-outlines group))
       (let ((frame (tile-group-current-frame group)))
-        (unless (frame-window frame)
+        (unless (or (frame-window frame)
+                    (and (= 1 (length (tile-group-frame-tree group)))
+                         (atom (first (tile-group-frame-tree group)))))
           (draw-frame-outline group frame t t))))))
 
 (defun echo-in-window (win font fg bg string)
@@ -2223,11 +2282,11 @@ windows used to draw the numbers in. The caller must destroy them."
   (apply 'run-hook-with-args *message-hook* strings))
 
 (defun echo-string (screen msg)
-  "Print msg to SCREEN's message window."
+  "Display @var{string} in the message bar on @var{screen}. You almost always want to use @command{message}."
   (echo-string-list screen (split-string msg (string #\Newline))))
 
 (defun message (fmt &rest args)
-  "run FMT and ARGS through format and echo the result to the current screen."
+  "run FMT and ARGS through `format' and echo the result to the current screen."
   (echo-string (current-screen) (apply 'format nil fmt args)))
 
 (defun err (fmt &rest args)
@@ -2302,7 +2361,9 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
         '(:substructure-redirect
           :substructure-notify
           :property-change
-          :structure-notify))
+          :structure-notify
+          :button-press
+          :exposure))
   (xlib:display-finish-output *display*)
   ;; Initialize the screen structure
   (labels ((ac (color)
@@ -2332,7 +2393,7 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
                                                :border-width 1
                                                :colormap (xlib:screen-default-colormap
                                                           screen-number)
-                                               :event-mask '()))
+                                               :event-mask '(:exposure)))
            (font (xlib:open-font *display* +default-font-name+))
            (group (make-tile-group
                    :screen screen
@@ -2381,6 +2442,9 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 
 ;;; Head functions
 
+(defun head-by-number (screen n)
+  (find n (screen-heads screen) :key 'head-number))
+
 (defun parse-xinerama-head (line)
   (ppcre:register-groups-bind (('parse-integer number width height x y))
                               ("^ +head #([0-9]+): ([0-9]+)x([0-9]+) @ ([0-9]+),([0-9]+)" line :sharedp t)
@@ -2397,16 +2461,22 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
   (or (and (xlib:query-extension *display* "XINERAMA")
            (with-current-screen screen
              ;; Ignore 'clone' heads.
-             (delete-duplicates
-              (loop for i in (split-string (run-shell-command "xdpyinfo -ext XINERAMA" t))
-                    for head = (parse-xinerama-head i)
-                    when head
-                    collect head)
-              :test (lambda (h1 h2)
-                      (and (= (frame-height h1) (frame-height h2))
-                           (= (frame-width h1) (frame-width h2))
-                           (= (frame-x h1) (frame-x h2))
-                           (= (frame-y h1) (frame-y h2)))))))
+             (loop
+              for i = 0 then (1+ i)
+              for h in
+              (delete-duplicates
+               (loop for i in (split-string (run-shell-command "xdpyinfo -ext XINERAMA" t))
+                     for head = (parse-xinerama-head i)
+                     when head
+                     collect head)
+               :test (lambda (h1 h2)
+                       (and (= (frame-height h1) (frame-height h2))
+                            (= (frame-width h1) (frame-width h2))
+                            (= (frame-x h1) (frame-x h2))
+                            (= (frame-y h1) (frame-y h2)))))
+
+              do (setf (head-number h) i)
+              collect h)))
       (list (make-head :number 0
                        :x 0 :y 0
                        :width (xlib:drawable-width root)
@@ -2660,19 +2730,8 @@ list of modifier symbols."
              (= 64 (logand value-mask 64)))
     (case stack-mode
       (:above
-       (if (deny-request-p window *deny-raise-request*)
-           (unless (or *suppress-deny-messages*
-                       ;; don't mention windows that are already visible
-                       (eql (window-state window) +normal-state+))
-             (if (eq (window-group window) (current-group))
-                 (echo-string (window-screen window) (format nil "'~a' denied raises request" (window-name window)))
-                 (echo-string (window-screen window) (format nil "'~a' denied raises request in group ~a" (window-name window) (group-name (window-group window))))))
-           (let ((oldf (tile-group-current-frame (window-group window))))
-             (frame-raise-window (window-group window) (window-frame window) window)
-             (unless (eq (window-frame window) oldf)
-               (show-frame-indicator (window-group window))))))))
+       (maybe-raise-window window))))
   (update-configuration window))
-
 
 (defun handle-window-move (win x y relative-to &optional (value-mask -1))
   (when *honor-window-moves*
@@ -3000,10 +3059,26 @@ chunks."
 (define-stump-event-handler :selection-clear ()
   (setf *x-selection* nil))
 
+(defun find-message-window-screen (win)
+  "Return the screen, if any, that message window WIN belongs."
+  (dolist (screen *screen-list*)
+    (when (xlib:window-equal (screen-message-window screen) win)
+      (return screen))))
+
 (define-stump-event-handler :exposure (window x y width height count)
-  (declare (ignore window x y width height))
-  (when (zerop count)
-    (update-all-mode-lines)))
+  (declare (ignore x y width height))
+  (let (screen)
+    (when (zerop count)
+      (cond
+        ((setf screen (find-screen window))
+         ;; root exposed
+         (show-frame-indicator (screen-current-group screen) nil))
+        ((setf screen (find-message-window-screen window))
+         ;; message window exposed
+         (echo-nth-last-message screen 0))
+        (t
+         ;; Only other windows we listen on are mode-lines
+         (update-all-mode-lines))))))
 
 (define-stump-event-handler :reparent-notify (window parent)
   (let ((win (find-window window)))
@@ -3048,6 +3123,16 @@ chunks."
            (activate-fullscreen window))))))
 
 
+(defun maybe-raise-window (window)
+  (if (deny-request-p window *deny-raise-request*)
+      (unless (or *suppress-deny-messages*
+                  ;; don't mention windows that are already visible
+                  (eq (frame-window (window-frame window)) window))
+        (if (eq (window-group window) (current-group))
+            (echo-string (window-screen window) (format nil "'~a' denied raise request" (window-name window)))
+            (echo-string (window-screen window) (format nil "'~a' denied raise request in group ~a" (window-name window) (group-name (window-group window))))))
+      (focus-all window)))
+
 (define-stump-event-handler :client-message (window type #|format|# data)
   (dformat 2 "client message: ~s ~s~%" type data)
   (case type
@@ -3070,9 +3155,12 @@ chunks."
        (when (and our-window group)
          (move-window-to-group our-window group))))
     (:_NET_ACTIVE_WINDOW
-     (let ((our-window (find-window window)))
+     (let ((our-window (find-window window))
+           (source (elt data 0)))
        (when our-window
-         (focus-all our-window))))
+         (if (= source 2)               ;request is from a pager
+             (focus-all our-window)
+             (maybe-raise-window our-window)))))
     (:_NET_CLOSE_WINDOW
      (let ((our-window (find-window window)))
        (when our-window
@@ -3107,6 +3195,7 @@ chunks."
   "Focus the window, frame, group and screen belonging to WIN. Raise
 the window in it's frame."
   (when (and win (window-frame win))
+    (unmap-message-window (window-screen win))
     (switch-to-screen (window-screen win))
     (let ((frame (window-frame win))
           (group (window-group win)))
@@ -3119,14 +3208,24 @@ the window in it's frame."
       (when (and win (find win (top-windows)))
         (focus-all win)))))
 
-;; TODO: determine if the press was on the root window, and, if so, locate
-;; and focus the frame containing the pointer.
-(define-stump-event-handler :button-press (window time)
+(define-stump-event-handler :button-press (window code x y child time)
   ;; Pass click to client
   (xlib:allow-events *display* :replay-pointer time)
-  (let ((win (find-window-by-parent window (visible-windows))))
-    (when (and win (eq *mouse-focus-policy* :click))
-      (focus-all win))))
+  (let (screen ml win)
+    (cond
+      ((and (setf screen (find-screen window)) (not child))
+       (when (and (eq *mouse-focus-policy* :click)
+                  *root-click-focuses-frame*)
+         (let* ((group (screen-current-group screen))
+                (frame (find-frame group x y)))
+           (when frame
+             (focus-frame group frame))))
+       (run-hook-with-args *root-click-hook* screen code x y))
+      ((setf ml (find-mode-line-window window))
+       (run-hook-with-args *mode-line-click-hook* ml code x y))
+      ((setf win (find-window-by-parent window (visible-windows)))
+       (when (eq *mouse-focus-policy* :click)
+         (focus-all win))))))
 
 ;; Handling event :KEY-PRESS
 ;; (:DISPLAY #<XLIB:DISPLAY :0 (The X.Org Foundation R60700000)> :EVENT-KEY :KEY-PRESS :EVENT-CODE 2 :SEND-EVENT-P NIL :CODE 45 :SEQUENCE 1419 :TIME 98761213 :ROOT #<XLIB:WINDOW :0 96> :WINDOW #<XLIB:WINDOW :0 6291484> :EVENT-WINDOW #<XLIB:WINDOW :0 6291484> :CHILD
@@ -3174,6 +3273,7 @@ the window in it's frame."
                           :mode :replace)))
 
 (defun set-x-selection (text)
+  "Set the X11 selection string to @var{string}."
   (setf *x-selection* text)
   (export-selection))
 
