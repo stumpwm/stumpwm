@@ -626,7 +626,8 @@ Modifies the match data; use `save-match-data' if necessary."
                                  (if (typep ch 'base-char)
                                      ch #\?))
                        (apply 'format nil fmt args))
-                  *debug-stream*)))
+                  *debug-stream*)
+    (finish-output *debug-stream*)))
 
 ;;; 
 ;;; formatting routines
