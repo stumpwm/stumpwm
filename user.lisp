@@ -625,7 +625,7 @@ such a case, kill the shell command to resume StumpWM."
           (setf (tile-group-current-frame group) l)
           (tree-iterate tree
                         (lambda (leaf)
-                          (eync-frame-windows group leaf)))
+                          (sync-frame-windows group leaf)))
           (frame-raise-window group l (frame-window l))
           (when (frame-window l)
             (update-window-border (frame-window l)))
