@@ -10,3 +10,4 @@ Makefile
 stumpwm
 stumpwm.info
 TAGS
+make-image.lisp
