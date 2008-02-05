@@ -24,6 +24,7 @@ release:
 	tar xf stumpwm-@PACKAGE_VERSION@.tar
 	cd stumpwm-@PACKAGE_VERSION@ && tar zxf @PPCRE_PATH@/../cl-ppcre.tar.gz
 	git log > stumpwm-@PACKAGE_VERSION@/ChangeLog
+	cp configure stumpwm-@PACKAGE_VERSION@/
 	tar zcf stumpwm-@PACKAGE_VERSION@.tgz stumpwm-@PACKAGE_VERSION@
 	rm -fr stumpwm-@PACKAGE_VERSION@/ stumpwm-@PACKAGE_VERSION@.tar
 
