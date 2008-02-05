@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT(Stump Window Manager, 0.0.6, sabetts@vcn.bc.ca)
+AC_INIT(Stump Window Manager, 0.9.2-GIT, sabetts@vcn.bc.ca)
 
 AC_SUBST(LISP_PROGRAM)
 AC_SUBST(LISP)
@@ -78,3 +78,4 @@ fi
 # Checks for library functions.
 AC_OUTPUT(Makefile)
 AC_OUTPUT(make-image.lisp)
+AC_OUTPUT(version.lisp)

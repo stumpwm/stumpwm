@@ -19,5 +19,17 @@ stumpwm.info: stumpwm.texi
 stumpwm: $(FILES)
 	$(LISP) $(LISP_OPTS)
 
+release:
+	git-archive --format=tar --prefix=stumpwm-@PACKAGE_VERSION@/ HEAD > stumpwm-@PACKAGE_VERSION@.tar
+	tar xf stumpwm-@PACKAGE_VERSION@.tar
+	cd stumpwm-@PACKAGE_VERSION@ && tar zxf @PPCRE_PATH@/../cl-ppcre.tar.gz
+	git log > stumpwm-@PACKAGE_VERSION@/ChangeLog
+	tar zcf stumpwm-@PACKAGE_VERSION@.tgz stumpwm-@PACKAGE_VERSION@
+	rm -fr stumpwm-@PACKAGE_VERSION@/ stumpwm-@PACKAGE_VERSION@.tar
+
+upload-release:
+	gpg -b stumpwm-@PACKAGE_VERSION@.tgz
+	scp stumpwm-@PACKAGE_VERSION@.tgz stumpwm-@PACKAGE_VERSION@.tgz.sig sabetts@dl.sv.nongnu.org:/releases/stumpwm/
+
 clean:
 	rm -f *.fasl *.fas *.lib stumpwm
