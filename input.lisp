@@ -124,17 +124,17 @@
     ;; Draw the prompt
     (draw-input-bucket screen prompt input)
     ;; Ready to recieve input
-    (xlib:grab-keyboard (screen-input-window screen) :owner-p nil
-                        :sync-keyboard-p nil :sync-pointer-p nil)))
+    
+))
 
 (defun shutdown-input-window (screen)
   (xlib:ungrab-keyboard *display*)
   (xlib:unmap-window (screen-input-window screen)))
 
-(defun input-handle-key-press-event (&rest event-slots &key root code state &allow-other-keys)
+(defun input-handle-key-press-event (&rest event-slots &key event-key root code state &allow-other-keys)
   (declare (ignore event-slots root))
   ;; FIXME: don't use a cons
-  (cons code state))
+  (list* event-key code state))
 
 (defun input-handle-selection-event (&key window selection property &allow-other-keys)
   (declare (ignore selection))
@@ -145,18 +145,14 @@
 (defun read-key-handle-event (&rest event-slots &key display event-key &allow-other-keys)
   (declare (ignore display))
   (case event-key
-    (:key-release
-     't)
-    (:key-press
+    ((or :key-release :key-press)
      (apply 'input-handle-key-press-event event-slots))
     (t nil)))
 
 (defun read-key-or-selection-handle-event (&rest event-slots &key display event-key &allow-other-keys)
   (declare (ignore display))
   (case event-key
-    (:key-release
-     't)
-    (:key-press
+    ((or :key-release :key-press)
      (apply 'input-handle-key-press-event event-slots))
     (:selection-notify
      (apply 'input-handle-selection-event event-slots))
@@ -164,19 +160,31 @@
 
 (defun read-key ()
   "Return a dotted pair (code . state) key."
-  (do ((ret nil (xlib:process-event *display* :handler #'read-key-handle-event :timeout nil)))
-      ((consp ret) ret)))
+  ;; The keyboard is frozen. Thaw it so we can read a key
+  (xlib:allow-events *display* :sync-keyboard)
+  (loop for ev = (xlib:process-event *display* :handler #'read-key-handle-event :timeout nil) do
+       (when (consp ev)
+         (if (eq (first ev) :key-press)
+             (return (cdr ev))
+             (progn
+               (xlib:allow-events *display* :sync-keyboard))))))
 
 (defun read-key-no-modifiers ()
   "Like read-key but never returns a modifier key."
-  (do ((k (read-key) (read-key)))
-      ((not (is-modifier (xlib:keycode->keysym *display* (car k) 0))) k)))
+  (loop for k = (read-key)
+       while (is-modifier (xlib:keycode->keysym *display* (car k) 0))
+       finally (return k)))
 
 (defun read-key-or-selection ()
-  (do ((ret nil (xlib:process-event *display* :handler #'read-key-or-selection-handle-event :timeout nil)))
-      ((or (stringp ret)
-           (consp ret))
-       ret)))
+  ;; The keyboard is frozen. Thaw it so we can read a key
+  (xlib:allow-events *display* :sync-keyboard)
+  (loop for ev = (xlib:process-event *display* :handler #'read-key-or-selection-handle-event :timeout nil) do
+       (cond ((stringp ev)
+              (return ev))
+             ((consp ev)
+              (if (eq (first ev) :key-press)
+                  (return (cdr ev))
+                  (xlib:allow-events *display* :sync-keyboard))))))
 
 (defun make-input-string (initial-input)
   (make-array (length initial-input) :element-type 'character :initial-contents initial-input
@@ -213,17 +221,16 @@ to return a list of matches."
       (setup-input-window screen prompt input)
       (catch :abort
         (unwind-protect
-             (key-loop)
+             (with-focus (screen-input-window screen)
+               (key-loop))
           (shutdown-input-window screen))))))
 
 (defun read-one-char (screen)
   "Read a single character from the user."
-  (grab-keyboard screen)
-  ;; FIXME: should this be in an unwind-protect to ungrab the kbd?
-  (prog1
-      (let ((k (read-key-no-modifiers)))
-        (keycode->character (car k) (xlib:make-state-keys (cdr k))))
-    (ungrab-keyboard)))
+  (with-focus (screen-focus-window screen)
+    (let ((k (read-key-no-modifiers)))
+      (keycode->character (car k) (xlib:make-state-keys (cdr k))))))
+
 
 (defun draw-input-bucket (screen prompt input &optional errorp)
   "Draw to the screen's input window the contents of input."

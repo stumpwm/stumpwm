@@ -1051,3 +1051,13 @@ input focus is transfered to the window you click on.")
 
 (defvar *resize-map* nil
   "The keymap used for resizing a window")
+
+(defmacro with-focus (xwin &body body)
+  "Set the focus to xwin, do body, then restore focus"
+  (let ((focus (gensym "FOCUS"))
+        (revert (gensym "REVERT")))
+    `(multiple-value-bind (,focus ,revert) (xlib:input-focus *display*)
+       (xlib:set-input-focus *display* ,xwin :pointer-root)
+       (unwind-protect
+            (progn ,@body)
+         (xlib:set-input-focus *display* ,focus ,revert)))))

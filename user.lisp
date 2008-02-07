@@ -879,13 +879,10 @@ string between them."
     (let ((rest (argument-pop-rest input)))
       (or (and rest (parse-key-seq rest))
           ;; read a key sequence from the user
-          (unwind-protect
-               (progn
-                 (grab-keyboard (current-screen))
-                 (message "~a" prompt)
-                 (nreverse (second (multiple-value-list
-                                    (read-from-keymap *top-map* #'update)))))
-            (ungrab-keyboard))))))
+          (with-focus (screen-focus-window (current-screen))
+            (message "~a" prompt)
+            (nreverse (second (multiple-value-list
+                               (read-from-keymap *top-map* #'update)))))))))
 
 (define-stumpwm-type :window-number (input prompt)
   (let ((n (or (argument-pop input)
@@ -1648,15 +1645,14 @@ See *menu-map* for menu bindings."
          (*suppress-echo-timeout* t))
     (bound-check-menu menu)
     (catch :menu-quit
-      (grab-keyboard screen)
       (unwind-protect
-           (loop
-            (echo-string-list screen menu-text
-                              (+ (menu-state-selected menu) (if prompt 1 0)))
-            (let ((action (read-from-keymap *menu-map*)))
-              (when action
-                (funcall action menu))))
-        (ungrab-keyboard)
+           (with-focus (screen-focus-window screen)
+             (loop
+                (echo-string-list screen menu-text
+                                  (+ (menu-state-selected menu) (if prompt 1 0)))
+                (let ((action (read-from-keymap *menu-map*)))
+                  (when action
+                    (funcall action menu)))))
         (unmap-all-message-windows)))))
 
 (define-stumpwm-command "windowlist" ((fmt :rest))

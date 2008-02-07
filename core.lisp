@@ -2394,9 +2394,10 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
                                              :border-width 1
                                              :colormap (xlib:screen-default-colormap
                                                         screen-number)
-                                             :event-mask '(:key-press)))
+                                             :event-mask '(:key-press :key-release)))
            (focus-window (xlib:create-window :parent (xlib:screen-root screen-number)
-                                             :x 0 :y 0 :width 1 :height 1))
+                                             :x 0 :y 0 :width 1 :height 1
+                                             :event-mask '(:key-press :key-release)))
            (message-window (xlib:create-window :parent (xlib:screen-root screen-number)
                                                :x 0 :y 0 :width 1 :height 1
                                                :background bg
@@ -2414,7 +2415,6 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
       ;; Create our screen structure
       ;; The focus window is mapped at all times
       (xlib:map-window focus-window)
-      (xwin-grab-keys focus-window)
       (setf (screen-number screen) screen-number
             (screen-id screen) id
             (screen-host screen) host
@@ -2893,7 +2893,9 @@ list of modifier symbols."
 
 (defun read-from-keymap (kmap &optional update-fn)
   "Read a sequence of keys from the user, guided by the keymap,
-KMAP and return the binding or nil if the user hit an unbound sequence."
+KMAP and return the binding or nil if the user hit an unbound sequence.
+
+The Caller is responsible for setting up the input focus."
   (let* ((code-state (read-key-no-modifiers))
          (code (car code-state))
          (state (cdr code-state)))
@@ -2925,46 +2927,34 @@ KMAP and return the binding or nil if the user hit an unbound sequence."
                       (boundp cmd)
                       (hash-table-p (symbol-value cmd))))
              (when grab
-               (grab-pointer (current-screen))
-               ;;              (grab-keyboard (current-screen))
-               )
+               (grab-pointer (current-screen)))
              (let* ((code-state (read-key-no-modifiers))
                     (code (car code-state))
                     (state (cdr code-state)))
-               (handle-keymap cmd code state key-seq nil update-fn)))
+               (unwind-protect
+                    (handle-keymap cmd code state key-seq nil update-fn)
+                 (when grab (ungrab-pointer)))))
             (t (values cmd key-seq)))
           (if (equalp key (kbd "?"))
               (progn (display-keybinding keymap) (values t key-seq))
               (values nil key-seq))))))
 
 (define-stump-event-handler :key-press (code state #|window|#)
-  ;; modifiers can sneak in with a race condition. so avoid that.
-  (unless (is-modifier (xlib:keycode->keysym *display* code 0))
-    ;; grab the keyboard so all keys are sent to us, then thraw the
-    ;; keyboard so we get events.
-    (grab-keyboard (current-screen))
-    (xlib:allow-events *display* :async-keyboard)
-    ;; make absolutely sure we give back the keyboard
+  (labels ((get-cmd (code state)
+             (with-focus (screen-focus-window (current-screen))
+               (handle-keymap *top-map* code state nil t nil))))
     (unwind-protect
-         (labels ((get-cmd (code state)
-                    (unwind-protect
-                         (progn
-                           (handle-keymap *top-map* code state nil t nil))
-                      (ungrab-pointer)
-                      ;; This must be here and not after the command
-                      ;; has run because firefox doesn't accept fake
-                      ;; C-t keys otherwise. Presumably this is
-                      ;; because it detects the keyboard has been
-                      ;; grabbed and ignores all key events until it's
-                      ;; ungrabbed.
-                      (ungrab-keyboard))))
+         ;; modifiers can sneak in with a race condition. so avoid that.
+         (unless (is-modifier (xlib:keycode->keysym *display* code 0))
            (multiple-value-bind (cmd key-seq) (get-cmd code state)
              (cond
                ((eq cmd t))
                (cmd
                 (unmap-message-window (current-screen))
                 (interactive-command cmd) t)
-               (t (message "~{~a ~}not bound." (mapcar 'print-key (nreverse key-seq))))))))))
+               (t (message "~{~a ~}not bound." (mapcar 'print-key (nreverse key-seq)))))))
+      ;; When we're done, unfreeze the keyboard
+      (xlib:allow-events *display* :async-keyboard))))
 
 (defun bytes-to-window (bytes)
   "A sick hack to assemble 4 bytes into a 32 bit number. This is
