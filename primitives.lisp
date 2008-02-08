@@ -31,8 +31,6 @@
           *timeout-frame-indicator-wait*
           *frame-indicator-timer*
           *message-window-timer*
-          *map-window-hook*
-          *unmap-window-hook*
           *new-window-hook*
           *destroy-window-hook*
           *focus-window-hook*
@@ -110,7 +108,8 @@
           remove-hook
           run-hook
           run-hook-with-args
-          split-string))
+          split-string
+	  with-restarts-menu))
 
 
 ;;; Message Timer
@@ -139,18 +138,20 @@ be an integer.")
   "A hook called whenever a window is withdrawn.")
 
 (defvar *new-window-hook* '()
-  "A hook called whenever a window is created.")
+  "A hook called whenever a window is added to the window list. This
+includes a genuinely new window as well as bringing a withdrawn window
+back into the window list.")
 
 (defvar *destroy-window-hook* '()
-  "A hook called whenever a window is destroyed.")
+  "A hook called whenever a window is destroyed or withdrawn.")
 
 (defvar *focus-window-hook* '()
-  "A hook called when a window is given focus. It is called with
-  2 arguments: the current window and the last window (could be
-  nil).")
+  "A hook called when a window is given focus. It is called with 2
+arguments: the current window and the last window (could be nil).")
 
 (defvar *place-window-hook* '()
-  "A hook called whenever a window is placed by rule. Arguments are window group and frame")
+  "A hook called whenever a window is placed by rule. Arguments are
+window group and frame")
 
 (defvar *start-hook* '()
   "A hook called when stumpwm starts.")
@@ -159,13 +160,12 @@ be an integer.")
   "A hook called inside stumpwm's inner loop.")
 
 (defvar *focus-frame-hook* '()
-  "A hook called when a frame is given focus. The hook functions
-  are called with 2 arguments: the current frame and the last
-  frame.")
+  "A hook called when a frame is given focus. The hook functions are
+called with 2 arguments: the current frame and the last frame.")
 
 (defvar *new-frame-hook* '()
-  "A hook called when a new frame is created. the hook is
-  called with the frame as an argument.")
+  "A hook called when a new frame is created. the hook is called with
+the frame as an argument.")
 
 (defvar *message-hook* '()
   "A hook called whenever stumpwm displays a message. The hook
@@ -182,17 +182,17 @@ run before the error is dealt with according to
 
 (defvar *key-press-hook* '()
   "A hook called whenever a key under *top-map* is pressed.
-  It is called with 3 argument: the key, the (possibly incomplete)
-  key sequence it is a part of, and command value bound to the key.")
+It is called with 3 argument: the key, the (possibly incomplete) key
+sequence it is a part of, and command value bound to the key.")
 
 (defvar *root-click-hook* '()
-  "A hook called whenever there is a mouse click on the root window. Called
-  with 4 arguments, the screen containing the root window, the button clicked,
-  and the x and y of the pointer.")
+  "A hook called whenever there is a mouse click on the root
+window. Called with 4 arguments, the screen containing the root
+window, the button clicked, and the x and y of the pointer.")
 
 (defvar *mode-line-click-hook* '()
   "Called whenever the mode-line is clicked. It is called with 4 arguments,
-  the mode-line, the button clicked, and the x and y of the pointer.")
+the mode-line, the button clicked, and the x and y of the pointer.")
 
 ;; Data types and globals used by stumpwm
 
@@ -504,13 +504,31 @@ single char keys are supported.")
 (defvar *executing-stumpwm-command* nil
   "True when executing external commands.")
 
+;;; The restarts menu macro
+
+(defmacro with-restarts-menu (&body body)
+  "Execute BODY. If an error occurs allow the user to pick a
+restart from a menu of possible restarts. If a restart is not
+chosen, resignal the error."
+  (let ((c (gensym)))
+    `(handler-bind
+      ((error
+        (lambda (,c)
+          (restarts-menu ,c)
+          (signal ,c))))
+      ,@body)))
+
 ;;; Hook functionality
 
 (defun run-hook-with-args (hook &rest args)
-  "Call each function in HOOK and pass args to it"
-  (dolist (fn hook)
-    (handler-case (apply fn args)
-      (error (c) (message "^B^1*Error in function ^b~S^B on hook ^b~S^B!~% ^n~A" fn hook c) (values nil c)))))
+  "Call each function in HOOK and pass args to it."
+  (handler-case
+      (with-simple-restart (abort-hooks "Abort running the remaining hooks.")
+        (with-restarts-menu
+            (dolist (fn hook)
+              (with-simple-restart (continue-hooks "Continue running the remaining hooks.")
+                (apply fn args)))))
+    (error (c) (message "^B^1*Error on hook ^b~S^B!~% ^n~A" hook c) (values nil c))))
 
 (defun run-hook (hook)
   "Call each function in HOOK."

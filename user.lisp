@@ -39,8 +39,7 @@
 	  run-commands
 	  run-or-raise
 	  run-shell-command
-	  set-prefix-key
-	  with-restarts-menu))
+	  set-prefix-key))
 
 (defvar *root-map* nil
   "This is the keymap by default bound to @kbd{C-t}. It is known as the @dfn{prefix map}.")
@@ -203,18 +202,6 @@ menu, the error is re-signalled."
                                                        (write-to-string err :escape nil))))))
     (when restart
       (invoke-restart (second restart)))))
-
-(defmacro with-restarts-menu (&body body)
-  "Execute BODY. If an error occurs allow the user to pick a
-restart from a menu of possible restarts. If a restart is not
-chosen, resignal the error."
-  (let ((c (gensym)))
-    `(handler-bind
-      ((error
-        (lambda (,c)
-          (restarts-menu ,c)
-          (signal ,c))))
-      ,@body)))
 
 (defun focus-next-window (group)
   (focus-forward group (sort-windows group)))

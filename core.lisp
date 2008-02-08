@@ -1182,8 +1182,8 @@ needed."
                                     (xlib:intern-atom *display* a))
                                   +netwm-allowed-actions+)
                           :atom 32)
-    ;; Run the map window hook on it
-    (run-hook-with-args *map-window-hook* window)
+    ;; Run the new window hook on it.
+    (run-hook-with-args *new-window-hook* window)
     window))
 
 (defun find-withdrawn-window (xwin)
@@ -1225,6 +1225,8 @@ needed."
                           (list (netwm-group-id (window-group window)))
                           :cardinal 32)
     (maximize-window window)
+    ;; It is effectively a new window in terms of the window list.
+    (run-hook-with-args *new-window-hook* window)
     ;; give it focus
     (if (deny-request-p window *deny-map-request*)
         (unless *suppress-deny-messages*
@@ -1266,8 +1268,8 @@ needed."
       (focus-frame (window-group window) f))
     ;; quite often the modeline displays the window list, so update it
     (update-all-mode-lines)
-    ;; Run the unmap hook on the window
-    (run-hook-with-args *unmap-window-hook* window)))
+    ;; Run the destroy hook on the window
+    (run-hook-with-args *destroy-window-hook* window)))
 
 (defun destroy-window (window)
   (declare (type window window))
@@ -1281,8 +1283,7 @@ needed."
           (delete window (screen-withdrawn-windows screen)))
     (dformat 1 "destroy window ~a~%" screen)
     (dformat 3 "destroying parent window~%")
-    (xlib:destroy-window (window-parent window))
-    (run-hook-with-args *destroy-window-hook* window)))
+    (xlib:destroy-window (window-parent window))))
 
 (defun move-window-to-head (group window)
   "Move window to the head of the group's window list."
