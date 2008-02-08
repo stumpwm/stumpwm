@@ -1026,51 +1026,20 @@ Remove the specified function from the hook.
 
 The following hooks are available:
 
-@defvr {Hook} *map-window-hook*
-A hook called whenever a window is mapped.
-@end defvr
-
-@defvr {Hook} *unmap-window-hook*
-A hook called whenever a window is withdrawn.
-@end defvr
-
-@defvr {Hook} *new-window-hook*
-A hook called whenever a window is created.
-@end defvr
-
-@defvr {Hook} *destroy-window-hook*
-A hook called whenever a window is destroyed.
-@end defvr
-
-@defvr {Hook} *focus-window-hook*
-A hook called when a window is given focus.
-@end defvr
-
-@defvr {Hook} *unfocus-window-hook*
-A hook called when a window loses focus.
-@end defvr
-
-@defvr {Hook} *start-hook*
-A hook called when StumpWM starts.
-@end defvr
-
-@defvr {Hook} *internal-loop-hook*
-A hook called inside StumpWM's inner loop.
-@end defvr
-
-@defvr {Hook} *focus-frame-hook*
-A hook called when a frame is given focus. The hook functions are
-called with 2 arguments: the current frame and the last frame.
-@end defvr
-
-@defvr {Hook} *message-hook* &rest @var{lines}
-Any time a message is displayed in stumpwm this hook gets called with
-the lines displayed.
-@end defvr
-
-@defvr{Hook} *new-frame-hook* @var{new-frame}
-When a new frame is created, this hook is called with the new frame as an argument.
-@end defvr
+$$$ *new-window-hook*
+$$$ *destroy-window-hook*
+$$$ *focus-window-hook*
+$$$ *place-window-hook*
+$$$ *start-hook*
+$$$ *internal-loop-hook*
+$$$ *focus-frame-hook*
+$$$ *new-frame-hook*
+$$$ *message-hook*
+$$$ *top-level-error-hook*
+$$$ *focus-group-hook*
+$$$ *key-press-hook*
+$$$ *root-click-hook*
+$$$ *mode-line-click-hook*
 
 @node Command and Function Index, Variable Index, Hooks, Top
 @unnumbered Command and Function Index

@@ -50,6 +50,13 @@
 					name (documentation sym 'variable))
 				t)))
 
+(defun generate-hook-doc (s line)
+  (ppcre:register-groups-bind (name) ("^\\$\\$\\$ (.*)" line)
+			      (let ((sym (find-symbol (string-upcase name) :stumpwm)))
+				(format s "@defvr {Hook} ~a~%~a~&@end defvr~%~%"
+					name (documentation sym 'variable))
+				t)))
+
 (defun generate-command-doc (s line)
   (ppcre:register-groups-bind (name) ("^!!! (.*)" line)
 			      (let ((cmd (gethash name *command-hash*)))
@@ -64,7 +71,7 @@
 	 until (eq line is) do
 	   (or (generate-function-doc os line)
 	       (generate-macro-doc os line)
+	       (generate-hook-doc os line)
 	       (generate-variable-doc os line)
 	       (generate-command-doc os line)
 	       (write-line line os))))))
-				       
