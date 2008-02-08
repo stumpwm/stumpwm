@@ -1819,7 +1819,7 @@ current window. To exit command mode, type @key{C-g}."
                             (tile-group-current-frame group))))
     (if tree
         (balance-frames (current-group) tree)
-        (message "There's only one frame!"))))
+        (message "There's only one frame."))))
 
 (define-stumpwm-command "describe-key" ((keys :key-seq "Describe Key: "))
 "Either interactively type the key sequence or supply it as text. This
