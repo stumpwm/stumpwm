@@ -1813,9 +1813,10 @@ current window. To exit command mode, type @key{C-g}."
     (clear-window-marks group)))
 
 (define-stumpwm-command "balance-frames" ()
-"Make frames the same height or width in the current frame's subtree."
-  (let ((tree (tree-parent (tile-group-frame-tree (current-group))
-                           (tile-group-current-frame (current-group)))))
+  "Make frames the same height or width in the current frame's subtree."
+  (let* ((group (current-group))
+         (tree (tree-parent (tile-group-frame-head group (current-head))
+                            (tile-group-current-frame group))))
     (if tree
         (balance-frames (current-group) tree)
         (message "There's only 1 frame!"))))
