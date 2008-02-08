@@ -1446,6 +1446,8 @@ escape C-z
           (define-key m (kbd "m") "gmove")
           (define-key m (kbd "M") "gmove-marked")
           (define-key m (kbd "k") "gkill")
+          (define-key m (kbd "A") "grename")
+          (define-key m (kbd "r") "grename")
           (define-key m (kbd "1") "gselect 1")
           (define-key m (kbd "2") "gselect 2")
           (define-key m (kbd "3") "gselect 3")
@@ -1494,6 +1496,12 @@ groups and vgroups commands."
   (let ((groups (screen-groups (current-screen))))
     (when (> (length groups) 1)
       (switch-to-group (second groups)))))
+
+(define-stumpwm-command "grename" ((name :string "Group's New Name: "))
+  "Rename the current group."
+  (let ((group (current-group)))
+    (unless (find-group (current-screen) name)
+      (setf (group-name group) name))))
 
 (defun echo-groups (screen fmt &optional verbose (wfmt *window-format*))
   "Print a list of the windows to the screen."

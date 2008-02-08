@@ -431,6 +431,10 @@ Move the current window to the specified group.
 @item C-t g k
 Kill the current group. All windows are merged into the next group.
 
+@item C-t g A
+@xitem C-t g r
+Change the current group's name.
+
 @item C-t g 1
 @itemx C-t g 2
 @itemx C-t g 3
@@ -790,6 +794,7 @@ Groups in StumpWM are more commonly known as @dfn{virtual desktops} or
 !!! gselect
 !!! gmove
 !!! gkill
+!!! grename
 
 @menu
 * Customizing Groups::          
