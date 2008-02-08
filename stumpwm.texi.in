@@ -432,7 +432,7 @@ Move the current window to the specified group.
 Kill the current group. All windows are merged into the next group.
 
 @item C-t g A
-@xitem C-t g r
+@itemx C-t g r
 Change the current group's name.
 
 @item C-t g 1
