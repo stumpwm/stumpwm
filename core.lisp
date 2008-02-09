@@ -2952,7 +2952,7 @@ The Caller is responsible for setting up the input focus."
                (handle-keymap *top-map* code state nil t nil))))
     (unwind-protect
          ;; modifiers can sneak in with a race condition. so avoid that.
-         (unless (is-modifier (xlib:keycode->keysym *display* code 0))
+         (unless (is-modifier code)
            (multiple-value-bind (cmd key-seq) (get-cmd code state)
              (cond
                ((eq cmd t))

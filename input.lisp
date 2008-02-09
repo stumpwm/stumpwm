@@ -92,18 +92,11 @@
 
 ;;; keysym functions
 
-(defun is-modifier (keysym)
+(defun is-modifier (keycode)
   "Return t if keycode is a modifier"
-  ;; FIXME: This should depend on all the codes returned by ALL-MODIFIER-CODES
-  (let ((mods '("Mode_switch"
-                "Shift_L" "Shift_R"
-                "Control_L" "Control_R"
-                "Caps_Lock" "Shift_Lock"
-                "Meta_L" "Meta_R"
-                "Alt_L" "Alt_R"
-                "Super_L" "Super_R"
-                "Hyper_L" "Hyper_R")))
-    (member keysym (mapcar #'keysym-name->keysym mods))))
+  (or (find keycode *all-modifiers* :test 'eql)
+      ;; Treat No Symbol keys as modifiers (and therefore ignorable)
+      (= (xlib:keycode->keysym *display* keycode 0) 0)))
 
 (defun keycode->character (code mods)
   (let ((idx (if (member :shift mods) 1 0)))
@@ -172,7 +165,7 @@
 (defun read-key-no-modifiers ()
   "Like read-key but never returns a modifier key."
   (loop for k = (read-key)
-       while (is-modifier (xlib:keycode->keysym *display* (car k) 0))
+       while (is-modifier (car k))
        finally (return k)))
 
 (defun read-key-or-selection ()
@@ -215,7 +208,7 @@ to return a list of matches."
                             (input-insert-string input key)
                             (draw-input-bucket screen prompt input))
                            ;; skip modifiers
-                           ((is-modifier (xlib:keycode->keysym *display* (car key) 0)))
+                           ((is-modifier (car key)))
                            ((process-input screen prompt input (car key) (cdr key))
                             (return (input-line-string input)))))))
       (setup-input-window screen prompt input)
