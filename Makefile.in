@@ -16,6 +16,10 @@ all: stumpwm.info stumpwm
 stumpwm.info: stumpwm.texi
 	makeinfo stumpwm.texi
 
+# FIXME: This rule is too hardcoded 
+stumpwm.texi: stumpwm.texi.in
+	sbcl --eval "(progn (require 'asdf) (require 'stumpwm) (load \"manual.lisp\"))" --eval "(progn (stumpwm::generate-manual) (sb-ext:quit))"
+
 stumpwm: $(FILES)
 	$(LISP) $(LISP_OPTS)
 
