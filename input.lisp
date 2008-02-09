@@ -227,7 +227,7 @@ to return a list of matches."
 
 (defun read-one-char (screen)
   "Read a single character from the user."
-  (with-focus (screen-focus-window screen)
+  (with-focus (screen-key-window screen)
     (let ((k (read-key-no-modifiers)))
       (keycode->character (car k) (xlib:make-state-keys (cdr k))))))
 

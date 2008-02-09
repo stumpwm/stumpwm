@@ -2203,7 +2203,8 @@ windows used to draw the numbers in. The caller must destroy them."
   "Return t if win is a window used by stumpwm"
   (or (xlib:window-equal (screen-message-window screen) win)
       (xlib:window-equal (screen-input-window screen) win)
-      (xlib:window-equal (screen-focus-window screen) win)))
+      (xlib:window-equal (screen-focus-window screen) win)
+      (xlib:window-equal (screen-key-window screen) win)))
 
 (defun unmap-message-window (screen)
   "Unmap the screen's message window, if it is mapped."
@@ -2397,8 +2398,10 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
                                                         screen-number)
                                              :event-mask '(:key-press :key-release)))
            (focus-window (xlib:create-window :parent (xlib:screen-root screen-number)
-                                             :x 0 :y 0 :width 1 :height 1
-                                             :event-mask '(:key-press :key-release)))
+                                             :x 0 :y 0 :width 1 :height 1))
+           (key-window (xlib:create-window :parent (xlib:screen-root screen-number)
+                                           :x 0 :y 0 :width 1 :height 1
+                                           :event-mask '(:key-press :key-release)))
            (message-window (xlib:create-window :parent (xlib:screen-root screen-number)
                                                :x 0 :y 0 :width 1 :height 1
                                                :background bg
@@ -2416,6 +2419,8 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
       ;; Create our screen structure
       ;; The focus window is mapped at all times
       (xlib:map-window focus-window)
+      (xlib:map-window key-window)
+      (xwin-grab-keys focus-window)
       (setf (screen-number screen) screen-number
             (screen-id screen) id
             (screen-host screen) host
@@ -2432,6 +2437,7 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
             (screen-frame-outline-width screen) +default-frame-outline-width+
             (screen-input-window screen) input-window
             (screen-focus-window screen) focus-window
+            (screen-key-window screen) key-window
             (screen-ignore-msg-expose screen) 0
             (screen-message-cc screen) (make-ccontext :win message-window
                                                       :gc (xlib:create-gcontext
@@ -2942,7 +2948,7 @@ The Caller is responsible for setting up the input focus."
 
 (define-stump-event-handler :key-press (code state #|window|#)
   (labels ((get-cmd (code state)
-             (with-focus (screen-focus-window (current-screen))
+             (with-focus (screen-key-window (current-screen))
                (handle-keymap *top-map* code state nil t nil))))
     (unwind-protect
          ;; modifiers can sneak in with a race condition. so avoid that.

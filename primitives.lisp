@@ -419,6 +419,9 @@ Use the window's resource name.
   ;; exist, in which case they go into the current group.
   withdrawn-windows
   input-window
+  ;; the window that accepts further keypresses after a toplevel key
+  ;; has been pressed.
+  key-window
   ;; The window that gets focus when no window has focus
   focus-window
   ;;

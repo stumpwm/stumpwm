@@ -866,7 +866,7 @@ string between them."
     (let ((rest (argument-pop-rest input)))
       (or (and rest (parse-key-seq rest))
           ;; read a key sequence from the user
-          (with-focus (screen-focus-window (current-screen))
+          (with-focus (screen-key-window (current-screen))
             (message "~a" prompt)
             (nreverse (second (multiple-value-list
                                (read-from-keymap *top-map* #'update)))))))))
@@ -1641,7 +1641,7 @@ See *menu-map* for menu bindings."
     (bound-check-menu menu)
     (catch :menu-quit
       (unwind-protect
-           (with-focus (screen-focus-window screen)
+           (with-focus (screen-key-window screen)
              (loop
                 (echo-string-list screen menu-text
                                   (+ (menu-state-selected menu) (if prompt 1 0)))
