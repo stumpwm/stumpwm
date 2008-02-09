@@ -101,6 +101,7 @@ Introduction
 
 * Starting StumpWM::            
 * Basic Usage::                 
+* Interacting with the Lisp process::
 * Contact the StumpWM developers::  
 
 Key Bindings
@@ -150,6 +151,7 @@ customizability, completeness, and cushiness.
 @menu
 * Starting StumpWM::            
 * Basic Usage::                 
+* Interacting with the Lisp process::
 * Contact the StumpWM developers::  
 @end menu
 
@@ -196,7 +198,7 @@ message pop up in the upper, right corner. At this point, you have
 successfully started StumpWM.
 @end enumerate
 
-@node Basic Usage, Contact the StumpWM developers, Starting StumpWM, Introduction
+@node Basic Usage, Interacting with the Lisp process, Starting StumpWM, Introduction
 @section Basic Usage
 Once you have StumpWM up and running, the first thing you might want
 to do is start @samp{Emacs}. Type @kbd{C-t e}, or in other words
@@ -238,7 +240,31 @@ current one and resize it to fit the screen.
 
 For a full list of key bindings, @xref{List of Default Keybindings}.
 
-@node Contact the StumpWM developers,  , Basic Usage, Introduction
+@node Interacting with the Lisp process, Contact the StumpWM developers, Basic Usage, Introduction
+@section Interacting with the Lisp process
+
+Since StumpWM is a Lisp program, there is a way for youto evaluate
+Lisp code directly, on the same Lisp process that StumpWM is running on.
+Type @kbd{C-t :} and an input box will appear. Then type some Lisp
+expression.
+
+When you call eval this way, you will be in the COMMON-LISP-USER
+package. In order to use all the functions and variables defined in
+the StumpWM manual, you need to explicitly mention the package stumpwm:
+
+@table @asis
+@item stumpwm:*mode-line-border-width*
+Reads the value of *mode-line-border-width*.
+
+@item (setf stumpwm:*mode-line-border-width* 3)
+Sets the variable *mode-line-border-width* to 3.
+
+@item (stumpwm:set-prefix-key (stumpwm:kbd "C-M-H-s-z"))
+Calls the set-prefix-key function (and sets a new keyboard prefix)
+@end table
+
+
+@node Contact the StumpWM developers, , Interacting with the Lisp process, Introduction
 @section Contact the StumpWM developers
 The StumpWM home page is @url{http://stumpwm.nongnu.org/}.
 
@@ -250,8 +276,6 @@ you can subscribe to at
 is restricted to subscribers to keep spam out of the archives.
 
 The StumpWM IRC channel can be found on Freenode at #stumpwm.
-
-
 
 @node Key Bindings, Message and Input Bar, Introduction, Top
 @chapter Key Bindings
