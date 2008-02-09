@@ -1766,29 +1766,39 @@ you don't care which one."
     (cond ((null tree) nil)
           ((atom tree)
            (expand-frame tree amount dir))
-          (t (if (or (and (find dir '(:left :right))
-                          (tree-row-split tree))
-                     (and (find dir '(:top :bottom))
-                          (tree-column-split tree)))
-                 (dolist (i tree)
-                   (expand-tree i amount dir))
-                 (let* ((children (if (find dir '(:left :top))
-                                      (reverse tree)
-                                      tree))
-                        (fn (if (find dir '(:left :right))
-                                'tree-width
-                                'tree-height))
-                        (total (funcall fn tree)))
-                   ;; resize proportionally
-                   (loop
-                    for i in children
-                    for ofs = 0 then (+ ofs amt)
-                    for left = amount then (- left amt)
-                    for totalleft = total then (- total oldamt)
-                    for oldamt = (funcall fn i)
-                    for amt = (truncate (* (/ oldamt totalleft) left)) do
-                    (expand-tree i amt dir)
-                    (offset-tree-dir i ofs dir))))))))
+          ((or (and (find dir '(:left :right))
+                    (tree-row-split tree))
+               (and (find dir '(:top :bottom))
+                    (tree-column-split tree)))
+           (dolist (i tree)
+             (expand-tree i amount dir)))
+          (t
+           (let* ((children (if (find dir '(:left :top))
+                              (reverse tree)
+                              tree))
+                  (sz-fn (if (find dir '(:left :right))
+                           'tree-width
+                           'tree-height))
+                  (total (funcall sz-fn tree))
+                  (amt-list (loop for i in children
+                                  for old-sz = (funcall sz-fn i)
+                                  collect (truncate (/ (* amount old-sz) total))))
+                  (remainder (- amount (apply '+ amt-list)))
+                  (ofs 0))
+             ;; spread the remainder out as evenly as possible
+             (assert (< remainder (length amt-list)))
+             (loop for i upfrom 0
+                   while (> remainder 0)
+                   do
+                   (incf (nth i amt-list))
+                   (decf remainder))
+             ;; resize proportionally
+             (loop for i in children
+                   for amt in amt-list
+                   do
+                   (expand-tree i amt dir)
+                   (offset-tree-dir i ofs dir)
+                   (incf ofs amt)))))))
 
 (defun join-subtrees (tree leaf)
   "expand the children of tree to occupy the space of
