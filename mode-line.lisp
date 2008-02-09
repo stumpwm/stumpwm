@@ -256,13 +256,17 @@ timer.")
 (defun frame-display-y (group frame)
   "Return a Y for frame that doesn't overlap the mode-line."
   (let* ((head (frame-head group frame))
-         (ml (head-mode-line head)))
+         (ml (head-mode-line head))
+	 (head-y (frame-y head))
+	 (rel-frame-y (- (frame-y frame) head-y)))
     (if (and ml (not (eq (mode-line-mode ml) :hidden)))
         (case (mode-line-position ml)
           (:top
-           (+ (mode-line-height ml) (round (* (frame-y frame) (mode-line-factor ml)))))
+           (+ head-y
+	      (+ (mode-line-height ml) (round (* rel-frame-y (mode-line-factor ml))))))
           (:bottom
-           (round (* (frame-y frame) (mode-line-factor ml)))))
+           (+ head-y
+	      (round (* rel-frame-y (mode-line-factor ml))))))
         (frame-y frame))))
 
 (defun frame-display-height (group frame)
