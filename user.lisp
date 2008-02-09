@@ -1500,8 +1500,12 @@ groups and vgroups commands."
 (define-stumpwm-command "grename" ((name :string "Group's New Name: "))
   "Rename the current group."
   (let ((group (current-group)))
-    (unless (find-group (current-screen) name)
-      (setf (group-name group) name))))
+    (cond ((find-group (current-screen) name)
+           (message "^1*^BError: Name already exists."))
+          ((zerop (length name))
+           (message "^1*^BError: Empty name."))
+          (t
+           (setf (group-name group) name)))))
 
 (defun echo-groups (screen fmt &optional verbose (wfmt *window-format*))
   "Print a list of the windows to the screen."
