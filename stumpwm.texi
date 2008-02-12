@@ -349,7 +349,7 @@ Run an X terminal; by default xterm
 
 @item C-t e
 @itemx C-t C-e
-Run Emacs 
+Run Emacs or raise it if it is already running.
 
 @item C-t t
 Sends a @key{C-t} to the frame; this is useful for applications like Firefox
@@ -1476,6 +1476,10 @@ Return the x selection no matter what client own it.
 @chapter Miscellaneous Commands
 The following is a list of commands that don't really fit in any other
 section.
+
+@deffn {Command} emacs 
+Start emacs unless it is already running, in which case focus it.
+@end deffn
 
 @deffn {Command} banish WHERE
 Warp the mouse the lower right corner of the current head.

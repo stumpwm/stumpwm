@@ -50,8 +50,8 @@
         (let ((m (make-sparse-keymap)))
           (define-key m (kbd "c") "exec xterm")
           (define-key m (kbd "C-c") "exec xterm")
-          (define-key m (kbd "e") "exec emacs")
-          (define-key m (kbd "C-e") "exec emacs")
+          (define-key m (kbd "e") "emacs")
+          (define-key m (kbd "C-e") "emacs")
           (define-key m (kbd "n") "pull-hidden-next")
           (define-key m (kbd "C-n") "pull-hidden-next")
           (define-key m (kbd "M-n") "next")
@@ -1906,3 +1906,7 @@ command prints the command bound to the specified key sequence."
 
 (define-stumpwm-command "restore-rules" ((file :rest "Filename: "))
   (restore-window-placement-rules file))
+
+(define-stumpwm-command "emacs" ()
+  "Start emacs unless it is already running, in which case focus it."
+  (run-or-raise "emacs" '(:class "Emacs")))

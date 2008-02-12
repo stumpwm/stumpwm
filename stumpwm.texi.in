@@ -342,7 +342,7 @@ Run an X terminal; by default xterm
 
 @item C-t e
 @itemx C-t C-e
-Run Emacs 
+Run Emacs or raise it if it is already running.
 
 @item C-t t
 Sends a @key{C-t} to the frame; this is useful for applications like Firefox
@@ -890,6 +890,7 @@ currently focused frame belongs.
 The following is a list of commands that don't really fit in any other
 section.
 
+!!! emacs
 !!! banish
 !!! ratwarp
 !!! ratrelwarp
