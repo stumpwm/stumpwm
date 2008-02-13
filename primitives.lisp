@@ -785,8 +785,7 @@ output directly to a file.")
                                  (if (typep ch 'base-char)
                                      ch #\?))
                        (apply 'format nil fmt args))
-                  *debug-stream*)
-    (finish-output *debug-stream*)))
+                  *debug-stream*)))
 
 ;;; 
 ;;; formatting routines
