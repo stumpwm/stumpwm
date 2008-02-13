@@ -46,7 +46,17 @@ function wait_result ()
 
 function send_cmd ()
 {
-	xprop -root -f STUMPWM_COMMAND 8s -set STUMPWM_COMMAND "$1"
+	local cmd="$1"
+
+	if [ "$cmd" == "stumpwm-quit" ]
+	then
+		cmd=quit
+	elif [ "$cmd" == "quit" ]
+	then
+		exit
+	fi
+
+	xprop -root -f STUMPWM_COMMAND 8s -set STUMPWM_COMMAND "$cmd"
 
 	wait_result
 }
