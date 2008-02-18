@@ -45,6 +45,9 @@
   )
 (defparameter *mpd-port* 6600)
 
+(defvar *mpd-collapse-album-length* nil)
+(defvar *mpd-collapse-all-length* nil)
+
 (defmacro with-mpd-connection (&body body)
   `(if *mpd-socket*
        (handler-case (progn ,@body)
@@ -137,19 +140,24 @@
 (defun mpd-update-status ()
   (setf *mpd-status* (mpd-send-command "status")))
 
-(defun format-mpd-current-song (current-song)
-  (let ((artist (assoc-value :artist current-song))
+(defun format-mpd-current-song (current-song &optional (collapse-album nil) (collapse-all nil))
+  (let* ((artist (assoc-value :artist current-song))
         (album (assoc-value :album current-song))
         (title (assoc-value :title current-song))
-        (file (assoc-value :file current-song)))
-    (if (or (null artist)
+	 (file (assoc-value :file current-song))
+	 (song (if (or (null artist)
             (null album)
             (null title))
         (format nil "~a" file)
-      (format nil "~a (~a): ~a"
+		   (format nil "~a \"~a\" - ~a"
               artist
-              album
+			   (if (and collapse-album *mpd-collapse-album-length* (> (length album) *mpd-collapse-album-length*))
+			       (concatenate 'string (subseq album 0 *mpd-collapse-album-length*) "...")
+			       album)
               title))))
+    (if (and collapse-all *mpd-collapse-all-length* (> (length song) *mpd-collapse-all-length*))
+	(concatenate 'string (subseq song 0 *mpd-collapse-all-length*) "...")
+	song)))
 
 (defun format-mpd-status (status)
   (let ((mpd-state (assoc-value :state status)))
@@ -199,7 +207,7 @@
          (progn (mpd-update-current-song)
                 (format nil "~a: ~a"
                         (format-mpd-status *mpd-status*)
-                        (format-mpd-current-song *mpd-current-song*)))))
+                        (format-mpd-current-song *mpd-current-song* t t)))))
     "Not connected"))
 
 ;;mpd commands
