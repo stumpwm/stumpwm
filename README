@@ -15,14 +15,14 @@ Build & Start Stumpwm
 Prerequisites
 =============
 
-* a common lisp distribution. clisp or SBCL both worth.
+* a common lisp distribution. clisp or SBCL both work.
 * clx
 * cl-ppcre
 
 If you intend to use sbcl you need to install portable-clx. If you're
-using clisp, make sure it has been compiled with mit-clx. As of clisp
-1.41, new-clx is too buggy to run stumpwm. If you want to use new-clx,
-build clisp from CVS where the problems have been resolved.
+using clisp, make sure it is at least version 1.42 and has been
+compiled with new-clx. As of clisp 1.42, new-clx works fine with
+stumpwm. Any version before that is too buggy to run stumpwm.
 
 You can use asdf-install to install lisp libraries:
 $ sbcl
@@ -51,7 +51,7 @@ $ ./configure --with-lisp=clisp
 
 If your lisps are in strange places you may need to tell the script where to find them:
 
-$ configure --with-sbcl=/home/sabetts/opt/bin --with-clisp=/usr/local/downstairs/to/the/left
+$ configure --with-sbcl=/home/sabetts/opt/bin/sbcl --with-clisp=/usr/local/downstairs/to/the/left/clisp
 
 Now build it:
 
@@ -92,7 +92,5 @@ Questions?
 ----------
 
 See http://stumpwm.nongnu.org/community.html for information on
-contacting me and other stumpwm users.
-
-- Shawn
+contacting stumpwm developers and users.
 
