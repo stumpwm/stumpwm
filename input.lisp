@@ -153,14 +153,10 @@
 
 (defun read-key ()
   "Return a dotted pair (code . state) key."
-  ;; The keyboard is frozen. Thaw it so we can read a key
-  (xlib:allow-events *display* :sync-keyboard)
   (loop for ev = (xlib:process-event *display* :handler #'read-key-handle-event :timeout nil) do
-       (when (consp ev)
-         (if (eq (first ev) :key-press)
-             (return (cdr ev))
-             (progn
-               (xlib:allow-events *display* :sync-keyboard))))))
+       (when (and (consp ev)
+                  (eq (first ev) :key-press))
+           (return (cdr ev)))))
 
 (defun read-key-no-modifiers ()
   "Like read-key but never returns a modifier key."
@@ -169,15 +165,12 @@
        finally (return k)))
 
 (defun read-key-or-selection ()
-  ;; The keyboard is frozen. Thaw it so we can read a key
-  (xlib:allow-events *display* :sync-keyboard)
   (loop for ev = (xlib:process-event *display* :handler #'read-key-or-selection-handle-event :timeout nil) do
        (cond ((stringp ev)
               (return ev))
-             ((consp ev)
-              (if (eq (first ev) :key-press)
-                  (return (cdr ev))
-                  (xlib:allow-events *display* :sync-keyboard))))))
+             ((and (consp ev)
+                   (eq (first ev) :key-press))
+              (return (cdr ev))))))
 
 (defun make-input-string (initial-input)
   (make-array (length initial-input) :element-type 'character :initial-contents initial-input

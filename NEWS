@@ -3,6 +3,10 @@
 This file documents user visible changes between versions of StumpWM
 
 * Changes since 0.9.1
+** key grab handling
+top level key binding are now grabbed "asynchronously." This should
+eliminate the keyboard freezes some have experiences.
+
 ** New command emacs
 
 ** AltGr modifier should be recognized now
