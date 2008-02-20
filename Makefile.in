@@ -26,7 +26,7 @@ stumpwm: $(FILES)
 release:
 	git-archive --format=tar --prefix=stumpwm-@PACKAGE_VERSION@/ HEAD > stumpwm-@PACKAGE_VERSION@.tar
 	tar xf stumpwm-@PACKAGE_VERSION@.tar
-	cd stumpwm-@PACKAGE_VERSION@ && tar zxf @PPCRE_PATH@/../cl-ppcre.tar.gz
+	cd stumpwm-@PACKAGE_VERSION@ && tar zxf @PPCRE_PATH@/../cl-ppcre.tar.gz && mv cl-ppcre-* cl-ppcre
 	git log > stumpwm-@PACKAGE_VERSION@/ChangeLog
 	cp configure stumpwm-@PACKAGE_VERSION@/
 	tar zcf stumpwm-@PACKAGE_VERSION@.tgz stumpwm-@PACKAGE_VERSION@

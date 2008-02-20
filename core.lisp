@@ -944,13 +944,13 @@ than the root window's width and height."
                (when code
                  (xlib:grab-key w code
                                 :modifiers (x11-mods key) :owner-p t
-                                :sync-pointer-p nil :sync-keyboard-p t)
+                                :sync-pointer-p nil :sync-keyboard-p nil)
                  ;; Ignore numlock by also grabbing the keycombo with
                  ;; numlock on.
                  (when (modifiers-numlock *modifiers*)
                    (xlib:grab-key w code
                                   :modifiers (x11-mods key t) :owner-p t
-                                  :sync-pointer-p nil :sync-keyboard-p t))))))
+                                  :sync-pointer-p nil :sync-keyboard-p nil))))))
     (maphash (lambda (k v)
                (declare (ignore v))
                (grabit win k))
@@ -2969,9 +2969,7 @@ The Caller is responsible for setting up the input focus."
                (cmd
                 (unmap-message-window (current-screen))
                 (interactive-command cmd) t)
-               (t (message "~{~a ~}not bound." (mapcar 'print-key (nreverse key-seq)))))))
-      ;; When we're done, unfreeze the keyboard
-      (xlib:allow-events *display* :async-keyboard))))
+               (t (message "~{~a ~}not bound." (mapcar 'print-key (nreverse key-seq))))))))))
 
 (defun bytes-to-window (bytes)
   "A sick hack to assemble 4 bytes into a 32 bit number. This is

@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT(Stump Window Manager, 0.9.2-GIT, sabetts@vcn.bc.ca)
+AC_INIT(Stump Window Manager, 0.9.3-GIT, sabetts@vcn.bc.ca)
 
 AC_SUBST(LISP_PROGRAM)
 AC_SUBST(LISP)
