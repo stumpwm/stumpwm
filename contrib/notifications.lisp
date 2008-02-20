@@ -74,7 +74,6 @@
   "Add a notification string.
 If a notification is already included, it will be moved to the front instead of
 added anew."
-  (message "gotten ~a" str)
   (when (not (string= (car notifications) str))
     (when (member str notifications :test #'string=)
       (setf notifications (delete str notifications :test #'string=)))
