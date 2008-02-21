@@ -58,8 +58,9 @@
 ;;
 ;; (defun th-notifications-add (str)
 ;;   (interactive "sNotification: ")
-;;   (shell-command (concat "stumpish notifications-add '" str "'"))
-;;   (th-notifications-show))
+;;   (start-process "notifications-add" nil
+;;                  "stumpish" "notifications-add" str))
+;;
 
 ;;; Code:
 
