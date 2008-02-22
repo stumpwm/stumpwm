@@ -31,17 +31,35 @@
 ;;;
 ;;; NOTES:
 ;;; see http://mpd.wikia.com/wiki/Protocol_Reference for full protocol
+#-(or sbcl clisp) (error "unimplemented")
+
 (in-package :stumpwm)
 
 ;;mpd client
 (defparameter *mpd-socket* nil)
-(defparameter *mpd-server* "localhost")
+(defparameter *mpd-server* 
+  #+cmu
+  "localhost"
+  #+sbcl
+  #(127 0 0 1)
+  )
 (defparameter *mpd-port* 6600)
+
+(defmacro with-mpd-connection (&body body)
+  `(if *mpd-socket*
+       (handler-case (progn ,@body)
+                     (error (c) (progn
+                                  (message "Error with mpd connection: ~a" c)
+                                  (setf *mpd-socket* nil))))
+     (message "Error: not connected to mpd~%")))
 
 (defun mpd-send (command)
   "Send command to stream ending with newline"
   (with-mpd-connection
-   (ext:write-char-sequence
+   (#+cmu   
+    ext:write-char-sequence
+    #+sbcl  
+    write-sequence
     (concatenate  'string command (string #\Newline))
     *mpd-socket*)))
 
@@ -78,11 +96,19 @@
 
 (defun mpd-connect ()
   "Connect to mpd server"
-  (setf *mpd-socket*
+    (setq *mpd-socket*
+	  #+cmu
         (handler-case (socket:socket-connect *mpd-port* *mpd-server*
                                              :element-type 'character)
                       ((or system::simple-os-error error)
                        (err)
+			 (format t  "Error connecting to mpd: ~a~%" err)))
+	  #+sbcl
+	  (handler-case (let ((s (make-instance 'sb-bsd-sockets:inet-socket :type :stream :protocol :tcp)))
+			  (sb-bsd-sockets:socket-connect s *mpd-server* *mpd-port*)
+			  (sb-bsd-sockets:socket-make-stream s :input t :output t :buffering :none))
+			((or simple-error error) 
+			 (err)
                        (format t  "Error connecting to mpd: ~a~%" err))))
   (when *mpd-socket*
     (read-line *mpd-socket*)))
@@ -98,13 +124,6 @@
   (mpd-send cmd)
   (mpd-receive))
 
-(defmacro with-mpd-connection (&body body)
-  `(if *mpd-socket*
-       (handler-case (progn ,@body)
-                     (error (c) (progn
-                                  (message "Error with mpd connection: ~a" c)
-                                  (setf *mpd-socket* nil))))
-     (message "Error: not connected to mpd~%")))
 
 ;;mpd formatter
 (dolist (a '((#\m fmt-mpd-status)))
