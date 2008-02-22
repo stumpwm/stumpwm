@@ -373,5 +373,5 @@
         (define-key m (kbd "v") "mpd-set-volume")
         (define-key m (kbd "e") "mpd-volume-up")
         (define-key m (kbd "d") "mpd-volume-down")
-        (define-key m (kbd "S") *mpd-search-map*)
+        (define-key m (kbd "S") '*mpd-search-map*)
         m))
