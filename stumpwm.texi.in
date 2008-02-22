@@ -498,6 +498,8 @@ List all key sequences that are bound to the specified command
 ### *root-map*
 ### *top-map*
 ### *groups-map*
+
+!!! bind
  
 @node Message and Input Bar, Windows, Key Bindings, Top
 @chapter Message and Input Bar

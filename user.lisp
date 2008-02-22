@@ -1910,3 +1910,8 @@ command prints the command bound to the specified key sequence."
 (define-stumpwm-command "emacs" ()
   "Start emacs unless it is already running, in which case focus it."
   (run-or-raise "emacs" '(:class "Emacs")))
+
+(define-stumpwm-command "bind" ((key :text "Key Chord: ") (command :rest "Command: "))
+  "Hang a key binding off the escape key."
+  (define-key *root-map* (kbd key) command))
+

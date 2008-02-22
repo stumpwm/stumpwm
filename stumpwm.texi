@@ -559,6 +559,11 @@ The top level key map. This is where you'll find the binding for the
 The keymap that group related key bindings sit on. It is bound to @kbd{C-t g} by default.
 @end defvar
 
+
+@deffn {Command} bind KEY COMMAND
+Hang a key binding off the escape key.
+@end deffn
+
  
 @node Message and Input Bar, Windows, Key Bindings, Top
 @chapter Message and Input Bar
