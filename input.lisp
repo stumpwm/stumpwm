@@ -514,7 +514,8 @@ functions are passed this structure as their first argument."
 
 (defun input-self-insert (input key)
   (let ((char (xlib:keysym->character *display* (key-keysym key))))
-    (if (or (key-mods-p key) (null char))
+    (if (or (key-mods-p key) (null char)
+            (not (characterp char)))
         :error
         (input-insert-char input char))))
 
