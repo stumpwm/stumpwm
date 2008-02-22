@@ -2959,7 +2959,9 @@ The Caller is responsible for setting up the input focus."
                     (handle-keymap cmd code state key-seq nil update-fn)
                  (when grab (ungrab-pointer)))))
             (t (values cmd key-seq)))
-          (if (equalp key (kbd "?"))
+          (if (find key (list (kbd "?")
+                              (kbd "C-h"))
+                    :test 'equalp)
               (progn (display-keybinding keymap) (values t key-seq))
               (values nil key-seq))))))
 

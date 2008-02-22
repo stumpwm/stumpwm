@@ -3,6 +3,9 @@
 This file documents user visible changes between versions of StumpWM
 
 * Changes since 0.9.2
+** C-h lists keybindings too
+In any keymap C-h and ? will list the keybindings.
+
 ** New command bind
 Hang a key binding off the escape key.
 
