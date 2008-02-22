@@ -379,12 +379,10 @@ If the screen is split into multiple frames, one split will be
 undone. If there is only one split, the effect will be the same as @kbd{C-t Q}.
 
 @item C-t o
+@itemx C-t TAB
 If the screen is split into multiple frames, focus shifts to the
 @command{next} frame, where it cycles to the right and then down; analogous
 to @kbd{C-x o} in Emacs.
-
-@item C-t TAB
-Jump to the last frame that had focus.
 
 @item C-t F
 Display ``Current Frame'' in the frame which has focus.

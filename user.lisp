@@ -93,7 +93,7 @@
           (define-key m (kbd "S") "hsplit")
           (define-key m (kbd "r") "iresize")
           (define-key m (kbd "o") "fnext")
-          (define-key m (kbd "TAB") "fother")
+          (define-key m (kbd "TAB") "fnext")
           (define-key m (kbd "f") "fselect")
           (define-key m (kbd "F") "curframe")
           (define-key m (kbd "t") "meta C-t")
