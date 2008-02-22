@@ -1497,14 +1497,21 @@ groups and vgroups commands."
     (when (> (length groups) 1)
       (switch-to-group (second groups)))))
 
-(define-stumpwm-command "grename" ((name :string "Group's New Name: "))
+(define-stumpwm-command "grename" ((name :string "New name for group: "))
   "Rename the current group."
   (let ((group (current-group)))
     (cond ((find-group (current-screen) name)
-           (message "^1*^BError: Name already exists."))
-          ((zerop (length name))
-           (message "^1*^BError: Empty name."))
+           (message "^1*^BError: Name already exists"))
+          ((or (zerop (length name))
+               (string= name "."))
+           (message "^1*^BError: empty name"))
           (t
+           (cond ((and (char= (char name 0) #\.) ;change to hidden group
+                       (not (char= (char (group-name group) 0) #\.)))
+                  (setf (group-number group) (find-free-hidden-group-number (current-screen))))
+                 ((and (not (char= (char name 0) #\.)) ;change from hidden group
+                       (char= (char (group-name group) 0) #\.))
+                  (setf (group-number group) (find-free-group-number (current-screen)))))
            (setf (group-name group) name)))))
 
 (defun echo-groups (screen fmt &optional verbose (wfmt *window-format*))
