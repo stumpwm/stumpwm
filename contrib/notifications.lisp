@@ -27,7 +27,7 @@
 ;;
 ;; Then add the formatter %n to your mode-line spec, i.e. like this:
 ;;
-;;   (setf *screen-mode-line-format* "[%W] {%g} (%n)")
+;;   (setf *screen-mode-line-format* "[%W] {%g} (%N)")
 ;;
 ;; You might want to bind *notifications-map* to a key:
 ;;
@@ -66,7 +66,9 @@
 
 (in-package :stumpwm)
 
-(push '(#\n notifications-as-string) *screen-mode-line-formatters*)
+(push '(#\N notifications-as-string) *screen-mode-line-formatters*)
+
+(defparameter *notifications-delimiters* '("[" "]"))
 
 (defvar notifications nil
   "A list of notification strings.")
@@ -94,10 +96,12 @@ added anew."
 
 (defun notifications-as-string (&rest r)
   (declare (ignore r))
-  (let ((str "+"))
-    (loop for n in notifications
-       do (setf str (concat str " " n " +")))
-    str))
+  (if notifications
+      (format nil "~a ~{ ~a ~#[~:;;~]~} ~a"
+              (first *notifications-delimiters*)
+              notifications
+              (second *notifications-delimiters*))
+    ""))
 
 (define-stumpwm-command "notifications-show" ()
   "Messages all notifications."
