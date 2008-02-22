@@ -1409,7 +1409,14 @@ bar."
       (let ((fobj (xlib:open-font *display* (first (xlib:list-font-names *display* font :max-fonts 1)))))
         (xlib:close-font (screen-font i))
         (setf (screen-font i) fobj
-              (xlib:gcontext-font (screen-message-gc i)) fobj)))
+              (xlib:gcontext-font (screen-message-gc i)) fobj)
+        ;; update the modelines too
+        (dolist (h (screen-heads i))
+          (when (and (head-mode-line h)
+                     (eq (mode-line-mode (head-mode-line h)) :stump))
+            (setf (xlib:gcontext-font (mode-line-gc (head-mode-line h))) fobj)
+            (resize-mode-line (head-mode-line h))
+            (sync-mode-line (head-mode-line h))))))
     t))
 
 (defun max-width (font l)
