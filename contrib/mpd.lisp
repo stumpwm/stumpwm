@@ -38,7 +38,7 @@
 ;;mpd client
 (defparameter *mpd-socket* nil)
 (defparameter *mpd-server* 
-  #+cmu
+  #+clisp
   "localhost"
   #+sbcl
   #(127 0 0 1)
@@ -59,7 +59,7 @@
 (defun mpd-send (command)
   "Send command to stream ending with newline"
   (with-mpd-connection
-   (#+cmu   
+   (#+clisp
     ext:write-char-sequence
     #+sbcl  
     write-sequence
@@ -100,7 +100,7 @@
 (defun mpd-connect ()
   "Connect to mpd server"
     (setq *mpd-socket*
-	  #+cmu
+	  #+clisp
         (handler-case (socket:socket-connect *mpd-port* *mpd-server*
                                              :element-type 'character)
                       ((or system::simple-os-error error)
