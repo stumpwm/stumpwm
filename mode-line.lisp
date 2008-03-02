@@ -497,6 +497,6 @@ timer.")
       (when (head-mode-line head)
         (toggle-mode-line screen head))))
 
-(define-stumpwm-command "mode-line" ()
+(defcommand mode-line () ()
   "A command to toggle the mode line visibility."
   (toggle-mode-line (current-screen) (current-head)))

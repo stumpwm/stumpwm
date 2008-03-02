@@ -1959,7 +1959,7 @@ either :width or :height"
                           (lambda (leaf)
                             (sync-frame-windows group leaf)))))))))
 
-(defun balance-frames (group tree)
+(defun balance-frames-internal (group tree)
   "Resize all the children of tree to be of equal width or height
 depending on the tree's split direction."
   (let* ((split-type (tree-split-type tree))

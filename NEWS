@@ -3,6 +3,13 @@
 This file documents user visible changes between versions of StumpWM
 
 * Changes since 0.9.2
+** define-stumpwm-command is deprecated
+Use defcommand instead
+
+** pull-window-by-number arguments are reversed
+
+** renumber function's arguments are reversed
+
 ** C-h lists keybindings too
 In any keymap C-h and ? will list the keybindings.
 

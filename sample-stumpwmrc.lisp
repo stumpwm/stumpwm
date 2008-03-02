@@ -9,7 +9,7 @@
 
 ;; prompt the user for an interactive command. The first arg is an
 ;; optional initial contents.
-(define-stumpwm-command "colon1" ((initial :rest nil))
+(defcommand colon1 (&optional (initial "")) (:rest)
   (let ((cmd (read-one-line (current-screen) ": " initial)))
     (when cmd
       (interactive-command cmd (current-screen)))))
@@ -25,7 +25,7 @@
 
 ;; Web jump (works for Google and Imdb)
 (defmacro make-web-jump (name prefix)
-  `(define-stumpwm-command ,name ((search :rest ,(concatenate 'string name " search: ")))
+  `(defcommand ,name (search) ((:rest ,(concatenate 'string name " search: ")))
     (substitute #\+ #\Space search)
     (run-shell-command (concatenate 'string ,prefix search))))
 
@@ -35,13 +35,6 @@
 ;; C-t M-s is a terrble binding, but you get the idea.
 (define-key *root-map* (kbd "M-s") "google")
 (define-key *root-map* (kbd "i") "imdb")
-
-
-;; Using run-or-raise
-(define-stumpwm-command "emacs" ()
-  (run-or-raise "emacs" '(:class "Emacs")))
-
-(define-key *root-map* (kbd "E") "emacs")
 
 ;; Message window font
 (set-font "-xos4-terminus-medium-r-normal--14-140-72-72-c-80-iso8859-15")

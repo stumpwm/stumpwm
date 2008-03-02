@@ -572,7 +572,7 @@ Hang a key binding off the escape key.
 Display @var{string} in the message bar.
 @end deffn
 
-@deffn {Command} colon INITIAL-INPUT
+@deffn {Command} colon &OPTIONAL INITIAL-INPUT
 Read a command from the user. @var{initial-text} is optional. When
 supplied, the text will appear in the prompt.
 @end deffn
@@ -796,18 +796,18 @@ Go to the previous window in the window list.
 Pull the next hidden window into the current frame.
 @end deffn
 
-@deffn {Command} delete 
+@deffn {Command} delete-current-window 
 Delete the current window. This is a request sent to the window. The
 window's client may decide not to grant the request or may not be able
 to if it is unresponsive.
 @end deffn
 
-@deffn {Command} kill 
+@deffn {Command} kill-current-window 
 `Tell X to disconnect the client that owns the current window. if
-@command{delete} didn't work, try this.
+@command{delete-current-window} didn't work, try this.
 @end deffn
 
-@deffn {Command} windows FMT
+@deffn {Command} windows &OPTIONAL (FMT *WINDOW-FORMAT*)
 Display a list of managed windows. The optional argument @var{fmt} can
 be used to override the default window formatting.
 @end deffn
@@ -820,9 +820,9 @@ Switch to the window last focused.
 Pull the last focused, hidden window into the current frame.
 @end deffn
 
-@deffn {Command} number N
-Change the window's number to the specified number. If another window
-is using the number, then the windows swap numbers.
+@deffn {Command} renumber NT &OPTIONAL (GROUP (CURRENT-GROUP))
+Change the current window's number to the specified number. If another window
+is using the number, then the windows swap numbers. Defaults to current group.
 @end deffn
 
 @deffn {Command} meta KEY
@@ -833,7 +833,7 @@ Send a fake key to the current window. @var{key} is a typical StumpWM key, like 
 Switch to the first window that starts with @var{win}.
 @end deffn
 
-@deffn {Command} windowlist FMT
+@deffn {Command} windowlist &OPTIONAL (FMT *WINDOW-FORMAT*)
 Allow the user to Select a window from the list of windows and focus
 the selected window. For information of menu bindings
 @xref{Menus}. The optional argument @var{fmt} can be specified to
@@ -1037,8 +1037,8 @@ Frames contain windows. All windows exist within a frame.
 Those used to ratpoison will notice that this differs from ratpoison's
 window pool, where windows and frames are not so tightly connected.
 
-@deffn {Command} pull WINDOW-NUMBER
-Move the window whose number is @var{window-number} to the current frame.
+@deffn {Command} pull-window-by-number N &OPTIONAL (GROUP (CURRENT-GROUP))
+Pull window N from another frame into the current frame and focus it.
 @end deffn
 
 @deffn {Command} hsplit 
@@ -1049,9 +1049,10 @@ Split the current frame into 2 side-by-side frames.
 Split the current frame into 2 frames, one on top of the other.
 @end deffn
 
-@deffn {Command} remove 
-Remove the current frame. Windows in the frame are migrated to the
-frame taking up its space.
+@deffn {Command} remove-split &OPTIONAL (GROUP (CURRENT-GROUP))
+Remove the current frame in the specified group (defaults to current
+group). Windows in the frame are migrated to the frame taking up its
+space.
 @end deffn
 
 @deffn {Command} only 
@@ -1295,14 +1296,14 @@ Cycle to the previous group in the group list.
 Merge @var{from} into the current group. @var{from} is not deleted.
 @end deffn
 
-@deffn {Command} groups FMT
+@deffn {Command} groups &OPTIONAL (FMT *GROUP-FORMAT*)
 Display the list of groups with their number and
 name. @var{*group-format*} controls the formatting. The optional
 argument @var{fmt} can be used to override the default group
 formatting.
 @end deffn
 
-@deffn {Command} vgroups GFMT WFMT
+@deffn {Command} vgroups &OPTIONAL GFMT WFMT
 Like @command{groups} but also display the windows in each group. The
 optional arguments @var{gfmt} and @var{wfmt} can be used to override
 the default group formatting and window formatting, respectively.
@@ -1424,17 +1425,13 @@ The list of screens managed by stumpwm.
 @node Interacting With Unix, Interacting With X11, Screens, Top
 @chapter Interacting With Unix
 
-@deffn {Command} exec CMD
-Run the shell command asynchronously. Output is discarded.
-@end deffn
-
-
-@defun run-shell-command CMD &OPTIONAL COLLECT-OUTPUT-P
+@deffn {Command} run-shell-command CMD &OPTIONAL COLLECT-OUTPUT-P
 Run the specified shell command. If @var{collect-output-p} is @code{T}
 then run the command synchonously and collect the output. Be
 careful. If the shell command doesn't return, it will hang StumpWM. In
 such a case, kill the shell command to resume StumpWM.
-@end defun
+@end deffn
+
 
 @defun programs-in-path BASE &OPTIONAL FULL-PATH (PATH (SPLIT-STRING (GETENV PATH) :))
 Return a list of programs in the path that start with @var{base}. if
@@ -1496,12 +1493,12 @@ Warp the mouse to the specified location.
 Warp the mouse by the specified amount from its current position.
 @end deffn
 
-@deffn {Command} time 
-Display time.
+@deffn {Command} echo-date 
+Display the date and time.
 @end deffn
 
-@deffn {Command} eval CMD
-Evaluate the lisp s-expression and display the result.
+@deffn {Command} eval-line CMD
+NIL
 @end deffn
 
 @deffn {Command} insert STRING
@@ -1520,8 +1517,7 @@ Reload the @file{~/.stumpwmrc} file.
 Display all the bindings in @var{*root-map*}.
 @end deffn
 
-@deffn {Command} abort 
-Do nothing.
+@deffn {Command} keyboard-quit 
 @end deffn
 
 @deffn {Command} quit 
@@ -1556,10 +1552,10 @@ know lisp very well. One might put the following in one's rc file:
 @end defun
 
 
-@defmac define-stumpwm-command @var{name} ((@var{var} @var{type} @var{prompt}) ...) &body @var{body}
+@defmac defcommand @var{name} &var{lambda-list} ((@var{type} @var{prompt}) ...) &body @var{body}
 Create a new command with the name @var{name}. @var{prompt} is
-optional. If left out, stumpwm will not prompt for the variable and it
-will be set to nil.
+optional. If left out, stumpwm will not prompt for the variable. Do
+this when @var{lambda-list} includes optional arguments.
 @end defmac
 
 @defmac define-stumpwm-type @var{type} (@var{input} @var{prompt}) &body @var{body}

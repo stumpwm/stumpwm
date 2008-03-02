@@ -79,20 +79,26 @@
             (*print-pretty* t))
         (prin1 foo fp)))))
 
-(define-stumpwm-command "dump-group" ((file :rest "Dump To File: "))
+(defcommand dump-group-to-file (file) (:rest "Dump To File: ")
   "Dumps the frames of the current group of the current screen to the named file."
   (dump-to-file (dump-group (current-group)) file)
   (message "Group dumped"))
 
-(define-stumpwm-command "dump-screen" ((file :rest "Dump To File: "))
+(defcommand-alias dump-group dump-group-to-file) 
+
+(defcommand dump-screen-to-file (file) (:rest "Dump To File: ")
   "Dumps the frames of all groups of the current screen to the named file"
   (dump-to-file (dump-screen (current-screen)) file)
   (message "Screen dumped"))
 
-(define-stumpwm-command "dump-desktop" ((file :rest "Dump To File: "))
+(defcommand-alias dump-screen dump-screen-to-file)
+
+(defcommand dump-desktop-to-file (file) (:rest "Dump To File: ")
   "Dumps the frames of all groups of all screens to the named file"
   (dump-to-file (dump-desktop) file)
   (message "Desktop dumped"))
+
+(defcommand-alias dump-desktop dump-desktop-to-file)
 
 
 ;;;
@@ -186,9 +192,9 @@
       (t
        (message "Don't know how to restore ~a" dump)))))
 
-(define-stumpwm-command "restore" ((file :rest "Restore From File: "))
+(defcommand restore (file) ((:rest "Restore From File: "))
   "Restores screen, groups, or frames from named file, depending on file's contents."
   (restore-from-file file))
 
-(define-stumpwm-command "place-existing-windows" ()
+(defcommand place-existing-windows () ()
   (sync-window-placement))

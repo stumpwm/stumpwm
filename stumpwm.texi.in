@@ -633,12 +633,12 @@ An input function takes 2 arguments: the input structure and the key pressed.
 !!! pull-hidden-next
 !!! prev
 !!! pull-hidden-previous
-!!! delete
-!!! kill
+!!! delete-current-window
+!!! kill-current-window
 !!! windows
 !!! other
 !!! pull-hidden-other
-!!! number
+!!! renumber
 !!! meta
 !!! select
 !!! windowlist
@@ -725,10 +725,10 @@ Frames contain windows. All windows exist within a frame.
 Those used to ratpoison will notice that this differs from ratpoison's
 window pool, where windows and frames are not so tightly connected.
 
-!!! pull
+!!! pull-window-by-number
 !!! hsplit
 !!! vsplit
-!!! remove
+!!! remove-split
 !!! only
 !!! curframe
 !!! fnext
@@ -868,9 +868,8 @@ currently focused frame belongs.
 @node Interacting With Unix, Interacting With X11, Screens, Top
 @chapter Interacting With Unix
 
-!!! exec
+!!! run-shell-command
 
-@@@ run-shell-command
 @@@ programs-in-path
 @@@ pathname-is-executable-p
 
@@ -894,23 +893,23 @@ section.
 !!! banish
 !!! ratwarp
 !!! ratrelwarp
-!!! time
-!!! eval
+!!! echo-date
+!!! eval-line
 !!! insert
 !!! reload
 !!! loadrc
 !!! help
-!!! abort
+!!! keyboard-quit
 !!! quit
 !!! getsel
 !!! putsel
 !!! command-mode
 @@@ run-commands
 
-@defmac define-stumpwm-command @var{name} ((@var{var} @var{type} @var{prompt}) ...) &body @var{body}
+@defmac defcommand @var{name} &var{lambda-list} ((@var{type} @var{prompt}) ...) &body @var{body}
 Create a new command with the name @var{name}. @var{prompt} is
-optional. If left out, stumpwm will not prompt for the variable and it
-will be set to nil.
+optional. If left out, stumpwm will not prompt for the variable. Do
+this when @var{lambda-list} includes optional arguments.
 @end defmac
 
 @defmac define-stumpwm-type @var{type} (@var{input} @var{prompt}) &body @var{body}

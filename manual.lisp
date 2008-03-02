@@ -59,9 +59,10 @@
 
 (defun generate-command-doc (s line)
   (ppcre:register-groups-bind (name) ("^!!! (.*)" line)
-			      (let ((cmd (gethash name *command-hash*)))
+			      (let ((cmd (symbol-function (find-symbol (string-upcase name) :stumpwm))))
 				(format s "@deffn {Command} ~a ~{~a~^ ~}~%~a~&@end deffn~%~%"
-					name (mapcar 'first (command-args cmd)) (command-docstring cmd))
+					name (sb-impl::%simple-fun-arglist cmd)
+                                        (documentation cmd 'function))
 				t)))
 
 (defun generate-manual (&key (in #p"stumpwm.texi.in") (out #p"stumpwm.texi"))
