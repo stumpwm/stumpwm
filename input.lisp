@@ -110,10 +110,10 @@
                     (xlib:font-ascent (screen-font screen))))
          (win (screen-input-window screen)))
     ;; Window dimensions
-    (xlib:map-window win)
     (xlib:with-state (win)
       (setf (xlib:window-priority win) :above
             (xlib:drawable-height win) height))
+    (xlib:map-window win)
     ;; Draw the prompt
     (draw-input-bucket screen prompt input)
     ;; Ready to recieve input
