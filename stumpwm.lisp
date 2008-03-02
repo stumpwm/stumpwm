@@ -230,7 +230,8 @@ of those expired."
                  ;; switch to the (old) current group.
                  (let ((netwm-id (first (xlib:get-property (screen-root s) :_NET_CURRENT_DESKTOP))))
                    (when (and netwm-id (< netwm-id (length (screen-groups s))))
-                     (switch-to-group (elt (sort-groups s) netwm-id))))))
+                     (switch-to-group (elt (sort-groups s) netwm-id))))
+                 (redraw-current-message (current-screen))))
              ;; Let's manage.
              (let ((*package* (find-package *default-package*)))
                (run-hook *start-hook*)
