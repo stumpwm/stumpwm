@@ -73,7 +73,8 @@
 (defvar notifications nil
   "A list of notification strings.")
 
-(define-stumpwm-command "notifications-add" ((str :rest "Notification: "))
+(defcommand notifications-add (str)
+  ((:rest "Notification: "))
   "Add a notification string.
 If a notification is already included, it will be moved to the front instead of
 added anew."
@@ -82,15 +83,18 @@ added anew."
       (setf notifications (delete str notifications :test #'string=)))
     (push str notifications)))
 
-(define-stumpwm-command "notifications-reset" ()
+(defcommand notifications-reset ()
+  ()
   "Clear all notifications."
   (setf notifications nil))
 
-(define-stumpwm-command "notifications-delete-first" ()
+(defcommand notifications-delete-first ()
+  ()
   "Delete the first notification."
   (setf notifications (cdr notifications)))
 
-(define-stumpwm-command "notifications-delete-last" ()
+(defcommand notifications-delete-last ()
+  ()
   "Delete the first notification."
   (setf notifications (nreverse (cdr (nreverse notifications)))))
 
@@ -103,7 +107,8 @@ added anew."
               (second *notifications-delimiters*))
     ""))
 
-(define-stumpwm-command "notifications-show" ()
+(defcommand notifications-show ()
+  ()
   "Messages all notifications."
   (message "Notifications: ~a" (notifications-as-string)))
 
