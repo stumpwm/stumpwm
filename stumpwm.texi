@@ -1481,7 +1481,7 @@ section.
 Start emacs unless it is already running, in which case focus it.
 @end deffn
 
-@deffn {Command} banish WHERE
+@deffn {Command} banish &OPTIONAL WHERE
 Warp the mouse the lower right corner of the current head.
 @end deffn
 
@@ -1524,6 +1524,13 @@ Display all the bindings in @var{*root-map*}.
 Quit StumpWM.
 @end deffn
 
+@deffn {Command} soft-restart 
+Soft Restart StumpWM. The lisp process isn't restarted. Instead,
+control jumps to the very beginning of the stumpwm program. This
+differs from a theoretical hard restart, which would restart the unix
+process.
+@end deffn
+
 @deffn {Command} getsel 
 Echo the X selection.
 @end deffn
@@ -1536,6 +1543,14 @@ Stuff the string @var{string} into the X selection.
 Command mode allows you to type ratpoison commands without needing the
 @key{C-t} prefix. Keys not bound in StumpWM will still get sent to the
 current window. To exit command mode, type @key{C-g}.
+@end deffn
+
+@deffn {Command} copy-unhandled-error 
+When an unhandled error occurs, StumpWM restarts and attempts to
+continue. Unhandled errors should be reported to the mailing list so
+they can be fixed. Use this command to copy the unhandled error and
+backtrace to the X11 selection so you can paste in your email when
+submitting the bug report.
 @end deffn
 
 @defun run-commands &REST COMMANDS

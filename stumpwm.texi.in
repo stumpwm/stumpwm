@@ -901,9 +901,11 @@ section.
 !!! help
 !!! keyboard-quit
 !!! quit
+!!! soft-restart
 !!! getsel
 !!! putsel
 !!! command-mode
+!!! copy-unhandled-error
 @@@ run-commands
 
 @defmac defcommand @var{name} &var{lambda-list} ((@var{type} @var{prompt}) ...) &body @var{body}
