@@ -2236,10 +2236,11 @@ windows used to draw the numbers in. The caller must destroy them."
 
 (defun reset-message-window-timer ()
   "Set the message window timer to timeout in *timeout-wait* seconds."
-  (when (timer-p *message-window-timer*)
-    (cancel-timer *message-window-timer*))
-  (setf *message-window-timer* (run-with-timer *timeout-wait* nil
-                                               'unmap-all-message-windows)))
+  (unless *ignore-echo-timeout*
+    (when (timer-p *message-window-timer*)
+      (cancel-timer *message-window-timer*))
+    (setf *message-window-timer* (run-with-timer *timeout-wait* nil
+                                                 'unmap-all-message-windows))))
 
 (defun show-frame-indicator (group &optional (clear t))
   ;; Don't draw if this isn't a current group!
@@ -2281,7 +2282,8 @@ windows used to draw the numbers in. The caller must destroy them."
       (setf (screen-last-msg-highlights screen) (butlast (screen-last-msg-highlights screen))))))
 
 (defun redraw-current-message (screen)
-  (let ((*record-last-msg-override* t))
+  (let ((*record-last-msg-override* t)
+        (*ignore-echo-timeout* t))
     (dformat 5 "Redrawing message window!~%")
     (apply 'echo-string-list screen (screen-current-msg screen) (screen-current-msg-highlights screen))))
 
