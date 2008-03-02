@@ -210,7 +210,7 @@ of those expired."
                        (and *startup-message* (message "~a" *startup-message*))
                        (message "^B^1*Error loading ^b~A^B: ^n~A" rc err))))
                (when *last-unhandled-error*
-                 (message-no-timeout "^B^1StumpWM Crashed With An Unhandled Error!~%Copy the error to the clipboard with the 'copy-unhandled-error' command.~%^b~a^B^n~%~%~a"
+                 (message-no-timeout "^B^1*StumpWM Crashed With An Unhandled Error!~%Copy the error to the clipboard with the 'copy-unhandled-error' command.~%^b~a^B^n~%~%~a"
                           (first *last-unhandled-error*) (second *last-unhandled-error*)))
                (mapc 'process-existing-windows *screen-list*)
                ;; We need to setup each screen with its current window. Go
