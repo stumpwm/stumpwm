@@ -1085,3 +1085,7 @@ input focus is transfered to the window you click on.")
        (unwind-protect
             (progn ,@body)
          (xlib:set-input-focus *display* ,focus ,revert)))))
+
+(defvar *last-unhandled-error* nil
+  "If an unrecoverable error occurs, this variable will contain the
+  condition and the backtrace.")

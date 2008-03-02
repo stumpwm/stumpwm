@@ -130,10 +130,7 @@ of those expired."
 
 (defun stumpwm-internal-loop ()
   "The internal loop that waits for events and handles them."
-  ;; before entering the interactive debugger, ungrab the keyboard. If
-  ;; we don't the whole X server could be locked.
-  (catch :quit
-    (loop
+  (loop
      (run-hook *internal-loop-hook*)
      (handler-bind
          ;;          ((or xlib:window-error xlib:drawable-error) (lambda (c)
@@ -150,9 +147,7 @@ of those expired."
                         (message "^1*^B~a" s)))
                      (:break (invoke-debugger c))
                      (:abort
-                      (format t "~&Caught '~a' at the top level. Please report this." c)
-                      (print-backtrace)
-                      (throw :quit t))))))
+                      (throw :top-level (list c (backtrace-string))))))))
        ;; Note: process-event appears to hang for an unknown
        ;; reason. This is why it is passed a timeout in hopes that
        ;; this will keep it from hanging.
@@ -169,7 +164,7 @@ of those expired."
          ;; it seems not.
          (xlib:display-finish-output *display*)
          ;;(dformat 10 "toplevel focus: ~a~%" (multiple-value-list (xlib:input-focus *display*)))
-         )))))
+         ))))
 
 (defun parse-display-string (display)
   "Parse an X11 DISPLAY string and return the host and display from it."
@@ -187,9 +182,7 @@ of those expired."
 	    :local)
 	   (t :internet)))))
 
-;; Usage: (stumpwm)
-(defun stumpwm (&optional (display-str (or (getenv "DISPLAY") ":0")))
-  "Start the stump window manager."
+(defun stumpwm-internal (display-str)
   (multiple-value-bind (host display screen protocol) (parse-display-string display-str)
     (declare (ignore screen))
     (setf *display* (xlib:open-display host :display display :protocol protocol)
@@ -204,17 +197,21 @@ of those expired."
                ;; Initialize all the screens
                (handler-case
                    (progn (setf *screen-list* (loop for i in (xlib:display-roots *display*)
-                                                    for n from 0
-                                                    collect (init-screen i n host)))
+                                                 for n from 0
+                                                 collect (init-screen i n host)))
                           (xlib:display-finish-output *display*))
                  (xlib:access-error ()
-                   (return-from stumpwm (write-line "Another window manager is running."))))
+                   (write-line "Another window manager is running.")
+                   (throw :top-level :quit)))
                ;; Load rc file
                (let ((*package* (find-package *default-package*)))
                  (multiple-value-bind (success err rc) (load-rc-file)
                    (if success
                        (and *startup-message* (message "~a" *startup-message*))
                        (message "^B^1*Error loading ^b~A^B: ^n~A" rc err))))
+               (when *last-unhandled-error*
+                 (message-no-timeout "^B^1StumpWM Crashed With An Unhandled Error!~%Copy the error to the clipboard with the 'copy-unhandled-error' command.~%^b~a^B^n~%~%~a"
+                          (first *last-unhandled-error*) (second *last-unhandled-error*)))
                (mapc 'process-existing-windows *screen-list*)
                ;; We need to setup each screen with its current window. Go
                ;; through them in reverse so the first screen's frame ends up
@@ -238,4 +235,23 @@ of those expired."
              (let ((*package* (find-package *default-package*)))
                (run-hook *start-hook*)
                (stumpwm-internal-loop)))
-        (xlib:close-display *display*)))))
+        (xlib:close-display *display*))))
+  ;; what should the top level loop do?
+  :quit)
+
+;; Usage: (stumpwm)
+(defun stumpwm (&optional (display-str (or (getenv "DISPLAY") ":0")))
+  "Start the stump window manager."
+  (loop
+     (let ((ret (catch :top-level
+                  (stumpwm-internal display-str))))
+       (setf *last-unhandled-error* nil)
+       (cond ((and (consp ret)
+                   (typep (first ret) 'condition))
+              (format t "~&Caught '~a' at the top level. Please report this.~%~a" 
+                      (first ret) (second ret))
+              (setf *last-unhandled-error* ret))
+             ((eq ret :restart))
+             (t 
+              ;; the number is the unix return code
+              (return-from stumpwm 0))))))

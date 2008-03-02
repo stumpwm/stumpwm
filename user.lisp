@@ -1215,7 +1215,14 @@ great example."
 
 (defcommand quit () ()
 "Quit StumpWM."
-  (throw :quit nil))
+  (throw :top-level :quit))
+
+(defcommand soft-restart () ()
+  "Soft Restart StumpWM. The lisp process isn't restarted. Instead,
+control jumps to the very beginning of the stumpwm program. This
+differs from a theoretical hard restart, which would restart the unix
+process."
+  (throw :top-level :restart))
 
 (defun clear-frame (frame group)
   "Clear the given frame."
@@ -1961,3 +1968,15 @@ command prints the command bound to the specified key sequence."
                   (:rest "Command: "))
   "Hang a key binding off the escape key."
   (define-key *root-map* (kbd key) command))
+
+(defcommand copy-unhandled-error () ()
+  "When an unhandled error occurs, StumpWM restarts and attempts to
+continue. Unhandled errors should be reported to the mailing list so
+they can be fixed. Use this command to copy the unhandled error and
+backtrace to the X11 selection so you can paste in your email when
+submitting the bug report."
+  (if *last-unhandled-error*
+      (progn
+        (set-x-selection (format nil "~a~%~a" (first *last-unhandled-error*) (second *last-unhandled-error*)))
+        (message "Copied to clipboard."))
+      (message "There was no unhandled error!")))
