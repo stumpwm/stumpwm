@@ -181,15 +181,15 @@
 package symbols. But for backwards compatibility this macro creates an
 alias name for the command that is only accessible interactively."
   `(setf (gethash ',alias *command-hash*)
-         (make-command-alias :from ',original
-                             :to ',alias)))
+         (make-command-alias :from ',alias
+                             :to ',original)))
 
 (defun all-commands ()
-  "Return a list of all interactive commands."
+  "Return a list of all interactive commands as strings."
   (let (acc)
     (maphash (lambda (k v)
                (declare (ignore v))
-               (push k acc))
+               (push (string-downcase k) acc))
              *command-hash*)
     (sort acc 'string<)))
 
@@ -1014,7 +1014,7 @@ user aborted."
                                              :start 0)
                          input))
            (cmd-data (or (get-command-structure command)
-                         (throw 'error (format nil "Command '~s' ~s not found." command *command-hash*))))
+                         (throw 'error (format nil "Command '~a' not found." command))))
            (arg-specs (command-args cmd-data))
            (args (loop for spec in arg-specs
                     collect (let* ((type (if (listp spec)
@@ -1042,7 +1042,7 @@ user aborted."
                                                                         (argument-line-start arg-line)))))
       ;; Success
       (prog1
-          (apply (get-command-symbol command) args)
+          (apply (command-name cmd-data) args)
         (setf *last-command* command)))))
 
 (defun interactive-command (cmd)
