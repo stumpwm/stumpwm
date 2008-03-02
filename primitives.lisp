@@ -126,6 +126,12 @@ be an integer.")
 (defvar *frame-indicator-timer* nil
   "Keep track of the timer that hides the frame indicator.")
 
+(defvar *frame-indicator-text* " Current Frame "
+  "What appears in the frame indicator window?")
+
+(defvar *suppress-frame-indicator* nil
+  "Set this to T if you never want to see the frame indicator.")
+
 (defvar *message-window-timer* nil
   "Keep track of the timer that hides the message window.")
 
@@ -425,6 +431,7 @@ Use the window's resource name.
   ;; The window that gets focus when no window has focus
   focus-window
   ;;
+  frame-window
   frame-outline-gc
   ;; color contexts
   message-cc

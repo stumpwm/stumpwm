@@ -1529,16 +1529,18 @@ T (default) then also focus the frame."
 
 (defun focus-frame (group f)
   (let ((w (frame-window f))
-        (last (tile-group-current-frame group)))
+        (last (tile-group-current-frame group))
+        (show-indicator nil))
     (setf (tile-group-current-frame group) f)
     ;; record the last frame to be used in the fother command.
     (unless (eq f last)
       (setf (tile-group-last-frame group) last)
       (run-hook-with-args *focus-frame-hook* f last)
-      (show-frame-indicator group))
+      (setf show-indicator t))
     (if w
         (focus-window w)
-        (no-focus group (frame-window last)))))
+        (no-focus group (frame-window last)))
+    (show-frame-indicator group)))
 
 (defun frame-windows (group f)
   (remove-if-not (lambda (w) (eq (window-frame w) f))
@@ -2234,6 +2236,17 @@ windows used to draw the numbers in. The caller must destroy them."
     (cancel-timer *message-window-timer*)
     (setf *message-window-timer* nil)))
 
+(defun unmap-frame-indicator-window (screen)
+  "Unmap the screen's message window, if it is mapped."
+;;  (unless (eq (xlib:window-map-state (screen-frame-window screen)) :unmapped)
+    (xlib:unmap-window (screen-frame-window screen)))
+
+(defun unmap-all-frame-indicator-windows ()
+  (mapc #'unmap-frame-indicator-window *screen-list*)
+  (when (timer-p *frame-indicator-timer*)
+    (cancel-timer *frame-indicator-timer*)
+    (setf *frame-indicator-timer* nil)))
+
 (defun reset-message-window-timer ()
   "Set the message window timer to timeout in *timeout-wait* seconds."
   (unless *ignore-echo-timeout*
@@ -2242,20 +2255,50 @@ windows used to draw the numbers in. The caller must destroy them."
     (setf *message-window-timer* (run-with-timer *timeout-wait* nil
                                                  'unmap-all-message-windows))))
 
-(defun show-frame-indicator (group &optional (clear t))
+(defun reset-frame-indicator-timer ()
+  "Set the message window timer to timeout in *timeout-wait* seconds."
+  (when (timer-p *frame-indicator-timer*)
+    (cancel-timer *frame-indicator-timer*))
+  (setf *frame-indicator-timer* (run-with-timer *timeout-frame-indicator-wait* nil
+                                                'unmap-all-frame-indicator-windows)))
+
+(defun show-frame-outline (group &optional (clear t))
   ;; Don't draw if this isn't a current group!
   (when (find group (mapcar 'screen-current-group *screen-list*))
-    (dformat 5 "show-frame-indicator!~%")
+    (dformat 5 "show-frame-outline!~%")
     ;; *resize-hides-windows* uses the frame outlines for display,
     ;; so try not to interfere.
     (unless (eq *top-map* *resize-map*)
       (when clear
         (clear-frame-outlines group))
       (let ((frame (tile-group-current-frame group)))
-        (unless (or (frame-window frame)
-                    (and (= 1 (length (tile-group-frame-tree group)))
-                         (atom (first (tile-group-frame-tree group)))))
-          (draw-frame-outline group frame t t))))))
+        (unless (and (= 1 (length (tile-group-frame-tree group)))
+                     (atom (first (tile-group-frame-tree group))))
+          ;; draw the outline
+          (unless (frame-window frame)
+            (draw-frame-outline group frame t t)))))))
+
+(defun show-frame-indicator (group &optional force)
+  (show-frame-outline group)
+  ;; FIXME: Arg, these tests are already done in show-frame-outline
+  (when (find group (mapcar 'screen-current-group *screen-list*))
+    (when (or force
+              (and (or (> 1 (length (tile-group-frame-tree group)))
+                       (not (atom (first (tile-group-frame-tree group)))))
+                   (not *suppress-frame-indicator*)))
+      (let ((frame (tile-group-current-frame group))
+            (w (screen-frame-window (current-screen)))
+            (string *frame-indicator-text*)
+            (font (screen-font (current-screen))))
+        (xlib:with-state (w)
+          (setf (xlib:drawable-x w) (+ (frame-x frame)
+                                       (truncate (- (frame-width frame) (xlib:text-width font string)) 2))
+                (xlib:drawable-y w) (+ (frame-y frame)
+                                       (truncate (- (frame-height frame) (font-height font)) 2))
+                (xlib:window-priority w) :above))
+        (xlib:map-window w)
+        (echo-in-window w font (screen-fg-color (current-screen)) (screen-bg-color (current-screen)) string)
+        (reset-frame-indicator-timer)))))
 
 (defun echo-in-window (win font fg bg string)
   (let* ((height (font-height font))
@@ -2430,6 +2473,14 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
                                                :colormap (xlib:screen-default-colormap
                                                           screen-number)
                                                :event-mask '(:exposure)))
+           (frame-window (xlib:create-window :parent (xlib:screen-root screen-number)
+                                             :x 0 :y 0 :width 20 :height 20
+                                             :background bg
+                                             :border border
+                                             :border-width 1
+                                             :colormap (xlib:screen-default-colormap
+                                                        screen-number)
+                                             :event-mask '(:exposure)))
            (font (xlib:open-font *display* +default-font-name+))
            (group (make-tile-group
                    :screen screen
@@ -2457,6 +2508,7 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
             (screen-input-window screen) input-window
             (screen-focus-window screen) focus-window
             (screen-key-window screen) key-window
+            (screen-frame-window screen) frame-window
             (screen-ignore-msg-expose screen) 0
             (screen-message-cc screen) (make-ccontext :win message-window
                                                       :gc (xlib:create-gcontext
@@ -3111,7 +3163,7 @@ chunks."
       (cond
         ((setf screen (find-screen window))
          ;; root exposed
-         (show-frame-indicator (screen-current-group screen) nil))
+         (show-frame-outline (screen-current-group screen) nil))
         ((setf screen (find-message-window-screen window))
          ;; message window exposed
          (if (plusp (screen-ignore-msg-expose screen))

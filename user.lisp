@@ -666,7 +666,7 @@ using SDL."
 
 (defcommand curframe () ()
 "Display a window indicating which frame is focused."
-  (show-frame-indicator (current-group)))
+  (show-frame-indicator (current-group) t))
 
 (defun focus-frame-next-sibling (group)
   (let* ((sib (next-sibling (tile-group-frame-tree group)
@@ -729,7 +729,7 @@ select one. Returns the selected frame or nil if aborted."
           :key 'get-frame-number-translation)))
 
 
-(defcommand fselect (frame-number) (:frame t)
+(defcommand fselect (frame-number) ((:frame t))
 "Display a number in the corner of each frame and let the user to
 select a frame by number. If @var{frame-number} is specified, just
 jump to that frame."
