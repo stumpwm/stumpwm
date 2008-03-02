@@ -223,7 +223,7 @@
 ;;mpd commands
 (defvar *mpd-volume-step* 5)
 
-(define-stumpwm-command "mpd-select-song-in-playlist" ()
+(defcommand mpd-select-song-in-playlist () ()
   (let ((status (mpd-send-command "status")))
     (labels ((pick (options)
                    (let ((selection
@@ -248,14 +248,14 @@
                (song-number (position choice result)))
           (mpd-send-command (format nil "play ~d" song-number)))))))
 
-(define-stumpwm-command "mpd-connect" ()
+(defcommand mpd-connect () ()
   (message "~a" (init-mpd-connection)))
 
-(define-stumpwm-command "mpd-disconnect" ()
+(defcommand mpd-disconnect () ()
   (close-mpd-connection))
 
 
-(define-stumpwm-command "mpd-toggle-pause" ()
+(defcommand mpd-toggle-pause () ()
   (let ((status (mpd-send-command "status")))
     (cond
      ((equal (assoc-value :state status)
@@ -263,53 +263,53 @@
      ((equal (assoc-value :state status)
              "pause") (mpd-send-command "pause 0")))))
 
-(define-stumpwm-command "mpd-toggle-random" ()
+(defcommand mpd-toggle-random () ()
   (let ((status (mpd-send-command "status")))
     (cond
      ((equal (assoc-value :random status) "0") (mpd-send-command "random 1"))
      ((equal (assoc-value :random status) "1") (mpd-send-command "random 0")))))
 
-(define-stumpwm-command "mpd-toggle-repeat" ()
+(defcommand mpd-toggle-repeat () ()
   (let ((status (mpd-send-command "status")))
     (cond
      ((equal (assoc-value :repeat status) "0") (mpd-send-command "repeat 1"))
      ((equal (assoc-value :repeat status) "1") (mpd-send-command "repeat 0")))))
 
-(define-stumpwm-command "mpd-play" ()
+(defcommand mpd-play () ()
   (mpd-send-command "play"))
 
-(define-stumpwm-command "mpd-stop" ()
+(defcommand mpd-stop () ()
   (mpd-send-command "stop"))
 
-(define-stumpwm-command "mpd-next" ()
+(defcommand mpd-next () ()
   (mpd-send-command "next"))
 
-(define-stumpwm-command "mpd-prev" ()
+(defcommand mpd-prev () ()
   (mpd-send-command "previous"))
 
-(define-stumpwm-command "mpd-set-volume" ((vol :rest "Set volume to: "))
+(defcommand mpd-set-volume (vol) ((rest "Set volume to: "))
   (mpd-send-command (format nil "setvol ~a" vol)))
 
-(define-stumpwm-command "mpd-volume-up" ()
+(defcommand mpd-volume-up () ()
   (let* ((status (mpd-send-command "status"))
          (vol (read-from-string (assoc-value :volume status))))
     (mpd-send-command (format nil "setvol ~a" (+ vol *mpd-volume-step*)))))
 
-(define-stumpwm-command "mpd-volume-down" ()
+(defcommand mpd-volume-down () ()
   (let* ((status (mpd-send-command "status"))
          (vol (read-from-string (assoc-value :volume status))))
     (mpd-send-command (format nil "setvol ~a" (- vol *mpd-volume-step*)))))
 
-(define-stumpwm-command "mpd-clear" ()
+(defcommand mpd-clear () ()
   (mpd-send-command "clear"))
 
-(define-stumpwm-command "mpd-update" ()
+(defcommand mpd-update () ()
   (message "~a" (mpd-send-command "update")))
 
-(define-stumpwm-command "mpd-current-song" ()
+(defcommand mpd-current-song () ()
   (message "~a" (format-mpd-current-song (mpd-send-command "currentsong"))))
 
-(define-stumpwm-command "mpd-playlist" ()
+(defcommand mpd-playlist () ()
   (let* ((response (mpd-send-command "playlistinfo"))
          (result (mapcar #'cadr (remove-if (lambda (item)
                                              (not (equal :file
@@ -321,12 +321,12 @@
                  result)
       (message "~a files in playlist" (length result)))))
 
-(define-stumpwm-command "mpd-add-file" ((file :rest "Add file to playlist: "))
+(defcommand mpd-add-file (file) ((:rest "Add file to playlist: "))
   (mpd-send-command (format nil "add \"~a\"" file)))
 
 ;;search and add commands
-(define-stumpwm-command "mpd-search-and-add-artist"
-  ((what :rest "Search & add artist to playlist: "))
+(defcommand mpd-search-and-add-artist (what)
+  ((:rest "Search & add artist to playlist: "))
   (let* ((response (mpd-send-command (format nil "search artist \"~a\"" what)))
          (result (mapcar #'cadr (remove-if (lambda (item)
                                              (not (equal :file
@@ -340,8 +340,8 @@
                  result)
       (message "~a files added" (length result)))))
 
-(define-stumpwm-command "mpd-search-and-add-file"
-  ((what :rest "Search & add file to playlist: "))
+(defcommand mpd-search-and-add-file (what)
+  ((:rest "Search & add file to playlist: "))
   (let* ((response (mpd-send-command (format nil "search file \"~a\"" what)))
          (result (mapcar #'cadr (remove-if (lambda (item)
                                              (not (equal :file
@@ -355,8 +355,8 @@
                  result)
       (message "~a files added" (length result)))))
 
-(define-stumpwm-command "mpd-search-and-add-title"
-  ((what :rest "Search & add title to playlist: "))
+(defcommand mpd-search-and-add-title (what)
+  ((:rest "Search & add title to playlist: "))
   (let* ((response (mpd-send-command (format nil "search title \"~a\"" what)))
          (result (mapcar #'cadr (remove-if (lambda (item)
                                              (not (equal :file
@@ -370,8 +370,8 @@
                  result)
       (message "~a files added" (length result)))))
 
-(define-stumpwm-command "mpd-search-and-add-album"
-  ((what :rest "Search & add album to playlist: "))
+(defcommand mpd-search-and-add-album (what)
+  ((:rest "Search & add album to playlist: "))
   (let* ((response (mpd-send-command (format nil "search album \"~a\"" what)))
          (result (mapcar #'cadr (remove-if (lambda (item)
                                              (not (equal :file
@@ -385,8 +385,8 @@
                  result)
       (message "~a files added" (length result)))))
 
-(define-stumpwm-command "mpd-search-and-add-genre"
-  ((what :rest "Search & add genre to playlist: "))
+(defcommand mpd-search-and-add-genre (what)
+  ((:rest "Search & add genre to playlist: "))
   (let* ((response (mpd-send-command (format nil "search genre \"~a\"" what)))
          (result (mapcar #'cadr (remove-if (lambda (item)
                                              (not (equal :file
@@ -403,15 +403,15 @@
 
 
 ;;search commands
-(define-stumpwm-command "mpd-search-artist" ((what :rest "Search artist: "))
+(defcommand mpd-search-artist (what) ((:rest "Search artist: "))
   (mpd-send-command (format nil "search artist \"~a\"" what)))
-(define-stumpwm-command "mpd-search-file" ((what :rest "Search file: "))
+(defcommand mpd-search-file (what) ((:rest "Search file: "))
   (mpd-send-command (format nil "search file \"~a\"" what)))
-(define-stumpwm-command "mpd-search-title" ((what :rest "Search title: "))
+(defcommand mpd-search-title (what) ((:rest "Search title: "))
   (mpd-send-command (format nil "search title \"~a\"" what)))
-(define-stumpwm-command "mpd-search-album" ((what :rest "Search album: "))
+(defcommand mpd-search-album (what) ((:rest "Search album: "))
   (mpd-send-command (format nil "search album \"~a\"" what)))
-(define-stumpwm-command "mpd-search-genre" ((what :rest "Search genre: "))
+(defcommand mpd-search-genre (what) ((:rest "Search genre: "))
   (mpd-send-command (format nil "search genre \"~a\"" what)))
 
 ;;Key map
