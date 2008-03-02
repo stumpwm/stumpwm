@@ -1089,3 +1089,8 @@ input focus is transfered to the window you click on.")
 (defvar *last-unhandled-error* nil
   "If an unrecoverable error occurs, this variable will contain the
   condition and the backtrace.")
+
+(defvar *show-command-backtrace* nil
+  "When this is T a backtrace is displayed with errors that occurred
+within an interactive call to a command.")
+  

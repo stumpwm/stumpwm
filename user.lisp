@@ -330,7 +330,7 @@ to if it is unresponsive."
                  y (1- (+ (xlib:drawable-y win) (xlib:drawable-height win))))))))
     (warp-pointer (group-screen group) x y)))
 
-(defcommand banish (where) (:rest)
+(defcommand banish (&optional where) (:rest)
   "Warp the mouse the lower right corner of the current head."
   (if where
       (banish-pointer (intern (string-upcase where) :keyword))
@@ -1059,7 +1059,9 @@ user aborted."
             (handler-bind 
                 ((error (lambda (c)
                           (invoke-restart 'interactive-command-error
-                                          (format nil "^B^1*Error In Command '^b~a^B': ^n~A~a" cmd c (backtrace-string))))))
+                                          (format nil "^B^1*Error In Command '^b~a^B': ^n~A~a" 
+                                                  cmd c (if *show-command-backtrace* 
+                                                            (backtrace-string) ""))))))
               (parse-and-run-command cmd))
           (interactive-command-error (err-text)
             (values err-text t)))
