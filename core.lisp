@@ -1540,7 +1540,8 @@ T (default) then also focus the frame."
     (if w
         (focus-window w)
         (no-focus group (frame-window last)))
-    (show-frame-indicator group)))
+    (when show-indicator
+      (show-frame-indicator group))))
 
 (defun frame-windows (group f)
   (remove-if-not (lambda (w) (eq (window-frame w) f))
