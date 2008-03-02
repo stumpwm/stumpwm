@@ -221,7 +221,7 @@
     "Not connected"))
 
 ;;mpd commands
-(defparameter *mpd-volume-step* 5)
+(defvar *mpd-volume-step* 5)
 
 (define-stumpwm-command "mpd-select-song-in-playlist" ()
   (let ((status (mpd-send-command "status")))
