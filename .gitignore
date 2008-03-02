@@ -14,3 +14,4 @@ make-image.lisp
 version.lisp
 stumpwm-*.tgz
 stumpwm-*.tgz.sig
+.dotest
