@@ -37,7 +37,7 @@
 
 ;;mpd client
 (defparameter *mpd-socket* nil)
-(defparameter *mpd-server* 
+(defparameter *mpd-server*
   #+clisp
   "localhost"
   #+sbcl
@@ -61,10 +61,14 @@
   (with-mpd-connection
    (#+clisp
     ext:write-char-sequence
-    #+sbcl  
+    #+sbcl
     write-sequence
     (concatenate  'string command (string #\Newline))
     *mpd-socket*)))
+
+(defun mpd-send-command (cmd)
+  (mpd-send cmd)
+  (mpd-receive))
 
 (defun mpd-termination-p (str)
   (or (mpd-error-p str)
@@ -87,7 +91,6 @@
 (defun assoc-value (name list)
   (cadr (assoc name list)))
 
-
 (defun mpd-receive ()
   "Returns a list containing all data sent by mpd."
   (with-mpd-connection
@@ -97,35 +100,36 @@
          until (mpd-termination-p i)
          collect (mpd-tokenize i))))
 
-(defun mpd-connect ()
+(defun init-mpd-connection ()
   "Connect to mpd server"
     (setq *mpd-socket*
-	  #+clisp
+          #+clisp
         (handler-case (socket:socket-connect *mpd-port* *mpd-server*
                                              :element-type 'character)
                       ((or system::simple-os-error error)
                        (err)
-			 (format t  "Error connecting to mpd: ~a~%" err)))
-	  #+sbcl
-	  (handler-case (let ((s (make-instance 'sb-bsd-sockets:inet-socket :type :stream :protocol :tcp)))
-			  (sb-bsd-sockets:socket-connect s *mpd-server* *mpd-port*)
-			  (sb-bsd-sockets:socket-make-stream s :input t :output t :buffering :none))
-			((or simple-error error) 
-			 (err)
+                         (format t  "Error connecting to mpd: ~a~%" err)))
+          #+sbcl
+          (handler-case (let ((s (make-instance 'sb-bsd-sockets:inet-socket
+                                                :type :stream :protocol :tcp)))
+                          (sb-bsd-sockets:socket-connect s *mpd-server*
+                                                         *mpd-port*)
+                          (sb-bsd-sockets:socket-make-stream s
+                                                             :input t
+                                                             :output t
+                                                             :buffering :none))
+                        ((or simple-error error)
+                         (err)
                        (format t  "Error connecting to mpd: ~a~%" err))))
   (when *mpd-socket*
     (read-line *mpd-socket*)))
 
-(defun mpd-disconnect ()
+(defun close-mpd-connection ()
   "Disconnect from mpd server"
   (with-mpd-connection
    (close *mpd-socket*)
    (setf *mpd-socket* nil)))
 
-
-(defun mpd-send-command (cmd)
-  (mpd-send cmd)
-  (mpd-receive))
 
 
 ;;mpd formatter
@@ -140,24 +144,30 @@
 (defun mpd-update-status ()
   (setf *mpd-status* (mpd-send-command "status")))
 
-(defun format-mpd-current-song (current-song &optional (collapse-album nil) (collapse-all nil))
+(defun format-mpd-current-song (current-song &optional
+                                             (collapse-album nil)
+                                             (collapse-all nil))
   (let* ((artist (assoc-value :artist current-song))
         (album (assoc-value :album current-song))
         (title (assoc-value :title current-song))
-	 (file (assoc-value :file current-song))
-	 (song (if (or (null artist)
+         (file (assoc-value :file current-song))
+         (song (if (or (null artist)
             (null album)
             (null title))
         (format nil "~a" file)
-		   (format nil "~a \"~a\" - ~a"
+                   (format nil "~a \"~a\" - ~a"
               artist
-			   (if (and collapse-album *mpd-collapse-album-length* (> (length album) *mpd-collapse-album-length*))
-			       (concatenate 'string (subseq album 0 *mpd-collapse-album-length*) "...")
-			       album)
+              (if (and collapse-album *mpd-collapse-album-length*
+                       (> (length album) *mpd-collapse-album-length*))
+                  (concatenate 'string
+                               (subseq album 0 *mpd-collapse-album-length*)
+                               "...")
+                album)
               title))))
-    (if (and collapse-all *mpd-collapse-all-length* (> (length song) *mpd-collapse-all-length*))
-	(concatenate 'string (subseq song 0 *mpd-collapse-all-length*) "...")
-	song)))
+    (if (and collapse-all *mpd-collapse-all-length*
+             (> (length song) *mpd-collapse-all-length*))
+        (concatenate 'string (subseq song 0 *mpd-collapse-all-length*) "...")
+      song)))
 
 (defun format-mpd-status (status)
   (let ((mpd-state (assoc-value :state status)))
@@ -239,14 +249,11 @@
           (mpd-send-command (format nil "play ~d" song-number)))))))
 
 (define-stumpwm-command "mpd-connect" ()
-  (message "~a" (mpd-connect)))
+  (message "~a" (init-mpd-connection)))
 
 (define-stumpwm-command "mpd-disconnect" ()
-  (mpd-disconnect))
+  (close-mpd-connection))
 
-(define-stumpwm-command "mpd-send-command" ((cmd :rest "Send mpd: "))
-  (mpd-send cmd)
-  (mpd-receive))
 
 (define-stumpwm-command "mpd-toggle-pause" ()
   (let ((status (mpd-send-command "status")))
@@ -316,6 +323,8 @@
 
 (define-stumpwm-command "mpd-add-file" ((file :rest "Add file to playlist: "))
   (mpd-send-command (format nil "add \"~a\"" file)))
+
+;;search and add commands
 (define-stumpwm-command "mpd-search-and-add-artist"
   ((what :rest "Search & add artist to playlist: "))
   (let* ((response (mpd-send-command (format nil "search artist \"~a\"" what)))
@@ -331,9 +340,69 @@
                  result)
       (message "~a files added" (length result)))))
 
+(define-stumpwm-command "mpd-search-and-add-file"
+  ((what :rest "Search & add file to playlist: "))
+  (let* ((response (mpd-send-command (format nil "search file \"~a\"" what)))
+         (result (mapcar #'cadr (remove-if (lambda (item)
+                                             (not (equal :file
+                                                         (first item))))
+                                           response))))
+    (loop for i in result
+          do (mpd-send-command (format nil "add \"~a\"" i)))
+    (if (< (length result) 80)
+        (message "Added ~a files: ~%^7*~{~a~%~}"
+                 (length result)
+                 result)
+      (message "~a files added" (length result)))))
+
+(define-stumpwm-command "mpd-search-and-add-title"
+  ((what :rest "Search & add title to playlist: "))
+  (let* ((response (mpd-send-command (format nil "search title \"~a\"" what)))
+         (result (mapcar #'cadr (remove-if (lambda (item)
+                                             (not (equal :file
+                                                         (first item))))
+                                           response))))
+    (loop for i in result
+          do (mpd-send-command (format nil "add \"~a\"" i)))
+    (if (< (length result) 80)
+        (message "Added ~a files: ~%^7*~{~a~%~}"
+                 (length result)
+                 result)
+      (message "~a files added" (length result)))))
+
+(define-stumpwm-command "mpd-search-and-add-album"
+  ((what :rest "Search & add album to playlist: "))
+  (let* ((response (mpd-send-command (format nil "search album \"~a\"" what)))
+         (result (mapcar #'cadr (remove-if (lambda (item)
+                                             (not (equal :file
+                                                         (first item))))
+                                           response))))
+    (loop for i in result
+          do (mpd-send-command (format nil "add \"~a\"" i)))
+    (if (< (length result) 80)
+        (message "Added ~a files: ~%^7*~{~a~%~}"
+                 (length result)
+                 result)
+      (message "~a files added" (length result)))))
+
+(define-stumpwm-command "mpd-search-and-add-genre"
+  ((what :rest "Search & add genre to playlist: "))
+  (let* ((response (mpd-send-command (format nil "search genre \"~a\"" what)))
+         (result (mapcar #'cadr (remove-if (lambda (item)
+                                             (not (equal :file
+                                                         (first item))))
+                                           response))))
+    (loop for i in result
+          do (mpd-send-command (format nil "add \"~a\"" i)))
+    (if (< (length result) 80)
+        (message "Added ~a files: ~%^7*~{~a~%~}"
+                 (length result)
+                 result)
+      (message "~a files added" (length result)))))
 
 
 
+;;search commands
 (define-stumpwm-command "mpd-search-artist" ((what :rest "Search artist: "))
   (mpd-send-command (format nil "search artist \"~a\"" what)))
 (define-stumpwm-command "mpd-search-file" ((what :rest "Search file: "))
@@ -356,6 +425,16 @@
         (define-key m (kbd "g") "mpd-search-genre")
         m))
 
+(setf *mpd-add-map*
+      (let ((m (make-sparse-keymap)))
+        (define-key m (kbd "a") "mpd-search-and-add-artist")
+        (define-key m (kbd "A") "mpd-search-and-add-album")
+        (define-key m (kbd "t") "mpd-search-and-add-title")
+        (define-key m (kbd "f") "mpd-search-and-add-file")
+        (define-key m (kbd "g") "mpd-search-and-add-genre")
+        (define-key m (kbd "F") "mpd-add-file")
+        m))
+
 (setf *mpd-map*
       (let ((m (make-sparse-keymap)))
         (define-key m (kbd "SPC") "mpd-toggle-pause")
@@ -374,4 +453,5 @@
         (define-key m (kbd "e") "mpd-volume-up")
         (define-key m (kbd "d") "mpd-volume-down")
         (define-key m (kbd "S") '*mpd-search-map*)
+        (define-key m (kbd "A") '*mpd-add-map*)
         m))
