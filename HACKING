@@ -1,0 +1,300 @@
+                   Hacking the Stump Window Manager
+                   --------------------------------
+
+Table of Contents
+-----------------
+
+1) Background and Scope
+2) Obtaining StumpWM
+3) Hacking StumpWM
+4) Using git With StumpWM
+5) References (not explicitly cited)
+6) Footnotes
+
+
+Background and Scope
+--------------------
+
+StumpWM is a window manager written in Common Lisp. According to the
+StumpWM homepage[1]:
+
+    Stumpwm attempts to be customizable yet visually minimal. There
+    are no window decorations, no icons, and no buttons. It does have
+    various hooks to attach your personal customizations, and
+    variables to tweak.
+
+    * Hack the good hack
+    * debug your good hack
+    * customize your window manager
+
+    while it's running. That's right. With a 100% Common Lisp window
+    manager there's no stopping the hacks. Just re-eval and GO!
+
+That's all well and good, but just how do you get started on the good
+hack? How do you let others know how good your hack is? This document
+should hopefully get you started writing your very own code to use
+with the Stump Window Manager.
+
+This is not an introduction to Common Lisp, mind you; there is already
+a wealth of information available on the Internet dealing with that
+subject. For more information on that, please see the Common Lisp
+Wiki[2] or your favorite Internet search engine.
+
+The goal here is an introduction to StumpWM coding in particular as
+well as some information on effectively using git, the version control
+system used by StumpWM's authors.
+
+Obtaining StumpWM
+-----------------
+
+StumpWM can be obtained from the StumpWM homepage[1]. For detailed
+installation instructions, please see the README file that you should
+have received along with this HACKING file.
+
+
+Hacking StumpWM
+---------------
+
+For those of you who have worked on Free Software projects before,
+this part should probably be fairly intuitive.
+
+- Pay attention to file names and contents. If you're making changes
+  to mode-line related code, don't put it in core.lisp. If you're
+  introducing some completely new featureset, consider putting all of
+  the new code in a new file.
+
+- Does a command need to be user-visible ("interactive") or is it
+  just called by other commands?
+
+  - If it's not going to be user-visible, you can just use the
+    familiar (defun foo ()...) syntax.
+
+  - If you want the command to be used interactively, you use
+    StumpWM's defcommand syntax, as in the examples below.
+
+    (defcommand test (foo bar)
+       ((:string "How you're going to prompt for variable foo: ")
+        (:number "How you want to prompt for variable bar: "))
+       "This command is a test"
+       (body...))
+
+    (defcommand test2 () ()
+       "This is also a test"
+       (body...))
+
+    (defcommand title (args) (interactive-args)
+       "Doc string"
+       (body...))
+
+    ...so basically, inside the first set of parentheses after the
+    function name, you specify what (if any) arguments will be passed
+    to the command. The second set of parentheses tells StumpWM how to
+    get those arguments if they're not explicitly passed to the
+    command. For example,
+
+    ((:string "What do you want to do: "))
+
+    ...will read a string from the input the user provides. The quoted
+    text is the prompt the user will see. Of course, if you were to,
+    say, call the command test, as defined above, from another piece
+    of code, it wouldn't give the prompt as long as you fed it
+    arguments.
+
+    Note that all commands defined using the defcommand syntax are
+    available both to be called with "C-t ;" and from within other
+    lisp programs, as though they had been defun-ned (which, in fact,
+    they have).
+
+- Any code that depends on external libraries or programs that some
+  users might not have installed should be placed in the contrib/
+  directory.
+
+- Don't be afraid to submit your patches to the StumpWM mailing
+  list[3]! It may not immediately make it into the official git
+  repository, but individual users might find it useful and apply it
+  to their own setup, or might be willing to offer suggestions on how
+  to improve the code.
+
+- Remember:  StumpWM is designed to run on both clisp and on SBCL. If
+  you must use code specific to one or the other, at the very least
+  warn people that it only works with one lisp implementation. Better
+  yet, figure out how to do it in the other distribution and write
+  a statement like this:
+
+  #+clisp
+  (your-clisp-code)
+  #+sbcl
+  (your-sbcl-code)
+
+  ...to wrap the code for each lisp. Of course, the best option is to
+  find a way to use the same code for clisp and SBCL.
+
+
+Using git With StumpWM
+----------------------
+
+This next part is long, sorry. The rationale for this is that
+people working on StumpWM are likely to have some degree of experience
+at least looking at code, but might not necessarily have experience
+with this particular method of version control (or any method, for
+that matter). And I concentrate on branching in this part because (a)
+I think it's cool, and (b) it allows people to be creative and take
+risks without having to worry about messing up their whole install.
+
+For quite a while now, StumpWM has been using the git version control
+system[4] for development. If you're one using one of the official
+releases or still using the now-obsolete CVS version, you can get the
+bleeding-edge source code from the official git repository with
+a single command:
+
+$ git clone git://git.savannah.nongnu.org/stumpwm.git
+
+After this, you'll have a complete git repository, along with the
+complete revision history since the switch. Feel free to play around;
+git has some important features that actually make this safe!
+
+Before we get to that stuff, though, you're going to want to tell git
+about yourself so that your information is included in your commits
+and patches. The very minimum you're going to want to do is:
+
+$ git config --global user.name "Anne N. O'Nymous"
+$ git config --global user.email "anonymous@foo.org"
+
+Be sure to check out the manual for git-config--there are several
+options you might want to set, such as enabling colorized output or
+changing the editor and pager you use when making commits and viewing
+logs.
+
+For the sake of argument, let's say you want to make some major
+changes to both user.lisp and core.lisp, add a file called
+DANGEROUS_EXPERIMENT_DO_NOT_USE_OR_ELSE.lisp, and remove the manual
+because you're too 1337 for such things. However, you don't want to
+break your entire StumpWM setup and start over. Thankfully, you don't
+have to. Before you get started, issue this command from the stumpwm
+directory:
+
+$ git checkout -b experimental
+
+You should now find yourself in a new branch, called experimental. To
+confirm this, type "git branch" (without the quotes); there should be
+an asterisk next to the branch you're currently viewing. At any time,
+you can type "git checkout master" to return to your master branch,
+and at any time you can have as many branches of the project as you
+like. If you want to create a new branch based not on the master
+branch but on your experimental branch, for example, you'd type:
+
+$ git checkout -b new-experiment experimental
+
+This will place you in a newly-created branch called new-experiment
+which should be identical to your experimental branch as of the last
+commit (more on that soon). If you're actually typing out the
+directions, switch back to your old experimental branch like so:
+
+$ git checkout experimental
+
+Anyway, now that you have a new branch, create that new file with the
+long name, which I'll just call danger.lisp for brevity. Make whatever
+changes you want to it, and when you're done, tell git about your new
+file.
+
+$ git add dangerous.lisp
+
+Now, let's pretend you're done making changes. Tell git you're done
+for now:
+
+$ git commit -a
+
+This will open up a prompt in your editor of choice for you to
+describe your changes. Try to keep the first line short, and then add
+more explanation underneath (for an example, run the command "git log"
+and take a look at some of the longer commit explanations). Save that
+file and then do this:
+
+$ git checkout master
+$ ls
+
+...and look for your new file. It's not there! That's because you've
+done all of your work in another branch, which git is currently hiding
+from you so that you can "check out" the branch called "master." All
+is as it should be--your master repository is still safe.
+
+$ git checkout experimental
+
+Now, delete manual.lisp and stumpwm.texi. That's right. Wipe them off
+the face of the Earth, or at least off the hard drive of your
+computer. When you're done, you don't have to tell git you've deleted
+them; it'll figure it out on its own (though things may not compile
+properly unless you edit Makefile.in and stumpwm.asd. Anyway, go ahead
+and edit core.lisp and user.lisp. Really break 'em. Run free! When
+you're done, do another commit, as above, and give it a stupid title
+like "lolz i b0rked stUmpwm guys wTF!?!?!!111!" Now try to compile.
+Just try. It won't work. If it does, you're some kind of savant or
+something. Keep up the good work. If you've actually managed to break
+StumpWM like you were supposed to, never fear! You have two options at
+this point.
+
+One is to go back to the master branch (with another git checkout) and
+just delete your experimental branch, like so:
+
+$ git branch -D
+
+The "-D" means to force a delete, even if the changes you've made
+aren't available elsewhere. A "-d" means to delete the branch if and
+only if you've merged the changes in elsewhere.
+
+The other option is to create patches for each of your commits so far,
+delete the branch, and then apply any working/wanted patches in a new
+branch. Create your patches (after committing) like so:
+
+$ git format-patch -o patches origin
+
+(Before doing that you can review your changes with "git log origin..")
+
+You can also use the format-patch command to create a patch of working
+code to send in to the mailing list.
+
+A developer might ask you to try out something they're working on. To
+fetch their master branch, you'd do this:
+
+$ git remote add -f -m master -t master foo git://bar.org/~foo/stumpwm
+
+...where "foo" is the shorthand name you'll use to refer to that
+repository in the future. To checkout a local copy of that repository,
+you'd then do this:
+
+$ git checkout --track -b foo-master foo/master
+
+...and could use "git pull foo" to update later while looking at that
+branch (and note that "git pull" with no arguments, in the master
+branch, will update your StumpWM from the official repository.
+
+Finally, if you want to move your experimental changes into your
+master branch, you'd checkout your master branch and run:
+
+$ git merge experimental
+
+If there are file conflicts, "git diff" will show you where they are;
+you have to fix them by hand. When you're done, do another
+
+$ git commit -a
+
+...to finalize the changes to your master branch. You can then delete
+your experimental branch. Alternately, you can wait until your changes
+(assuming you sent them in) make it into the official repository
+before deleting your experimental branch.
+
+
+References (not explicitly cited)
+---------------------------------
+
+- The StumpWM source code
+- http://www.kernel.org/pub/software/scm/git/docs/tutorial.html 
+- http://stumpwm.antidesktop.net/cgi-bin/wiki/Git
+
+Footnotes
+---------
+
+[1] http://www.nongnu.org/stumpwm
+[2] http://www.cliki.net
+[3] http://lists.nongnu.org/mailman/listinfo/stumpwm-devel
+[4] http://git.or.cz

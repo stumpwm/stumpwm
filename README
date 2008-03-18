@@ -15,21 +15,35 @@ Build & Start Stumpwm
 Prerequisites
 =============
 
-* a common lisp distribution. clisp or SBCL both work.
+* a common lisp distribution. clisp and SBCL both work.
 * clx
 * cl-ppcre
 
 If you intend to use sbcl you need to install portable-clx. If you're
-using clisp, make sure it is at least version 1.42 and has been
+using clisp, make sure you use at least version 1.42 and that clisp is
 compiled with new-clx. As of clisp 1.42, new-clx works fine with
 stumpwm. Any version before that is too buggy to run stumpwm.
 
 You can use asdf-install to install lisp libraries:
-$ sbcl
-* (require 'asdf)
-* (require 'asdf-install)
-* (asdf-install:install 'clx)
-* (asdf-install:install 'cl-ppcre)
+  $ sbcl
+    * (require 'asdf)
+    * (require 'asdf-install)
+    * (asdf-install:install 'clx)
+    * (asdf-install:install 'cl-ppcre)
+
+If using clisp, you'll need to install asdf first to use asdf-install.
+  $ mkdir -p ~/.cl/asdf && cd ~/.cl
+  $ wget http://cclan.cvs.sourceforge.net/*checkout*/cclan/asdf/asdf.lisp -O ~/.cl/asdf/asdf.lisp
+  $ echo "(load #p\"/home/USER/.cl/asdf/asdf\")" >> ~/.clisprc.lisp
+  $ mkdir -p ~/.cl/systems
+  $ echo "(push #p\"/home/USER/.cl/systems\" asdf:*central-registry*)" >> ~/.clisprc.lisp
+  $ wget http://common-lisp.net/project/asdf-install/asdf-install_latest.tar.gz
+  $ tar xf asdf-install_latest.tar.gz
+  $ ln -s ~/.cl/asdf-install/asdf-install/asdf-install.asd ~/.cl/systems/
+  $ clisp
+    * (asdf:operate 'asdf:compile-op 'asdf-install)
+    * (asdf:operate 'asdf:load-op 'asdf-install)
+    * (asdf-install:install :cl-ppcre)
 
 Your operating system distribution may also have these libraries
 available.
@@ -45,7 +59,8 @@ If there's already a configure script then just run it.
 
 $ ./configure
 
-By default stumpwm elects sbcl. You can explicitely use clisp this way:
+By default stumpwm elects sbcl. If you have both installed, you can
+explicitly select clisp like so:
 
 $ ./configure --with-lisp=clisp
 
@@ -63,7 +78,7 @@ of the stumpwm/ directory.
 
 Now that you have a binary, call it from your ~/.xinitrc file:
 
-$ echo /path/to/stumpwm > ~/.xinitrc
+$ echo /path/to/stumpwm >> ~/.xinitrc
 $ startx
 
 Hopefully that will put you in X running stumpwm!
@@ -91,6 +106,5 @@ There's a #stumpwm channel on irc.freenode.net, too.
 Questions?
 ----------
 
-See http://stumpwm.nongnu.org/community.html for information on
+See http://stumpwm.nongnu.org/community.html for more information on
 contacting stumpwm developers and users.
-
