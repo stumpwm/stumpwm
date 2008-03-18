@@ -20,8 +20,8 @@ Prerequisites
 * cl-ppcre
 
 If you intend to use sbcl you need to install portable-clx. If you're
-using clisp, make sure you use at least version 1.42 and that clisp is
-compiled with new-clx. As of clisp 1.42, new-clx works fine with
+using clisp, make sure you use at least version 2.42 and that clisp is
+compiled with new-clx. As of clisp 2.42, new-clx works fine with
 stumpwm. Any version before that is too buggy to run stumpwm.
 
 You can use asdf-install to install lisp libraries:
