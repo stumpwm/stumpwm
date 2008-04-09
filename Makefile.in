@@ -1,9 +1,11 @@
 LISP=@LISP_PROGRAM@
 
-clisp_OPTS=-K full -on-error exit ./make-image.lisp
-sbcl_OPTS=--load ./make-image.lisp
+clisp_BUILDOPTS=-K full -on-error exit ./make-image.lisp
+sbcl_BUILDOPTS=--load ./make-image.lisp
 
-LISP_OPTS= $(@LISP@_OPTS)
+clisp_INFOOPTS=-K full -on-error exit -x "(asdf:operate 'asdf:load-op :stumpwm) (load \"manual.lisp\")(stumpwm::generate-manual)(ext:exit)"
+sbcl_INFOOPTS=--eval "(progn (require 'asdf) (require 'stumpwm) (load \"manual.lisp\"))" --eval "(progn (stumpwm::generate-manual) (sb-ext:quit))"
+
 
 # You shouldn't have to edit past this
 
@@ -18,10 +20,10 @@ stumpwm.info: stumpwm.texi
 
 # FIXME: This rule is too hardcoded 
 stumpwm.texi: stumpwm.texi.in
-	sbcl --eval "(progn (require 'asdf) (require 'stumpwm) (load \"manual.lisp\"))" --eval "(progn (stumpwm::generate-manual) (sb-ext:quit))"
+	$(LISP) $(@LISP@_INFOOPTS)
 
 stumpwm: $(FILES)
-	$(LISP) $(LISP_OPTS)
+	$(LISP) $(@LISP@_BUILDOPTS)
 
 release:
 	git-archive --format=tar --prefix=stumpwm-@PACKAGE_VERSION@/ HEAD > stumpwm-@PACKAGE_VERSION@.tar
