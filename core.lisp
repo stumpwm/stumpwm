@@ -2533,7 +2533,7 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
            (group (make-tile-group
                    :screen screen
                    :number 1
-                   :name "Default")))
+                   :name *default-group-name*)))
       ;; Create our screen structure
       ;; The focus window is mapped at all times
       (xlib:map-window focus-window)
@@ -3484,3 +3484,4 @@ the window in it's frame."
            (,ogroup (current-group)))
       (unwind-protect (progn ,@body)
         (focus-frame ,ogroup ,oframe)))))
+
