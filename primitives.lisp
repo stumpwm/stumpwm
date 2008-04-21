@@ -718,8 +718,14 @@ Useful for re-using the &REST arg after removing some options."
   (let ((filename (coerce (sb-int:unix-namestring pathname) 'base-string)))
     (and (eq (sb-unix:unix-file-kind filename) :file)
          (sb-unix:unix-access filename sb-unix:x_ok)))
-  ;; FIXME: add the code for clisp
-  #-sbcl t)
+  #+clisp
+  (let* ((pname (list (coerce (namestring pathname) 'base-string)))
+	 (fileinfo (with-open-stream (f
+				      (ext:run-program "file" :arguments `,pname :output :stream))
+		     (loop for line = (read-line f nil nil) while line collect line)))
+	 (ftest (cl-ppcre:all-matches-as-strings "executable" (car fileinfo))))
+    (string= "executable" (car ftest)))
+  #-(or sbcl clisp) t)
 
 (defun probe-path (path)
   "Return the truename of a supplied path, or nil if it does not exist."
@@ -1040,8 +1046,10 @@ the new window, and returns the prefered frame.")
   #+sbcl (sb-ext:octets-to-string
           (coerce octets '(vector (unsigned-byte 8)))
           :external-format :utf-8)
+  #+clisp (ext:convert-string-from-bytes octets charset:utf-8)
+
   ;; TODO: handle UTF-8 for other lisps
-  #-sbcl
+  #-(or sbcl clisp) 
   (map 'string #'code-char octets))
 
 (defun string-to-utf8 (string)
@@ -1049,8 +1057,10 @@ the new window, and returns the prefered frame.")
   #+sbcl (sb-ext:string-to-octets
           string
           :external-format :utf-8)
+  #+clisp (ext:convert-string-to-bytes string charset:utf-8)
+
   ;; TODO: handle UTF-8 for other lisps
-  #-sbcl
+  #-(or sbcl clisp) 
   (map 'list #'char-code string))
 
 (defvar *startup-message* "^2*Welcome to The ^BStump^b ^BW^bindow ^BM^banager!"
@@ -1070,12 +1080,13 @@ will have no effect.")
   "List of rules governing window placement. Use define-frame-preference to
 add rules")
 
-;; FIXME: this macro doesnt use gensym, though it's also low risk
+
 (defmacro define-frame-preference (group &rest frames)
-  `(dolist (x ',frames)
-     ;; verify the correct structure
-     (destructuring-bind (frame-number raise lock &rest keys &key class instance type role title) x
-       (push (list* ,group frame-number raise lock keys) *window-placement-rules*))))
+  (let ((x (gensym "x")))
+    `(dolist (x ',frames)
+      ;; verify the correct structure
+      (destructuring-bind (frame-number raise lock &rest keys &key class instance type role title) x
+	(push (list* ,group frame-number raise lock keys) *window-placement-rules*)))))
 
 (defun clear-window-placement-rules ()
   (setf *window-placement-rules* nil))
