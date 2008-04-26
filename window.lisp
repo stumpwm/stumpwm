@@ -818,41 +818,55 @@ than the root window's width and height."
 (defun pick-prefered-frame (window)
   (let* ((group (window-group window))
          (frames (group-frames group))
-         (default (tile-group-current-frame group)))
-    (or
-     (if (or (functionp *new-window-prefered-frame*)
-             (and (symbolp *new-window-prefered-frame*)
-                  (fboundp *new-window-prefered-frame*)))
-         (handler-case
-             (funcall *new-window-prefered-frame* window)
-           (error (c)
-             (message "^1*^BError while calling ^b^3**new-window-prefered-frame*^1*^B: ^n~a" c)
-             nil))
-         (loop for i in *new-window-prefered-frame*
-               thereis (case i
-                         (:last
-                          ;; last-frame can be stale
-                          (and (> (length frames) 1)
-                               (tile-group-last-frame group)))
-                         (:unfocused
-                          (find-if (lambda (f)
-                                     (not (eq f (tile-group-current-frame group))))
-                                   frames))
-                         (:empty
-                          (find-if (lambda (f)
-                                     (null (frame-window f)))
-                                   frames))
-                         (:choice
-                          ;; Transient windows sometimes specify a location
-                          ;; relative to the TRANSIENT_FOR window. Just ignore
-                          ;; these hints.
-                          (unless (find (window-type window) '(:transient :dialog))
-                            (let ((hints (window-normal-hints window)))
-                              (when (and hints (xlib:wm-size-hints-user-specified-position-p hints))
-                                (find-frame group (window-x window) (window-y window))))))
-                         (t             ; :focused
-                          (tile-group-current-frame group)))))
-     default)))
+         (default (tile-group-current-frame group))
+         (prefered-frame (or *new-window-prefered-frame* default)))
+    (when (or (functionp *new-window-prefered-frame*)
+              (and (symbolp *new-window-prefered-frame*)
+                   (fboundp *new-window-prefered-frame*)))
+      (setq prefered-frame
+            (handler-case
+                (funcall *new-window-prefered-frame* window)
+              (error (c)
+                (message "^1*^BError while calling ^b^3**new-window-prefered-frame*^1*^B: ^n~a" c)
+                default))))
+    (cond
+      ;; If we already have a frame use it.
+      ((frame-p prefered-frame)
+       prefered-frame)
+      ;; If `prefered-frame' is a list of keyword use it to determine the
+      ;; frame.  The sanity check doesn't cover not recognized keywords.  We
+      ;; simply fall back to the default then.
+      ((and (listp prefered-frame)
+            (every #'keywordp prefered-frame))
+       (loop for i in prefered-frame
+          thereis (case i
+                    (:last
+                     ;; last-frame can be stale
+                     (and (> (length frames) 1)
+                          (tile-group-last-frame group)))
+                    (:unfocused
+                     (find-if (lambda (f)
+                                (not (eq f (tile-group-current-frame group))))
+                              frames))
+                    (:empty
+                     (find-if (lambda (f)
+                                (null (frame-window f)))
+                              frames))
+                    (:choice
+                     ;; Transient windows sometimes specify a location
+                     ;; relative to the TRANSIENT_FOR window. Just ignore
+                     ;; these hints.
+                     (unless (find (window-type window) '(:transient :dialog))
+                       (let ((hints (window-normal-hints window)))
+                         (when (and hints (xlib:wm-size-hints-user-specified-position-p hints))
+                           (find-frame group (window-x window) (window-y window))))))
+                    (t                  ; :focused or not recognized keyword
+                     default))))
+      ;; Not well formed `*new-window-prefered-frame*'.  Message an error and
+      ;; return the default.
+      (t (message "^1*^BInvalid ^b^3**new-window-prefered-frame*^1*^B: ^n~a"
+                  prefered-frame)
+         default))))
 
 (defun add-window (screen xwin)
   (screen-add-mapped-window screen xwin)

@@ -869,8 +869,8 @@ Choose any empty frame.
 Choose any unfocused frame.
 @end table
 
-Alternatively, it can be set to a function that takes one argument,
-the new window, and returns the prefered frame.")
+Alternatively, it can be set to a function that takes one argument, the new
+window, and returns the prefered frame or a list of the above preferences.")
 
 (defun backtrace-string ()
   "Similar to print-backtrace, but return the backtrace as a string."
