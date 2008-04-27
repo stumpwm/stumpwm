@@ -541,7 +541,7 @@ the 'date' command options except the following ones: %g, %G, %j, %N,
   "Switch to the window last focused."
   (other-window (current-group)))
 
-(defun programs-in-path (base &optional full-path (path (split-string (getenv "PATH") ":")))
+(defun programs-in-path (&optional full-path (path (split-string (getenv "PATH") ":")))
   "Return a list of programs in the path that start with @var{base}. if
 @var{full-path} is @var{t} then return the full path, otherwise just
 return the filename. @var{path} is by default the @env{PATH}
@@ -554,15 +554,28 @@ each directory seperated by a colon."
    nconc (loop
           for file in (directory (merge-pathnames (make-pathname :name :wild) dir))
           for namestring = (file-namestring file)
-          when (and (string= base namestring
-                             :end1 (min (length base)
-                                        (length namestring))
-                             :end2 (min (length base)
-                                        (length namestring)))
-                    (pathname-is-executable-p file))
-          collect (if full-path
-                      (namestring file)
-                      namestring))))
+	    when (pathname-is-executable-p file)
+	    collect (if full-path
+			(namestring file)
+			namestring))))
+
+(defvar *program-list* '()
+  "list containing the programs in the path, used for completion")
+(defcommand rehash (&optional (path (split-string (getenv "PATH")
+					     ":"))) ()
+    "put the list of programs in the path in @var{*programs-list*}"
+  (setf *program-list* (programs-in-path nil path)))
+
+(defun complete-program (base)
+  "return the list of programs in @var{*program-list*} whose names begin
+with base. If @var{*program-list*} is nil, run @code{rehash} first."
+  (or *program-list* (rehash))
+  (remove-if-not #'(lambda (p)
+		     (string= base p
+			      :end1 (min (length base)
+					 (length p))
+			      :end2 (min (length base)
+					 (length p))))  *program-list*))
 
 (defcommand run-shell-command (cmd &optional collect-output-p) ((:shell "/bin/sh -c "))
   "Run the specified shell command. If @var{collect-output-p} is @code{T}
@@ -982,7 +995,7 @@ string between them."
 
 (define-stumpwm-type :shell (input prompt)
   (or (argument-pop-rest input)
-      (completing-read (current-screen) prompt 'programs-in-path)))
+      (completing-read (current-screen) prompt 'complete-program)))
 
 (define-stumpwm-type :rest (input prompt)
   (or (argument-pop-rest input)
