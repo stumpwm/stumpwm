@@ -571,11 +571,11 @@ each directory seperated by a colon."
 with base. If @var{*program-list*} is nil, run @code{rehash} first."
   (or *program-list* (rehash))
   (remove-if-not #'(lambda (p)
-		     (string= base p
-			      :end1 (min (length base)
-					 (length p))
-			      :end2 (min (length base)
-					 (length p))))  *program-list*))
+		     (if (> (length base) (length p))
+			 '()
+			 (string= base p
+			      :end1 (length base)
+			      :end2 (length base))))  *program-list*))
 
 (defcommand run-shell-command (cmd &optional collect-output-p) ((:shell "/bin/sh -c "))
   "Run the specified shell command. If @var{collect-output-p} is @code{T}
