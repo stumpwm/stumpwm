@@ -103,6 +103,7 @@
           *xwin-to-window*
           *resize-map*
           *default-group-name*
+          *window-border-style*
           add-hook
           dformat
           getenv
@@ -1136,3 +1137,26 @@ input focus is transfered to the window you click on.")
   "When this is T a backtrace is displayed with errors that occurred
 within an interactive call to a command.")
 
+(defvar *window-border-style* :thick
+  "This controls the appearance of the border around windows. valid
+values are:
+@table @var
+@item :thick
+All space within the frame not used by the window is dedicated to the
+border.
+
+@item :thin
+Only the border width as controlled by *maxsize-border-width*
+*normal-border-width* and *transient-border-width* is used as the
+border. The rest is filled with the unfocus color.
+
+@item :tight
+The same as :thin but the border surrounds the window and the wasted
+space within the frame is not obscured, revealing the background.
+
+@item :none
+Like :tight but no border is ever visible.
+@end table
+
+After changing this variable you may need to call
+sync-all-frame-windows to see the change.")

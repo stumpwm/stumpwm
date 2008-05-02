@@ -477,7 +477,10 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
             ;; windows that dont fill the entire screen have a transparent background.
             (xlib:window-background (window-parent window))
             (if (eq (window-type window) :normal)
-                c :none))
+                (if (eq *window-border-style* :thick)
+                    c
+                    (screen-unfocus-color screen))
+                :none))
       ;; get the background updated
       (xlib:clear-area (window-parent window)))))
 
@@ -832,7 +835,8 @@ than the root window's width and height."
                                                      width height
                                                      0 0
                                                      fwidth fheight)
-      (when center
+      (when (or center
+                (find *window-border-style* '(:tight :none)))
         (setf x (+ wx (frame-x f))
               y (+ wy (frame-display-y (window-group win) f))
               wx 0 wy 0))
@@ -863,10 +867,19 @@ than the root window's width and height."
             (xlib:drawable-y (window-parent win)) y))
     ;; This is the only place a window's geometry should change
     (set-window-geometry win :x wx :y wy :width width :height height :border-width 0)
-    ;; the parent window should stick to the size of the window
-    ;; unless it isn't being maximized to fill the frame.
     (xlib:with-state ((window-parent win))
-      (if stick
+      ;; FIXME: updating the border doesn't need to be run everytime
+      ;; the window is maximized, but only when the border style or
+      ;; window type changes. The overhead is probably minimal,
+      ;; though.
+      (setf (xlib:drawable-border-width (window-parent win))
+            (case *window-border-style*
+              (:none 0)
+              (t (default-border-width-for-type (window-type win)))))
+      ;; the parent window should stick to the size of the window
+      ;; unless it isn't being maximized to fill the frame.
+      (if (or stick
+              (find *window-border-style* '(:tight :none)))
           (setf (xlib:drawable-width (window-parent win)) (window-width win)
                 (xlib:drawable-height (window-parent win)) (window-height win))
           (let ((frame (window-frame win)))
@@ -1587,8 +1600,9 @@ T (default) then also focus the frame."
     (if w
         (focus-window w)
         (no-focus group (frame-window last)))
-    (when show-indicator
-      (show-frame-indicator group))))
+    (if show-indicator
+        (show-frame-indicator group)
+        (show-frame-outline group))))
 
 (defun frame-windows (group f)
   (remove-if-not (lambda (w) (eq (window-frame w) f))

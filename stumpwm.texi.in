@@ -669,6 +669,7 @@ list. Some commands operate only on marked windows.
 ### *maxsize-border-width*
 ### *transient-border-width*
 ### *normal-border-width*
+### *window-border-style*
 
 @@@ set-win-bg-color
 @@@ set-normal-gravity
