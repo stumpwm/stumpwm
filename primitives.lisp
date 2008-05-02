@@ -718,13 +718,10 @@ Useful for re-using the &REST arg after removing some options."
   (let ((filename (coerce (sb-int:unix-namestring pathname) 'base-string)))
     (and (eq (sb-unix:unix-file-kind filename) :file)
          (sb-unix:unix-access filename sb-unix:x_ok)))
+  ;; FIXME: this is not exactly perfect
   #+clisp
-  (let* ((pname (list (coerce (namestring pathname) 'base-string)))
-	 (fileinfo (with-open-stream (f
-				      (ext:run-program "file" :arguments `,pname :output :stream))
-		     (loop for line = (read-line f nil nil) while line collect line)))
-	 (ftest (cl-ppcre:all-matches-as-strings "executable" (car fileinfo))))
-    (string= "executable" (car ftest)))
+  (logand (posix:convert-mode (posix:file-stat-mode (posix:file-stat pathname)))
+          (posix:convert-mode '(:xusr :xgrp :xoth)))
   #-(or sbcl clisp) t)
 
 (defun probe-path (path)
@@ -745,10 +742,8 @@ Useful for re-using the &REST arg after removing some options."
     (file-error () nil)))
 
 (defun portable-file-write-date (pathname)
-  ;; clisp errors out if you run file-write-date on a directory
-  ;; pathname and doesn't appear to have a directory
-  ;; equivalent. AAAAARG!
-  #+clisp 0
+  ;; clisp errors out if you run file-write-date on a directory.
+  #+clisp (posix:file-stat-mtime (posix:file-stat pathname))
   #-clisp (file-write-date pathname))
 
 (defun split-string (string &optional (separators "
