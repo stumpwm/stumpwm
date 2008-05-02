@@ -88,6 +88,11 @@ added anew."
   "Clear all notifications."
   (setf notifications nil))
 
+(defcommand notifications-delete (str)
+  ()
+  "Delete the specified notification."
+  (setf notifications (delete str notifications :test #'string=)))
+
 (defcommand notifications-delete-first ()
   ()
   "Delete the first notification."
