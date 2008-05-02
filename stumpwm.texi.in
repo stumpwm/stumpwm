@@ -740,6 +740,7 @@ window pool, where windows and frames are not so tightly connected.
 !!! fclear
 !!! move-focus
 !!! move-window
+!!! exchange-windows
 !!! next-in-frame
 !!! prev-in-frame
 !!! other-in-frame

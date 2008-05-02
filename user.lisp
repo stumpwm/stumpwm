@@ -920,6 +920,16 @@ string between them."
                        (mapcar 'window-name
                                (group-windows (current-group))))))
 
+(define-stumpwm-type :direction (input prompt)
+  (let* ((values '(("up" :up)
+                   ("down" :down)
+                   ("left" :left)
+                   ("right" :right)))
+         (dir (second (assoc (string-trim " " (argument-pop-or-read input prompt values))
+                             values :test 'string-equal))))
+    (or dir
+        (throw 'error "No matching direction."))))
+
 (define-stumpwm-type :gravity (input prompt)
 "Set the current window's gravity."
   (let* ((values '(("center" :center)
@@ -1286,16 +1296,16 @@ process."
     best-frame))
 
 (defun move-focus-and-or-window (dir &optional win-p)
+  (declare (type (member :up :down :left :right) dir))
   (let* ((group (current-group))
-         (direction (intern (string-upcase dir) :keyword))
-         (new-frame (neighbour direction (tile-group-current-frame group) (group-frames group)))
+         (new-frame (neighbour dir (tile-group-current-frame group) (group-frames group)))
          (window (current-window)))
     (when new-frame
       (if (and win-p window)
           (pull-window window new-frame)
           (focus-frame group new-frame)))))
 
-(defcommand move-focus (dir) ((:string "Direction: "))
+(defcommand move-focus (dir) ((:direction "Direction: "))
 "Focus the frame adjacent to the current one in the specified
 direction. The following are valid directions:
 @table @asis
@@ -1306,7 +1316,7 @@ direction. The following are valid directions:
 @end table"
   (move-focus-and-or-window dir))
 
-(defcommand move-window (dir) ((:string "Direction: "))
+(defcommand move-window (dir) ((:direction "Direction: "))
 "Just like move-focus except that the current is pulled along."
   (move-focus-and-or-window dir t))
 
@@ -1982,3 +1992,28 @@ submitting the bug report."
         (set-x-selection (format nil "~a~%~a" (first *last-unhandled-error*) (second *last-unhandled-error*)))
         (message "Copied to clipboard."))
       (message "There was no unhandled error!")))
+
+;; Exchange
+
+(defun exchange-windows (win1 win2)
+  "Exchange the windows in their respective frames."
+  (let ((f1 (window-frame win1))
+        (f2 (window-frame win2)))
+    (unless (eq f1 f2)
+      (pull-window win1 f2)
+      (pull-window win2 f1)
+      (focus-frame (window-group win1) f2))))
+
+(defcommand exchange-direction (dir &optional (win (current-window)))
+    ((:direction "Direction: "))
+  "Exchange the current window (by default) with the top window of the frame in specified direction.
+@table @asis
+@item up
+@item down
+@item left
+@item right
+@end table"
+  (let* ((frame-set (group-frames (window-group win))))
+    (exchange-windows win (frame-window (neighbour dir
+                                                   (window-frame win)
+                                                   frame-set)))))

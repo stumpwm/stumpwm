@@ -3,6 +3,10 @@
 This file documents user visible changes between versions of StumpWM
 
 * Changes since 0.9.2
+** new command exchange-windows
+
+** new command type :direction
+
 ** define-stumpwm-command is deprecated
 Use defcommand instead
 

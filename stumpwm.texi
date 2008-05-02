@@ -1109,6 +1109,10 @@ direction. The following are valid directions:
 Just like move-focus except that the current is pulled along.
 @end deffn
 
+@deffn {Command} exchange-windows WIN1 WIN2
+Exchange the windows in their respective frames.
+@end deffn
+
 @deffn {Command} next-in-frame 
 Go to the next window in the current frame.
 @end deffn
