@@ -2338,24 +2338,25 @@ windows used to draw the numbers in. The caller must destroy them."
 (defun echo-string-list (screen strings &rest highlights)
   "Draw each string in l in the screen's message window. HIGHLIGHT is
   the nth entry to highlight."
-  (unless *executing-stumpwm-command*
-    (let ((width (render-strings screen (screen-message-cc screen) *message-window-padding* 0 strings '() nil)))
-      (setup-message-window screen (length strings) width)
-      (render-strings screen (screen-message-cc screen) *message-window-padding* 0 strings highlights))
-    (setf (screen-current-msg screen)
-          strings
-          (screen-current-msg-highlights screen)
-          highlights))
-  (push-last-message screen strings highlights)
-  (xlib:display-finish-output *display*)
-  ;; Set a timer to hide the message after a number of seconds
-  (if *suppress-echo-timeout*
-      ;; any left over timers need to be canceled.
-      (when (timer-p *message-window-timer*)
-        (cancel-timer *message-window-timer*)
-        (setf *message-window-timer* nil))
-      (reset-message-window-timer))
-  (apply 'run-hook-with-args *message-hook* strings))
+  (when strings
+    (unless *executing-stumpwm-command*
+      (let ((width (render-strings screen (screen-message-cc screen) *message-window-padding* 0 strings '() nil)))
+        (setup-message-window screen (length strings) width)
+        (render-strings screen (screen-message-cc screen) *message-window-padding* 0 strings highlights))
+      (setf (screen-current-msg screen)
+            strings
+            (screen-current-msg-highlights screen)
+            highlights))
+    (push-last-message screen strings highlights)
+    (xlib:display-finish-output *display*)
+    ;; Set a timer to hide the message after a number of seconds
+    (if *suppress-echo-timeout*
+        ;; any left over timers need to be canceled.
+        (when (timer-p *message-window-timer*)
+          (cancel-timer *message-window-timer*)
+          (setf *message-window-timer* nil))
+        (reset-message-window-timer))
+    (apply 'run-hook-with-args *message-hook* strings)))
 
 (defun echo-string (screen msg)
   "Display @var{string} in the message bar on @var{screen}. You almost always want to use @command{message}."
