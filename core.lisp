@@ -1512,6 +1512,53 @@ function expects to be wrapped in a with-state for win."
              (>= x fx) (<= x fwx)
              (return f))))))
 
+
+(defun frame-set-x (frame v)
+  (decf (frame-width frame)
+        (- v (frame-x frame)))
+  (setf (frame-x frame) v))
+
+(defun frame-set-y (frame v)
+  (decf (frame-height frame)
+        (- v (frame-y frame)))
+  (setf (frame-y frame) v))
+
+(defun frame-set-r (frame v)
+  (setf (frame-width frame)
+        (- v (frame-x frame))))
+
+(defun frame-set-b (frame v)
+  (setf (frame-height frame)
+        (- v (frame-y frame))))
+
+(defun frame-r (frame)
+  (+ (frame-x frame) (frame-width frame)))
+
+(defun frame-b (frame)
+  (+ (frame-y frame) (frame-height frame)))
+
+(defun frame-intersect (f1 f2)
+  "Return a new frame representing (only) the intersection of F1 and F2. WIDTH and HEIGHT will be <= 0 if there is no overlap"
+  (let ((r (copy-frame f1)))
+    (when (> (frame-x f2) (frame-x f1))
+      (frame-set-x r (frame-x f2)))
+    (when (< (+ (frame-x f2) (frame-width f2))
+             (+ (frame-x f1) (frame-width f1)))
+      (frame-set-r r (frame-r f2)))
+    (when (> (frame-y f2) (frame-y f1))
+      (frame-set-y r (frame-y f2)))
+    (when (< (+ (frame-y f2) (frame-height f2))
+             (+ (frame-y f1) (frame-height f1)))
+      (frame-set-b r (frame-b f2)))
+  (values r)))
+
+(defun frames-overlap-p (f1 f2)
+  "Returns T if frames F1 and F2 overlap at all"
+  (and (and (frame-p f1) (frame-p f2))
+       (let ((frame (frame-intersect f1 f2)))
+         (values (not (and (plusp (frame-width frame))
+                           (plusp (frame-height frame))))))))
+
 (defun frame-raise-window (g f w &optional (focus t))
   "Raise the window w in frame f in group g. if FOCUS is
 T (default) then also focus the frame."
@@ -2372,7 +2419,7 @@ windows used to draw the numbers in. The caller must destroy them."
 current screen along with a backtrace. For careful study, the
 message does not time out."
   (let ((*suppress-echo-timeout* t))
-    (echo-string (current-screen) 
+    (echo-string (current-screen)
                  (concat (apply 'format nil fmt args)
                          (backtrace-string)))))
 
@@ -2487,7 +2534,7 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
            (group (make-tile-group
                    :screen screen
                    :number 1
-                   :name "Default")))
+                   :name *default-group-name*)))
       ;; Create our screen structure
       ;; The focus window is mapped at all times
       (xlib:map-window focus-window)
@@ -2555,21 +2602,16 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
            (with-current-screen screen
              ;; Ignore 'clone' heads.
              (loop
-              for i = 0 then (1+ i)
-              for h in
-              (delete-duplicates
-               (loop for i in (split-string (run-shell-command "xdpyinfo -ext XINERAMA" t))
-                     for head = (parse-xinerama-head i)
-                     when head
-                     collect head)
-               :test (lambda (h1 h2)
-                       (and (= (frame-height h1) (frame-height h2))
-                            (= (frame-width h1) (frame-width h2))
-                            (= (frame-x h1) (frame-x h2))
-                            (= (frame-y h1) (frame-y h2)))))
-
-              do (setf (head-number h) i)
-              collect h)))
+                for i = 0 then (1+ i)
+                for h in
+                (delete-duplicates
+                 (loop for i in (split-string (run-shell-command "xdpyinfo -ext XINERAMA" t))
+                    for head = (parse-xinerama-head i)
+                    when head
+                    collect head)
+                 :test #'frames-overlap-p)
+                do (setf (head-number h) i)
+                collect h)))
       (list (make-head :number 0
                        :x 0 :y 0
                        :width (xlib:drawable-width root)
@@ -2579,6 +2621,7 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 (defun copy-heads (screen)
   "Return a copy of screen's heads."
   (mapcar 'copy-frame (screen-heads screen)))
+
 
 ;; Determining a frame's head based on position probably won't
 ;; work with overlapping heads. Would it be better to walk
@@ -3444,3 +3487,4 @@ the window in it's frame."
            (,ogroup (current-group)))
       (unwind-protect (progn ,@body)
         (focus-frame ,ogroup ,oframe)))))
+

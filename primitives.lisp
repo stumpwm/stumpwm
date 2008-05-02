@@ -102,6 +102,7 @@
           *banish-pointer-to*
           *xwin-to-window*
           *resize-map*
+          *default-group-name*
           add-hook
           dformat
           getenv
@@ -793,8 +794,7 @@ output directly to a file.")
                                  (if (typep ch 'base-char)
                                      ch #\?))
                        (apply 'format nil fmt args))
-                  *debug-stream*)
-    (finish-output *debug-stream*)))
+                  *debug-stream*)))
 
 ;;; 
 ;;; formatting routines
@@ -1115,6 +1115,9 @@ input focus is transfered to the window you click on.")
 (defvar *resize-map* nil
   "The keymap used for resizing a window")
 
+(defvar *default-group-name* "Default"
+  "The name of the default group.")
+
 (defmacro with-focus (xwin &body body)
   "Set the focus to xwin, do body, then restore focus"
   (let ((focus (gensym "FOCUS"))
@@ -1132,4 +1135,4 @@ input focus is transfered to the window you click on.")
 (defvar *show-command-backtrace* nil
   "When this is T a backtrace is displayed with errors that occurred
 within an interactive call to a command.")
-  
+
