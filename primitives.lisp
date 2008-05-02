@@ -1017,6 +1017,24 @@ the new window, and returns the prefered frame.")
 
   #-(or sbcl clisp) (write-line "Sorry, no backtrace for you."))
 
+(defun bytes-to-string (data)
+  "Convert a list of bytes into a string."
+  #+sbcl
+  (sb-ext:octets-to-string
+   (make-array (length data) :element-type '(unsigned-byte 8) :initial-contents data))
+   #+clisp
+   (ext:convert-string-from-bytes 
+    (make-array (length data) :element-type '(unsigned-byte 8) :initial-contents data)
+    custom:*terminal-encoding*))
+
+(defun string-to-bytes (string)
+  "Convert a string to a list of bytes."
+  #+sbcl
+  (sb-ext:string-to-octets string)
+  #+clisp
+  (ext:convert-string-to-bytes
+   custom:*terminal-encoding*))
+
 (defun utf8-to-string (octets)
   "Convert the list of octets to a string."
   #+sbcl (sb-ext:octets-to-string

@@ -3066,14 +3066,16 @@ chunks."
   (let* ((win root)
          (screen (find-screen root))
          (data (xlib:get-property win :stumpwm_command :delete-p t))
-         (cmd (map 'string 'code-char data)))
+         (cmd (bytes-to-string data)))
     (let ((msgs (screen-last-msg screen))
           (hlts (screen-last-msg-highlights screen))
           (*executing-stumpwm-command* t))
       (setf (screen-last-msg screen) '()
             (screen-last-msg-highlights screen) '())
       (interactive-command cmd)
-      (xlib:change-property win :stumpwm_command_result (map 'list 'char-code (format nil "~{~{~a~%~}~}" (nreverse (screen-last-msg screen)))) :string 8)
+      (xlib:change-property win :stumpwm_command_result 
+                            (string-to-bytes (format nil "~{~{~a~%~}~}" (nreverse (screen-last-msg screen))))
+                            :string 8)
       (setf (screen-last-msg screen) msgs
             (screen-last-msg-highlights screen) hlts))
     (xlib:display-finish-output *display*)))
