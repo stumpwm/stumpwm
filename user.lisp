@@ -567,7 +567,7 @@ each directory seperated by a colon."
 
 (defun rehash (&optional (paths (mapcar 'parse-namestring (split-string (getenv "PATH") ":"))))
   "Update the cache of programs in the path stored in @var{*programs-list*} when needed."
-  (let ((dates (mapcar 'file-write-date paths)))
+  (let ((dates (mapcar 'portable-file-write-date paths)))
     (unless (and *path-cache*
                  (equal (path-cache-paths *path-cache*) paths)
                  (equal (path-cache-modification-dates *path-cache*) dates))
@@ -576,14 +576,14 @@ each directory seperated by a colon."
                                           :paths paths)))))
 
 (defun complete-program (base)
-  "return the list of programs in @var{*program-list*} whose names begin
-with base. If @var{*program-list*} is nil, run @code{rehash} first."
+  "return the list of programs in @var{*path-cache*} whose names begin
+with base. Automagically update the cache."
   (rehash)
   (remove-if-not #'(lambda (p)
 		     (when (<= (length base) (length p))
                        (string= base p
                                 :end1 (length base)
-                                :end2 (length base))))  *program-list*))
+                                :end2 (length base)))) (path-cache-programs *path-cache*)))
 
 (defcommand run-shell-command (cmd &optional collect-output-p) ((:shell "/bin/sh -c "))
   "Run the specified shell command. If @var{collect-output-p} is @code{T}

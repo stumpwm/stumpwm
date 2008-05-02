@@ -744,6 +744,13 @@ Useful for re-using the &REST arg after removing some options."
               :name nil :type nil :defaults pathname))))
     (file-error () nil)))
 
+(defun portable-file-write-date (pathname)
+  ;; clisp errors out if you run file-write-date on a directory
+  ;; pathname and doesn't appear to have a directory
+  ;; equivalent. AAAAARG!
+  #+clisp 0
+  #-clisp (file-write-date pathname))
+
 (defun split-string (string &optional (separators "
 "))
   "Splits STRING into substrings where there are matches for SEPARATORS.
@@ -1028,25 +1035,30 @@ the new window, and returns the prefered frame.")
   #+sbcl
   (sb-ext:octets-to-string
    (make-array (length data) :element-type '(unsigned-byte 8) :initial-contents data))
-   #+clisp
-   (ext:convert-string-from-bytes 
-    (make-array (length data) :element-type '(unsigned-byte 8) :initial-contents data)
-    custom:*terminal-encoding*))
+  #+clisp
+  (ext:convert-string-from-bytes 
+   (make-array (length data) :element-type '(unsigned-byte 8) :initial-contents data)
+   custom:*terminal-encoding*)
+  #-(or sbcl clisp)
+  (map 'list #'code-char string))
 
 (defun string-to-bytes (string)
   "Convert a string to a vector of octets."
   #+sbcl
   (sb-ext:string-to-octets string)
   #+clisp
-  (ext:convert-string-to-bytes
-   custom:*terminal-encoding*))
+  (ext:convert-string-to-bytes (coerce string '(vector (unsigned-byte 8)))
+                               custom:*terminal-encoding*)
+  #-(or sbcl clisp)
+  (map 'list #'char-code string))
 
 (defun utf8-to-string (octets)
   "Convert the list of octets to a string."
   #+sbcl (sb-ext:octets-to-string
           (coerce octets '(vector (unsigned-byte 8)))
           :external-format :utf-8)
-  #+clisp (ext:convert-string-from-bytes octets charset:utf-8)
+  #+clisp (ext:convert-string-from-bytes (coerce octets '(vector (unsigned-byte 8)))
+                                         charset:utf-8)
   #-(or sbcl clisp)
   (map 'string #'code-char octets))
 
