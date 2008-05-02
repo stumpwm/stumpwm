@@ -20,7 +20,7 @@
 ;; Commentary:
 ;;
 ;; Generate the texinfo manual from docstrings in the source. Note,
-;; this only works in sbcl.
+;; this only works in sbcl and clisp
 ;;
 ;; Code:
 
@@ -35,12 +35,12 @@
 						(fdefinition (read-from-string name))))
 					    (symbol-function (find-symbol (string-upcase name) :stumpwm))))
 				    (*print-pretty* nil))
-				#+sbcl (format s "@defun {~a} ~{~a~^ ~}~%~a~&@end defun~%~%"
-					       name (sb-impl::%simple-fun-arglist fn)
-					       (documentation fn 'function))
-				#-sbcl (format s "@defun {~a} ~%~a~&@end defun~%~%"
-					       name ;(sb-impl::%simple-fun-arglist fn)
-					       (documentation fn 'function))
+				(format s "@defun ~a ~{~a~^ ~}~%~a~&@end defun~%~%"
+					name
+					#+sbcl (sb-impl::%simple-fun-arglist fn)
+					#+clisp (ext:arglist fn)
+					#- (or sbcl clisp) '("(Check the code for args list)")
+					(documentation fn 'function))
 				t)))
 
 (defun generate-macro-doc (s line)
@@ -64,10 +64,10 @@
   (ppcre:register-groups-bind (name) ("^!!! (.*)" line)
 			      (let ((cmd (symbol-function (find-symbol (string-upcase name) :stumpwm))))
 				#+sbcl (format s "@deffn {Command} ~a ~{~a~^ ~}~%~a~&@end deffn~%~%"
-					       name (sb-impl::%simple-fun-arglist cmd)
-					       (documentation cmd 'function))
-				#-sbcl (format s "@deffn {Command} ~a ~%~a~&@end deffn~%~%"
-					       name ;(sb-impl::%simple-fun-arglist cmd)
+					       name
+					       #+sbcl (sb-impl::%simple-fun-arglist cmd)
+					       #+clisp (ext:arglist cmd)
+					       #- (or sbcl clisp) '("(Check the code for args list)")
 					       (documentation cmd 'function))
 				t)))
 
