@@ -1034,7 +1034,7 @@ the new window, and returns the prefered frame.")
     custom:*terminal-encoding*))
 
 (defun string-to-bytes (string)
-  "Convert a string to a list of bytes."
+  "Convert a string to a vector of octets."
   #+sbcl
   (sb-ext:string-to-octets string)
   #+clisp
@@ -1047,9 +1047,7 @@ the new window, and returns the prefered frame.")
           (coerce octets '(vector (unsigned-byte 8)))
           :external-format :utf-8)
   #+clisp (ext:convert-string-from-bytes octets charset:utf-8)
-
-  ;; TODO: handle UTF-8 for other lisps
-  #-(or sbcl clisp) 
+  #-(or sbcl clisp)
   (map 'string #'code-char octets))
 
 (defun string-to-utf8 (string)
@@ -1058,9 +1056,7 @@ the new window, and returns the prefered frame.")
           string
           :external-format :utf-8)
   #+clisp (ext:convert-string-to-bytes string charset:utf-8)
-
-  ;; TODO: handle UTF-8 for other lisps
-  #-(or sbcl clisp) 
+  #-(or sbcl clisp)
   (map 'list #'char-code string))
 
 (defvar *startup-message* "^2*Welcome to The ^BStump^b ^BW^bindow ^BM^banager!"
