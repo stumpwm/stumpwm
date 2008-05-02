@@ -559,23 +559,31 @@ each directory seperated by a colon."
 			(namestring file)
 			namestring))))
 
-(defvar *program-list* '()
-  "list containing the programs in the path, used for completion")
-(defcommand rehash (&optional (path (split-string (getenv "PATH")
-					     ":"))) ()
-    "put the list of programs in the path in @var{*programs-list*}"
-  (setf *program-list* (programs-in-path nil path)))
+(defstruct path-cache
+  programs modification-dates paths)
+
+(defvar *path-cache* nil
+  "A cache containing the programs in the path, used for completion.")
+
+(defun rehash (&optional (paths (mapcar 'parse-namestring (split-string (getenv "PATH") ":"))))
+  "Update the cache of programs in the path stored in @var{*programs-list*} when needed."
+  (let ((dates (mapcar 'file-write-date paths)))
+    (unless (and *path-cache*
+                 (equal (path-cache-paths *path-cache*) paths)
+                 (equal (path-cache-modification-dates *path-cache*) dates))
+      (setf *path-cache* (make-path-cache :programs (programs-in-path nil paths)
+                                          :modification-dates dates
+                                          :paths paths)))))
 
 (defun complete-program (base)
   "return the list of programs in @var{*program-list*} whose names begin
 with base. If @var{*program-list*} is nil, run @code{rehash} first."
-  (or *program-list* (rehash))
+  (rehash)
   (remove-if-not #'(lambda (p)
-		     (if (> (length base) (length p))
-			 '()
-			 (string= base p
-			      :end1 (length base)
-			      :end2 (length base))))  *program-list*))
+		     (when (<= (length base) (length p))
+                       (string= base p
+                                :end1 (length base)
+                                :end2 (length base))))  *program-list*))
 
 (defcommand run-shell-command (cmd &optional collect-output-p) ((:shell "/bin/sh -c "))
   "Run the specified shell command. If @var{collect-output-p} is @code{T}
