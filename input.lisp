@@ -306,9 +306,8 @@ to return a list of matches."
 position. @var{input} must be of type @var{input-line}. Input
 functions are passed this structure as their first argument."
   (check-type string string)
-  ;; FIXME: obviously this is substandard
-  (map nil (lambda (c) (input-insert-char input c))
-       string))
+  (loop for c across string
+	do (input-insert-char input c)))
 
 (defun input-point (input)
   "Return the position of the cursor."
