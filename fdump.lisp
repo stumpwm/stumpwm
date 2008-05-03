@@ -1,5 +1,5 @@
 ;; fdump.lisp -- Layout save and restore routines.
-;; Copyright (C) 2007 Jonathan Liles, Shawn Betts
+;; Copyright (C) 2007-2008 Jonathan Liles, Shawn Betts
 ;;
 ;;  This file is part of stumpwm.
 ;;

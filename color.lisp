@@ -1,4 +1,4 @@
-;; Copyright (C) 2007 Jonathan Moore Liles
+;; Copyright (C) 2007-2008 Jonathan Moore Liles
 ;;
 ;;  This file is part of stumpwm.
 ;;

@@ -1,4 +1,4 @@
-;; Copyright (C) 2006 Matthew Kennedy
+;; Copyright (C) 2006-2008 Matthew Kennedy
 ;;
 ;;  This file is part of stumpwm.
 ;;

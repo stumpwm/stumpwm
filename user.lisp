@@ -1,4 +1,4 @@
-;; Copyright (C) 2003 Shawn Betts
+;; Copyright (C) 2003-2008 Shawn Betts
 ;;
 ;;  This file is part of stumpwm.
 ;;
@@ -41,7 +41,8 @@
 	  run-commands
 	  run-or-raise
 	  run-shell-command
-	  set-prefix-key))
+	  set-prefix-key
+          window-send-string))
 
 (defvar *root-map* nil
   "This is the keymap by default bound to @kbd{C-t}. It is known as the @dfn{prefix map}.")

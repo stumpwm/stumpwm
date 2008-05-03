@@ -1,4 +1,4 @@
-;; Copyright (C) 2006 Shawn Betts
+;; Copyright (C) 2006-2008 Shawn Betts
 ;;
 ;;  This file is part of stumpwm.
 ;;

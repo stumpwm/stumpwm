@@ -1,4 +1,4 @@
-;; Copyright (C) 2003 Shawn Betts
+;; Copyright (C) 2003-2008 Shawn Betts
 ;;
 ;;  This file is part of stumpwm.
 ;;
@@ -25,12 +25,17 @@
 
 (in-package stumpwm)
 
-(export '(define-key
+(export '(*top-map*
+          define-key
 	  kbd
 	  lookup-command
 	  lookup-key
 	  make-sparse-keymap
 	  undefine-key))
+
+(defvar *top-map* nil
+  "The top level key map. This is where you'll find the binding for the
+@dfn{prefix map}.")
 
 (defstruct key
   keysym shift control meta alt hyper super)
@@ -209,3 +214,26 @@ sequences that run binding."
                         kmap)
                cmds)))
     (mapcar 'reverse (search-it command keymap nil))))
+
+
+;;; The Top Map
+
+;; Do it this way so its easier to wipe the map and get a clean one.
+(when (null *top-map*)
+  (setf *top-map*
+        (let ((m (make-sparse-keymap)))
+          (define-key m (kbd "C-t") '*root-map*)
+          m)))
+
+(defvar *top-map-list* nil)
+
+(defun push-top-map (new-top)
+  (push *top-map* *top-map-list*)
+  (setf *top-map* new-top)
+  (sync-keys))
+
+(defun pop-top-map ()
+  (when *top-map-list*
+    (setf *top-map* (pop *top-map-list*))
+    (sync-keys)
+    t))

@@ -1,4 +1,4 @@
-;; Copyright (C) 2003 Shawn Betts
+;; Copyright (C) 2003-2008 Shawn Betts
 ;;
 ;;  This file is part of stumpwm.
 ;;
@@ -78,7 +78,6 @@
           *group-format*
           *list-hidden-groups*
           *x-selection*
-          *top-map*
           *last-command*
           *max-last-message-size*
           *record-last-msg-override*
@@ -902,11 +901,6 @@ The group's name.
 (defvar *x-selection* nil
   "This holds stumpwm's current selection. It is generally set
 when killing text in the input bar.")
-
-;; This is here to avoid warnings
-(defvar *top-map* nil
-  "The top level key map. This is where you'll find the binding for the
-@dfn{prefix map}.")
 
 (defvar *last-command* nil
   "Set to the last interactive command run.")
