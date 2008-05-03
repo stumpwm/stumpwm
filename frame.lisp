@@ -96,10 +96,12 @@
 
 (defun frames-overlap-p (f1 f2)
   "Returns T if frames F1 and F2 overlap at all"
+  (check-type f1 frame)
+  (check-type f2 frame)
   (and (and (frame-p f1) (frame-p f2))
        (let ((frame (frame-intersect f1 f2)))
-         (values (not (and (plusp (frame-width frame))
-                           (plusp (frame-height frame))))))))
+         (values (and (plusp (frame-width frame))
+                      (plusp (frame-height frame)))))))
 
 (defun frame-raise-window (g f w &optional (focus t))
   "Raise the window w in frame f in group g. if FOCUS is
@@ -679,4 +681,3 @@ windows used to draw the numbers in. The caller must destroy them."
            (,ogroup (current-group)))
       (unwind-protect (progn ,@body)
         (focus-frame ,ogroup ,oframe)))))
-
