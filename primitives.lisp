@@ -1037,8 +1037,7 @@ the new window, and returns the prefered frame.")
   #+sbcl
   (sb-ext:string-to-octets string)
   #+clisp
-  (ext:convert-string-to-bytes (coerce string '(vector (unsigned-byte 8)))
-                               custom:*terminal-encoding*)
+  (ext:convert-string-to-bytes string custom:*terminal-encoding*)
   #-(or sbcl clisp)
   (map 'list #'char-code string))
 
