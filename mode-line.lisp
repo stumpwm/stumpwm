@@ -68,8 +68,8 @@
   "The mode line border color.")
 
 (defvar *screen-mode-line-format* "[^B%n^b] %W"
-  "This variable describes what will be displayed on the modeline for each screen. 
-Turn it on with the function TOGGLE-MODE-LINE or the mode-line command. 
+  "This variable describes what will be displayed on the modeline for each screen.
+Turn it on with the function TOGGLE-MODE-LINE or the mode-line command.
 
 It is a list where each element may be a string, a symbol, or a list.
 
@@ -243,7 +243,7 @@ timer.")
 (defun resize-mode-line (ml)
   (when (eq (mode-line-mode ml) :stump)
     ;; This is a StumpWM mode-line
-    (setf (xlib:drawable-height (mode-line-window ml)) (+ (font-height (xlib:gcontext-font (mode-line-gc ml))) (* *mode-line-pad-y* 2))))
+    (setf (xlib:drawable-height (mode-line-window ml)) (+ (* (1+ (count #\Newline (mode-line-contents ml) :test #'equal)) (font-height (xlib:gcontext-font (mode-line-gc ml)))) (* *mode-line-pad-y* 2))))
   (setf (xlib:drawable-width (mode-line-window ml)) (- (frame-width (mode-line-head ml)) (* 2 (xlib:drawable-border-width (mode-line-window ml))))
         (xlib:drawable-height (mode-line-window ml)) (min (xlib:drawable-height (mode-line-window ml)) (/ (head-height (mode-line-head ml)) 4))
         (mode-line-height ml) (+ (xlib:drawable-height (mode-line-window ml)) (* 2 (xlib:drawable-border-width (mode-line-window ml))))
@@ -349,9 +349,11 @@ timer.")
            (string (mode-line-format-string ml)))
       (when (or force (not (string= (mode-line-contents ml) string)))
         (setf (mode-line-contents ml) string)
+        (resize-mode-line ml)
         (xlib:display-finish-output *display*)
         (let ((width (render-strings (mode-line-screen ml) (mode-line-cc ml)
-                                     *mode-line-pad-x*     *mode-line-pad-y* (list string) '())))
+                                     *mode-line-pad-x*     *mode-line-pad-y*
+                                     (split-string string (string #\Newline)) '())))
           ;; Just clear what we need to. This reduces flicker.
           (xlib:clear-area (mode-line-window ml) :x (+ *mode-line-pad-x* width)))))))
 
