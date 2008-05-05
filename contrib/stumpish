@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Copyright (C) 2007 Jonathan Moore Liles
 #
@@ -19,7 +19,7 @@
 
 ### STUMPwm Interactive Shell.
 
-function wait_result ()
+wait_result ()
 {
 	while true
 	do
@@ -44,14 +44,14 @@ function wait_result ()
 			s/\^[*[:digit:]]\{2\}//g;s/\^[Bbn]//g;'
 }
 
-function send_cmd ()
+send_cmd ()
 {
 	local cmd="$1"
 
-	if [ "$cmd" == "stumpwm-quit" ]
+	if [ "$cmd" = "stumpwm-quit" ]
 	then
 		cmd=quit
-	elif [ "$cmd" == "quit" ]
+	elif [ "$cmd" = "quit" ]
 	then
 		exit
 	fi
@@ -61,7 +61,7 @@ function send_cmd ()
 	wait_result
 }
 
-function usage ()
+usage ()
 {
 cat <<EOF
 Usage: stumpish [[-e] command [args...]]
@@ -85,7 +85,7 @@ exit 0;
 
 READLINE=yes
 
-if [ "x$1" == "x-r" ]
+if [ "x$1" = "x-r" ]
 then
 	READLINE=no
 	shift 1
@@ -93,8 +93,8 @@ fi
 
 if [ $# -gt 0 ]
 then
-	[ "$1" == "--help" ] && usage
-	if [ $1 == "-e" ]
+	[ "$1" = "--help" ] && usage
+	if [ "$1" = "-e" ]
 	then
 		if [ $# -ne 2 ]
 		then
@@ -112,7 +112,7 @@ then
 else
 	if [ -t 0 ]
 	then
-		if [ $READLINE == yes ] && type rlwrap &>/dev/null
+		if [ $READLINE = yes ] && type rlwrap 2>&1 >/dev/null
 		then
 			## Note: $TEMP is not conventional; it is left
 			## here purely for backwards compatibility.
@@ -134,16 +134,18 @@ else
 
 IFS='
 '
-		while read -p "> "
+		echo -n "> "
+		while read REPLY
 		do
 			tput bold
 			tput setaf 2
 			send_cmd "$REPLY"
 			tput sgr0
 
+			echo -n "> "
 		done
 	else
-		while read
+		while read REPLY
 		do
 			send_cmd "$REPLY"
 		done
