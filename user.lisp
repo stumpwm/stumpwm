@@ -259,7 +259,11 @@ each directory seperated by a colon."
 
 (defun rehash (&optional (paths (mapcar 'parse-namestring (split-string (getenv "PATH") ":"))))
   "Update the cache of programs in the path stored in @var{*programs-list*} when needed."
-  (let ((dates (mapcar 'portable-file-write-date paths)))
+  (let ((dates (mapcar (lambda (p)
+                         (when (probe-path p)
+                           (portable-file-write-date p)))
+                       paths)))
+    (finish-output)
     (unless (and *path-cache*
                  (equal (path-cache-paths *path-cache*) paths)
                  (equal (path-cache-modification-dates *path-cache*) dates))
