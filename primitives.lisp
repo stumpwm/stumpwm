@@ -31,6 +31,7 @@
           *timeout-frame-indicator-wait*
           *frame-indicator-timer*
           *message-window-timer*
+          *urgent-window-hook*
           *new-window-hook*
           *destroy-window-hook*
           *focus-window-hook*
@@ -136,6 +137,10 @@ be an integer.")
   "Keep track of the timer that hides the message window.")
 
 ;;; Hooks
+
+(defvar *urgent-window-hook* '()
+  "A hook called whenever a window sets the property indicating that
+  it demands the user's attention")
 
 (defvar *map-window-hook* '()
   "A hook called whenever a window is mapped.")
@@ -424,6 +429,8 @@ Use the window's resource name.
   ;; they were in when they were unmapped unless that group doesn't
   ;; exist, in which case they go into the current group.
   withdrawn-windows
+  ;; a list of windows for which (window-urgent-p) currently true.
+  urgent-windows
   input-window
   ;; the window that accepts further keypresses after a toplevel key
   ;; has been pressed.
@@ -839,7 +846,7 @@ less than this value.")
 
 (defvar *new-frame-action* :last-window
   "When a new frame is created, this variable controls what is put in the
-new frame. Valid values are 
+new frame. Valid values are
 
 @table @code
 @item :empty
@@ -876,6 +883,53 @@ window, and returns the preferred frame or a list of the above preferences.")
   "Similar to print-backtrace, but return the backtrace as a string."
   (with-output-to-string (*standard-output*)
     (print-backtrace)))
+
+(defun print-backtrace (&optional (frames 100))
+  "print a backtrace of FRAMES number of frames to standard-output"
+  #+sbcl (sb-debug:backtrace frames *standard-output*)
+  #+clisp (ext:show-stack 1 frames (sys::the-frame))
+
+  #-(or sbcl clisp) (write-line "Sorry, no backtrace for you."))
+
+(defun bytes-to-string (data)
+  "Convert a list of bytes into a string."
+  #+sbcl
+  (sb-ext:octets-to-string
+   (make-array (length data) :element-type '(unsigned-byte 8) :initial-contents data))
+  #+clisp
+  (ext:convert-string-from-bytes
+   (make-array (length data) :element-type '(unsigned-byte 8) :initial-contents data)
+   custom:*terminal-encoding*)
+  #-(or sbcl clisp)
+  (map 'list #'code-char string))
+
+(defun string-to-bytes (string)
+  "Convert a string to a vector of octets."
+  #+sbcl
+  (sb-ext:string-to-octets string)
+  #+clisp
+  (ext:convert-string-to-bytes string custom:*terminal-encoding*)
+  #-(or sbcl clisp)
+  (map 'list #'char-code string))
+
+(defun utf8-to-string (octets)
+  "Convert the list of octets to a string."
+  #+sbcl (sb-ext:octets-to-string
+          (coerce octets '(vector (unsigned-byte 8)))
+          :external-format :utf-8)
+  #+clisp (ext:convert-string-from-bytes (coerce octets '(vector (unsigned-byte 8)))
+                                         charset:utf-8)
+  #-(or sbcl clisp)
+  (map 'string #'code-char octets))
+
+(defun string-to-utf8 (string)
+  "Convert the string to a vector of octets."
+  #+sbcl (sb-ext:string-to-octets
+          string
+          :external-format :utf-8)
+  #+clisp (ext:convert-string-to-bytes string charset:utf-8)
+  #-(or sbcl clisp)
+  (map 'list #'char-code string))
 
 (defvar *startup-message* "^2*Welcome to The ^BStump^b ^BW^bindow ^BM^banager!"
   "This is the message StumpWM displays when it starts. Set it to NIL to

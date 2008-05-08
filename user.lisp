@@ -63,6 +63,7 @@
           (define-key m (kbd "C-SPC") "pull-hidden-next")
           (define-key m (kbd "p") "pull-hidden-previous")
           (define-key m (kbd "C-p") "pull-hidden-previous")
+          (define-key m (kbd "C-u") "next-urgent")
           (define-key m (kbd "M-p") "prev")
           (define-key m (kbd "C-M-p") "prev-in-frame")
           (define-key m (kbd "w") "windows")
@@ -1089,11 +1090,11 @@ user aborted."
         ;; this fancy footwork lets us grab the backtrace from where the
         ;; error actually happened.
         (restart-case
-            (handler-bind 
+            (handler-bind
                 ((error (lambda (c)
                           (invoke-restart 'interactive-command-error
-                                          (format nil "^B^1*Error In Command '^b~a^B': ^n~A~a" 
-                                                  cmd c (if *show-command-backtrace* 
+                                          (format nil "^B^1*Error In Command '^b~a^B': ^n~A~a"
+                                                  cmd c (if *show-command-backtrace*
                                                             (backtrace-string) ""))))))
               (parse-and-run-command cmd))
           (interactive-command-error (err-text)
@@ -1117,7 +1118,7 @@ supplied, the text will appear in the prompt."
     (when (plusp (length cmd))
       (interactive-command cmd))))
 
-(defcommand pull-window-by-number (n &optional (group (current-group))) 
+(defcommand pull-window-by-number (n &optional (group (current-group)))
                                   ((:window-number "Pull: "))
   "Pull window N from another frame into the current frame and focus it."
   (let ((win (find n (group-windows group) :key 'window-number :test '=)))
@@ -1893,6 +1894,11 @@ current frame and raise it."
 "Go to the last accessed window in the current frame."
   (other-window-in-frame (current-group)))
 
+(defcommand next-urgent () ()
+  "Jump to the next urgent window"
+  (and (screen-urgent-windows (current-screen))
+       (focus-all (first (screen-urgent-windows (current-screen))))))
+
 (defcommand command-mode () ()
 "Command mode allows you to type ratpoison commands without needing the
 @key{C-t} prefix. Keys not bound in StumpWM will still get sent to the
@@ -1980,7 +1986,7 @@ command prints the command bound to the specified key sequence."
                 :role (and (not (equal role "")) role))
           *window-placement-rules*)))
 
-(defcommand remember (lock title) 
+(defcommand remember (lock title)
                      ((:y-or-n "Lock to group? ")
                       (:y-or-n "Use title? "))
   "Make a generic placement rule for the current window. Might be too specific/not specific enough!"
@@ -2013,7 +2019,7 @@ command prints the command bound to the specified key sequence."
   "Start emacs unless it is already running, in which case focus it."
   (run-or-raise "emacs" '(:class "Emacs")))
 
-(defcommand bind (key command) 
+(defcommand bind (key command)
                  ((:text "Key Chord: ")
                   (:rest "Command: "))
   "Hang a key binding off the escape key."

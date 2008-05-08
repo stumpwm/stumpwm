@@ -85,6 +85,8 @@
   ;; Grant the stack-mode change (if it's mapped)
   (set-window-geometry window :width width :height height)
   (maximize-window window)
+  (when (window-urgent-p window)
+    (window-clear-urgency window))
   (when (and (window-in-current-group-p window)
              ;; stack-mode change?
              (= 64 (logand value-mask 64)))
@@ -320,7 +322,7 @@ chunks."
       (setf (screen-last-msg screen) '()
             (screen-last-msg-highlights screen) '())
       (interactive-command cmd)
-      (xlib:change-property win :stumpwm_command_result 
+      (xlib:change-property win :stumpwm_command_result
                             (string-to-bytes (format nil "~{~{~a~%~}~}" (nreverse (screen-last-msg screen))))
                             :string 8)
       (setf (screen-last-msg screen) msgs
@@ -338,7 +340,10 @@ chunks."
            (window-type window) (xwin-type (window-xwin window)))
      (dformat 4 "new hints: ~s~%" (window-normal-hints window))
      (maximize-window window))
-    (:wm_hints)
+    (:wm_hints
+     (when (and (window-urgent-p window) (not (find window (screen-urgent-windows (window-screen window)))))
+       (and (register-urgent-window window)
+            (run-hook-with-args *urgent-window-hook* window))))
     (:wm_class
      (setf (window-class window) (xwin-class (window-xwin window))
            (window-res window) (xwin-res-name (window-xwin window))))
@@ -348,11 +353,15 @@ chunks."
      (setf (window-type window) (xwin-type (window-xwin window)))
      (maximize-window window))
     (:_NET_WM_STATE
-     ;; Client is broken and sets this property itself instead of sending a
-     ;; client request to the root window. Try to make do.
      (dolist (p (xlib:get-property (window-xwin window) :_NET_WM_STATE))
        (case (xlib:atom-name *display* p)
+         (:_NET_WM_STATE_DEMANDS_ATTENTION
+          (and (window-urgent-p window) (not (find window (screen-urgent-windows (window-screen window))))
+               (and (register-urgent-window window)
+                    (run-hook-with-args *urgent-window-hook* window))))
          (:_NET_WM_STATE_FULLSCREEN
+          ;; Client is broken and sets this property itself instead of sending a
+          ;; client request to the root window. Try to make do.
           ;; FIXME: what about when properties are REMOVED?
           (update-fullscreen window 1)))))))
 

@@ -31,6 +31,44 @@
           set-transient-gravity
           set-window-geometry))
 
+;; Urgency / demands attention
+
+(defun register-urgent-window (window)
+  "Add WINDOW to its screen's list of urgent windows"
+  (if (eq (screen-current-window (window-screen window)) window)
+      ;; window is already current, clear the urgent state to let it know we know.
+      (window-clear-urgency window)
+      (progn
+        (push window (screen-urgent-windows (window-screen window)))
+        (update-mode-lines (window-screen window))
+        (values t))))
+
+(defun unregister-urgent-window (window)
+  "Remove WINDOW to its screen's list of urgent windows"
+  (setf (screen-urgent-windows (window-screen window))
+        (delete window (screen-urgent-windows (window-screen window))))
+  (update-mode-lines (window-screen window)))
+
+(defun window-clear-urgency (window)
+  "Clear the urgency bit and/or _NET_WM_STATE_DEMANDS_ATTENTION on
+WINDOW"
+  (and (xlib:wm-hints (window-xwin window))
+       (let ((flags (xlib:wm-hints-flags (xlib:wm-hints (window-xwin window)))))
+         (setf flags (logand (lognot 256) flags))))
+  (remove-wm-state (window-xwin window) :_NET_WM_STATE_DEMANDS_ATTENTION)
+  (unregister-urgent-window window))
+
+(defun window-urgent-p (window)
+  "Returns T if WINDOW has the urgency bit and/or
+_NET_WM_STATE_DEMANDS_ATTENTION set"
+  (or (and (xlib:wm-hints (window-xwin window))
+           (logand 256 (xlib:wm-hints-flags (xlib:wm-hints (window-xwin window)))))
+      (find-wm-state (window-xwin window) :_NET_WM_STATE_DEMANDS_ATTENTION)))
+
+(defun only-urgent (windows)
+  "Return a list of all urgent windows on SCREEN"
+  (remove-if-not 'window-urgent-p (copy-list windows)))
+
 ;; Since StumpWM already uses the term 'group' to refer to Virtual Desktops,
 ;; we'll call the grouped windows of an application a 'gang'
 
@@ -222,6 +260,8 @@
 ;; FIXME: should we raise the winodw or its parent?
 (defun raise-window (win)
   "Map the window if needed and bring it to the top of the stack. Does not affect focus."
+  (when (window-urgent-p win)
+    (window-clear-urgency win))
   (when (window-hidden-p win)
     (unhide-window win)
     (update-configuration win))
@@ -1001,6 +1041,8 @@ needed."
     ;; now that the window is withdrawn, clean up the data structures
     (setf (screen-withdrawn-windows screen)
           (delete window (screen-withdrawn-windows screen)))
+    (setf (screen-urgent-windows screen)
+          (delete window (screen-urgent-windows screen)))
     (dformat 1 "destroy window ~a~%" screen)
     (dformat 3 "destroying parent window~%")
     (xlib:destroy-window (window-parent window))))

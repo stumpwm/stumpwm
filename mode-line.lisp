@@ -100,7 +100,8 @@ List the groups using @var{*group-format*}
                                         (#\g fmt-group-list)
                                         (#\h fmt-head)
                                         (#\n fmt-group)
-                                        (#\W fmt-head-window-list))
+                                        (#\W fmt-head-window-list)
+                                        (#\u fmt-urgent-window-list))
   "An alist containing format character format function pairs for
 formatting screen mode-lines. functions are passed the screen's
 current group.")
@@ -126,6 +127,16 @@ timer.")
 ;; All mode-line formatters take the mode-line they are being invoked from
 ;; as the first argument. Additional arguments (everything between the first
 ;; ',' and the ';' are provided as strings [not yet implemented]).
+
+(defun fmt-urgent-window-list (ml)
+  "Using *window-format*, return a 1 line list of the urgent windows, space seperated."
+   (format nil "~{~a~^ ~}"
+          (mapcar (lambda (w)
+                    (let ((str (format-expand *window-formatters* *window-format* w)))
+                      (if (eq w (current-window))
+                          (fmt-highlight str)
+                          str)))
+                  (screen-urgent-windows (mode-line-screen ml)))))
 
 (defun fmt-window-list (ml)
    "Using *window-format*, return a 1 line list of the windows, space seperated."
