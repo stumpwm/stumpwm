@@ -351,11 +351,10 @@ timer.")
         (setf (mode-line-contents ml) string)
         (resize-mode-line ml)
         (xlib:display-finish-output *display*)
+        (xlib:clear-area (mode-line-window ml))
         (let ((width (render-strings (mode-line-screen ml) (mode-line-cc ml)
                                      *mode-line-pad-x*     *mode-line-pad-y*
-                                     (split-string string (string #\Newline)) '())))
-          ;; Just clear what we need to. This reduces flicker.
-          (xlib:clear-area (mode-line-window ml) :x (+ *mode-line-pad-x* width)))))))
+                                     (split-string string (string #\Newline)) '()))))))))
 
 (defun find-mode-line-window (xwin)
   (dolist (s *screen-list*)
