@@ -467,6 +467,9 @@ than the root window's width and height."
          (hints-inc-y (and hints (xlib:wm-size-hints-height-inc hints)))
          (hints-min-aspect (and hints (xlib:wm-size-hints-min-aspect hints)))
          (hints-max-aspect (and hints (xlib:wm-size-hints-max-aspect hints)))
+         (border (case *window-border-style*
+                   (:none 0)
+                   (t (default-border-width-for-type (window-type win)))))
          center)
     ;;    (dformat 4 "hints: ~s~%" hints)
     ;; determine what the width and height should be
@@ -478,9 +481,8 @@ than the root window's width and height."
                y (frame-y head)
                width (frame-width head)
                height (frame-height head)
-               (xlib:window-priority (window-parent win)) :above
-               (xlib:drawable-border-width (window-parent win)) 0))
-       (return-from geometry-hints (values x y 0 0 width height t)))
+               (xlib:window-priority (window-parent win)) :above))
+       (return-from geometry-hints (values x y 0 0 width height 0 t)))
       ;; Adjust the defaults if the window is a transient_for window.
       ((find (window-type win) '(:transient :dialog))
        (setf center t
@@ -531,7 +533,7 @@ than the root window's width and height."
               y (+ wy (frame-display-y (window-group win) f))
               wx 0 wy 0))
       ;; Now return our findings
-      (values x y wx wy width height center))))
+      (values x y wx wy width height border center))))
 
 (defun set-window-geometry (win &key x y width height border-width)
   (macrolet ((update (xfn wfn v)
@@ -548,13 +550,9 @@ than the root window's width and height."
 
 (defun maximize-window (win)
   "Maximize the window."
-  (multiple-value-bind (x y wx wy width height stick)
+  (multiple-value-bind (x y wx wy width height border stick)
       (geometry-hints win)
-    (dformat 4 "maximize window ~a x: ~d y: ~d width: ~d height: ~d stick: ~s~%" win x y width height stick)
-    ;; Move the parent window
-    (xlib:with-state ((window-parent win))
-      (setf (xlib:drawable-x (window-parent win)) x
-            (xlib:drawable-y (window-parent win)) y))
+    (dformat 4 "maximize window ~a x: ~d y: ~d width: ~d height: ~d border: ~d stick: ~s~%" win x y width height border stick)
     ;; This is the only place a window's geometry should change
     (set-window-geometry win :x wx :y wy :width width :height height :border-width 0)
     (xlib:with-state ((window-parent win))
@@ -562,10 +560,9 @@ than the root window's width and height."
       ;; the window is maximized, but only when the border style or
       ;; window type changes. The overhead is probably minimal,
       ;; though.
-      (setf (xlib:drawable-border-width (window-parent win))
-            (case *window-border-style*
-              (:none 0)
-              (t (default-border-width-for-type (window-type win)))))
+      (setf (xlib:drawable-x (window-parent win)) x
+            (xlib:drawable-y (window-parent win)) y
+            (xlib:drawable-border-width (window-parent win)) border)
       ;; the parent window should stick to the size of the window
       ;; unless it isn't being maximized to fill the frame.
       (if (or stick
