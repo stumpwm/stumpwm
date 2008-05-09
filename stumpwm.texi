@@ -1226,7 +1226,7 @@ A command to toggle the mode line visibility.
 @end deffn
 
 
-@defun {toggle-mode-line} SCREEN HEAD &OPTIONAL (FORMAT (QUOTE *SCREEN-MODE-LINE-FORMAT*))
+@defun {toggle-mode-line} SCREEN HEAD &OPTIONAL (FORMAT '*SCREEN-MODE-LINE-FORMAT*)
 Toggle the state of the mode line for the specified screen
 @end defun
 

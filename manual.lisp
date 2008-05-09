@@ -35,7 +35,7 @@
                                                 (fdefinition (read-from-string name))))
                                             (symbol-function (find-symbol (string-upcase name) :stumpwm))))
                                     (*print-pretty* nil))
-                                (format s "@defun ~a ~{~a~^ ~}~%~a~&@end defun~%~%"
+                                (format s "@defun {~a} ~{~a~^ ~}~%~a~&@end defun~%~%"
                                         name
                                         #+sbcl (sb-impl::%simple-fun-arglist fn)
                                         #+clisp (ext:arglist fn)
@@ -63,12 +63,12 @@
 (defun generate-command-doc (s line)
   (ppcre:register-groups-bind (name) ("^!!! (.*)" line)
                               (let ((cmd (symbol-function (find-symbol (string-upcase name) :stumpwm))))
-                                #+sbcl (format s "@deffn {Command} ~a ~{~a~^ ~}~%~a~&@end deffn~%~%"
-                                               name
-                                               #+sbcl (sb-impl::%simple-fun-arglist cmd)
-                                               #+clisp (ext:arglist cmd)
-                                               #- (or sbcl clisp) '("(Check the code for args list)")
-                                               (documentation cmd 'function))
+                                (format s "@deffn {Command} ~a ~{~a~^ ~}~%~a~&@end deffn~%~%"
+                                        name
+                                        #+sbcl (sb-impl::%simple-fun-arglist cmd)
+                                        #+clisp (ext:arglist cmd)
+                                        #- (or sbcl clisp) '("(Check the code for args list)")
+                                        (documentation cmd 'function))
                                 t)))
 
 (defun generate-manual (&key (in #p"stumpwm.texi.in") (out #p"stumpwm.texi"))

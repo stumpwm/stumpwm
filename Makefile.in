@@ -3,7 +3,7 @@ LISP=@LISP_PROGRAM@
 clisp_BUILDOPTS=-K full -on-error exit ./make-image.lisp
 sbcl_BUILDOPTS=--load ./make-image.lisp
 
-clisp_INFOOPTS=-K full -on-error exit -x "(asdf:operate 'asdf:load-op :stumpwm) (load \"manual.lisp\")(stumpwm::generate-manual)(ext:exit)"
+clisp_INFOOPTS=-K full -on-error exit -x "(load \"asdf.lisp\") (load \"stumpwm.asd\") (load \"@PPCRE_PATH@/cl-ppcre.asd\") (asdf:operate 'asdf:load-op :stumpwm) (load (compile-file \"manual.lisp\")) (stumpwm::generate-manual) (ext:exit)"
 sbcl_INFOOPTS=--eval "(progn (require 'asdf) (require 'stumpwm) (load \"manual.lisp\"))" --eval "(progn (stumpwm::generate-manual) (sb-ext:quit))"
 
 
@@ -11,7 +11,7 @@ sbcl_INFOOPTS=--eval "(progn (require 'asdf) (require 'stumpwm) (load \"manual.l
 
 # This is copied from the .asd file. It'd be nice to have the list in
 # one place, but oh well.
-FILES=package.lisp primitives.lisp keysyms.lisp keytrans.lisp kmap.lisp input.lisp core.lisp user.lisp mode-line.lisp color.lisp stumpwm.lisp version.lisp make-image.lisp
+FILES=package.lisp primitives.lisp wrappers.lisp keysyms.lisp keytrans.lisp kmap.lisp input.lisp core.lisp screen.lisp group.lisp frame.lisp window.lisp message-window.lisp events.lisp selection.lisp user.lisp fdump.lisp mode-line.lisp color.lisp stumpwm.lisp version.lisp
 
 all: stumpwm.info stumpwm
 
