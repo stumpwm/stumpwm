@@ -28,57 +28,57 @@
 
 (defun generate-function-doc (s line)
   (ppcre:register-groups-bind (name) ("^@@@ (.*)" line)
-			      (let ((fn (if (find #\( name :test 'char=)
-					    ;; handle (setf <symbol>) functions
-					    (with-standard-io-syntax
-					      (let ((*package* (find-package :stumpwm)))
-						(fdefinition (read-from-string name))))
-					    (symbol-function (find-symbol (string-upcase name) :stumpwm))))
-				    (*print-pretty* nil))
-				(format s "@defun ~a ~{~a~^ ~}~%~a~&@end defun~%~%"
-					name
-					#+sbcl (sb-impl::%simple-fun-arglist fn)
-					#+clisp (ext:arglist fn)
-					#- (or sbcl clisp) '("(Check the code for args list)")
-					(documentation fn 'function))
-				t)))
+                              (let ((fn (if (find #\( name :test 'char=)
+                                            ;; handle (setf <symbol>) functions
+                                            (with-standard-io-syntax
+                                              (let ((*package* (find-package :stumpwm)))
+                                                (fdefinition (read-from-string name))))
+                                            (symbol-function (find-symbol (string-upcase name) :stumpwm))))
+                                    (*print-pretty* nil))
+                                (format s "@defun ~a ~{~a~^ ~}~%~a~&@end defun~%~%"
+                                        name
+                                        #+sbcl (sb-impl::%simple-fun-arglist fn)
+                                        #+clisp (ext:arglist fn)
+                                        #- (or sbcl clisp) '("(Check the code for args list)")
+                                        (documentation fn 'function))
+                                t)))
 
 (defun generate-macro-doc (s line)
   (declare (ignore s line)))
 
 (defun generate-variable-doc (s line)
   (ppcre:register-groups-bind (name) ("^### (.*)" line)
-			      (let ((sym (find-symbol (string-upcase name) :stumpwm)))
-				(format s "@defvar ~a~%~a~&@end defvar~%~%"
-					name (documentation sym 'variable))
-				t)))
+                              (let ((sym (find-symbol (string-upcase name) :stumpwm)))
+                                (format s "@defvar ~a~%~a~&@end defvar~%~%"
+                                        name (documentation sym 'variable))
+                                t)))
 
 (defun generate-hook-doc (s line)
   (ppcre:register-groups-bind (name) ("^\\$\\$\\$ (.*)" line)
-			      (let ((sym (find-symbol (string-upcase name) :stumpwm)))
-				(format s "@defvr {Hook} ~a~%~a~&@end defvr~%~%"
-					name (documentation sym 'variable))
-				t)))
+                              (let ((sym (find-symbol (string-upcase name) :stumpwm)))
+                                (format s "@defvr {Hook} ~a~%~a~&@end defvr~%~%"
+                                        name (documentation sym 'variable))
+                                t)))
 
 (defun generate-command-doc (s line)
   (ppcre:register-groups-bind (name) ("^!!! (.*)" line)
-			      (let ((cmd (symbol-function (find-symbol (string-upcase name) :stumpwm))))
-				#+sbcl (format s "@deffn {Command} ~a ~{~a~^ ~}~%~a~&@end deffn~%~%"
-					       name
-					       #+sbcl (sb-impl::%simple-fun-arglist cmd)
-					       #+clisp (ext:arglist cmd)
-					       #- (or sbcl clisp) '("(Check the code for args list)")
-					       (documentation cmd 'function))
-				t)))
+                              (let ((cmd (symbol-function (find-symbol (string-upcase name) :stumpwm))))
+                                #+sbcl (format s "@deffn {Command} ~a ~{~a~^ ~}~%~a~&@end deffn~%~%"
+                                               name
+                                               #+sbcl (sb-impl::%simple-fun-arglist cmd)
+                                               #+clisp (ext:arglist cmd)
+                                               #- (or sbcl clisp) '("(Check the code for args list)")
+                                               (documentation cmd 'function))
+                                t)))
 
 (defun generate-manual (&key (in #p"stumpwm.texi.in") (out #p"stumpwm.texi"))
   (with-open-file (os out :direction :output :if-exists :supersede)
     (with-open-file (is in :direction :input)
       (loop for line = (read-line is nil is)
-	 until (eq line is) do
-	   (or (generate-function-doc os line)
-	       (generate-macro-doc os line)
-	       (generate-hook-doc os line)
-	       (generate-variable-doc os line)
-	       (generate-command-doc os line)
-	       (write-line line os))))))
+         until (eq line is) do
+           (or (generate-function-doc os line)
+               (generate-macro-doc os line)
+               (generate-hook-doc os line)
+               (generate-variable-doc os line)
+               (generate-command-doc os line)
+               (write-line line os))))))
