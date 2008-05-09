@@ -26,6 +26,7 @@
   :depends-on (:cl-ppcre)
   :components ((:file "package")
 	       (:file "primitives")
+	       (:file "wrappers")
 	       (:file "keysyms")
 	       (:file "keytrans")
 	       (:file "kmap")
