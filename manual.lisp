@@ -35,7 +35,7 @@
 						(fdefinition (read-from-string name))))
 					    (symbol-function (find-symbol (string-upcase name) :stumpwm))))
 				    (*print-pretty* nil))
-				(format s "@defun ~a ~{~a~^ ~}~%~a~&@end defun~%~%"
+				(format s "@defun {~a} ~{~a~^ ~}~%~a~&@end defun~%~%"
 					name (sb-impl::%simple-fun-arglist fn)
 					(documentation fn 'function))
 				t)))
