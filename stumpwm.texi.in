@@ -91,7 +91,7 @@ This document explains how to use The Stump Window Manager.
 * Interacting With X11::        
 * Miscellaneous Commands::      
 * Hooks::                       
-* Hacking::
+* Hacking::                     
 * Command and Function Index::  
 * Variable Index::              
 
@@ -102,7 +102,7 @@ Introduction
 
 * Starting StumpWM::            
 * Basic Usage::                 
-* Interacting with the Lisp process::
+* Interacting with the Lisp process::  
 * Contact the StumpWM developers::  
 
 Key Bindings
@@ -142,8 +142,8 @@ Miscellaneous Commands
 
 Hacking
 
-* General Advice::
-* Using git with StumpWM::
+* General Advice::              
+* Using git with StumpWM::      
 
 @end detailmenu
 @end menu
@@ -157,7 +157,7 @@ customizability, completeness, and cushiness.
 @menu
 * Starting StumpWM::            
 * Basic Usage::                 
-* Interacting with the Lisp process::
+* Interacting with the Lisp process::  
 * Contact the StumpWM developers::  
 @end menu
 
@@ -270,7 +270,7 @@ Calls the set-prefix-key function (and sets a new keyboard prefix)
 @end table
 
 
-@node Contact the StumpWM developers, , Interacting with the Lisp process, Introduction
+@node Contact the StumpWM developers,  , Interacting with the Lisp process, Introduction
 @section Contact the StumpWM developers
 The StumpWM home page is @url{http://stumpwm.nongnu.org/}.
 
@@ -1031,7 +1031,7 @@ Return T if TIMER is a timer structure.
 !!! describe-function
 !!! where-is
 
-@node Hooks, Command and Function Index, Miscellaneous Commands, Top
+@node Hooks, Hacking, Miscellaneous Commands, Top
 @chapter Hooks
 StumpWM exports a number of hooks you can use to add customizations;
 like hooks in Emacs, you add to a hook with the @code{add-hook}
@@ -1087,11 +1087,11 @@ For those of you who have worked on Free Software projects before,
 this part should probably be fairly intuitive.
 
 @menu
-* General Advice::
-* Using git with StumpWM::
+* General Advice::              
+* Using git with StumpWM::      
 @end menu
 
-@node General Advice, Using git with StumpWM, , Hacking
+@node General Advice, Using git with StumpWM, Hacking, Hacking
 @section Hacking:  General Advice
 
 @enumerate
@@ -1182,7 +1182,7 @@ statement like this:
 find a way to use the same code for clisp and SBCL.
 @end enumerate
 
-@node Using git with StumpWM, , General Advice, Hacking
+@node Using git with StumpWM,  , General Advice, Hacking
 @section Hacking:  Using git with StumpWM
 
 For quite a while now, StumpWM has been using the git version control
@@ -1357,7 +1357,7 @@ your experimental branch. Alternately, you can wait until your changes
 (assuming you sent them in) make it into the official repository
 before deleting your experimental branch.
 
-@node Command and Function Index, Variable Index, Hooks, Top
+@node Command and Function Index, Variable Index, Hacking, Top
 @unnumbered Command and Function Index
 @printindex fn
 
