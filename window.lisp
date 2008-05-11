@@ -169,7 +169,7 @@
             (if (eq (window-type window) :normal)
                 (if (eq *window-border-style* :thick)
                     c
-                    (screen-unfocus-color screen))
+                    (screen-win-bg-color screen))
                 :none))
       ;; get the background updated
       (xlib:clear-area (window-parent window)))))
