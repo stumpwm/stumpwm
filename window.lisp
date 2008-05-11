@@ -590,9 +590,8 @@ than the root window's width and height."
                            :x (xlib:drawable-x (window-xwin window)) :y (xlib:drawable-y (window-xwin window))
                            :width (window-width window)
                            :height (window-height window)
-                           ;; normal windows get a black background
                            :background (if (eq (window-type window) :normal)
-                                           (screen-bg-color screen)
+                                           (screen-win-bg-color screen)
                                            :none)
                            :border (screen-unfocus-color screen)
                            :border-width (default-border-width-for-type (window-type window))
