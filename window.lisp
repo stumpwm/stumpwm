@@ -771,7 +771,7 @@ than the root window's width and height."
 (defun assign-window (window group frame &optional (where :tail))
   (setf (window-group window) group
         (window-number window) (find-free-window-number group)
-        (window-frame window) (or frame (pick-prefered-frame window)))
+        (window-frame window) (or frame (pick-preferred-frame window)))
   (if (eq where :head)
       (push window (group-windows group))
       (setf (group-windows group) (append (group-windows group) (list window)))))
@@ -815,30 +815,30 @@ than the root window's width and height."
       (run-hook-with-args *place-window-hook* window group frame))
     window))
 
-(defun pick-prefered-frame (window)
+(defun pick-preferred-frame (window)
   (let* ((group (window-group window))
          (frames (group-frames group))
          (default (tile-group-current-frame group))
-         (prefered-frame (or *new-window-prefered-frame* default)))
-    (when (or (functionp *new-window-prefered-frame*)
-              (and (symbolp *new-window-prefered-frame*)
-                   (fboundp *new-window-prefered-frame*)))
-      (setq prefered-frame
+         (preferred-frame (or *new-window-preferred-frame* default)))
+    (when (or (functionp *new-window-preferred-frame*)
+              (and (symbolp *new-window-preferred-frame*)
+                   (fboundp *new-window-preferred-frame*)))
+      (setq preferred-frame
             (handler-case
-                (funcall *new-window-prefered-frame* window)
+                (funcall *new-window-preferred-frame* window)
               (error (c)
-                (message "^1*^BError while calling ^b^3**new-window-prefered-frame*^1*^B: ^n~a" c)
+                (message "^1*^BError while calling ^b^3**new-window-preferred-frame*^1*^B: ^n~a" c)
                 default))))
     (cond
       ;; If we already have a frame use it.
-      ((frame-p prefered-frame)
-       prefered-frame)
-      ;; If `prefered-frame' is a list of keyword use it to determine the
+      ((frame-p preferred-frame)
+       preferred-frame)
+      ;; If `preferred-frame' is a list of keyword use it to determine the
       ;; frame.  The sanity check doesn't cover not recognized keywords.  We
       ;; simply fall back to the default then.
-      ((and (listp prefered-frame)
-            (every #'keywordp prefered-frame))
-       (loop for i in prefered-frame
+      ((and (listp preferred-frame)
+            (every #'keywordp preferred-frame))
+       (loop for i in preferred-frame
           thereis (case i
                     (:last
                      ;; last-frame can be stale
@@ -862,10 +862,10 @@ than the root window's width and height."
                            (find-frame group (window-x window) (window-y window))))))
                     (t                  ; :focused or not recognized keyword
                      default))))
-      ;; Not well formed `*new-window-prefered-frame*'.  Message an error and
+      ;; Not well formed `*new-window-preferred-frame*'.  Message an error and
       ;; return the default.
-      (t (message "^1*^BInvalid ^b^3**new-window-prefered-frame*^1*^B: ^n~a"
-                  prefered-frame)
+      (t (message "^1*^BInvalid ^b^3**new-window-preferred-frame*^1*^B: ^n~a"
+                  preferred-frame)
          default))))
 
 (defun add-window (screen xwin)
@@ -932,7 +932,7 @@ needed."
             (screen-withdrawn-windows screen) (delete window (screen-withdrawn-windows screen))
             ;; put the window at the end of the list
             (group-windows (window-group window)) (append (group-windows (window-group window)) (list window))
-            (window-frame window) (or frame (pick-prefered-frame window))))
+            (window-frame window) (or frame (pick-preferred-frame window))))
     (screen-add-mapped-window screen (window-xwin window))
     (register-window window)
     (xlib:change-property (window-xwin window) :_NET_WM_DESKTOP

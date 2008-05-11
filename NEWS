@@ -3,6 +3,10 @@
 This file documents user visible changes between versions of StumpWM
 
 * Changes since 0.9.2
+** spelling mistake fixed
+One global variable was changed. *new-window-prefered-frame* is now
+called *new-window-preferred-frame*.
+
 ** new variable *window-border-style*
 
 ** new command exchange-windows

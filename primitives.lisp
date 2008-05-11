@@ -92,7 +92,7 @@
           *min-frame-width*
           *min-frame-height*
           *new-frame-action*
-          *new-window-prefered-frame*
+          *new-window-preferred-frame*
           *startup-message*
           *default-package*
           *window-placement-rules*
@@ -850,7 +850,7 @@ The last focused window that is not currently visible is placed in the
 frame. This is the default.
 @end table")
 
-(defvar *new-window-prefered-frame* '(:focused)
+(defvar *new-window-preferred-frame* '(:focused)
   "This variable controls what frame a new window appears in. It is a
 list of preferences. The first preference that is satisfied is
 used. Valid list elements are as follows:
@@ -870,7 +870,7 @@ Choose any unfocused frame.
 @end table
 
 Alternatively, it can be set to a function that takes one argument, the new
-window, and returns the prefered frame or a list of the above preferences.")
+window, and returns the preferred frame or a list of the above preferences.")
 
 (defun backtrace-string ()
   "Similar to print-backtrace, but return the backtrace as a string."
