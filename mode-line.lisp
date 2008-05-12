@@ -361,11 +361,10 @@ timer.")
       (when (or force (not (string= (mode-line-contents ml) string)))
         (setf (mode-line-contents ml) string)
         (resize-mode-line ml)
-        (xlib:display-finish-output *display*)
         (xlib:clear-area (mode-line-window ml))
-        (let ((width (render-strings (mode-line-screen ml) (mode-line-cc ml)
-                                     *mode-line-pad-x*     *mode-line-pad-y*
-                                     (split-string string (string #\Newline)) '()))))))))
+        (render-strings (mode-line-screen ml) (mode-line-cc ml)
+                        *mode-line-pad-x*     *mode-line-pad-y*
+                        (split-string string (string #\Newline)) '())))))
 
 (defun find-mode-line-window (xwin)
   (dolist (s *screen-list*)
