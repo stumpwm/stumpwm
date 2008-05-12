@@ -146,6 +146,7 @@
           (define-key m (kbd "v") "describe-variable")
           (define-key m (kbd "f") "describe-function")
           (define-key m (kbd "k") "describe-key")
+          (define-key m (kbd "c") "describe-command")
           (define-key m (kbd "w") "where-is")
           m)))
 
@@ -1034,7 +1035,7 @@ string between them."
           finally (return c))))
 
 (defun call-interactively (command &optional (input ""))
-  "Parse the command's arguments from inputgiven the command's
+  "Parse the command's arguments from input given the command's
 argument specifications then execute it. Returns a string or nil if
 user aborted."
   (declare (type (or string symbol) command)
@@ -1939,8 +1940,11 @@ command prints the command bound to the specified key sequence."
 
 (defcommand describe-command (com) ((:command "Describe Command: "))
   "Print the online help associated with the specified command."
-  (message-no-timeout "Command \"~a\":~%~a" com
-                      (documentation (get-command-structure com) 'function)))
+  ; Is it really a command, not just a function?
+  (if (get-command-structure com)
+      (message-no-timeout "Command \"~a\":~%~a" com
+                          (documentation (get-command-symbol com) 'function))
+      (message-no-timeout "Error: Command \"~\" not found." com)))
 
 (defcommand where-is (cmd) ((:rest "Where is command: "))
 "Print the key sequences bound to the specified command."
