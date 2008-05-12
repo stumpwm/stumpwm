@@ -491,6 +491,10 @@ Describe the specified variable.
 List all key sequences that are bound to the specified command
 @end table
 
+@item C-t h c
+Describe the specified command.
+@end table
+
 @node Binding Keys,  , List of Default Keybindings, Key Bindings
 @section Binding Keys
 
