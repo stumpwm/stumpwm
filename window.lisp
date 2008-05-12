@@ -638,7 +638,14 @@ than the root window's width and height."
 
 (defun xwin-grab-keys (win)
   (labels ((grabit (w key)
-             (let ((code (xlib:keysym->keycodes *display* (key-keysym key))))
+             (let* ((code (xlib:keysym->keycodes *display* (key-keysym key)))
+                    (shift-sym (xlib:keycode->keysym *display* code 1)))
+               ;; Some keysyms, such as upper case letters, need the
+               ;; shift modifier to be set in order to grab properly.
+               (when (eql (key-keysym key) shift-sym)
+                 ;; don't butcher the caller's structure
+                 (setf key (copy-structure key)
+                       (key-shift key) t))
                ;; some keysyms aren't mapped to keycodes so just ignore them.
                (when code
                  (xlib:grab-key w code
