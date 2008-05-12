@@ -489,7 +489,6 @@ Describe the specified variable.
 
 @item C-t h w
 List all key sequences that are bound to the specified command
-@end table
 
 @item C-t h c
 Describe the specified command.
