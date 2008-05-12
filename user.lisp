@@ -1521,6 +1521,7 @@ escape C-z
           (define-key m (kbd "C-p") "gprev")
           (define-key m (kbd "o") "gother")
           (define-key m (kbd "'") "gselect")
+          (define-key m (kbd "\"") "grouplist")
           (define-key m (kbd "m") "gmove")
           (define-key m (kbd "M") "gmove-marked")
           (define-key m (kbd "k") "gkill")
@@ -1628,6 +1629,17 @@ the default group formatting and window formatting, respectively."
 @command{gselect} selects the group with that number."
   (when to-group
     (switch-to-group to-group)))
+
+(defcommand grouplist (&optional (fmt *group-format*)) (:rest)
+  "Allow the user to select a group from a list, like windowlist but
+  for groups"
+  (let ((group (second (select-from-menu
+		(current-screen)
+		(mapcar (lambda (g)
+			  (list (format-expand *group-formatters* fmt g) g))
+			(screen-groups (current-screen)))))))
+    (when group
+      (switch-to-group group))))
 
 (defcommand gmove (to-group) ((:group "To Group: "))
 "Move the current window to the specified group."
