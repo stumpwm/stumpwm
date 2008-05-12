@@ -107,10 +107,10 @@ utilization."
 (defun fmt-cpu-freq (ml)
   "Returns a string representing the current CPU frequency (especially useful for laptop users.)"
   (declare (ignore ml))
-  (let ((mhz (parse-integer (run-shell-command "sed -n 's/^cpu MHz\\s\\+: \\(.\\+\\)\\..*$/\\1/p' /proc/cpuinfo | head -1 | tr -d [:cntrl:]" t))))
+  (let ((mhz (parse-integer (run-shell-command "sed -n 's/^cpu MHz\\s\\+: \\(.\\+\\)\\..*$/\\1/p' /proc/cpuinfo 2>/dev/null | head -1 | tr -d [:cntrl:]" t))))
     (apply 'format nil "~F~A" (if (>= mhz 1000) (list (/ mhz 1000) "GHz") (list mhz "MHz")))))
 
 (defun fmt-cpu-temp (ml)
   "Returns a string representing the current CPU temperature."
   (declare (ignore ml))
-  (run-shell-command "sed -n 's/temperature:[[:space:]]*//p' /proc/acpi/thermal_zone/THRM/temperature | tr -d [:cntrl:][:space:]" t))
+  (run-shell-command "sed -n 's/temperature:[[:space:]]*//p' /proc/acpi/thermal_zone/THRM/temperature 2>/dev/null | tr -d [:cntrl:][:space:]" t))
