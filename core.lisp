@@ -57,8 +57,7 @@
            (values code (x11-mods key))))))
 
 (defun send-fake-key (win key)
-  "Send a fake key event to win. ch is the character and mods is a
-list of modifier symbols."
+  "Send a fake key press event to win."
   (multiple-value-bind (code state) (key-to-keycode+state key)
     (xlib:send-event (window-xwin win) :key-press (xlib:make-event-mask :key-press)
                      :display *display*
@@ -71,8 +70,7 @@ list of modifier symbols."
                      :state state)))
 
 (defun send-fake-click (win button)
-  "Send a fake key event to win. ch is the character and mods is a
-list of modifier symbols."
+  "Send a fake click (button press + button release) to win."
   ;; I don't know why this doesn't work. Sadly CLX doesn't have the
   ;; XTest extension like xlib does. With it this would be 2 lines.
   (multiple-value-bind (x y) (xlib:query-pointer (window-xwin win))
