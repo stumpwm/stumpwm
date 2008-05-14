@@ -453,6 +453,9 @@ Go to the next group in the list.
 @item C-t g '
 Select a group by name or by number.
 
+@item C-t g "
+Select a group from a list and switch to it.
+
 @item C-t g m
 Move the current window to the specified group.
 
@@ -830,6 +833,7 @@ Groups in StumpWM are more commonly known as @dfn{virtual desktops} or
 !!! gmove
 !!! gkill
 !!! grename
+!!! grouplist
 
 @menu
 * Customizing Groups::          
