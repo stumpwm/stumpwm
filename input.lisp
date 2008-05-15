@@ -90,6 +90,9 @@
 (defvar *input-current-completions-idx* nil
   "The current index in the current completions list.")
 
+(defvar *input-history-ignore-duplicates* nil
+  "Do not add a command to the input history if it's already the first in the list.")
+
 ;;; keysym functions
 
 (defun is-modifier (keycode)
@@ -544,7 +547,9 @@ input (pressing Return), nil otherwise."
                    :error))))
     (case (process-key code state)
       (:done
-       (push (input-line-string input) *input-history*)
+       (when (or (not *input-history-ignore-duplicates*)
+                 (string/= (input-line-string input) (first *input-history*)))
+         (push (input-line-string input) *input-history*))
        :done)
       (:abort
        (throw :abort t))
