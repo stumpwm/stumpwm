@@ -639,15 +639,15 @@ than the root window's width and height."
 (defun xwin-grab-keys (win)
   (labels ((grabit (w key)
              (let* ((code (xlib:keysym->keycodes *display* (key-keysym key))))
-               ;; Some keysyms, such as upper case letters, need the
-               ;; shift modifier to be set in order to grab properly.
-               (when (and (not (eql (key-keysym key) (xlib:keycode->keysym *display* code 0)))
-                          (eql (key-keysym key) (xlib:keycode->keysym *display* code 1)))
-                 ;; don't butcher the caller's structure
-                 (setf key (copy-structure key)
-                       (key-shift key) t))
                ;; some keysyms aren't mapped to keycodes so just ignore them.
                (when code
+                 ;; Some keysyms, such as upper case letters, need the
+                 ;; shift modifier to be set in order to grab properly.
+                 (when (and (not (eql (key-keysym key) (xlib:keycode->keysym *display* code 0)))
+                            (eql (key-keysym key) (xlib:keycode->keysym *display* code 1)))
+                   ;; don't butcher the caller's structure
+                   (setf key (copy-structure key)
+                         (key-shift key) t))
                  (xlib:grab-key w code
                                 :modifiers (x11-mods key) :owner-p t
                                 :sync-pointer-p nil :sync-keyboard-p nil)
