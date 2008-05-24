@@ -341,7 +341,8 @@ chunks."
      (dformat 4 "new hints: ~s~%" (window-normal-hints window))
      (maximize-window window))
     (:wm_hints
-     (when (and (window-urgent-p window) (not (find window (screen-urgent-windows (window-screen window)))))
+     (when (and (window-urgent-p window)
+                (not (find window (screen-urgent-windows (window-screen window)))))
        (and (register-urgent-window window)
             (run-hook-with-args *urgent-window-hook* window))))
     (:wm_class
@@ -356,7 +357,8 @@ chunks."
      (dolist (p (xlib:get-property (window-xwin window) :_NET_WM_STATE))
        (case (xlib:atom-name *display* p)
          (:_NET_WM_STATE_DEMANDS_ATTENTION
-          (and (window-urgent-p window) (not (find window (screen-urgent-windows (window-screen window))))
+          (and (window-urgent-p window)
+               (not (find window (screen-urgent-windows (window-screen window))))
                (and (register-urgent-window window)
                     (run-hook-with-args *urgent-window-hook* window))))
          (:_NET_WM_STATE_FULLSCREEN

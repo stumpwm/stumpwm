@@ -237,6 +237,7 @@ the mode-line, the button clicked, and the x and y of the pointer.")
     :_NET_WM_ALLOWED_ACTIONS
     :_NET_WM_STATE_FULLSCREEN
     :_NET_WM_STATE_HIDDEN
+    :_NET_WM_STATE_DEMANDS_ATTENTION
     :_NET_WM_FULL_WINDOW_PLACEMENT
     :_NET_CLOSE_WINDOW
     :_NET_CLIENT_LIST
