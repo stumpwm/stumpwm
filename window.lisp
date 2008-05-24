@@ -61,9 +61,10 @@ WINDOW"
 (defun window-urgent-p (window)
   "Returns T if WINDOW has the urgency bit and/or
 _NET_WM_STATE_DEMANDS_ATTENTION set"
-  (or (and (xlib:wm-hints (window-xwin window))
-           (logand 256 (xlib:wm-hints-flags (xlib:wm-hints (window-xwin window)))))
-      (find-wm-state (window-xwin window) :_NET_WM_STATE_DEMANDS_ATTENTION)))
+  (let ((hints (xlib:wm-hints (window-xwin window))))
+    (or (and hints
+             (plusp (logand 256 (xlib:wm-hints-flags hints))))
+        (find-wm-state (window-xwin window) :_NET_WM_STATE_DEMANDS_ATTENTION))))
 
 (defun only-urgent (windows)
   "Return a list of all urgent windows on SCREEN"
