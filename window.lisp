@@ -1077,7 +1077,6 @@ maximized, and given focus."
          (cw (screen-focus screen)))
     ;; If window to focus is already focused then our work is done.
     (unless (eq window cw)
-      (update-all-mode-lines)
       (raise-window window)
       (screen-set-focus screen window)
       ;;(send-client-message window :WM_PROTOCOLS +wm-take-focus+)
