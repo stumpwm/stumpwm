@@ -1099,8 +1099,6 @@ user aborted."
               (parse-and-run-command cmd))
           (interactive-command-error (err-text)
             (values err-text t)))
-      ;; interactive commands update the modeline
-      (update-all-mode-lines)
       (cond ((stringp result)
              (if error-p
                  (message-no-timeout "~a" result)
