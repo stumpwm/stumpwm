@@ -621,6 +621,7 @@ cycle through completions.
 
 @@@ echo-string
 @@@ message
+### *input-history-ignore-duplicates*
 
 @node Programming the Input Bar,  , Programming The Message Bar, Message and Input Bar
 @section Programming the Input Bar
