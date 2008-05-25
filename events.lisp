@@ -329,6 +329,12 @@ chunks."
             (screen-last-msg-highlights screen) hlts))
     (xlib:display-finish-output *display*)))
 
+(defun maybe-set-urgency (window)
+  (when (and (window-urgent-p window)
+             (not (find window (screen-urgent-windows (window-screen window)))))
+    (when (register-urgent-window window)
+      (run-hook-with-args *urgent-window-hook* window))))
+
 (defun update-window-properties (window atom)
   (case atom
     (:wm_name
@@ -341,10 +347,7 @@ chunks."
      (dformat 4 "new hints: ~s~%" (window-normal-hints window))
      (maximize-window window))
     (:wm_hints
-     (when (and (window-urgent-p window)
-                (not (find window (screen-urgent-windows (window-screen window)))))
-       (and (register-urgent-window window)
-            (run-hook-with-args *urgent-window-hook* window))))
+     (maybe-set-urgency window))
     (:wm_class
      (setf (window-class window) (xwin-class (window-xwin window))
            (window-res window) (xwin-res-name (window-xwin window))))
@@ -356,11 +359,6 @@ chunks."
     (:_NET_WM_STATE
      (dolist (p (xlib:get-property (window-xwin window) :_NET_WM_STATE))
        (case (xlib:atom-name *display* p)
-         (:_NET_WM_STATE_DEMANDS_ATTENTION
-          (and (window-urgent-p window)
-               (not (find window (screen-urgent-windows (window-screen window))))
-               (and (register-urgent-window window)
-                    (run-hook-with-args *urgent-window-hook* window))))
          (:_NET_WM_STATE_FULLSCREEN
           ;; Client is broken and sets this property itself instead of sending a
           ;; client request to the root window. Try to make do.
@@ -529,17 +527,25 @@ chunks."
            (dolist (p (list p1 p2))
              (unless (= p 0)
                (case (xlib:atom-name *display* p)
-                 (:_NET_WM_STATE_FULLSCREEN
-                  (update-fullscreen our-window action)))))))))
-    (:_NET_MOVERESIZE_WINDOW
-     (let ((our-window (find-window window)))
-       (when our-window
-         (let ((x (elt data 1))
-               (y (elt data 2)))
-           (dformat 3 "!!! Data: ~S~%" data)
-           (handle-window-move our-window x y :relative :root)))))
-    (t
-     (dformat 2 "ignored message~%"))))
+                 (:_NET_WM_STATE_DEMANDS_ATTENTION
+                  (case action
+                    (1
+                     (add-wm-state window :_NET_WM_STATE_DEMANDS_ATTENTION))
+                    (2
+                     (unless (find-wm-state window :_NET_WM_STATE_DEMANDS_ATTENTION)
+                       (add-wm-state window :_NET_WM_STATE_DEMANDS_ATTENTION))))
+                  (maybe-set-urgency window))
+               (:_NET_WM_STATE_FULLSCREEN
+                (update-fullscreen our-window action)))))))))
+  (:_NET_MOVERESIZE_WINDOW
+   (let ((our-window (find-window window)))
+     (when our-window
+       (let ((x (elt data 1))
+             (y (elt data 2)))
+         (dformat 3 "!!! Data: ~S~%" data)
+         (handle-window-move our-window x y :relative :root)))))
+  (t
+   (dformat 2 "ignored message~%"))))
 
 (define-stump-event-handler :focus-out (window mode kind)
   (dformat 5 "~@{~s ~}~%" window mode kind))
