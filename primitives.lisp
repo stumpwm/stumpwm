@@ -638,6 +638,14 @@ Modifies the match data; use `save-match-data' if necessary."
           ;; it out a little.
           '("")))))
 
+(defun insert-before (list item nth)
+  "Insert ITEM before the NTH element of LIST."
+  (declare (type (integer 0 *) nth))
+  (let* ((nth (min nth (length list)))
+         (pre (subseq list 0 nth))
+         (post (subseq list nth)))
+    (nconc pre (list item) post)))
+
 (defvar *debug-level* 0
   "Set this variable to a number > 0 to turn on debugging. The greater the number the more debugging output.")
 
