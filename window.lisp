@@ -285,12 +285,13 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
 (defun (setf xwin-border-width) (width win)
   (setf (xlib:drawable-border-width win) width))
 
-(defun default-border-width-for-type (type)
-  (ecase type
-    (:dock 0)
-    (:normal *normal-border-width*)
-    (:maxsize *maxsize-border-width*)
-    ((:transient :dialog) *transient-border-width*)))
+(defun default-border-width-for-type (window)
+  (or (and (xwin-maxsize-p (window-xwin window))
+           *maxsize-border-width*)
+      (ecase (window-type window)
+        (:dock 0)
+        (:normal *normal-border-width*)
+        ((:transient :dialog) *transient-border-width*))))
 
 (defun xwin-class (win)
   (multiple-value-bind (res class) (xlib:get-wm-class win)
@@ -404,18 +405,21 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
                 (first (remove-if 'window-hidden-p (frame-windows group frame))))
           (focus-frame group (tile-group-current-frame group)))))))
 
+
+(defun xwin-maxsize-p (win)
+  "Returns T if WIN specifies maximum dimensions."
+  (let ((hints (xlib:wm-normal-hints win)))
+    (and hints (or (xlib:wm-size-hints-max-width hints)
+                   (xlib:wm-size-hints-max-height hints)
+                   (xlib:wm-size-hints-min-aspect hints)
+                   (xlib:wm-size-hints-max-aspect hints)))))
+
 (defun xwin-type (win)
   "Return one of :desktop, :dock, :toolbar, :utility, :splash,
-:dialog, :transient, :maxsize and :normal.  Right now
-only :dialog, :normal, :maxsize and :transient are
+:dialog, :transient, and :normal.  Right now
+only :dock, :dialog, :normal, and :transient are
 actually returned; see +NETWM-WINDOW-TYPES+."
-  (or (and (let ((hints (xlib:wm-normal-hints win)))
-             (and hints (or (xlib:wm-size-hints-max-width hints)
-                            (xlib:wm-size-hints-max-height hints)
-                            (xlib:wm-size-hints-min-aspect hints)
-                            (xlib:wm-size-hints-max-aspect hints))))
-           :maxsize)
-      (let ((net-wm-window-type (xlib:get-property win :_NET_WM_WINDOW_TYPE)))
+  (or (let ((net-wm-window-type (xlib:get-property win :_NET_WM_WINDOW_TYPE)))
         (when net-wm-window-type
           (dolist (type-atom net-wm-window-type)
             (when (assoc (xlib:atom-name *display* type-atom) +netwm-window-types+)
@@ -478,10 +482,10 @@ and bottom_end_x."
 
 (defun gravity-for-window (win)
   (or (window-gravity win)
+      (and (xwin-maxsize-p (window-xwin win)) *maxsize-gravity*)
       (ecase (window-type win)
         (:dock *normal-gravity*)
         (:normal *normal-gravity*)
-        (:maxsize *maxsize-gravity*)
         ((:transient :dialog) *transient-gravity*))))
 
 (defun geometry-hints (win)
@@ -510,7 +514,7 @@ than the root window's width and height."
          (hints-max-aspect (and hints (xlib:wm-size-hints-max-aspect hints)))
          (border (case *window-border-style*
                    (:none 0)
-                   (t (default-border-width-for-type (window-type win)))))
+                   (t (default-border-width-for-type win))))
          center)
     ;;    (dformat 4 "hints: ~s~%" hints)
     ;; determine what the width and height should be
@@ -635,7 +639,7 @@ than the root window's width and height."
                                            (screen-win-bg-color screen)
                                            :none)
                            :border (screen-unfocus-color screen)
-                           :border-width (default-border-width-for-type (window-type window))
+                           :border-width (default-border-width-for-type window)
                            :event-mask *window-parent-events*)))
       (unless (eq (xlib:window-map-state (window-xwin window)) :unmapped)
         (incf (window-unmap-ignores window)))

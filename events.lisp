@@ -459,7 +459,7 @@ chunks."
   (setf (window-fullscreen window) nil)
   (dformat 2 "client requests to leave fullscreen~%")
   (remove-wm-state (window-xwin window) :_NET_WM_STATE_FULLSCREEN)
-  (setf (xlib:drawable-border-width (window-parent window)) (default-border-width-for-type (window-type window)))
+  (setf (xlib:drawable-border-width (window-parent window)) (default-border-width-for-type window))
   (maximize-window window)
   (update-window-border window)
   (update-mode-lines (current-screen)))
