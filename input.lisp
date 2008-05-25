@@ -24,7 +24,8 @@
 ;; Code:
 (in-package :stumpwm)
 
-(export '(*input-map*
+(export '(*input-history-ignore-duplicates*
+          *input-map*
 	  completing-read
 	  input-delete-region
 	  input-goto-char
@@ -547,8 +548,8 @@ input (pressing Return), nil otherwise."
                    :error))))
     (case (process-key code state)
       (:done
-       (when (or (not *input-history-ignore-duplicates*)
-                 (string/= (input-line-string input) (first *input-history*)))
+       (unless (and *input-history-ignore-duplicates*
+                    (string= (input-line-string input) (first *input-history*)))
          (push (input-line-string input) *input-history*))
        :done)
       (:abort
