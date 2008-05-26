@@ -42,6 +42,7 @@
                (:file "events")
                (:file "selection")
 	       (:file "user")
+               (:file "iresize")
                (:file "bindings")
                (:file "help")
                (:file "fdump")

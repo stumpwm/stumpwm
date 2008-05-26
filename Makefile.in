@@ -14,8 +14,9 @@ sbcl_INFOOPTS=--eval "(progn (require 'asdf) (require 'stumpwm) (load \"manual.l
 FILES=package.lisp primitives.lisp wrappers.lisp keysyms.lisp		\
 keytrans.lisp kmap.lisp input.lisp core.lisp command.lisp menu.lisp	\
 screen.lisp group.lisp frame.lisp window.lisp message-window.lisp	\
-events.lisp selection.lisp user.lisp bindings.lisp help.lisp		\
-fdump.lisp mode-line.lisp color.lisp stumpwm.lisp version.lisp
+events.lisp selection.lisp user.lisp iresize.lisp bindings.lisp		\
+help.lisp fdump.lisp mode-line.lisp color.lisp stumpwm.lisp		\
+version.lisp
 
 all: stumpwm.info stumpwm
 
