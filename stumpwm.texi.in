@@ -1038,6 +1038,7 @@ Return T if TIMER is a timer structure.
 !!! describe-variable
 !!! describe-function
 !!! where-is
+!!! modifiers
 
 @node Hooks, Hacking, Miscellaneous Commands, Top
 @chapter Hooks

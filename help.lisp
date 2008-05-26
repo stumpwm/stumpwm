@@ -107,3 +107,11 @@ command prints the command bound to the specified key sequence."
   (message-no-timeout "\"~a\" is on ~{~a~^, ~}"
                       cmd
                       (mapcar 'print-key-seq (search-kmap cmd *top-map*))))
+
+(defcommand modifiers () ()
+  "List the modifiers stumpwm recognizes and what MOD-X it thinks they're on."
+  (message "~@{~5@a: ~{~(~a~)~^ ~}~%~}"
+           "Meta" (modifiers-meta *modifiers*)
+           "Alt" (modifiers-alt *modifiers*)
+           "Super" (modifiers-super *modifiers*)
+           "Hyper" (modifiers-hyper *modifiers*)))
