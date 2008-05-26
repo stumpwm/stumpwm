@@ -229,3 +229,138 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 (defun find-group (screen name)
   "Return the group with the name, NAME. Or NIL if none exists."
   (find name (screen-groups screen) :key 'group-name :test 'string=))
+
+;;; Group commands
+
+;; FIXME: groups are to screens exactly as windows are to
+;; groups. There is a lot of duplicate code that could be globbed
+;; together.
+
+(defun group-forward (current list)
+  (let ((ng (next-group current list)))
+    (when ng
+      (switch-to-group ng))))
+
+(defcommand gnew (name) ((:string "Group Name: "))
+"Create a new group with the specified name. The new group becomes the
+current group. If @var{name} begins with a dot (``.'') the group new
+group will be created in the hidden state. Hidden groups have group
+numbers less than one and are invisible to from gprev, gnext, and, optionally,
+groups and vgroups commands."
+  (let ((group (add-group (current-screen) name)))
+    (if group
+        (switch-to-group group)
+        (message "^B^3*Groups must have a name!"))))
+
+(defcommand gnewbg (name) ((:string "Group Name: "))
+"Create a new group but do not switch to it."
+  (unless (find-group (current-screen) name)
+    (add-group (current-screen) name)))
+
+(defcommand gnext () ()
+"Cycle to the next group in the group list."
+  (group-forward (current-group)
+                 (sort-groups (current-screen))))
+
+(defcommand gprev () ()
+"Cycle to the previous group in the group list."
+  (group-forward (current-group)
+                 (reverse (sort-groups (current-screen)))))
+
+(defcommand gother () ()
+  "Go back to the last group."
+  (let ((groups (screen-groups (current-screen))))
+    (when (> (length groups) 1)
+      (switch-to-group (second groups)))))
+
+(defcommand grename (name) ((:string "New name for group: "))
+  "Rename the current group."
+  (let ((group (current-group)))
+    (cond ((find-group (current-screen) name)
+           (message "^1*^BError: Name already exists"))
+          ((or (zerop (length name))
+               (string= name "."))
+           (message "^1*^BError: empty name"))
+          (t
+           (cond ((and (char= (char name 0) #\.) ;change to hidden group
+                       (not (char= (char (group-name group) 0) #\.)))
+                  (setf (group-number group) (find-free-hidden-group-number (current-screen))))
+                 ((and (not (char= (char name 0) #\.)) ;change from hidden group
+                       (char= (char (group-name group) 0) #\.))
+                  (setf (group-number group) (find-free-group-number (current-screen)))))
+           (setf (group-name group) name)))))
+
+(defun echo-groups (screen fmt &optional verbose (wfmt *window-format*))
+  "Print a list of the windows to the screen."
+  (let* ((groups (sort-groups screen))
+         (names (mapcan (lambda (g)
+                          (list*
+                           (format-expand *group-formatters* fmt g)
+                           (when verbose
+                             (mapcar (lambda (w)
+                                       (format-expand *window-formatters*
+                                                      (concatenate 'string "  " wfmt)
+                                                      w))
+                                     (sort-windows g)))))
+                        (if *list-hidden-groups* groups (non-hidden-groups groups)))))
+    (echo-string-list screen names)))
+
+(defcommand groups (&optional (fmt *group-format*)) (:rest)
+"Display the list of groups with their number and
+name. @var{*group-format*} controls the formatting. The optional
+argument @var{fmt} can be used to override the default group
+formatting."
+  (echo-groups (current-screen) fmt))
+
+(defcommand vgroups (&optional gfmt wfmt) (:string :rest)
+"Like @command{groups} but also display the windows in each group. The
+optional arguments @var{gfmt} and @var{wfmt} can be used to override
+the default group formatting and window formatting, respectively."
+  (echo-groups (current-screen)
+               (or gfmt *group-format*)
+               t (or wfmt *window-format*)))
+
+(defcommand gselect (to-group) ((:group "Select Group: "))
+"Select the first group that starts with
+@var{substring}. @var{substring} can also be a number, in which case
+@command{gselect} selects the group with that number."
+  (when to-group
+    (switch-to-group to-group)))
+
+(defcommand grouplist (&optional (fmt *group-format*)) (:rest)
+  "Allow the user to select a group from a list, like windowlist but
+  for groups"
+  (let ((group (second (select-from-menu
+		(current-screen)
+		(mapcar (lambda (g)
+			  (list (format-expand *group-formatters* fmt g) g))
+			(screen-groups (current-screen)))))))
+    (when group
+      (switch-to-group group))))
+
+(defcommand gmove (to-group) ((:group "To Group: "))
+"Move the current window to the specified group."
+  (when (and to-group
+             (current-window))
+    (move-window-to-group (current-window) to-group)))
+
+(defcommand gmove-marked (to-group) ((:group "To Group: "))
+  (when to-group
+    (let ((group (current-group)))
+      (dolist (i (marked-windows group))
+        (setf (window-marked i) nil)
+        (move-window-to-group i to-group)))))
+
+(defcommand gkill () ()
+"Kill the current group. All windows in the current group are migrated
+to the next group."
+  (let ((dead-group (current-group))
+        (to-group (next-group (current-group))))
+    (switch-to-group to-group)
+    (kill-group dead-group to-group)))
+
+(defcommand gmerge (from) ((:group "From Group: "))
+"Merge @var{from} into the current group. @var{from} is not deleted."
+  (if (eq from (current-group))
+      (message "^B^3*Cannot merge group with itself!")
+      (merge-groups from (current-group))))

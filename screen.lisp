@@ -612,3 +612,20 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
    do (if oh
           (scale-head screen oh nh)
           (add-head screen nh))))
+
+;;; Screen commands
+
+(defcommand snext () ()
+"Go to the next screen."
+  (switch-to-screen (next-screen))
+  (show-frame-indicator (current-group)))
+
+(defcommand sprev () ()
+"Go to the previous screen."
+  (switch-to-screen (next-screen (reverse (sort-screens))))
+  (show-frame-indicator (current-group)))
+
+(defcommand sother () ()
+"Go to the last screen."
+  (switch-to-screen (cadr *screen-list*))
+  (show-frame-indicator (current-group)))

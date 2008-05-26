@@ -86,3 +86,14 @@
                               timeout))
                   ;; make sure we return a string
                   return (or ret "")))))))
+
+;;; Commands
+
+(defcommand putsel (string) ((:rest "Text: "))
+"Stuff the string @var{string} into the X selection."
+  (set-x-selection string))
+
+;; FIXME: this function is basically useless atm.
+(defcommand getsel () ()
+"Echo the X selection."
+  (message "~a" (get-x-selection)))
