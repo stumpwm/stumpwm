@@ -29,7 +29,7 @@
 
 (defun columnize (list columns &key col-aligns (pad 1) (char #\Space) (align :left))
   ;; only somewhat nasty
-  (let* ((rows (truncate (length list) columns))
+  (let* ((rows (ceiling (length list) columns))
          (data (loop for i from 0 below (length list) by rows
                      collect (subseq list i (min (+ i rows) (length list)))))
          (max (mapcar (lambda (col)
@@ -54,7 +54,7 @@
 (defun display-keybinding (kmap-var)
   (let* ((screen (current-screen))
          (data (mapcar-hash (lambda (k v) (format nil "^5*~5a^n ~a" (print-key k) v)) (symbol-value kmap-var)))
-         (cols (ceiling (length data)
+         (cols (ceiling (1+ (length data))
                         (truncate (- (head-height (current-head)) (* 2 (screen-msg-border-width screen)))
                                   (font-height (screen-font screen))))))
     (message-no-timeout "Prefix: ~{~a~^ | ~}~%~{~a~^~%~}"
@@ -69,7 +69,7 @@
   (let* ((screen (current-screen))
          (data (all-commands))
          (cols (ceiling (length data)
-                        (truncate (head-height (current-head))
+                        (truncate (- (head-height (current-head)) (* 2 (screen-msg-border-width screen)))
                                   (font-height (screen-font screen))))))
     (message-no-timeout "~{~a~^~%~}"
                         (columnize data cols))))
