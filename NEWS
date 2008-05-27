@@ -3,7 +3,7 @@
 This file documents user visible changes between versions of StumpWM
 
 * Changes since 0.9.2
-** new command modifiers
+** new commands modifiers and copy-last-message
 
 ** new command grouplist and binding C-c g "
 
