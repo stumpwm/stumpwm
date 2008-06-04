@@ -278,9 +278,13 @@ and @samp{xterm}."
   (set-any-color screen-win-bg-color color))
 
 (defun set-focus-color (color)
+  "Set the border color for focused windows. This is only used when
+there is more than one frame."
   (set-any-color screen-focus-color color))
 
 (defun set-unfocus-color (color)
+  "Set the border color for windows without focus. This is only used when
+there is more than one frame."
   (set-any-color screen-unfocus-color color))
 
 (defun set-msg-border-width (width)

@@ -686,6 +686,8 @@ list. Some commands operate only on marked windows.
 ### *window-border-style*
 
 @@@ set-win-bg-color
+@@@ set-focus-color
+@@@ set-unfocus-color
 @@@ set-normal-gravity
 @@@ set-maxsize-gravity
 @@@ set-transient-gravity
