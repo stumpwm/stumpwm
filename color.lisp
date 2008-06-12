@@ -162,7 +162,8 @@ then call (update-color-map)).")
           (let ((fg (if (equal f "*") (progn (get-fg-color screen cc nil) (ccontext-default-fg cc)) (get-fg-color screen cc (parse-integer f))))
                 (bg (if (equal b "*") (progn (get-bg-color screen cc nil) (ccontext-default-bg cc)) (get-bg-color screen cc (parse-integer b)))))
             (set-fg-bg fg bg))
-        (error (c) (dformat 1 "Invalid color code: ~A" c)))) r))
+        (error (c) (dformat 1 "Invalid color code: ~A" c))))
+    r))
 
 (defun render-strings (screen cc padx pady strings highlights &optional (draw t))
   (let* ((height (+ (xlib:font-descent (screen-font screen))
@@ -205,3 +206,76 @@ then call (update-color-map)).")
     (set-color screen cc "n" 0)
     width))
 
+;;; FIXME: It would be nice if the output of this parser was used to
+;;; draw the text, but the current drawing implementation is probably
+;;; faster.
+(defun parse-color (s i)
+  (let ((l (- (length s) i)))
+    (when (zerop l)
+      (return-from parse-color (values `("^") 0)))
+    (let ((f (subseq s i (1+ i)))
+          (b (if (< l 2) "*" (subseq s (1+ i) (+ i 2)))))
+      (case (elt f 0)
+        (#\n                            ; normal
+         (values
+          `((:background "*")
+            (:foreground "*")
+            (:reverse nil))
+          1))
+        (#\b                            ; bright off
+         (values
+          `((:bright nil))
+          1))
+        (#\B                            ; bright on
+         (values 
+          `((:bright t))
+          1))
+        (#\R
+         (values
+          `((:reverse t))
+          1))
+        (#\r
+         (values
+          `((:reverse nil))
+          1))
+        (#\[
+         (values
+          `((:push))
+          1))
+        (#\]
+         (values
+          `((:pop))
+          1))
+        (#\^                            ; circumflex
+         (values `("^") 1))
+        ((#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+         (values
+          `((:background ,(if (string= f "*")
+                              "*"
+                              (parse-integer f)))
+            (:foreground ,(if (string= b "*")
+                              "*"
+                              (parse-integer b))))
+          2))
+        (t
+         (values `(,(format nil "^~a" f)) 1))))))
+
+(defun parse-color-string (string)
+  "parse a color coded string into a list of strings and color codes"
+  (loop
+     with color = nil
+     with off = 0
+     for st = 0 then (min (+ en (1+ off)) (length string))
+     as en = (position #\^ string :start st)
+     ;; avoid empty strings at the beginning and end
+     unless (or (eql en st)
+                (eql st (length string)))
+     collect (subseq string st en)
+     while en
+     append (progn
+              (multiple-value-setq (color off) (parse-color string (1+ en)))
+              color)))
+
+(defun uncolorify (string)
+  "Remove any color markup in STRING"
+  (format nil "~{~a~}" (remove-if-not 'stringp (parse-color-string string))))

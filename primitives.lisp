@@ -646,6 +646,14 @@ Modifies the match data; use `save-match-data' if necessary."
           ;; it out a little.
           '("")))))
 
+(defun insert-before (list item nth)
+  "Insert ITEM before the NTH element of LIST."
+  (declare (type (integer 0 *) nth))
+  (let* ((nth (min nth (length list)))
+         (pre (subseq list 0 nth))
+         (post (subseq list nth)))
+    (nconc pre (list item) post)))
+
 (defvar *debug-level* 0
   "Set this variable to a number > 0 to turn on debugging. The greater the number the more debugging output.")
 
@@ -884,53 +892,6 @@ window, and returns the preferred frame or a list of the above preferences.")
   "Similar to print-backtrace, but return the backtrace as a string."
   (with-output-to-string (*standard-output*)
     (print-backtrace)))
-
-(defun print-backtrace (&optional (frames 100))
-  "print a backtrace of FRAMES number of frames to standard-output"
-  #+sbcl (sb-debug:backtrace frames *standard-output*)
-  #+clisp (ext:show-stack 1 frames (sys::the-frame))
-
-  #-(or sbcl clisp) (write-line "Sorry, no backtrace for you."))
-
-(defun bytes-to-string (data)
-  "Convert a list of bytes into a string."
-  #+sbcl
-  (sb-ext:octets-to-string
-   (make-array (length data) :element-type '(unsigned-byte 8) :initial-contents data))
-  #+clisp
-  (ext:convert-string-from-bytes
-   (make-array (length data) :element-type '(unsigned-byte 8) :initial-contents data)
-   custom:*terminal-encoding*)
-  #-(or sbcl clisp)
-  (map 'list #'code-char string))
-
-(defun string-to-bytes (string)
-  "Convert a string to a vector of octets."
-  #+sbcl
-  (sb-ext:string-to-octets string)
-  #+clisp
-  (ext:convert-string-to-bytes string custom:*terminal-encoding*)
-  #-(or sbcl clisp)
-  (map 'list #'char-code string))
-
-(defun utf8-to-string (octets)
-  "Convert the list of octets to a string."
-  #+sbcl (sb-ext:octets-to-string
-          (coerce octets '(vector (unsigned-byte 8)))
-          :external-format :utf-8)
-  #+clisp (ext:convert-string-from-bytes (coerce octets '(vector (unsigned-byte 8)))
-                                         charset:utf-8)
-  #-(or sbcl clisp)
-  (map 'string #'code-char octets))
-
-(defun string-to-utf8 (string)
-  "Convert the string to a vector of octets."
-  #+sbcl (sb-ext:string-to-octets
-          string
-          :external-format :utf-8)
-  #+clisp (ext:convert-string-to-bytes string charset:utf-8)
-  #-(or sbcl clisp)
-  (map 'list #'char-code string))
 
 (defvar *startup-message* "^2*Welcome to The ^BStump^b ^BW^bindow ^BM^banager!"
   "This is the message StumpWM displays when it starts. Set it to NIL to

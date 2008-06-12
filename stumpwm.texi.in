@@ -622,6 +622,7 @@ cycle through completions.
 @@@ echo-string
 @@@ message
 ### *input-history-ignore-duplicates*
+!!! copy-last-message
 
 @node Programming the Input Bar,  , Programming The Message Bar, Message and Input Bar
 @section Programming the Input Bar
@@ -685,6 +686,8 @@ list. Some commands operate only on marked windows.
 ### *window-border-style*
 
 @@@ set-win-bg-color
+@@@ set-focus-color
+@@@ set-unfocus-color
 @@@ set-normal-gravity
 @@@ set-maxsize-gravity
 @@@ set-transient-gravity
@@ -1038,6 +1041,7 @@ Return T if TIMER is a timer structure.
 !!! describe-variable
 !!! describe-function
 !!! where-is
+!!! modifiers
 
 @node Hooks, Hacking, Miscellaneous Commands, Top
 @chapter Hooks

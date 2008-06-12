@@ -246,3 +246,19 @@ message does not time out."
   "Like message, but the window doesn't disappear after a few seconds."
   (let ((*suppress-echo-timeout* t))
     (apply 'message fmt args)))
+
+;;; Commands
+
+(defvar *lastmsg-nth* nil)
+
+(defcommand lastmsg () ()
+  ;; Allow the user to go back through the message history
+  (if (string= *last-command* "lastmsg")
+      (progn
+        (incf *lastmsg-nth*)
+        (if (>= *lastmsg-nth* (length (screen-last-msg (current-screen))))
+            (setf *lastmsg-nth* 0)))
+      (setf *lastmsg-nth* 0))
+  (if (screen-last-msg (current-screen))
+      (echo-nth-last-message (current-screen) *lastmsg-nth*)
+      (message "No last message.")))

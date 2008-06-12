@@ -1100,3 +1100,358 @@ maximized, and given focus."
   "Kill the client associated with window."
   (dformat 3 "Kill client~%")
   (xlib:kill-client *display* (xlib:window-id window)))
+
+;;; Window commands
+
+(defun focus-next-window (group)
+  (focus-forward group (sort-windows group)))
+
+(defun focus-prev-window (group)
+  (focus-forward group
+                 (reverse
+                  (sort-windows group))))
+
+(defcommand next () ()
+  "Go to the next window in the window list."
+  (let ((group (current-group)))
+    (if (group-current-window group)
+        (focus-next-window group)
+        (other-window group))))
+
+(defcommand prev () ()
+  "Go to the previous window in the window list."
+  (let ((group (current-group)))
+    (if (group-current-window group)
+        (focus-prev-window group)
+        (other-window group))))
+
+(defun pull-window (win &optional (to-frame (tile-group-current-frame (window-group win))))
+  (let ((f (window-frame win))
+        (group (window-group win)))
+    (unless (eq (frame-window to-frame) win)
+      (xwin-hide win)
+      (setf (window-frame win) to-frame)
+      (maximize-window win)
+      (when (eq (window-group win) (current-group))
+        (xwin-unhide (window-xwin win) (window-parent win)))
+      ;; We have to restore the focus after hiding.
+      (when (eq win (screen-focus (window-screen win)))
+        (screen-set-focus (window-screen win) win))
+      (frame-raise-window group to-frame win)
+      ;; if win was focused in its old frame then give the old
+      ;; frame the frame's last focused window.
+      (when (eq (frame-window f) win)
+        ;; the current value is no longer valid.
+        (setf (frame-window f) nil)
+        (frame-raise-window group f (first (frame-windows group f)) nil)))))
+
+;; In the future, this window will raise the window into the current
+;; frame.
+(defun focus-forward (group window-list &optional pull-p (predicate (constantly t)))
+  "Set the focus to the next item in window-list from the focused
+window. If PULL-P is T then pull the window into the current
+frame."
+  ;; The window with focus is the "current" window, so find it in the
+  ;; list and give that window focus
+  (let* ((w (group-current-window group))
+         (wins (remove-if-not predicate (cdr (member w window-list))))
+         (nw (if (null wins)
+                 ;; If the last window in the list is focused, then
+                 ;; focus the first one.
+                 (car (remove-if-not predicate window-list))
+                 ;; Otherwise, focus the next one in the list.
+                 (first wins))))
+    ;; there's still the case when the window is the only one in the
+    ;; list, so make sure its not the same as the current window.
+    (if (and nw
+             (not (eq w nw)))
+        (if pull-p
+            (pull-window nw)
+            (frame-raise-window group (window-frame nw) nw))
+        (message "No other window."))))
+
+(defcommand delete-current-window () ()
+  "Delete the current window. This is a request sent to the window. The
+window's client may decide not to grant the request or may not be able
+to if it is unresponsive."
+  (let ((group (current-group)))
+    (when (group-current-window group)
+      (delete-window (group-current-window group)))))
+
+(defcommand-alias delete delete-current-window)
+
+(defcommand kill-current-window () ()
+"`Tell X to disconnect the client that owns the current window. if
+@command{delete-current-window} didn't work, try this."
+  (let ((group (current-group)))
+    (when (group-current-window group)
+      (xwin-kill (window-xwin (group-current-window group))))))
+
+(defcommand-alias kill kill-current-window)
+
+(defcommand title (title) ((:rest "Set window's title to: "))
+  (if (current-window)
+      (setf (window-user-title (current-window)) title)
+      (message "No Focused Window")))
+
+(defun select-window (group query)
+  "Read input from the user and go to the selected window."
+  (let (match)
+    (labels ((match (win)
+               (let* ((wname (window-name win))
+                      (end (min (length wname) (length query))))
+                 (string-equal wname query :end1 end :end2 end))))
+      (unless (null query)
+        (setf match (find-if #'match (group-windows group))))
+      (when match
+        (frame-raise-window group (window-frame match) match)))))
+
+(defcommand select (win) ((:window-name "Select: "))
+  "Switch to the first window that starts with @var{win}."
+  (select-window (current-group) win))
+
+(defun select-window-number (group num)
+  (labels ((match (win)
+             (= (window-number win) num)))
+    (let ((win (find-if #'match (group-windows group))))
+      (when win
+        (frame-raise-window group (window-frame win) win)))))
+
+(defun other-window (group)
+  (let* ((wins (group-windows group))
+         ;; the frame could be empty
+         (win (if (group-current-window group)
+                  (second wins)
+                  (first wins))))
+    (if win
+        (frame-raise-window group (window-frame win) win)
+        (echo-string (group-screen group) "No other window."))))
+
+(defcommand other () ()
+  "Switch to the window last focused."
+  (other-window (current-group)))
+
+(defcommand fullscreen () ()
+  "Toggle the fullscreen mode of the current widnow. Use this for clients
+with broken (non-NETWM) fullscreen implemenations, such as any program
+using SDL."
+  (update-fullscreen (current-window) 2))
+
+(defcommand pull-window-by-number (n &optional (group (current-group))) 
+                                  ((:window-number "Pull: "))
+  "Pull window N from another frame into the current frame and focus it."
+  (let ((win (find n (group-windows group) :key 'window-number :test '=)))
+    (when win
+      (pull-window win))))
+
+(defcommand-alias pull pull-window-by-number)
+
+(defcommand renumber (nt &optional (group (current-group))) ((:number "Number: "))
+  "Change the current window's number to the specified number. If another window
+is using the number, then the windows swap numbers. Defaults to current group."
+  (let ((nf (window-number (group-current-window group)))
+        (win (find-if #'(lambda (win)
+                          (= (window-number win) nt))
+                      (group-windows group))))
+    ;; Is it already taken?
+    (if win
+        (progn
+          ;; swap the window numbers
+          (setf (window-number win) nf)
+          (setf (window-number (group-current-window group)) nt))
+        ;; Just give the window the number
+        (setf (window-number (group-current-window group)) nt))))
+
+(defcommand-alias number renumber)
+
+(defcommand gravity (gravity) ((:gravity "Gravity: "))
+  (when (current-window)
+    (setf (window-gravity (current-window)) gravity)
+    (maximize-window (current-window))))
+
+(defcommand windowlist (&optional (fmt *window-format*)) (:rest)
+"Allow the user to Select a window from the list of windows and focus
+the selected window. For information of menu bindings
+@xref{Menus}. The optional argument @var{fmt} can be specified to
+override the default window formatting."
+  (if (null (group-windows (current-group)))
+      (message "No Managed Windows")
+      (let* ((group (current-group))
+             (window (second (select-from-menu
+                              (current-screen)
+                              (mapcar (lambda (w)
+                                        (list (format-expand *window-formatters* fmt w) w))
+                                      (sort-windows group))))))
+
+        (if window
+            (frame-raise-window group (window-frame window) window)
+            (throw 'error :abort)))))
+
+(defun window-send-string (window string)
+  "Send the string of characters to the window as if they'd been typed."
+  (when window
+    (map nil (lambda (ch)
+               ;; exploit the fact that keysyms for ascii characters
+               ;; are the same as their ascii value.
+               (let ((sym (cond ((<= 32 (char-code ch) 127)
+                                 (char-code ch))
+                                ((char= ch #\Tab)
+                                 (stumpwm-name->keysym "TAB"))
+                                ((char= ch #\Newline)
+                                 (stumpwm-name->keysym "RET"))
+                                (t nil))))
+                 (when sym
+                   (send-fake-key window
+                                  (make-key :keysym sym)))))
+         string)))
+
+(defcommand insert (string) ((:rest "Insert: "))
+"Send the string of characters to the current window as if they'd been typed."
+  (window-send-string (current-window) string))
+
+(defun other-hidden-window (group)
+  "Return the last window that was accessed and that is hidden."
+  (let ((wins (remove-if (lambda (w) (eq (frame-window (window-frame w)) w)) (group-windows group))))
+    (first wins)))
+
+(defun pull-other-hidden-window (group)
+  "pull the last accessed hidden window from any frame into the
+current frame and raise it."
+  (let ((win (other-hidden-window group)))
+    (if win
+        (pull-window win)
+        (echo-string (group-screen group) "No other window."))))
+
+(defun other-window-in-frame (group)
+  (let* ((f (tile-group-current-frame group))
+         (wins (frame-windows group f))
+         (win (if (frame-window f)
+                  (second wins)
+                  (first wins))))
+    (if win
+        (frame-raise-window group (window-frame win) win)
+        (echo-string (group-screen group) "No other window."))))
+
+(defcommand pull-hidden-next () ()
+"Pull the next hidden window into the current frame."
+  (let ((group (current-group)))
+    (focus-forward group (sort-windows group) t (lambda (w) (not (eq (frame-window (window-frame w)) w))))))
+
+(defcommand pull-hidden-previous () ()
+"Pull the next hidden window into the current frame."
+  (let ((group (current-group)))
+    (focus-forward group (nreverse (sort-windows group)) t (lambda (w) (not (eq (frame-window (window-frame w)) w))))))
+
+(defcommand pull-hidden-other () ()
+"Pull the last focused, hidden window into the current frame."
+  (let ((group (current-group)))
+    (pull-other-hidden-window group)))
+
+(defcommand mark () ()
+"Toggle the current window's mark."
+  (let ((win (current-window)))
+    (when win
+      (setf (window-marked win) (not (window-marked win)))
+      (message (if (window-marked win)
+                   "Marked!"
+                   "Unmarked!")))))
+
+(defcommand clear-marks () ()
+"Clear all marks in the current group."
+  (let ((group (current-group)))
+    (clear-window-marks group)))
+
+(defcommand pull-marked () ()
+"Pull all marked windows into the current frame and clear the marks."
+  (let ((group (current-group)))
+    (dolist (i (marked-windows group))
+      (pull-window i))
+    (clear-window-marks group)))
+
+(defun exchange-windows (win1 win2)
+  "Exchange the windows in their respective frames."
+  (let ((f1 (window-frame win1))
+        (f2 (window-frame win2)))
+    (unless (eq f1 f2)
+      (pull-window win1 f2)
+      (pull-window win2 f1)
+      (focus-frame (window-group win1) f2))))
+
+(defcommand exchange-direction (dir &optional (win (current-window)))
+    ((:direction "Direction: "))
+  "Exchange the current window (by default) with the top window of the frame in specified direction.
+@table @asis
+@item up
+@item down
+@item left
+@item right
+@end table"
+  (let* ((frame-set (group-frames (window-group win))))
+    (exchange-windows win (frame-window (neighbour dir
+                                                   (window-frame win)
+                                                   frame-set)))))
+
+(defun echo-windows (group fmt &optional (windows (group-windows group)))
+  "Print a list of the windows to the screen."
+  (let* ((wins (sort1 windows '< :key 'window-number))
+         (highlight (position (group-current-window group) wins))
+         (names (mapcar (lambda (w)
+                          (format-expand *window-formatters* fmt w)) wins)))
+    (if (null wins)
+        (echo-string (group-screen group) "No Managed Windows")
+        (echo-string-list (group-screen group) names highlight))))
+
+(defcommand windows (&optional (fmt *window-format*)) (:rest)
+  "Display a list of managed windows. The optional argument @var{fmt} can
+be used to override the default window formatting."
+  (echo-windows (current-group) fmt))
+
+(defcommand echo-frame-windows (&optional (fmt *window-format*)) (:rest)
+  (echo-windows (current-group) fmt (frame-windows (current-group)
+                                                   (tile-group-current-frame (current-group)))))
+
+(defcommand-alias frame-windows echo-frame-windows)
+
+;;; window placement commands
+
+(defun make-rule-for-window (window &optional lock title)
+  "Guess at a placement rule for WINDOW and add it to the current set."
+  (let* ((group (window-group window))
+         (group-name (group-name group))
+         (frame-number (frame-number (window-frame window)))
+         (role (window-role window)))
+    (push (list group-name frame-number t lock
+                :class (window-class window)
+                :instance (window-res window)
+                :title (and title (window-name window))
+                :role (and (not (equal role "")) role))
+          *window-placement-rules*)))
+
+(defcommand remember (lock title) 
+                     ((:y-or-n "Lock to group? ")
+                      (:y-or-n "Use title? "))
+  "Make a generic placement rule for the current window. Might be too specific/not specific enough!"
+  (make-rule-for-window (current-window) (first lock) (first title)))
+
+(defcommand forget () ()
+  (let* ((window (current-window))
+         (match (rule-matching-window window)))
+    (if match
+        (progn
+          (setf *window-placement-rules* (delete match *window-placement-rules*))
+          (message "Rule forgotten"))
+        (message "No matching rule"))))
+
+(defun dump-window-placement-rules (file)
+  "Dump *window-placement-rules* to FILE."
+  (dump-to-file *window-placement-rules* file))
+
+(defcommand dump-rules (file) ((:rest "Filename: "))
+  (dump-window-placement-rules file))
+
+(defun restore-window-placement-rules (file)
+  "Restore *window-placement-rules* from FILE."
+  (setf *window-placement-rules* (read-dump-from-file file)))
+
+(defcommand restore-rules (file) ((:rest "Filename: "))
+  (restore-window-placement-rules file))

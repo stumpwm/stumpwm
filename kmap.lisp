@@ -218,13 +218,6 @@ sequences that run binding."
 
 ;;; The Top Map
 
-;; Do it this way so its easier to wipe the map and get a clean one.
-(when (null *top-map*)
-  (setf *top-map*
-        (let ((m (make-sparse-keymap)))
-          (define-key m (kbd "C-t") '*root-map*)
-          m)))
-
 (defvar *top-map-list* nil)
 
 (defun push-top-map (new-top)

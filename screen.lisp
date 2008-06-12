@@ -278,9 +278,13 @@ and @samp{xterm}."
   (set-any-color screen-win-bg-color color))
 
 (defun set-focus-color (color)
+  "Set the border color for focused windows. This is only used when
+there is more than one frame."
   (set-any-color screen-focus-color color))
 
 (defun set-unfocus-color (color)
+  "Set the border color for windows without focus. This is only used when
+there is more than one frame."
   (set-any-color screen-unfocus-color color))
 
 (defun set-msg-border-width (width)
@@ -553,11 +557,9 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
   (setf (screen-heads screen) (sort (push head (screen-heads screen)) #'< :key 'head-number))
   (dolist (group (screen-groups screen))
     (setf (tile-group-frame-tree group)
-          (sort (push (copy-frame head) (tile-group-frame-tree group))
-                #'< :key (lambda (tile)
-                           (if (atom tile)
-                               (frame-number tile)
-                               (frame-number (car tile))))))
+          (insert-before (tile-group-frame-tree group)
+                         (copy-frame head)
+                         (head-number head)))
     ;; Try to put something in the new frame
     (let ((frame (tile-group-frame-head group head)))
       (choose-new-frame-window frame group)
@@ -614,3 +616,20 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
    do (if oh
           (scale-head screen oh nh)
           (add-head screen nh))))
+
+;;; Screen commands
+
+(defcommand snext () ()
+"Go to the next screen."
+  (switch-to-screen (next-screen))
+  (show-frame-indicator (current-group)))
+
+(defcommand sprev () ()
+"Go to the previous screen."
+  (switch-to-screen (next-screen (reverse (sort-screens))))
+  (show-frame-indicator (current-group)))
+
+(defcommand sother () ()
+"Go to the last screen."
+  (switch-to-screen (cadr *screen-list*))
+  (show-frame-indicator (current-group)))

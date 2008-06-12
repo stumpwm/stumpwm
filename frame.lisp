@@ -681,3 +681,284 @@ windows used to draw the numbers in. The caller must destroy them."
            (,ogroup (current-group)))
       (unwind-protect (progn ,@body)
         (focus-frame ,ogroup ,oframe)))))
+
+;;; Frame commands
+
+(defun split-frame-in-dir (group dir)
+  (let ((f (tile-group-current-frame group)))
+    (if (split-frame group dir)
+        (progn
+          (when (frame-window f)
+            (update-window-border (frame-window f)))
+          (show-frame-indicator group))
+        (message "Cannot split smaller than minimum size."))))
+
+(defcommand hsplit () ()
+"Split the current frame into 2 side-by-side frames."
+  (split-frame-in-dir (current-group) :column))
+
+(defcommand vsplit () ()
+"Split the current frame into 2 frames, one on top of the other."
+  (split-frame-in-dir (current-group) :row))
+
+(defcommand remove-split (&optional (group (current-group))) ()
+"Remove the current frame in the specified group (defaults to current
+group). Windows in the frame are migrated to the frame taking up its
+space."
+  (let* ((frame (tile-group-current-frame group))
+         (head (frame-head group frame))
+         (tree (tile-group-frame-head group head))
+         (s (closest-sibling (list tree) frame))
+         ;; grab a leaf of the siblings. The siblings doesn't have to be
+         ;; a frame.
+         (l (tree-accum-fn s
+                           (lambda (&rest siblings)
+                             (car siblings))
+                           #'identity)))
+    ;; Only remove the current frame if it has a sibling
+    (if (atom tree)
+        (message "No more frames!")
+        (when s
+          (when (frame-is-head group frame)
+            (setf (frame-number l) (frame-number frame)))
+          ;; Move the windows from the removed frame to its sibling
+          (migrate-frame-windows group frame l)
+          ;; If the frame has no window, give it the current window of
+          ;; the current frame.
+          (unless (frame-window l)
+            (setf (frame-window l)
+                  (frame-window frame)))
+          ;; Unsplit
+          (setf (tile-group-frame-head group head) (remove-frame tree frame))
+          ;; update the current frame and sync all windows
+          (setf (tile-group-current-frame group) l)
+          (tree-iterate tree
+                        (lambda (leaf)
+                          (sync-frame-windows group leaf)))
+          (frame-raise-window group l (frame-window l))
+          (when (frame-window l)
+            (update-window-border (frame-window l)))
+          (show-frame-indicator group)))))
+
+(defcommand-alias remove remove-split)
+
+(defcommand only () ()
+  "Delete all the frames but the current one and grow it to take up the entire head."
+  (let* ((screen (current-screen))
+         (group (screen-current-group screen))
+         (win (frame-window (tile-group-current-frame group)))
+         (head (current-head group))
+         (frame (copy-frame head)))
+    (if (atom (tile-group-frame-head group head))
+        (message "There's only one frame.")
+        (progn
+          (mapc (lambda (w)
+                  ;; windows in other frames disappear
+                  (unless (eq (window-frame w) (tile-group-current-frame group))
+                    (hide-window w))
+                  (setf (window-frame w) frame))
+                (head-windows group head))
+          (setf (frame-window frame) win
+                (tile-group-frame-head group head) frame
+                (tile-group-current-frame group) frame)
+          (focus-frame group frame)
+          (if (frame-window frame)
+              (update-window-border (frame-window frame))
+              (show-frame-indicator group))
+          (sync-frame-windows group (tile-group-current-frame group))))))
+
+(defcommand curframe () ()
+"Display a window indicating which frame is focused."
+  (show-frame-indicator (current-group) t))
+
+(defun focus-frame-next-sibling (group)
+  (let* ((sib (next-sibling (tile-group-frame-tree group)
+                            (tile-group-current-frame group))))
+    (when sib
+      (focus-frame group (tree-accum-fn sib
+                                        (lambda (x y)
+                                          (declare (ignore y))
+                                          x)
+                                        'identity))
+      (show-frame-indicator group))))
+
+(defun focus-last-frame (group)
+  ;; make sure the last frame still exists in the frame tree
+  (when (and (tile-group-last-frame group)
+             (find (tile-group-last-frame group) (group-frames group)))
+    (focus-frame group (tile-group-last-frame group))))
+
+(defun focus-frame-after (group frames)
+  "Given a list of frames focus the next one in the list after
+the current frame."
+  (let ((rest (cdr (member (tile-group-current-frame group) frames :test 'eq))))
+    (focus-frame group
+                 (if (null rest)
+                     (car frames)
+                     (car rest)))))
+
+(defun focus-next-frame (group)
+  (focus-frame-after group (group-frames group)))
+
+(defun focus-prev-frame (group)
+  (focus-frame-after group (nreverse (group-frames group))))
+
+(defcommand fnext () ()
+"Cycle through the frame tree to the next frame."
+  (focus-next-frame (current-group)))
+
+(defcommand sibling () ()
+"Jump to the frame's sibling. If a frame is split into twe frames,
+these two frames are siblings."
+  (focus-frame-next-sibling (current-group)))
+
+(defcommand fother () ()
+"Jump to the last frame that had focus."
+  (focus-last-frame (current-group)))
+
+(defun choose-frame-by-number (group)
+  "show a number in the corner of each frame and wait for the user to
+select one. Returns the selected frame or nil if aborted."
+  (let* ((wins (progn
+                 (draw-frame-outlines group)
+                 (draw-frame-numbers group)))
+         (ch (read-one-char (group-screen group)))
+         (num (read-from-string (string ch) nil nil)))
+    (dformat 3 "read ~S ~S~%" ch num)
+    (mapc #'xlib:destroy-window wins)
+    (clear-frame-outlines group)
+    (find ch (group-frames group)
+          :test 'char=
+          :key 'get-frame-number-translation)))
+
+
+(defcommand fselect (frame-number) ((:frame t))
+"Display a number in the corner of each frame and let the user to
+select a frame by number. If @var{frame-number} is specified, just
+jump to that frame."
+  (let ((group (current-group)))
+    (focus-frame group frame-number)))
+
+(defcommand resize (width height) ((:number "+ Width: ")
+                                   (:number "+ Height: "))
+  "Resize the current frame by @var{width} and @var{height} pixels"
+  (let* ((group (current-group))
+         (f (tile-group-current-frame group)))
+    (if (atom (tile-group-frame-tree group))
+        (message "No more frames!")
+        (progn
+          (clear-frame-outlines group)
+          (resize-frame group f width :width)
+          (resize-frame group f height :height)
+          (draw-frame-outlines group (current-head))))))
+
+(defun clear-frame (frame group)
+  "Clear the given frame."
+  (frame-raise-window group frame nil (eq (tile-group-current-frame group) frame)))
+
+(defcommand fclear () ()
+"Clear the current frame."
+  (clear-frame (tile-group-current-frame (current-group)) (current-group)))
+
+(defun get-edge (frame edge)
+  "Returns the specified edge of FRAME.  Valid values for EDGE are :TOP, :BOTTOM, :LEFT, and :RIGHT.
+  An edge is a START, END, and OFFSET. For horizontal edges, START is the left coordinate, END is
+  the right coordinate, and OFFSET is the Y coordinate.  Similarly, for vertical lines, START is
+  top, END is bottom, and OFFSET is X coordinate."
+  (let* ((x1 (frame-x frame))
+         (y1 (frame-y frame))
+         (x2 (+ x1 (frame-width frame)))
+         (y2 (+ y1 (frame-height frame))))
+    (ecase edge
+      (:top
+       (values x1 x2 y1))
+      (:bottom
+       (values x1 x2 y2))
+      (:left
+       (values y1 y2 x1))
+      (:right
+       (values y1 y2 x2)))))
+
+(defun neighbour (direction frame frameset)
+  "Returns the best neighbour of FRAME in FRAMESET on the DIRECTION edge.
+   Valid directions are :UP, :DOWN, :LEFT, :RIGHT.
+   eg: (NEIGHBOUR :UP F FS) finds the frame in FS that is the 'best'
+   neighbour above F."
+  (let ((src-edge (ecase direction
+                    (:up :top)
+                    (:down :bottom)
+                    (:left :left)
+                    (:right :right)))
+        (opposite (ecase direction
+                    (:up :bottom)
+                    (:down :top)
+                    (:left :right)
+                    (:right :left)))
+        (best-frame nil)
+        (best-overlap 0))
+    (multiple-value-bind (src-s src-e src-offset)
+        (get-edge frame src-edge)
+      (dolist (f frameset)
+        (multiple-value-bind (s e offset)
+            (get-edge f opposite)
+          (let ((overlap (- (min src-e e)
+                            (max src-s s))))
+            ;; Two edges are neighbours if they have the same offset and their starts and ends
+            ;; overlap.  We want to find the neighbour that overlaps the most.
+            (when (and (= src-offset offset)
+                       (>= overlap best-overlap))
+              (setf best-frame f)
+              (setf best-overlap overlap))))))
+    best-frame))
+
+(defun move-focus-and-or-window (dir &optional win-p)
+  (declare (type (member :up :down :left :right) dir))
+  (let* ((group (current-group))
+         (new-frame (neighbour dir (tile-group-current-frame group) (group-frames group)))
+         (window (current-window)))
+    (when new-frame
+      (if (and win-p window)
+          (pull-window window new-frame)
+          (focus-frame group new-frame)))))
+
+(defcommand move-focus (dir) ((:direction "Direction: "))
+"Focus the frame adjacent to the current one in the specified
+direction. The following are valid directions:
+@table @asis
+@item up
+@item down
+@item left
+@item right
+@end table"
+  (move-focus-and-or-window dir))
+
+(defcommand move-window (dir) ((:direction "Direction: "))
+"Just like move-focus except that the current is pulled along."
+  (move-focus-and-or-window dir t))
+
+(defcommand next-in-frame () ()
+"Go to the next window in the current frame."
+  (let ((group (current-group)))
+    (if (group-current-window group)
+        (focus-forward group (frame-sort-windows group (tile-group-current-frame group)))
+        (other-window-in-frame group))))
+
+(defcommand prev-in-frame () ()
+"Go to the previous window in the current frame."
+  (let ((group (current-group)))
+    (if (group-current-window group)
+        (focus-forward group (reverse (frame-sort-windows group (tile-group-current-frame group))))
+        (other-window-in-frame group))))
+
+(defcommand other-in-frame () ()
+"Go to the last accessed window in the current frame."
+  (other-window-in-frame (current-group)))
+
+(defcommand balance-frames () ()
+  "Make frames the same height or width in the current frame's subtree."
+  (let* ((group (current-group))
+         (tree (tree-parent (tile-group-frame-head group (current-head))
+                            (tile-group-current-frame group))))
+    (if tree
+        (balance-frames-internal (current-group) tree)
+        (message "There's only one frame."))))

@@ -19,11 +19,6 @@
 
 ;; Commentary:
 ;;
-;; To start stumpwm, load this file stumpwm-input.lisp,
-;; stumpwm-input.lisp, and stumpwm-user.lisp and evaluate:
-;; (stumpwm:stumpwm "" :display 0) This is assuming you want to
-;; connect to display 0.
-;;
 ;; Code:
 
 (in-package :stumpwm)
