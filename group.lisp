@@ -91,12 +91,12 @@ at 0. Return a netwm compliant group id."
       ;; restore the focus
       (setf (screen-focus screen) nil)
       (focus-frame new-group (tile-group-current-frame new-group))
+      (show-frame-indicator new-group) ; doesn't get called by focus-frame
       (xlib:change-property (screen-root screen) :_NET_CURRENT_DESKTOP
                             (list (netwm-group-id new-group))
                             :cardinal 32)
       (update-all-mode-lines)
-      (run-hook-with-args *focus-group-hook* new-group old-group)))
-  (show-frame-indicator new-group))
+      (run-hook-with-args *focus-group-hook* new-group old-group))))
 
 (defun move-window-to-group (window to-group)
   (labels ((really-move-window (window to-group)
