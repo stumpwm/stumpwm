@@ -31,6 +31,7 @@
           *timeout-frame-indicator-wait*
           *frame-indicator-timer*
           *message-window-timer*
+          *urgent-window-hook*
           *new-window-hook*
           *destroy-window-hook*
           *focus-window-hook*
@@ -137,6 +138,10 @@ be an integer.")
 
 ;;; Hooks
 
+(defvar *urgent-window-hook* '()
+  "A hook called whenever a window sets the property indicating that
+  it demands the user's attention")
+
 (defvar *map-window-hook* '()
   "A hook called whenever a window is mapped.")
 
@@ -232,6 +237,7 @@ the mode-line, the button clicked, and the x and y of the pointer.")
     :_NET_WM_ALLOWED_ACTIONS
     :_NET_WM_STATE_FULLSCREEN
     :_NET_WM_STATE_HIDDEN
+    :_NET_WM_STATE_DEMANDS_ATTENTION
     :_NET_WM_FULL_WINDOW_PLACEMENT
     :_NET_CLOSE_WINDOW
     :_NET_CLIENT_LIST
@@ -424,6 +430,8 @@ Use the window's resource name.
   ;; they were in when they were unmapped unless that group doesn't
   ;; exist, in which case they go into the current group.
   withdrawn-windows
+  ;; a list of windows for which (window-urgent-p) currently true.
+  urgent-windows
   input-window
   ;; the window that accepts further keypresses after a toplevel key
   ;; has been pressed.
@@ -847,7 +855,7 @@ less than this value.")
 
 (defvar *new-frame-action* :last-window
   "When a new frame is created, this variable controls what is put in the
-new frame. Valid values are 
+new frame. Valid values are
 
 @table @code
 @item :empty

@@ -31,6 +31,45 @@
           set-transient-gravity
           set-window-geometry))
 
+;; Urgency / demands attention
+
+(defun register-urgent-window (window)
+  "Add WINDOW to its screen's list of urgent windows"
+  (if (eq (screen-current-window (window-screen window)) window)
+      ;; window is already current, clear the urgent state to let it know we know.
+      (window-clear-urgency window)
+      (progn
+        (push window (screen-urgent-windows (window-screen window)))
+        (update-mode-lines (window-screen window))
+        (values t))))
+
+(defun unregister-urgent-window (window)
+  "Remove WINDOW to its screen's list of urgent windows"
+  (setf (screen-urgent-windows (window-screen window))
+        (delete window (screen-urgent-windows (window-screen window))))
+  (update-mode-lines (window-screen window)))
+
+(defun window-clear-urgency (window)
+  "Clear the urgency bit and/or _NET_WM_STATE_DEMANDS_ATTENTION on
+WINDOW"
+  (and (xlib:wm-hints (window-xwin window))
+       (let ((flags (xlib:wm-hints-flags (xlib:wm-hints (window-xwin window)))))
+         (setf flags (logand (lognot 256) flags))))
+  (remove-wm-state (window-xwin window) :_NET_WM_STATE_DEMANDS_ATTENTION)
+  (unregister-urgent-window window))
+
+(defun window-urgent-p (window)
+  "Returns T if WINDOW has the urgency bit and/or
+_NET_WM_STATE_DEMANDS_ATTENTION set"
+  (let* ((hints (xlib:wm-hints (window-xwin window)))
+         (flags (when hints (xlib:wm-hints-flags hints))))
+    (or (and flags (logtest 256 flags))
+        (find-wm-state (window-xwin window) :_NET_WM_STATE_DEMANDS_ATTENTION))))
+
+(defun only-urgent (windows)
+  "Return a list of all urgent windows on SCREEN"
+  (remove-if-not 'window-urgent-p (copy-list windows)))
+
 ;; Since StumpWM already uses the term 'group' to refer to Virtual Desktops,
 ;; we'll call the grouped windows of an application a 'gang'
 
@@ -222,6 +261,8 @@
 ;; FIXME: should we raise the winodw or its parent?
 (defun raise-window (win)
   "Map the window if needed and bring it to the top of the stack. Does not affect focus."
+  (when (window-urgent-p win)
+    (window-clear-urgency win))
   (when (window-hidden-p win)
     (unhide-window win)
     (update-configuration win))
@@ -244,12 +285,13 @@
 (defun (setf xwin-border-width) (width win)
   (setf (xlib:drawable-border-width win) width))
 
-(defun default-border-width-for-type (type)
-  (ecase type
-    (:dock 0)
-    (:normal *normal-border-width*)
-    (:maxsize *maxsize-border-width*)
-    ((:transient :dialog) *transient-border-width*)))
+(defun default-border-width-for-type (window)
+  (or (and (xwin-maxsize-p (window-xwin window))
+           *maxsize-border-width*)
+      (ecase (window-type window)
+        (:dock 0)
+        (:normal *normal-border-width*)
+        ((:transient :dialog) *transient-border-width*))))
 
 (defun xwin-class (win)
   (multiple-value-bind (res class) (xlib:get-wm-class win)
@@ -363,18 +405,21 @@
                 (first (remove-if 'window-hidden-p (frame-windows group frame))))
           (focus-frame group (tile-group-current-frame group)))))))
 
+
+(defun xwin-maxsize-p (win)
+  "Returns T if WIN specifies maximum dimensions."
+  (let ((hints (xlib:wm-normal-hints win)))
+    (and hints (or (xlib:wm-size-hints-max-width hints)
+                   (xlib:wm-size-hints-max-height hints)
+                   (xlib:wm-size-hints-min-aspect hints)
+                   (xlib:wm-size-hints-max-aspect hints)))))
+
 (defun xwin-type (win)
   "Return one of :desktop, :dock, :toolbar, :utility, :splash,
-:dialog, :transient, :maxsize and :normal.  Right now
-only :dialog, :normal, :maxsize and :transient are
+:dialog, :transient, and :normal.  Right now
+only :dock, :dialog, :normal, and :transient are
 actually returned; see +NETWM-WINDOW-TYPES+."
-  (or (and (let ((hints (xlib:wm-normal-hints win)))
-             (and hints (or (xlib:wm-size-hints-max-width hints)
-                            (xlib:wm-size-hints-max-height hints)
-                            (xlib:wm-size-hints-min-aspect hints)
-                            (xlib:wm-size-hints-max-aspect hints))))
-           :maxsize)
-      (let ((net-wm-window-type (xlib:get-property win :_NET_WM_WINDOW_TYPE)))
+  (or (let ((net-wm-window-type (xlib:get-property win :_NET_WM_WINDOW_TYPE)))
         (when net-wm-window-type
           (dolist (type-atom net-wm-window-type)
             (when (assoc (xlib:atom-name *display* type-atom) +netwm-window-types+)
@@ -437,10 +482,10 @@ and bottom_end_x."
 
 (defun gravity-for-window (win)
   (or (window-gravity win)
+      (and (xwin-maxsize-p (window-xwin win)) *maxsize-gravity*)
       (ecase (window-type win)
         (:dock *normal-gravity*)
         (:normal *normal-gravity*)
-        (:maxsize *maxsize-gravity*)
         ((:transient :dialog) *transient-gravity*))))
 
 (defun geometry-hints (win)
@@ -469,7 +514,7 @@ than the root window's width and height."
          (hints-max-aspect (and hints (xlib:wm-size-hints-max-aspect hints)))
          (border (case *window-border-style*
                    (:none 0)
-                   (t (default-border-width-for-type (window-type win)))))
+                   (t (default-border-width-for-type win))))
          center)
     ;;    (dformat 4 "hints: ~s~%" hints)
     ;; determine what the width and height should be
@@ -594,7 +639,7 @@ than the root window's width and height."
                                            (screen-win-bg-color screen)
                                            :none)
                            :border (screen-unfocus-color screen)
-                           :border-width (default-border-width-for-type (window-type window))
+                           :border-width (default-border-width-for-type window)
                            :event-mask *window-parent-events*)))
       (unless (eq (xlib:window-map-state (window-xwin window)) :unmapped)
         (incf (window-unmap-ignores window)))
@@ -1001,6 +1046,8 @@ needed."
     ;; now that the window is withdrawn, clean up the data structures
     (setf (screen-withdrawn-windows screen)
           (delete window (screen-withdrawn-windows screen)))
+    (setf (screen-urgent-windows screen)
+          (delete window (screen-urgent-windows screen)))
     (dformat 1 "destroy window ~a~%" screen)
     (dformat 3 "destroying parent window~%")
     (xlib:destroy-window (window-parent window))))
@@ -1034,7 +1081,6 @@ maximized, and given focus."
          (cw (screen-focus screen)))
     ;; If window to focus is already focused then our work is done.
     (unless (eq window cw)
-      (update-all-mode-lines)
       (raise-window window)
       (screen-set-focus screen window)
       ;;(send-client-message window :WM_PROTOCOLS +wm-take-focus+)
