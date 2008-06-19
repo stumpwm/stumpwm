@@ -34,6 +34,8 @@
 
 (in-package :stumpwm)
 
+(export '(*acpi-thermal-zone*))
+
 ;; Install formatters.
 (dolist (a '((#\c fmt-cpu-usage)
              (#\C fmt-cpu-usage-bar)
@@ -104,13 +106,25 @@ utilization."
   (let ((cpu (truncate (* 100 (current-cpu-usage)))))
     (bar cpu width full empty)))
 
+(defun get-proc-file-field (fname field)
+  (with-open-file (s fname)
+    (do ((line (read-line s nil nil) (read-line s nil nil)))
+        ((null line) nil)
+      (let ((split (cl-ppcre:split "\\s*:\\s*" line)))
+        (when (string= (car split) field) (return (cadr split)))))))
+
 (defun fmt-cpu-freq (ml)
   "Returns a string representing the current CPU frequency (especially useful for laptop users.)"
   (declare (ignore ml))
-  (let ((mhz (parse-integer (run-shell-command "sed -n 's/^cpu MHz\\s\\+: \\(.\\+\\)\\..*$/\\1/p' /proc/cpuinfo 2>/dev/null | head -1 | tr -d [:cntrl:]" t))))
+  (let ((mhz (parse-integer (get-proc-file-field "/proc/cpuinfo" "cpu MHz")
+                            :junk-allowed t)))
     (apply 'format nil "~F~A" (if (>= mhz 1000) (list (/ mhz 1000) "GHz") (list mhz "MHz")))))
+
+(defvar *acpi-thermal-zone* "THRM")
 
 (defun fmt-cpu-temp (ml)
   "Returns a string representing the current CPU temperature."
   (declare (ignore ml))
-  (run-shell-command "sed -n 's/temperature:[[:space:]]*//p' /proc/acpi/thermal_zone/THRM/temperature 2>/dev/null | tr -d [:cntrl:][:space:]" t))
+  (get-proc-file-field (concatenate 'string "/proc/acpi/thermal_zone/"
+                                    *acpi-thermal-zone* "/temperature")
+                       "temperature"))
