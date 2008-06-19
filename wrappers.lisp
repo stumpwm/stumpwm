@@ -63,7 +63,8 @@
                                                 (string= "DISPLAY=" str :end2 (min 8 (length str))))
                                               (sb-ext:posix-environ)))
                 opts)
-  #-(or allegro clisp cmu gcl liquid lispworks lucid sbcl)
+  #+openmcl (apply #'ccl:run-program prog args :wait wait :output t :error t)
+  #-(or allegro clisp cmu gcl liquid lispworks lucid sbcl openmcl)
   (error 'not-implemented :proc (list 'run-prog prog opts)))
 
 ;;; XXX: DISPLAY isn't set for cmucl
@@ -93,7 +94,9 @@
                                                   (remove-if (lambda (str)
                                                                (string= "DISPLAY=" str :end2 (min 8 (length str))))
                                                              (sb-ext:posix-environ)))))
-  #-(or allegro clisp cmu sbcl)
+  #+openmcl (with-output-to-string (s)
+              (ccl:run-program prog args :wait t :output s :error t))
+  #-(or allegro clisp cmu sbcl openmcl)
   (error 'not-implemented :proc (list 'pipe-input prog args)))
 
 (defun getenv (var)
@@ -108,7 +111,8 @@
   #+lucid (lcl:environment-variable (string var))
   #+mcl (ccl::getenv var)
   #+sbcl (sb-posix:getenv (string var))
-  #-(or allegro clisp cmu gcl lispworks lucid mcl sbcl scl)
+  #+openmcl (ccl:getenv (string var))
+  #-(or allegro clisp cmu gcl lispworks lucid mcl sbcl scl openmcl)
   (error 'not-implemented :proc (list 'getenv var)))
 
 (defun (setf getenv) (val var)
@@ -126,7 +130,8 @@
   #+lispworks (setf (lw:environment-variable (string var)) (string val))
   #+lucid (setf (lcl:environment-variable (string var)) (string val))
   #+sbcl (sb-posix:putenv (format nil "~A=~A" (string var) (string val)))
-  #-(or allegro clisp cmu gcl lispworks lucid sbcl scl)
+  #+openmcl (ccl:setenv (string var) (string val))
+  #-(or allegro clisp cmu gcl lispworks lucid sbcl scl openmcl)
   (error 'not-implemented :proc (list '(setf getenv) var)))
 
 (defun pathname-is-executable-p (pathname)
@@ -167,8 +172,9 @@
   "print a backtrace of FRAMES number of frames to standard-output"
   #+sbcl (sb-debug:backtrace frames *standard-output*)
   #+clisp (ext:show-stack 1 frames (sys::the-frame))
+  #+openmcl (ccl:print-call-history :count frames)
 
-  #-(or sbcl clisp) (write-line "Sorry, no backtrace for you."))
+  #-(or sbcl clisp openmcl) (write-line "Sorry, no backtrace for you."))
 
 (defun bytes-to-string (data)
   "Convert a list of bytes into a string."

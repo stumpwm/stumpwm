@@ -32,4 +32,20 @@
                    :executable t :keep-global-handlers t :norc t :documentation "The StumpWM Executable"))
 
 
-#-(or sbcl clisp) (error "This lisp implementation is not supported.")
+;;; OPENMCL
+
+;; Is there a better way to use asdf.lisp than including it with stumpwm?
+#+openmcl
+(progn
+  (require 'asdf)
+  (load "stumpwm.asd"))
+#+openmcl
+(progn
+  (asdf:oos 'asdf:load-op 'stumpwm))
+#+openmcl
+(progn
+  (ccl:save-application "stumpwm" :toplevel-function (lambda ()
+                                              (stumpwm:stumpwm)
+                                              (ccl:quit))))
+
+#-(or sbcl clisp openmcl) (error "This lisp implementation is not supported.")

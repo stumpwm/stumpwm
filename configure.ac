@@ -12,6 +12,7 @@ AC_SUBST(PPCRE_PATH)
 AC_ARG_WITH(lisp, [ --with-lisp=IMPL      use the specified lisp (either sbcl or clisp)], LISP=$withval, LISP="sbcl")
 AC_ARG_WITH(sbcl, [ --with-sbcl=PATH      specify location of sbcl], SBCL_PATH=$withval, SBCL_PATH="")
 AC_ARG_WITH(clisp, [ --with-clisp=PATH     specify location of clisp], CLISP_PATH=$withval, CLISP_PATH="")
+AC_ARG_WITH(openmcl, [ --with-openmcl=PATH     specify location of openmcl], OPENMCL_PATH=$withval, OPENMCL_PATH="")
 AC_ARG_WITH(ppcre, [ --with-ppcre=PATH     specify location of cl-ppcre], PPCRE_PATH=$withval, PPCRE_PATH="`pwd`/cl-ppcre")
 
 if test -x "$SBCL_PATH"; then
@@ -30,6 +31,14 @@ else
    AC_PATH_PROG([CLISP],clisp,"")
 fi
 
+if test -x "$OPENMCL_PATH"; then
+   OPENMCL=$OPENMCL_PATH
+   AC_MSG_CHECKING([for openmcl])
+   AC_MSG_RESULT($OPENMCL)
+else
+   AC_PATH_PROG([OPENMCL],openmcl,"")
+fi
+
 if test "x$LISP" = "xclisp"; then
    if test "x$CLISP" = "x"; then
       LISP=sbcl
@@ -44,6 +53,14 @@ elif test "x$LISP" = "xsbcl"; then
    else
       LISP_PROGRAM=$SBCL
    fi
+elif test "x$LISP" = "xopenmcl"; then
+   if test "x$OPENMCL" = "x"; then
+      LISP=sbcl
+      LISP_PROGRAM=$SBCL
+   else
+      LISP_PROGRAM=$OPENMCL
+   fi
+
 fi
 
 if test "x$LISP_PROGRAM" = "x"; then
