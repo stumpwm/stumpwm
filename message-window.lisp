@@ -155,7 +155,9 @@ function expects to be wrapped in a with-state for win."
                    (not *suppress-frame-indicator*)))
       (let ((frame (tile-group-current-frame group))
             (w (screen-frame-window (current-screen)))
-            (string *frame-indicator-text*)
+            (string (if (stringp *frame-indicator-text*)
+                        *frame-indicator-text*
+                        (prin1-to-string *frame-indicator-text*)))
             (font (screen-font (current-screen))))
         (xlib:with-state (w)
           (setf (xlib:drawable-x w) (+ (frame-x frame)
