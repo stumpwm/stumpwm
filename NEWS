@@ -3,6 +3,10 @@
 This file documents user visible changes between versions of StumpWM
 
 * Changes since 0.9.2
+** C-t <n> bindings moved to C-t C-<n>
+To pull a window by number you now have to hold down Control. Just
+pressing the number now selects the window by number in its frame.
+
 ** new commands modifiers and copy-last-message
 
 ** new command grouplist and binding C-c g "

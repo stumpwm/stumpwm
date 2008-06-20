@@ -1210,7 +1210,8 @@ to if it is unresponsive."
   "Switch to the first window that starts with @var{win}."
   (select-window (current-group) win))
 
-(defun select-window-number (group num)
+(defcommand select-window-by-number (num &optional (group (current-group)))
+                                    ((:window-number "Select: "))
   (labels ((match (win)
              (= (window-number win) num)))
     (let ((win (find-if #'match (group-windows group))))

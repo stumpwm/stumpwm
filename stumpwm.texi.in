@@ -302,6 +302,30 @@ mimics GNU Screen's keyboard handling. StumpWM's default prefix key is
 The following is a list of keybindings.
 
 @table @kbd
+@item C-t 0
+@itemx C-t 1
+@itemx C-t 2
+@itemx C-t 3
+@itemx C-t 4
+@itemx C-t 5
+@itemx C-t 6
+@itemx C-t 7
+@itemx C-t 8
+@itemx C-t 9
+Select the window with the corresponding number
+
+@item C-t C-0
+@itemx C-t C-1
+@itemx C-t C-2
+@itemx C-t C-3
+@itemx C-t C-4
+@itemx C-t C-5
+@itemx C-t C-6
+@itemx C-t C-7
+@itemx C-t C-8
+@itemx C-t C-9
+Pull the window with the corresponding number into the current frame
+
 @item C-t n
 @itemx C-t C-n
 @itemx C-t Space
