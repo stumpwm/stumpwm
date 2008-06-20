@@ -150,7 +150,7 @@ function expects to be wrapped in a with-state for win."
   ;; FIXME: Arg, these tests are already done in show-frame-outline
   (when (find group (mapcar 'screen-current-group *screen-list*))
     (when (or force
-              (and (or (> 1 (length (tile-group-frame-tree group)))
+              (and (or (> (length (tile-group-frame-tree group)) 1)
                        (not (atom (first (tile-group-frame-tree group)))))
                    (not *suppress-frame-indicator*)))
       (let ((frame (tile-group-current-frame group))
