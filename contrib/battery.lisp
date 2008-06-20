@@ -79,7 +79,7 @@
                 (let* ((online (round (/ (if (string= "charging" *bat-state*)
                                              (- full remain) remain)
                                          rate))))
-                  (setq *bat-remain-time* (multiple-value-bind (h m) 
+                  (setq *bat-remain-time* (multiple-value-bind (h m)
                                               (truncate online 60)
                                             (list h m)))))))))))
 
