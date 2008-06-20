@@ -335,6 +335,13 @@ chunks."
     (when (register-urgent-window window)
       (run-hook-with-args *urgent-window-hook* window))))
 
+(defun safe-bytes-to-atoms (list)
+  "Return a list of atoms from list. Any number that cannot be
+converted to an atom is removed."
+  (loop for p in list
+        when (typep p '(unsigned-byte 29))
+        collect (xlib:atom-name *display* p)))
+
 (defun update-window-properties (window atom)
   (case atom
     (:wm_name
@@ -357,8 +364,12 @@ chunks."
      (setf (window-type window) (xwin-type (window-xwin window)))
      (maximize-window window))
     (:_NET_WM_STATE
-     (dolist (p (xlib:get-property (window-xwin window) :_NET_WM_STATE))
-       (case (xlib:atom-name *display* p)
+     ;; Some clients put really big numbers in the list causing
+     ;; atom-name to fail, so filter out anything that can't be
+     ;; converted into an atom.
+     (dolist (p (safe-bytes-to-atoms
+                 (xlib:get-property (window-xwin window) :_NET_WM_STATE)))
+       (case p
          (:_NET_WM_STATE_FULLSCREEN
           ;; Client is broken and sets this property itself instead of sending a
           ;; client request to the root window. Try to make do.
