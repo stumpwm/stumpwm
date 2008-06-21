@@ -26,7 +26,10 @@
 
 (in-package #:stumpwm)
 
-(export '())
+(export '(*resize-increment*
+          iresize
+          abort-iresize
+          exit-iresize))
 
 (defvar *resize-backup* nil)
 
