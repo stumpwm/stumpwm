@@ -17,53 +17,60 @@
 # the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
 # Boston, MA 02111-1307 USA
 
-### STUMPwm Interactive Shell.
+### STUMPwm Interactive SHell.
+
+if sleep --version 2>/dev/null | grep -q GNU
+then
+    DELAY=0.1
+else
+    DELAY=1
+fi
 
 wait_result ()
 {
-	while true
-	do
-		RESULT=`xprop -root -f STUMPWM_COMMAND_RESULT 8s STUMPWM_COMMAND_RESULT 2>/dev/null`
+    while true
+    do
+	RESULT=`xprop -root -f STUMPWM_COMMAND_RESULT 8s STUMPWM_COMMAND_RESULT 2>/dev/null`
 
-		if echo "$RESULT" | grep -v -q 'not found.$'
-		then
-			break;
-		fi
-
-		sleep 1;
-	done
-
-	xprop -root -remove STUMPWM_COMMAND_RESULT
-
-	if echo "$RESULT" | grep -q '= $'
+	if echo "$RESULT" | grep -v -q 'not found.$'
 	then
-		return 1;
+	    break
 	fi
 
-	echo $RESULT | sed 's/[^"]*"//;s/"$//;s/\\n/\n/g;s/\\"/"/g;s/\n\+$//;
+	sleep $DELAY
+    done
+
+    xprop -root -remove STUMPWM_COMMAND_RESULT
+
+    if echo "$RESULT" | grep -q '= $'
+    then
+	return 1
+    fi
+
+    echo $RESULT | sed 's/[^"]*"//;s/"$//;s/\\n/\n/g;s/\\"/"/g;s/\n\+$//;
 			s/\^[*[:digit:]]\{2\}//g;s/\^[Bbn]//g;'
 }
 
 send_cmd ()
 {
-	local cmd="$1"
+    local cmd="$1"
 
-	if [ "$cmd" = "stumpwm-quit" ]
-	then
-		cmd=quit
-	elif [ "$cmd" = "quit" ]
-	then
-		exit
-	fi
+    if [ "$cmd" = "stumpwm-quit" ]
+    then
+	cmd=quit
+    elif [ "$cmd" = "quit" ]
+    then
+	exit
+    fi
 
-	xprop -root -f STUMPWM_COMMAND 8s -set STUMPWM_COMMAND "$cmd"
+    xprop -root -f STUMPWM_COMMAND 8s -set STUMPWM_COMMAND "$cmd"
 
-	wait_result
+    wait_result
 }
 
 usage ()
 {
-cat <<EOF
+    cat <<EOF
 Usage: stumpish [[-e] command [args...]]
 
 StumpIsh is the StumpWM shell. Use it to interact a running StumpWM
@@ -73,82 +80,81 @@ input is a pipe, stumpish executes any number of commands and prints
 the concatenated results. If the '-e' option and one argument are
 given on the command line, stumpish reads any number of lines from
 standard input and uses them as the argument to the named command.
-Otherwise if one or more arguments are provided on the command line,
-the first is considered the name of the command to execute, and the
-remainder are concatenated to form the argument.
+Otherwise, if one or more arguments are provided on the command line,
+the first is considered the name of the command to execute and the
+remainder is concatenated to form the argument.
 
 Example:
 	echo '(group-windows (current-group))' | stumpish eval
 EOF
-exit 0;
+    exit 0;
 }
 
 READLINE=yes
 
 if [ "x$1" = "x-r" ]
 then
-	READLINE=no
-	shift 1
+    READLINE=no
+    shift 1
 fi
 
 if [ $# -gt 0 ]
 then
-	[ "$1" = "--help" ] && usage
-	if [ "$1" = "-e" ]
+    [ "$1" = "--help" ] && usage
+    if [ "$1" = "-e" ]
+    then
+	if [ $# -ne 2 ]
 	then
-		if [ $# -ne 2 ]
-		then
-			echo "'-e' require exactly one argument!"
-			exit
-		fi
-		shift 1
-		IFS=''
-		ARGS=`cat /dev/stdin`
-		send_cmd "$1 $ARGS"
-	else
-		IFS=' '
-		send_cmd "$*"
+	    echo "'-e' requires exactly one argument!"
+	    exit
 	fi
+	shift 1
+	IFS=''
+	ARGS=`cat /dev/stdin`
+	send_cmd "$1 $ARGS"
+    else
+	IFS=' '
+	send_cmd "$*"
+    fi
 else
-	if [ -t 0 ]
+    if [ -t 0 ]
+    then
+	if [ $READLINE = yes ] && type rlwrap 2>&1 >/dev/null
 	then
-		if [ $READLINE = yes ] && type rlwrap 2>&1 >/dev/null
-		then
-			## Note: $TEMP is not conventional; it is left
-			## here purely for backwards compatibility.
-			COMMANDS="${TEMP:-${TEMPDIR:-/var/tmp}}/stumpish.commands.$$"
-			echo `send_cmd "commands"` | sed 's/[[:space:]]\+/\n/g' | sort > "$COMMANDS"
-			rlwrap -f "$COMMANDS" stumpish -r
-			rm -f "$COMMANDS"
-			exit
-		fi
-
-		tput setaf 5
-                echo Welcome to the StumpWM Interactive Shell.
-                tput sgr0
-                echo -n 'Type '
-                tput setaf 2
-                echo -n commands
-                tput sgr0
-                echo \ for a list of commands.
-
-IFS='
-'
-		echo -n "> "
-		while read REPLY
-		do
-			tput bold
-			tput setaf 2
-			send_cmd "$REPLY"
-			tput sgr0
-
-			echo -n "> "
-		done
-	else
-		while read REPLY
-		do
-			send_cmd "$REPLY"
-		done
+	    # Note: $TEMP is not conventional; it is left here purely
+	    # for backwards compatibility.
+	    COMMANDS="${TEMP:-${TEMPDIR:-/var/tmp}}/stumpish.commands.$$"
+	    echo `send_cmd "commands"` | sed 's/[[:space:]]\+/\n/g' | sort > "$COMMANDS"
+	    rlwrap -f "$COMMANDS" stumpish -r
+	    rm -f "$COMMANDS"
+	    exit
 	fi
-fi
 
+	tput setaf 5
+        echo Welcome to the STUMPwm Interactive SHell.
+        tput sgr0
+        echo -n 'Type '
+        tput setaf 2
+        echo -n commands
+        tput sgr0
+        echo \ for a list of commands.
+
+        IFS='
+'
+	echo -n "> "
+	while read REPLY
+	do
+	    tput bold
+	    tput setaf 2
+	    send_cmd "$REPLY"
+	    tput sgr0
+
+	    echo -n "> "
+	done
+    else
+	while read REPLY
+	do
+	    send_cmd "$REPLY"
+	done
+    fi
+fi
