@@ -48,12 +48,14 @@
 
 (defun read-battery-file (battery fname)
   (let ((fields (make-hash-table :test #'equal)))
-    (with-open-file (s (concatenate 'string "/proc/acpi/battery/" battery "/" fname))
-      (do ((line (read-line s nil nil) (read-line s nil nil)))
-          ((null line) fields)
-        (let ((split (cl-ppcre:split ":\\s*" line)))
-          (setf (gethash (string-trim '(#\Space) (car split)) fields)
-                (string-trim '(#\Space) (cadr split))))))))
+    (with-open-file (s (concatenate 'string "/proc/acpi/battery/" battery "/" fname :if-does-not-exist nil))
+      (if s
+          (do ((line (read-line s nil nil) (read-line s nil nil)))
+              ((null line) fields)
+            (let ((split (cl-ppcre:split ":\\s*" line)))
+              (setf (gethash (string-trim '(#\Space) (car split)) fields)
+                    (string-trim '(#\Space) (cadr split)))))
+          ""))))
 
 (defun current-battery-charge ()
   "Calculate remaining battery charge. Don't make calculation more than once in 15 seconds."
@@ -74,7 +76,7 @@
               (setq *bat-remain* (round (/ (* 100 remain) full))
                     *bat-state* charge-state
                     *bat-remain-time* nil)
-	    
+
               (when (> rate 0)
                 (let* ((online (round (/ (if (string= "charging" *bat-state*)
                                              (- full remain) remain)
@@ -88,7 +90,7 @@
   (declare (ignore ml))
   (current-battery-charge)
   (if *bat-state*
-      (format nil "BAT: ~D%~A" 
+      (format nil "BAT: ~D%~A"
 	      *bat-remain*
 	      (if *bat-remain-time*
 		  (format nil " (~2,'0d:~2,'0d) ~A"  (car *bat-remain-time*) (cadr *bat-remain-time*) *bat-state*) "")) "no battery"))

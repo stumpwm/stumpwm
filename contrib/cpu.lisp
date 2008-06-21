@@ -107,11 +107,13 @@ utilization."
     (bar cpu width full empty)))
 
 (defun get-proc-file-field (fname field)
-  (with-open-file (s fname)
-    (do ((line (read-line s nil nil) (read-line s nil nil)))
-        ((null line) nil)
-      (let ((split (cl-ppcre:split "\\s*:\\s*" line)))
-        (when (string= (car split) field) (return (cadr split)))))))
+  (with-open-file (s fname :if-does-not-exist nil) ;
+    (if s
+        (do ((line (read-line s nil nil) (read-line s nil nil)))
+            ((null line) nil)
+          (let ((split (cl-ppcre:split "\\s*:\\s*" line)))
+            (when (string= (car split) field) (return (cadr split)))))
+        "")))
 
 (defun fmt-cpu-freq (ml)
   "Returns a string representing the current CPU frequency (especially useful for laptop users.)"
