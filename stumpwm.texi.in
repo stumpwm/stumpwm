@@ -123,6 +123,12 @@ Windows
 * Customizing Window Appearance::  
 * Controlling Raise And Map Requests::  
 * Programming With Windows::    
+* Rule Based Window Placement::  
+
+Frames
+
+* Interactively Resizing Frames::  
+* Frame Dumping::               
 
 Groups
 
@@ -693,6 +699,7 @@ An input function takes 2 arguments: the input structure and the key pressed.
 * Customizing Window Appearance::  
 * Controlling Raise And Map Requests::  
 * Programming With Windows::    
+* Rule Based Window Placement::  
 @end menu
 
 @node Window Marks, Customizing Window Appearance, Windows, Windows
@@ -752,7 +759,7 @@ Some examples follow.
 (push '(:class "Xterm") stumpwm:*deny-raise-request*)
 @end example
 
-@node Programming With Windows,  , Controlling Raise And Map Requests, Windows
+@node Programming With Windows, Rule Based Window Placement, Controlling Raise And Map Requests, Windows
 @section Programming With Windows
 
 @defmac def-window-attr @var{attr}
@@ -761,10 +768,10 @@ Create a new window attribute and corresponding get/set functions.
 
 @@@ window-send-string
 
-@node
+@node Rule Based Window Placement,  , Programming With Windows, Windows
 @section Rule Based Window Placement
 
-@@@ define-frame-preference
+%%% define-frame-preference
 
 !!! remember
 !!! forget
@@ -803,7 +810,12 @@ window pool, where windows and frames are not so tightly connected.
 ### *min-frame-height*
 ### *new-frame-action*
 
-@node
+@menu
+* Interactively Resizing Frames::  
+* Frame Dumping::               
+@end menu
+
+@node Interactively Resizing Frames, Frame Dumping, Frames, Frames
 @section Interactively Resizing Frames
 There is a mode called @code{iresize} that lets you interactively
 resize the current frame. To enter the mode use the @code{iresize}
@@ -846,7 +858,7 @@ Select the highlighted option.
 
 ### *resize-increment*
 
-@node
+@node Frame Dumping,  , Interactively Resizing Frames, Frames
 @section Frame Dumping
 The configuration of frames and groups can be saved and restored using
 the following commands.
@@ -855,7 +867,6 @@ the following commands.
 !!! dump-desktop-to-file
 !!! dump-group
 !!! dump-group-to-file
-!!! dump-rules
 !!! dump-screen
 !!! dump-screen-to-file
 !!! restore
