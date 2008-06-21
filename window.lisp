@@ -1443,16 +1443,14 @@ be used to override the default window formatting."
           (message "Rule forgotten"))
         (message "No matching rule"))))
 
-(defun dump-window-placement-rules (file)
+(defcommand dump-window-placement-rules (file) ((:rest "Filename: "))
   "Dump *window-placement-rules* to FILE."
   (dump-to-file *window-placement-rules* file))
 
-(defcommand dump-rules (file) ((:rest "Filename: "))
-  (dump-window-placement-rules file))
+(defcommand-alias dump-rules dump-window-placement-rules)
 
-(defun restore-window-placement-rules (file)
+(defcommand restore-window-placement-rules (file) ((:rest "Filename: "))
   "Restore *window-placement-rules* from FILE."
   (setf *window-placement-rules* (read-dump-from-file file)))
 
-(defcommand restore-rules (file) ((:rest "Filename: "))
-  (restore-window-placement-rules file))
+(defcommand-alias restore-rules restore-window-placement-rules)
