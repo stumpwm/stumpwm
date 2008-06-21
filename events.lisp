@@ -547,7 +547,7 @@ converted to an atom is removed."
                     (2
                      (unless (find-wm-state window :_NET_WM_STATE_DEMANDS_ATTENTION)
                        (add-wm-state window :_NET_WM_STATE_DEMANDS_ATTENTION))))
-                  (maybe-set-urgency window))
+                  (maybe-set-urgency our-window))
                (:_NET_WM_STATE_FULLSCREEN
                 (update-fullscreen our-window action)))))))))
   (:_NET_MOVERESIZE_WINDOW
