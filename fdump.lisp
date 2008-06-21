@@ -24,6 +24,32 @@
 
 (in-package #:stumpwm)
 
+(export '(ddump
+          ddump-current
+          ddump-screens
+          dump-desktop-to-file
+          dump-group-to-file
+          dump-screen-to-file
+          fdump
+          fdump-current
+          fdump-height
+          fdump-number
+          fdump-width
+          fdump-windows
+          fdump-x
+          fdump-y
+          gdump
+          gdump-current
+          gdump-name
+          gdump-number
+          gdump-tree
+          place-existing-windows
+          restore
+          sdump
+          sdump-current
+          sdump-groups
+          sdump-number))
+
 (defstruct fdump
   number x y width height windows current)
 
