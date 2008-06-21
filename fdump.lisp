@@ -203,7 +203,7 @@
       (when screen
         (restore-screen screen sdump)))))
 
-(defun restore-from-file (file)
+(defcommand restore (file) ((:rest "Restore From File: "))
   (let ((dump (read-dump-from-file file)))
     (typecase dump
       (gdump
@@ -218,9 +218,11 @@
       (t
        (message "Don't know how to restore ~a" dump)))))
 
-(defcommand restore (file) ((:rest "Restore From File: "))
+(defcommand restore-from-file (file) ((:rest "Restore From File: "))
   "Restores screen, groups, or frames from named file, depending on file's contents."
   (restore-from-file file))
+
+(defcommand-alias restore restore-from-file)
 
 (defcommand place-existing-windows () ()
   (sync-window-placement))
