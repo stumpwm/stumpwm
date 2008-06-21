@@ -536,7 +536,9 @@ converted to an atom is removed."
                (p1 (elt data 1))
                (p2 (elt data 2)))
            (dolist (p (list p1 p2))
-             (unless (= p 0)
+             ;; Sometimes the number cannot be converted to an atom, so skip them.
+             (unless (or (= p 0)
+                         (not (typep p '(unsigned-byte 29))))
                (case (xlib:atom-name *display* p)
                  (:_NET_WM_STATE_DEMANDS_ATTENTION
                   (case action
