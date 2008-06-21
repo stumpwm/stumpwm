@@ -277,8 +277,8 @@ alias name for the command that is only accessible interactively."
 
 (defun select-group (screen query)
   "Attempt to match string QUERY against group number or partial name."
-  (let (match
-        (num (ignore-errors (parse-integer query))))
+  (let ((num (ignore-errors (parse-integer query)))
+        match)
     (labels ((match (grp)
                (let* ((name (group-name grp))
                       (end (min (length name) (length query))))
