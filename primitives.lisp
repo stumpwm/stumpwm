@@ -106,6 +106,7 @@
           *window-border-style*
           add-hook
           dformat
+          define-frame-preference
           remove-hook
           run-hook
           run-hook-with-args
