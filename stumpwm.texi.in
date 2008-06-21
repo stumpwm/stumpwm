@@ -679,7 +679,10 @@ An input function takes 2 arguments: the input structure and the key pressed.
 !!! renumber
 !!! meta
 !!! select
+!!! select-window-by-number
+!!! title
 !!! windowlist
+!!! fullscreen
 
 ### *window-format*
 ### *window-name-source*
@@ -717,7 +720,6 @@ list. Some commands operate only on marked windows.
 @@@ set-transient-gravity
 
 !!! gravity
-
 
 @node Controlling Raise And Map Requests, Programming With Windows, Customizing Window Appearance, Windows
 @section Controlling Raise And Map Requests
@@ -759,6 +761,16 @@ Create a new window attribute and corresponding get/set functions.
 
 @@@ window-send-string
 
+@node
+@section Rule Based Window Placement
+
+@@@ define-frame-preference
+
+!!! remember
+!!! forget
+!!! dump-window-placement-rules
+!!! restore-window-placement-rules
+
 @node Frames, Mode-line, Windows, Top
 @chapter Frames
 Frames contain windows. All windows exist within a frame.
@@ -781,14 +793,73 @@ window pool, where windows and frames are not so tightly connected.
 !!! fclear
 !!! move-focus
 !!! move-window
-!!! exchange-windows
 !!! next-in-frame
 !!! prev-in-frame
 !!! other-in-frame
+!!! echo-frame-windows
+!!! exchange-direction
 
 ### *min-frame-width*
 ### *min-frame-height*
 ### *new-frame-action*
+
+@node
+@section Interactively Resizing Frames
+There is a mode called @code{iresize} that lets you interactively
+resize the current frame. To enter the mode use the @code{iresize}
+command or type @key{C-t r}.
+
+The following keybindings apply to the mode:
+@table @kbd
+@item C-p
+@itemx Up
+@itemx k
+Shrink the frame vertically.
+
+@item C-n
+@itemx Down
+@itemx j
+Expand the frame vertically.
+
+@item C-f
+@itemx Right
+@itemx l
+Expand the frame horizontally.
+
+@item C-b
+@itemx Left
+@itemx h
+Shrink the frame horizontally.
+
+@item C-g
+@itemx ESC
+Abort the interactive resize. NOTE: This currently doesn't work.
+
+@item RET
+Select the highlighted option.
+
+@end table
+
+!!! iresize
+!!! abort-iresize
+!!! exit-iresize
+
+### *resize-increment*
+
+@node
+@section Frame Dumping
+The configuration of frames and groups can be saved and restored using
+the following commands.
+
+!!! dump-desktop
+!!! dump-desktop-to-file
+!!! dump-group
+!!! dump-group-to-file
+!!! dump-rules
+!!! dump-screen
+!!! dump-screen-to-file
+!!! restore
+!!! place-existing-windows
 
 @node Mode-line, Groups, Frames, Top
 @chapter The Mode Line
@@ -854,6 +925,7 @@ Groups in StumpWM are more commonly known as @dfn{virtual desktops} or
 !!! gnewbg
 !!! gnext
 !!! gprev
+!!! gother
 !!! gmerge
 !!! groups
 !!! vgroups
@@ -936,6 +1008,7 @@ section.
 !!! banish
 !!! ratwarp
 !!! ratrelwarp
+!!! ratclick
 !!! echo-date
 !!! eval-line
 !!! insert
@@ -949,6 +1022,9 @@ section.
 !!! putsel
 !!! command-mode
 !!! copy-unhandled-error
+!!! commands
+!!! lastmsg
+
 @@@ run-commands
 
 @defmac defcommand @var{name} &var{lambda-list} ((@var{type} @var{prompt}) ...) &body @var{body}
