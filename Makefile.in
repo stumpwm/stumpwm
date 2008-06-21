@@ -44,7 +44,7 @@ release:
 upload-release:
 	gpg -b stumpwm-@PACKAGE_VERSION@.tgz
 	scp stumpwm-@PACKAGE_VERSION@.tgz stumpwm-@PACKAGE_VERSION@.tgz.sig sabetts@dl.sv.nongnu.org:/releases/stumpwm/
-	echo -e ln stumpwm-@PACKAGE_VERSION@.tgz stumpwm-latest.tgz\\nln stumpwm-@PACKAGE_VERSION@.tgz.sig stumpwm-latest.tgz.sig | sftp -b - sabetts@dl.sv.nongnu.org:/releases/stumpwm/
+	echo rm stumpwm-latest.tgz.sig && echo rm stumpwm-latest.tgz && echo ln stumpwm-@PACKAGE_VERSION@.tgz stumpwm-latest.tgz && echo ln stumpwm-@PACKAGE_VERSION@.tgz.sig stumpwm-latest.tgz.sig | sftp -b - sabetts@dl.sv.nongnu.org:/releases/stumpwm/
 
 clean:
 	rm -f *.fasl *.fas *.lib *.*fsl stumpwm
