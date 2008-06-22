@@ -335,12 +335,19 @@ chunks."
     (when (register-urgent-window window)
       (run-hook-with-args *urgent-window-hook* window))))
 
+(defun safe-atom-name (n)
+  "Return the name of the atom with atom-id N or nil if there isn't one."
+  (handler-case
+      (xlib:atom-name *display* n)
+    (xlib:atom-error ()
+      nil)))
+
 (defun safe-bytes-to-atoms (list)
   "Return a list of atoms from list. Any number that cannot be
 converted to an atom is removed."
   (loop for p in list
         when (typep p '(unsigned-byte 29))
-        collect (xlib:atom-name *display* p)))
+        collect (safe-atom-name p)))
 
 (defun update-window-properties (window atom)
   (case atom
@@ -539,7 +546,7 @@ converted to an atom is removed."
              ;; Sometimes the number cannot be converted to an atom, so skip them.
              (unless (or (= p 0)
                          (not (typep p '(unsigned-byte 29))))
-               (case (xlib:atom-name *display* p)
+               (case (safe-atom-name p)
                  (:_NET_WM_STATE_DEMANDS_ATTENTION
                   (case action
                     (1
