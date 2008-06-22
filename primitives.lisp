@@ -554,11 +554,19 @@ chosen, resignal the error."
   (run-hook-with-args hook))
 
 (defmacro add-hook (hook fn)
-  "Add a function to a hook."
+  "Add @var{function} to the hook @var{hook-variable}. For example, to
+display a message whenever you switch frames:
+
+@example
+\(defun my-rad-fn (from-frame to-frame)
+  (stumpwm:message \"Mustard!\"))
+
+\(stumpmwm:add-hook stumpwm:*focus-frame-hook* 'my-rad-fn)
+@end example"
   `(setf ,hook (adjoin ,fn ,hook)))
 
 (defmacro remove-hook (hook fn)
-  "Remove a function from a hook."
+"Remove the specified function from the hook."
   `(setf ,hook (remove ,fn ,hook)))
 
 ;; Misc. utility functions
@@ -913,6 +921,8 @@ add rules")
 
 
 (defmacro define-frame-preference (group &rest frames)
+  "Create a rule that matches windows and automatically places them in a specified group and frame.
+FIXME: How about some real docs here?"
   (let ((x (gensym "X")))
     `(dolist (,x ',frames)
        ;; verify the correct structure

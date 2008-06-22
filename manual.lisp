@@ -44,7 +44,24 @@
                                 t)))
 
 (defun generate-macro-doc (s line)
-  (declare (ignore s line)))
+  (ppcre:register-groups-bind (name) ("^%%% (.*)" line)
+                              (let* ((symbol (find-symbol (string-upcase name) :stumpwm))
+                                     (*print-pretty* nil))
+                                (format s "@defmac {~a} ~{~a~^ ~}~%~a~&@end defmac~%~%"
+                                        name
+                                        #+sbcl (sb-impl::%simple-fun-arglist (macro-function symbol))
+                                        #+clisp (ext:arglist symbol)
+                                        #- (or sbcl clisp) '("(Check the code for args list)")
+                                        ;;; FIXME: when clisp compiles
+                                        ;;; a macro it discards the
+                                        ;;; documentation string! So
+                                        ;;; unless when generating the
+                                        ;;; manual for clisp, it is
+                                        ;;; loaded and not compiled
+                                        ;;; this will return NIL.
+                                        #+clisp "Due to a bug in clisp, macro function documentation is not generated. Try building the manual using sbcl."
+                                        #-clisp (documentation symbol 'function))
+                                t)))
 
 (defun generate-variable-doc (s line)
   (ppcre:register-groups-bind (name) ("^### (.*)" line)

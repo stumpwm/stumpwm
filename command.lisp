@@ -153,6 +153,39 @@ alias name for the command that is only accessible interactively."
       (throw 'error :abort)))
 
 (defmacro define-stumpwm-type (type (input prompt) &body body)
+  "Create a new type that can be used for command arguments. @var{type} can be any symbol. 
+
+When @var{body} is evaluated @var{input} is bound to the
+argument-line. It is passed to @code{argument-pop},
+@code{argument-pop-rest}, etc. @var{prompt} is the prompt that should
+be used when prompting the user for the argument.
+
+@example
+\(define-stumpwm-type :symbol (input prompt)
+ (or (find-symbol (string-upcase
+		     (or (argument-pop input)
+                         ;; Whitespace messes up find-symbol.
+		         (string-trim \" \"
+		           (completing-read (current-screen)
+					  prompt
+					  ;; find all symbols in the
+					  ;;  stumpwm package.
+					  (let (acc)
+					    (do-symbols (s (find-package \"STUMPWM\"))
+					      (push (string-downcase (symbol-name s)) acc))
+					    acc)))
+                      (throw 'error \"Abort.\")))
+                  \"STUMPWM\")
+     (throw 'error \"Symbol not in STUMPWM package\")))
+
+\(defcommand \"symbol\" (sym) ((:symbol \"Pick a symbol: \"))
+  (message \"~a\" (with-output-to-string (s)
+	          (describe sym s))))
+@end example
+
+This code creates a new type called @code{:symbol} which finds the
+symbol in the stumpwm package. The command @code{symbol} uses it and
+then describes the symbol."
   `(setf (gethash ,type *command-type-hash*)
     (lambda (,input ,prompt)
       ,@body)))

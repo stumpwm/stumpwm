@@ -762,9 +762,7 @@ Some examples follow.
 @node Programming With Windows, Rule Based Window Placement, Controlling Raise And Map Requests, Windows
 @section Programming With Windows
 
-@defmac def-window-attr @var{attr}
-Create a new window attribute and corresponding get/set functions.
-@end defmac
+%%% def-window-attr
 
 @@@ window-send-string
 
@@ -1038,48 +1036,8 @@ section.
 
 @@@ run-commands
 
-@defmac defcommand @var{name} &var{lambda-list} ((@var{type} @var{prompt}) ...) &body @var{body}
-Create a new command with the name @var{name}. @var{prompt} is
-optional. If left out, stumpwm will not prompt for the variable. Do
-this when @var{lambda-list} includes optional arguments.
-@end defmac
-
-@defmac define-stumpwm-type @var{type} (@var{input} @var{prompt}) &body @var{body}
-Create a new type that can be used for command arguments. @var{type} can be any symbol. 
-
-When @var{body} is evaluated @var{input} is bound to the
-argument-line. It is passed to @code{argument-pop},
-@code{argument-pop-rest}, etc. @var{prompt} is the prompt that should
-be used when prompting the user for the argument.
-
-@example
-(define-stumpwm-type :symbol (input prompt)
- (or (find-symbol (string-upcase
-		     (or (argument-pop input)
-                         ;; Whitespace messes up find-symbol.
-		         (string-trim " "
-		           (completing-read (current-screen)
-					  prompt
-					  ;; find all symbols in the
-					  ;;  stumpwm package.
-					  (let (acc)
-					    (do-symbols (s (find-package "STUMPWM"))
-					      (push (string-downcase (symbol-name s)) acc))
-					    acc)))
-                      (throw 'error "Abort.")))
-                  "STUMPWM")
-     (throw 'error "Symbol not in STUMPWM package")))
-
-(define-stumpwm-command "symbol" ((sym :symbol "Pick a symbol: "))
-  (message "~a" (with-output-to-string (s)
-	          (describe sym s))))
-@end example
-
-This code creates a new type called @code{:symbol} which finds the
-symbol in the stumpwm package. The command @code{symbol} uses it and
-then describes the symbol.
-
-@end defmac
+%%% defcommand
+%%% define-stumpwm-type
 
 @@@ run-or-raise
 
@@ -1088,14 +1046,13 @@ then describes the symbol.
 
 @@@ restarts-menu
 
-@defmac with-restarts-menu &body @var{body}
-Execute @var{body}. If an error occurs inside @var{body} then call
-restarts-menu on it.
-@end defmac
+%%% with-restarts-menu
 
 ### *startup-message*
 ### *suppress-abort-messages*
 ### *default-package*
+
+%%% defprogram-shortcut
 
 @menu
 * Menus::                       
@@ -1167,24 +1124,8 @@ function. for example:
 adds your @code{my-new-window-custos} function to the list of
 functions called when a new window appears.
 
-@defmac add-hook @var{hook-variable} @var{function}
-Add @var{function} to the hook @var{hook-variable}. For example, to
-display a message whenever you switch frames:
-
-@example
-(defun my-rad-fn (from-frame to-frame)
-  (stumpwm:message "Mustard!"))
-
-(stumpmwm:add-hook stumpwm:*focus-frame-hook* 'my-rad-fn)
-@end example
-@end defmac
-
-It is not recommended you add lambda functions or function objects to
-a hook as they are difficult to remove.
-
-@defmac remove-hook @var{hook-variable} @var{function}
-Remove the specified function from the hook.
-@end defmac
+%%% add-hook
+%%% remove-hook
 
 The following hooks are available:
 
