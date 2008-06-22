@@ -378,26 +378,25 @@ instance. @var{all-groups} overrides this default. Similarily for
            (focus-all win)
            (unless (eq frame old-frame)
              (show-frame-indicator group))))
-       (find-window (group)
-         (find-if (lambda (w)
-                    (apply 'window-matches-properties-p w props))
-                  (group-windows group))))
-    (let*
-        ((screens (if all-screens
-                      *screen-list*
-                      (list (current-screen))))
-         (win
-          ;; If no qualifiers are set don't bother looking for a match.
-          ;; search all groups
-          (if all-groups
-              (loop named outer
-                    for s in screens
-                    do (loop
-                        for g in (screen-groups s)
-                        for win = (find-window g)
-                        when win
-                        do (return-from outer win)))
-              (find-window (current-group)))))
+       (sort-windows-by-group (winlist)
+         (stable-sort (sort winlist #'< :key #'window-number)
+                      #'< :key #'(lambda (w) (group-number (window-group w)))))
+       (find-window (winlist)
+         (let* ((match (remove-if-not #'(lambda (w)
+                                          (apply 'window-matches-properties-p w props))
+                                      winlist))
+                (match-sorted (sort-windows-by-group match))
+                (rest (member (current-window) match-sorted)))
+           (if (<= (length rest) 1) ; current win not a match or no matches left
+               (car match-sorted)
+               (cadr rest)))))
+    (let* ((screens (if all-screens
+                        *screen-list*
+                        (list (current-screen))))
+           (winlist (if all-groups
+                        (mapcan (lambda (s) (screen-windows s)) screens)
+                        (group-windows (current-group))))
+           (win (find-window winlist)))
       (if win
           (goto-win win)
           (run-shell-command cmd)))))
