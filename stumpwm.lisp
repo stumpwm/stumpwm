@@ -56,10 +56,9 @@ loaded. When CATCH-ERRORS is nil, errors are left to be handled further up. "
   (if (and asynchronous
            (find error-key '(xlib:window-error xlib:drawable-error xlib:match-error)))
       (dformat 4 "Ignoring error: ~s~%" error-key)
-      ;; all other errors are thrown and caught at the top level where
-      ;; stumpwm quits, basically.
+      ;; all other asynchronous errors are printed.
       (if asynchronous
-          (apply 'cerror "Ignore" error-key :display display :error-key error-key key-vals)
+	  (message "Asynchronous Caught X Error: ~s ~s" error-key key-vals)
           (apply 'error error-key :display display :error-key error-key key-vals))))
 
 ;;; Timers
