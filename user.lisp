@@ -26,7 +26,8 @@
 
 (in-package :stumpwm)
 
-(export '(pathname-is-executable-p
+(export '(defprogram-shortcut
+          pathname-is-executable-p
 	  programs-in-path
 	  restarts-menu
 	  run-or-raise
@@ -420,3 +421,13 @@ submitting the bug report."
         (set-x-selection (format nil "~a~%~a" (first *last-unhandled-error*) (second *last-unhandled-error*)))
         (message "Copied to clipboard."))
       (message "There was no unhandled error!")))
+
+(defmacro defprogram-shortcut (name &key (command (string-downcase (string name)))
+                                         (props `'(:class ,(string-capitalize command)))
+                                         (map *top-map*)
+                                         (key (kbd (concat "H-" (subseq command 0 1)))))
+  "define a command and key binding to run or raise a program."
+  `(progn
+     (defcommand ,name () ()
+       (run-or-raise ,command ,props))
+     (define-key ,map ,key ,(string-downcase (string name)))))
