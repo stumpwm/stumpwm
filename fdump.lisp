@@ -110,7 +110,7 @@
   (dump-to-file (dump-group (current-group)) file)
   (message "Group dumped"))
 
-(defcommand-alias dump-group dump-group-to-file) 
+(defcommand-alias dump-group dump-group-to-file)
 
 (defcommand dump-screen-to-file (file) ((:rest "Dump To File: "))
   "Dumps the frames of all groups of the current screen to the named file"
@@ -203,7 +203,8 @@
       (when screen
         (restore-screen screen sdump)))))
 
-(defcommand restore (file) ((:rest "Restore From File: "))
+(defcommand restore-from-file (file) ((:rest "Restore From File: "))
+  "Restores screen, groups, or frames from named file, depending on file's contents."
   (let ((dump (read-dump-from-file file)))
     (typecase dump
       (gdump
@@ -217,10 +218,6 @@
        (message "Desktop restored."))
       (t
        (message "Don't know how to restore ~a" dump)))))
-
-(defcommand restore-from-file (file) ((:rest "Restore From File: "))
-  "Restores screen, groups, or frames from named file, depending on file's contents."
-  (restore-from-file file))
 
 (defcommand-alias restore restore-from-file)
 
