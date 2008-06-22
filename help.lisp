@@ -100,7 +100,7 @@ command prints the command bound to the specified key sequence."
   (if (get-command-structure com)
       (message-no-timeout "Command \"~a\":~%~a" com
                           (documentation (get-command-symbol com) 'function))
-      (message-no-timeout "Error: Command \"~\" not found." com)))
+      (message-no-timeout "Error: Command \"~a\" not found." com)))
 
 (defcommand where-is (cmd) ((:rest "Where is command: "))
 "Print the key sequences bound to the specified command."
