@@ -623,15 +623,14 @@ the window in it's frame."
   (let ((eventfn (gethash event-key *event-fn-table*))
         (win (getf event-slots :window)))
     (when eventfn
-      ;; XXX: Due to a bug in both the clisp and sbcl clx libraries,
-      ;; sometimes what should be a window will be a pixmap
-      ;; instead. In this case, we need to manually translate it to a
-      ;; window to avoid breakage in stumpwm. So far the only slot
-      ;; that seems to be affected is the :window slot for
-      ;; configure-request and reparent-notify events. It appears as
-      ;; though the hash table of XIDs and clx structures gets out of
-      ;; sync with X or perhaps X assigns a duplicate ID for a pixmap
-      ;; and a window.
+      ;; XXX: In both the clisp and sbcl clx libraries, sometimes what
+      ;; should be a window will be a pixmap instead. In this case, we
+      ;; need to manually translate it to a window to avoid breakage
+      ;; in stumpwm. So far the only slot that seems to be affected is
+      ;; the :window slot for configure-request and reparent-notify
+      ;; events. It appears as though the hash table of XIDs and clx
+      ;; structures gets out of sync with X or perhaps X assigns a
+      ;; duplicate ID for a pixmap and a window.
       (when (and win (not (xlib:window-p win)))
         (dformat 10 "Pixmap Workaround! ~s should be a window!~%" win)
         (setf (getf event-slots :window) (make-xlib-window win)))
