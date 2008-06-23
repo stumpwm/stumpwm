@@ -867,7 +867,7 @@ the following commands.
 !!! dump-group-to-file
 !!! dump-screen
 !!! dump-screen-to-file
-!!! restore
+!!! restore-from-file
 !!! place-existing-windows
 
 @node Mode-line, Groups, Frames, Top
