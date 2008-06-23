@@ -123,24 +123,28 @@
       (t (handle-unmanaged-window window x y width height border-width value-mask)))))
 
 (define-stump-event-handler :configure-notify (stack-mode #|parent|# window #|above-sibling|# x y width height border-width value-mask)
-  (dformat 4 "CONFIGURE NOTIFY ~@{~S ~}~%" stack-mode window x y width height border-width value-mask)
-  (let ((screen (find-screen window)))
-    (when screen
-      (let ((old-heads (copy-list (screen-heads screen))))
-        (setf (screen-heads screen) nil)
-        (let ((new-heads (make-screen-heads screen (screen-root screen))))
-          (setf (screen-heads screen) old-heads)
-          (cond
-            ((equalp old-heads new-heads)
-             (dformat 3 "Bogus configure-notify on root window of ~S~%" screen) t)
-            (t
-             (dformat 1 "Updating Xinerama configuration for ~S.~%" screen)
-             (if new-heads
-                 (progn
-                   (scale-screen screen new-heads)
-                   (mapc 'sync-all-frame-windows (screen-groups screen))
-                   (update-mode-lines screen))
-                 (dformat 1 "Invalid configuration! ~S~%" new-heads)))))))))
+  ;; XXX: For a very strange reason sometimes window is a xlib:pixmap
+  ;; instead of a window! This has been observed in both portable-clx
+  ;; and clisp. No idea why. For now, the workaround is to ignore the request.
+  (when (xlib:window-p window)
+    (dformat 4 "CONFIGURE NOTIFY ~@{~S ~}~%" stack-mode window x y width height border-width value-mask)
+    (let ((screen (find-screen window)))
+      (when screen
+        (let ((old-heads (copy-list (screen-heads screen))))
+          (setf (screen-heads screen) nil)
+          (let ((new-heads (make-screen-heads screen (screen-root screen))))
+            (setf (screen-heads screen) old-heads)
+            (cond
+              ((equalp old-heads new-heads)
+               (dformat 3 "Bogus configure-notify on root window of ~S~%" screen) t)
+              (t
+               (dformat 1 "Updating Xinerama configuration for ~S.~%" screen)
+               (if new-heads
+                   (progn
+                     (scale-screen screen new-heads)
+                     (mapc 'sync-all-frame-windows (screen-groups screen))
+                     (update-mode-lines screen))
+                   (dformat 1 "Invalid configuration! ~S~%" new-heads))))))))))
 
 (define-stump-event-handler :map-request (parent send-event-p window)
   (unless send-event-p
@@ -616,8 +620,21 @@ the window in it's frame."
 (defun handle-event (&rest event-slots &key display event-key &allow-other-keys)
   (declare (ignore display))
   (dformat 1 ">>> ~S~%" event-key)
-  (let ((eventfn (gethash event-key *event-fn-table*)))
+  (let ((eventfn (gethash event-key *event-fn-table*))
+        (win (getf event-slots :window)))
     (when eventfn
+      ;; XXX: Due to a bug in both the clisp and sbcl clx libraries,
+      ;; sometimes what should be a window will be a pixmap
+      ;; instead. In this case, we need to manually translate it to a
+      ;; window to avoid breakage in stumpwm. So far the only slot
+      ;; that seems to be affected is the :window slot for
+      ;; configure-request and reparent-notify events. It appears as
+      ;; though the hash table of XIDs and clx structures gets out of
+      ;; sync with X or perhaps X assigns a duplicate ID for a pixmap
+      ;; and a window.
+      (when (and win (not (xlib:window-p win)))
+        (dformat 10 "Pixmap Workaround! ~s should be a window!~%" win)
+        (setf (getf event-slots :window) (make-xlib-window win)))
       (handler-case
           (progn
             ;; This is not the stumpwm top level, but if the restart

@@ -215,3 +215,11 @@
   #+clisp (ext:convert-string-to-bytes string charset:utf-8)
   #-(or sbcl clisp)
   (map 'list #'char-code string))
+
+(defun make-xlib-window (xobject)
+  "For some reason the clx xid cache screws up returns pixmaps when
+they should be windows. So use this function to make a window out of them."
+  #+clisp (make-instance 'xlib:window :id (slot-value xobject 'xlib::id) :display *display*)
+  #+sbcl (xlib::make-window :id (slot-value xobject 'xlib::id) :display *display*)
+  #-(or sbcl clisp)
+  (error 'not-implemented :proc (list 'make-xlib-window xobject)))
