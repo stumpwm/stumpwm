@@ -59,7 +59,8 @@
                                         ;;; manual for clisp, it is
                                         ;;; loaded and not compiled
                                         ;;; this will return NIL.
-                                        #+clisp "Due to a bug in clisp, macro function documentation is not generated. Try building the manual using sbcl."
+                                        #+clisp (or (documentation symbol 'function)
+                                                    "Due to a bug in clisp, macro function documentation is not generated. Try building the manual using sbcl.")
                                         #-clisp (documentation symbol 'function))
                                 t)))
 
