@@ -128,7 +128,8 @@
                (xlib:close-display dpy2))))
     (let ((dpy (xlib:open-default-display)))
       (first-pass dpy)
-      (second-pass dpy))))
+      (second-pass dpy)
+      (xlib:close-display dpy))))
     
 
 (defun parse-display-string (display)
