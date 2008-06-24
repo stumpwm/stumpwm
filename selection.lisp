@@ -33,7 +33,7 @@
          (selwin (screen-focus-window (current-screen)))
          (root (screen-root screen)))
     (xlib:set-selection-owner *display* :primary selwin)
-    (unless (eq (xlib:selection-owner *display* :primary) selwin)
+    (unless (xlib:window-equal (xlib:selection-owner *display* :primary) selwin)
       (error "Can't set selection owner"))
     ;; also set the cut buffer for completeness
     (xlib:change-property root :cut-buffer0 *x-selection* :string 8 :transform #'xlib:char->card8
