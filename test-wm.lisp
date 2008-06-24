@@ -92,6 +92,45 @@
       (xlib:display-finish-output dpy)
       (sleep 10)))
 
+(defun break-display-xid-cache ()
+  (labels ((make-win (dpy)
+             (xlib:create-window :parent (xlib:screen-root (first (xlib:display-roots dpy))) :x 0 :y 0 :width 50 :height 50))
+           (make-pixmap (window)
+             (xlib:create-pixmap :width (random 100) :height (random 100) :depth 8 :drawable window))
+           (first-pass (dpy)
+             ;; Open a fresh connection. Create a window and a pixmap.
+             (let* ((dpy2 (xlib:open-default-display))
+                    (window (make-win dpy2))
+                    (pixmap (make-pixmap window)))
+               ;; make the pixmap the window's icon pixmap hint. 
+               (setf (xlib:wm-hints window) (xlib:make-wm-hints :icon-pixmap pixmap))
+               (format t "Window ID: ~s pixmap ID: ~s~%" (xlib:window-id window) (xlib:pixmap-id pixmap))
+               (xlib:display-finish-output dpy2)
+               ;; On the old connection, list the root window children
+               ;; and the icon pixmap hint to cache their XIDs.
+               (loop for w in (xlib:query-tree (xlib:screen-root (first (xlib:display-roots dpy))))
+                  for hints = (xlib:wm-hints w)
+                  when hints
+                  do (format t "top level window id: ~s | icon pixmap hint: ~s~%" (xlib:window-id w) (xlib:wm-hints-icon-pixmap hints)))
+               (xlib:close-display dpy2)))
+           (second-pass (dpy)
+             ;; Open a fresh connection and create 2 windows.
+             (let* ((dpy2 (xlib:open-default-display))
+                    (window1 (make-win dpy2))
+                    (window2 (make-win dpy2)))
+               (format t "Window#1 ID: ~s Window#2 ID: ~s~%" (xlib:window-id window1) (xlib:window-id window2))
+               (xlib:display-finish-output dpy2)
+               ;; On the old connection, list the root window children
+               ;; and note the second window is erroneously a pixmap
+               ;; due to too agressive caching in clx.
+               (loop for w in (xlib:query-tree (xlib:screen-root (first (xlib:display-roots dpy))))
+                  do (format t "window: ~s~%" w))
+               (xlib:close-display dpy2))))
+    (let ((dpy (xlib:open-default-display)))
+      (first-pass dpy)
+      (second-pass dpy))))
+    
+
 (defun parse-display-string (display)
   "Parse an X11 DISPLAY string and return the host and display from it."
   (let* ((colon (position #\: display))
