@@ -170,9 +170,9 @@ T (default) then also focus the frame."
     (when win
       (setf (window-frame win) frame))))
 
-(defun split-frame-h (group p)
+(defun split-frame-h (group p ratio)
   "Return 2 new frames. The first one stealing P's number and window"
-  (let* ((w (truncate (/ (frame-width p) 2)))
+  (let* ((w (truncate (* (frame-width p) ratio)))
          (h (frame-height p))
          (f1 (make-frame :number (frame-number p)
                          :x (frame-x p)
@@ -190,10 +190,10 @@ T (default) then also focus the frame."
     (run-hook-with-args *new-frame-hook* f2)
     (values f1 f2)))
 
-(defun split-frame-v (group p)
+(defun split-frame-v (group p ratio)
   "Return 2 new frames. The first one stealing P's number and window"
   (let* ((w (frame-width p))
-         (h (truncate (/ (frame-height p) 2)))
+         (h (truncate (* (frame-height p) ratio)))
          (f1 (make-frame :number (frame-number p)
                          :x (frame-x p)
                          :y (frame-y p)
@@ -578,7 +578,7 @@ depending on the tree's split direction."
      (tree-iterate i (lambda (leaf)
                        (sync-frame-windows group leaf))))))
 
-(defun split-frame (group how)
+(defun split-frame (group how &optional (ratio 1/2))
   "split the current frame into 2 frames. return T if it succeeded. NIL otherwise."
   (check-type how (member :row :column))
   (let* ((frame (tile-group-current-frame group))
@@ -591,7 +591,7 @@ depending on the tree's split direction."
       (multiple-value-bind (f1 f2) (funcall (if (eq how :column)
                                                 'split-frame-h
                                                 'split-frame-v)
-                                            group frame)
+                                            group frame ratio)
         (setf (tile-group-frame-head group head)
               (if (atom (tile-group-frame-head group head))
                   (list f1 f2)
