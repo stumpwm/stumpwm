@@ -920,14 +920,47 @@ will have no effect.")
 add rules")
 
 
-(defmacro define-frame-preference (group &rest frames)
-  "Create a rule that matches windows and automatically places them in a specified group and frame.
-FIXME: How about some real docs here?"
+(defmacro define-frame-preference (target-group &rest frame-rules)
+  "Create a rule that matches windows and automatically places them in
+a specified group and frame. Each frame rule is a lambda list:
+@example
+\(frame-number raise lock &key class instance type role title)
+@end example
+
+@table @var
+@item frame-number
+The frame number to send matching windows to
+
+@item raise
+When non-nil, raise and focus the window in its frame
+
+@item lock
+When this is nil, this rule will only match when the current group
+matches @var{target-group}. When non-nil, this rule matches regardless
+of the group and the window is sent to @var{target-group}. If
+@var{lock} and @var{raise} are both non-nil, then stumpwm will jump to
+the specified group and focus the matched window.
+
+@item class
+The window's class must match @var{class}.
+
+@item instance
+The window's instance/resource name must match @var{instance}.
+
+@item type
+The window's type must match @var{type}.
+
+@item role
+The window's role must match @var{role}.
+
+@item title
+The window's title must match @var{title}.
+@end table"
   (let ((x (gensym "X")))
-    `(dolist (,x ',frames)
+    `(dolist (,x ',frame-rules)
        ;; verify the correct structure
        (destructuring-bind (frame-number raise lock &rest keys &key class instance type role title) ,x
-         (push (list* ,group frame-number raise lock keys) *window-placement-rules*)))))
+         (push (list* ,target-group frame-number raise lock keys) *window-placement-rules*)))))
 
 (defun clear-window-placement-rules ()
   (setf *window-placement-rules* nil))
