@@ -48,7 +48,8 @@
 
 (defun read-battery-file (battery fname)
   (let ((fields (make-hash-table :test #'equal)))
-    (with-open-file (s (concatenate 'string "/proc/acpi/battery/" battery "/" fname :if-does-not-exist nil))
+    (with-open-file (s (concatenate 'string "/proc/acpi/battery/" battery "/" fname) 
+		       :if-does-not-exist nil)
       (if s
           (do ((line (read-line s nil nil) (read-line s nil nil)))
               ((null line) fields)
