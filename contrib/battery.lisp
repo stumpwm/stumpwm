@@ -37,7 +37,7 @@
 (export '(*battery-name*))
 
 (dolist (a '((#\b fmt-bat-charge)))
-  (push a *screen-mode-line-formatters*))
+  (pushnew a *screen-mode-line-formatters* :test 'equal))
 
 (defvar *bat-state* nil)
 (defvar *bat-remain* 0)
@@ -65,7 +65,7 @@
       (let ((battery-state (read-battery-file *battery-name* "state"))
             (battery-info (read-battery-file *battery-name* "info")))
         (if (string= "no" (gethash "present" battery-state))
-            (setq *bat-state* nil)
+            (setf *bat-state* nil)
             (let ((charge-state (gethash "charging state" battery-state))
                   (remain (parse-integer (gethash "remaining capacity" battery-state)
                                          :junk-allowed t))
@@ -73,7 +73,7 @@
                                               :junk-allowed t) 0) 60))
                   (full (parse-integer (gethash "design capacity" battery-info)
                                        :junk-allowed t)))
-              (setq *bat-remain* (round (/ (* 100 remain) full))
+              (setf *bat-remain* (round (/ (* 100 remain) full))
                     *bat-state* charge-state
                     *bat-remain-time* nil)
 
@@ -81,7 +81,7 @@
                 (let* ((online (round (/ (if (string= "charging" *bat-state*)
                                              (- full remain) remain)
                                          rate))))
-                  (setq *bat-remain-time* (multiple-value-bind (h m)
+                  (setf *bat-remain-time* (multiple-value-bind (h m)
                                               (truncate online 60)
                                             (list h m)))))))))))
 
@@ -91,9 +91,9 @@
   (current-battery-charge)
   (if *bat-state*
       (format nil "BAT: ~D%~A"
-	      *bat-remain*
-	      (if *bat-remain-time*
-		  (format nil " (~2,'0d:~2,'0d) ~A"  (car *bat-remain-time*) (cadr *bat-remain-time*) *bat-state*) "")) "no battery"))
+              *bat-remain*
+              (if *bat-remain-time*
+                  (format nil " (~2,'0d:~2,'0d) ~A"  (car *bat-remain-time*) (cadr *bat-remain-time*) *bat-state*) "")) "no battery"))
 
 
 ;; Alternative display:
@@ -118,9 +118,9 @@
 ;;               (if (or (string= *bat-state* "charging")
 ;;                       (string= *bat-state* "charged"))
 ;;                   "AC" "DC")
-;; 	      *bat-remain*
-;; 	      (if (and (string/= *bat-state* "charged") *bat-remain-time*)
-;; 		  (format nil (if (and (= (car *bat-remain-time*) 0)
+;;            *bat-remain*
+;;            (if (and (string/= *bat-state* "charged") *bat-remain-time*)
+;;                (format nil (if (and (= (car *bat-remain-time*) 0)
 ;;                                        (< (cadr *bat-remain-time*) 30))
 ;;                                   " (^[^B^1*~2,'0d:~2,'0d^])" " (~2,'0d:~2,'0d)")
 ;;                           (car *bat-remain-time*)

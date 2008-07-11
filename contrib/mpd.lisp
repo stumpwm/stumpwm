@@ -102,7 +102,7 @@
 
 (defun init-mpd-connection ()
   "Connect to mpd server"
-    (setq *mpd-socket*
+    (setf *mpd-socket*
           #+clisp
         (handler-case (socket:socket-connect *mpd-port* *mpd-server*
                                              :element-type 'character)
@@ -134,7 +134,7 @@
 
 ;;mpd formatter
 (dolist (a '((#\m fmt-mpd-status)))
-  (push a *screen-mode-line-formatters*))
+  (pushnew a *screen-mode-line-formatters* :test 'equal))
 
 (defparameter *mpd-current-song* nil)
 (defparameter *mpd-status* nil)

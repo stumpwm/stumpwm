@@ -66,7 +66,7 @@
 
 (in-package :stumpwm)
 
-(push '(#\N notifications-as-string) *screen-mode-line-formatters*)
+(pushnew '(#\N notifications-as-string) *screen-mode-line-formatters* :test 'equal)
 
 (defparameter *notifications-delimiters* '("[" "]"))
 
