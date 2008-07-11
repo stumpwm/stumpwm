@@ -90,6 +90,7 @@ This document explains how to use The Stump Window Manager.
 * Interacting With Unix::       
 * Interacting With X11::        
 * Miscellaneous Commands::      
+* Colors::                      
 * Hooks::                       
 * Hacking::                     
 * Command and Function Index::  
@@ -145,6 +146,10 @@ Miscellaneous Commands
 * Debugging StumpWM::           
 * Timers::                      
 * Getting Help::                
+
+Colors
+
+* Behind The Scenes Look At Colors::  
 
 Hacking
 
@@ -770,6 +775,7 @@ Some examples follow.
 @section Rule Based Window Placement
 
 %%% define-frame-preference
+@@@ clear-window-placement-rules
 
 !!! remember
 !!! forget
@@ -1008,7 +1014,7 @@ currently focused frame belongs.
 @@@ set-x-selection
 @@@ get-x-selection
 
-@node Miscellaneous Commands, Hooks, Interacting With X11, Top
+@node Miscellaneous Commands, Colors, Interacting With X11, Top
 @chapter Miscellaneous Commands
 The following is a list of commands that don't really fit in any other
 section.
@@ -1111,7 +1117,92 @@ Return T if TIMER is a timer structure.
 !!! where-is
 !!! modifiers
 
-@node Hooks, Hacking, Miscellaneous Commands, Top
+@node Colors, Hooks, Miscellaneous Commands, Top
+@chapter Colors
+All text printed by stumpwm is run through a coloring engine before
+being displayed. All color commands start with a @samp{^} (caret)
+character and apply to all text after it.
+
+@table @asis
+@item ^0-9
+A caret followed by a single digit number changes the foreground color
+to the specified color. A @samp{*} can be used to specify the normal
+color. See the color listing below.
+
+@item^0-90-9
+A caret followed by two digits sets the foreground and background
+color. The first digit refers to the foreground color and the second
+digit to the background color. A @samp{*} can be used in place of
+either digit to specify the normal color. See the color listing below.
+
+@item ^b
+turn on bright colors
+
+@item ^B
+turn off bright colors
+
+@item ^n
+Use the normal background and foreground color.
+
+@item ^R
+reverse the foreground and background colors
+
+@item ^r
+turn off reverse colors
+
+@item ^[
+Push the current colors onto the color stack. The current colors remain unchanged.
+
+@item ^]
+Pop the colors off the color stack.
+
+@item ^^
+Print a regular caret. 
+@end table
+
+The default colors are made to resemble the 16 VGA colors and are:
+@table @asis
+@item 0 black
+@item 1 red
+@item 2 green
+@item 3 yellow
+@item 4 blue
+@item 5 magenta
+@item 6 cyan
+@item 7 white
+@end table
+
+There are only 8 colors by default but 10 available digits. The last
+two digits are left up to the user. @ref{Behind The Scenes Look At
+Colors} for information on customizing colors.
+
+@menu
+* Behind The Scenes Look At Colors::  
+@end menu
+
+@node Behind The Scenes Look At Colors,  , Colors, Colors
+@section Behind The Scenes Look At Colors
+
+Color indexes are stored in @var{*colors*} as a list. The default list
+of colors leave 2 slots for the user to choose. If you'd like to use
+@samp{Papaya Whip} and @samp{Dark Golden Rod 3} you might eval the
+following:
+
+@example
+(setf *colors* (append *colors*
+                       (list "PapayaWhip"
+                             "DarkGoldenRod3")))
+(update-color-map)
+@end example
+
+Of course, you can change all the colors if you like.
+
+@@@ parse-color-string
+@@@ uncolorify
+### *colors*
+@@@ update-color-map
+
+@node Hooks, Hacking, Colors, Top
 @chapter Hooks
 StumpWM exports a number of hooks you can use to add customizations;
 like hooks in Emacs, you add to a hook with the @code{add-hook}

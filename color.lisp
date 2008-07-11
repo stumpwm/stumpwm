@@ -48,8 +48,8 @@
     "magenta"
     "cyan"
     "white")
-  "Eight colors by default. You can redefine these to whatever you like (and
-then call (update-color-map)).")
+  "Eight colors by default. You can redefine these to whatever you like and
+then call (update-color-map).")
 
 (defvar *color-map* nil)
 (defvar *foreground* nil)
@@ -72,6 +72,7 @@ then call (update-color-map)).")
 ;; Normal colors are dimmed and bright colors are intensified in order
 ;; to more closely resemble the VGA pallet.
 (defun update-color-map (screen)
+  "Read *colors* and cache their pixel colors for use when rendering colored text."
   (let ((scm (xlib:screen-default-colormap (screen-number screen))))
     (labels ((map-colors (amt)
                (loop for c in *colors*

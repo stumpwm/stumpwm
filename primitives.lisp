@@ -105,6 +105,7 @@
           *default-group-name*
           *window-border-style*
           add-hook
+          clear-window-placement-rules
           dformat
           define-frame-preference
           remove-hook
@@ -963,6 +964,7 @@ The window's title must match @var{title}.
          (push (list* ,target-group frame-number raise lock keys) *window-placement-rules*)))))
 
 (defun clear-window-placement-rules ()
+  "Clear all window placement rules."
   (setf *window-placement-rules* nil))
 
 (defvar *mouse-focus-policy* :ignore

@@ -1435,6 +1435,7 @@ be used to override the default window formatting."
   (make-rule-for-window (current-window) (first lock) (first title)))
 
 (defcommand forget () ()
+  "Forget the window placement rule that matches the current window."
   (let* ((window (current-window))
          (match (rule-matching-window window)))
     (if match
