@@ -225,3 +225,52 @@ they should be windows. So use this function to make a window out of them."
   #+sbcl (xlib::make-window :id (slot-value xobject 'xlib::id) :display *display*)
   #-(or sbcl clisp)
   (error 'not-implemented :proc (list 'make-xlib-window xobject)))
+
+
+;;; SBCL workaround for a clx caching bug. This is taken from portable-clx's display.lisp
+
+;; Define functions to find the CLX data types given a display and resource-id
+;; If the data type is being cached, look there first.
+#+sbcl (in-package #:xlib)
+#+sbcl
+(macrolet ((generate-lookup-functions (useless-name &body types)
+	    `(within-definition (,useless-name generate-lookup-functions)
+	       ,@(mapcar
+		   #'(lambda (type)
+		       `(defun ,(xintern 'lookup- type)
+			       (display id)
+			  (declare (type display display)
+				   (type resource-id id))
+			  (declare (clx-values ,type))
+			  ,(if (member type +clx-cached-types+)
+			       `(let ((,type (lookup-resource-id display id)))
+				  (cond ((or (null ,type)
+                                             (not (eq (type-of ,type) ',type))) ;; Not found or cache error, create and save it.
+					 (setq ,type (,(xintern 'make- type)
+						      :display display :id id))
+					 (save-id display id ,type))
+					;; Found.  Check the type
+					,(cond ((null +type-check?+)
+						`(t ,type))
+					       ((member type '(window pixmap))
+						`((type? ,type 'drawable) ,type))
+					       (t `((type? ,type ',type) ,type)))
+					,@(when +type-check?+
+					    `((t (x-error 'lookup-error
+							  :id id
+							  :display display
+							  :type ',type
+							  :object ,type))))))
+			       ;; Not being cached.  Create a new one each time.
+			       `(,(xintern 'make- type)
+				 :display display :id id))))
+		   types))))
+  (generate-lookup-functions ignore
+    drawable
+    window
+    pixmap
+    gcontext
+    cursor
+    colormap
+    font))
+#+sbcl (in-package #:stumpwm)
