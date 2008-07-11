@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2007  Shawn Betts
 
-;; Author: Shawn Betts <sabetts@shitbender.gagrod>
+;; Maintainer: Shawn Betts
 ;; Keywords: comm, lisp, tools
 
 ;; This file is free software; you can redistribute it and/or modify
