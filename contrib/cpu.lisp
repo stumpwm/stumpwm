@@ -122,8 +122,13 @@ utilization."
                             :junk-allowed t)))
     (apply 'format nil "~F~A" (if (>= mhz 1000) (list (/ mhz 1000) "GHz") (list mhz "MHz")))))
 
-(defvar *acpi-thermal-zone* "THRM")
-
+(defvar *acpi-thermal-zone* (first (last
+				    (pathname-directory
+				     (first
+				      (directory (make-pathname 
+						  :directory '(:absolute 
+							       "proc" "acpi" "thermal_zone"
+							       :wild))))))))
 (defun fmt-cpu-temp (ml)
   "Returns a string representing the current CPU temperature."
   (declare (ignore ml))
