@@ -2,7 +2,7 @@
 ;;;
 ;;; Copyright 2008 Vitaly Mayatskikh
 ;;;
-;;; Maintainer: Julian Steckline
+;;; Maintainer: Julian Stecklina
 ;;;
 ;;; This module is free software; you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by

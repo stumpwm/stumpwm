@@ -2,7 +2,7 @@
 ;;;
 ;;; Copyright 2007 Anonymous Coward, Jonathan Moore Liles.
 ;;;
-;;; Maintainer: Julian Steckline
+;;; Maintainer: Julian Stecklina
 ;;;
 ;;; This module is free software; you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
