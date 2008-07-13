@@ -226,6 +226,14 @@ they should be windows. So use this function to make a window out of them."
   #-(or sbcl clisp)
   (error 'not-implemented :proc (list 'make-xlib-window xobject)))
 
+;; Right now clisp and sbcl both work the same way
+(defun lookup-error-recoverable-p ()
+  #+(or clisp sbcl) (find :one (compute-restarts))
+  #-(or clisp sbcl) nil)
+
+(defun recover-from-lookup-error ()
+  #+(or clisp sbcl) (invoke-restart :one)
+  #-(or clisp sbcl) (error "unimplemented"))
 
 ;;; SBCL workaround for a clx caching bug. This is taken from portable-clx's display.lisp
 
@@ -244,23 +252,26 @@ they should be windows. So use this function to make a window out of them."
 			  (declare (clx-values ,type))
 			  ,(if (member type +clx-cached-types+)
 			       `(let ((,type (lookup-resource-id display id)))
-				  (cond ((or (null ,type)
-                                             (not (eq (type-of ,type) ',type))) ;; Not found or cache error, create and save it.
+				  (cond ((null ,type) ;; Not found, create and save it.
 					 (setq ,type (,(xintern 'make- type)
 						      :display display :id id))
 					 (save-id display id ,type))
 					;; Found.  Check the type
-					,(cond ((null +type-check?+)
-						`(t ,type))
-					       ((member type '(window pixmap))
-						`((type? ,type 'drawable) ,type))
-					       (t `((type? ,type ',type) ,type)))
-					,@(when +type-check?+
-					    `((t (x-error 'lookup-error
-							  :id id
-							  :display display
-							  :type ',type
-							  :object ,type))))))
+                                        ((type? ,type ',type) ,type)
+                                        (t 
+                                         (restart-case
+                                             (x-error 'lookup-error
+                                                      :id id
+                                                      :display display
+                                                      :type ',type
+                                                      :object ,type)
+                                           (:one ()
+                                             :report "Invalidate this cache entry"
+                                             (save-id display id (,(xintern 'make- type) :display display :id id)))
+                                           (:all ()
+                                             :report "Invalidate all display cache"
+                                             (clrhash (display-resource-id-map display))
+                                             (save-id display id (,(xintern 'make- type) :display display :id id)))))))
 			       ;; Not being cached.  Create a new one each time.
 			       `(,(xintern 'make- type)
 				 :display display :id id))))

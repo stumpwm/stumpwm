@@ -123,28 +123,24 @@
       (t (handle-unmanaged-window window x y width height border-width value-mask)))))
 
 (define-stump-event-handler :configure-notify (stack-mode #|parent|# window #|above-sibling|# x y width height border-width value-mask)
-  ;; XXX: For a very strange reason sometimes window is a xlib:pixmap
-  ;; instead of a window! This has been observed in both portable-clx
-  ;; and clisp. No idea why. For now, the workaround is to ignore the request.
-  (when (xlib:window-p window)
-    (dformat 4 "CONFIGURE NOTIFY ~@{~S ~}~%" stack-mode window x y width height border-width value-mask)
-    (let ((screen (find-screen window)))
-      (when screen
-        (let ((old-heads (copy-list (screen-heads screen))))
-          (setf (screen-heads screen) nil)
-          (let ((new-heads (make-screen-heads screen (screen-root screen))))
-            (setf (screen-heads screen) old-heads)
-            (cond
-              ((equalp old-heads new-heads)
-               (dformat 3 "Bogus configure-notify on root window of ~S~%" screen) t)
-              (t
-               (dformat 1 "Updating Xinerama configuration for ~S.~%" screen)
-               (if new-heads
-                   (progn
-                     (scale-screen screen new-heads)
-                     (mapc 'sync-all-frame-windows (screen-groups screen))
-                     (update-mode-lines screen))
-                   (dformat 1 "Invalid configuration! ~S~%" new-heads))))))))))
+  (dformat 4 "CONFIGURE NOTIFY ~@{~S ~}~%" stack-mode window x y width height border-width value-mask)
+  (let ((screen (find-screen window)))
+    (when screen
+      (let ((old-heads (copy-list (screen-heads screen))))
+        (setf (screen-heads screen) nil)
+        (let ((new-heads (make-screen-heads screen (screen-root screen))))
+          (setf (screen-heads screen) old-heads)
+          (cond
+            ((equalp old-heads new-heads)
+             (dformat 3 "Bogus configure-notify on root window of ~S~%" screen) t)
+            (t
+             (dformat 1 "Updating Xinerama configuration for ~S.~%" screen)
+             (if new-heads
+                 (progn
+                   (scale-screen screen new-heads)
+                   (mapc 'sync-all-frame-windows (screen-groups screen))
+                   (update-mode-lines screen))
+                 (dformat 1 "Invalid configuration! ~S~%" new-heads)))))))))
 
 (define-stump-event-handler :map-request (parent send-event-p window)
   (unless send-event-p

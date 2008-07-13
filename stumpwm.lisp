@@ -52,14 +52,20 @@ loaded. When CATCH-ERRORS is nil, errors are left to be handled further up. "
 
 (defun error-handler (display error-key &rest key-vals &key asynchronous &allow-other-keys)
   "Handle X errors"
-  ;; ignore asynchronous window errors
-  (if (and asynchronous
-           (find error-key '(xlib:window-error xlib:drawable-error xlib:match-error)))
-      (dformat 4 "Ignoring error: ~s~%" error-key)
-      ;; all other asynchronous errors are printed.
-      (if asynchronous
-	  (message "Asynchronous Caught X Error: ~s ~s" error-key key-vals)
-          (apply 'error error-key :display display :error-key error-key key-vals))))
+  (cond 
+    ;; ignore asynchronous window errors
+    ((and asynchronous
+          (find error-key '(xlib:window-error xlib:drawable-error xlib:match-error)))
+     (dformat 4 "Ignoring error: ~s~%" error-key))
+    ;; recover lookup errors if possible
+    ((and (eq error-key 'xlib:lookup-error)
+          (lookup-error-recoverable-p))
+     (recover-from-lookup-error))
+     ;; all other asynchronous errors are printed.
+     (asynchronous
+      (message "Caught Asynchronous X Error: ~s ~s" error-key key-vals))
+     (t
+      (apply 'error error-key :display display :error-key error-key key-vals))))
 
 ;;; Timers
 
