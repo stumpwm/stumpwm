@@ -74,7 +74,7 @@
                                          :junk-allowed t))
                   (rate (/ (or (parse-integer (gethash "present rate" battery-state)
                                               :junk-allowed t) 0) 60))
-                  (full (parse-integer (gethash "design capacity" battery-info)
+                  (full (parse-integer (gethash "last full capacity" battery-info)
                                        :junk-allowed t)))
               (setf *bat-remain* (round (/ (* 100 remain) full))
                     *bat-state* charge-state
