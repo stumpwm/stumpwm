@@ -638,3 +638,12 @@ input (pressing Return), nil otherwise."
 
 ;; (defun cook-keycode (code state)
 ;;   (values (xlib:keycode->keysym *display* code 0) (x11mod->stumpmod state)))
+
+
+(shadow '(yes-or-no-p))
+(defun yes-or-no-p (message)
+  "ask a yes-or-no question on the current screen and return T if the
+user presses 'y'"
+  (message (concatenate 'string message " [y/N]"))
+  (char= (read-one-char (current-screen))
+        #\y))

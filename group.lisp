@@ -356,9 +356,20 @@ the default group formatting and window formatting, respectively."
 "Kill the current group. All windows in the current group are migrated
 to the next group."
   (let ((dead-group (current-group))
-        (to-group (next-group (current-group))))
-    (switch-to-group to-group)
-    (kill-group dead-group to-group)))
+	(to-group (next-group (current-group))))
+    (if (eq dead-group to-group)
+    (message "There's only one visible group")
+    (if (or (not %interactivep%)
+	    (not (group-windows dead-group))
+	    (yes-or-no-p
+	     (format nil "You are about to kill non-empty group \"^B^3*~a^n\"
+The windows will be moved to group \"^B^2*~a^n\"
+^B^6*Confirm ?^n" (group-name dead-group) (group-name to-group))))
+	(progn
+	  (switch-to-group to-group)
+	  (kill-group dead-group to-group)
+	  (message "Deleted"))
+	(message "Canceled")))))
 
 (defcommand gmerge (from) ((:group "From Group: "))
 "Merge @var{from} into the current group. @var{from} is not deleted."
