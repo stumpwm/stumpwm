@@ -20,3 +20,6 @@
 
 (defpackage :stumpwm
   (:use :cl))
+
+(defpackage :stumpwm-user
+  (:use :cl :stumpwm))

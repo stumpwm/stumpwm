@@ -907,7 +907,7 @@ window, and returns the preferred frame or a list of the above preferences.")
   "This is the message StumpWM displays when it starts. Set it to NIL to
 suppress.")
 
-(defvar *default-package* (find-package "CL-USER")
+(defvar *default-package* (find-package '#:stumpwm-user)
   "This is the package eval reads and executes in. You might want to set
 this to @code{:stumpwm} if you find yourself using a lot of internal
 stumpwm symbols. Setting this variable anywhere but in your rc file
