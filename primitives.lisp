@@ -524,6 +524,9 @@ single char keys are supported.")
 (defvar *executing-stumpwm-command* nil
   "True when executing external commands.")
 
+(defvar *interactivep* nil
+  "True when a defcommand is executed from colon or a keybinding")
+ 
 ;;; The restarts menu macro
 
 (defmacro with-restarts-menu (&body body)

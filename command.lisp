@@ -51,7 +51,10 @@
   "Create a command function and store its interactive hints in *command-hash*."
   (check-type name symbol)
   `(progn
-     (defun ,name ,args ,@body)
+     (defun ,name ,args
+       (let ((%interactivep% *interactivep*)
+	     (*interactivep* nil))
+	 ,@body))
      (setf (gethash ',name *command-hash*)
            (make-command :name ',name
                          :args ',interactive-args))))
@@ -448,4 +451,5 @@ supplied, the text will appear in the prompt."
     (unless cmd
       (throw 'error :abort))
     (when (plusp (length cmd))
-      (interactive-command cmd))))
+      (let ((*interactivep* t))
+	(interactive-command cmd)))))

@@ -638,7 +638,8 @@ the window in it's frame."
             ;; reprocessed after restarting to the top level. So fake
             ;; it, and put the restart here.
             (with-simple-restart (top-level "Return to stumpwm's top level")
-              (apply eventfn event-slots))
+              (let ((*interactivep* t))
+		 (apply eventfn event-slots)))
             (xlib:display-finish-output *display*))
         ((or xlib:window-error xlib:drawable-error) (c)
           ;; Asynchronous errors are handled in the error
