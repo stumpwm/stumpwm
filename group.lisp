@@ -173,7 +173,7 @@ at 0. Return a netwm compliant group id."
                                    :cardinal 32))))
 
 (defun kill-group (group to-group)
-  (when (> (length (screen-groups (group-screen group))) 1)
+  (unless (eq group to-group)
     (let ((screen (group-screen group)))
       (merge-groups group to-group)
       (setf (screen-groups screen) (remove group (screen-groups screen)))
