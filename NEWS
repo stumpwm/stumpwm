@@ -3,6 +3,9 @@
 This file documents user visible changes between versions of StumpWM
 
 * Changes since 0.9.3
+** The default package is now stumpwm-user
+stumpwm-user imports all exported stumpwm symbols.
+
 ** the pixmap error plaguing some users has been fixed
 If you are running sbcl, you need do nothing. If you're using clisp,
 ensure the version is 2.46 or later.
