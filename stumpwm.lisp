@@ -57,10 +57,6 @@ loaded. When CATCH-ERRORS is nil, errors are left to be handled further up. "
     ((and asynchronous
           (find error-key '(xlib:window-error xlib:drawable-error xlib:match-error)))
      (dformat 4 "Ignoring error: ~s~%" error-key))
-    ;; recover lookup errors if possible
-    ((and (eq error-key 'xlib:lookup-error)
-          (lookup-error-recoverable-p))
-     (recover-from-lookup-error))
      ;; all other asynchronous errors are printed.
      (asynchronous
       (message "Caught Asynchronous X Error: ~s ~s" error-key key-vals))
@@ -133,11 +129,11 @@ of those expired."
   (loop
      (run-hook *internal-loop-hook*)
      (handler-bind
-         ;;          ((or xlib:window-error xlib:drawable-error) (lambda (c)
-         ;;            ;; Just in case some synchronous window error gets here
-         ;;            ;; (this should be impossible) catch it and ignore it.
-         ;;            (dformat 4 "top level ignore synchronous ~a~%" c))
-         ((error (lambda (c)
+         ((xlib:lookup-error (lambda (c)
+                               (if (lookup-error-recoverable-p)
+                                   (recover-from-lookup-error)
+                                   (error c))))
+          (error (lambda (c)
                    (run-hook *top-level-error-hook*)
                    (ecase *top-level-error-action*
                      (:message
