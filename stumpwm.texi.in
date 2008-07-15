@@ -155,6 +155,7 @@ Hacking
 
 * General Advice::              
 * Using git with StumpWM::      
+* Sending Patches::             
 
 @end detailmenu
 @end menu
@@ -1244,6 +1245,7 @@ this part should probably be fairly intuitive.
 @menu
 * General Advice::              
 * Using git with StumpWM::      
+* Sending Patches::             
 @end menu
 
 @node General Advice, Using git with StumpWM, Hacking, Hacking
@@ -1337,7 +1339,7 @@ statement like this:
 find a way to use the same code for clisp and SBCL.
 @end enumerate
 
-@node Using git with StumpWM,  , General Advice, Hacking
+@node Using git with StumpWM, Sending Patches, General Advice, Hacking
 @section Hacking:  Using git with StumpWM
 
 For quite a while now, StumpWM has been using the git version control
@@ -1511,6 +1513,38 @@ $ git commit -a
 your experimental branch. Alternately, you can wait until your changes
 (assuming you sent them in) make it into the official repository
 before deleting your experimental branch.
+
+@node Sending Patches,  , Using git with StumpWM, Hacking
+@section Sending Patches
+When sending patches to the mailing list for inclusion in StumpWM,
+there are a few guidelines that will make everything go smoother.
+
+@itemize
+@item
+Make sure it applies clean to the main git repository
+
+@item
+Ensure that you aren't introducing tabs, extra blank lines, or whitespace at the end of lines.
+
+@item
+Ensure your patch doesn't contain irrelevant indenting or reformatting changes.
+
+@item
+Try to make your patch address a single issue. If your patch changes
+two unrelated issues, break them into two seperate patches that can
+stand on their own.
+
+@item
+Don't send intermediate patches. When you're working on a feature you
+might make several commits to your local repository as you refine it
+and work out the bugs. When it's polished and ready to ship, send it
+as one patch! Sometimes it makes sense to send it as multiple patches
+if each patch contains a discrete feature or bug fix that can stand on
+its own. If one of your patches changes code that was added or
+modified in an earlier patch, consider merging them together and
+sending them as one.
+
+@end itemize
 
 @node Command and Function Index, Variable Index, Hacking, Top
 @unnumbered Command and Function Index
