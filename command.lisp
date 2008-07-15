@@ -54,6 +54,7 @@
      (defun ,name ,args
        (let ((%interactivep% *interactivep*)
 	     (*interactivep* nil))
+	 (declare (ignorable %interactivep%))
 	 ,@body))
      (setf (gethash ',name *command-hash*)
            (make-command :name ',name
@@ -400,25 +401,26 @@ user aborted."
           (apply (command-name cmd-data) args)
         (setf *last-command* command)))))
 
-(defun interactive-command (cmd)
+(defun eval-command (cmd &optional interactivep)
   "exec cmd and echo the result."
   (labels ((parse-and-run-command (input)
              (let* ((arg-line (make-argument-line :string input
                                                   :start 0))
                     (cmd (argument-pop arg-line)))
-               (call-interactively cmd arg-line))))
+               (let ((*interactivep* interactivep))
+		 (call-interactively cmd arg-line)))))
     (multiple-value-bind (result error-p)
         ;; this fancy footwork lets us grab the backtrace from where the
         ;; error actually happened.
         (restart-case
             (handler-bind 
                 ((error (lambda (c)
-                          (invoke-restart 'interactive-command-error
+                          (invoke-restart 'eval-command-error
                                           (format nil "^B^1*Error In Command '^b~a^B': ^n~A~a" 
                                                   cmd c (if *show-command-backtrace* 
                                                             (backtrace-string) ""))))))
               (parse-and-run-command cmd))
-          (interactive-command-error (err-text)
+          (eval-command-error (err-text)
             (values err-text t)))
       ;; interactive commands update the modeline
       (update-all-mode-lines)
@@ -442,7 +444,7 @@ know lisp very well. One might put the following in one's rc file:
   \"split\")
 @end example"
   (loop for i in commands do
-        (interactive-command i)))
+        (eval-command i)))
 
 (defcommand colon (&optional initial-input) (:rest)
   "Read a command from the user. @var{initial-text} is optional. When
@@ -451,5 +453,4 @@ supplied, the text will appear in the prompt."
     (unless cmd
       (throw 'error :abort))
     (when (plusp (length cmd))
-      (let ((*interactivep* t))
-	(interactive-command cmd)))))
+      (eval-command cmd t))))

@@ -12,7 +12,7 @@
 (defcommand colon1 (&optional (initial "")) (:rest)
   (let ((cmd (read-one-line (current-screen) ": " initial)))
     (when cmd
-      (interactive-command cmd (current-screen)))))
+      (eval-command cmd t))))
 
 ;; Read some doc
 (define-key *root-map* (kbd "d") "exec gv")

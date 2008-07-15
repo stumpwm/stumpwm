@@ -281,7 +281,7 @@ The Caller is responsible for setting up the input focus."
                ((eq cmd t))
                (cmd
                 (unmap-message-window (current-screen))
-                (interactive-command cmd) t)
+                (eval-command cmd t) t)
                (t (message "~{~a ~}not bound." (mapcar 'print-key (nreverse key-seq))))))))))
 
 (defun bytes-to-window (bytes)
@@ -304,7 +304,7 @@ chunks."
                         (interactive-p (car data))
                         (cmd (map 'string 'code-char (nbutlast (cdr data)))))
                    (declare (ignore interactive-p))
-                   (interactive-command cmd)
+                   (eval-command cmd)
                    (xlib:change-property win :rp_command_result (map 'list 'char-code "0TODO") :string 8)
                    (xlib:display-finish-output *display*)))
                bytes-after)))
@@ -321,7 +321,7 @@ chunks."
           (*executing-stumpwm-command* t))
       (setf (screen-last-msg screen) '()
             (screen-last-msg-highlights screen) '())
-      (interactive-command cmd)
+      (eval-command cmd)
       (xlib:change-property win :stumpwm_command_result
                             (string-to-bytes (format nil "~{~{~a~%~}~}" (nreverse (screen-last-msg screen))))
                             :string 8)
@@ -638,8 +638,7 @@ the window in it's frame."
             ;; reprocessed after restarting to the top level. So fake
             ;; it, and put the restart here.
             (with-simple-restart (top-level "Return to stumpwm's top level")
-              (let ((*interactivep* t))
-		 (apply eventfn event-slots)))
+              (apply eventfn event-slots))
             (xlib:display-finish-output *display*))
         ((or xlib:window-error xlib:drawable-error) (c)
           ;; Asynchronous errors are handled in the error
