@@ -104,6 +104,7 @@
           *resize-map*
           *default-group-name*
           *window-border-style*
+          *data-dir*
           add-hook
           clear-window-placement-rules
           dformat
@@ -112,7 +113,8 @@
           run-hook
           run-hook-with-args
           split-string
-	  with-restarts-menu))
+	  with-restarts-menu
+          with-data-file))
 
 
 ;;; Message Timer
@@ -1035,3 +1037,17 @@ Like :tight but no border is ever visible.
 
 After changing this variable you may need to call
 sync-all-frame-windows to see the change.")
+
+(defvar *data-dir* (make-pathname :directory (append (pathname-directory (user-homedir-pathname))
+                                                     (list ".stumpwm.d")))
+  "The directory used by stumpwm to store data between sessions.")
+
+(defmacro with-data-file ((s file &rest keys &key (if-exists :supersede) &allow-other-keys) &body body)
+  "Open a file in StumpWM's data directory. keyword arguments are sent
+directly to OPEN. Note that IF-EXISTS defaults to :supersede, instead
+of :error."
+  `(progn
+     (ensure-directories-exist *data-dir*)
+     (with-open-file (,s ,(merge-pathnames *data-dir* file)
+                         ,@keys)
+       ,@body)))
