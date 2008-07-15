@@ -48,7 +48,10 @@
   "")
 
 (defmacro defcommand (name (&rest args) (&rest interactive-args) &body body)
-  "Create a command function and store its interactive hints in *command-hash*."
+  "Create a command function and store its interactive hints in
+*command-hash*. The local variable %interactivep% can be used to check
+if the command was called interactively. If it is non-NIL then it was
+called from a keybinding or from the colon command."
   (check-type name symbol)
   `(progn
      (defun ,name ,args
