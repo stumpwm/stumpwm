@@ -162,7 +162,7 @@ function expects to be wrapped in a with-state for win."
         (xlib:with-state (w)
           (setf (xlib:drawable-x w) (+ (frame-x frame)
                                        (truncate (- (frame-width frame) (xlib:text-width font string)) 2))
-                (xlib:drawable-y w) (+ (frame-y frame)
+                (xlib:drawable-y w) (+ (frame-display-y group frame)
                                        (truncate (- (frame-height frame) (font-height font)) 2))
                 (xlib:window-priority w) :above))
         (xlib:map-window w)
