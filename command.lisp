@@ -47,6 +47,15 @@
 (defvar *max-command-alias-depth* 10
   "")
 
+;; XXX: I'd like to just use straight warn, but sbcl drops to the
+;; debugger when compiling so i've made a style warning instead
+;; -sabetts
+(define-condition command-docstring-warning (style-warning)
+  ((command :initarg :command))
+  (:report
+   (lambda (c s)
+     (format s "command ~a doesn't have a docstring" (slot-value c 'command)))))
+
 (defmacro defcommand (name (&rest args) (&rest interactive-args) &body body)
   "Create a command function and store its interactive hints in
 *command-hash*. The local variable %interactivep% can be used to check
@@ -55,7 +64,7 @@ called from a keybinding or from the colon command."
   (check-type name symbol)
   (let ((docstring (if (stringp (first body))
                      (first body)
-                     (warn "The command ~a lacks a docstring." name)))
+                     (warn (make-condition 'command-docstring-warning :command name))))
         (body (if (stringp (first body))
                   (cdr body) body)))
   `(progn
