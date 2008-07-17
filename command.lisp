@@ -53,15 +53,21 @@
 if the command was called interactively. If it is non-NIL then it was
 called from a keybinding or from the colon command."
   (check-type name symbol)
+  (let ((docstring (if (stringp (first body))
+                     (first body)
+                     (warn "The command ~a lacks a docstring." name)))
+        (body (if (stringp (first body))
+                  (cdr body) body)))
   `(progn
      (defun ,name ,args
+       ,docstring
        (let ((%interactivep% *interactivep*)
 	     (*interactivep* nil))
 	 (declare (ignorable %interactivep%))
 	 ,@body))
      (setf (gethash ',name *command-hash*)
            (make-command :name ',name
-                         :args ',interactive-args))))
+                         :args ',interactive-args)))))
 
 (defmacro define-stumpwm-command (name (&rest args) &body body)
   "Deprecated. use `defcommand' instead."
