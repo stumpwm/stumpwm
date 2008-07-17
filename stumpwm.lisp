@@ -57,6 +57,9 @@ loaded. When CATCH-ERRORS is nil, errors are left to be handled further up. "
     ((and asynchronous
           (find error-key '(xlib:window-error xlib:drawable-error xlib:match-error)))
      (dformat 4 "Ignoring error: ~s~%" error-key))
+    ((eq error-key 'xlib:access-error)
+     (write-line "Another window manager is running.")
+     (throw :top-level :quit))
      ;; all other asynchronous errors are printed.
      (asynchronous
       (message "Caught Asynchronous X Error: ~s ~s" error-key key-vals))
@@ -191,14 +194,10 @@ of those expired."
                ;; we need to do this first because init-screen grabs keys
                (update-modifier-map)
                ;; Initialize all the screens
-               (handler-case
-                   (progn (setf *screen-list* (loop for i in (xlib:display-roots *display*)
-                                                 for n from 0
-                                                 collect (init-screen i n host)))
-                          (xlib:display-finish-output *display*))
-                 (xlib:access-error ()
-                   (write-line "Another window manager is running.")
-                   (throw :top-level :quit)))
+               (setf *screen-list* (loop for i in (xlib:display-roots *display*)
+                                      for n from 0
+                                      collect (init-screen i n host)))
+               (xlib:display-finish-output *display*)
                ;; Load rc file
                (let ((*package* (find-package *default-package*)))
                  (multiple-value-bind (success err rc) (load-rc-file)
