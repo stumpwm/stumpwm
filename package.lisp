@@ -19,7 +19,8 @@
 ;; Boston, MA 02111-1307 USA
 
 (defpackage :stumpwm
-  (:use :cl))
+  (:use :cl)
+  (:shadow #:yes-or-no-p #:y-or-n-p))
 
 (defpackage :stumpwm-user
   (:use :cl :stumpwm))
