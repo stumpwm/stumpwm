@@ -27,6 +27,7 @@
 	  *mode-line-pad-y*
 	  *mode-line-position*
 	  *mode-line-timeout*
+          *hidden-window-color*
 	  *screen-mode-line-format*
 	  *screen-mode-line-formatters*
           add-screen-mode-line-formatter
@@ -70,6 +71,11 @@
 (defvar *mode-line-border-color* "Gray30"
   "The mode line border color.")
 
+(defvar *hidden-window-color* "^5*"
+  "Color command for hidden windows when using the
+fmt-head-window-list2 formatter. To disable coloring hidden windows,
+set this to an empty string.")
+
 (defvar *screen-mode-line-format* "[^B%n^b] %W"
   "This variable describes what will be displayed on the modeline for each screen.
 Turn it on with the function TOGGLE-MODE-LINE or the mode-line command.
@@ -105,6 +111,7 @@ List the groups using @var{*group-format*}
                                         (#\n fmt-group)
                                         (#\W fmt-head-window-list)
                                         (#\u fmt-urgent-window-list)
+                                        (#\v fmt-head-window-list-hidden-windows)
                                         (#\d fmt-modeline-time))
   "An alist containing format character format function pairs for
 formatting screen mode-lines. functions are passed the screen's
@@ -183,6 +190,28 @@ timer.")
                           str)))
                   (sort1 (head-windows (mode-line-current-group ml) (mode-line-head ml))
                          #'< :key #'window-number))))
+
+(defun fmt-hidden (s)
+  (format nil (concat "^[" *hidden-window-color* "~A^]") s))
+
+(defun fmt-head-window-list-hidden-windows (ml)
+  "Using *window-format*, return a 1 line list of the windows, space
+separated. The currently focused window is highlighted with
+fmt-highlight. Any non-visible windows are colored the
+*hidden-window-color*."
+  (let* ((group (mode-line-current-group ml))
+         (head (mode-line-head ml))
+         (all-wins (head-windows group head))
+         (top-wins (mapcar 'frame-window (head-frames group head)))
+         (non-top-wins (set-difference all-wins top-wins)))
+    (format nil "~{~a~^ ~}"
+            (mapcar (lambda (w)
+                      (let ((str (format-expand *window-formatters*
+                                                *window-format* w)))
+                        (cond ((eq w (current-window)) (fmt-highlight str))
+                              ((find w non-top-wins) (fmt-hidden str))
+                              (t str))))
+                    (sort1 all-wins #'< :key #'window-number)))))
 
 (defun fmt-modeline-time (ml)
   (declare (ignore ml))
