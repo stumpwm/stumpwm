@@ -13,7 +13,7 @@
 @ifinfo
 This is the Stump Window Manager user manual.
 
-Copyright @copyright{} 2000, 2001 Shawn Betts
+Copyright @copyright{} 2000-2008 Shawn Betts
 
 Permission is granted to make and distribute verbatim
 copies of this manual provided the copyright notice and
@@ -50,7 +50,7 @@ translation approved by the Free Software Foundation.
 
 @page
 @vskip 0pt plus 1filll
-Copyright @copyright{} 2000, 2001 Shawn Betts
+Copyright @copyright{} 2000-2008 Shawn Betts
 
 Permission is granted to make and distribute verbatim
 copies of this manual provided the copyright notice and
