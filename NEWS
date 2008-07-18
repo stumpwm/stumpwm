@@ -22,7 +22,7 @@ pressing the number now selects the window by number in its frame.
 
 ** new commands modifiers and copy-last-message
 
-** new command grouplist and binding C-c g "
+** new command grouplist and binding C-t g "
 
 ** New keybinding C-t h c
 bound to describe-command
