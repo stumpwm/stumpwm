@@ -159,6 +159,9 @@ function expects to be wrapped in a with-state for win."
                         *frame-indicator-text*
                         (prin1-to-string *frame-indicator-text*)))
             (font (screen-font (current-screen))))
+        ;; If it's already mapped it'll appear briefly in the wrong
+        ;; place, so unmap it first.
+        (xlib:unmap-window w)
         (xlib:with-state (w)
           (setf (xlib:drawable-x w) (+ (frame-x frame)
                                        (truncate (- (frame-width frame) (xlib:text-width font string)) 2))
