@@ -27,7 +27,7 @@
 ;;
 ;;   (load "/path/to/stumpwm/contrib/notifications.lisp")
 ;;
-;; Then add the formatter %n to your mode-line spec, i.e. like this:
+;; Then add the formatter %N to your mode-line spec, i.e. like this:
 ;;
 ;;   (setf *screen-mode-line-format* "[%W] {%g} (%N)")
 ;;
