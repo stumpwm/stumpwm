@@ -361,10 +361,10 @@ to the next group."
     (message "There's only one visible group")
     (if (or (not %interactivep%)
 	    (not (group-windows dead-group))
-	    (yes-or-no-p
+	    (y-or-n-p
 	     (format nil "You are about to kill non-empty group \"^B^3*~a^n\"
 The windows will be moved to group \"^B^2*~a^n\"
-^B^6*Confirm ?^n" (group-name dead-group) (group-name to-group))))
+^B^6*Confirm?^n " (group-name dead-group) (group-name to-group))))
 	(progn
 	  (switch-to-group to-group)
 	  (kill-group dead-group to-group)
