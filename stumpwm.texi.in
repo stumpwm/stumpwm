@@ -1130,7 +1130,7 @@ A caret followed by a single digit number changes the foreground color
 to the specified color. A @samp{*} can be used to specify the normal
 color. See the color listing below.
 
-@item^0-90-9
+@item ^0-90-9
 A caret followed by two digits sets the foreground and background
 color. The first digit refers to the foreground color and the second
 digit to the background color. A @samp{*} can be used in place of
