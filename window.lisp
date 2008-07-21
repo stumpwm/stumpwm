@@ -1455,3 +1455,9 @@ be used to override the default window formatting."
   (setf *window-placement-rules* (read-dump-from-file file)))
 
 (defcommand-alias restore-rules restore-window-placement-rules)
+
+(defcommand info (&optional (fmt *window-info-format*)) ()
+  "Display information about the current window."
+  (if (current-window)
+      (message "~a" (format-expand *window-formatters* fmt (current-window)))
+      (message "No Current Window")))

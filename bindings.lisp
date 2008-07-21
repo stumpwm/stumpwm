@@ -144,6 +144,7 @@
           (define-key m (kbd "+") "balance-frames")
           (define-key m (kbd "A") "title")
           (define-key m (kbd "h") '*help-map*)
+          (define-key m (kbd "i") "info")
           m)))
 
 (when (null *groups-map*)

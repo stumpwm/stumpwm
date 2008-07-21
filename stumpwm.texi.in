@@ -362,6 +362,9 @@ List all the windows
 @item C-t 0-9
 Select a window by number
 
+@item C-t i
+Display information about the current window.
+
 @item C-t f
 Select a frame by number
 
@@ -695,6 +698,7 @@ An input function takes 2 arguments: the input structure and the key pressed.
 !!! title
 !!! windowlist
 !!! fullscreen
+!!! info
 
 ### *window-format*
 ### *window-name-source*

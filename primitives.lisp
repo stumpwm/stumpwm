@@ -734,7 +734,10 @@ output directly to a file.")
                               (#\c window-class)
                               (#\i window-res)
                               (#\r window-role)
-                              (#\m fmt-window-marked))
+                              (#\m fmt-window-marked)
+                              (#\h window-height)
+                              (#\w window-width)
+                              (#\g gravity-for-window))
   "an alist containing format character format function pairs for formatting window lists.")
 
 (defvar *window-format* "%m%n%s%50t"
@@ -760,6 +763,9 @@ Draw a # if the window is marked.
 Note, a prefix number can be used to crop the argument to a specified
 size. For instance, @samp{%20t} crops the window's title to 20
 characters.")
+
+(defvar *window-info-format* "%hx%w %n (%t)"
+  "The format used in the info command. @xref{*window-format*} for formatting details.")
 
 (defvar *group-formatters* '((#\n group-number)
                              (#\s fmt-group-status)

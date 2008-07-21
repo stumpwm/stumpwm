@@ -2,6 +2,9 @@
 
 This file documents user visible changes between versions of StumpWM
 
+* Changes since 0.9.4.1
+** added info command
+
 * Changes since 0.9.3
 ** new %interactivep% variable
 see defcommand in the manual.
