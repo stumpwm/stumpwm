@@ -107,7 +107,10 @@ alias name for the command that is only accessible interactively."
 
 (defun get-command-symbol (command)
   (if (stringp command)
-      (find-symbol (string-upcase command) :stumpwm)
+      (maphash (lambda (k v)
+                 (when (string-equal k command)
+                   (return-from get-command-symbol k)))
+               *command-hash*)
       command))
 
 (defun get-command-structure (command)
