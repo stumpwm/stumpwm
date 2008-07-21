@@ -168,7 +168,10 @@ Now when you type C-t C-z, you'll see the text ``Zzzzz...'' pop up."
 
 (defun undefine-key (map key)
   "Clear the key binding in the specified keybinding."
-  (remhash key map))
+  (remhash key map)
+  ;; We need to tell the X server when changing the top-map bindings.
+  (when (eq map *top-map*)
+    (sync-keys)))
 
 (defun lookup-key-sequence (kmap key-seq)
   "Return the command bound to the key sequenc, KEY-SEQ, in keymap KMAP."
