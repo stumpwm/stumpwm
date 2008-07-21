@@ -7,7 +7,7 @@
 
 @dircategory X11
 @direntry
-* StumpWM: (StumpWM).       A Common Lisp window manager
+* StumpWM: (stumpwm).       A Common Lisp window manager
 @end direntry
 
 @ifinfo

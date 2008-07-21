@@ -8,6 +8,11 @@ clisp_INFOOPTS=-K full -on-error exit -x "(load \"asdf.lisp\") (load \"stumpwm.a
 sbcl_INFOOPTS=--eval "(progn (require 'asdf) (require 'stumpwm) (load \"manual.lisp\"))" --eval "(progn (stumpwm::generate-manual) (sb-ext:quit))"
 openmcl_INFOOPTS=--eval "(require 'asdf) (require 'stumpwm) (load (compile-file \"manual.lisp\")) (stumpwm::generate-manual) (quit)"
 
+datarootdir = @datarootdir@
+prefix=@prefix@
+exec_prefix= @exec_prefix@
+bindir=@bindir@
+infodir=@infodir@
 
 # You shouldn't have to edit past this
 
@@ -49,3 +54,15 @@ upload-release:
 
 clean:
 	rm -f *.fasl *.fas *.lib *.*fsl stumpwm stumpwm.texi stumpwm.info
+
+install: stumpwm.info stumpwm
+	test -z "$(bindir)" || mkdir -p "$(bindir)"
+	cp stumpwm $(bindir)
+	test -z "$(infodir)" || mkdir -p "$(infodir)"
+	cp stumpwm.info "$(infodir)"
+	install-info --info-dir="$(infodir)" "$(infodir)/stumpwm.info"
+
+uninstall:
+	rm "$(bindir)/stumpwm"
+	rm "$(infodir)/stumpwm.info"
+	install-info --info-dir="$(infodir)" --remove "$(infodir)/stumpwm.info"
