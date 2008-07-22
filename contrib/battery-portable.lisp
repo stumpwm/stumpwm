@@ -38,7 +38,7 @@
   (:export #:*refresh-time*
 	   #:*prefer-sysfs*
 	   ))
-(in-package :stumpwm.contrib.battery-linux)
+(in-package :stumpwm.contrib.battery-portable)
 
 ;;; Configuration
 
@@ -174,8 +174,7 @@
 		     (format fmt "~/stumpwm.contrib.battery-portable::fmt-time/~A ^[~A~D%^]"
 			     time
 			     (if (eq state :charging) #\+ #\-)
-			     (bar-zone-color perc 20 50 90
-					     (eq state :discharging))
+			     (bar-zone-color perc 20 50 90 t)
 			     (round perc))))))))))
 
 ;;; The actual mode-line format function. A bit ugly...
