@@ -28,8 +28,10 @@
 	  *mode-line-position*
 	  *mode-line-timeout*
 	  *screen-mode-line-format*
+	  *screen-mode-line-formatters*
 	  enable-mode-line
-	  toggle-mode-line))
+	  toggle-mode-line
+	  bar-zone-color))
 
 (defstruct mode-line
   screen
@@ -178,16 +180,16 @@ timer.")
 (defvar *bar-hi-color* "^B^3*")
 (defvar *bar-crit-color* "^B^1*")
 
-(defun bar-zone-color (percent)
-  (concatenate 'string
-               (cond
-                 ((>= percent 90)
-                  *bar-crit-color*)
-                 ((>= percent 50)
-                  *bar-hi-color*)
-                 ((>= percent 20)
-                  *bar-med-color*)
-                 (t ""))))
+(defun bar-zone-color (amount &optional (med 20) (hi 50) (crit 90) reverse)
+  "Return a color command based on the magnitude of the argument. If
+the limits for the levels aren't specified, they default to sensible
+values for a percentage. With reverse, lower numbers are more
+critical."
+  (labels ((past (n) (funcall (if reverse #'<= #'>=) amount n)))
+    (cond ((past crit) *bar-crit-color*)
+          ((past hi) *bar-hi-color*)
+          ((past med) *bar-med-color*)
+          (t ""))))
 
 (defun repeat (n char)
  (make-string n :initial-element char))
