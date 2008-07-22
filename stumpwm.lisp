@@ -24,6 +24,7 @@
 (in-package :stumpwm)
 
 (export '(cancel-timer
+	  load-contrib
 	  run-with-timer
 	  stumpwm
 	  timer-p))
@@ -251,3 +252,17 @@ of those expired."
              (t 
               ;; the number is the unix return code
               (return-from stumpwm 0))))))
+
+;;; Contribs
+
+(defun load-contrib (name)
+  "Loads the contributed package with the given NAME."
+  ;; This should use ASDF in the future. And maybe there should be an
+  ;; extra stumpwm-contrib repository.
+  (load 
+   (asdf:system-relative-pathname (asdf:find-system :stumpwm) 
+				  (make-pathname :directory '(:relative "contrib")
+						 :name name
+						 :type "lisp"))))
+
+;;; EOF
