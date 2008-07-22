@@ -285,3 +285,56 @@ they should be windows. So use this function to make a window out of them."
     colormap
     font))
 #+sbcl (in-package #:stumpwm)
+
+;;; On GNU/Linux some contribs use sysfs to figure out useful info for
+;;; the user. SBCL upto at least 1.0.16 (but probably much later) has
+;;; a problem handling files in sysfs caused by SBCL's slightly
+;;; unusual handling of files in general and Linux' sysfs violating
+;;; POSIX. When this situation is resolved, this function may be removed.
+#+ linux
+(export '(read-line-from-sysfs))
+
+#+ linux
+(defun read-line-from-sysfs (stream &optional (blocksize 80))
+  "READ-LINE, but with a workaround for a known SBCL/Linux bug
+regarding files in sysfs. Data is read in chunks of BLOCKSIZE bytes."
+  #- sbcl
+  (progn (declare (ignore blocksize))
+	 (read-line stream))
+  #+ sbcl
+  (let ((buf (make-array blocksize
+			 :element-type '(unsigned-byte 8)
+			 :initial-element 0))
+	(fd (sb-sys:fd-stream-fd stream))
+	(string-filled 0)
+	(string (make-string blocksize))
+	bytes-read
+	pos
+	(stringlen blocksize))
+
+    (loop
+       ; Read in the raw bytes
+       (setf bytes-read
+	     (sb-unix:unix-read fd (sb-sys:vector-sap buf) blocksize))
+
+       ; This is # bytes both read and in the correct line.
+       (setf pos (or (position (char-code #\Newline) buf) bytes-read))
+
+       ; Resize the string if necessary.
+       (when (> (+ pos string-filled) stringlen)
+	 (setf stringlen (max (+ pos string-filled)
+			      (* 2 stringlen)))
+	 (let ((new (make-string stringlen)))
+	   (replace new string)
+	   (setq string new)))
+
+       ; Translate read bytes to string
+       (setf (subseq string string-filled)
+	     (sb-ext:octets-to-string (subseq buf 0 pos)))
+
+       (incf string-filled pos)
+
+       (if (< pos blocksize)
+	   (return (subseq string 0 string-filled))))))
+
+;;; EOF
