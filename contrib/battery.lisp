@@ -93,7 +93,8 @@
   (declare (ignore ml))
   (current-battery-charge)
   (if *bat-state*
-      (format nil "BAT: ~D%~A"
+      (format nil "BAT: ^[~A~D%^]~A"
+              (bar-zone-color *bat-remain* 50 30 10 t)
               *bat-remain*
               (if *bat-remain-time*
                   (format nil " (~2,'0d:~2,'0d) ~A"  (car *bat-remain-time*) (cadr *bat-remain-time*) *bat-state*) "")) "no battery"))
