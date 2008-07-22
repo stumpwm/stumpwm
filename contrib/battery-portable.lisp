@@ -28,7 +28,7 @@
 ;;;
 ;;; To load this module, place
 ;;;
-;;;     (load-contrib "battery-portable")
+;;;     (load-module "battery-portable")
 ;;;
 ;;; in your .stumpwmrc. Battery information is then available via %B
 ;;; in your mode-line config.
@@ -55,11 +55,6 @@
   "Prefer sysfs over procfs for information gathering. This has effect
   only on Linux.")
 
-;;; Globals
-
-(defparameter *battery-methods* nil
-  "Available methods to query battery information.")
-
 ;;; Method base class
 
 (defclass battery-method ()
@@ -69,14 +64,13 @@
 (defgeneric all-batteries (method)
   (:documentation "Returns all recognized batteries."))
 
-(defgeneric preference-value (method)
-  (:method ((m battery-method)) 0)
-  (:documentation "Returns an integer. Larger values indicate a method
-  with higher preference. Default is 0."))
-
 (defun preferred-battery-method ()
-  (make-instance
-   (first (sort *battery-methods* #'> :key #'preference-value))))
+  #- linux
+  nil
+  #+ linux
+  (if *prefer-sysfs*
+      (make-instance 'sysfs-method)
+      (make-instance 'procfs-method)))
 
 ;;; Battery class
 
@@ -99,8 +93,6 @@
     ()
     (:documentation "Collect battery information through Linux' procfs interface."))
   
-  (pushnew 'procfs-method *battery-methods*)
-
   (defclass procfs-battery (battery)
     ((path :initarg :path :initform (error ":path missing")
 	   :reader path-of)
@@ -176,11 +168,6 @@
     ()
     (:documentation "Collect battery information through Linux'
   class-based sysfs interface."))
-
-  (pushnew 'sysfs-method *battery-methods*)
-
-  (defmethod preference-value ((m sysfs-method))
-    (if *prefer-sysfs* 100 -100))
 
   (defclass sysfs-battery (battery)
     ((path :initarg :path :initform (error ":path missing")
