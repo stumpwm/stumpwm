@@ -92,6 +92,7 @@ This document explains how to use The Stump Window Manager.
 * Miscellaneous Commands::      
 * Colors::                      
 * Hooks::                       
+* Modules::                     
 * Hacking::                     
 * Command and Function Index::  
 * Variable Index::              
@@ -1207,7 +1208,7 @@ Of course, you can change all the colors if you like.
 ### *colors*
 @@@ update-color-map
 
-@node Hooks, Hacking, Colors, Top
+@node Hooks, Modules, Colors, Top
 @chapter Hooks
 StumpWM exports a number of hooks you can use to add customizations;
 like hooks in Emacs, you add to a hook with the @code{add-hook}
@@ -1240,7 +1241,14 @@ $$$ *key-press-hook*
 $$$ *root-click-hook*
 $$$ *mode-line-click-hook*
 
-@node Hacking, Command and Function Index, Hooks, Top
+@node Modules, Hacking, Hooks, Top
+@chapter Modules
+StumpWM has a growing number of modules not loaded by default. All
+modules exist in the @file{contrib/} directory of StumpWM's archive.
+
+!!! load-module
+
+@node Hacking, Command and Function Index, Modules, Top
 @chapter Hacking
 
 For those of you who have worked on Free Software projects before,
