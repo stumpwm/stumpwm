@@ -52,9 +52,15 @@
 (defun window-clear-urgency (window)
   "Clear the urgency bit and/or _NET_WM_STATE_DEMANDS_ATTENTION on
 WINDOW"
-  (and (xlib:wm-hints (window-xwin window))
-       (let ((flags (xlib:wm-hints-flags (xlib:wm-hints (window-xwin window)))))
-         (setf flags (logand (lognot 256) flags))))
+  (let* ((hints (xlib:wm-hints (window-xwin window)))
+         (flags (when hints (xlib:wm-hints-flags hints))))
+    (when flags
+      (setf (xlib:wm-hints-flags hints)
+            ;; XXX: as of clisp 2.46 flags is a list, not a number.
+            (if (listp flags)
+                (remove :urgency flags)
+                (logand (lognot 256) flags)))
+      (setf (xlib:wm-hints (window-xwin window)) hints)))
   (remove-wm-state (window-xwin window) :_NET_WM_STATE_DEMANDS_ATTENTION)
   (unregister-urgent-window window))
 
@@ -63,7 +69,10 @@ WINDOW"
 _NET_WM_STATE_DEMANDS_ATTENTION set"
   (let* ((hints (xlib:wm-hints (window-xwin window)))
          (flags (when hints (xlib:wm-hints-flags hints))))
-    (or (and flags (logtest 256 flags))
+    ;; XXX: as of clisp 2.46 flags is a list, not a number.
+    (or (and flags (if (listp flags)
+                       (find :urgency flags)
+                       (logtest 256 flags)))
         (find-wm-state (window-xwin window) :_NET_WM_STATE_DEMANDS_ATTENTION))))
 
 (defun only-urgent (windows)
