@@ -70,6 +70,11 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
   "Return a list of all urgent windows on SCREEN"
   (remove-if-not 'window-urgent-p (copy-list windows)))
 
+(defcommand next-urgent () ()
+            "Jump to the next urgent window"
+            (and (screen-urgent-windows (current-screen))
+                 (focus-all (first (screen-urgent-windows (current-screen))))))
+
 ;; Since StumpWM already uses the term 'group' to refer to Virtual Desktops,
 ;; we'll call the grouped windows of an application a 'gang'
 
@@ -1238,7 +1243,7 @@ with broken (non-NETWM) fullscreen implemenations, such as any program
 using SDL."
   (update-fullscreen (current-window) 2))
 
-(defcommand pull-window-by-number (n &optional (group (current-group))) 
+(defcommand pull-window-by-number (n &optional (group (current-group)))
                                   ((:window-number "Pull: "))
   "Pull window N from another frame into the current frame and focus it."
   (let ((win (find n (group-windows group) :key 'window-number :test '=)))
@@ -1428,7 +1433,7 @@ be used to override the default window formatting."
                 :role (and (not (equal role "")) role))
           *window-placement-rules*)))
 
-(defcommand remember (lock title) 
+(defcommand remember (lock title)
                      ((:y-or-n "Lock to group? ")
                       (:y-or-n "Use title? "))
   "Make a generic placement rule for the current window. Might be too specific/not specific enough!"

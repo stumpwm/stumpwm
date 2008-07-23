@@ -61,6 +61,7 @@
           (define-key m (kbd "C-SPC") "pull-hidden-next")
           (define-key m (kbd "p") "pull-hidden-previous")
           (define-key m (kbd "C-p") "pull-hidden-previous")
+          (define-key m (kbd "C-u") "next-urgent")
           (define-key m (kbd "M-p") "prev")
           (define-key m (kbd "C-M-p") "prev-in-frame")
           (define-key m (kbd "w") "windows")
@@ -227,7 +228,7 @@ escape C-z
 @end example"
   (set-prefix-key (kbd key)))
 
-(defcommand bind (key command) 
+(defcommand bind (key command)
                  ((:text "Key Chord: ")
                   (:rest "Command: "))
   "Hang a key binding off the escape key."
