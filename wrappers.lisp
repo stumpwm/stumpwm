@@ -228,7 +228,7 @@ they should be windows. So use this function to make a window out of them."
 
 ;; Right now clisp and sbcl both work the same way
 (defun lookup-error-recoverable-p ()
-  #+(or clisp sbcl) (find :one (compute-restarts))
+  #+(or clisp sbcl) (find :one (compute-restarts) :key 'restart-name)
   #-(or clisp sbcl) nil)
 
 (defun recover-from-lookup-error ()
