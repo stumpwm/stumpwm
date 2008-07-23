@@ -1,4 +1,4 @@
-;; Copyright (C) 2008 John Li, Shawn Betts
+;; Copyright (C) 2008 Julian Stecklina, Shawn Betts
 ;;
 ;;  This file is part of stumpwm.
 ;;
