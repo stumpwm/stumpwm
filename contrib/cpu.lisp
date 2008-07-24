@@ -122,7 +122,9 @@ utilization."
   (declare (ignore ml))
   (let ((mhz (parse-integer (get-proc-file-field "/proc/cpuinfo" "cpu MHz")
                             :junk-allowed t)))
-    (apply 'format nil "~F~A" (if (>= mhz 1000) (list (/ mhz 1000) "GHz") (list mhz "MHz")))))
+    (if (>= mhz 1000)
+	(format nil "~,2FGHz" (/ mhz 1000))
+	(format nil "~DMHz" mhz))))
 
 (defvar *acpi-thermal-zone* (first (last
 				    (pathname-directory
