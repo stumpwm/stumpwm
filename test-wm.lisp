@@ -105,7 +105,9 @@
                ;; make the pixmap the window's icon pixmap hint. 
                (setf (xlib:wm-hints window) (xlib:make-wm-hints :icon-pixmap pixmap))
                (format t "Window ID: ~s pixmap ID: ~s~%" (xlib:window-id window) (xlib:pixmap-id pixmap))
+               (xlib:map-window window)
                (xlib:display-finish-output dpy2)
+               (sleep 1)
                ;; On the old connection, list the root window children
                ;; and the icon pixmap hint to cache their XIDs.
                (loop for w in (xlib:query-tree (xlib:screen-root (first (xlib:display-roots dpy))))
