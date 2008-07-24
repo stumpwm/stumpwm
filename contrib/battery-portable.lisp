@@ -245,7 +245,7 @@
 		     (format fmt "~/stumpwm.contrib.battery-portable::fmt-time/~A ^[~A~D%^]"
 			     time
 			     (if (eq state :charging) #\+ #\-)
-			     (bar-zone-color perc 20 50 90 t)
+			     (bar-zone-color perc 90 50 20 t)
 			     (round perc))))))))))
 
 ;;; The actual mode-line format function. A bit ugly...
