@@ -972,6 +972,7 @@ The window's title must match @var{title}.
     `(dolist (,x ',frame-rules)
        ;; verify the correct structure
        (destructuring-bind (frame-number raise lock &rest keys &key class instance type role title) ,x
+         (declare (ignore class instance type role title))
          (push (list* ,target-group frame-number raise lock keys) *window-placement-rules*)))))
 
 (defun clear-window-placement-rules ()
