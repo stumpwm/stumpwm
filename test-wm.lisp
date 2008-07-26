@@ -132,7 +132,18 @@
       (first-pass dpy)
       (second-pass dpy)
       (xlib:close-display dpy))))
-    
+
+(defun get-wm-hints ()
+  "simias reports that on sbcl the wm-hints property is all screwed up
+when he runs an x server on 32 or 64bit freebsd and runs any x client
+on a fedora 32bit, connecting through an ssh tunnel. clisp works fine.
+
+so run this function on clisp and sbcl and compare the numbers."
+  (let ((dpy (xlib:open-default-display)))
+    (write-line "you gotta have some windows open for this to work.")
+    (dolist (w (xlib:query-tree (xlib:screen-root (first (xlib:display-roots dpy)))))
+      (format t "~s ~s: ~s~%" w (xlib:wm-name w) (xlib:get-property w :WM_HINTS :type :WM_HINTS :result-type 'vector)))
+    (xlib:close-display dpy)))
 
 (defun parse-display-string (display)
   "Parse an X11 DISPLAY string and return the host and display from it."
