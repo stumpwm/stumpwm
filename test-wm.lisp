@@ -138,11 +138,13 @@
 when he runs an x server on 32 or 64bit freebsd and runs any x client
 on a fedora 32bit, connecting through an ssh tunnel. clisp works fine.
 
-so run this function on clisp and sbcl and compare the numbers."
+so run this function on clisp and sbcl and compare the numbers. This
+assumes you're running a reparenting wm."
   (let ((dpy (xlib:open-default-display)))
     (write-line "you gotta have some windows open for this to work.")
-    (dolist (w (xlib:query-tree (xlib:screen-root (first (xlib:display-roots dpy)))))
-      (format t "~s ~s: ~s~%" w (xlib:wm-name w) (xlib:get-property w :WM_HINTS :type :WM_HINTS :result-type 'vector)))
+    (dolist (top (xlib:query-tree (xlib:screen-root (first (xlib:display-roots dpy)))))
+      (dolist (w (xlib:query-tree top))
+        (format t "~s ~s: ~s~%" w (xlib:wm-name w) (xlib:get-property w :WM_HINTS :type :WM_HINTS :result-type 'vector))))
     (xlib:close-display dpy)))
 
 (defun parse-display-string (display)
