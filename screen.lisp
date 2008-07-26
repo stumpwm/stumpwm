@@ -568,6 +568,8 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 
 (defun remove-head (screen head)
   (dformat 1 "Removing head #~D~%" (head-number head))
+  (when (head-mode-line head)
+    (toggle-mode-line screen head))
   (dolist (group (screen-groups screen))
     ;; Hide its windows.
     (let ((windows (head-windows group head)))
@@ -582,8 +584,6 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
           (setf (window-frame window) frame))))
     ;; Try to do something with the orphaned windows
     (populate-frames group))
-  (when (head-mode-line head)
-    (toggle-mode-line screen head))
   ;; Remove it from SCREEN's head list.
   (setf (screen-heads screen) (delete head (screen-heads screen))))
 
