@@ -906,7 +906,7 @@ jump to that frame."
             ;; Two edges are neighbours if they have the same offset and their starts and ends
             ;; overlap.  We want to find the neighbour that overlaps the most.
             (when (and (= src-offset offset)
-                       (>= overlap best-overlap))
+                       (> overlap best-overlap))
               (setf best-frame f)
               (setf best-overlap overlap))))))
     best-frame))
