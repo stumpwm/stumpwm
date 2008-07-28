@@ -776,6 +776,7 @@ Some examples follow.
 %%% def-window-attr
 
 @@@ window-send-string
+### *default-window-name*
 
 @node Rule Based Window Placement,  , Programming With Windows, Windows
 @section Rule Based Window Placement

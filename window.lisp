@@ -25,11 +25,15 @@
 
 (in-package #:stumpwm)
 
-(export '(def-window-attr
+(export '(*default-window-name*
+          def-window-attr
           set-normal-gravity
           set-maxsize-gravity
           set-transient-gravity
           set-window-geometry))
+
+(defvar *default-window-name* "Unnamed"
+  "The name given to a window that does not supply its own name.")
 
 ;; Urgency / demands attention
 
@@ -196,7 +200,8 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
       (case *window-name-source*
         (:resource-name (window-res window))
         (:class (window-class window))
-        (t (window-title window)))))
+        (t (window-title window)))
+      *default-window-name*))
 
 (defun window-id (window)
   (xlib:window-id (window-xwin window)))
