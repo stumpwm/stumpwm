@@ -104,9 +104,13 @@ command prints the command bound to the specified key sequence."
 
 (defcommand where-is (cmd) ((:rest "Where is command: "))
 "Print the key sequences bound to the specified command."
-  (message-no-timeout "\"~a\" is on ~{~a~^, ~}"
+(let ((bindings (search-kmap cmd *top-map*)))
+  (if bindings
+      (message-no-timeout "\"~a\" is on ~{~a~^, ~}"
                       cmd
-                      (mapcar 'print-key-seq (search-kmap cmd *top-map*))))
+                      (mapcar 'print-key-seq bindings))
+      (message-no-timeout "Command \"~a\" is not currently bound"
+                      cmd))))
 
 (defcommand modifiers () ()
   "List the modifiers stumpwm recognizes and what MOD-X it thinks they're on."
