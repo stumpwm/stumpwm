@@ -138,8 +138,7 @@ identity with a range check."
         (cadr matches))))
 
 (defun move-screen-to-head (screen)
-  (setf *screen-list* (remove screen *screen-list*))
-  (push screen *screen-list*))
+  (move-to-head *screen-list* screen))
 
 (defun switch-to-screen (screen)
   (when (and screen

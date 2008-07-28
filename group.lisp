@@ -35,8 +35,7 @@ otherwise specified."
 (defun move-group-to-head (screen group)
   "Move window to the head of the group's window list."
                                         ;(assert (member window (screen-mapped-windows screen)))
-  (setf (screen-groups screen) (delete group (screen-groups screen)))
-  (push group (screen-groups screen)))
+  (move-to-head (screen-groups screen) group))
 
 (defun sort-groups (screen)
   "Return a copy of the screen's group list sorted by number."

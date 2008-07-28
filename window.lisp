@@ -1076,8 +1076,7 @@ needed."
   (declare (type group group))
   (declare (type window window))
                                         ;(assert (member window (screen-mapped-windows screen)))
-  (setf (group-windows group) (delete window (group-windows group)))
-  (push window (group-windows group))
+  (move-to-head (group-windows group) window)
   (netwm-update-client-list-stacking (group-screen group)))
 
 (defun no-focus (group last-win)

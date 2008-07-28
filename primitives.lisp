@@ -114,7 +114,8 @@
           run-hook-with-args
           split-string
 	  with-restarts-menu
-          with-data-file))
+          with-data-file
+	  move-to-head))
 
 
 ;;; Message Timer
@@ -1055,3 +1056,9 @@ of :error."
      (with-open-file (,s ,(merge-pathnames *data-dir* file)
                          ,@keys)
        ,@body)))
+
+(defmacro move-to-head (list elt)
+   "Move the specified element in in LIST to the head of the list."
+ `(progn
+    (setf ,list (remove ,elt ,list))
+    (push ,elt ,list)))
