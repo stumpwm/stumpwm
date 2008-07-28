@@ -701,12 +701,12 @@ windows used to draw the numbers in. The caller must destroy them."
 "Split the current frame into 2 frames, one on top of the other."
   (split-frame-in-dir (current-group) :row))
 
-(defcommand remove-split (&optional (group (current-group))) ()
-"Remove the current frame in the specified group (defaults to current
-group). Windows in the frame are migrated to the frame taking up its
+(defcommand remove-split (&optional (group (current-group)) (frame (tile-group-current-frame group))) ()
+"Remove the specified frame in the specified group (defaults to current
+group, current frame). Windows in the frame are migrated to the frame taking up its
 space."
-  (let* ((frame (tile-group-current-frame group))
-         (head (frame-head group frame))
+  (let* ((head (frame-head group frame))
+         (current (tile-group-current-frame group))
          (tree (tile-group-frame-head group head))
          (s (closest-sibling (list tree) frame))
          ;; grab a leaf of the siblings. The siblings doesn't have to be
@@ -731,14 +731,16 @@ space."
           ;; Unsplit
           (setf (tile-group-frame-head group head) (remove-frame tree frame))
           ;; update the current frame and sync all windows
-          (setf (tile-group-current-frame group) l)
+          (when (eq frame current)
+            (setf (tile-group-current-frame group) l))
           (tree-iterate tree
                         (lambda (leaf)
                           (sync-frame-windows group leaf)))
-          (frame-raise-window group l (frame-window l))
+          (frame-raise-window group l (frame-window l) nil)
           (when (frame-window l)
             (update-window-border (frame-window l)))
-          (show-frame-indicator group)))))
+          (when (eq frame current)
+            (show-frame-indicator group))))))
 
 (defcommand-alias remove remove-split)
 
