@@ -113,7 +113,10 @@ T (default) then also focus the frame."
       (if w
           (raise-window w)
           (mapc 'hide-window (frame-windows g f))))
-    (when focus
+    ;; If raising a window in the current frame we must focus it or
+    ;; the group and screen will get out of sync.
+    (when (or focus
+              (eq (tile-group-current-frame g) f))
       (focus-frame g f))
     (when (and w (not (window-modal-p w)))
       (raise-modals-of w))))
