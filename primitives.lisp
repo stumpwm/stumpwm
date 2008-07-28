@@ -1004,13 +1004,11 @@ input focus is transfered to the window you click on.")
 
 (defmacro with-focus (xwin &body body)
   "Set the focus to xwin, do body, then restore focus"
-  (let ((focus (gensym "FOCUS"))
-        (revert (gensym "REVERT")))
-    `(multiple-value-bind (,focus ,revert) (xlib:input-focus *display*)
-       (xlib:set-input-focus *display* ,xwin :pointer-root)
-       (unwind-protect
-            (progn ,@body)
-         (xlib:set-input-focus *display* ,focus ,revert)))))
+  `(progn
+     (grab-keyboard ,xwin)
+     (unwind-protect
+          (progn ,@body)
+       (ungrab-keyboard))))
 
 (defvar *last-unhandled-error* nil
   "If an unrecoverable error occurs, this variable will contain the

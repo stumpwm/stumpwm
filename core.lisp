@@ -114,8 +114,8 @@
   (xlib:ungrab-pointer *display*)
   (xlib:display-finish-output *display*))
 
-(defun grab-keyboard (screen)
-  (let ((ret (xlib:grab-keyboard (screen-root screen) :owner-p nil
+(defun grab-keyboard (xwin)
+  (let ((ret (xlib:grab-keyboard xwin :owner-p nil
                                  :sync-keyboard-p nil :sync-pointer-p nil)))
     (dformat 5 "vvv Grab keyboard: ~s~%" ret)
     ret))
