@@ -121,7 +121,7 @@ then
 else
     if [ -t 0 ]
     then
-	if [ $READLINE = yes ] && type rlwrap 2>&1 >/dev/null
+	if [ $READLINE = yes ] && type rlwrap >/dev/null 2>&1
 	then
 	    # Note: $TEMP is not conventional; it is left here purely
 	    # for backwards compatibility.
