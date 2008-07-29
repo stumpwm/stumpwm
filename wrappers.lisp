@@ -286,6 +286,20 @@ they should be windows. So use this function to make a window out of them."
     font))
 #+sbcl (in-package #:stumpwm)
 
+
+;;; CLISP does not include a :linux feature on Linux (at least until
+;;; version 2.46). Until this is fixed, use a hack to determine
+;;; whether this is run on Linux.
+
+#+ (and clisp (not linux))
+(eval-when (eval load compile)
+  (when (string= "Linux"
+                 (let ((str (ext:run-program "uname" :wait t :output :stream)))
+                   (unwind-protect 
+                        (read-line str)
+                     (close str))))
+    (push :linux *features*)))
+
 ;;; On GNU/Linux some contribs use sysfs to figure out useful info for
 ;;; the user. SBCL upto at least 1.0.16 (but probably much later) has
 ;;; a problem handling files in sysfs caused by SBCL's slightly

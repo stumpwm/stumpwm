@@ -49,11 +49,6 @@
 ;;; CLISP doesn't include :linux in *features* even if it runs on
 ;;; Linux. :-/
 
-#+ (and clisp (not linux))
-(eval-when (load compile execute)
-  (when (string= "Linux" (string-trim '(#\Newline) (run-shell-command "uname -s" t)))
-    (push :linux *features*)))
-
 ;;; Configuration
 
 (defvar *refresh-time* 5
