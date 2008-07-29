@@ -33,9 +33,13 @@
 ;;; Linux. On Debian-ish systems, iwconfig is in the wireless-tools
 ;;; package.
 
-(in-package :stumpwm)
+(defpackage :stumpwm.contrib.wifi
+  (:use :common-lisp :stumpwm )
+  (:export #:*iwconfig-path*))
+(in-package :stumpwm.contrib.wifi)
 
-(pushnew '(#\I fmt-wifi) *screen-mode-line-formatters* :test 'equal)
+(defvar *iwconfig-path* "/sbin/iwconfig"
+  "Location if iwconfig, defaults to /sbin/iwconfig.")
 
 (defmacro defun-cached (name interval arglist &body body)
   "Creates a function that does simple caching. The body must be
@@ -64,14 +68,14 @@ you're connected to as well as the signal strength. When no valid data
 is found, just displays nil."
   (declare (ignore ml))
   (let ((essid (run-shell-command
-                #.(concat "iwconfig 2>/dev/null | grep ESSID |"
-                          "cut -d '\"' -f 2 | tr -d '\\n'")
+                (format nil "~A 2>/dev/null | grep ESSID | cut -d '\"' -f 2 | tr -d '\\n'"
+                        *iwconfig-path*)
                 t)))
     (if (string= essid "")
         "nil"
         (let* ((qual (run-shell-command
-                      #.(concat "iwconfig 2>/dev/null | grep 'Link Quality' |"
-                                "awk '{print $2}' | cut -b 9- | tr -d '\\n'")
+                      (format nil "~A 2>/dev/null | grep 'Link Quality' | awk '{print $2}' | cut -b 9- | tr -d '\\n'"
+                              *iwconfig-path*)
                       t))
                (num-pos (position #\/ qual))
                (perc (if num-pos
@@ -82,3 +86,9 @@ is found, just displays nil."
                          0)))
           (format nil "~A ^[~A~D%^]"
                   essid (bar-zone-color perc 40 30 15 t) perc)))))
+
+;;; Add mode-line formatter
+
+(add-screen-mode-line-formatter #\I #'fmt-wifi)
+
+;;; EOF
