@@ -313,8 +313,9 @@ they should be windows. So use this function to make a window out of them."
   "READ-LINE, but with a workaround for a known SBCL/Linux bug
 regarding files in sysfs. Data is read in chunks of BLOCKSIZE bytes."
   #- sbcl
-  (progn (declare (ignore blocksize))
-	 (read-line stream))
+  (declare (ignore blocksize))
+  #- sbcl
+  (read-line stream)
   #+ sbcl
   (let ((buf (make-array blocksize
 			 :element-type '(unsigned-byte 8)
