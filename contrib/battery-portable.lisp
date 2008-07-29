@@ -263,6 +263,7 @@
 
 ;;; Put this at the end to avoid evaluating it when the core above
 ;;; throws an error.
-(pushnew '(#\B fmt-bat) *screen-mode-line-formatters* :test 'equal)
+
+(add-screen-mode-line-formatter #\B #'fmt-bat)
 
 ;;; EOF
