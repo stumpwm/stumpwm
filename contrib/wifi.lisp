@@ -20,6 +20,11 @@
 ;;; Boston, MA 02111-1307 USA
 ;;;
 
+;;; WARNING:
+;;; 
+;;; This triggers a yet to be discovered bug in SBCL, which causes
+;;; stumpwm to freeze.
+
 ;;; USAGE:
 ;;;
 ;;; Place the following in your ~/.stumpwmrc file:
