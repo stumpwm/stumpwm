@@ -1,10 +1,10 @@
 ;;; Portable battery information for StumpWM's mode-line.
-;;; 
+;;;
 ;;; Written by Julian Stecklina with inspiration from John Li and
 ;;; Rupert Swarbrick.
-;;; 
+;;;
 ;;; Copyright (c) 2008 Julian Stecklina
-;;; 
+;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
 ;;; files (the "Software"), to deal in the Software without
@@ -12,10 +12,10 @@
 ;;; modify, merge, publish, distribute, sublicense, and/or sell copies
 ;;; of the Software, and to permit persons to whom the Software is
 ;;; furnished to do so, subject to the following conditions:
-;;; 
+;;;
 ;;; The above copyright notice and this permission notice shall be
 ;;; included in all copies or substantial portions of the Software.
-;;; 
+;;;
 ;;; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 ;;; EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 ;;; MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -24,7 +24,7 @@
 ;;; WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ;;; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;;; DEALINGS IN THE SOFTWARE.
-;;; 
+;;;
 ;;;
 ;;; To load this module, place
 ;;;
@@ -32,18 +32,18 @@
 ;;;
 ;;; in your .stumpwmrc. Battery information is then available via %B
 ;;; in your mode-line config.
-;;; 
+;;;
 ;;; If you have an older kernel and the above doesn't work, add
-;;; 
+;;;
 ;;;     (setf stumpwm.contrib.battery-portable:*prefer-sysfs* nil)
-;;; 
+;;;
 ;;; below the above line.
 
 (defpackage :stumpwm.contrib.battery-portable
   (:use :common-lisp :stumpwm :cl-ppcre)
   (:export #:*refresh-time*
-	   #:*prefer-sysfs*
-	   ))
+           #:*prefer-sysfs*
+           ))
 (in-package :stumpwm.contrib.battery-portable)
 
 ;;; Configuration
@@ -92,71 +92,71 @@
   (defclass procfs-method (battery-method)
     ()
     (:documentation "Collect battery information through Linux' procfs interface."))
-  
+
   (defclass procfs-battery (battery)
     ((path :initarg :path :initform (error ":path missing")
-	   :reader path-of)
+           :reader path-of)
      (info-hash :initform (make-hash-table :test 'equal)
-		:reader info-hash-of)))
+                :reader info-hash-of)))
 
   (defmethod update-info ((battery procfs-battery))
     (clrhash (info-hash-of battery))
-    (loop 
+    (loop
        for filename in '("state" "info")
        do (with-open-file (file (merge-pathnames (make-pathname :name filename)
-						 (path-of battery)))
-	    (loop 
-	       for line = (read-line file nil nil)
-	       while line
-	       do (multiple-value-bind (match? matches)
-		      (scan-to-strings "^([^:]+):\\s*([^\\s]+)(\\s.*)?$" line)
-		    (if (not match?)
-			(format t "Unrecognized line: ~S~%" line)
-			(setf (gethash (aref matches 0) (info-hash-of battery))
-			      (aref matches 1))))))))
+                                                 (path-of battery)))
+            (loop
+               for line = (read-line file nil nil)
+               while line
+               do (multiple-value-bind (match? matches)
+                      (scan-to-strings "^([^:]+):\\s*([^\\s]+)(\\s.*)?$" line)
+                    (if (not match?)
+                        (format t "Unrecognized line: ~S~%" line)
+                        (setf (gethash (aref matches 0) (info-hash-of battery))
+                              (aref matches 1))))))))
 
   (define-condition info-value-not-present (error)
     ())
-  
+
   (defmethod info-value ((battery procfs-battery) key)
-    (multiple-value-bind (val found?) 
-	(gethash key (info-hash-of battery))
-	(if found?
-	    val
-	    (error 'info-value-not-present))))
+    (multiple-value-bind (val found?)
+        (gethash key (info-hash-of battery))
+        (if found?
+            val
+            (error 'info-value-not-present))))
 
   (defmethod info-value-int ((battery procfs-battery) key)
     (values (parse-integer (info-value battery key))))
 
   (defmethod all-batteries ((method procfs-method))
     (mapcar (lambda (p)
-	      (make-instance 'procfs-battery :path p))
-	    (directory (make-pathname 
-			:directory '(:absolute "proc" "acpi" "battery" :wild)))))
-  
+              (make-instance 'procfs-battery :path p))
+            (directory (make-pathname
+                        :directory '(:absolute "proc" "acpi" "battery" :wild)))))
+
   (defmethod state-of ((battery procfs-battery))
     (handler-case
-	(progn
-	  (update-info battery)
-	  (if (string/= (info-value battery "present") "yes")
-	      :unknown
-	      (let* ((state (info-value battery "charging state")))
-		(flet ((percent ()
-			 (/ (info-value-int battery "remaining capacity")
-			    (info-value-int battery "last full capacity"))))
-		  
-		(cond
-		  ((string= state "charged") (values :charged (percent)))
-		  ((string= state "discharging")
-		   (values :discharging (percent)
-			   (* 3600 (/ (info-value-int battery "remaining capacity")
-				      (info-value-int battery "present rate")))))
-		  ((string= state "charging")
-		   (values :charging (percent)
-			   (* 3600 (/ (- (info-value-int "last full capacity")
-					 (info-value-int "remaining capacity"))
-				      (info-value-int battery "present rate")))))
-		  (t :unknown))))))
+        (progn
+          (update-info battery)
+          (if (string/= (info-value battery "present") "yes")
+              :unknown
+              (let* ((state (info-value battery "charging state")))
+                (flet ((percent ()
+                         (/ (info-value-int battery "remaining capacity")
+                            (info-value-int battery "last full capacity"))))
+
+                (cond
+                  ((string= state "charged") (values :charged (percent)))
+                  ((string= state "discharging")
+                   (values :discharging (percent)
+                           (* 3600 (/ (info-value-int battery "remaining capacity")
+                                      (info-value-int battery "present rate")))))
+                  ((string= state "charging")
+                   (values :charging (percent)
+                           (* 3600 (/ (- (info-value-int "last full capacity")
+                                         (info-value-int "remaining capacity"))
+                                      (info-value-int battery "present rate")))))
+                  (t :unknown))))))
       (t () :unknown))))
 
 ;;; Linux sysfs implementation
@@ -171,11 +171,11 @@
 
   (defclass sysfs-battery (battery)
     ((path :initarg :path :initform (error ":path missing")
-	   :reader path-of)))
+           :reader path-of)))
 
   (defun sysfs-field (path name)
     (with-open-file (file (merge-pathnames (make-pathname :name name)
-					   path))
+                                           path))
       (read-line-from-sysfs file)))
 
   (defun sysfs-int-field (path name)
@@ -183,39 +183,39 @@
 
   (defmethod all-batteries ((m sysfs-method))
     (remove nil
-	    (mapcar (lambda (path)
-		      (handler-case
-			  (when (string= "Battery"
-					 (sysfs-field path "type"))
-			    (make-instance 'sysfs-battery
-					   :path path))
-			(file-error () nil)))
-		    (directory 
-		     (make-pathname :directory '(:absolute "sys" "class" "power_supply" :wild))))))
+            (mapcar (lambda (path)
+                      (handler-case
+                          (when (string= "Battery"
+                                         (sysfs-field path "type"))
+                            (make-instance 'sysfs-battery
+                                           :path path))
+                        (file-error () nil)))
+                    (directory
+                     (make-pathname :directory '(:absolute "sys" "class" "power_supply" :wild))))))
 
   (defmethod state-of ((battery sysfs-battery))
     (handler-case
-	(let ((path (path-of battery)))
-	  (if (string= (sysfs-field path "present") "0")
-	      :unknown
-	      (let* ((state (sysfs-field path "status"))
-		     (consumption (sysfs-int-field path "current_now"))
-		     (curr (sysfs-int-field path "energy_now"))
-		     (full (sysfs-int-field path "energy_full"))
-		     (percent (* 100 (/ curr full))))
-		(cond
-		  ((string= state "Full") (values :charged percent))
-		  ((string= state "Discharging")
-		   (values :discharging percent
-			   (if (zerop consumption)
-			       0
-			       (* 3600 (/ curr consumption)))))
-		  ((string= state "Charging")
-		   (values :charging percent
-			   (if (zerop consumption)
-			       0
-			       (* 3600 (/ (- full curr) consumption)))))
-		  (t :unknown)))))
+        (let ((path (path-of battery)))
+          (if (string= (sysfs-field path "present") "0")
+              :unknown
+              (let* ((state (sysfs-field path "status"))
+                     (consumption (sysfs-int-field path "current_now"))
+                     (curr (sysfs-int-field path "energy_now"))
+                     (full (sysfs-int-field path "energy_full"))
+                     (percent (* 100 (/ curr full))))
+                (cond
+                  ((string= state "Full") (values :charged percent))
+                  ((string= state "Discharging")
+                   (values :discharging percent
+                           (if (zerop consumption)
+                               0
+                               (* 3600 (/ curr consumption)))))
+                  ((string= state "Charging")
+                   (values :charging percent
+                           (if (zerop consumption)
+                               0
+                               (* 3600 (/ (- full curr) consumption)))))
+                  (t :unknown)))))
       (t () :unknown))))
 
 ;;; Interface to the outside world.
@@ -223,30 +223,30 @@
 (defun fmt-time (stream arg colonp atp)
   (declare (ignore colonp atp))
   (multiple-value-bind (hours rest)
-      (truncate arg 3600) 
+      (truncate arg 3600)
   (format stream "~D:~2,'0D" hours (floor rest 60))))
 
 (defun battery-info-string ()
   "Compiles a string suitable for StumpWM's mode-line."
   (with-output-to-string (fmt)
     (let ((batteries (all-batteries (or (preferred-battery-method)
-					(return-from battery-info-string
-					  "(not implemented)")))))
+                                        (return-from battery-info-string
+                                          "(not implemented)")))))
       (if (endp batteries)
-	  (format fmt "(no battery)")
-	  (loop 
-	     for bat in batteries
-	     do (multiple-value-bind (state perc time)
-		    (state-of bat)
-		  (ecase state
-		    (:unknown (format fmt "(no info)"))
-		    (:charged (format fmt "~~ ~D%" (round perc)))
-		    ((:charging :discharging) 
-		     (format fmt "~/stumpwm.contrib.battery-portable::fmt-time/~A ^[~A~D%^]"
-			     time
-			     (if (eq state :charging) #\+ #\-)
-			     (bar-zone-color perc 90 50 20 t)
-			     (round perc))))))))))
+          (format fmt "(no battery)")
+          (loop
+             for bat in batteries
+             do (multiple-value-bind (state perc time)
+                    (state-of bat)
+                  (ecase state
+                    (:unknown (format fmt "(no info)"))
+                    (:charged (format fmt "~~ ~D%" (round perc)))
+                    ((:charging :discharging)
+                     (format fmt "~/stumpwm.contrib.battery-portable::fmt-time/~A ^[~A~D%^]"
+                             time
+                             (if (eq state :charging) #\+ #\-)
+                             (bar-zone-color perc 90 50 20 t)
+                             (round perc))))))))))
 
 ;;; The actual mode-line format function. A bit ugly...
 (let ((next 0)
@@ -256,7 +256,7 @@
     ;; Return the last info again, if we are called too quickly.
     (let ((now (get-universal-time)))
       (when (< now next)
-	(return-from fmt-bat last-value))
+        (return-from fmt-bat last-value))
       (setf next (+ now *refresh-time*)))
     ;; Generate info string.
     (setf last-value (battery-info-string))))
