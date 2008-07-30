@@ -1153,20 +1153,20 @@ color. The first digit refers to the foreground color and the second
 digit to the background color. A @samp{*} can be used in place of
 either digit to specify the normal color. See the color listing below.
 
-@item ^b
-turn on bright colors
-
 @item ^B
-turn off bright colors
+Turn on bright colors.
+
+@item ^b
+Turn off bright colors.
 
 @item ^n
 Use the normal background and foreground color.
 
 @item ^R
-reverse the foreground and background colors
+Reverse the foreground and background colors.
 
 @item ^r
-turn off reverse colors
+Turn off reverse colors.
 
 @item ^[
 Push the current colors onto the color stack. The current colors remain unchanged.
@@ -1175,7 +1175,7 @@ Push the current colors onto the color stack. The current colors remain unchange
 Pop the colors off the color stack.
 
 @item ^^
-Print a regular caret. 
+Print a regular caret.
 @end table
 
 The default colors are made to resemble the 16 VGA colors and are:
@@ -1210,7 +1210,7 @@ following:
 (setf *colors* (append *colors*
                        (list "PapayaWhip"
                              "DarkGoldenRod3")))
-(update-color-map)
+(update-color-map (current-screen))
 @end example
 
 Of course, you can change all the colors if you like.
