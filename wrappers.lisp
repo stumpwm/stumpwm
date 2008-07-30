@@ -247,11 +247,7 @@ they should be windows. So use this function to make a window out of them."
 
 #+ (and clisp (not linux))
 (eval-when (eval load compile)
-  (when (string= "Linux"
-                 (let ((str (ext:run-program "uname" :wait t :output :stream)))
-                   (unwind-protect 
-                        (read-line str)
-                     (close str))))
+  (when (string= "Linux" (os:uname-sysname (os:uname)))
     (push :linux *features*)))
 
 ;;; On GNU/Linux some contribs use sysfs to figure out useful info for
