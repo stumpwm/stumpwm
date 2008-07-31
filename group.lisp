@@ -27,6 +27,59 @@
 
 (export '(current-group))
 
+(defvar *default-group-type* 'tile-group
+  "The type of group that should be created by default.")
+
+(defclass group ()
+  ((screen :initarg :screen :accessor group-screen)
+   (windows :initform nil :accessor group-windows)
+   (number :initarg :number :accessor group-number)
+   (name :initarg :name :accessor group-name)))
+
+;;; The group API
+(defgeneric group-add-window (group window)
+  (:documentation "Called when a window is added to the group. All
+house keeping is already taken care of. Only the group's specific
+window managing housekeeping need be done."))
+(defgeneric group-delete-window (group window)
+  (:documentation "Called when a window is removed from thegroup. All
+house keeping is already taken care of. Only the group's specific
+window managing housekeeping need be done."))
+(defgeneric group-wake-up (group)
+  (:documentation "When the group becomes the current group, this
+function is called."))
+(defgeneric group-suspend (group)
+  (:documentation "When the group is no longer the current group, this
+function is called."))
+(defgeneric group-current-window (group)
+  (:documentation "The group is asked to return its focused window."))
+(defgeneric group-resize-request (group window width height)
+  (:documentation "The window requested a width and/or height change."))
+(defgeneric group-move-request (group window x y relative-to)
+  (:documentation "The window requested a position change."))
+(defgeneric group-raise-request (group window type)
+  (:documentation "A request has been made to raise the window. TYPE
+is the type of raise request being made. :MAP means the window has
+made requested to be mapped. :above means the window has requested to
+to be placed above its siblings."))
+(defgeneric group-lost-focus (group)
+  (:documentation "The current window was hidden or destroyed or
+something happened to it. So the group is asked to do something smart
+about it."))
+(defgeneric group-indicate-focus (group)
+  (:documentation "The group is asked to in some way show the user where the keyboard focus is."))
+(defgeneric group-focus-window (group win)
+  (:documentation "The group is asked to focus the specified window wherever it is."))
+(defgeneric group-button-press (group x y child)
+  (:documentation "The user clicked somewhere in the group."))
+(defgeneric group-window-visible-p (group win)
+  (:documentation "Return non-NIL if the window is visible. NIL if not."))
+(defgeneric group-root-exposure (group)
+  (:documentation "The root window got an exposure event. If the group
+needs to redraw anything on it, this is where it should do it."))
+(defgeneric group-add-head (group)
+  (:documentation "A new head was added."))
+
 (defun current-group (&optional (screen (current-screen)))
   "Return the current group for the current screen, unless
 otherwise specified."
@@ -59,9 +112,6 @@ otherwise specified."
 start at -1 and go down."
   (find-free-number (mapcar 'group-number (screen-groups screen)) -1 :negative))
 
-(defun group-current-window (group)
-  (frame-window (tile-group-current-frame group)))
-
 (defun non-hidden-groups (groups)
   "Return only those groups that are not hidden."
   (remove-if (lambda (g)
@@ -89,8 +139,7 @@ at 0. Return a netwm compliant group id."
       (move-group-to-head screen new-group)
       ;; restore the focus
       (setf (screen-focus screen) nil)
-      (focus-frame new-group (tile-group-current-frame new-group))
-      (show-frame-indicator new-group) ; doesn't get called by focus-frame
+      (group-wake-up new-group)
       (xlib:change-property (screen-root screen) :_NET_CURRENT_DESKTOP
                             (list (netwm-group-id new-group))
                             :cardinal 32)
@@ -100,35 +149,19 @@ at 0. Return a netwm compliant group id."
 (defun move-window-to-group (window to-group)
   (labels ((really-move-window (window to-group)
              (unless (eq (window-group window) to-group)
-               (let ((old-group (window-group window))
-                     (old-frame (window-frame window)))
-                 (hide-window window)
-                 ;; house keeping
-                 (setf (group-windows (window-group window))
-                       (remove window (group-windows (window-group window))))
-                 (setf (window-frame window) (tile-group-current-frame to-group)
-                       (window-group window) to-group
-                       (window-number window) (find-free-window-number to-group))
-                 ;; try to put the window in the appropriate frame for the group
-                 (multiple-value-bind (placed-group frame raise) (get-window-placement (window-screen window) window)
-                   (declare (ignore placed-group))
-                   (when frame
-                     (setf (window-frame window) frame)
-                     (when raise
-                       (setf (tile-group-current-frame to-group) frame
-                             (frame-window frame) nil))))
-                 (push window (group-windows to-group))
-                 (sync-frame-windows to-group (tile-group-current-frame to-group))
-                 ;; maybe pick a new window for the old frame
-                 (when (eq (frame-window old-frame) window)
-                   (setf (frame-window old-frame) (first (frame-windows old-group old-frame)))
-                   (focus-frame old-group old-frame))
-                 ;; maybe show the window in its new frame
-                 (when (null (frame-window (window-frame window)))
-                   (frame-raise-window (window-group window) (window-frame window) window))
-                 (xlib:change-property (window-xwin window) :_NET_WM_DESKTOP
-                                       (list (netwm-group-id to-group))
-                                       :cardinal 32)))))
+               (hide-window window)
+               (group-delete-window (window-group window) window)
+               ;; house keeping
+               (setf (group-windows (window-group window))
+                     (remove window (group-windows (window-group window)))
+                     (window-group window) to-group
+                     (window-number window) (find-free-window-number to-group))
+               (push window (group-windows to-group))
+               (xlib:change-property (window-xwin window) :_NET_WM_DESKTOP
+                                     (list (netwm-group-id to-group))
+                                     :cardinal 32)
+               ;;
+               (group-add-window to-group window))))
     ;; When a modal window is moved, all the windows it shadows must be moved
     ;; as well. When a shadowed window is moved, the modal shadowing it must
     ;; be moved.
@@ -201,7 +234,7 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
                             (apply #'concatenate 'list names))
                           :UTF8_STRING 8)))
 
-(defun add-group (screen name)
+(defun add-group (screen name &optional (type *default-group-type*))
   "Create a new group in SCREEN with the supplied name. group names
     starting with a . are considered hidden groups. Hidden groups are
     skipped by gprev and gnext and do not show up in the group
@@ -212,15 +245,12 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
   (unless (or (string= name "")
               (string= name "."))
     (or (find-group screen name)
-        (let* ((heads (copy-heads screen))
-               (ng (make-tile-group
-                    :frame-tree heads
-                    :current-frame (first heads)
-                    :screen screen
-                    :number (if (char= (char name 0) #\.)
-                                (find-free-hidden-group-number screen)
-                                (find-free-group-number screen))
-                    :name name)))
+        (let ((ng (make-instance type
+                                 :screen screen
+                                 :number (if (char= (char name 0) #\.)
+                                             (find-free-hidden-group-number screen)
+                                             (find-free-group-number screen))
+                                 :name name)))
           (setf (screen-groups screen) (append (screen-groups screen) (list ng)))
           (netwm-set-group-properties screen)
           (netwm-update-groups screen)

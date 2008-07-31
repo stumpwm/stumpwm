@@ -27,6 +27,112 @@
 
 (export '(save-frame-excursion))
 
+(defclass tile-group (group)
+  ((frame-tree :accessor tile-group-frame-tree)
+   (last-frame :initform nil :accessor tile-group-last-frame)
+   (current-frame :accessor tile-group-current-frame)))
+
+(defmethod initialize-instance :after ((group tile-group) &key &allow-other-keys)
+  (let* ((heads (copy-heads (group-screen group))))
+    (setf (tile-group-frame-tree group) heads
+          (tile-group-current-frame group) (first heads))))
+
+(defmethod group-wake-up ((group tile-group))
+  (focus-frame group (tile-group-current-frame group))
+  ;; doesn't get called by focus-frame
+  (show-frame-indicator group))
+
+(defmethod group-delete-window ((group tile-group) window)
+  (let ((f (window-frame window)))
+    ;; maybe pick a new window for the old frame
+    (when (eq (frame-window f) window)
+      (frame-raise-window group f (first (frame-windows group f)) nil))))
+
+(defmethod group-add-window ((group tile-group) window)
+  ;; This is important to get the frame slot
+  (change-class window 'tile-window)
+  (setf (window-frame window) (tile-group-current-frame group))
+  ;; try to put the window in the appropriate frame for the group
+  (multiple-value-bind (placed-group frame raise) (get-window-placement (window-screen window) window)
+    (declare (ignore placed-group))
+    (if frame
+        (progn
+          (setf (window-frame window) frame)
+          (when raise
+            (setf (tile-group-current-frame group) frame
+                  (frame-window frame) nil)))
+        (setf (window-frame window)
+              (if *processing-existing-windows*
+                  (find-frame group (xlib:drawable-x (window-xwin window)) (xlib:drawable-y (window-xwin window)))
+                  (pick-preferred-frame window)))))
+  (sync-frame-windows group (tile-group-current-frame group))
+  ;; maybe show the window in its new frame
+  (when (null (frame-window (window-frame window)))
+    (frame-raise-window (window-group window) (window-frame window) window)))
+
+(defmethod group-current-window ((group tile-group))
+  (frame-window (tile-group-current-frame group)))
+
+(defmethod group-move-request ((group tile-group) window x y relative-to)
+  (when *honor-window-moves*
+    (dformat 3 "Window requested new position ~D,~D relative to ~S~%" x y relative-to)
+    (let* ((pos  (if (eq relative-to :parent)
+                     (list
+                      (+ (xlib:drawable-x (window-parent window)) x)
+                      (+ (xlib:drawable-y (window-parent window)) y))
+                     (list x y)))
+           (frame (apply #'find-frame group pos)))
+      (when frame
+        (pull-window window frame)))))
+
+(defmethod group-resize-request ((group tile-group) window width height)
+  (maximize-window window))
+
+(defmethod group-raise-request ((group tile-group) window stack-mode)
+  (when (window-in-current-group-p window)
+    (case stack-mode
+      (:map
+       (maybe-map-window window))
+      (:above
+       (maybe-raise-window window)))))
+
+(defmethod group-lost-focus ((group tile-group))
+  ;; If this window had the focus, try to avoid losing it.
+  (let ((frame (tile-group-current-frame group)))
+    (setf (frame-window frame)
+          (first (remove-if 'window-hidden-p (frame-windows group frame))))
+    (focus-frame group frame)))
+
+(defmethod group-indicate-focus ((group tile-group))
+  (show-frame-indicator group))
+
+(defmethod group-focus-window ((group tile-group) win)
+  (frame-raise-window group (window-frame win) win))
+
+(defmethod group-button-press ((group tile-group) x y (where (eql :root)))
+  (when (and (eq *mouse-focus-policy* :click)
+             *root-click-focuses-frame*)
+    (let* ((frame (find-frame group x y)))
+      (when frame
+        (focus-frame group frame)
+        (update-all-mode-lines)))))
+
+(defmethod group-button-press ((group tile-group) x y (where window))
+  (when (eq *mouse-focus-policy* :click)
+    (focus-all where)
+    (update-all-mode-lines)))
+
+(defmethod group-window-visible-p ((group tile-group) win)
+  (eq (frame-window (window-frame win)) win))
+
+(defmethod group-root-exposure ((group tile-group))
+  (show-frame-outline group nil))
+
+(defmethod group-add-head ((group tile-group))
+  (sync-all-frame-windows group))
+
+;;;;;
+
 (defun populate-frames (group)
   "Try to fill empty frames in GROUP with hidden windows"
   (dolist (f (group-frames group))

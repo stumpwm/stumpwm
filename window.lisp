@@ -26,7 +26,7 @@
 (in-package #:stumpwm)
 
 (export '(*default-window-name*
-          def-window-attr
+          define-window-slot
           set-normal-gravity
           set-maxsize-gravity
           set-transient-gravity
@@ -170,18 +170,6 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
   "Out of WINDOWS, return a list of those which are transient."
   (remove-if-not 'window-transient-p (copy-list windows)))
 
-(defun really-raise-window (window)
-  (frame-raise-window (window-group window) (window-frame window) window))
-
-(defun raise-modals-of (window)
-  (mapc 'really-raise-window (modals-of window)))
-
-(defun raise-modals-of-gang (window)
-  (mapc 'really-raise-window (only-modals (window-gang window))))
-
-(defun raise-transients-of-gang (window)
-  (mapc 'really-raise-window (only-transients (window-gang window))))
-
 (defun all-windows ()
   (mapcan (lambda (s) (copy-list (screen-windows s))) *screen-list*))
 
@@ -189,11 +177,6 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
   "Return a list of visible windows (on all screens)"
   (loop for s in *screen-list*
         nconc (delete-if 'window-hidden-p (copy-list (group-windows (screen-current-group s))))))
-
-(defun top-windows ()
-  "Return a list of windows on top (on all screen)"
-  (loop for s in *screen-list*
-        nconc (mapcar 'frame-window (group-frames (screen-current-group s)))))
 
 (defun window-name (window)
   (or (window-user-title window)
@@ -212,25 +195,6 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
 
 (defun window-screen (window)
   (group-screen (window-group window)))
-
-(defun update-window-border (window)
-  ;; give it a colored border but only if there are more than 1 frames.
-  (let* ((group (window-group window))
-         (screen (group-screen group)))
-    (let ((c (if (and (> (length (group-frames group)) 1)
-                      (eq (group-current-window group) window))
-                 (screen-focus-color screen)
-                 (screen-unfocus-color screen))))
-      (setf (xlib:window-border (window-parent window)) c
-            ;; windows that dont fill the entire screen have a transparent background.
-            (xlib:window-background (window-parent window))
-            (if (eq (window-type window) :normal)
-                (if (eq *window-border-style* :thick)
-                    c
-                    (screen-win-bg-color screen))
-                :none))
-      ;; get the background updated
-      (xlib:clear-area (window-parent window)))))
 
 (defun send-client-message (window type &rest data)
   "Send a client message to a client's window."
@@ -330,7 +294,7 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
         (utf8-to-string name)
         "")))
 
-(defmacro def-window-attr (attr)
+(defmacro define-window-slot (attr)
   "Create a new window attribute and corresponding get/set functions."
   (let ((win (gensym))
         (val (gensym)))
@@ -417,13 +381,7 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
     (when (window-in-current-group-p window)
       (xwin-hide window)
       (when (eq window (current-window))
-        ;; If this window had the focus, try to avoid losing it.
-        (let ((group (window-group window))
-              (frame (window-frame window)))
-          (setf (frame-window frame)
-                (first (remove-if 'window-hidden-p (frame-windows group frame))))
-          (focus-frame group (tile-group-current-frame group)))))))
-
+        (group-lost-focus (window-group window))))))
 
 (defun xwin-maxsize-p (win)
   "Returns T if WIN specifies maximum dimensions."
@@ -507,98 +465,6 @@ and bottom_end_x."
         (:normal *normal-gravity*)
         ((:transient :dialog) *transient-gravity*))))
 
-(defun geometry-hints (win)
-  "Return hints for max width and height and increment hints. These
-hints have been modified to always be defined and never be greater
-than the root window's width and height."
-  (let* ((f (window-frame win))
-         (x (frame-x f))
-         (y (frame-display-y (window-group win) f))
-         (border (xlib:drawable-border-width (window-parent win)))
-         (fwidth (- (frame-width f) (* 2 border)))
-         (fheight (- (frame-display-height (window-group win) f)
-                     (* 2 border)))
-         (width fwidth)
-         (height fheight)
-         (hints (window-normal-hints win))
-         (hints-min-width (and hints (xlib:wm-size-hints-min-width hints)))
-         (hints-min-height (and hints (xlib:wm-size-hints-min-height hints)))
-         (hints-max-width (and hints (xlib:wm-size-hints-max-width hints)))
-         (hints-max-height (and hints (xlib:wm-size-hints-max-height hints)))
-         (hints-width (and hints (xlib:wm-size-hints-base-width hints)))
-         (hints-height (and hints (xlib:wm-size-hints-base-height hints)))
-         (hints-inc-x (and hints (xlib:wm-size-hints-width-inc hints)))
-         (hints-inc-y (and hints (xlib:wm-size-hints-height-inc hints)))
-         (hints-min-aspect (and hints (xlib:wm-size-hints-min-aspect hints)))
-         (hints-max-aspect (and hints (xlib:wm-size-hints-max-aspect hints)))
-         (border (case *window-border-style*
-                   (:none 0)
-                   (t (default-border-width-for-type win))))
-         center)
-    ;;    (dformat 4 "hints: ~s~%" hints)
-    ;; determine what the width and height should be
-    (cond
-      ;; handle specially fullscreen windows.
-      ((window-fullscreen win)
-       (let ((head (frame-head (window-group win) f)))
-         (setf x (frame-x head)
-               y (frame-y head)
-               width (frame-width head)
-               height (frame-height head)
-               (xlib:window-priority (window-parent win)) :above))
-       (return-from geometry-hints (values x y 0 0 width height 0 t)))
-      ;; Adjust the defaults if the window is a transient_for window.
-      ((find (window-type win) '(:transient :dialog))
-       (setf center t
-             width (min (max (or hints-width 0)
-                             (or hints-min-width 0)
-                             (window-width win))
-                        width)
-             height (min (max (or hints-height 0)
-                              (or hints-min-height 0)
-                              (window-height win))
-                         height)))
-      ;; aspect hints are handled similar to max size hints
-      ((and hints-min-aspect hints-max-aspect)
-       (let ((ratio (/ width height)))
-         (cond ((< ratio hints-min-aspect)
-                (setf height (ceiling width hints-min-aspect)))
-               ((> ratio hints-max-aspect)
-                (setf width  (ceiling (* height hints-max-aspect)))))
-         (setf center t)))
-      ;; Update our defaults if the window has the maxsize hints
-      ((or hints-max-width hints-max-height)
-       (when (and hints-max-width
-                  (< hints-max-width width))
-         (setf width hints-max-width))
-       (when (and hints-max-height
-                  (< hints-max-height height))
-         (setf height hints-max-height))
-       (setf center t))
-      (t
-       ;; if they have inc hints then start with the size and adjust
-       ;; based on those increments until the window fits in the frame
-       (when hints-inc-x
-         (let ((w (or hints-width (window-width win))))
-           (setf width (+ w (* hints-inc-x
-                               (+ (floor (- fwidth w) hints-inc-x)))))))
-       (when hints-inc-y
-         (let ((h (or hints-height (window-height win))))
-           (setf height (+ h (* hints-inc-y
-                                (+ (floor (- fheight h -1) hints-inc-y)))))))))
-    ;; adjust for gravity
-    (multiple-value-bind (wx wy) (get-gravity-coords (gravity-for-window win)
-                                                     width height
-                                                     0 0
-                                                     fwidth fheight)
-      (when (or center
-                (find *window-border-style* '(:tight :none)))
-        (setf x (+ wx (frame-x f))
-              y (+ wy (frame-display-y (window-group win) f))
-              wx 0 wy 0))
-      ;; Now return our findings
-      (values x y wx wy width height border center))))
-
 (defun set-window-geometry (win &key x y width height border-width)
   (macrolet ((update (xfn wfn v)
                `(when ,v ;; (/= (,wfn win) ,v))
@@ -611,33 +477,6 @@ than the root window's width and height."
       (update xlib:drawable-height window-height height)
       (update xlib:drawable-border-width nil border-width)
       )))
-
-(defun maximize-window (win)
-  "Maximize the window."
-  (multiple-value-bind (x y wx wy width height border stick)
-      (geometry-hints win)
-    (dformat 4 "maximize window ~a x: ~d y: ~d width: ~d height: ~d border: ~d stick: ~s~%" win x y width height border stick)
-    ;; This is the only place a window's geometry should change
-    (set-window-geometry win :x wx :y wy :width width :height height :border-width 0)
-    (xlib:with-state ((window-parent win))
-      ;; FIXME: updating the border doesn't need to be run everytime
-      ;; the window is maximized, but only when the border style or
-      ;; window type changes. The overhead is probably minimal,
-      ;; though.
-      (setf (xlib:drawable-x (window-parent win)) x
-            (xlib:drawable-y (window-parent win)) y
-            (xlib:drawable-border-width (window-parent win)) border)
-      ;; the parent window should stick to the size of the window
-      ;; unless it isn't being maximized to fill the frame.
-      (if (or stick
-              (find *window-border-style* '(:tight :none)))
-          (setf (xlib:drawable-width (window-parent win)) (window-width win)
-                (xlib:drawable-height (window-parent win)) (window-height win))
-          (let ((frame (window-frame win)))
-            (setf (xlib:drawable-width (window-parent win)) (- (frame-width frame)
-                                                               (* 2 (xlib:drawable-border-width (window-parent win))))
-                  (xlib:drawable-height (window-parent win)) (- (frame-display-height (window-group win) frame)
-                                                                (* 2 (xlib:drawable-border-width (window-parent win))))))))))
 
 (defun find-free-window-number (group)
   "Return a free window number for GROUP."
@@ -762,202 +601,25 @@ than the root window's width and height."
         do (xwin-grab-keys (screen-focus-window i)))
   (xlib:display-finish-output *display*))
 
-
-;;; Window placement routines
-
-(defun xwin-to-window (xwin)
-  "Build a window for XWIN"
-  (make-window
-   :xwin xwin
-   :width (xlib:drawable-width xwin) :height (xlib:drawable-height xwin)
-   :x (xlib:drawable-x xwin) :y (xlib:drawable-y xwin)
-   :title (xwin-name xwin)
-   :class (xwin-class xwin)
-   :res (xwin-res-name xwin)
-   :role (xwin-role xwin)
-   :type (xwin-type xwin)
-   :normal-hints (xlib:wm-normal-hints xwin)
-   :state +iconic-state+
-   :plist (make-hash-table)
-   :unmap-ignores 0))
-
-(defun string-match (string pat)
-  (let ((l (length pat)))
-    (when (> l 0)
-      (if (and (> l 3) (equal (subseq pat 0 3) "..."))
-          (search (subseq pat 3 l) string)
-          (equal string pat)))))
-
-(defun window-matches-properties-p (window &key class instance type role title)
-  "Returns T if window matches all the given properties"
-  (and
-   (if class (equal (window-class window) class) t)
-   (if instance (equal (window-res window) instance) t)
-   (if type (equal (window-type window) type) t)
-   (if role (string-match (window-role window) role) t)
-   (if title (string-match (window-title window) title) t) t))
-
-(defun window-matches-rule-p (w rule)
-  "Returns T if window matches rule"
-  (destructuring-bind (group-name frame raise lock &rest props) rule
-    (declare (ignore frame raise))
-    (if (or lock
-            (equal group-name (group-name (or (window-group w) (current-group)))))
-        (apply 'window-matches-properties-p w props))))
-
-;; TODO: add rules allowing matched windows to create their own groups/frames
-
-(defun rule-matching-window (window)
-  (dolist (rule *window-placement-rules*)
-    (when (window-matches-rule-p window rule) (return rule))))
-
-(defun get-window-placement (screen window)
-  "Returns the ideal group and frame that WINDOW should belong to and whether
-  the window should be raised."
-  (let ((match (rule-matching-window window)))
-    (if match
-        (destructuring-bind (group-name frame raise lock &rest props) match
-          (declare (ignore lock props))
-          (let ((group (find-group screen group-name)))
-            (if group
-                (values group (frame-by-number group frame) raise)
-                (progn
-                  (message "^B^1*Error placing window, group \"^b~a^B\" does not exist." group-name)
-                  (values)))))
-        (values))))
-
-(defun sync-window-placement ()
-  "Re-arrange existing windows according to placement rules"
-  (dolist (screen *screen-list*)
-    (dolist (window (screen-windows screen))
-      (multiple-value-bind (to-group frame raise) (get-window-placement screen window)
-        (declare (ignore raise))
-        (when to-group
-          (unless (eq (window-group window) to-group)
-            (move-window-to-group window to-group))
-          (unless (eq (window-frame window) frame)
-            (pull-window window frame)))))))
-
-(defun assign-window (window group frame &optional (where :tail))
-  (setf (window-group window) group
-        (window-number window) (find-free-window-number group)
-        (window-frame window) (or frame (pick-preferred-frame window)))
-  (if (eq where :head)
-      (push window (group-windows group))
-      (setf (group-windows group) (append (group-windows group) (list window)))))
-
-(defun place-existing-window (screen xwin)
-  "Called for windows existing at startup."
-  (let* ((window (xwin-to-window xwin))
-         (netwm-id (first (xlib:get-property xwin :_NET_WM_DESKTOP)))
-         (group (if (and netwm-id (< netwm-id (length (screen-groups screen))))
-                    (elt (sort-groups screen) netwm-id)
-                    (screen-current-group screen))))
-    (dformat 3 "Assigning pre-existing window ~S to group ~S~%" (window-name window) (group-name group))
-    (assign-window window group (find-frame group (xlib:drawable-x xwin) (xlib:drawable-y xwin)) :head)
-    (setf (frame-window (window-frame window)) window)
-    window))
-
-(defun place-window (screen xwin)
-  "Pick a group and frame for XWIN."
-  (let* ((window (xwin-to-window xwin))
-         (group (screen-current-group screen))
-         (frame nil)
-         (raise nil))
-    (multiple-value-bind (to-group to-frame to-raise) (get-window-placement screen window)
-      (setf group (or to-group group)
-            frame to-frame
-            raise to-raise))
-    (assign-window window group frame)
-    (setf (xwin-state xwin) +iconic-state+)
-    (xlib:change-property xwin :_NET_WM_DESKTOP
-                          (list (netwm-group-id group))
-                          :cardinal 32)
-    (when frame
-      (unless (eq (current-group) group)
-        (if raise
-            (switch-to-group group)
-            (message "Placing window ~a in frame ~d of group ~a"
-                     (window-name window) (frame-number frame) (group-name group))))
-      (when raise
-        (switch-to-screen (group-screen group))
-        (focus-frame group frame))
-      (run-hook-with-args *place-window-hook* window group frame))
-    window))
-
-(defun pick-preferred-frame (window)
-  (let* ((group (window-group window))
-         (frames (group-frames group))
-         (default (tile-group-current-frame group))
-         (preferred-frame (or *new-window-preferred-frame* default)))
-    (when (or (functionp *new-window-preferred-frame*)
-              (and (symbolp *new-window-preferred-frame*)
-                   (fboundp *new-window-preferred-frame*)))
-      (setq preferred-frame
-            (handler-case
-                (funcall *new-window-preferred-frame* window)
-              (error (c)
-                (message "^1*^BError while calling ^b^3**new-window-preferred-frame*^1*^B: ^n~a" c)
-                default))))
-    (cond
-      ;; If we already have a frame use it.
-      ((frame-p preferred-frame)
-       preferred-frame)
-      ;; If `preferred-frame' is a list of keyword use it to determine the
-      ;; frame.  The sanity check doesn't cover not recognized keywords.  We
-      ;; simply fall back to the default then.
-      ((and (listp preferred-frame)
-            (every #'keywordp preferred-frame))
-       (loop for i in preferred-frame
-          thereis (case i
-                    (:last
-                     ;; last-frame can be stale
-                     (and (> (length frames) 1)
-                          (tile-group-last-frame group)))
-                    (:unfocused
-                     (find-if (lambda (f)
-                                (not (eq f (tile-group-current-frame group))))
-                              frames))
-                    (:empty
-                     (find-if (lambda (f)
-                                (null (frame-window f)))
-                              frames))
-                    (:choice
-                     ;; Transient windows sometimes specify a location
-                     ;; relative to the TRANSIENT_FOR window. Just ignore
-                     ;; these hints.
-                     (unless (find (window-type window) '(:transient :dialog))
-                       (let ((hints (window-normal-hints window)))
-                         (when (and hints (xlib:wm-size-hints-user-specified-position-p hints))
-                           (find-frame group (window-x window) (window-y window))))))
-                    (t                  ; :focused or not recognized keyword
-                     default))))
-      ;; Not well formed `*new-window-preferred-frame*'.  Message an error and
-      ;; return the default.
-      (t (message "^1*^BInvalid ^b^3**new-window-preferred-frame*^1*^B: ^n~a"
-                  preferred-frame)
-         default))))
-
-(defun add-window (screen xwin)
-  (screen-add-mapped-window screen xwin)
-  (register-window (if *processing-existing-windows*
-                       (place-existing-window screen xwin)
-                       (place-window screen xwin))))
-
 (defun netwm-remove-window (window)
   (xlib:delete-property (window-xwin window) :_NET_WM_DESKTOP))
 
 (defun process-mapped-window (screen xwin)
   "Add the window to the screen's mapped window list and process it as
 needed."
-  (let ((window (add-window screen xwin)))
-    (setf (xlib:window-event-mask (window-xwin window)) *window-events*)
+  (let ((window (xwin-to-window xwin)))
+    (screen-add-mapped-window screen xwin)
     ;; windows always have border width 0. Their parents provide the
     ;; border.
     (set-window-geometry window :border-width 0)
-    (reparent-window window)
-    (maximize-window window)
+    (setf (xlib:window-event-mask (window-xwin window)) *window-events*)
+    (register-window window)
     (grab-keys-on-window window)
+    (if *processing-existing-windows*
+        (place-existing-window screen window)
+        (place-window screen window))
+    (reparent-window window)
+    (group-add-window (window-group window) window)
     ;; quite often the modeline displays the window list, so update it
     (update-all-mode-lines)
     ;; Set allowed actions
@@ -982,52 +644,41 @@ needed."
   "Restore a withdrawn window"
   (declare (type window window))
   ;; put it in a valid group
-  (let ((screen (window-screen window)))
-    ;; Use window plaecment rules
-    (multiple-value-bind (group frame raise) (get-window-placement screen window)
-      (declare (ignore raise))
-      (unless (find (window-group window)
-                    (screen-groups screen))
-        (setf (window-group window) (or group (screen-current-group screen))))
-      ;; FIXME: somehow it feels like this could be merged with group-add-window
-      (setf (window-title window) (xwin-name (window-xwin window))
-            (window-class window) (xwin-class (window-xwin window))
-            (window-res window) (xwin-res-name (window-xwin window))
-            (window-role window) (xwin-role (window-xwin window))
-            (window-type window) (xwin-type (window-xwin window))
-            (window-normal-hints window) (xlib:wm-normal-hints (window-xwin window))
-            (window-number window) (find-free-window-number (window-group window))
-            (window-state window) +iconic-state+
-            (xwin-state (window-xwin window)) +iconic-state+
-            (screen-withdrawn-windows screen) (delete window (screen-withdrawn-windows screen))
-            ;; put the window at the end of the list
-            (group-windows (window-group window)) (append (group-windows (window-group window)) (list window))
-            (window-frame window) (or frame (pick-preferred-frame window))))
+  (let* ((screen (window-screen window))
+         (group (get-window-placement screen window)))
+    (unless (find (window-group window)
+                  (screen-groups screen))
+      (setf (window-group window) (or group (screen-current-group screen))))
+    ;; FIXME: somehow it feels like this could be merged with group-add-window
+    (setf (window-title window) (xwin-name (window-xwin window))
+          (window-class window) (xwin-class (window-xwin window))
+          (window-res window) (xwin-res-name (window-xwin window))
+          (window-role window) (xwin-role (window-xwin window))
+          (window-type window) (xwin-type (window-xwin window))
+          (window-normal-hints window) (xlib:wm-normal-hints (window-xwin window))
+          (window-number window) (find-free-window-number (window-group window))
+          (window-state window) +iconic-state+
+          (xwin-state (window-xwin window)) +iconic-state+
+          (screen-withdrawn-windows screen) (delete window (screen-withdrawn-windows screen))
+          ;; put the window at the end of the list
+          (group-windows (window-group window)) (append (group-windows (window-group window)) (list window)))
     (screen-add-mapped-window screen (window-xwin window))
     (register-window window)
+    (group-add-window (window-group window) window)
     (xlib:change-property (window-xwin window) :_NET_WM_DESKTOP
                           (list (netwm-group-id (window-group window)))
                           :cardinal 32)
-    (maximize-window window)
     ;; It is effectively a new window in terms of the window list.
     (run-hook-with-args *new-window-hook* window)
-    ;; give it focus
-    (if (deny-request-p window *deny-map-request*)
-        (unless *suppress-deny-messages*
-          (if (eq (window-group window) (current-group))
-              (echo-string (window-screen window) (format nil "'~a' denied map request" (window-name window)))
-              (echo-string (window-screen window) (format nil "'~a' denied map request in group ~a" (window-name window) (group-name (window-group window))))))
-        (frame-raise-window (window-group window) (window-frame window) window
-                            (if (eq (window-frame window)
-                                    (tile-group-current-frame (window-group window)))
-                                t nil)))))
+    ;; FIXME: only called frame-raise-window instead of this function
+    ;; which will likely call focus-all.
+    (group-raise-request (window-group window) window :map)))
 
 (defun withdraw-window (window)
   "Withdrawing a window means just putting it in a list til we get a destroy event."
   (declare (type window window))
   ;; This function cannot request info about WINDOW from the xserver as it may not exist anymore.
-  (let ((f (window-frame window))
-        (group (window-group window))
+  (let ((group (window-group window))
         (screen (window-screen window)))
     (dformat 1 "withdraw window ~a~%" screen)
     ;; Save it for later since it is only withdrawn, not destroyed.
@@ -1039,17 +690,11 @@ needed."
     (screen-remove-mapped-window screen (window-xwin window))
     (setf (group-windows group)
           (delete window (group-windows group)))
-    ;; remove it from it's frame structures
-    (when (eq (frame-window f) window)
-      (frame-raise-window group f (first (frame-windows group f)) nil))
     (when (window-in-current-group-p window)
       ;; since the window doesn't exist, it doesn't have focus.
       (setf (screen-focus screen) nil))
     (netwm-remove-window window)
-    ;; If the current window was removed, then refocus the frame it
-    ;; was in, since it has a new current window
-    (when (eq (tile-group-current-frame group) f)
-      (focus-frame (window-group window) f))
+    (group-delete-window group window)
     ;; quite often the modeline displays the window list, so update it
     (update-all-mode-lines)
     ;; Run the destroy hook on the window
@@ -1121,73 +766,6 @@ maximized, and given focus."
 
 ;;; Window commands
 
-(defun focus-next-window (group)
-  (focus-forward group (sort-windows group)))
-
-(defun focus-prev-window (group)
-  (focus-forward group
-                 (reverse
-                  (sort-windows group))))
-
-(defcommand next () ()
-  "Go to the next window in the window list."
-  (let ((group (current-group)))
-    (if (group-current-window group)
-        (focus-next-window group)
-        (other-window group))))
-
-(defcommand prev () ()
-  "Go to the previous window in the window list."
-  (let ((group (current-group)))
-    (if (group-current-window group)
-        (focus-prev-window group)
-        (other-window group))))
-
-(defun pull-window (win &optional (to-frame (tile-group-current-frame (window-group win))))
-  (let ((f (window-frame win))
-        (group (window-group win)))
-    (unless (eq (frame-window to-frame) win)
-      (xwin-hide win)
-      (setf (window-frame win) to-frame)
-      (maximize-window win)
-      (when (eq (window-group win) (current-group))
-        (xwin-unhide (window-xwin win) (window-parent win)))
-      ;; We have to restore the focus after hiding.
-      (when (eq win (screen-focus (window-screen win)))
-        (screen-set-focus (window-screen win) win))
-      (frame-raise-window group to-frame win)
-      ;; if win was focused in its old frame then give the old
-      ;; frame the frame's last focused window.
-      (when (eq (frame-window f) win)
-        ;; the current value is no longer valid.
-        (setf (frame-window f) nil)
-        (frame-raise-window group f (first (frame-windows group f)) nil)))))
-
-;; In the future, this window will raise the window into the current
-;; frame.
-(defun focus-forward (group window-list &optional pull-p (predicate (constantly t)))
-  "Set the focus to the next item in window-list from the focused
-window. If PULL-P is T then pull the window into the current
-frame."
-  ;; The window with focus is the "current" window, so find it in the
-  ;; list and give that window focus
-  (let* ((w (group-current-window group))
-         (wins (remove-if-not predicate (cdr (member w window-list))))
-         (nw (if (null wins)
-                 ;; If the last window in the list is focused, then
-                 ;; focus the first one.
-                 (car (remove-if-not predicate window-list))
-                 ;; Otherwise, focus the next one in the list.
-                 (first wins))))
-    ;; there's still the case when the window is the only one in the
-    ;; list, so make sure its not the same as the current window.
-    (if (and nw
-             (not (eq w nw)))
-        (if pull-p
-            (pull-window nw)
-            (frame-raise-window group (window-frame nw) nw))
-        (message "No other window."))))
-
 (defcommand delete-current-window () ()
   "Delete the current window. This is a request sent to the window. The
 window's client may decide not to grant the request or may not be able
@@ -1222,7 +800,7 @@ to if it is unresponsive."
       (unless (null query)
         (setf match (find-if #'match (group-windows group))))
       (when match
-        (frame-raise-window group (window-frame match) match)))))
+        (group-focus-window group match)))))
 
 (defcommand select (win) ((:window-name "Select: "))
   "Switch to the first window that starts with @var{win}."
@@ -1234,7 +812,7 @@ to if it is unresponsive."
              (= (window-number win) num)))
     (let ((win (find-if #'match (group-windows group))))
       (when win
-        (frame-raise-window group (window-frame win) win)))))
+        (group-focus-window group win)))))
 
 (defun other-window (group)
   (let* ((wins (group-windows group))
@@ -1243,7 +821,7 @@ to if it is unresponsive."
                   (second wins)
                   (first wins))))
     (if win
-        (frame-raise-window group (window-frame win) win)
+        (group-focus-window group win)
         (echo-string (group-screen group) "No other window."))))
 
 (defcommand other () ()
@@ -1255,15 +833,6 @@ to if it is unresponsive."
 with broken (non-NETWM) fullscreen implemenations, such as any program
 using SDL."
   (update-fullscreen (current-window) 2))
-
-(defcommand pull-window-by-number (n &optional (group (current-group)))
-                                  ((:window-number "Pull: "))
-  "Pull window N from another frame into the current frame and focus it."
-  (let ((win (find n (group-windows group) :key 'window-number :test '=)))
-    (when win
-      (pull-window win))))
-
-(defcommand-alias pull pull-window-by-number)
 
 (defcommand renumber (nt &optional (group (current-group))) ((:number "Number: "))
   "Change the current window's number to the specified number. If another window
@@ -1303,7 +872,7 @@ override the default window formatting."
                                       (sort-windows group))))))
 
         (if window
-            (frame-raise-window group (window-frame window) window)
+            (group-focus-window group window)
             (throw 'error :abort)))))
 
 (defun window-send-string (window string)
@@ -1328,44 +897,6 @@ override the default window formatting."
 "Send the string of characters to the current window as if they'd been typed."
   (window-send-string (current-window) string))
 
-(defun other-hidden-window (group)
-  "Return the last window that was accessed and that is hidden."
-  (let ((wins (remove-if (lambda (w) (eq (frame-window (window-frame w)) w)) (group-windows group))))
-    (first wins)))
-
-(defun pull-other-hidden-window (group)
-  "pull the last accessed hidden window from any frame into the
-current frame and raise it."
-  (let ((win (other-hidden-window group)))
-    (if win
-        (pull-window win)
-        (echo-string (group-screen group) "No other window."))))
-
-(defun other-window-in-frame (group)
-  (let* ((f (tile-group-current-frame group))
-         (wins (frame-windows group f))
-         (win (if (frame-window f)
-                  (second wins)
-                  (first wins))))
-    (if win
-        (frame-raise-window group (window-frame win) win)
-        (echo-string (group-screen group) "No other window."))))
-
-(defcommand pull-hidden-next () ()
-"Pull the next hidden window into the current frame."
-  (let ((group (current-group)))
-    (focus-forward group (sort-windows group) t (lambda (w) (not (eq (frame-window (window-frame w)) w))))))
-
-(defcommand pull-hidden-previous () ()
-"Pull the next hidden window into the current frame."
-  (let ((group (current-group)))
-    (focus-forward group (nreverse (sort-windows group)) t (lambda (w) (not (eq (frame-window (window-frame w)) w))))))
-
-(defcommand pull-hidden-other () ()
-"Pull the last focused, hidden window into the current frame."
-  (let ((group (current-group)))
-    (pull-other-hidden-window group)))
-
 (defcommand mark () ()
 "Toggle the current window's mark."
   (let ((win (current-window)))
@@ -1387,29 +918,6 @@ current frame and raise it."
       (pull-window i))
     (clear-window-marks group)))
 
-(defun exchange-windows (win1 win2)
-  "Exchange the windows in their respective frames."
-  (let ((f1 (window-frame win1))
-        (f2 (window-frame win2)))
-    (unless (eq f1 f2)
-      (pull-window win1 f2)
-      (pull-window win2 f1)
-      (focus-frame (window-group win1) f2))))
-
-(defcommand exchange-direction (dir &optional (win (current-window)))
-    ((:direction "Direction: "))
-  "Exchange the current window (by default) with the top window of the frame in specified direction.
-@table @asis
-@item up
-@item down
-@item left
-@item right
-@end table"
-  (let* ((frame-set (group-frames (window-group win))))
-    (exchange-windows win (frame-window (neighbour dir
-                                                   (window-frame win)
-                                                   frame-set)))))
-
 (defun echo-windows (group fmt &optional (windows (group-windows group)))
   "Print a list of the windows to the screen."
   (let* ((wins (sort1 windows '< :key 'window-number))
@@ -1424,55 +932,6 @@ current frame and raise it."
   "Display a list of managed windows. The optional argument @var{fmt} can
 be used to override the default window formatting."
   (echo-windows (current-group) fmt))
-
-(defcommand echo-frame-windows (&optional (fmt *window-format*)) (:rest)
-  (echo-windows (current-group) fmt (frame-windows (current-group)
-                                                   (tile-group-current-frame (current-group)))))
-
-(defcommand-alias frame-windows echo-frame-windows)
-
-;;; window placement commands
-
-(defun make-rule-for-window (window &optional lock title)
-  "Guess at a placement rule for WINDOW and add it to the current set."
-  (let* ((group (window-group window))
-         (group-name (group-name group))
-         (frame-number (frame-number (window-frame window)))
-         (role (window-role window)))
-    (push (list group-name frame-number t lock
-                :class (window-class window)
-                :instance (window-res window)
-                :title (and title (window-name window))
-                :role (and (not (equal role "")) role))
-          *window-placement-rules*)))
-
-(defcommand remember (lock title)
-                     ((:y-or-n "Lock to group? ")
-                      (:y-or-n "Use title? "))
-  "Make a generic placement rule for the current window. Might be too specific/not specific enough!"
-  (make-rule-for-window (current-window) (first lock) (first title)))
-
-(defcommand forget () ()
-  "Forget the window placement rule that matches the current window."
-  (let* ((window (current-window))
-         (match (rule-matching-window window)))
-    (if match
-        (progn
-          (setf *window-placement-rules* (delete match *window-placement-rules*))
-          (message "Rule forgotten"))
-        (message "No matching rule"))))
-
-(defcommand dump-window-placement-rules (file) ((:rest "Filename: "))
-  "Dump *window-placement-rules* to FILE."
-  (dump-to-file *window-placement-rules* file))
-
-(defcommand-alias dump-rules dump-window-placement-rules)
-
-(defcommand restore-window-placement-rules (file) ((:rest "Filename: "))
-  "Restore *window-placement-rules* from FILE."
-  (setf *window-placement-rules* (read-dump-from-file file)))
-
-(defcommand-alias restore-rules restore-window-placement-rules)
 
 (defcommand info (&optional (fmt *window-info-format*)) ()
   "Display information about the current window."

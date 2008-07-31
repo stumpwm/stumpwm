@@ -784,7 +784,7 @@ Some examples follow.
 @node Programming With Windows, Rule Based Window Placement, Controlling Raise And Map Requests, Windows
 @section Programming With Windows
 
-%%% def-window-attr
+%%% define-window-slot
 
 @@@ window-send-string
 ### *default-window-name*
