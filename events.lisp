@@ -588,7 +588,8 @@ the window in it's frame."
   (when (and window (eq mode :normal) (eq *mouse-focus-policy* :sloppy))
     (let ((win (find-window window)))
       (when (and win (find win (top-windows)))
-        (focus-all win)))))
+        (focus-all win)
+        (update-all-mode-lines)))))
 
 (define-stump-event-handler :button-press (window code x y child time)
   ;; Pass click to client
@@ -601,13 +602,15 @@ the window in it's frame."
          (let* ((group (screen-current-group screen))
                 (frame (find-frame group x y)))
            (when frame
-             (focus-frame group frame))))
+             (focus-frame group frame)
+             (update-all-mode-lines))))
        (run-hook-with-args *root-click-hook* screen code x y))
       ((setf ml (find-mode-line-window window))
        (run-hook-with-args *mode-line-click-hook* ml code x y))
       ((setf win (find-window-by-parent window (visible-windows)))
        (when (eq *mouse-focus-policy* :click)
-         (focus-all win))))))
+         (focus-all win)
+         (update-all-mode-lines))))))
 
 ;; Handling event :KEY-PRESS
 ;; (:DISPLAY #<XLIB:DISPLAY :0 (The X.Org Foundation R60700000)> :EVENT-KEY :KEY-PRESS :EVENT-CODE 2 :SEND-EVENT-P NIL :CODE 45 :SEQUENCE 1419 :TIME 98761213 :ROOT #<XLIB:WINDOW :0 96> :WINDOW #<XLIB:WINDOW :0 6291484> :EVENT-WINDOW #<XLIB:WINDOW :0 6291484> :CHILD
