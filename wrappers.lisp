@@ -241,14 +241,17 @@ they should be windows. So use this function to make a window out of them."
   #+(or clisp sbcl) (invoke-restart :one)
   #-(or clisp sbcl) (error "unimplemented"))
 
-;;; CLISP does not include a :linux feature on Linux (at least until
-;;; version 2.46). Until this is fixed, use a hack to determine
-;;; whether this is run on Linux.
+;;; CLISP does not include features to distinguish different Unix
+;;; flavours (at least until version 2.46). Until this is fixed, use a
+;;; hack to determine them.
 
-#+ (and clisp (not linux))
+#+ (and clisp (not (or linux freebsd)))
 (eval-when (eval load compile)
-  (when (string= "Linux" (os:uname-sysname (os:uname)))
-    (push :linux *features*)))
+  (let ((osname (os:uname-sysname (os:uname))))
+    (cond
+      ((string= osname "Linux") (pushnew :linux *features*))
+      ((string= osname "FreeBSD") (pushnew :freebsd *features*))
+      (t (warn "Your operating system is not recognized.")))))
 
 ;;; On GNU/Linux some contribs use sysfs to figure out useful info for
 ;;; the user. SBCL upto at least 1.0.16 (but probably much later) has
