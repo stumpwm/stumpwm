@@ -161,8 +161,7 @@ T (default) then also focus the frame."
   (tree-accum-fn (tile-group-frame-head group head) 'nconc 'list))
 
 (defun find-free-frame-number (group)
-  (find-free-number (mapcar (lambda (f) (frame-number f))
-                            (group-frames group))))
+  (find-free-number (mapcar 'frame-number (group-frames group))))
 
 (defun choose-new-frame-window (frame group)
   "Find out what window should go in a newly created frame."
