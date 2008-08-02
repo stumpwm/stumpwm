@@ -836,7 +836,7 @@ to if it is unresponsive."
       (when win
         (group-focus-window group win)))))
 
-(defcommand other (&optional (group (current-group))) ()
+(defcommand other-window (&optional (group (current-group))) ()
   "Switch to the window last focused."
   (let* ((wins (group-windows group))
          ;; the frame could be empty
@@ -846,6 +846,8 @@ to if it is unresponsive."
     (if win
         (group-focus-window group win)
         (echo-string (group-screen group) "No other window."))))
+
+(defcommand-alias other other-window)
 
 (defcommand renumber (nt &optional (group (current-group))) ((:number "Number: "))
   "Change the current window's number to the specified number. If another window
@@ -913,10 +915,12 @@ override the default window formatting."
                    "Marked!"
                    "Unmarked!")))))
 
-(defcommand clear-marks (&optional (group (current-group)) (windows (group-windows group))) ()
+(defcommand clear-window-marks (&optional (group (current-group)) (windows (group-windows group))) ()
 "Clear all marks in the current group."
   (dolist (w windows)
     (setf (window-marked w) nil)))
+
+(defcommand-alias clear-marks clear-window-marks)
 
 (defcommand echo-windows (&optional (fmt *window-format*) (group (current-group)) (windows (group-windows group))) (:rest)
   "Display a list of managed windows. The optional argument @var{fmt} can
