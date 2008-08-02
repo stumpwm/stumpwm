@@ -35,6 +35,33 @@
 (defvar *default-window-name* "Unnamed"
   "The name given to a window that does not supply its own name.")
 
+(defclass window ()
+  ((xwin    :initarg :xwin    :accessor window-xwin)
+   (width   :initarg :width   :accessor window-width)
+   (height  :initarg :height  :accessor window-height)
+   ;; these are only used to hold the requested map location.
+   (x       :initarg :x       :accessor window-x)
+   (y       :initarg :y       :accessor window-y)
+   (gravity :initform nil     :accessor window-gravity)
+   (group   :initarg :group   :accessor window-group)
+   (number  :initarg :number  :accessor window-number)
+   (parent                    :accessor window-parent)
+   (title   :initarg :title   :accessor window-title)
+   (user-title :initform nil  :accessor window-user-title)
+   (class   :initarg :class   :accessor window-class)
+   (type    :initarg :type    :accessor window-type)
+   (res     :initarg :res     :accessor window-res)
+   (role    :initarg :role    :accessor window-role)
+   (unmap-ignores :initarg :unmap-ignores :accessor window-unmap-ignores)
+   (state   :initarg :state   :accessor window-state)
+   (normal-hints :initarg :normal-hints :accessor window-normal-hints)
+   (marked  :initform nil     :accessor window-marked)
+   (plist   :initarg :plist   :accessor window-plist)
+   (fullscreen :initform nil  :accessor window-fullscreen)))
+
+(defmethod print-object ((object window) stream)
+  (format stream "#S(~a ~s #x~x)" (type-of object) (window-name object) (window-id object)))
+
 ;;; Window Management API
 
 (defgeneric update-decoration (window)
@@ -270,14 +297,6 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
 
 ;; some handy wrappers
 
-(defun true-height (win)
-  (xlib:with-state (win)
-    (+ (xlib:drawable-height win) (* (xlib:drawable-border-width win) 2))))
-
-(defun true-width (win)
-  (xlib:with-state (win)
-    (+ (xlib:drawable-width win) (* (xlib:drawable-border-width win) 2))))
-
 (defun xwin-border-width (win)
   (xlib:drawable-border-width win))
 
@@ -329,10 +348,6 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
   (loop for i in (sort-windows group)
         when (window-marked i)
         collect i))
-
-(defun clear-window-marks (group &optional (windows (group-windows group)))
-  (dolist (w windows)
-    (setf (window-marked w) nil)))
 
 (defun (setf xwin-state) (state xwin)
   "Set the state (iconic, normal, withdrawn) of a window."
@@ -770,11 +785,6 @@ maximized, and given focus."
       (move-window-to-head group window)
       (run-hook-with-args *focus-window-hook* window cw))))
 
-(defun delete-window (window)
-  "Send a delete event to the window."
-  (dformat 3 "Delete window~%")
-  (send-client-message window :WM_PROTOCOLS (xlib:intern-atom *display* :WM_DELETE_WINDOW)))
-
 (defun xwin-kill (window)
   "Kill the client associated with window."
   (dformat 3 "Kill client~%")
@@ -782,45 +792,41 @@ maximized, and given focus."
 
 ;;; Window commands
 
-(defcommand delete-current-window () ()
+(defcommand delete-window (&optional (window (current-window))) ()
   "Delete the current window. This is a request sent to the window. The
 window's client may decide not to grant the request or may not be able
 to if it is unresponsive."
-  (let ((group (current-group)))
-    (when (group-current-window group)
-      (delete-window (group-current-window group)))))
+  (when window
+    (send-client-message window :WM_PROTOCOLS (xlib:intern-atom *display* :WM_DELETE_WINDOW))))
 
-(defcommand-alias delete delete-current-window)
+(defcommand-alias delete delete-window)
 
-(defcommand kill-current-window () ()
-"`Tell X to disconnect the client that owns the current window. if
+(defcommand kill-window (&optional (window (current-window))) ()
+  "Tell X to disconnect the client that owns the current window. if
 @command{delete-current-window} didn't work, try this."
-  (let ((group (current-group)))
-    (when (group-current-window group)
-      (xwin-kill (window-xwin (group-current-window group))))))
+  (when window
+    (xwin-kill (window-xwin window))))
 
-(defcommand-alias kill kill-current-window)
+(defcommand-alias kill kill-window)
 
 (defcommand title (title) ((:rest "Set window's title to: "))
   (if (current-window)
       (setf (window-user-title (current-window)) title)
       (message "No Focused Window")))
 
-(defun select-window (group query)
-  "Read input from the user and go to the selected window."
+(defcommand select-window (query) ((:window-name "Select: "))
+  "Switch to the first window that starts with @var{query}."
   (let (match)
     (labels ((match (win)
                (let* ((wname (window-name win))
                       (end (min (length wname) (length query))))
                  (string-equal wname query :end1 end :end2 end))))
       (unless (null query)
-        (setf match (find-if #'match (group-windows group))))
+        (setf match (find-if #'match (group-windows (current-group)))))
       (when match
-        (group-focus-window group match)))))
+        (group-focus-window (current-group) match)))))
 
-(defcommand select (win) ((:window-name "Select: "))
-  "Switch to the first window that starts with @var{win}."
-  (select-window (current-group) win))
+(defcommand-alias select select-window)
 
 (defcommand select-window-by-number (num &optional (group (current-group)))
                                     ((:window-number "Select: "))
@@ -830,7 +836,8 @@ to if it is unresponsive."
       (when win
         (group-focus-window group win)))))
 
-(defun other-window (group)
+(defcommand other (&optional (group (current-group))) ()
+  "Switch to the window last focused."
   (let* ((wins (group-windows group))
          ;; the frame could be empty
          (win (if (group-current-window group)
@@ -839,16 +846,6 @@ to if it is unresponsive."
     (if win
         (group-focus-window group win)
         (echo-string (group-screen group) "No other window."))))
-
-(defcommand other () ()
-  "Switch to the window last focused."
-  (other-window (current-group)))
-
-(defcommand fullscreen () ()
-  "Toggle the fullscreen mode of the current widnow. Use this for clients
-with broken (non-NETWM) fullscreen implemenations, such as any program
-using SDL."
-  (update-fullscreen (current-window) 2))
 
 (defcommand renumber (nt &optional (group (current-group))) ((:number "Number: "))
   "Change the current window's number to the specified number. If another window
@@ -868,11 +865,6 @@ is using the number, then the windows swap numbers. Defaults to current group."
 
 (defcommand-alias number renumber)
 
-(defcommand gravity (gravity) ((:gravity "Gravity: "))
-  (when (current-window)
-    (setf (window-gravity (current-window)) gravity)
-    (maximize-window (current-window))))
-
 (defcommand windowlist (&optional (fmt *window-format*)) (:rest)
 "Allow the user to Select a window from the list of windows and focus
 the selected window. For information of menu bindings
@@ -891,8 +883,9 @@ override the default window formatting."
             (group-focus-window group window)
             (throw 'error :abort)))))
 
-(defun window-send-string (window string)
-  "Send the string of characters to the window as if they'd been typed."
+
+(defcommand window-send-string (string &optional (window (current-window))) ((:rest "Insert: "))
+  "Send the string of characters to the current window as if they'd been typed."
   (when window
     (map nil (lambda (ch)
                ;; exploit the fact that keysyms for ascii characters
@@ -909,9 +902,7 @@ override the default window formatting."
                                   (make-key :keysym sym)))))
          string)))
 
-(defcommand insert (string) ((:rest "Insert: "))
-"Send the string of characters to the current window as if they'd been typed."
-  (window-send-string (current-window) string))
+(defcommand-alias insert window-send-string)
 
 (defcommand mark () ()
 "Toggle the current window's mark."
@@ -922,20 +913,14 @@ override the default window formatting."
                    "Marked!"
                    "Unmarked!")))))
 
-(defcommand clear-marks () ()
+(defcommand clear-marks (&optional (group (current-group)) (windows (group-windows group))) ()
 "Clear all marks in the current group."
-  (let ((group (current-group)))
-    (clear-window-marks group)))
+  (dolist (w windows)
+    (setf (window-marked w) nil)))
 
-(defcommand pull-marked () ()
-"Pull all marked windows into the current frame and clear the marks."
-  (let ((group (current-group)))
-    (dolist (i (marked-windows group))
-      (pull-window i))
-    (clear-window-marks group)))
-
-(defun echo-windows (group fmt &optional (windows (group-windows group)))
-  "Print a list of the windows to the screen."
+(defcommand echo-windows (&optional (fmt *window-format*) (group (current-group)) (windows (group-windows group))) (:rest)
+  "Display a list of managed windows. The optional argument @var{fmt} can
+be used to override the default window formatting."
   (let* ((wins (sort1 windows '< :key 'window-number))
          (highlight (position (group-current-window group) wins))
          (names (mapcar (lambda (w)
@@ -944,10 +929,7 @@ override the default window formatting."
         (echo-string (group-screen group) "No Managed Windows")
         (echo-string-list (group-screen group) names highlight))))
 
-(defcommand windows (&optional (fmt *window-format*)) (:rest)
-  "Display a list of managed windows. The optional argument @var{fmt} can
-be used to override the default window formatting."
-  (echo-windows (current-group) fmt))
+(defcommand-alias windows echo-windows)
 
 (defcommand info (&optional (fmt *window-info-format*)) ()
   "Display information about the current window."

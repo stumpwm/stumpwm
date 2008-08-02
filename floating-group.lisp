@@ -28,7 +28,7 @@
 (defmethod group-current-window ((group float-group))
   (screen-focus (group-screen group)))
 
-(defmethod current-head (&optional (group float-group))
+(defmethod group-current-head ((group float-group))
   ;; FIXME: it'd be good not to copy them each time.
   (first (copy-heads (group-screen group))))
 

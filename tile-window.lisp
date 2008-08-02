@@ -2,6 +2,9 @@
 
 (in-package :stumpwm)
 
+(defclass tile-window (window)
+  ((frame   :initarg :frame   :accessor window-frame)))
+
 (defmethod update-decoration ((window tile-window))
   ;; give it a colored border but only if there are more than 1 frames.
   (let* ((group (window-group window))
@@ -307,6 +310,24 @@ current frame and raise it."
                                                    (tile-group-current-frame (current-group)))))
 
 (defcommand-alias frame-windows echo-frame-windows)
+
+(defcommand fullscreen () ()
+  "Toggle the fullscreen mode of the current widnow. Use this for clients
+with broken (non-NETWM) fullscreen implemenations, such as any program
+using SDL."
+  (update-fullscreen (current-window) 2))
+
+(defcommand gravity (gravity) ((:gravity "Gravity: "))
+  (when (current-window)
+    (setf (window-gravity (current-window)) gravity)
+    (maximize-window (current-window))))
+
+(defcommand pull-marked () ()
+"Pull all marked windows into the current frame and clear the marks."
+  (let ((group (current-group)))
+    (dolist (i (marked-windows group))
+      (pull-window i))
+    (clear-window-marks group)))
 
 ;;; window placement commands
 

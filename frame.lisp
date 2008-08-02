@@ -73,7 +73,7 @@
 (defmethod group-current-window ((group tile-group))
   (frame-window (tile-group-current-frame group)))
 
-(defmethod current-head (&optional (group tile-group))
+(defmethod group-current-head ((group tile-group))
   (frame-head group (tile-group-current-frame group)))
 
 (defmethod group-move-request ((group tile-group) window x y relative-to)

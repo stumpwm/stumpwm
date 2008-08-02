@@ -107,7 +107,7 @@
       ;; XXX: Clearly a more general criterion is needed
       (when frame
         (if raise
-            (focus-all group window)
+            (focus-all window)
             (unless (eq (current-group) group)
               (message "Placing window ~a in group ~a"
                        (window-name window) (group-name group))))
