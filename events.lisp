@@ -456,7 +456,7 @@ converted to an atom is removed."
   (remove-wm-state (window-xwin window) :_NET_WM_STATE_FULLSCREEN)
   (setf (xlib:drawable-border-width (window-parent window)) (default-border-width-for-type window))
   (maximize-window window)
-  (update-window-border window)
+  (update-decoration window)
   (update-mode-lines (current-screen)))
 
 (defun update-fullscreen (window action)

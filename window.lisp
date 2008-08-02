@@ -35,6 +35,22 @@
 (defvar *default-window-name* "Unnamed"
   "The name given to a window that does not supply its own name.")
 
+;;; Window Management API
+
+(defgeneric update-decoration (window)
+  (:documentation "Update the window decoration."))
+(defgeneric focus-window (window)
+  (:documentation "Give the specified window keyboard focus."))
+(defgeneric raise-window (window)
+  (:documentation "Bring the window to the top of the window stack."))
+(defgeneric window-visible-p (window)
+  (:documentation "Return T if the window is visible"))
+
+
+
+(defmethod update-decoration ((window window))
+  )
+
 ;; Urgency / demands attention
 
 (defun register-urgent-window (window)
@@ -242,7 +258,7 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
    (xlib:wm-name win)))
 
 ;; FIXME: should we raise the winodw or its parent?
-(defun raise-window (win)
+(defmethod raise-window (win)
   "Map the window if needed and bring it to the top of the stack. Does not affect focus."
   (when (window-urgent-p win)
     (window-clear-urgency win))
@@ -733,9 +749,9 @@ needed."
       (setf (screen-focus screen) nil)
       (move-screen-to-head screen))
     (when last-win
-      (update-window-border last-win))))
-
-(defun focus-window (window)
+      (update-decoration last-win))))
+  
+(defmethod focus-window (window)
   "Give the window focus. This means the window will be visible,
 maximized, and given focus."
   (dformat 3 "focus-window: ~s~%" window)
@@ -747,9 +763,9 @@ maximized, and given focus."
       (raise-window window)
       (screen-set-focus screen window)
       ;;(send-client-message window :WM_PROTOCOLS +wm-take-focus+)
-      (update-window-border window)
+      (update-decoration window)
       (when cw
-        (update-window-border cw))
+        (update-decoration cw))
       ;; Move the window to the head of the mapped-windows list
       (move-window-to-head group window)
       (run-hook-with-args *focus-window-hook* window cw))))

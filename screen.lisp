@@ -538,9 +538,6 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 (defun (setf tile-group-frame-head) (frame group head)
   (setf (elt (tile-group-frame-tree group) (position head (group-heads group))) frame))
 
-(defun current-head (&optional (group (current-group)))
-  (frame-head group (tile-group-current-frame group)))
-
 (defun head-windows (group head)
   "Returns a list of windows on HEAD of GROUP"
   (remove-if-not

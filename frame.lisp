@@ -73,6 +73,9 @@
 (defmethod group-current-window ((group tile-group))
   (frame-window (tile-group-current-frame group)))
 
+(defmethod current-head (&optional (group tile-group))
+  (frame-head group (tile-group-current-frame group)))
+
 (defmethod group-move-request ((group tile-group) window x y relative-to)
   (when *honor-window-moves*
     (dformat 3 "Window requested new position ~D,~D relative to ~S~%" x y relative-to)
@@ -797,7 +800,7 @@ windows used to draw the numbers in. The caller must destroy them."
     (if (split-frame group dir)
         (progn
           (when (frame-window f)
-            (update-window-border (frame-window f)))
+            (update-decoration (frame-window f)))
           (show-frame-indicator group))
         (message "Cannot split smaller than minimum size."))))
 
@@ -846,7 +849,7 @@ space."
                           (sync-frame-windows group leaf)))
           (frame-raise-window group l (frame-window l) nil)
           (when (frame-window l)
-            (update-window-border (frame-window l)))
+            (update-decoration (frame-window l)))
           (when (eq frame current)
             (show-frame-indicator group))))))
 
@@ -873,7 +876,7 @@ space."
                 (tile-group-current-frame group) frame)
           (focus-frame group frame)
           (if (frame-window frame)
-              (update-window-border (frame-window frame))
+              (update-decoration (frame-window frame))
               (show-frame-indicator group))
           (sync-frame-windows group (tile-group-current-frame group))))))
 

@@ -2,6 +2,27 @@
 
 (in-package :stumpwm)
 
+(defmethod update-decoration ((window tile-window))
+  ;; give it a colored border but only if there are more than 1 frames.
+  (let* ((group (window-group window))
+         (screen (group-screen group)))
+    (let ((c (if (and (> (length (group-frames group)) 1)
+                      (eq (group-current-window group) window))
+                 (screen-focus-color screen)
+                 (screen-unfocus-color screen))))
+      (setf (xlib:window-border (window-parent window)) c
+            ;; windows that dont fill the entire screen have a transparent background.
+            (xlib:window-background (window-parent window))
+            (if (eq (window-type window) :normal)
+                (if (eq *window-border-style* :thick)
+                    c
+                    (screen-win-bg-color screen))
+                :none))
+      ;; get the background updated
+      (xlib:clear-area (window-parent window)))))
+
+;;;;
+
 (defun really-raise-window (window)
   (frame-raise-window (window-group window) (window-frame window) window))
 
@@ -141,27 +162,6 @@ than the root window's width and height."
                                                                (* 2 (xlib:drawable-border-width (window-parent win))))
                   (xlib:drawable-height (window-parent win)) (- (frame-display-height (window-group win) frame)
                                                                 (* 2 (xlib:drawable-border-width (window-parent win))))))))))
-
-;;;
-
-(defun update-window-border (window)
-  ;; give it a colored border but only if there are more than 1 frames.
-  (let* ((group (window-group window))
-         (screen (group-screen group)))
-    (let ((c (if (and (> (length (group-frames group)) 1)
-                      (eq (group-current-window group) window))
-                 (screen-focus-color screen)
-                 (screen-unfocus-color screen))))
-      (setf (xlib:window-border (window-parent window)) c
-            ;; windows that dont fill the entire screen have a transparent background.
-            (xlib:window-background (window-parent window))
-            (if (eq (window-type window) :normal)
-                (if (eq *window-border-style* :thick)
-                    c
-                    (screen-win-bg-color screen))
-                :none))
-      ;; get the background updated
-      (xlib:clear-area (window-parent window)))))
 
 ;;;
 
