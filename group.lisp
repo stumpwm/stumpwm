@@ -37,10 +37,11 @@
    (name :initarg :name :accessor group-name)))
 
 ;;; The group API
-(defgeneric group-add-window (group window)
+(defgeneric group-add-window (group window &key &allow-other-keys)
   (:documentation "Called when a window is added to the group. All
 house keeping is already taken care of. Only the group's specific
-window managing housekeeping need be done."))
+window managing housekeeping need be done.  This function accepts keys
+to inform the group on how to place the window."))
 (defgeneric group-delete-window (group window)
   (:documentation "Called when a window is removed from thegroup. All
 house keeping is already taken care of. Only the group's specific
@@ -192,6 +193,26 @@ at 0. Return a netwm compliant group id."
   "Merge all windows in FROM-GROUP into TO-GROUP."
   (dolist (window (group-windows from-group))
     (move-window-to-group window to-group)))
+
+(defun netwm-group (window &optional (screen (window-screen window)))
+  "Get the window's desktop property and return a matching group, if
+there exists one."
+  (let ((id (first (xlib:get-property (window-xwin window) :_NET_WM_DESKTOP))))
+    (when (and id (< id (length (screen-groups screen))))
+      (elt (sort-groups screen) id))))
+
+(defun netwm-set-group (window)
+  "Set the desktop property for the given window."
+  (xlib:change-property (window-xwin window) :_NET_WM_DESKTOP
+                        (list (netwm-group-id (window-group window)))
+                        :cardinal 32))
+
+(defun netwm-set-allowed-actions (window)
+  (xlib:change-property (window-xwin window) :_NET_WM_ALLOWED_ACTIONS
+                        (mapcar (lambda (a)
+                                  (xlib:intern-atom *display* a))
+                                +netwm-allowed-actions+)
+                        :atom 32))
 
 (defun netwm-update-groups (screen)
   "update all windows to reflect a change in the group list."

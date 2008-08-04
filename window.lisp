@@ -73,11 +73,6 @@
 (defgeneric window-visible-p (window)
   (:documentation "Return T if the window is visible"))
 
-
-
-(defmethod update-decoration ((window window))
-  )
-
 ;; Urgency / demands attention
 
 (defun register-urgent-window (window)
@@ -513,23 +508,22 @@ and bottom_end_x."
   "Return a free window number for GROUP."
   (find-free-number (mapcar 'window-number (group-windows group))))
 
-(defun reparent-window (window)
+(defun reparent-window (screen window)
   ;; apparently we need to grab the server so the client doesn't get
   ;; the mapnotify event before the reparent event. that's what fvwm
   ;; says.
   (xlib:with-server-grabbed (*display*)
-    (let* ((screen (window-screen window))
-           (master-window (xlib:create-window
-                           :parent (screen-root screen)
-                           :x (xlib:drawable-x (window-xwin window)) :y (xlib:drawable-y (window-xwin window))
-                           :width (window-width window)
-                           :height (window-height window)
-                           :background (if (eq (window-type window) :normal)
-                                           (screen-win-bg-color screen)
-                                           :none)
-                           :border (screen-unfocus-color screen)
-                           :border-width (default-border-width-for-type window)
-                           :event-mask *window-parent-events*)))
+    (let ((master-window (xlib:create-window
+                          :parent (screen-root screen)
+                          :x (xlib:drawable-x (window-xwin window)) :y (xlib:drawable-y (window-xwin window))
+                          :width (window-width window)
+                          :height (window-height window)
+                          :background (if (eq (window-type window) :normal)
+                                          (screen-win-bg-color screen)
+                                          :none)
+                          :border (screen-unfocus-color screen)
+                          :border-width (default-border-width-for-type window)
+                          :event-mask *window-parent-events*)))
       (unless (eq (xlib:window-map-state (window-xwin window)) :unmapped)
         (incf (window-unmap-ignores window)))
       (xlib:reparent-window (window-xwin window) master-window 0 0)
@@ -570,7 +564,7 @@ and bottom_end_x."
     (setf (window-state w) +normal-state+)
     (xwin-hide w)))
 
-(defun xwin-grab-keys (win)
+(defun xwin-grab-keys (win screen)
   (labels ((grabit (w key)
              (let* ((code (xlib:keysym->keycodes *display* (key-keysym key))))
                ;; some keysyms aren't mapped to keycodes so just ignore them.
@@ -591,13 +585,14 @@ and bottom_end_x."
                    (xlib:grab-key w code
                                   :modifiers (x11-mods key t) :owner-p t
                                   :sync-pointer-p nil :sync-keyboard-p nil))))))
-    (maphash (lambda (k v)
-               (declare (ignore v))
-               (grabit win k))
-             *top-map*)))
+    (dolist (map (dereference-kmaps (top-maps screen)))
+      (maphash (lambda (k v)
+                 (declare (ignore v))
+                 (grabit win k))
+               map))))
 
 (defun grab-keys-on-window (win)
-  (xwin-grab-keys (window-xwin win)))
+  (xwin-grab-keys (window-xwin win) (window-group win)))
 
 (defun xwin-ungrab-keys (win)
   (xlib:ungrab-key win :any :modifiers :any))
@@ -628,8 +623,8 @@ and bottom_end_x."
                  do (xwin-ungrab-keys j))
         do (xlib:display-finish-output *display*)
         do (loop for j in (screen-mapped-windows i)
-                 do (xwin-grab-keys j))
-        do (xwin-grab-keys (screen-focus-window i)))
+                 do (xwin-grab-keys j i))
+        do (xwin-grab-keys (screen-focus-window i) i))
   (xlib:display-finish-output *display*))
 
 (defun netwm-remove-window (window)
@@ -645,20 +640,22 @@ needed."
     (set-window-geometry window :border-width 0)
     (setf (xlib:window-event-mask (window-xwin window)) *window-events*)
     (register-window window)
+    (reparent-window screen window)
+    (netwm-set-allowed-actions window)
+    (let ((placement-data (place-window screen window)))
+      (apply 'group-add-window (window-group window) window placement-data)
+      ;; If the placement rule matched then either the window's group
+      ;; is the current group or the rule's :lock attribute was
+      ;; on. Either way the window's group should become the current
+      ;; one (if it isn't already) if :raise is T.
+      (when (getf placement-data :raise)
+        (switch-to-group (window-group window)))
+      (when placement-data
+        (apply 'run-hook-with-args *place-window-hook* window (window-group window) placement-data)))
+    ;; must call this after the group slot is set for the window.
     (grab-keys-on-window window)
-    (if *processing-existing-windows*
-        (place-existing-window screen window)
-        (place-window screen window))
-    (reparent-window window)
-    (group-add-window (window-group window) window)
     ;; quite often the modeline displays the window list, so update it
     (update-all-mode-lines)
-    ;; Set allowed actions
-    (xlib:change-property xwin :_NET_WM_ALLOWED_ACTIONS
-                          (mapcar (lambda (a)
-                                    (xlib:intern-atom *display* a))
-                                  +netwm-allowed-actions+)
-                          :atom 32)
     ;; Run the new window hook on it.
     (run-hook-with-args *new-window-hook* window)
     window))
@@ -696,9 +693,7 @@ needed."
     (screen-add-mapped-window screen (window-xwin window))
     (register-window window)
     (group-add-window (window-group window) window)
-    (xlib:change-property (window-xwin window) :_NET_WM_DESKTOP
-                          (list (netwm-group-id (window-group window)))
-                          :cardinal 32)
+    (netwm-set-group window)
     ;; It is effectively a new window in terms of the window list.
     (run-hook-with-args *new-window-hook* window)
     ;; FIXME: only called frame-raise-window instead of this function

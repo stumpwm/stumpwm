@@ -2,12 +2,22 @@
 
 (in-package :stumpwm)
 
+;;; floating window
+
+(defclass float-window (window)
+  ())
+
+(defmethod update-decoration ((window float-window))
+  (xlib:clear-area (window-parent window)))
+
+;;; floating group
+
 (defclass float-group (group)
   ((current-window :accessor float-group-current-window))
   )
 
-(defmethod group-add-window ((group float-group) window)
-  (change-class window 'window)
+(defmethod group-add-window ((group float-group) window &key &allow-other-keys)
+  (change-class window 'float-window)
   (float-window-align window)
   (focus-window window))
 
@@ -17,6 +27,7 @@
       (no-focus group nil)))
 
 (defmethod group-delete-window ((group float-group) window)
+  (declare (ignore window))
   (&float-focus-next group))
 
 (defmethod group-wake-up ((group float-group))
@@ -58,12 +69,14 @@
               (xlib:drawable-height xwin) height)))))
 
 (defmethod group-move-request ((group float-group) window x y relative-to)
+  (declare (ignore relative-to))
   (with-slots (parent) window
     (xlib:with-state (parent)
       (setf (xlib:drawable-x parent) x
             (xlib:drawable-y parent) y))))
 
 (defmethod group-raise-request ((group float-group) window type)
+  (declare (ignore type))
   (focus-window window))
 
 (defmethod group-lost-focus ((group float-group))
@@ -92,7 +105,7 @@
 (defmethod group-add-head ((group float-group))
   )
 
-(defmethod group-button-press ((group float-group) x y window)
+(defmethod group-button-press ((group float-group) x y (window float-window))
   (let ((screen (group-screen group)))
     (when (or (< x (xlib:drawable-x (window-xwin window)))
               (> x (+ (xlib:drawable-width (window-xwin window))
@@ -121,14 +134,9 @@
             (ungrab-pointer))
           (message "Done."))))))
 
+(defmethod group-button-press ((group float-group) x y where)
+  (declare (ignore x y where))
+  )
+
 (defcommand newfloat (name) ((:rest "Name: "))
   (add-group (current-screen) name 'float-group))
-
-
-;;; floating window
-
-(defclass float-window (window)
-  ())
-
-(defmethod update-decoration ((window float-window))
-  (xlib:clear-area (window-parent window)))

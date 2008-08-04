@@ -76,42 +76,31 @@
             (pull-window window frame)))))))
 
 (defun assign-window (window group &optional (where :tail))
+  "Assign the window to the specified group and perform the necessary
+housekeeping."
   (setf (window-group window) group
         (window-number window) (find-free-window-number group))
   (if (eq where :head)
       (push window (group-windows group))
-      (setf (group-windows group) (append (group-windows group) (list window)))))
-
-(defun place-existing-window (screen window)
-  "Called for windows existing at startup."
-  (let* ((netwm-id (first (xlib:get-property (window-xwin window) :_NET_WM_DESKTOP)))
-         (group (if (and netwm-id (< netwm-id (length (screen-groups screen))))
-                    (elt (sort-groups screen) netwm-id)
-                    (screen-current-group screen))))
-    (dformat 3 "Assigning pre-existing window ~S to group ~S~%" (window-name window) (group-name group))
-    (assign-window window group :head)
-    ;;(setf (frame-window (window-frame window)) window)
-    ))
+      (setf (group-windows group) (append (group-windows group) (list window))))
+  (setf (xwin-state (window-xwin window)) +iconic-state+)
+  (netwm-set-group window))
 
 (defun place-window (screen window)
-  "Pick a group and frame for WINDOW."
-  (let (group)
-    (multiple-value-bind (to-group frame raise) (get-window-placement screen window)
-      (setf group (or to-group
-                      (screen-current-group screen)))
-      (assign-window window group)
-      (setf (xwin-state (window-xwin window)) +iconic-state+)
-      (xlib:change-property (window-xwin window) :_NET_WM_DESKTOP
-                            (list (netwm-group-id group))
-                            :cardinal 32)
-      ;; XXX: Clearly a more general criterion is needed
-      (when frame
-        (if raise
-            (focus-all window)
-            (unless (eq (current-group) group)
-              (message "Placing window ~a in group ~a"
-                       (window-name window) (group-name group))))
-        (run-hook-with-args *place-window-hook* window group frame)))))
+  "Pick a group WINDOW and return the group-specific placement hints, if any."
+  (let* ((netwm-group (netwm-group window screen))
+         (placement (multiple-value-list (get-window-placement screen window)))
+         (placement-group (first placement))
+         (group (or (when *processing-existing-windows*
+                      netwm-group)
+                    placement-group
+                    netwm-group
+                    (screen-current-group screen))))
+    (assign-window window group (if *processing-existing-windows* :head :tail))
+    ;; if we're using the placement group, then return the extra data.
+    (when (eq group placement-group)
+      (list :frame (second placement)
+            :raise (third placement)))))
 
 (defun pick-preferred-frame (window)
   (let* ((group (window-group window))

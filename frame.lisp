@@ -48,24 +48,22 @@
     (when (eq (frame-window f) window)
       (frame-raise-window group f (first (frame-windows group f)) nil))))
 
-(defmethod group-add-window ((group tile-group) window)
+(defmethod group-add-window ((group tile-group) window &key frame raise &allow-other-keys)
   ;; This is important to get the frame slot
   (change-class window 'tile-window)
-  (setf (window-frame window) (tile-group-current-frame group))
-  ;; try to put the window in the appropriate frame for the group
-  (multiple-value-bind (placed-group frame raise) (get-window-placement (window-screen window) window)
-    (declare (ignore placed-group))
-    (if frame
-        (progn
-          (setf (window-frame window) frame)
-          (when raise
-            (setf (tile-group-current-frame group) frame
-                  (frame-window frame) nil)))
-        (setf (window-frame window)
-              (if *processing-existing-windows*
-                  (find-frame group (xlib:drawable-x (window-xwin window)) (xlib:drawable-y (window-xwin window)))
-                  (pick-preferred-frame window)))))
-  (sync-frame-windows group (tile-group-current-frame group))
+  ;; Try to put the window in the appropriate frame for the group.
+  (setf (window-frame window)
+        (or frame
+            (when *processing-existing-windows*
+              (find-frame group (xlib:drawable-x (window-parent window))
+                          (xlib:drawable-y (window-parent window))))
+            (pick-preferred-frame window)))
+  (when *processing-existing-windows*
+    (setf (frame-window (window-frame window)) window))
+  (when raise
+    (setf (tile-group-current-frame group) frame
+          (frame-window frame) nil))
+  (sync-frame-windows group (window-frame window))
   ;; maybe show the window in its new frame
   (when (null (frame-window (window-frame window)))
     (frame-raise-window (window-group window) (window-frame window) window)))
@@ -89,6 +87,7 @@
         (pull-window window frame)))))
 
 (defmethod group-resize-request ((group tile-group) window width height)
+  (declare (ignore width height))
   (maximize-window window))
 
 (defmethod group-raise-request ((group tile-group) window stack-mode)
@@ -121,6 +120,7 @@
         (update-all-mode-lines)))))
 
 (defmethod group-button-press ((group tile-group) x y (where window))
+  (declare (ignore x y))
   (when (eq *mouse-focus-policy* :click)
     (focus-all where)
     (update-all-mode-lines)))
