@@ -26,8 +26,15 @@
 
 (in-package :stumpwm)
 
+;; handy for figuring out which symbol is borking the documentation
+(defun dprint (sym)
+  (declare (ignorable sym))
+  ;;(format t "~&Doing ~a..." sym))
+)
+
 (defun generate-function-doc (s line)
   (ppcre:register-groups-bind (name) ("^@@@ (.*)" line)
+                              (dprint name)
                               (let ((fn (if (find #\( name :test 'char=)
                                             ;; handle (setf <symbol>) functions
                                             (with-standard-io-syntax
@@ -45,6 +52,7 @@
 
 (defun generate-macro-doc (s line)
   (ppcre:register-groups-bind (name) ("^%%% (.*)" line)
+                              (dprint name)
                               (let* ((symbol (find-symbol (string-upcase name) :stumpwm))
                                      (*print-pretty* nil))
                                 (format s "@defmac {~a} ~{~a~^ ~}~%~a~&@end defmac~%~%"
@@ -66,6 +74,7 @@
 
 (defun generate-variable-doc (s line)
   (ppcre:register-groups-bind (name) ("^### (.*)" line)
+                              (dprint name)
                               (let ((sym (find-symbol (string-upcase name) :stumpwm)))
                                 (format s "@defvar ~a~%~a~&@end defvar~%~%"
                                         name (documentation sym 'variable))
@@ -73,6 +82,7 @@
 
 (defun generate-hook-doc (s line)
   (ppcre:register-groups-bind (name) ("^\\$\\$\\$ (.*)" line)
+                              (dprint name)
                               (let ((sym (find-symbol (string-upcase name) :stumpwm)))
                                 (format s "@defvr {Hook} ~a~%~a~&@end defvr~%~%"
                                         name (documentation sym 'variable))
@@ -80,6 +90,7 @@
 
 (defun generate-command-doc (s line)
   (ppcre:register-groups-bind (name) ("^!!! (.*)" line)
+                              (dprint name)
                               (let ((cmd (symbol-function (find-symbol (string-upcase name) :stumpwm))))
                                 (format s "@deffn {Command} ~a ~{~a~^ ~}~%~a~&@end deffn~%~%"
                                         name
