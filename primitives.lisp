@@ -1013,6 +1013,7 @@ sync-all-frame-windows to see the change.")
   "Open a file in StumpWM's data directory. keyword arguments are sent
 directly to OPEN. Note that IF-EXISTS defaults to :supersede, instead
 of :error."
+  (declare (ignorable if-exists))
   `(progn
      (ensure-directories-exist *data-dir*)
      (with-open-file (,s ,(merge-pathnames *data-dir* file)
