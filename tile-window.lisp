@@ -24,6 +24,11 @@
       ;; get the background updated
       (xlib:clear-area (window-parent window)))))
 
+(defmethod window-sync ((window tile-window) hint)
+  (case hint
+    ((:normal-hints :type)
+     (maximize-window window))))
+
 ;;;;
 
 (defun really-raise-window (window)

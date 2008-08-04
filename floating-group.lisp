@@ -10,6 +10,10 @@
 (defmethod update-decoration ((window float-window))
   (xlib:clear-area (window-parent window)))
 
+(defmethod window-sync ((window float-window) hint)
+  (declare (ignore hint))
+  )
+
 ;;; floating group
 
 (defclass float-group (group)

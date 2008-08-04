@@ -343,7 +343,7 @@ converted to an atom is removed."
      (setf (window-normal-hints window) (xlib:wm-normal-hints (window-xwin window))
            (window-type window) (xwin-type (window-xwin window)))
      (dformat 4 "new hints: ~s~%" (window-normal-hints window))
-     (maximize-window window))
+     (window-sync window :normal-hints))
     (:wm_hints
      (maybe-set-urgency window))
     (:wm_class
@@ -353,7 +353,7 @@ converted to an atom is removed."
      (setf (window-role window) (xwin-role (window-xwin window))))
     (:wm_transient_for
      (setf (window-type window) (xwin-type (window-xwin window)))
-     (maximize-window window))
+     (window-sync window :type))
     (:_NET_WM_STATE
      ;; Some clients put really big numbers in the list causing
      ;; atom-name to fail, so filter out anything that can't be

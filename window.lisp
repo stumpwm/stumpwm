@@ -72,6 +72,9 @@
   (:documentation "Bring the window to the top of the window stack."))
 (defgeneric window-visible-p (window)
   (:documentation "Return T if the window is visible"))
+(defgeneric window-sync (window what-changed)
+  (:documentation "Some window slot has been updated and the window
+may need to sync itself. WHAT-CHANGED is a hint at what changed."))
 
 ;; Urgency / demands attention
 

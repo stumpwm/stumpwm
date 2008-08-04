@@ -151,17 +151,16 @@ at 0. Return a netwm compliant group id."
   (labels ((really-move-window (window to-group)
              (unless (eq (window-group window) to-group)
                (hide-window window)
-               (group-delete-window (window-group window) window)
                ;; house keeping
                (setf (group-windows (window-group window))
-                     (remove window (group-windows (window-group window)))
-                     (window-group window) to-group
+                     (remove window (group-windows (window-group window))))
+               (group-delete-window (window-group window) window)
+               (setf (window-group window) to-group
                      (window-number window) (find-free-window-number to-group))
                (push window (group-windows to-group))
                (xlib:change-property (window-xwin window) :_NET_WM_DESKTOP
                                      (list (netwm-group-id to-group))
                                      :cardinal 32)
-               ;;
                (group-add-window to-group window))))
     ;; When a modal window is moved, all the windows it shadows must be moved
     ;; as well. When a shadowed window is moved, the modal shadowing it must
@@ -396,6 +395,7 @@ the default group formatting and window formatting, respectively."
     (move-window-to-group (current-window) to-group)))
 
 (defcommand gmove-marked (to-group) ((:group "To Group: "))
+  "move the marked windows to the specified group."
   (when to-group
     (let ((group (current-group)))
       (dolist (i (marked-windows group))
