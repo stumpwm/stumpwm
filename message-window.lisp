@@ -257,7 +257,8 @@ message does not time out."
 (defvar *lastmsg-nth* nil)
 
 (defcommand lastmsg () ()
-  ;; Allow the user to go back through the message history
+  "Display the last message. If the previous command was lastmsg, then
+continue cycling back through the message history."
   (if (string= *last-command* "lastmsg")
       (progn
         (incf *lastmsg-nth*)

@@ -39,7 +39,7 @@
   from to)
 
 (defstruct command
-  name args)
+  name class args)
 
 (defvar *command-hash* (make-hash-table :test 'eq)
   "A list of interactive stumpwm commands.")
@@ -61,12 +61,18 @@
 *command-hash*. The local variable %interactivep% can be used to check
 if the command was called interactively. If it is non-NIL then it was
 called from a keybinding or from the colon command."
-  (check-type name symbol)
+  (check-type name (or symbol list))
   (let ((docstring (if (stringp (first body))
                      (first body)
                      (warn (make-condition 'command-docstring-warning :command name))))
         (body (if (stringp (first body))
-                  (cdr body) body)))
+                  (cdr body) body))
+        (name (if (atom name)
+                  name
+                  (first name)))
+        (group (if (atom name)
+                   t
+                   (second name))))
   `(progn
      (defun ,name ,args
        ,docstring
@@ -76,6 +82,7 @@ called from a keybinding or from the colon command."
 	 ,@body))
      (setf (gethash ',name *command-hash*)
            (make-command :name ',name
+                         :class ',group
                          :args ',interactive-args)))))
 
 (defmacro define-stumpwm-command (name (&rest args) &body body)
@@ -108,6 +115,7 @@ alias name for the command that is only accessible interactively."
 (defun get-command-symbol (command)
   (if (stringp command)
       (maphash (lambda (k v)
+                 (declare (ignore v))
                  (when (string-equal k command)
                    (return-from get-command-symbol k)))
                *command-hash*)

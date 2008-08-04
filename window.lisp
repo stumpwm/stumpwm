@@ -788,23 +788,25 @@ maximized, and given focus."
 ;;; Window commands
 
 (defcommand delete-window (&optional (window (current-window))) ()
-  "Delete the current window. This is a request sent to the window. The
-window's client may decide not to grant the request or may not be able
-to if it is unresponsive."
+  "Delete a window. By default delete the current window. This is a
+request sent to the window. The window's client may decide not to
+grant the request or may not be able to if it is unresponsive."
   (when window
     (send-client-message window :WM_PROTOCOLS (xlib:intern-atom *display* :WM_DELETE_WINDOW))))
 
 (defcommand-alias delete delete-window)
 
 (defcommand kill-window (&optional (window (current-window))) ()
-  "Tell X to disconnect the client that owns the current window. if
-@command{delete-current-window} didn't work, try this."
+  "Tell X to disconnect the client that owns the specified
+window. Default to the current window. if
+@command{delete-window} didn't work, try this."
   (when window
     (xwin-kill (window-xwin window))))
 
 (defcommand-alias kill kill-window)
 
 (defcommand title (title) ((:rest "Set window's title to: "))
+  "Override the current window's title."
   (if (current-window)
       (setf (window-user-title (current-window)) title)
       (message "No Focused Window")))
@@ -825,6 +827,7 @@ to if it is unresponsive."
 
 (defcommand select-window-by-number (num &optional (group (current-group)))
                                     ((:window-number "Select: "))
+  "Find the window with the given number and focus it in its frame."
   (labels ((match (win)
              (= (window-number win) num)))
     (let ((win (find-if #'match (group-windows group))))

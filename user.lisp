@@ -99,8 +99,9 @@ menu, the error is re-signalled."
   "Warp the mouse by the specified amount from its current position."
   (warp-pointer-relative dx dy))
 
-;; FIXME: This function doesn't work.
 (defcommand ratclick (&optional (button 1)) (:number)
+  "Simulate a pointer button event at the current pointer
+location. Note: this function rarely works."
   (when (current-window)
     (send-fake-click (current-window) button)))
 
@@ -293,6 +294,7 @@ such a case, kill the shell command to resume StumpWM."
 (defcommand-alias exec run-shell-command)
 
 (defcommand eval-line (cmd) ((:rest "Eval: "))
+  "Evaluate the s-expression and display the result(s)."
   (handler-case
       (message "^20~{~a~^~%~}"
                (mapcar 'prin1-to-string

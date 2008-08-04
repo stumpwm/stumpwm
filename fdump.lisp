@@ -222,4 +222,5 @@
 (defcommand-alias restore restore-from-file)
 
 (defcommand place-existing-windows () ()
+  "Re-arrange existing windows according to placement rules."
   (sync-window-placement))

@@ -698,14 +698,14 @@ An input function takes 2 arguments: the input structure and the key pressed.
 !!! pull-hidden-next
 !!! prev
 !!! pull-hidden-previous
-!!! delete-current-window
-!!! kill-current-window
-!!! windows
-!!! other
+!!! delete-window
+!!! kill-window
+!!! echo-windows
+!!! other-window
 !!! pull-hidden-other
 !!! renumber
 !!! meta
-!!! select
+!!! select-window
 !!! select-window-by-number
 !!! title
 !!! windowlist
@@ -730,7 +730,7 @@ Windows can be marked. A marked window has a # beside it in the window
 list. Some commands operate only on marked windows.
 
 !!! mark
-!!! clear-marks
+!!! clear-window-marks
 !!! pull-marked
 
 @node Customizing Window Appearance, Controlling Raise And Map Requests, Window Marks, Windows
@@ -1044,7 +1044,7 @@ section.
 !!! ratclick
 !!! echo-date
 !!! eval-line
-!!! insert
+!!! window-send-string
 !!! reload
 !!! loadrc
 !!! help

@@ -71,6 +71,9 @@
 (update-resize-map)
 
 (defcommand iresize () ()
+  "Start the interactive resize mode. A new keymap specific to
+resizing the current frame is loaded. Hit @key{C-g}, @key{RET}, or
+@key{ESC} to exit."
   (let ((frame (tile-group-current-frame (current-group))))
     (if (atom (tile-group-frame-head (current-group) (frame-head (current-group) frame)))
         (message "There's only 1 frame!")
@@ -98,12 +101,14 @@
         (focus-window (current-window))))))
 
 (defcommand abort-iresize () ()
+  "Exit from the interactive resize mode."
   (resize-unhide)
   (message "Abort resize")
   ;; TODO: actually revert the frames
   (pop-top-map))
 
 (defcommand exit-iresize () ()
+  "Exit from the interactive resize mode."
   (resize-unhide)
   (message "Resize Complete")
   (pop-top-map))
