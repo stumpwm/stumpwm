@@ -431,7 +431,6 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
       ;; The focus window is mapped at all times
       (xlib:map-window focus-window)
       (xlib:map-window key-window)
-      (xwin-grab-keys focus-window)
       (setf (screen-number screen) screen-number
             (screen-id screen) id
             (screen-host screen) host
@@ -469,6 +468,7 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
       (netwm-set-properties screen focus-window)
       (update-colors-for-screen screen)
       (update-color-map screen)
+      (xwin-grab-keys focus-window screen)
       screen)))
 
 

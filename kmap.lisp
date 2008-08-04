@@ -193,11 +193,21 @@ Now when you type C-t C-z, you'll see the text ``Zzzzz...'' pop up."
                cmd))
           (t nil))))
 
+(defun kmap-symbol-p (x)
+  (and (symbolp x)
+       (boundp x)
+       (hash-table-p (symbol-value x))))
+
 (defun kmap-p (x)
   (or (hash-table-p x)
-      (and (symbolp x)
-           (boundp x)
-           (hash-table-p (symbol-value x)))))
+      (kmap-symbol-p x)))
+
+(defun dereference-kmaps (kmaps)
+  (mapcar (lambda (m)
+            (if (kmap-symbol-p m)
+                (symbol-value m)
+                m))
+          kmaps))
 
 (defun search-kmap (command keymap &key (test 'equal))
   "Search the keymap for the specified binding. Return the key

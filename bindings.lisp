@@ -30,6 +30,14 @@
           *root-map*
 	  set-prefix-key))
 
+(defvar *escape-key* (kbd "C-t")
+  "The escape key. Any keymap that wants to hang off the escape key
+should use this specific key struct instead of creating their own
+C-t.")
+
+(defvar *escape-fake-key* (kbd "t")
+  "The binding that sends the fake escape key to the current window.")
+
 (defvar *root-map* nil
   "This is the keymap by default bound to @kbd{C-t}. It is known as the @dfn{prefix map}.")
 
@@ -39,155 +47,179 @@
 (defvar *help-map* nil
   "Help related bindings hang from this keymap")
 
+(defvar *group-top-maps* '((group *group-top-map*)
+                           (tile-group *tile-group-top-map*)
+                           (float-group *float-group-top-map*))
+  "An alist of the top level maps for each group type. For a given
+group, all maps whose type matches the given group are active. So for
+a tile-group, both the group map and tile-group map are active.")
+
+(defvar *group-top-map* nil)
+(defvar *group-root-map* nil)
+(defvar *tile-group-top-map* nil)
+(defvar *tile-group-root-map* nil)
+(defvar *float-group-top-map* nil)
+(defvar *float-group-root-map* nil)
+
 ;; Do it this way so its easier to wipe the map and get a clean one.
-(when (null *top-map*)
-  (setf *top-map*
-        (let ((m (make-sparse-keymap)))
-          (define-key m (kbd "C-t") '*root-map*)
-          m)))
+(defmacro fill-keymap (map &rest bindings)
+  `(unless ,map
+     (setf ,map
+           (let ((m (make-sparse-keymap)))
+             ,@(loop for i = bindings then (cddr i)
+                    while i
+                    collect `(define-key m ,(first i) ,(second i)))
+             m))))
 
-(when (null *root-map*)
-  (setf *root-map*
-        (let ((m (make-sparse-keymap)))
-          (define-key m (kbd "c") "exec xterm")
-          (define-key m (kbd "C-c") "exec xterm")
-          (define-key m (kbd "e") "emacs")
-          (define-key m (kbd "C-e") "emacs")
-          (define-key m (kbd "n") "pull-hidden-next")
-          (define-key m (kbd "C-n") "pull-hidden-next")
-          (define-key m (kbd "M-n") "next")
-          (define-key m (kbd "C-M-n") "next-in-frame")
-          (define-key m (kbd "SPC") "pull-hidden-next")
-          (define-key m (kbd "C-SPC") "pull-hidden-next")
-          (define-key m (kbd "p") "pull-hidden-previous")
-          (define-key m (kbd "C-p") "pull-hidden-previous")
-          (define-key m (kbd "C-u") "next-urgent")
-          (define-key m (kbd "M-p") "prev")
-          (define-key m (kbd "C-M-p") "prev-in-frame")
-          (define-key m (kbd "w") "windows")
-          (define-key m (kbd "C-w") "windows")
-          (define-key m (kbd "W") "place-existing-windows")
-          (define-key m (kbd "k") "delete")
-          (define-key m (kbd "C-k") "delete")
-          (define-key m (kbd "K") "kill")
-          (define-key m (kbd "b") "banish")
-          (define-key m (kbd "C-b") "banish")
-          (define-key m (kbd "a") "time")
-          (define-key m (kbd "C-a") "time")
-          (define-key m (kbd "'") "select")
-          (define-key m (kbd "\"") "windowlist")
-          (define-key m (kbd "C-t") "pull-hidden-other")
-          (define-key m (kbd "M-t") "other-in-frame")
-          (define-key m (kbd "!") "exec")
-          (define-key m (kbd "C-g") "abort")
-          (define-key m (kbd "0") "select-window-by-number 0")
-          (define-key m (kbd "1") "select-window-by-number 1")
-          (define-key m (kbd "2") "select-window-by-number 2")
-          (define-key m (kbd "3") "select-window-by-number 3")
-          (define-key m (kbd "4") "select-window-by-number 4")
-          (define-key m (kbd "5") "select-window-by-number 5")
-          (define-key m (kbd "6") "select-window-by-number 6")
-          (define-key m (kbd "7") "select-window-by-number 7")
-          (define-key m (kbd "8") "select-window-by-number 8")
-          (define-key m (kbd "9") "select-window-by-number 9")
-          (define-key m (kbd "C-0") "pull 0")
-          (define-key m (kbd "C-1") "pull 1")
-          (define-key m (kbd "C-2") "pull 2")
-          (define-key m (kbd "C-3") "pull 3")
-          (define-key m (kbd "C-4") "pull 4")
-          (define-key m (kbd "C-5") "pull 5")
-          (define-key m (kbd "C-6") "pull 6")
-          (define-key m (kbd "C-7") "pull 7")
-          (define-key m (kbd "C-8") "pull 8")
-          (define-key m (kbd "C-9") "pull 9")
-          (define-key m (kbd "R") "remove")
-          (define-key m (kbd "s") "vsplit")
-          (define-key m (kbd "S") "hsplit")
-          (define-key m (kbd "r") "iresize")
-          (define-key m (kbd "o") "fnext")
-          (define-key m (kbd "TAB") "fnext")
-          (define-key m (kbd "M-TAB") "fother")
-          (define-key m (kbd "f") "fselect")
-          (define-key m (kbd "F") "curframe")
-          (define-key m (kbd "t") "meta C-t")
-          (define-key m (kbd "C-N") "number")
-          (define-key m (kbd ";") "colon")
-          (define-key m (kbd ":") "eval")
-          (define-key m (kbd "C-h") "help")
-          (define-key m (kbd "-") "fclear")
-          (define-key m (kbd "Q") "only")
-          (define-key m (kbd "Up") "move-focus up")
-          (define-key m (kbd "Down") "move-focus down")
-          (define-key m (kbd "Left") "move-focus left")
-          (define-key m (kbd "Right") "move-focus right")
-          (define-key m (kbd "M-Up") "move-window up")
-          (define-key m (kbd "M-Down") "move-window down")
-          (define-key m (kbd "M-Left") "move-window left")
-          (define-key m (kbd "M-Right") "move-window right")
-          (define-key m (kbd "v") "version")
-          (define-key m (kbd "#") "mark")
-          (define-key m (kbd "m") "lastmsg")
-          (define-key m (kbd "C-m") "lastmsg")
-          (define-key m (kbd "G") "vgroups")
-          (define-key m (kbd "g") '*groups-map*)
-          (define-key m (kbd "F1") "gselect 1")
-          (define-key m (kbd "F2") "gselect 2")
-          (define-key m (kbd "F3") "gselect 3")
-          (define-key m (kbd "F4") "gselect 4")
-          (define-key m (kbd "F5") "gselect 5")
-          (define-key m (kbd "F6") "gselect 6")
-          (define-key m (kbd "F7") "gselect 7")
-          (define-key m (kbd "F8") "gselect 8")
-          (define-key m (kbd "F9") "gselect 9")
-          (define-key m (kbd "F10") "gselect 10")
-          (define-key m (kbd "F11") "fullscreen")
-          (define-key m (kbd "?") "help")
-          (define-key m (kbd "+") "balance-frames")
-          (define-key m (kbd "A") "title")
-          (define-key m (kbd "h") '*help-map*)
-          (define-key m (kbd "i") "info")
-          m)))
+(fill-keymap *top-map*
+  *escape-key* '*root-map*)
 
-(when (null *groups-map*)
-  (setf *groups-map*
-        (let ((m (make-sparse-keymap)))
-          (define-key m (kbd "g") "groups")
-          (define-key m (kbd "c") "gnew")
-          (define-key m (kbd "n") "gnext")
-          (define-key m (kbd "C-n") "gnext")
-          (define-key m (kbd "SPC") "gnext")
-          (define-key m (kbd "C-SPC") "gnext")
-          (define-key m (kbd "p") "gprev")
-          (define-key m (kbd "C-p") "gprev")
-          (define-key m (kbd "o") "gother")
-          (define-key m (kbd "'") "gselect")
-          (define-key m (kbd "\"") "grouplist")
-          (define-key m (kbd "m") "gmove")
-          (define-key m (kbd "M") "gmove-marked")
-          (define-key m (kbd "k") "gkill")
-          (define-key m (kbd "A") "grename")
-          (define-key m (kbd "r") "grename")
-          (define-key m (kbd "1") "gselect 1")
-          (define-key m (kbd "2") "gselect 2")
-          (define-key m (kbd "3") "gselect 3")
-          (define-key m (kbd "4") "gselect 4")
-          (define-key m (kbd "5") "gselect 5")
-          (define-key m (kbd "6") "gselect 6")
-          (define-key m (kbd "7") "gselect 7")
-          (define-key m (kbd "8") "gselect 8")
-          (define-key m (kbd "9") "gselect 9")
-          (define-key m (kbd "0") "gselect 10")
-          m)))
+(fill-keymap *root-map*
+  (kbd "c")   "exec xterm"
+  (kbd "C-c") "exec xterm"
+  (kbd "e")   "emacs"
+  (kbd "C-e") "emacs"
+  (kbd "b")   "banish"
+  (kbd "C-b") "banish"
+  (kbd "a")   "time"
+  (kbd "C-a") "time"
+  (kbd "!")   "exec"
+  (kbd "C-g") "abort"
+  (kbd "t")   "meta C-t"
+  (kbd ";")   "colon"
+  (kbd ":")   "eval"
+  (kbd "v")   "version"
+  (kbd "m")   "lastmsg"
+  (kbd "C-m") "lastmsg"
+  (kbd "G")   "vgroups"
+  (kbd "g")   '*groups-map*
+  (kbd "F1")  "gselect 1"
+  (kbd "F2")  "gselect 2"
+  (kbd "F3")  "gselect 3"
+  (kbd "F4")  "gselect 4"
+  (kbd "F5")  "gselect 5"
+  (kbd "F6")  "gselect 6"
+  (kbd "F7")  "gselect 7"
+  (kbd "F8")  "gselect 8"
+  (kbd "F9")  "gselect 9"
+  (kbd "F10") "gselect 10"
+  (kbd "?")   "help"
+  (kbd "h")   '*help-map*)
 
-(when (null *help-map*)
-  (setf *help-map*
-        (let ((m (make-sparse-keymap)))
-          (define-key m (kbd "v") "describe-variable")
-          (define-key m (kbd "f") "describe-function")
-          (define-key m (kbd "k") "describe-key")
-          (define-key m (kbd "c") "describe-command")
-          (define-key m (kbd "w") "where-is")
-          m)))
+(fill-keymap *group-top-map*
+  *escape-key* '*group-root-map*)
+
+(fill-keymap *group-root-map*
+  (kbd "C-u") "next-urgent"
+  (kbd "w")   "windows"
+  (kbd "C-w") "windows"
+  (kbd "k")   "delete"
+  (kbd "C-k") "delete"
+  (kbd "K")   "kill"
+  (kbd "'")   "select"
+  (kbd "\"")  "windowlist"
+  (kbd "0")   "select-window-by-number 0"
+  (kbd "1")   "select-window-by-number 1"
+  (kbd "2")   "select-window-by-number 2"
+  (kbd "3")   "select-window-by-number 3"
+  (kbd "4")   "select-window-by-number 4"
+  (kbd "5")   "select-window-by-number 5"
+  (kbd "6")   "select-window-by-number 6"
+  (kbd "7")   "select-window-by-number 7"
+  (kbd "8")   "select-window-by-number 8"
+  (kbd "9")   "select-window-by-number 9"
+  (kbd "C-N") "number"
+  (kbd "#")   "mark"
+  (kbd "F11") "fullscreen"
+  (kbd "A")   "title"
+  (kbd "i")   "info")
+
+(fill-keymap *tile-group-top-map*
+  *escape-key* '*tile-group-root-map*)
+
+(fill-keymap *tile-group-root-map*
+  (kbd "n")       "pull-hidden-next"
+  (kbd "C-n")     "pull-hidden-next"
+  (kbd "M-n")     "next"
+  (kbd "C-M-n")   "next-in-frame"
+  (kbd "SPC")     "pull-hidden-next"
+  (kbd "C-SPC")   "pull-hidden-next"
+  (kbd "p")       "pull-hidden-previous"
+  (kbd "C-p")     "pull-hidden-previous"
+  (kbd "M-p")     "prev"
+  (kbd "C-M-p")   "prev-in-frame"
+  (kbd "W")       "place-existing-windows"
+  *escape-key*     "pull-hidden-other"
+  (kbd "M-t")     "other-in-frame"
+  (kbd "C-0")     "pull 0"
+  (kbd "C-1")     "pull 1"
+  (kbd "C-2")     "pull 2"
+  (kbd "C-3")     "pull 3"
+  (kbd "C-4")     "pull 4"
+  (kbd "C-5")     "pull 5"
+  (kbd "C-6")     "pull 6"
+  (kbd "C-7")     "pull 7"
+  (kbd "C-8")     "pull 8"
+  (kbd "C-9")     "pull 9"
+  (kbd "R")       "remove"
+  (kbd "s")       "vsplit"
+  (kbd "S")       "hsplit"
+  (kbd "r")       "iresize"
+  (kbd "o")       "fnext"
+  (kbd "TAB")     "fnext"
+  (kbd "M-TAB")   "fother"
+  (kbd "f")       "fselect"
+  (kbd "F")       "curframe"
+  (kbd "-")       "fclear"
+  (kbd "Q")       "only"
+  (kbd "Up")      "move-focus up"
+  (kbd "Down")    "move-focus down"
+  (kbd "Left")    "move-focus left"
+  (kbd "Right")   "move-focus right"
+  (kbd "M-Up")    "move-window up"
+  (kbd "M-Down")  "move-window down"
+  (kbd "M-Left")  "move-window left"
+  (kbd "M-Right") "move-window right"
+  (kbd "+")       "balance-frames")
+
+(fill-keymap *float-group-top-map*)
+(fill-keymap *float-group-root-map*)
+             
+
+(fill-keymap *groups-map*
+  (kbd "g")     "groups"
+  (kbd "c")     "gnew"
+  (kbd "n")     "gnext"
+  (kbd "C-n")   "gnext"
+  (kbd "SPC")   "gnext"
+  (kbd "C-SPC") "gnext"
+  (kbd "p")     "gprev"
+  (kbd "C-p")   "gprev"
+  (kbd "o")     "gother"
+  (kbd "'")     "gselect"
+  (kbd "\"")    "grouplist"
+  (kbd "m")     "gmove"
+  (kbd "M")     "gmove-marked"
+  (kbd "k")     "gkill"
+  (kbd "A")     "grename"
+  (kbd "r")     "grename"
+  (kbd "1")     "gselect 1"
+  (kbd "2")     "gselect 2"
+  (kbd "3")     "gselect 3"
+  (kbd "4")     "gselect 4"
+  (kbd "5")     "gselect 5"
+  (kbd "6")     "gselect 6"
+  (kbd "7")     "gselect 7"
+  (kbd "8")     "gselect 8"
+  (kbd "9")     "gselect 9"
+  (kbd "0")     "gselect 10")
+
+(fill-keymap *help-map*
+  (kbd "v") "describe-variable"
+  (kbd "f") "describe-function"
+  (kbd "k") "describe-key"
+  (kbd "c") "describe-command"
+  (kbd "w") "where-is")
 
 (defcommand command-mode () ()
 "Command mode allows you to type ratpoison commands without needing the

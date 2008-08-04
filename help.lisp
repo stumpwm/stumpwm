@@ -51,19 +51,21 @@
                                (:left (format nil "~a~a~a" (if (= c 0) "" padstr) s len))
                                (:right (format nil "~a~a~a" (if (= c 0) "" padstr) len s))))))))
 
-(defun display-keybinding (kmap-var)
+(defun display-bindings-for-keymaps (key-seq &rest keymaps)
   (let* ((screen (current-screen))
-         (data (mapcar-hash (lambda (k v) (format nil "^5*~5a^n ~a" (print-key k) v)) (symbol-value kmap-var)))
+         (data (mapcan (lambda (map)
+                         (mapcar-hash (lambda (k v) (format nil "^5*~5a^n ~a" (print-key k) v)) map))
+                       keymaps))
          (cols (ceiling (1+ (length data))
                         (truncate (- (head-height (current-head)) (* 2 (screen-msg-border-width screen)))
                                   (font-height (screen-font screen))))))
-    (message-no-timeout "Prefix: ~{~a~^ | ~}~%~{~a~^~%~}"
-                        (mapcar 'print-key-seq (search-kmap kmap-var *top-map*))
+    (message-no-timeout "Prefix: ~a~%~{~a~^~%~}"
+                        (print-key-seq key-seq)
                         (columnize data cols))))
 
 (defcommand help () ()
 "Display all the bindings in @var{*root-map*}."
-  (display-keybinding '*root-map*))
+  (display-bindings-for-keymaps *escape-key* *root-map*))
 
 (defcommand commands () ()
   (let* ((screen (current-screen))

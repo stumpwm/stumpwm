@@ -207,51 +207,56 @@ The Caller is responsible for setting up the input focus."
          (state (cdr code-state)))
     (handle-keymap kmap code state nil nil update-fn)))
 
-(defun handle-keymap (kmap code state key-seq grab update-fn)
+(defun handle-keymap (kmaps code state key-seq grab update-fn)
   "Find the command mapped to the (code state) and return it."
-  ;; a symbol is assumed to have a hashtable as a value.
-  (dformat 1 "Awaiting key ~a~%" kmap)
-  (let ((keymap '()))
-    (when (and (symbolp kmap)
-               (boundp kmap)
-               (hash-table-p (symbol-value kmap)))
-      (setf
-       keymap kmap
-       kmap (symbol-value kmap)))
-    (check-type kmap hash-table)
-    (let* ((key (code-state->key code state))
-           (cmd (lookup-key kmap key))
-           (key-seq (cons key key-seq)))
-      (dformat 1 "key-press: ~S ~S ~S~%" key state cmd)
-      (run-hook-with-args *key-press-hook* key key-seq cmd)
-      (when update-fn
-        (funcall update-fn key-seq))
-      (if cmd
-          (cond
-            ((or (hash-table-p cmd)
-                 (and (symbolp cmd)
-                      (boundp cmd)
-                      (hash-table-p (symbol-value cmd))))
-             (when grab
-               (grab-pointer (current-screen)))
-             (let* ((code-state (read-key-no-modifiers))
-                    (code (car code-state))
-                    (state (cdr code-state)))
-               (unwind-protect
-                    (handle-keymap cmd code state key-seq nil update-fn)
-                 (when grab (ungrab-pointer)))))
-            (t (values cmd key-seq)))
-          (if (and (find key (list (kbd "?")
-                                   (kbd "C-h"))
-                         :test 'equalp)
-                   keymap)
-              (progn (display-keybinding keymap) (values t key-seq))
-              (values nil key-seq))))))
+  ;; KMAPS is a list of keymaps that may match the user's key sequence.
+  (dformat 1 "Awaiting key ~a~%" kmaps)
+  (let* ((key (code-state->key code state))
+         (key-seq (cons key key-seq))
+         (bindings (mapcar (lambda (m)
+                             (lookup-key m key))
+                           (dereference-kmaps kmaps)))
+         ;; if the first non-nil thing is another keymap, then grab
+         ;; all the keymaps and recurse on them. If the first one is a
+         ;; command, then we're done.
+         (match (find-if-not 'null bindings)))
+    (dformat 1 "key-press: ~S ~S ~S~%" key state match)
+    (run-hook-with-args *key-press-hook* key key-seq match)
+    (when update-fn
+      (funcall update-fn key-seq))
+    (cond ((kmap-p match)
+           (when grab
+             (grab-pointer (current-screen)))
+           (let* ((code-state (read-key-no-modifiers))
+                  (code (car code-state))
+                  (state (cdr code-state)))
+             (unwind-protect
+                  (handle-keymap (remove-if-not 'kmap-p bindings) code state key-seq nil update-fn)
+               (when grab (ungrab-pointer)))))
+          (match
+           (values match key-seq))
+          ((and (find key (list (kbd "?")
+                                (kbd "C-h"))
+                      :test 'equalp))
+           (apply 'display-bindings-for-keymaps (reverse (cdr key-seq)) (dereference-kmaps kmaps))
+           (values t key-seq))
+          (t
+           (values nil key-seq)))))
+
+(defun top-maps (&optional (group (current-group)))
+  "Return all top level keymaps that are active."
+  (let ((acc (list *top-map*)))
+    ;; group maps
+    (loop for i in *group-top-maps*
+       do (when (typep group (first i))
+            (push (second i) acc)))
+    ;; Minor Mode maps
+    acc))
 
 (define-stump-event-handler :key-press (code state #|window|#)
   (labels ((get-cmd (code state)
              (with-focus (screen-key-window (current-screen))
-               (handle-keymap *top-map* code state nil t nil))))
+               (handle-keymap (top-maps) code state nil t nil))))
     (unwind-protect
          ;; modifiers can sneak in with a race condition. so avoid that.
          (unless (is-modifier code)
