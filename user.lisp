@@ -311,7 +311,7 @@ such a case, kill the shell command to resume StumpWM."
     (message "~a" string)))
 
 (defun send-meta-key (screen key)
-  "Send the prefix key"
+  "Send the key to the current window on the specified screen."
   (when (screen-current-window screen)
     (send-fake-key (screen-current-window screen) key)))
 

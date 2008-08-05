@@ -589,10 +589,8 @@ and bottom_end_x."
                                   :modifiers (x11-mods key t) :owner-p t
                                   :sync-pointer-p nil :sync-keyboard-p nil))))))
     (dolist (map (dereference-kmaps (top-maps screen)))
-      (maphash (lambda (k v)
-                 (declare (ignore v))
-                 (grabit win k))
-               map))))
+      (dolist (i (kmap-bindings map))
+        (grabit win (binding-key i))))))
 
 (defun grab-keys-on-window (win)
   (xwin-grab-keys (window-xwin win) (window-group win)))

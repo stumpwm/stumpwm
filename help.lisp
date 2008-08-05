@@ -54,7 +54,7 @@
 (defun display-bindings-for-keymaps (key-seq &rest keymaps)
   (let* ((screen (current-screen))
          (data (mapcan (lambda (map)
-                         (mapcar-hash (lambda (k v) (format nil "^5*~5a^n ~a" (print-key k) v)) map))
+                         (mapcar (lambda (b) (format nil "^5*~5a^n ~a" (print-key (binding-key b)) (binding-command b))) (kmap-bindings map)))
                        keymaps))
          (cols (ceiling (1+ (length data))
                         (truncate (- (head-height (current-head)) (* 2 (screen-msg-border-width screen)))
@@ -65,7 +65,7 @@
 
 (defcommand help () ()
 "Display all the bindings in @var{*root-map*}."
-  (display-bindings-for-keymaps *escape-key* *root-map*))
+  (display-bindings-for-keymaps (list *escape-key*) *root-map*))
 
 (defcommand commands () ()
   (let* ((screen (current-screen))

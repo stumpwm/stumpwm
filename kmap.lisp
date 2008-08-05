@@ -40,6 +40,12 @@
 (defstruct key
   keysym shift control meta alt hyper super)
 
+(defstruct kmap
+  bindings)
+
+(defstruct binding
+  key command)
+
 (defun make-sparse-keymap ()
   "Create an empty keymap. If you want to create a new list of bindings
 in the key binding tree, this is where you start. To hang frame
@@ -55,21 +61,20 @@ related bindings off @kbd{C-t C-f} one might use the following code:
 
 \(stumpwm:define-key stumpwm:*root-map* (stumpwm:kbd \"C-f\") '*my-frame-bindings*)
 @end example"
-  (make-hash-table :test 'equalp))
+  (make-kmap))
 
 (defun lookup-command (keymap command)
   "Return a list of keys that are bound to command"
-  (let (acc)
-    (maphash (lambda (k v)
-               (when (equal command v)
-                 (push k acc)))
-             keymap)
-    acc))
+  (loop for i in (kmap-bindings keymap)
+     when (equal command (binding-command i))
+     collect (binding-key i)))
 
 (defun lookup-key (keymap key &optional accept-default)
-  (or (gethash key keymap)
-      (and accept-default
-           (gethash t keymap))))
+  (labels ((retcmd (key)
+             (when key (binding-command key))))
+    (or (retcmd (find key (kmap-bindings keymap) :key 'binding-key :test 'equalp))
+        (and accept-default
+             (retcmd (find t (kmap-bindings keymap) :key 'binding-key))))))
 
 (defun key-mods-p (key)
   (or (key-shift key)
@@ -135,6 +140,16 @@ others."
   ;; XXX: define-key needs to be fixed to handle a list of keys
   (first (parse-key-seq keys)))
 
+(defun copy-key-into (from to)
+  "copy the contents of TO into FROM."
+  (setf (key-keysym to) (key-keysym from)
+        (key-shift to) (key-shift from)
+        (key-control to) (key-control from)
+        (key-meta to) (key-meta from)
+        (key-alt to) (key-alt from)
+        (key-hyper to) (key-hyper from)
+        (key-super to) (key-super from)))
+
 (defun print-mods (key)
   (concatenate 'string
                (when (key-control key) "C-")
@@ -161,34 +176,35 @@ others."
 @end example
 
 Now when you type C-t C-z, you'll see the text ``Zzzzz...'' pop up."
-  (setf (gethash key map) command)
-  ;; We need to tell the X server when changing the top-map bindings.
-  (when (eq map *top-map*)
-    (sync-keys)))
+  (declare (type kmap map) (type (or key (eql t)) key))
+  (let ((binding (find key (kmap-bindings map) :key 'binding-key :test 'equalp)))
+    (setf (kmap-bindings map)
+          (append (if binding
+                      (delete binding (kmap-bindings map))
+                      (kmap-bindings map))
+                  (list (make-binding :key key :command command))))
+    ;; We need to tell the X server when changing the top-map bindings.
+    (when (eq map *top-map*)
+      (sync-keys))))
 
 (defun undefine-key (map key)
   "Clear the key binding in the specified keybinding."
-  (remhash key map)
+  (setf (kmap-bindings map) (delete key (kmap-bindings map) :key 'binding-key :test 'equalp))
   ;; We need to tell the X server when changing the top-map bindings.
   (when (eq map *top-map*)
     (sync-keys)))
 
 (defun lookup-key-sequence (kmap key-seq)
   "Return the command bound to the key sequenc, KEY-SEQ, in keymap KMAP."
-  (when (and (symbolp kmap)
-             (boundp kmap)
-             (hash-table-p (symbol-value kmap)))
+  (when (kmap-symbol-p kmap)
     (setf kmap (symbol-value kmap)))
-  (check-type kmap hash-table)
+  (check-type kmap kmap)
   (let* ((key (car key-seq))
          (cmd (lookup-key kmap key)))
     (cond ((null (cdr key-seq))
            cmd)
           (cmd
-           (if (or (hash-table-p cmd)
-                   (and (symbolp cmd)
-                        (boundp cmd)
-                        (hash-table-p (symbol-value cmd))))
+           (if (kmap-or-kmap-symbol-p cmd)
                (lookup-key-sequence cmd (cdr key-seq))
                cmd))
           (t nil))))
@@ -196,10 +212,10 @@ Now when you type C-t C-z, you'll see the text ``Zzzzz...'' pop up."
 (defun kmap-symbol-p (x)
   (and (symbolp x)
        (boundp x)
-       (hash-table-p (symbol-value x))))
+       (kmap-p (symbol-value x))))
 
-(defun kmap-p (x)
-  (or (hash-table-p x)
+(defun kmap-or-kmap-symbol-p (x)
+  (or (kmap-p x)
       (kmap-symbol-p x)))
 
 (defun dereference-kmaps (kmaps)
@@ -213,19 +229,14 @@ Now when you type C-t C-z, you'll see the text ``Zzzzz...'' pop up."
   "Search the keymap for the specified binding. Return the key
 sequences that run binding."
   (labels ((search-it (cmd kmap key-seq)
-             (when (and (symbolp kmap)
-                        (boundp kmap)
-                        (hash-table-p (symbol-value kmap)))
+             (when (kmap-symbol-p kmap)
                (setf kmap (symbol-value kmap)))
-             (check-type kmap hash-table)
-             (let (cmds)
-               (maphash (lambda (k v)
-                          (cond ((funcall test v cmd)
-                                 (push (cons k key-seq) cmds))
-                                ((kmap-p v)
-                                 (setf cmds (append cmds (search-it cmd v (cons k key-seq)))))))
-                        kmap)
-               cmds)))
+             (check-type kmap kmap)
+             (loop for i in (kmap-bindings kmap)
+                if (funcall test (binding-command i) cmd)
+                collect (cons (binding-key i) key-seq)
+                else if (kmap-or-kmap-symbol-p (binding-command i))
+                append (search-it cmd (binding-command i) (cons (binding-key i) key-seq)))))
     (mapcar 'reverse (search-it command keymap nil))))
 
 

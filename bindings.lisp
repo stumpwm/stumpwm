@@ -85,7 +85,7 @@ a tile-group, both the group map and tile-group map are active.")
   (kbd "C-a") "time"
   (kbd "!")   "exec"
   (kbd "C-g") "abort"
-  (kbd "t")   "meta C-t"
+  *escape-fake-key* "send-escape"
   (kbd ";")   "colon"
   (kbd ":")   "eval"
   (kbd "v")   "version"
@@ -228,7 +228,7 @@ current window. To exit command mode, type @key{C-g}."
   (message "Press C-g to exit command-mode.")
   (push-top-map *root-map*))
 
-(defun set-prefix-key (key)
+(defcommand set-prefix-key (key) ((:key "Key: "))
   "Change the stumpwm prefix key to KEY.
 @example
 \(stumpwm:set-prefix-key (stumpwm:kbd \"C-M-H-s-z\"))
@@ -238,30 +238,18 @@ This will change the prefix key to @key{Control} + @key{Meta} + @key{Hyper} + @k
 the @key{z} key. By most standards, a terrible prefix key but it makes a
 great example."
   (check-type key key)
-  (let (prefix)
-    (dolist (i (lookup-command *top-map* '*root-map*))
-      (setf prefix i)
-      (undefine-key *top-map* i))
-    (define-key *top-map* key '*root-map*)
-    (let* ((meta (make-key :keysym (key-keysym key)))
-           (old-cmd (concatenate 'string "meta " (print-key prefix)))
-           (cmd (concatenate 'string "meta " (print-key key))))
-      (dolist (i (lookup-command *root-map* old-cmd))
-        (undefine-key *root-map* i))
-      (define-key *root-map* meta cmd))
-    (define-key *root-map* key "other")
-    (sync-keys)))
+  (copy-key-into key *escape-key*)
+  (copy-key-into (make-key :keysym (key-keysym key)) *escape-fake-key*)
+  (sync-keys))
 
-(defcommand escape (key) ((:string "Key: "))
-  "Set the prefix key. Here's how you would change the prefix key to @kbd{C-z}.
-
-@example
-escape C-z
-@end example"
-  (set-prefix-key (kbd key)))
+(defcommand-alias escape set-prefix-key)
 
 (defcommand bind (key command)
                  ((:text "Key Chord: ")
                   (:rest "Command: "))
   "Hang a key binding off the escape key."
   (define-key *root-map* (kbd key) command))
+
+(defcommand send-escape () ()
+  "Send the escape key to the current window."
+  (send-meta-key (current-screen) *escape-key*))

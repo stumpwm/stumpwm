@@ -224,14 +224,14 @@ The Caller is responsible for setting up the input focus."
     (run-hook-with-args *key-press-hook* key key-seq match)
     (when update-fn
       (funcall update-fn key-seq))
-    (cond ((kmap-p match)
+    (cond ((kmap-or-kmap-symbol-p match)
            (when grab
              (grab-pointer (current-screen)))
            (let* ((code-state (read-key-no-modifiers))
                   (code (car code-state))
                   (state (cdr code-state)))
              (unwind-protect
-                  (handle-keymap (remove-if-not 'kmap-p bindings) code state key-seq nil update-fn)
+                  (handle-keymap (remove-if-not 'kmap-or-kmap-symbol-p bindings) code state key-seq nil update-fn)
                (when grab (ungrab-pointer)))))
           (match
            (values match key-seq))
