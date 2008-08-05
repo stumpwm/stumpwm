@@ -125,7 +125,7 @@ at 0. Return a netwm compliant group id."
                    (focus-frame old-group old-frame))
                  ;; maybe show the window in its new frame
                  (when (null (frame-window (window-frame window)))
-                   (frame-raise-window (window-group window) (window-frame window) window))
+                   (really-raise-window window))
                  (xlib:change-property (window-xwin window) :_NET_WM_DESKTOP
                                        (list (netwm-group-id to-group))
                                        :cardinal 32)))))
