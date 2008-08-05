@@ -98,11 +98,16 @@ command prints the command bound to the specified key sequence."
 
 (defcommand describe-command (com) ((:command "Describe Command: "))
   "Print the online help associated with the specified command."
-  ; Is it really a command, not just a function?
-  (if (get-command-structure com)
-      (message-no-timeout "Command \"~a\":~%~a" com
-                          (documentation (get-command-symbol com) 'function))
-      (message-no-timeout "Error: Command \"~a\" not found." com)))
+  (let* ((deref (dereference-command-symbol com))
+         (struct (get-command-structure com nil)))
+    (cond ((null struct)
+           (message "Error: Command \"~a\" not found." com))
+          ((eq deref struct)
+           (message-no-timeout "Command \"~a\":~%~a" (command-name struct)
+                               (documentation (command-name struct) 'function)))
+          (t
+           (message-no-timeout "\"~a\" is an alias for the command \"~a\":~%~a" (command-alias-from deref) (command-name struct)
+                               (documentation (command-name struct) 'function))))))
 
 (defcommand where-is (cmd) ((:rest "Where is command: "))
 "Print the key sequences bound to the specified command."

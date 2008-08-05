@@ -103,38 +103,50 @@ alias name for the command that is only accessible interactively."
          (make-command-alias :from ',alias
                              :to ',original)))
 
-(defun all-commands ()
-  "Return a list of all interactive commands as strings."
+(defun dereference-command-symbol (command)
+  "Given a string or symbol look it up in the command database and return
+whatever it finds: a command, an alias, or nil."
+  (maphash (lambda (k v)
+             (when (string-equal k command)
+               (return-from dereference-command-symbol v)))
+           *command-hash*))
+
+(defun command-active-p (command)
+  (typep (current-group) (command-class command))
+  ;; TODO: minor modes
+  )
+
+(defun get-command-structure (command &optional (only-active t))
+  "Return the command structure for COMMAND. COMMAND can be a string,
+symbol, command, or command-alias. By default only search active
+commands."
+  (declare (type (or string symbol command command-alias) command))
+  (when (or (stringp command) (symbolp command))
+    (setf command (dereference-command-symbol command)))
+  (when (command-alias-p command)
+    (setf command (loop for c = (gethash (command-alias-to command) *command-hash*)
+                     then (gethash (command-alias-to c) *command-hash*)
+                     for depth from 1
+                     until (or (null c)
+                               (command-p c))
+                     when (> depth *max-command-alias-depth*)
+                     do (error "Maximum command alias depth exceded")
+                     finally (return c))))
+  (when (and command
+             (or (not only-active)
+                 (command-active-p command)))
+    command))
+
+(defun all-commands (&optional (only-active t))
+  "Return a list of all interactive commands as strings. By default
+only return active commands."
   (let (acc)
     (maphash (lambda (k v)
-               (declare (ignore v))
-               (push (string-downcase k) acc))
+               ;; make sure its an active command
+               (when (get-command-structure v only-active)
+                 (push (string-downcase k) acc)))
              *command-hash*)
     (sort acc 'string<)))
-
-(defun get-command-symbol (command)
-  (if (stringp command)
-      (maphash (lambda (k v)
-                 (declare (ignore v))
-                 (when (string-equal k command)
-                   (return-from get-command-symbol k)))
-               *command-hash*)
-      command))
-
-(defun get-command-structure (command)
-  "Return the command structure for COMMAND."
-  (declare (type (or string symbol) command))
-  (setf command (get-command-symbol command))
-  (and command
-       (loop for c = (gethash command *command-hash*)
-            for depth from 1
-          until (or (null c)
-                    (command-p c))
-          ;; the only other possibility is an alias
-          do (setf command (command-alias-to c))
-            (when (> depth *max-command-alias-depth*)
-              (error "Maximum command alias depth exceded"))
-          finally (return c))))
 
 ;;; command arguments
 
