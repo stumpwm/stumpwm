@@ -20,10 +20,11 @@ infodir=@infodir@
 # one place, but oh well.
 FILES=package.lisp primitives.lisp wrappers.lisp keysyms.lisp		\
 keytrans.lisp kmap.lisp input.lisp core.lisp command.lisp menu.lisp	\
-screen.lisp group.lisp frame.lisp window.lisp message-window.lisp	\
-events.lisp selection.lisp user.lisp iresize.lisp bindings.lisp		\
-help.lisp fdump.lisp mode-line.lisp color.lisp stumpwm.lisp		\
-version.lisp
+screen.lisp group.lisp window.lisp floating-group.lisp frame.lisp	\
+tile-window.lisp window-placement.lisp message-window.lisp		\
+selection.lisp user.lisp iresize.lisp bindings.lisp events.lisp		\
+help.lisp fdump.lisp mode-line.lisp color.lisp module.lisp		\
+stumpwm.lisp version.lisp
 
 all: stumpwm.info stumpwm
 

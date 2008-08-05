@@ -142,5 +142,5 @@
   (declare (ignore x y where))
   )
 
-(defcommand newfloat (name) ((:rest "Name: "))
+(defcommand gnew-float (name) ((:rest "Name: "))
   (add-group (current-screen) name 'float-group))
