@@ -491,6 +491,16 @@ Create a new group.
 @itemx C-t g C-SPC
 Go to the next group in the list.
 
+@item C-t g N
+Go to the next group in the list and bring the current window along.
+
+@item C-t g p
+@itemx C-t g C-p
+Go to the previous group in the list.
+
+@item C-t g P
+Go to the previous group in the list and bring the current window along.
+
 @item C-t g '
 Select a group by name or by number.
 
@@ -958,6 +968,8 @@ Groups in StumpWM are more commonly known as @dfn{virtual desktops} or
 !!! gnewbg
 !!! gnext
 !!! gprev
+!!! gnext-with-window
+!!! gprev-with-window
 !!! gother
 !!! gmerge
 !!! groups

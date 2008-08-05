@@ -9,6 +9,8 @@ This file documents user visible changes between versions of StumpWM
 
 ** added info command
 
+** added g{next,prev}-with-window commands
+
 * Changes since 0.9.3
 ** new %interactivep% variable
 see defcommand in the manual.

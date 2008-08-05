@@ -237,9 +237,21 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 ;; together.
 
 (defun group-forward (current list)
+  "Switch to the next group in the list, if one exists. Returns the
+new group."
   (let ((ng (next-group current list)))
     (when ng
-      (switch-to-group ng))))
+      (switch-to-group ng)
+      ng)))
+
+(defun group-forward-with-window (current list)
+  "Switch to the next group in the list, if one exists, and moves the
+current window of the current group to the new one."
+  (let ((next (group-forward current list))
+        (win (group-current-window current)))
+    (when (and next win)
+      (move-window-to-group win next)
+      (really-raise-window win))))
 
 (defcommand gnew (name) ((:string "Group Name: "))
 "Create a new group with the specified name. The new group becomes the
@@ -266,6 +278,18 @@ groups and vgroups commands."
 "Cycle to the previous group in the group list."
   (group-forward (current-group)
                  (reverse (sort-groups (current-screen)))))
+
+(defcommand gnext-with-window () ()
+  "Cycle to the next group in the group list, taking the current
+window along."
+  (group-forward-with-window (current-group)
+                             (sort-groups (current-screen))))
+
+(defcommand gprev-with-window () ()
+  "Cycle to the previous group in the group list, taking the current
+window along."
+  (group-forward-with-window (current-group)
+                             (reverse (sort-groups (current-screen)))))
 
 (defcommand gother () ()
   "Go back to the last group."
