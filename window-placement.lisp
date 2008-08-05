@@ -39,7 +39,11 @@
   (destructuring-bind (group-name frame raise lock &rest props) rule
     (declare (ignore frame raise))
     (if (or lock
-            (equal group-name (group-name (or (window-group w) (current-group)))))
+            ;; The group slot may not be set at this point if the
+            ;; window is new.
+            (equal group-name (group-name (or (when (slot-boundp w 'group)
+                                                (window-group w))
+                                              (current-group)))))
         (apply 'window-matches-properties-p w props))))
 
 ;; TODO: add rules allowing matched windows to create their own groups/frames
