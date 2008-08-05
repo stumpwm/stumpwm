@@ -303,9 +303,6 @@ StumpWM is controlled entirely by keystrokes and Lisp commands. It
 mimics GNU Screen's keyboard handling. StumpWM's default prefix key is
 @kbd{C-t}.
 
-!!! escape
-
-
 @menu
 * List of Default Keybindings::  
 * Binding Keys::                
@@ -544,7 +541,7 @@ Describe the specified command.
 @@@ define-key
 @@@ undefine-key
 @@@ kbd
-@@@ set-prefix-key
+!!! set-prefix-key
 
 @@@ make-sparse-keymap
 
