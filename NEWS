@@ -3,6 +3,13 @@
 This file documents user visible changes between versions of StumpWM
 
 * Changes since 0.9.4.1
+** new top/root keymaps
+The *root-map* keymap and *top-map* have been split into several based
+on what group it applies to, tiling, floating, both.
+
+** new floating group
+StumpWM now has a floating window group mode.
+
 ** new command load-module
 
 ** added install/uninstall Makefile rules
