@@ -34,19 +34,21 @@
    (if role (string-match (window-role window) role) t)
    (if title (string-match (window-title window) title) t) t))
 
+
 (defun window-matches-rule-p (w rule)
   "Returns T if window matches rule"
-  (destructuring-bind (group-name frame raise lock &rest props) rule
-    (declare (ignore frame raise))
+  (destructuring-bind (group-name frame raise lock
+                       &key create restore class instance type role title) rule
+    (declare (ignore frame raise create restore))
     (if (or lock
-            ;; The group slot may not be set at this point if the
-            ;; window is new.
             (equal group-name (group-name (or (when (slot-boundp w 'group)
                                                 (window-group w))
                                               (current-group)))))
-        (apply 'window-matches-properties-p w props))))
-
-;; TODO: add rules allowing matched windows to create their own groups/frames
+        (window-matches-properties-p w :class class
+                                       :instance instance
+                                       :type type
+                                       :role role
+                                       :title title))))
 
 (defun rule-matching-window (window)
   (dolist (rule *window-placement-rules*)
@@ -57,21 +59,43 @@
   the window should be raised."
   (let ((match (rule-matching-window window)))
     (if match
-        (destructuring-bind (group-name frame raise lock &rest props) match
-          (declare (ignore lock props))
+        (destructuring-bind (group-name frame raise lock
+                             &key create restore class instance type role title) match
+          (declare (ignore lock class instance type role title))
           (let ((group (find-group screen group-name)))
-            (if group
-                (values group (frame-by-number group frame) raise)
-                (progn
-                  (message "^B^1*Error placing window, group \"^b~a^B\" does not exist." group-name)
-                  (values)))))
+            (cond (group
+                   (when (and restore (stringp restore))
+                     (let ((restore-file (data-dir-file restore)))
+                       (if (probe-file restore-file)
+                           (restore-group group
+                                          (read-dump-from-file restore-file))
+                           (message "^B^1*Can't restore group \"^b~a^B\" with \"^b~a^B\"."
+                                    group-name restore-file))))
+                   (values group (frame-by-number group frame) raise))
+                  (create
+                   (let ((new-group (add-group (current-screen) group-name))
+                         (restore-file (if (stringp create)
+                                           (data-dir-file create)
+                                           (data-dir-file group-name))))
+                     (if (and new-group
+                              (probe-file restore-file))
+                         (restore-group new-group
+                                        (read-dump-from-file restore-file))
+                         (when (stringp create)
+                           (message "^B^1*Can't restore group \"^b~a^B\" with \"^b~a^B\"."
+                                    group-name restore-file)))
+                     (values new-group (frame-by-number new-group frame) raise)))
+                    (t (message "^B^1*Error placing window, group \"^b~a^B\" does not exist." group-name)
+                       (values)))))
         (values))))
 
 (defun sync-window-placement ()
   "Re-arrange existing windows according to placement rules"
   (dolist (screen *screen-list*)
     (dolist (window (screen-windows screen))
-      (multiple-value-bind (to-group frame raise) (get-window-placement screen window)
+      (multiple-value-bind (to-group frame raise)
+          (with-current-screen screen
+            (get-window-placement screen window))
         (declare (ignore raise))
         (when to-group
           (unless (eq (window-group window) to-group)
