@@ -72,6 +72,9 @@
   (mpd-send cmd)
   (mpd-receive))
 
+(defun mpd-format-command (fmt &rest args)
+  (mpd-send-command (apply 'format nil fmt args)))
+
 (defun mpd-termination-p (str)
   (or (mpd-error-p str)
       (mpd-ok-p str)))
@@ -132,7 +135,14 @@
    (close *mpd-socket*)
    (setf *mpd-socket* nil)))
 
-
+(defun mpd-search (type what &optional (exact-search nil))
+  (mpd-format-command "~a ~a \"~a\""
+                      (if exact-search "find"
+                          "search")
+                      type what))
+(defun mpd-add (files)
+  (loop for i in files
+     do (mpd-format-command "add \"~a\"" i)))
 
 ;;mpd formatter
 (dolist (a '((#\m fmt-mpd-status)))
@@ -225,7 +235,7 @@
 ;;mpd commands
 (defvar *mpd-volume-step* 5)
 
-(defcommand mpd-select-song-in-playlist () ()
+(defcommand mpd-browse-playlist () ()
   (let ((status (mpd-send-command "status")))
     (labels ((pick (options)
                    (let ((selection
@@ -250,12 +260,49 @@
                (song-number (position choice result)))
           (mpd-send-command (format nil "play ~d" song-number)))))))
 
+(defcommand mpd-browse-albums () ()
+  (labels ((pick (options)
+             (let ((selection
+                    (select-from-menu (current-screen) options
+                                      "Play album" 0)))
+               (cond
+                 ((null selection)
+                  (throw 'stumpwm::error "Abort."))
+                 (t selection)))))
+    (let* ((response (mpd-send-command "list album"))
+           (result (mapcar #'cadr (remove-if (lambda (item)
+                                               (not (equal :album
+                                                           (first item))))
+                                             response))))
+      (let* ((choice (pick result)))
+        (mpd-search-and-add-album choice t)))))
+
+
+(defcommand mpd-browse-artists () ()
+  (labels ((pick (options)
+             (let ((selection
+                    (select-from-menu (current-screen) options
+                                      "Play artists" 0)))
+               (cond
+                 ((null selection)
+                  (throw 'stumpwm::error "Abort."))
+                 (t selection)))))
+    (let* ((response (mpd-send-command "list artist"))
+           (result (mapcar #'cadr (remove-if (lambda (item)
+                                               (not (equal :artist
+                                                           (first item))))
+                                             response))))
+      (let* ((choice (pick result)))
+        (mpd-search-and-add-artist choice t)))))
+
 (defcommand mpd-connect () ()
   (message "~a" (init-mpd-connection)))
 
 (defcommand mpd-disconnect () ()
   (close-mpd-connection))
 
+(defcommand mpd-kill () ()
+ (mpd-send-command "kill"))
 
 (defcommand mpd-toggle-pause () ()
   (let ((status (mpd-send-command "status")))
@@ -305,8 +352,10 @@
 (defcommand mpd-clear () ()
   (mpd-send-command "clear"))
 
-(defcommand mpd-update () ()
-  (message "~a" (mpd-send-command "update")))
+(defcommand mpd-update (&optional (path nil)) ()
+  (if path
+      (message "~a" (mpd-format-command "update ~a" path))
+      (message "~a" (mpd-send-command "update"))))
 
 (defcommand mpd-current-song () ()
   (message "~a" (format-mpd-current-song (mpd-send-command "currentsong"))))
@@ -327,75 +376,70 @@
   (mpd-send-command (format nil "add \"~a\"" file)))
 
 ;;search and add commands
-(defcommand mpd-search-and-add-artist (what)
+(defcommand mpd-search-and-add-artist (what &optional (exact-search nil))
   ((:rest "Search & add artist to playlist: "))
-  (let* ((response (mpd-send-command (format nil "search artist \"~a\"" what)))
+  (let* ((response (mpd-search "artist" what exact-search))
          (result (mapcar #'cadr (remove-if (lambda (item)
                                              (not (equal :file
                                                          (first item))))
                                            response))))
-    (loop for i in result
-          do (mpd-send-command (format nil "add \"~a\"" i)))
+    (mpd-add result)
     (if (< (length result) 80)
         (message "Added ~a files: ~%^7*~{~a~%~}"
                  (length result)
                  result)
       (message "~a files added" (length result)))))
 
-(defcommand mpd-search-and-add-file (what)
+(defcommand mpd-search-and-add-file (what &optional (exact-search nil))
   ((:rest "Search & add file to playlist: "))
-  (let* ((response (mpd-send-command (format nil "search file \"~a\"" what)))
+  (let* ((response (mpd-search "file" what exact-search))
          (result (mapcar #'cadr (remove-if (lambda (item)
                                              (not (equal :file
                                                          (first item))))
                                            response))))
-    (loop for i in result
-          do (mpd-send-command (format nil "add \"~a\"" i)))
+    (mpd-add result)
     (if (< (length result) 80)
         (message "Added ~a files: ~%^7*~{~a~%~}"
                  (length result)
                  result)
       (message "~a files added" (length result)))))
 
-(defcommand mpd-search-and-add-title (what)
+(defcommand mpd-search-and-add-title (what &optional (exact-search nil))
   ((:rest "Search & add title to playlist: "))
-  (let* ((response (mpd-send-command (format nil "search title \"~a\"" what)))
+  (let* ((response (mpd-search "title" what exact-search))
          (result (mapcar #'cadr (remove-if (lambda (item)
                                              (not (equal :file
                                                          (first item))))
                                            response))))
-    (loop for i in result
-          do (mpd-send-command (format nil "add \"~a\"" i)))
+    (mpd-add result)
     (if (< (length result) 80)
         (message "Added ~a files: ~%^7*~{~a~%~}"
                  (length result)
                  result)
       (message "~a files added" (length result)))))
 
-(defcommand mpd-search-and-add-album (what)
+(defcommand mpd-search-and-add-album (what &optional (exact-search nil))
   ((:rest "Search & add album to playlist: "))
-  (let* ((response (mpd-send-command (format nil "search album \"~a\"" what)))
+  (let* ((response (mpd-search "album" what exact-search))
          (result (mapcar #'cadr (remove-if (lambda (item)
                                              (not (equal :file
                                                          (first item))))
                                            response))))
-    (loop for i in result
-          do (mpd-send-command (format nil "add \"~a\"" i)))
+    (mpd-add result)
     (if (< (length result) 80)
         (message "Added ~a files: ~%^7*~{~a~%~}"
                  (length result)
                  result)
       (message "~a files added" (length result)))))
 
-(defcommand mpd-search-and-add-genre (what)
+(defcommand mpd-search-and-add-genre (what &optional (exact-search nil))
   ((:rest "Search & add genre to playlist: "))
-  (let* ((response (mpd-send-command (format nil "search genre \"~a\"" what)))
+  (let* ((response (mpd-search "genre" what exact-search))
          (result (mapcar #'cadr (remove-if (lambda (item)
                                              (not (equal :file
                                                          (first item))))
                                            response))))
-    (loop for i in result
-          do (mpd-send-command (format nil "add \"~a\"" i)))
+    (mpd-add result)
     (if (< (length result) 80)
         (message "Added ~a files: ~%^7*~{~a~%~}"
                  (length result)
@@ -427,6 +471,13 @@
         (define-key m (kbd "g") "mpd-search-genre")
         m))
 
+(setf *mpd-browse-map*
+      (let ((m (make-sparse-keymap)))
+        (define-key m (kbd "p") "mpd-browse-playlist")
+        (define-key m (kbd "l") "mpd-browse-albums")
+        (define-key m (kbd "a") "mpd-browse-artists")
+        m))
+
 (setf *mpd-add-map*
       (let ((m (make-sparse-keymap)))
         (define-key m (kbd "a") "mpd-search-and-add-artist")
@@ -442,18 +493,22 @@
         (define-key m (kbd "SPC") "mpd-toggle-pause")
         (define-key m (kbd "s") "mpd-toggle-random")
         (define-key m (kbd "r") "mpd-toggle-repeat")
+        (define-key m (kbd "S") "mpd-current-song")
         (define-key m (kbd "p") "mpd-play")
+        (define-key m (kbd "q") "mpd-browse-playlist")
         (define-key m (kbd "o") "mpd-stop")
         (define-key m (kbd "m") "mpd-next")
         (define-key m (kbd "l") "mpd-prev")
         (define-key m (kbd "c") "mpd-clear")
+        (define-key m (kbd "x") "mpd-connect")
+        (define-key m (kbd "k") "mpd-kill")
         (define-key m (kbd "u") "mpd-update")
         (define-key m (kbd "a") "mpd-search-and-add-artist")
-        (define-key m (kbd "q") "mpd-select-song-in-playlist")
         (define-key m (kbd "z") "mpd-playlist")
         (define-key m (kbd "v") "mpd-set-volume")
         (define-key m (kbd "e") "mpd-volume-up")
         (define-key m (kbd "d") "mpd-volume-down")
         (define-key m (kbd "S") '*mpd-search-map*)
+        (define-key m (kbd "b") '*mpd-browse-map*)
         (define-key m (kbd "A") '*mpd-add-map*)
         m))
