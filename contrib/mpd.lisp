@@ -47,6 +47,12 @@
   )
 (defparameter *mpd-port* 6600)
 
+(defvar *mpd-timeout* 50)
+
+(defparameter *mpd-timer*
+  (when *mpd-timeout*
+    (run-with-timer *mpd-timeout* *mpd-timeout* 'mpd-ping)))
+
 (defvar *mpd-collapse-album-length* nil)
 (defvar *mpd-collapse-all-length* nil)
 
@@ -134,6 +140,9 @@
   (with-mpd-connection
    (close *mpd-socket*)
    (setf *mpd-socket* nil)))
+
+(defun mpd-ping ()
+  (mpd-send-command "ping"))
 
 (defun mpd-search (type what &optional (exact-search nil))
   (mpd-format-command "~a ~a \"~a\""
@@ -259,6 +268,8 @@
           (let* ((choice (pick result))
                (song-number (position choice result)))
           (mpd-send-command (format nil "play ~d" song-number)))))))
+
+(defcommand-alias select-song-from-playlist browse-playlist)
 
 (defcommand mpd-browse-albums () ()
   (labels ((pick (options)
