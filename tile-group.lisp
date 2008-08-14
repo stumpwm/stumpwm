@@ -525,7 +525,7 @@ you don't care which one."
                   (total (funcall sz-fn tree))
                   (amt-list (loop for i in children
                                   for old-sz = (funcall sz-fn i)
-                                  collect (truncate (/ (* amount old-sz) total))))
+                                  collect (floor (* amount old-sz) total)))
                   (remainder (- amount (apply '+ amt-list)))
                   (ofs 0))
              ;; spread the remainder out as evenly as possible
