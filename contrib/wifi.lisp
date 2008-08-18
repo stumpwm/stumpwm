@@ -21,7 +21,7 @@
 ;;;
 
 ;;; WARNING:
-;;; 
+;;;
 ;;; This triggers a yet to be discovered bug in SBCL, which causes
 ;;; stumpwm to freeze.
 
@@ -34,17 +34,21 @@
 ;;; Then you can use "%I" in your mode line format (both "w" and "W"
 ;;; were taken. Think _I_EEE 802.11 :-)).
 ;;;
-;;; Notes: This gets information through iwconfig, so it only works on
-;;; Linux. On Debian-ish systems, iwconfig is in the wireless-tools
-;;; package.
+;;; Notes: This gets information through sysfs, so it only works on
+;;; Linux with a mounted sysfs.
 
 (defpackage :stumpwm.contrib.wifi
   (:use :common-lisp :stumpwm )
-  (:export #:*iwconfig-path*))
+  (:export #:*iwconfig-path*
+           #:*wireless-device*))
 (in-package :stumpwm.contrib.wifi)
 
 (defvar *iwconfig-path* "/sbin/iwconfig"
   "Location if iwconfig, defaults to /sbin/iwconfig.")
+
+(defvar *wireless-device* nil
+  "Set to the name of the wireless device you want to monitor. If set
+  to NIL, try to guess.")
 
 (defmacro defun-cached (name interval arglist &body body)
   "Creates a function that does simple caching. The body must be
@@ -67,30 +71,46 @@ prev-val."
              (setf ,prev-val (locally ,@body)))
            ,prev-val)))))
 
+(defun guess-wireless-device ()
+  (or (loop
+         for path in (directory (make-pathname :directory '(:absolute "sys" "class" "net" :wild)))
+         thereis (let ((device-name (car (last (pathname-directory path)))))
+                   (if (probe-file (merge-pathnames (make-pathname :directory '(:relative "wireless"))
+                                                    path))
+                       device-name
+                       nil)))
+      (error "No wireless device found.")))
+
+(defun read-wifi-info (device what)
+  (let ((path (make-pathname :directory `(:absolute "sys" "class" "net" ,device "wireless"))))
+    (with-open-file (in (merge-pathnames (make-pathname :name what)
+                                         path))
+      (read-line-from-sysfs in))))
+
+(defun read-wifi-info-int (device what)
+  (parse-integer (read-wifi-info device what)))
+
+
 (defun-cached fmt-wifi 5 (ml)
   "Formatter for wifi status. Displays the ESSID of the access point
 you're connected to as well as the signal strength. When no valid data
 is found, just displays nil."
   (declare (ignore ml))
-  (let ((essid (run-shell-command
-                (format nil "~A 2>/dev/null | grep ESSID | cut -d '\"' -f 2 | tr -d '\\n'"
-                        *iwconfig-path*)
-                t)))
-    (if (string= essid "")
-        "nil"
-        (let* ((qual (run-shell-command
-                      (format nil "~A 2>/dev/null | grep 'Link Quality' | awk '{print $2}' | cut -b 9- | tr -d '\\n'"
-                              *iwconfig-path*)
-                      t))
-               (num-pos (position #\/ qual))
-               (perc (if num-pos
-                         (round (* 100 (/ (parse-integer
-                                           (subseq qual 0 num-pos))
-                                          (parse-integer
-                                           (subseq qual (1+ num-pos))))))
-                         0)))
+  (handler-case
+      (let* ((device (or *wireless-device* (guess-wireless-device)))
+             (essid (multiple-value-bind (match? sub)
+                        (cl-ppcre:scan-to-strings "ESSID:\"(.*)\""
+                                                  (run-shell-command (format nil "~A ~A 2>/dev/null"
+                                                                             *iwconfig-path*
+                                                                             device)
+                                                                     t))
+                      (if match?
+                          (aref sub 0)
+                          (return-from fmt-wifi "no link")))))
+        (let* ((qual (read-wifi-info-int device "link")))
           (format nil "~A ^[~A~D%^]"
-                  essid (bar-zone-color perc 40 30 15 t) perc)))))
+                  essid (bar-zone-color qual 40 30 15 t) qual)))
+    (t (c) (format nil "Error ~A" c))))
 
 ;;; Add mode-line formatter
 
