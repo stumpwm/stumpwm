@@ -20,7 +20,7 @@
 ;;; Wmii-like keybindings
 
 (defvar *terminal* "xterm"
-  "The command to used start a terminal. It should understand the -e
+  "The command used to start a terminal. It should understand the -e
   parameter.")
 
 ;; Use focus-follows-mouse, like wmii does.
