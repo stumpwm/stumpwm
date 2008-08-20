@@ -1069,6 +1069,7 @@ needed."
           (delete window (screen-urgent-windows screen)))
     (dformat 1 "destroy window ~a~%" screen)
     (dformat 3 "destroying parent window~%")
+    (dformat 7 "parent window is ~a~%" (window-parent window))
     (xlib:destroy-window (window-parent window))))
 
 (defun move-window-to-head (group window)
