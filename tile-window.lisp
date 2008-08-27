@@ -29,6 +29,16 @@
     ((:normal-hints :type)
      (maximize-window window))))
 
+(defmethod window-visible-p ((window tile-window))
+  ;; In this case, visible means the window is the top window in the
+  ;; frame. This is not entirely true when it doesn't take up the
+  ;; entire frame and there's a window below it.
+  (and (eq (window-frame window)
+           (frame-window (window-frame window)))))
+
+(defmethod window-head ((window tile-window))
+  (frame-head (window-group window) (window-frame window)))
+
 ;;;;
 
 (defun really-raise-window (window)
@@ -42,13 +52,6 @@
 
 (defun raise-transients-of-gang (window)
   (mapc 'really-raise-window (only-transients (window-gang window))))
-
-;;;
-
-(defun top-windows ()
-  "Return a list of windows on top (on all screen)"
-  (loop for s in *screen-list*
-        nconc (mapcar 'frame-window (group-frames (screen-current-group s)))))
 
 ;;;
 

@@ -545,7 +545,7 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
   "Returns a list of windows on HEAD of GROUP"
   (remove-if-not
    (lambda (w)
-     (eq head (frame-head group (window-frame w))))
+     (eq head (window-head w)))
    (group-windows group)))
 
 (defun frame-is-head (group frame)

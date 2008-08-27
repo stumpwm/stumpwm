@@ -273,30 +273,6 @@ critical."
                                                     (head-y (mode-line-head ml))
                                                     (- (+ (head-y (mode-line-head ml)) (head-height (mode-line-head ml))) (mode-line-height ml)))))
 
-(defun frame-display-y (group frame)
-  "Return a Y for frame that doesn't overlap the mode-line."
-  (let* ((head (frame-head group frame))
-         (ml (head-mode-line head))
-	 (head-y (frame-y head))
-	 (rel-frame-y (- (frame-y frame) head-y)))
-    (if (and ml (not (eq (mode-line-mode ml) :hidden)))
-        (case (mode-line-position ml)
-          (:top
-           (+ head-y
-	      (+ (mode-line-height ml) (round (* rel-frame-y (mode-line-factor ml))))))
-          (:bottom
-           (+ head-y
-	      (round (* rel-frame-y (mode-line-factor ml))))))
-        (frame-y frame))))
-
-(defun frame-display-height (group frame)
-  "Return a HEIGHT for frame that doesn't overlap the mode-line."
-  (let* ((head (frame-head group frame))
-         (ml (head-mode-line head)))
-    (if (and ml (not (eq (mode-line-mode ml) :hidden)))
-        (round (* (frame-height frame) (mode-line-factor ml)))
-        (frame-height frame))))
-
 (defgeneric mode-line-format-elt (elt))
 
 (defmethod mode-line-format-elt ((elt string))
@@ -384,7 +360,7 @@ critical."
 
 (defun sync-mode-line (ml)
   (dolist (group (screen-groups (mode-line-screen ml)))
-    (sync-head-frame-windows group (mode-line-head ml))))
+    (group-sync-head group (mode-line-head ml))))
 
 (defun set-mode-line-window (ml xwin)
   "Use an external window as mode-line."
@@ -501,7 +477,7 @@ critical."
           ;; setup the timer
           (turn-on-mode-line-timer)))
     (dolist (group (screen-groups screen))
-      (sync-head-frame-windows group head))))
+      (group-sync-head group head))))
 
 (defun enable-mode-line (screen head state &optional format)
   "Set the state of SCREEN's HEAD's mode-line. If STATE is T and FORMAT is

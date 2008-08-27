@@ -14,6 +14,20 @@
   (declare (ignore hint))
   )
 
+(defmethod window-head ((window float-window))
+  (dolist (head (screen-heads (group-screen (window-group window))))
+    (when (and
+           (>= (window-x window) (frame-x head))
+           (>= (window-y window) (frame-y head))
+           (<= (+ (window-x window) (window-width window))
+               (+ (frame-x head) (frame-width head)))
+           (<= (+ (window-y window) (window-height window))
+               (+ (frame-y head) (frame-height head))))
+      (return head))))
+
+(defmethod window-visible-p ((win float-window))
+  (eql (window-state win) +normal-state+))
+
 ;;; floating group
 
 (defclass float-group (group)
@@ -44,8 +58,7 @@
   (screen-focus (group-screen group)))
 
 (defmethod group-current-head ((group float-group))
-  ;; FIXME: it'd be good not to copy them each time.
-  (first (copy-heads (group-screen group))))
+  (first (screen-heads (group-screen group))))
 
 (defun float-window-align (window)
   (with-slots (parent xwin width height) window
@@ -100,13 +113,13 @@
   (xlib:clear-area (window-parent window))
   (focus-window window))
 
-(defmethod group-window-visible-p ((group float-group) win)
-  (eql (window-state win) +normal-state+))
-
 (defmethod group-root-exposure ((group float-group))
   )
 
 (defmethod group-add-head ((group float-group))
+  )
+
+(defmethod group-sync-head ((group float-group) head)
   )
 
 (defmethod group-button-press ((group float-group) x y (window float-window))

@@ -134,6 +134,10 @@
 (defmethod group-add-head ((group tile-group))
   (sync-all-frame-windows group))
 
+(defmethod group-sync-head ((group tile-group) head)
+  (dolist (f (head-frames group head))
+    (sync-frame-windows group f)))
+
 ;;;;;
 
 (defun populate-frames (group)
@@ -187,6 +191,30 @@
 
 (defun frame-b (frame)
   (+ (frame-y frame) (frame-height frame)))
+
+(defun frame-display-y (group frame)
+  "Return a Y for frame that doesn't overlap the mode-line."
+  (let* ((head (frame-head group frame))
+         (ml (head-mode-line head))
+	 (head-y (frame-y head))
+	 (rel-frame-y (- (frame-y frame) head-y)))
+    (if (and ml (not (eq (mode-line-mode ml) :hidden)))
+        (case (mode-line-position ml)
+          (:top
+           (+ head-y
+	      (+ (mode-line-height ml) (round (* rel-frame-y (mode-line-factor ml))))))
+          (:bottom
+           (+ head-y
+	      (round (* rel-frame-y (mode-line-factor ml))))))
+        (frame-y frame))))
+
+(defun frame-display-height (group frame)
+  "Return a HEIGHT for frame that doesn't overlap the mode-line."
+  (let* ((head (frame-head group frame))
+         (ml (head-mode-line head)))
+    (if (and ml (not (eq (mode-line-mode ml) :hidden)))
+        (round (* (frame-height frame) (mode-line-factor ml)))
+        (frame-height frame))))
 
 (defun frame-intersect (f1 f2)
   "Return a new frame representing (only) the intersection of F1 and F2. WIDTH and HEIGHT will be <= 0 if there is no overlap"

@@ -80,6 +80,9 @@ about it."))
 needs to redraw anything on it, this is where it should do it."))
 (defgeneric group-add-head (group)
   (:documentation "A new head was added."))
+(defgeneric group-sync-head (group head)
+  (:documentation "When a head or its usable area is resized, this is
+called. When the modeline size changes, this is called."))
 
 (defun current-group (&optional (screen (current-screen)))
   "Return the current group for the current screen, unless

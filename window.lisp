@@ -75,6 +75,8 @@
 (defgeneric window-sync (window what-changed)
   (:documentation "Some window slot has been updated and the window
 may need to sync itself. WHAT-CHANGED is a hint at what changed."))
+(defgeneric window-head (window)
+  (:documentation "Report what window the head is currently on."))
 
 ;; Urgency / demands attention
 
@@ -218,6 +220,11 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
   "Return a list of visible windows (on all screens)"
   (loop for s in *screen-list*
         nconc (delete-if 'window-hidden-p (copy-list (group-windows (screen-current-group s))))))
+
+(defun top-windows ()
+  "Return a list of semantically visible windows (on all screens)"
+  (loop for s in *screen-list*
+        nconc (delete-if-not 'window-visible-p (copy-list (group-windows (screen-current-group s))))))
 
 (defun window-name (window)
   (or (window-user-title window)
