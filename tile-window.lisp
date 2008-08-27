@@ -33,8 +33,8 @@
   ;; In this case, visible means the window is the top window in the
   ;; frame. This is not entirely true when it doesn't take up the
   ;; entire frame and there's a window below it.
-  (and (eq (window-frame window)
-           (frame-window (window-frame window)))))
+  (eq window
+      (frame-window (window-frame window))))
 
 (defmethod window-head ((window tile-window))
   (frame-head (window-group window) (window-frame window)))
