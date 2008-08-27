@@ -285,7 +285,7 @@ then describes the symbol."
           (with-focus (screen-key-window (current-screen))
             (message "~a" prompt)
             (nreverse (second (multiple-value-list
-                               (read-from-keymap *top-map* #'update)))))))))
+                               (read-from-keymap (top-maps) #'update)))))))))
 
 (define-stumpwm-type :window-number (input prompt)
   (let ((n (or (argument-pop input)

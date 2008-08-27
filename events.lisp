@@ -197,15 +197,15 @@
             (let ((ml (find-mode-line-window window)))
               (when ml (destroy-mode-line-window ml))))))))
 
-(defun read-from-keymap (kmapr &optional update-fn)
-  "Read a sequence of keys from the user, guided by the keymap,
-KMAP and return the binding or nil if the user hit an unbound sequence.
+(defun read-from-keymap (kmaps &optional update-fn)
+  "Read a sequence of keys from the user, guided by the keymaps,
+KMAPS and return the binding or nil if the user hit an unbound sequence.
 
 The Caller is responsible for setting up the input focus."
   (let* ((code-state (read-key-no-modifiers))
          (code (car code-state))
          (state (cdr code-state)))
-    (handle-keymap kmap code state nil nil update-fn)))
+    (handle-keymap kmaps code state nil nil update-fn)))
 
 (defun handle-keymap (kmaps code state key-seq grab update-fn)
   "Find the command mapped to the (code state) and return it."
@@ -595,7 +595,7 @@ the window in it's frame."
        (group-button-press (screen-current-group screen) x y :root))
       ((setf ml (find-mode-line-window window))
        (run-hook-with-args *mode-line-click-hook* ml code x y))
-      ((setf win (find-window-by-parent window (visible-windows)))
+      ((setf win (find-window-by-parent window (top-windows)))
        (group-button-press (window-group win) x y win)))))
 
 ;; Handling event :KEY-PRESS
