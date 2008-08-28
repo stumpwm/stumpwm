@@ -770,8 +770,7 @@ needed."
       (update-decoration last-win))))
   
 (defmethod focus-window (window)
-  "Give the window focus. This means the window will be visible,
-maximized, and given focus."
+  "Make the window visible and give it keyboard focus."
   (dformat 3 "focus-window: ~s~%" window)
   (let* ((group (window-group window))
          (screen (group-screen group))
