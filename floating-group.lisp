@@ -8,7 +8,13 @@
   ())
 
 (defmethod update-decoration ((window float-window))
-  (xlib:clear-area (window-parent window)))
+  (let ((group (window-group window)))
+    (setf (xlib:window-background (window-parent window))
+          (xlib:alloc-color (xlib:screen-default-colormap (screen-number (window-screen window)))
+                            (if (eq (group-current-window group) window)
+                                "Orange"
+                                "SteelBlue4")))
+    (xlib:clear-area (window-parent window))))
 
 (defmethod window-sync ((window float-window) hint)
   (declare (ignore hint))
@@ -103,14 +109,6 @@
   )
 
 (defmethod group-focus-window ((group float-group) window)
-  (when (group-current-window group)
-    (setf (xlib:window-background (window-parent (group-current-window group)))
-          (xlib:alloc-color (xlib:screen-default-colormap (screen-number (window-screen window)))
-                            "SteelBlue"))
-    (xlib:clear-area (window-parent (group-current-window group))))
-  (setf (xlib:window-background (window-parent (group-current-window group))) (xlib:alloc-color (xlib:screen-default-colormap (screen-number (window-screen window)))
-                                                                                                "Orange"))
-  (xlib:clear-area (window-parent window))
   (focus-window window))
 
 (defmethod group-root-exposure ((group float-group))
@@ -124,32 +122,36 @@
 
 (defmethod group-button-press ((group float-group) x y (window float-window))
   (let ((screen (group-screen group)))
-    (when (or (< x (xlib:drawable-x (window-xwin window)))
-              (> x (+ (xlib:drawable-width (window-xwin window))
-                      (xlib:drawable-x (window-xwin window))))
-              (< y (xlib:drawable-y (window-xwin window)))
-              (> y (+ (xlib:drawable-height (window-xwin window))
-                      (xlib:drawable-y (window-xwin window)))))
-      (message "Move window! ~@{~a ~}" x y window)
-      (multiple-value-bind (relx rely) (xlib:query-pointer (window-parent window))
-        (labels ((move-window-event-handler (&rest event-slots &key event-key &allow-other-keys)
-                   (case event-key
-                     (:button-release
-                      :done)
-                     (:motion-notify
-                      (with-slots (parent) window
-                        (xlib:with-state (parent)
-                          (setf (xlib:drawable-x parent) (- (getf event-slots :x) relx)
-                                (xlib:drawable-y parent) (- (getf event-slots :y) rely))))
-                      t)
-                     (t
-                      nil))))
-          (xlib:grab-pointer (screen-root screen) '(:button-release :pointer-motion))
-          (unwind-protect
-               (loop for ev = (xlib:process-event *display* :handler #'move-window-event-handler :timeout nil)
-                  until (eq ev :done))
-            (ungrab-pointer))
-          (message "Done."))))))
+    (cond
+      ((or (< x (xlib:drawable-x (window-xwin window)))
+           (> x (+ (xlib:drawable-width (window-xwin window))
+                   (xlib:drawable-x (window-xwin window))))
+           (< y (xlib:drawable-y (window-xwin window)))
+           (> y (+ (xlib:drawable-height (window-xwin window))
+                   (xlib:drawable-y (window-xwin window)))))
+       (message "Move window! ~@{~a ~}" x y window)
+       (multiple-value-bind (relx rely) (xlib:query-pointer (window-parent window))
+         (labels ((move-window-event-handler (&rest event-slots &key event-key &allow-other-keys)
+                    (case event-key
+                      (:button-release
+                       :done)
+                      (:motion-notify
+                       (with-slots (parent) window
+                         (xlib:with-state (parent)
+                           (setf (xlib:drawable-x parent) (- (getf event-slots :x) relx)
+                                 (xlib:drawable-y parent) (- (getf event-slots :y) rely))))
+                       t)
+                      (t
+                       nil))))
+           (xlib:grab-pointer (screen-root screen) '(:button-release :pointer-motion))
+           (unwind-protect
+                (loop for ev = (xlib:process-event *display* :handler #'move-window-event-handler :timeout nil)
+                   until (eq ev :done))
+             (ungrab-pointer))
+           (message "Done."))))
+      (t
+       (when (eq *mouse-focus-policy* :click)
+         (focus-window window))))))
 
 (defmethod group-button-press ((group float-group) x y where)
   (declare (ignore x y where))
