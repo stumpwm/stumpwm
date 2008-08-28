@@ -202,7 +202,8 @@ identity with a range check."
           (ccontext-default-fg (screen-message-cc screen)) fg
           (ccontext-default-bg (screen-message-cc screen)) bg))
   (dolist (i (list (screen-message-window screen)
-                   (screen-input-window screen)))
+                   (screen-input-window screen)
+                   (screen-frame-window screen)))
     (setf (xlib:window-border i) (screen-border-color screen)
           (xlib:window-background i) (screen-bg-color screen)))
   ;; update the backgrounds of all the managed windows
