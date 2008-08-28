@@ -106,7 +106,7 @@ completion (e.g. not backspace or F9)"
 	    (cur-elem (car rest-elem) (car rest-elem))
 	    (cur-elem-name (menu-element-name cur-elem) (menu-element-name cur-elem))
 	    (current-input-length (length *current-menu-input*))
-	    (match-regex (ppcre:create-scanner *current-menu-input*)))
+	    (match-regex (ppcre:create-scanner *current-menu-input* :case-insensitive-mode t)))
 	   ((not cur-elem))
 	(when (and (>= (length cur-elem-name) current-input-length)
 		   (ppcre:scan match-regex cur-elem-name))
