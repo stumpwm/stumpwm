@@ -799,10 +799,8 @@ than the root window's width and height."
 
 (defun window-matches-rule-p (w rule)
   "Returns T if window matches rule"
-  (destructuring-bind (group-name frame raise lock create restore
-                                  dump-name
-                                  &rest props) rule
-    (declare (ignore frame raise create restore dump-name))
+  (destructuring-bind (group-name frame raise lock &rest props) rule
+    (declare (ignore frame raise))
     (if (or lock
             (equal group-name (group-name (or (window-group w) (current-group)))))
         (apply 'window-matches-properties-p w props))))
@@ -818,34 +816,14 @@ than the root window's width and height."
   the window should be raised."
   (let ((match (rule-matching-window window)))
     (if match
-        (destructuring-bind (group-name frame raise lock
-                             create restore dump-name
-                             &rest props) match
+        (destructuring-bind (group-name frame raise lock &rest props) match
           (declare (ignore lock props))
           (let ((group (find-group screen group-name)))
-            (cond (group
-                   (when restore
-                     (if (probe-file dump-name)
-                         (progn (message "Restoring group \"^b~a^B\" from \"^b~a^B\"." group-name dump-name)
-                                (restore-group group
-                                               (read-dump-from-file dump-name)))
-                         (message "^B^1*Error restoring group \"^b~a^B\" from \"^b~a^B\"." group dump-name)))
-                   (values group (frame-by-number group frame) raise))
-                  (create
-                   (let ((new-group (add-group (current-screen) group-name)))
-                     (if (and new-group
-                              (probe-file dump-name))
-                         (progn (restore-group new-group
-                                               (read-dump-from-file dump-name))
-                                (values new-group
-                                        (frame-by-number new-group frame)
-                                        raise))
-                         (progn (message "^B^1*Error restoring group \"^b~a^B\" from \"^b~a^B\"." new-group dump-name)
-                                (values new-group
-                                        (frame-by-number new-group frame)
-                                        raise)))))
-                    (t (message "^B^1*Error placing window, group \"^b~a^B\" does not exist." group-name)
-                       (values)))))
+            (if group
+                (values group (frame-by-number group frame) raise)
+                (progn
+                  (message "^B^1*Error placing window, group \"^b~a^B\" does not exist." group-name)
+                  (values)))))
         (values))))
 
 (defun sync-window-placement ()
@@ -1005,7 +983,7 @@ needed."
   (declare (type window window))
   ;; put it in a valid group
   (let ((screen (window-screen window)))
-    ;; Use window placement rules
+    ;; Use window plaecment rules
     (multiple-value-bind (group frame raise) (get-window-placement screen window)
       (declare (ignore raise))
       (unless (find (window-group window)
@@ -1462,8 +1440,7 @@ be used to override the default window formatting."
          (group-name (group-name group))
          (frame-number (frame-number (window-frame window)))
          (role (window-role window)))
-    (push (list group-name frame-number t lock nil nil
-                (concat *data-dir* group-name)
+    (push (list group-name frame-number t lock
                 :class (window-class window)
                 :instance (window-res window)
                 :title (and title (window-name window))

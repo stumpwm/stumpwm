@@ -932,11 +932,12 @@ will have no effect.")
   "List of rules governing window placement. Use define-frame-preference to
 add rules")
 
+
 (defmacro define-frame-preference (target-group &rest frame-rules)
   "Create a rule that matches windows and automatically places them in
 a specified group and frame. Each frame rule is a lambda list:
 @example
-\(frame-number raise lock &key create restore dump-name class instance type role title)
+\(frame-number raise lock &key class instance type role title)
 @end example
 
 @table @var
@@ -952,17 +953,6 @@ matches @var{target-group}. When non-nil, this rule matches regardless
 of the group and the window is sent to @var{target-group}. If
 @var{lock} and @var{raise} are both non-nil, then stumpwm will jump to
 the specified group and focus the matched window.
-
-@item create
-When t the group is created (and eventually restored from *data-dir*/dump-name)
-if it doesn't already exists. The default is nil.
-
-@item restore
-When t the group is restored even if it already exists. The default is nil.
-
-@item dump-name
-Group dump file to use for automatic restore/create. File should be placed in
-*data-dir*. The default is the group name.
 
 @item class
 The window's class must match @var{class}.
@@ -982,23 +972,9 @@ The window's title must match @var{title}.
   (let ((x (gensym "X")))
     `(dolist (,x ',frame-rules)
        ;; verify the correct structure
-       (destructuring-bind (frame-number raise lock
-                                         &rest keys
-                                         &key (dump-name ,target-group)
-                                         create restore class instance type role title) ,x
+       (destructuring-bind (frame-number raise lock &rest keys &key class instance type role title) ,x
          (declare (ignore class instance type role title))
-         (push (list* ,target-group frame-number raise lock create restore
-                      (concat *data-dir* dump-name)
-                      ;; FIXME: there's probably something better
-                      (remove-if (lambda (item)
-                                   (or (eq item :create)
-                                       (eq item create)
-                                       (eq item :restore)
-                                       (eq item restore)
-                                       (eq item :dump-name)
-                                       (eq item dump-name)))
-                                 keys))
-               *window-placement-rules*)))))
+         (push (list* ,target-group frame-number raise lock keys) *window-placement-rules*)))))
 
 (defun clear-window-placement-rules ()
   "Clear all window placement rules."
