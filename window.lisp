@@ -1290,6 +1290,20 @@ is using the number, then the windows swap numbers. Defaults to current group."
 
 (defcommand-alias number renumber)
 
+(defcommand repack-window-numbers (&optional preserved) ()
+  "Ensure that used window numbers do not have gaps; ignore PRESERVED window numbers."
+  (let* ((group (current-group))
+	 (windows (sort-windows group)))
+    (loop for w in windows
+	  do (unless (find (window-number w) preserved)
+	       (setf
+		 (window-number w)
+		 (find-free-number
+		   (remove
+		     (window-number w)
+		     (mapcar 'window-number windows))
+		   0))))))
+
 (defcommand gravity (gravity) ((:gravity "Gravity: "))
   (when (current-window)
     (setf (window-gravity (current-window)) gravity)
