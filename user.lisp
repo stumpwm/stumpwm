@@ -434,3 +434,15 @@ submitting the bug report."
      (defcommand ,name () ()
        (run-or-raise ,command ,props))
      (define-key ,map ,key ,(string-downcase (string name)))))
+
+(defcommand show-window-properties () ()
+  "Shows the properties of the current window. These properties can be
+used for matching windows with run-or-raise or window placement
+rules."
+  (let ((w (current-window)))
+    (message-no-timeout "class: ~A~%instance: ~A~%type: :~A~%role: ~A~%title: ~A"
+                        (window-class w)
+                        (window-res w)
+                        (string (window-type w))
+                        (window-role w)
+                        (window-title w))))
