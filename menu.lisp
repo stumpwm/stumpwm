@@ -78,8 +78,8 @@
   (throw :menu-quit nil))
 
 (defun get-input-char (key)
-  "returns t if key is a character suitable for menu
-completion (e.g. not backspace or F9)"
+  "If @var{key} is a character suitable for menu completion (e.g. not
+backspace or F9), return it otherwise return nil"
   (let ((char (xlib:keysym->character *display* (key-keysym key))))
     (if (or (key-mods-p key) (null char)
             (not (characterp char)))
@@ -93,7 +93,8 @@ completion (e.g. not backspace or F9)"
 
 (defun check-menu-complete (menu key-seq)
   "If the use entered a key not mapped in @var{*menu-map}, check if
-  he's trying to type an entry's name"
+  he's trying to type an entry's name. Match is case insensitive as
+  long as the user types lower-case characters."
   (let ((input-char (get-input-char key-seq)))
     (when input-char
       (setf *current-menu-input*
@@ -106,7 +107,10 @@ completion (e.g. not backspace or F9)"
 	    (cur-elem (car rest-elem) (car rest-elem))
 	    (cur-elem-name (menu-element-name cur-elem) (menu-element-name cur-elem))
 	    (current-input-length (length *current-menu-input*))
-	    (match-regex (ppcre:create-scanner *current-menu-input* :case-insensitive-mode t)))
+	    (match-regex (ppcre:create-scanner *current-menu-input*
+					       :case-insensitive-mode
+					       (string= (string-downcase *current-menu-input*)
+							*current-menu-input*))))
 	   ((not cur-elem))
 	(when (and (>= (length cur-elem-name) current-input-length)
 		   (ppcre:scan match-regex cur-elem-name))
