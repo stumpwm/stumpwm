@@ -423,7 +423,10 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
                                              :colormap (xlib:screen-default-colormap
                                                         screen-number)
                                              :event-mask '(:exposure)))
-           (font (xlib:open-font *display* +default-font-name+))
+           (font (xlib:open-font *display*
+                                 (if (font-exists-p +default-font-name+)
+                                     +default-font-name+
+                                     "*")))
            (group (make-tile-group
                    :screen screen
                    :number 1
