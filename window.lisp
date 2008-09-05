@@ -728,7 +728,7 @@ than the root window's width and height."
 
 (defun xwin-grab-keys (win)
   (labels ((grabit (w key)
-             (let* ((code (xlib:keysym->keycodes *display* (key-keysym key))))
+             (loop for code in (multiple-value-list (xlib:keysym->keycodes *display* (key-keysym key))) do
                ;; some keysyms aren't mapped to keycodes so just ignore them.
                (when code
                  ;; Some keysyms, such as upper case letters, need the
