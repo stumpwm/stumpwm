@@ -158,25 +158,26 @@ others."
   (format nil "^5*~{~a~^ ~}^n" (mapcar 'print-key seq)))
 
 (defun define-key (map key command)
-  "Add a keybinding mapping the key, @var{key}, to the command,
-@var{command}, in the specified keymap. For example,
+  "Add a keybinding mapping for the key, @var{key}, to the command,
+@var{command}, in the specified keymap. If @var{command} is nil, remove an
+exising binding.  For example,
 
 @example
 \(stumpwm:define-key stumpwm:*root-map* (stumpwm:kbd \"C-z\") \"echo Zzzzz...\")
 @end example
 
 Now when you type C-t C-z, you'll see the text ``Zzzzz...'' pop up."
-  (setf (gethash key map) command)
+  (if command
+      (setf (gethash key map) command)
+      (remhash key map))
   ;; We need to tell the X server when changing the top-map bindings.
   (when (eq map *top-map*)
     (sync-keys)))
 
+;; Not really needed.  Keep it for backward compatibility.
 (defun undefine-key (map key)
   "Clear the key binding in the specified keybinding."
-  (remhash key map)
-  ;; We need to tell the X server when changing the top-map bindings.
-  (when (eq map *top-map*)
-    (sync-keys)))
+  (define-key map key nil))
 
 (defun lookup-key-sequence (kmap key-seq)
   "Return the command bound to the key sequenc, KEY-SEQ, in keymap KMAP."
