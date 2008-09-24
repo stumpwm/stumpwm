@@ -93,14 +93,19 @@ modifier. Most of the time numlock just gets in the way."
     (when with-numlock (setf mods (append (modifiers-numlock *modifiers*) mods)))
     (apply 'xlib:make-state-mask mods)))
 
-(define-condition kbd-parse ()
-  () (:documentation "Raised when a kbd string failed to parse."))
+(defun report-kbd-parse-error (c stream)
+  (format stream "Failed to parse key string: ~s" (slot-value c 'string)))
+
+(define-condition kbd-parse-error (stumpwm-error)
+  ((string :initarg :string))
+  (:report report-kbd-parse-error)
+  (:documentation "Raised when a kbd string failed to parse."))
 
 (defun parse-mods (mods end)
   "MODS is a sequence of <MOD CHAR> #\- pairs. Return a list suitable
 for passing as the last argument to (apply #'make-key ...)"
   (unless (evenp end)
-    (signal 'kbd-parse))
+    (signal 'kbd-parse-error :string mods))
   (apply #'nconc (loop for i from 0 below end by 2
                        if (char/= (char mods (1+ i)) #\-)
                        do (signal 'kbd-parse)
@@ -111,18 +116,18 @@ for passing as the last argument to (apply #'make-key ...)"
                                  (#\H (list :hyper t))
                                  (#\s (list :super t))
                                  (#\S (list :shift t))
-                                 (t (signal 'kbd-parse))))))
+                                 (t (signal 'kbd-parse-error :string mods))))))
 
 (defun parse-key (string)
-  "Parse STRING and return a key structure."
-  ;; FIXME: we want to return NIL when we get a kbd-parse error
-  ;;(ignore-errors
+  "Parse STRING and return a key structure. Raise an error of type
+kbd-parse if the key failed to parse."
   (let* ((p (when (> (length string) 2)
               (position #\- string :from-end t :end (- (length string) 1))))
          (mods (parse-mods string (if p (1+ p) 0)))
          (keysym (stumpwm-name->keysym (subseq string (if p (1+ p) 0)))))
-    (and keysym
-         (apply 'make-key :keysym keysym mods))))
+    (if keysym
+        (apply 'make-key :keysym keysym mods)
+        (signal 'kbd-parse-error :string string))))
 
 (defun parse-key-seq (keys)
   "KEYS is a key sequence. Parse it and return the list of keys."
