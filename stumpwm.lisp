@@ -137,7 +137,8 @@ of those expired."
                                (if (lookup-error-recoverable-p)
                                    (recover-from-lookup-error)
                                    (error c))))
-          (error (lambda (c)
+          (warning (lambda (c) (declare (ignore c)) (invoke-restart 'muffle-warning)))
+          (t (lambda (c)
                    (run-hook *top-level-error-hook*)
                    (ecase *top-level-error-action*
                      (:message

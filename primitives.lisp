@@ -538,7 +538,8 @@ restart from a menu of possible restarts. If a restart is not
 chosen, resignal the error."
   (let ((c (gensym)))
     `(handler-bind
-      ((error
+      ((warning (lambda (c) (declare (ignore c)) (invoke-restart 'muffle-warning)))
+       (t
         (lambda (,c)
           (restarts-menu ,c)
           (signal ,c))))
@@ -554,7 +555,7 @@ chosen, resignal the error."
             (dolist (fn hook)
               (with-simple-restart (continue-hooks "Continue running the remaining hooks.")
                 (apply fn args)))))
-    (error (c) (message "^B^1*Error on hook ^b~S^B!~% ^n~A" hook c) (values nil c))))
+    (t (c) (message "^B^1*Error on hook ^b~S^B!~% ^n~A" hook c) (values nil c))))
 
 (defun run-hook (hook)
   "Call each function in HOOK."
@@ -1063,3 +1064,6 @@ of :error."
  `(progn
     (setf ,list (remove ,elt ,list))
     (push ,elt ,list)))
+
+(define-condition stumpwm-error (error)
+  () (:documentation "Any stumpwm specific error should inherit this."))

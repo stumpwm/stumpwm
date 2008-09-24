@@ -896,7 +896,7 @@ than the root window's width and height."
       (setq preferred-frame
             (handler-case
                 (funcall *new-window-preferred-frame* window)
-              (error (c)
+              (t (c)
                 (message "^1*^BError while calling ^b^3**new-window-preferred-frame*^1*^B: ^n~a" c)
                 default))))
     (cond
