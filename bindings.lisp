@@ -231,7 +231,7 @@ escape C-z
   (set-prefix-key (kbd key)))
 
 (defcommand bind (key command)
-                 ((:text "Key Chord: ")
+                 ((:string "Key Chord: ")
                   (:rest "Command: "))
   "Hang a key binding off the escape key."
   (define-key *root-map* (kbd key) command))
