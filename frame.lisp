@@ -487,13 +487,18 @@ either :width or :height"
   (check-type amount integer)
   ;; (check-type dim (member :width :height))
   (labels ((max-amount (parent node min dim-fn)
-             (dformat 10 "max ~@{~a~^ ~}~%" parent node min dim-fn)
-             (if parent
-                 (- (funcall dim-fn parent)
-                    (funcall dim-fn node)
-                    (* min (1- (length parent))))
-                 ;; no parent means the frame can't get any bigger.
-                 0)))
+             (let ((right-sibling (cadr (member node parent)))
+                   (left-sibling (cadr (member node (reverse parent)))))
+
+               (dformat 10 "max ~@{~a~^ ~}~%" parent node min dim-fn right-sibling left-sibling)
+               (if parent
+                   (cond (right-sibling
+                          (max 0 (- (funcall dim-fn right-sibling) min)))
+                         (left-sibling
+                          (max 0 (- (funcall dim-fn left-sibling) min)))
+                         (t 0))
+                   ;; no parent means the frame can't get any bigger.
+                   0))))
     (let* ((tree (tile-group-frame-tree group))
            (parent (tree-parent tree frame))
            (gparent (tree-parent tree parent))
