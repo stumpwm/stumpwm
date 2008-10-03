@@ -107,8 +107,10 @@
           *data-dir*
           add-hook
           clear-window-placement-rules
+          data-dir-file
           dformat
           define-frame-preference
+          redirect-all-output
           remove-hook
           run-hook
           run-hook-with-args
@@ -693,6 +695,28 @@ output directly to a file.")
                        (apply 'format nil fmt args))
                   *debug-stream*)))
 
+(defvar *redirect-stream* nil
+  "This variable Keeps track of the stream all output is sent to when
+`redirect-all-output' is called so if it changes we can close it
+before reopening.")
+
+(defun redirect-all-output (file)
+  "Elect to redirect all output to the specified file. For instance,
+if you want everything to go to ~/stumpwm.d/debug-output.txt you would
+do:
+
+@example
+(redirect-all-output (data-dir-file \"debug-output\" \"txt\"))
+@end example
+"
+  (when (typep *redirect-stream* 'file-stream)
+    (close *redirect-stream*))
+  (setf *redirect-stream* (open file :direction :output :if-exists :append :if-does-not-exist :create)
+        *error-output*    *redirect-stream*
+        *standard-output* *redirect-stream*
+        *trace-output*    *redirect-stream*
+        *debug-stream*    *redirect-stream*))
+
 ;;; 
 ;;; formatting routines
 
@@ -1048,6 +1072,11 @@ sync-all-frame-windows to see the change.")
 (defvar *data-dir* (make-pathname :directory (append (pathname-directory (user-homedir-pathname))
                                                      (list ".stumpwm.d")))
   "The directory used by stumpwm to store data between sessions.")
+
+(defun data-dir-file (name &optional type)
+  "Return a pathname inside stumpwm's data dir with the specified name and type"
+  (ensure-directories-exist *data-dir*)
+  (make-pathname :name name :type type :defaults *data-dir*))
 
 (defmacro with-data-file ((s file &rest keys &key (if-exists :supersede) &allow-other-keys) &body body)
   "Open a file in StumpWM's data directory. keyword arguments are sent

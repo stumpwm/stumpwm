@@ -112,6 +112,7 @@ Key Bindings
 
 * List of Default Keybindings::  
 * Binding Keys::                
+* Modifiers::                   
 
 Message and Input Bar
 
@@ -145,6 +146,7 @@ Screens
 Miscellaneous Commands
 
 * Menus::                       
+* StumpWM's Data Directory::    
 * Debugging StumpWM::           
 * Timers::                      
 * Getting Help::                
@@ -309,7 +311,7 @@ mimics GNU Screen's keyboard handling. StumpWM's default prefix key is
 @menu
 * List of Default Keybindings::  
 * Binding Keys::                
-* Modifiers::
+* Modifiers::                   
 @end menu
 
 @node List of Default Keybindings, Binding Keys, Key Bindings, Key Bindings
@@ -1227,12 +1229,13 @@ section.
 
 @menu
 * Menus::                       
+* StumpWM's Data Directory::    
 * Debugging StumpWM::           
 * Timers::                      
 * Getting Help::                
 @end menu
 
-@node Menus, Debugging StumpWM, Miscellaneous Commands, Miscellaneous Commands
+@node Menus, StumpWM's Data Directory, Miscellaneous Commands, Miscellaneous Commands
 @section Menus
 Some commands present the options in a menu. The following are the menu key bindings:
 
@@ -1256,11 +1259,22 @@ Select the highlighted option.
 
 @end table
 
-@node Debugging StumpWM, Timers, Menus, Miscellaneous Commands
+@node StumpWM's Data Directory, Debugging StumpWM, Menus, Miscellaneous Commands
+@section StumpWM's Data Directory
+If you want to store StumpWM data between sessions, the recommended
+method is to store them in @file{~/.stumpwm.d/}. StumpWM supplies
+some functions to make doing this easier.
+
+### *data-dir*
+@@@ data-dir-file
+%%% with-data-file
+
+@node Debugging StumpWM, Timers, StumpWM's Data Directory, Miscellaneous Commands
 @section Debugging StumpWM
 
 ### *debug-level*
 ### *debug-stream*
+@@@ redirect-all-output
 
 @node Timers, Getting Help, Debugging StumpWM, Miscellaneous Commands
 @section Timers
