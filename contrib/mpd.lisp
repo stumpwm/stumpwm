@@ -49,9 +49,7 @@
 
 (defvar *mpd-timeout* 50)
 
-(defparameter *mpd-timer*
-  (when *mpd-timeout*
-    (run-with-timer *mpd-timeout* *mpd-timeout* 'mpd-ping)))
+(defparameter *mpd-timer* nil)
 
 (defvar *mpd-collapse-album-length* nil)
 (defvar *mpd-collapse-all-length* nil)
@@ -133,6 +131,9 @@
                          (err)
                        (format t  "Error connecting to mpd: ~a~%" err))))
   (when *mpd-socket*
+    (when *mpd-timeout*
+      (setf *mpd-timer*
+            (run-with-timer *mpd-timeout* *mpd-timeout* 'mpd-ping)))
     (read-line *mpd-socket*)))
 
 (defun close-mpd-connection ()
