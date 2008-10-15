@@ -1,6 +1,6 @@
 ;;; MPD client & formatters for stumpwm
 ;;;
-;;; Copyright 2007 Morgan Veyret.
+;;; Copyright 2007 Morgan Veyret, Ivy Foster.
 ;;;
 ;;; Maintainer: Morgan Veyret
 ;;;
@@ -24,18 +24,81 @@
 ;;;
 ;;; Put:
 ;;;
-;;;     (load "/path/to/mpd.lisp")
+;;;     (load-module "mpd")
 ;;;
-;;; In your ~/.stumpwmrc
+;;; ...into your ~/.stumpwmrc
 ;;;
-;;; Then you can use "%m" in your mode line format.
-;;; You can also use the various commands defined at the end of the file
+;;; Then you can use "%m" in your mode line format, as well as various commands
+;;; defined at the end of the file.
 ;;;
+;;; You can customize the modeline format (*mpd-modeline-fmt*), the status
+;;; message displayed by the command mpd-status (*mpd-status-fmt*; note that
+;;; this is also used on the modeline), and the status message displayed by the
+;;; command mpd-current-song (*mpd-current-song-fmt*). See the documentation for
+;;; *mpd-modeline-fmt* for more information.
+
 ;;; NOTES:
-;;; see http://mpd.wikia.com/wiki/Protocol_Reference for full protocol
+;;;
+;;; See http://mpd.wikia.com/wiki/Protocol_Reference for full protocol
+
+;;; TODO:
+;;;
+;;; - Implement optional shortening for formatting functions
+;;; - Set-crossfade support
+
+;;; CODE:
+
 #-(or sbcl clisp) (error "unimplemented")
 
 (in-package :stumpwm)
+
+(export '(*mpd-timeout*
+	  *mpd-collapse-album-length*
+	  *mpd-collapse-all-length*
+	  *mpd-current-song-fmt*
+	  *mpd-formatters-alist*
+	  *mpd-status-fmt*
+	  *mpd-modeline-fmt*
+	  *mpd-volume-step*
+	  *mpd-port*
+	  mpd-browse-playlist
+	  select-song-from-playlist
+	  mpd-play
+	  mpd-toggle-repeat
+	  mpd-toggle-random
+	  mpd-toggle-pause
+	  mpd-kill
+	  mpd-disconnect
+	  mpd-connect
+	  mpd-browse-artists
+	  mpd-browse-albums
+	  mpd-update
+	  mpd-clear
+	  mpd-volume-down
+	  mpd-volume-up
+	  mpd-set-volume
+	  mpd-prev
+	  mpd-next
+	  mpd-stop
+	  mpd-play-track
+	  mpd-search-genre
+	  mpd-search-album
+	  mpd-search-title
+	  mpd-search-file
+	  mpd-search-artist
+	  mpd-search-and-add-genre
+	  mpd-search-and-add-album
+	  mpd-search-and-add-title
+	  mpd-search-and-add-file
+	  mpd-search-and-add-artist
+	  mpd-add-file
+	  mpd-playlist
+	  mpd-status
+	  mpd-current-song
+	  *mpd-map*
+	  *mpd-add-map*
+	  *mpd-browse-map*
+	  *mpd-search-map*))
 
 ;;mpd client
 (defparameter *mpd-socket* nil)
@@ -136,12 +199,6 @@
             (run-with-timer *mpd-timeout* *mpd-timeout* 'mpd-ping)))
     (read-line *mpd-socket*)))
 
-(defun close-mpd-connection ()
-  "Disconnect from mpd server"
-  (with-mpd-connection
-   (close *mpd-socket*)
-   (setf *mpd-socket* nil)))
-
 (defun mpd-ping ()
   (mpd-send-command "ping"))
 
@@ -150,12 +207,16 @@
                       (if exact-search "find"
                           "search")
                       type what))
+
 (defun mpd-add (files)
   (loop for i in files
      do (mpd-format-command "add \"~a\"" i)))
 
-;;mpd formatter
-(dolist (a '((#\m fmt-mpd-status)))
+;;; ------------------------------------------------------------------
+;;; Formatting
+;;; ------------------------------------------------------------------
+
+(dolist (a '((#\m mpd-modeline)))
   (pushnew a *screen-mode-line-formatters* :test 'equal))
 
 (defparameter *mpd-current-song* nil)
@@ -166,83 +227,171 @@
 (defun mpd-update-status ()
   (setf *mpd-status* (mpd-send-command "status")))
 
-(defun format-mpd-current-song (current-song &optional
-                                             (collapse-album nil)
-                                             (collapse-all nil))
-  (let* ((artist (assoc-value :artist current-song))
-        (album (assoc-value :album current-song))
-        (title (assoc-value :title current-song))
-         (file (assoc-value :file current-song))
-         (song (if (or (null artist)
-            (null album)
-            (null title))
-        (format nil "~a" file)
-                   (format nil "~a \"~a\" - ~a"
-              artist
-              (if (and collapse-album *mpd-collapse-album-length*
-                       (> (length album) *mpd-collapse-album-length*))
-                  (concatenate 'string
-                               (subseq album 0 *mpd-collapse-album-length*)
-                               "...")
-                album)
-              title))))
-    (if (and collapse-all *mpd-collapse-all-length*
-             (> (length song) *mpd-collapse-all-length*))
-        (concatenate 'string (subseq song 0 *mpd-collapse-all-length*) "...")
-      song)))
+(defun mpd-get-artist ()
+  (assoc-value :artist *mpd-current-song*))
 
-(defun format-mpd-status (status)
-  (let ((mpd-state (assoc-value :state status)))
-     (cond
-       ((equal mpd-state "play")
-        (format nil "Playing [~a;~a] (~a%)"
-                (if (equal (assoc-value :random *mpd-status*)
-                           "0")
-                    "_"
-                  "S")
-                (if (equal (assoc-value :repeat *mpd-status*)
-                           "0")
-                    "_"
-                  "R")
-                (assoc-value :volume *mpd-status*)))
-       ((equal mpd-state "pause")
-        (format nil "Paused [~a;~a]"
-                (if (equal (assoc-value :random *mpd-status*)
-                           "0")
-                    "_"
-                  "S")
-                (if (equal (assoc-value :repeat *mpd-status*)
-                           "0")
-                    "_"
-                  "R")))
-       ((equal mpd-state "stop")
-        (format nil "Stopped  [~a;~a]"
-                (if (equal (assoc-value :random *mpd-status*)
-                           "0")
-                    "_"
-                  "S")
-                (if (equal (assoc-value :repeat *mpd-status*)
-                           "0")
-                    "_"
-                  "R"))))))
+(defun mpd-get-album ()
+  (assoc-value :album *mpd-current-song*))
 
-;;FIXME: update status based on last current song time
-;;FIXME: this means updating status on commands calls
-(defun fmt-mpd-status (ml)
+(defun mpd-get-date ()
+  (assoc-value :date *mpd-current-song*))
+
+(defun mpd-minutes-seconds (time)
+  (let ((minutes) (seconds))
+    (if (< time 60)
+	(progn
+	  (setf minutes 0)
+	  (setf seconds time))
+      (progn
+	(setf minutes (write-to-string (floor time 60)))
+	(setf seconds (rem time 60))))
+    (when (< seconds 10)
+      (setf seconds (concat "0" (write-to-string seconds))))
+    (format nil "~a:~a" minutes seconds)))
+
+(defun mpd-get-elapsed ()
+  (let* ((total (assoc-value :time *mpd-current-song*))
+	 (time (assoc-value :time *mpd-status*))
+	 (elapsed (parse-integer (subseq time 0 (- (length time) (length total) 1)))))
+    (mpd-minutes-seconds elapsed)))
+
+(defun mpd-get-length ()
+  (let ((time (parse-integer (assoc-value :time *mpd-current-song*)))
+	(minutes) (seconds))
+    (mpd-minutes-seconds time)))
+
+(defun mpd-get-status ()
+  (cond ((equal (assoc-value :state *mpd-status*) "play") "Playing")
+	((equal (assoc-value :state *mpd-status*) "pause") "Paused")
+	((equal (assoc-value :state *mpd-status*) "stop") "Stopped")))
+
+(defun mpd-get-file ()
+  (assoc-value :file *mpd-current-song*))
+
+(defun mpd-get-volume ()
+  (assoc-value :volume *mpd-status*))
+
+(defun mpd-get-xfade ()
+  (let ((xfade (assoc-value :xfade *mpd-status*)))
+    (if (> (parse-integer xfade) 0)
+	(format nil "F=~a" (assoc-value :xfade *mpd-status*)) "_")))
+
+(defun mpd-get-genre ()
+  (assoc-value :genre *mpd-current-song*))
+
+(defun mpd-get-number ()
+  (write-to-string (1+ (parse-integer (assoc-value :song *mpd-status*)))))
+
+(defun mpd-get-playlistlength ()
+  (assoc-value :playlistlength *mpd-status*))
+
+(defun mpd-repeating-p ()
+  (if (string= (assoc-value :repeat *mpd-status*) "1")
+      t nil))
+
+(defun mpd-get-repeat ()
+  (if (mpd-repeating-p) "R" "_"))
+
+(defun mpd-shuffle-p ()
+  (if (string= (assoc-value :random *mpd-status*) "1")
+      t nil))
+
+(defun mpd-get-shuffle ()
+  (if (mpd-shuffle-p) "S" "_"))
+
+(defun mpd-get-title ()
+  (assoc-value :title *mpd-current-song*))
+
+(defun mpd-get-track ()
+  (assoc-value :track *mpd-current-song*))
+
+(defun mpd-modeline (ml)
   (declare (ignore ml))
   (if *mpd-socket*
       (with-mpd-connection
        (mpd-update-status)
-       (if (equal "stop" (assoc-value :state *mpd-status*))
-           (format nil "~a"
-                   (format-mpd-status *mpd-status*))
-         (progn (mpd-update-current-song)
-                (format nil "~a: ~a"
-                        (format-mpd-status *mpd-status*)
-                        (format-mpd-current-song *mpd-current-song* t t)))))
-    "Not connected"))
+       (if (equal "Stopped" (mpd-get-status))
+	   (format-expand *mpd-formatters-alist* *mpd-status-fmt*)
+	 (progn
+	   (mpd-update-current-song)
+	   (format-expand *mpd-formatters-alist* *mpd-modeline-fmt*))))))
 
-;;mpd commands
+(defvar *mpd-formatters-alist*
+  '((#\a mpd-get-artist)
+    (#\A mpd-get-album)
+    (#\d mpd-get-date)
+    (#\e mpd-get-elapsed)
+    (#\f mpd-get-file)
+    (#\F mpd-get-xfade)
+    (#\g mpd-get-genre)
+    (#\l mpd-get-length)
+    (#\n mpd-get-number)
+    (#\p mpd-get-playlistlength)
+    (#\r mpd-get-repeat)
+    (#\s mpd-get-shuffle)
+    (#\S mpd-get-status)
+    (#\t mpd-get-title)
+    (#\T mpd-get-track)
+    (#\v mpd-get-volume)))
+
+(defvar *mpd-current-song-fmt* "%a
+%A
+%t
+(%n/%p)"
+  "The default value for displaying the current song.
+For more information on valid formatters, please see the documentation
+for `*mpd-modeline-fmt*'")
+
+(defvar *mpd-status-fmt* "%S [%s;%r;%F]"
+  "The default value for displaying the current MPD status.
+For more information on valid formatters, please see the documentation
+for `*mpd-modeline-fmt*'")
+
+(defvar *mpd-modeline-fmt* "%S [%s;%r;%F]: %a - %A - %t (%n/%p)"
+  "The default value for displaying MPD information on the modeline.
+
+@table @asis
+@item %%
+A literal '%'
+@item %a
+Artist
+@item %A
+Album
+@item %d
+Date
+@item %e
+Elapsed time
+@item %f
+Filename
+@item %F
+'F=#' if crossfade is set, '_' otherwise
+@item %g
+Genre
+@item %l
+Song length
+@item %n
+Position in playlist (song Number, for a mnemonic)
+@item %p
+Total playlist length
+@item %r
+'R' if repeat is on, '_' otherwise
+@item %s
+'S' if shuffle is on, '_' otherwise
+@item %S
+'Playing' if playing, 'Paused' if paused, else 'Stopped'
+@item %t
+Title
+@item %T
+Track number (relative to the album, not the playlist)
+@item %v
+Volume
+@end table
+")
+
+;;; ------------------------------------------------------------------
+;;; Misc. commands
+;;; ------------------------------------------------------------------
+
 (defvar *mpd-volume-step* 5)
 
 (defcommand mpd-browse-playlist () ()
@@ -289,7 +438,6 @@
       (let* ((choice (pick result)))
         (mpd-search-and-add-album choice t)))))
 
-
 (defcommand mpd-browse-artists () ()
   (labels ((pick (options)
              (let ((selection
@@ -311,33 +459,36 @@
   (message "~a" (init-mpd-connection)))
 
 (defcommand mpd-disconnect () ()
-  (close-mpd-connection))
+  "Disconnect from mpd server"
+  (with-mpd-connection
+   (close *mpd-socket*)
+   (setf *mpd-socket* nil)))
 
 (defcommand mpd-kill () ()
  (mpd-send-command "kill"))
 
 (defcommand mpd-toggle-pause () ()
-  (let ((status (mpd-send-command "status")))
-    (cond
-     ((equal (assoc-value :state status)
-             "play") (mpd-send-command "pause 1"))
-     ((equal (assoc-value :state status)
-             "pause") (mpd-send-command "pause 0")))))
+  (cond
+   ((equal (mpd-get-status) "Playing")
+    (mpd-send-command "pause 1"))
+   ((equal (mpd-get-status) "Paused")
+      (mpd-send-command "pause 0"))))
 
 (defcommand mpd-toggle-random () ()
-  (let ((status (mpd-send-command "status")))
-    (cond
-     ((equal (assoc-value :random status) "0") (mpd-send-command "random 1"))
-     ((equal (assoc-value :random status) "1") (mpd-send-command "random 0")))))
+  (if (mpd-shuffle-p)
+      (mpd-send-command "random 0")
+    (mpd-send-command "random 1")))
 
 (defcommand mpd-toggle-repeat () ()
-  (let ((status (mpd-send-command "status")))
-    (cond
-     ((equal (assoc-value :repeat status) "0") (mpd-send-command "repeat 1"))
-     ((equal (assoc-value :repeat status) "1") (mpd-send-command "repeat 0")))))
+  (if (mpd-repeating-p)
+      (mpd-send-command "repeat 0")
+    (mpd-send-command "repeat 1")))
 
 (defcommand mpd-play () ()
   (mpd-send-command "play"))
+
+(defcommand mpd-play-track (track) ((:number "Track: "))
+  (mpd-send-command (concat "play " (write-to-string (1- track)))))
 
 (defcommand mpd-stop () ()
   (mpd-send-command "stop"))
@@ -370,7 +521,16 @@
       (message "~a" (mpd-send-command "update"))))
 
 (defcommand mpd-current-song () ()
-  (message "~a" (format-mpd-current-song (mpd-send-command "currentsong"))))
+  (mpd-update-current-song)
+  (mpd-update-status)
+  (message "~a"
+	   (format-expand *mpd-formatters-alist* *mpd-current-song-fmt*)))
+
+(defcommand mpd-status () ()
+  (mpd-update-status)
+  (mpd-update-current-song)
+  (message "~a"
+	   (format-expand *mpd-formatters-alist* *mpd-status-fmt*)))
 
 (defcommand mpd-playlist () ()
   (let* ((response (mpd-send-command "playlistinfo"))
@@ -457,8 +617,6 @@
                  (length result)
                  result)
       (message "~a files added" (length result)))))
-
-
 
 ;;search commands
 (defcommand mpd-search-artist (what) ((:rest "Search artist: "))
