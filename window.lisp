@@ -637,7 +637,13 @@ than the root window's width and height."
             (setf (xlib:drawable-width (window-parent win)) (- (frame-width frame)
                                                                (* 2 (xlib:drawable-border-width (window-parent win))))
                   (xlib:drawable-height (window-parent win)) (- (frame-display-height (window-group win) frame)
-                                                                (* 2 (xlib:drawable-border-width (window-parent win))))))))))
+                                                                (* 2 (xlib:drawable-border-width (window-parent win)))))))
+      ;; update the "extents"
+      (xlib:change-property (window-xwin win) :_NET_FRAME_EXTENTS
+                            (list wx wy
+                                  (- (xlib:drawable-width (window-parent win)) width wx)
+                                  (- (xlib:drawable-height (window-parent win)) height wy))
+                            :cardinal 32))))
 
 (defun find-free-window-number (group)
   "Return a free window number for GROUP."
