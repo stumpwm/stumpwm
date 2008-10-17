@@ -235,58 +235,6 @@ they should be windows. So use this function to make a window out of them."
   #+(or clisp sbcl) (invoke-restart :one)
   #-(or clisp sbcl) (error "unimplemented"))
 
-;;; SBCL workaround for a clx caching bug. This is taken from portable-clx's display.lisp
-
-;; Define functions to find the CLX data types given a display and resource-id
-;; If the data type is being cached, look there first.
-#+sbcl (in-package #:xlib)
-#+sbcl
-(macrolet ((generate-lookup-functions (useless-name &body types)
-	    `(within-definition (,useless-name generate-lookup-functions)
-	       ,@(mapcar
-		   #'(lambda (type)
-		       `(defun ,(xintern 'lookup- type)
-			       (display id)
-			  (declare (type display display)
-				   (type resource-id id))
-			  (declare (clx-values ,type))
-			  ,(if (member type +clx-cached-types+)
-			       `(let ((,type (lookup-resource-id display id)))
-				  (cond ((null ,type) ;; Not found, create and save it.
-					 (setq ,type (,(xintern 'make- type)
-						      :display display :id id))
-					 (save-id display id ,type))
-					;; Found.  Check the type
-                                        ((type? ,type ',type) ,type)
-                                        (t 
-                                         (restart-case
-                                             (x-error 'lookup-error
-                                                      :id id
-                                                      :display display
-                                                      :type ',type
-                                                      :object ,type)
-                                           (:one ()
-                                             :report "Invalidate this cache entry"
-                                             (save-id display id (,(xintern 'make- type) :display display :id id)))
-                                           (:all ()
-                                             :report "Invalidate all display cache"
-                                             (clrhash (display-resource-id-map display))
-                                             (save-id display id (,(xintern 'make- type) :display display :id id)))))))
-			       ;; Not being cached.  Create a new one each time.
-			       `(,(xintern 'make- type)
-				 :display display :id id))))
-		   types))))
-  (generate-lookup-functions ignore
-    drawable
-    window
-    pixmap
-    gcontext
-    cursor
-    colormap
-    font))
-#+sbcl (in-package #:stumpwm)
-
-
 ;;; CLISP does not include a :linux feature on Linux (at least until
 ;;; version 2.46). Until this is fixed, use a hack to determine
 ;;; whether this is run on Linux.
