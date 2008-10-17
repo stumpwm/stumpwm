@@ -169,6 +169,9 @@ manager."
                       (convert "Magistrate Z")
                       #(0))
              (test-it win
+                      #(0))
+             (test-it win)
+             (test-it win
                       #(0)
                       (convert "checkity checkfoo"))
              (test-it win
