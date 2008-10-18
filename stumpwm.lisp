@@ -128,7 +128,7 @@ of those expired."
             internal-time-units-per-second)
          0)))
 
-(defun perform-top-level-error-action ()
+(defun perform-top-level-error-action (c)
   (ecase *top-level-error-action*
     (:message
      (let ((s (format nil "~&Caught '~a' at the top level. Please report this." c)))
@@ -152,7 +152,7 @@ of those expired."
           ((or serious-condition error)
            (lambda (c)
              (run-hook *top-level-error-hook*)
-             (perform-top-level-error-action)))
+             (perform-top-level-error-action c)))
           (t
            (lambda (c)
              ;; some other wacko condition was raised so first try
@@ -162,7 +162,7 @@ of those expired."
                    ((find-restart 'continue)
                     (continue)))
              ;; and if that fails treat it like a top level error.
-             (perform-top-level-error-action))))
+             (perform-top-level-error-action c))))
        ;; Note: process-event appears to hang for an unknown
        ;; reason. This is why it is passed a timeout in hopes that
        ;; this will keep it from hanging.
