@@ -227,7 +227,7 @@ function expects to be wrapped in a with-state for win."
           (cancel-timer *message-window-timer*)
           (setf *message-window-timer* nil))
         (reset-message-window-timer))
-    (dformat 5 "Outputting a message:~%~{ ~a~%~}~%End of message" strings)
+    (dformat 5 "Outputting a message:~%~{        ~a~%~}" strings)
     (apply 'run-hook-with-args *message-hook* strings)))
 
 (defun echo-string (screen msg)
