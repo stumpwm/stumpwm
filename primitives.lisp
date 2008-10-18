@@ -540,12 +540,12 @@ restart from a menu of possible restarts. If a restart is not
 chosen, resignal the error."
   (let ((c (gensym)))
     `(handler-bind
-      ((warning (lambda (c) (declare (ignore c)) (invoke-restart 'muffle-warning)))
-       (t
-        (lambda (,c)
-          (restarts-menu ,c)
-          (signal ,c))))
-      ,@body)))
+         ((warning #'muffle-warning)
+          ((or serious-condition error)
+           (lambda (,c)
+             (restarts-menu ,c)
+             (signal ,c))))
+       ,@body)))
 
 ;;; Hook functionality
 
@@ -687,7 +687,7 @@ output directly to a file.")
 (defun dformat (level fmt &rest args)
   (when (>= *debug-level* level)
     (multiple-value-bind (sec m h) (decode-universal-time (get-universal-time))
-      (format *debug-stream* "~d:~d:~d " h m sec))
+      (format *debug-stream* "~2,'0d:~2,'0d:~2,'0d " h m sec))
     ;; strip out non base-char chars quick-n-dirty like
     (write-string (map 'string (lambda (ch)
                                  (if (typep ch 'base-char)

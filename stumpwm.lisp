@@ -128,6 +128,17 @@ of those expired."
             internal-time-units-per-second)
          0)))
 
+(defun perform-top-level-error-action ()
+  (ecase *top-level-error-action*
+    (:message
+     (let ((s (format nil "~&Caught '~a' at the top level. Please report this." c)))
+       (write-line s)
+       (print-backtrace)
+       (message "^1*^B~a" s)))
+    (:break (invoke-debugger c))
+    (:abort
+     (throw :top-level (list c (backtrace-string))))))
+
 (defun stumpwm-internal-loop ()
   "The internal loop that waits for events and handles them."
   (loop
@@ -137,18 +148,21 @@ of those expired."
                                (if (lookup-error-recoverable-p)
                                    (recover-from-lookup-error)
                                    (error c))))
-          (warning (lambda (c) (declare (ignore c)) (invoke-restart 'muffle-warning)))
-          (t (lambda (c)
-                   (run-hook *top-level-error-hook*)
-                   (ecase *top-level-error-action*
-                     (:message
-                      (let ((s (format nil "~&Caught '~a' at the top level. Please report this." c)))
-                        (write-line s)
-                        (print-backtrace)
-                        (message "^1*^B~a" s)))
-                     (:break (invoke-debugger c))
-                     (:abort
-                      (throw :top-level (list c (backtrace-string))))))))
+          (warning #'muffle-warning)
+          ((or serious-condition error)
+           (lambda (c)
+             (run-hook *top-level-error-hook*)
+             (perform-top-level-error-action)))
+          (t
+           (lambda (c)
+             ;; some other wacko condition was raised so first try
+             ;; what we can to keep going.
+             (cond ((find-restart 'muffle-warning)
+                    (muffle-warning))
+                   ((find-restart 'continue)
+                    (continue)))
+             ;; and if that fails treat it like a top level error.
+             (perform-top-level-error-action))))
        ;; Note: process-event appears to hang for an unknown
        ;; reason. This is why it is passed a timeout in hopes that
        ;; this will keep it from hanging.
