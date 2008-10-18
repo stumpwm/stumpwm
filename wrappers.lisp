@@ -63,8 +63,11 @@
                                                 (string= "DISPLAY=" str :end2 (min 8 (length str))))
                                               (sb-ext:posix-environ)))
                 opts)
-  #+openmcl (apply #'ccl:run-program prog args :wait wait :output t :error t)
-  #-(or allegro clisp cmu gcl liquid lispworks lucid sbcl openmcl)
+  #+ccl (ccl:run-program prog (mapcar (lambda (s)
+                                        (if (simple-string-p s) s (coerce s 'simple-string)))
+                                      args)
+                         :wait wait :output t :error t)
+  #-(or allegro clisp cmu gcl liquid lispworks lucid sbcl ccl)
   (error 'not-implemented :proc (list 'run-prog prog opts)))
 
 ;;; XXX: DISPLAY isn't set for cmucl
@@ -94,9 +97,12 @@
                                                   (remove-if (lambda (str)
                                                                (string= "DISPLAY=" str :end2 (min 8 (length str))))
                                                              (sb-ext:posix-environ)))))
-  #+openmcl (with-output-to-string (s)
-              (ccl:run-program prog args :wait t :output s :error t))
-  #-(or allegro clisp cmu sbcl openmcl)
+  #+ccl (with-output-to-string (s)
+          (ccl:run-program prog (mapcar (lambda (s)
+                                          (if (simple-string-p s) s (coerce s 'simple-string)))
+                                        args)
+                           :wait t :output s :error t))
+  #-(or allegro clisp cmu sbcl ccl)
   (error 'not-implemented :proc (list 'pipe-input prog args)))
 
 (defun getenv (var)
@@ -172,9 +178,9 @@
   "print a backtrace of FRAMES number of frames to standard-output"
   #+sbcl (sb-debug:backtrace frames *standard-output*)
   #+clisp (ext:show-stack 1 frames (sys::the-frame))
-  #+openmcl (ccl:print-call-history :count frames)
+  #+ccl (ccl:print-call-history :count frames :stream *standard-output* :detailed-p nil)
 
-  #-(or sbcl clisp openmcl) (write-line "Sorry, no backtrace for you."))
+  #-(or sbcl clisp ccl) (write-line "Sorry, no backtrace for you."))
 
 (defun bytes-to-string (data)
   "Convert a list of bytes into a string."
