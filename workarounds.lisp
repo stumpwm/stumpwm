@@ -79,6 +79,8 @@
 (defun get-wm-class (window)
   (let ((value (get-property window :WM_CLASS :type :STRING :result-type 'string :transform #'card8->char)))
     (when value
+      ;; Buggy clients may not comply with the format, so deal with
+      ;; the unexpected.
       (let* ((first-zero (position (load-time-value (card8->char 0)) (the string value)))
              (second-zero (and first-zero
                                (position (load-time-value (card8->char 0)) (the string value) :start (1+ first-zero))))
