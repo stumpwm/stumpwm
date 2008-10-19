@@ -266,6 +266,26 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
 ;;                           0 0 300 200 t)
 ;;      (xlib:clear-area (window-parent window)))))
 
+(defun get-normalized-normal-hints (xwin)
+  (macrolet ((validate-hint (fn)
+               (setf fn (intern (concatenate 'string (string :wm-size-hints-) (string fn)) :xlib))
+               `(setf (,fn hints) (and (,fn hints)
+                                       (plusp (,fn hints))
+                                       (,fn hints)))))
+    (let ((hints (xlib:wm-normal-hints xwin)))
+      (when hints
+        (validate-hint :min-width)
+        (validate-hint :min-height)
+        (validate-hint :max-width)
+        (validate-hint :max-height)
+        (validate-hint :base-width)
+        (validate-hint :base-height)
+        (validate-hint :width-inc)
+        (validate-hint :height-inc)
+        (validate-hint :min-aspect)
+        (validate-hint :max-aspect))
+      hints)))
+
 (defun xwin-net-wm-name (win)
   "Return the netwm wm name"
   (let ((name (xlib:get-property win :_NET_WM_NAME)))
@@ -427,7 +447,7 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
 
 (defun xwin-maxsize-p (win)
   "Returns T if WIN specifies maximum dimensions."
-  (let ((hints (xlib:wm-normal-hints win)))
+  (let ((hints (get-normalized-normal-hints win)))
     (and hints (or (xlib:wm-size-hints-max-width hints)
                    (xlib:wm-size-hints-max-height hints)
                    (xlib:wm-size-hints-min-aspect hints)
@@ -782,7 +802,7 @@ than the root window's width and height."
    :res (xwin-res-name xwin)
    :role (xwin-role xwin)
    :type (xwin-type xwin)
-   :normal-hints (xlib:wm-normal-hints xwin)
+   :normal-hints (get-normalized-normal-hints xwin)
    :state +iconic-state+
    :plist (make-hash-table)
    :unmap-ignores 0))
@@ -1001,7 +1021,7 @@ needed."
             (window-res window) (xwin-res-name (window-xwin window))
             (window-role window) (xwin-role (window-xwin window))
             (window-type window) (xwin-type (window-xwin window))
-            (window-normal-hints window) (xlib:wm-normal-hints (window-xwin window))
+            (window-normal-hints window) (get-normalized-normal-hints (window-xwin window))
             (window-number window) (find-free-window-number (window-group window))
             (window-state window) +iconic-state+
             (xwin-state (window-xwin window)) +iconic-state+

@@ -357,7 +357,7 @@ converted to an atom is removed."
      ;; Let the mode line know about the new name.
      (update-all-mode-lines))
     (:wm_normal_hints
-     (setf (window-normal-hints window) (xlib:wm-normal-hints (window-xwin window))
+     (setf (window-normal-hints window) (get-normalized-normal-hints (window-xwin window))
            (window-type window) (xwin-type (window-xwin window)))
      (dformat 4 "new hints: ~s~%" (window-normal-hints window))
      (maximize-window window))
