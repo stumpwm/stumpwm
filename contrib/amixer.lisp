@@ -1,8 +1,8 @@
 ;;; Amixer module for StumpWM.
 ;;;
-;;; Copyright 2007 Amy Templeton, Jonathan Moore Liles.
+;;; Copyright 2007 Amy Templeton, Jonathan Moore Liles, Ivy Foster.
 ;;;
-;;; Maintainer: 
+;;; Maintainer: Ivy Foster
 ;;;
 ;;; This module is free software; you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
@@ -27,73 +27,56 @@
 ;;;
 ;;;     (load "/path/to/amixer.lisp")
 ;;;
-;;; In your ~/.stumpwmrc
+;;; ...in your ~/.stumpwmrc, followed by some keybindings (according
+;;; to your preference)
+
+;;; TODO:
+;;;
+;;; Make the `defvolcontrol' macro create all the necessary commands at once.
+;;;
+;;;   - Should it just create, say, amixer-pcm, which would be passed an
+;;;     argument? i.e., (define-key *this-map* (kbd "e") "amixer-pcm 1-")
+;;;
+;;;   - Else, figure out how to make the macro not error when converting a
+;;;     string to a symbol for the name of the command
+
+;;; Code:
+
+(in-package :stumpwm)
 
 (defun volcontrol (channel amount)
-  (let ((percent
-         (parse-integer
-          (run-shell-command
-           (concat "amixer sset " channel " " (or amount "toggle")
-                   "| sed -n 's/^.*\\[\\([[:digit:]]\\+\\)%\\].*$/\\1/p' | head -1")
-           t))))
+  (let ((percent (parse-integer
+		  (run-shell-command
+		   (concat "amixer sset " channel " " (or amount "toggle")
+			   "| tail -1" "| awk '{print substr($5, 2, 2)}'") t))))
     (message
-     (concat "Mixer: " channel " " (or amount "toggled") (format nil "~C^B~A%" #\Newline percent) "^b [^[^7*"
+     (concat "Mixer: " channel " " (or amount "toggled")
+	     (format nil "~C^B~A%" #\Newline percent) "^b [^[^7*"
              (bar percent 50 #\# #\:) "^]]"))))
 
-(defcommand amixer-PCM-1- () ()
-  "Lowers PCM volume"
-  (volcontrol "PCM" "1-"))
+(defmacro defvolcontrol (name channel valence)
+  `(defcommand ,name () ()
+     (volcontrol ,channel ,valence)))
 
-(defcommand amixer-PCM-1+ () ()
-  "Raises PCM volume"
-  (volcontrol "PCM" "1+"))
+(defvolcontrol amixer-PCM-1- "PCM" "1-")
+(defvolcontrol amixer-PCM-1+ "PCM" "1+")
+(defvolcontrol amixer-PCM-toggle "PCM" "toggle")
 
-(defcommand amixer-PCM-toggle () ()
-  "Un/mutes PCM volume"
-  (volcontrol "PCM" nil))
+(defvolcontrol amixer-Front-1- "Front" "1-")
+(defvolcontrol amixer-Front-1+ "Front" "1+")
+(defvolcontrol amixer-Front-toggle "Front" "toggle")
 
-(defcommand amixer-Master-1- () ()
-  "Lowers Master volume"
-  (volcontrol "Master" "1-"))
+(defvolcontrol amixer-Master-1- "Master" "1-")
+(defvolcontrol amixer-Master-1+ "Master" "1+")
+(defvolcontrol amixer-Master-toggle "Master" "toggle")
 
-(defcommand amixer-Master-1+ () ()
-  "Raises Master volume"
-  (volcontrol "Master" "1+"))
-
-(defcommand amixer-Master-toggle () ()
-  "Un/mutes Master volume"
-  (volcontrol "Master" nil))
-
-(defcommand amixer-Headphone-1- () ()
-  "Lowers Headphone volume"
-  (volcontrol "Headphone" "1-"))
-
-(defcommand amixer-Headphone-1+ () ()
-  "Raises Headphone volume"
-  (volcontrol "Headphone" "1+"))
-
-(defcommand amixer-Headphone-toggle () ()
-  "Un/mutes Headphone volume"
-  (volcontrol "Headphone" nil))
+(defvolcontrol amixer-Headphone-1- "Headphone" "1-")
+(defvolcontrol amixer-Headphone-1+ "Headphone" "1+")
+(defvolcontrol amixer-Headphone-toggle "Headphone" "toggle")
 
 (defcommand amixer-sense-toggle () ()
   (message
    (concat "Headphone Jack Sense toggled"
            (run-shell-command "amixer sset 'Headphone Jack Sense' toggle" t))))
 
-(define-keysym #x1008ff11 "XF86AudioLowerVolume")
-(define-keysym #x1008ff12 "XF86AudioMute")
-(define-keysym #x1008ff13 "XF86AudioRaiseVolume")
-
-;;; Some bindings
-
-(define-key *top-map* (kbd "XF86AudioLowerVolume")   "amixer-PCM-1-")
-(define-key *top-map* (kbd "XF86AudioRaiseVolume")   "amixer-PCM-1+")
-(define-key *top-map* (kbd "XF86AudioMute")          "amixer-PCM-toggle")
-(define-key *top-map* (kbd "C-XF86AudioLowerVolume") "amixer-Master-1-")
-(define-key *top-map* (kbd "C-XF86AudioRaiseVolume") "amixer-Master-1+")
-(define-key *top-map* (kbd "C-XF86AudioMute")        "amixer-Master-toggle")
-(define-key *top-map* (kbd "M-XF86AudioLowerVolume") "amixer-Headphone-1-")
-(define-key *top-map* (kbd "M-XF86AudioRaiseVolume") "amixer-Headphone-1+")
-(define-key *top-map* (kbd "M-XF86AudioMute")        "amixer-Headphone-toggle")
-(define-key *top-map* (kbd "S-XF86AudioMute")        "amixer-sense-toggle")
+;;; End of file
