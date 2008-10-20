@@ -305,6 +305,29 @@
 (defun mpd-get-track ()
   (assoc-value :track *mpd-current-song*))
 
+(defun mpd-get-song-name ()
+  (let* ((artist (assoc-value :artist *mpd-current-song*))
+        (album (assoc-value :album *mpd-current-song*))
+        (title (assoc-value :title *mpd-current-song*))
+         (file (assoc-value :file *mpd-current-song*))
+         (song (if (or (null artist)
+                      (null album)
+                      (null title))
+                  (format nil "~a" file)
+                   (format nil "~a \"~a\" - ~a"
+                          artist
+                          (if (and *mpd-collapse-album-length*
+                                   (> (length album) *mpd-collapse-album-length*))
+                              (concatenate 'string
+                                           (subseq album 0 *mpd-collapse-album-length*)
+                                           "...")
+                              album)
+                          title))))
+    (if (and *mpd-collapse-all-length*
+            (> (length song) *mpd-collapse-all-length*))
+        (concatenate 'string (subseq song 0 *mpd-collapse-all-length*) "...")
+       song)))
+
 (defun mpd-modeline (ml)
   (declare (ignore ml))
   (if *mpd-socket*
@@ -332,7 +355,8 @@
     (#\S mpd-get-status)
     (#\t mpd-get-title)
     (#\T mpd-get-track)
-    (#\v mpd-get-volume)))
+    (#\v mpd-get-volume)
+    (#\m mpd-get-song-name)))
 
 (defvar *mpd-current-song-fmt* "%a
 %A
