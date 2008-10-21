@@ -112,7 +112,7 @@
 
 (defvar *mpd-timeout* 50)
 
-(defparameter *mpd-timer* nil)
+(defvar *mpd-timer* nil)
 
 (defvar *mpd-collapse-album-length* nil)
 (defvar *mpd-collapse-all-length* nil)
@@ -122,7 +122,8 @@
        (handler-case (progn ,@body)
                      (error (c) (progn
                                   (message "Error with mpd connection: ~a" c)
-                                  (setf *mpd-socket* nil))))
+                                  (setf *mpd-socket* nil)
+                                  (when *mpd-timer* (cancel-timer *mpd-timer*)))))
      (message "Error: not connected to mpd~%")))
 
 (defun mpd-send (command)
@@ -486,7 +487,8 @@ Volume
   "Disconnect from mpd server"
   (with-mpd-connection
    (close *mpd-socket*)
-   (setf *mpd-socket* nil)))
+   (setf *mpd-socket* nil)
+   (when *mpd-timer* (cancel-timer *mpd-timer*))))
 
 (defcommand mpd-kill () ()
  (mpd-send-command "kill"))
