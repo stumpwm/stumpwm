@@ -3,6 +3,31 @@
 This file documents user visible changes between versions of StumpWM
 
 * Changes since 0.9.4.1
+
+** new module, aumix.lisp
+
+** new command, repack-window-numbers
+
+** new module, productivity.lisp
+
+** _NET_FRAME_EXTENTS property is set on client windows
+
+** define-key acts like undefine-key when nil is passed as the command
+
+** new command, show-window-properties 
+
+** select-from-menu lets you type regex to match an item
+
+** new commands, gnext-with-window and gprev-with-window
+
+** run-or-raise now cycles through matching windows
+
+** new function add-screen-mode-line-formatter
+
+** new module wifi.lisp
+
+** new module battery-portable.lisp
+
 ** new command load-module
 
 ** added install/uninstall Makefile rules
