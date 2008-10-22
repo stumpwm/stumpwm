@@ -245,13 +245,17 @@ The Caller is responsible for setting up the input focus."
 
 (defun top-maps (&optional (group (current-group)))
   "Return all top level keymaps that are active."
-  (let ((acc (list *top-map*)))
-    ;; group maps
-    (loop for i in *group-top-maps*
-       do (when (typep group (first i))
-            (push (second i) acc)))
-    ;; Minor Mode maps
-    acc))
+  (append
+   ;; The plain jane top map is first because that's where users are
+   ;; going to throw in their universally accessible customizations
+   ;; which we don't want groups or minor modes shadowing them.
+   (list '*top-map*)
+   ;; TODO: Minor Mode maps go here
+   ;; lastly, group maps. Last because minor modes should be able to
+   ;; shadow a group's default bindings.
+   (loop for i in *group-top-maps*
+      when (typep group (first i))
+      collect (second i))))
 
 (define-stump-event-handler :key-press (code state #|window|#)
   (labels ((get-cmd (code state)

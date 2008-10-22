@@ -47,12 +47,16 @@ C-t.")
 (defvar *help-map* nil
   "Help related bindings hang from this keymap")
 
-(defvar *group-top-maps* '((group *group-top-map*)
-                           (tile-group *tile-group-top-map*)
-                           (float-group *float-group-top-map*))
+(defvar *group-top-maps* '((tile-group *tile-group-top-map*)
+                           (float-group *float-group-top-map*)
+                           (group *group-top-map*))
   "An alist of the top level maps for each group type. For a given
 group, all maps whose type matches the given group are active. So for
-a tile-group, both the group map and tile-group map are active.")
+a tile-group, both the group map and tile-group map are active.
+
+Order is important. Each map is seached in the order they appear in
+the list (inactive maps being skipped). In general the order should go
+from most specific groups to most general groups.")
 
 (defvar *group-top-map* nil)
 (defvar *group-root-map* nil)
