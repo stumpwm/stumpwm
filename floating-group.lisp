@@ -118,6 +118,7 @@
   )
 
 (defmethod group-sync-head ((group float-group) head)
+  (declare (ignore head))
   )
 
 (defmethod group-button-press ((group float-group) x y (window float-window))
