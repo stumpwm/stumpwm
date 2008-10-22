@@ -27,7 +27,10 @@
 
 (export '(*version*))
 
-(defparameter *version* #.(concatenate 'string "@PACKAGE_VERSION@ Compiled On " (format-time-string)))
+(defparameter *version*
+  #.(concatenate 'string "@PACKAGE_VERSION@ Compiled On "
+		 (format-expand *time-format-string-alist*
+			       *time-format-string-default*)))
 
 (defun echo-version (screen)
   (echo-string screen *version*))

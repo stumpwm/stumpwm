@@ -51,6 +51,7 @@
                (:file "help")
                (:file "fdump")
 	       (:file "mode-line")
+	       (:file "time")
 	       (:file "color")
                (:file "module")
 	       (:file "stumpwm")
