@@ -70,7 +70,7 @@
 
 (update-resize-map)
 
-(defcommand iresize () ()
+(defcommand (iresize tile-group) () ()
   "Start the interactive resize mode. A new keymap specific to
 resizing the current frame is loaded. Hit @key{C-g}, @key{RET}, or
 @key{ESC} to exit."
@@ -100,14 +100,14 @@ resizing the current frame is loaded. Hit @key{C-g}, @key{RET}, or
       (when (current-window)
         (focus-window (current-window))))))
 
-(defcommand abort-iresize () ()
+(defcommand (abort-iresize tile-group) () ()
   "Exit from the interactive resize mode."
   (resize-unhide)
   (message "Abort resize")
   ;; TODO: actually revert the frames
   (pop-top-map))
 
-(defcommand exit-iresize () ()
+(defcommand (exit-iresize tile-group) () ()
   "Exit from the interactive resize mode."
   (resize-unhide)
   (message "Resize Complete")

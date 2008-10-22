@@ -837,15 +837,15 @@ windows used to draw the numbers in. The caller must destroy them."
           (show-frame-indicator group))
         (message "Cannot split smaller than minimum size."))))
 
-(defcommand hsplit () ()
+(defcommand (hsplit tile-group) () ()
 "Split the current frame into 2 side-by-side frames."
   (split-frame-in-dir (current-group) :column))
 
-(defcommand vsplit () ()
+(defcommand (vsplit tile-group) () ()
 "Split the current frame into 2 frames, one on top of the other."
   (split-frame-in-dir (current-group) :row))
 
-(defcommand remove-split (&optional (group (current-group)) (frame (tile-group-current-frame group))) ()
+(defcommand (remove-split tile-group) (&optional (group (current-group)) (frame (tile-group-current-frame group))) ()
 "Remove the specified frame in the specified group (defaults to current
 group, current frame). Windows in the frame are migrated to the frame taking up its
 space."
@@ -888,7 +888,7 @@ space."
 
 (defcommand-alias remove remove-split)
 
-(defcommand only () ()
+(defcommand (only tile-group) () ()
   "Delete all the frames but the current one and grow it to take up the entire head."
   (let* ((screen (current-screen))
          (group (screen-current-group screen))
@@ -913,7 +913,7 @@ space."
               (show-frame-indicator group))
           (sync-frame-windows group (tile-group-current-frame group))))))
 
-(defcommand curframe () ()
+(defcommand (curframe tile-group) () ()
 "Display a window indicating which frame is focused."
   (show-frame-indicator (current-group) t))
 
@@ -949,16 +949,16 @@ the current frame."
 (defun focus-prev-frame (group)
   (focus-frame-after group (nreverse (group-frames group))))
 
-(defcommand fnext () ()
+(defcommand (fnext tile-group) () ()
 "Cycle through the frame tree to the next frame."
   (focus-next-frame (current-group)))
 
-(defcommand sibling () ()
+(defcommand (sibling tile-group) () ()
 "Jump to the frame's sibling. If a frame is split into twe frames,
 these two frames are siblings."
   (focus-frame-next-sibling (current-group)))
 
-(defcommand fother () ()
+(defcommand (fother tile-group) () ()
 "Jump to the last frame that had focus."
   (focus-last-frame (current-group)))
 
@@ -978,15 +978,15 @@ select one. Returns the selected frame or nil if aborted."
           :key 'get-frame-number-translation)))
 
 
-(defcommand fselect (frame-number) ((:frame t))
+(defcommand (fselect tile-group) (frame-number) ((:frame t))
 "Display a number in the corner of each frame and let the user to
 select a frame by number. If @var{frame-number} is specified, just
 jump to that frame."
   (let ((group (current-group)))
     (focus-frame group frame-number)))
 
-(defcommand resize (width height) ((:number "+ Width: ")
-                                   (:number "+ Height: "))
+(defcommand (resize tile-group) (width height) ((:number "+ Width: ")
+                                                (:number "+ Height: "))
   "Resize the current frame by @var{width} and @var{height} pixels"
   (let* ((group (current-group))
          (f (tile-group-current-frame group)))
@@ -1002,7 +1002,7 @@ jump to that frame."
   "Clear the given frame."
   (frame-raise-window group frame nil (eq (tile-group-current-frame group) frame)))
 
-(defcommand fclear () ()
+(defcommand (fclear tile-group) () ()
 "Clear the current frame."
   (clear-frame (tile-group-current-frame (current-group)) (current-group)))
 
@@ -1067,7 +1067,7 @@ jump to that frame."
           (pull-window window new-frame)
           (focus-frame group new-frame)))))
 
-(defcommand move-focus (dir) ((:direction "Direction: "))
+(defcommand (move-focus tile-group) (dir) ((:direction "Direction: "))
 "Focus the frame adjacent to the current one in the specified
 direction. The following are valid directions:
 @table @asis
@@ -1078,29 +1078,29 @@ direction. The following are valid directions:
 @end table"
   (move-focus-and-or-window dir))
 
-(defcommand move-window (dir) ((:direction "Direction: "))
+(defcommand (move-window tile-group) (dir) ((:direction "Direction: "))
 "Just like move-focus except that the current is pulled along."
   (move-focus-and-or-window dir t))
 
-(defcommand next-in-frame () ()
+(defcommand (next-in-frame tile-group) () ()
 "Go to the next window in the current frame."
   (let ((group (current-group)))
     (if (group-current-window group)
         (focus-forward group (frame-sort-windows group (tile-group-current-frame group)))
         (other-window-in-frame group))))
 
-(defcommand prev-in-frame () ()
+(defcommand (prev-in-frame tile-group) () ()
 "Go to the previous window in the current frame."
   (let ((group (current-group)))
     (if (group-current-window group)
         (focus-forward group (reverse (frame-sort-windows group (tile-group-current-frame group))))
         (other-window-in-frame group))))
 
-(defcommand other-in-frame () ()
+(defcommand (other-in-frame tile-group) () ()
 "Go to the last accessed window in the current frame."
   (other-window-in-frame (current-group)))
 
-(defcommand balance-frames () ()
+(defcommand (balance-frames tile-group) () ()
   "Make frames the same height or width in the current frame's subtree."
   (let* ((group (current-group))
          (tree (tree-parent (tile-group-frame-head group (current-head))
