@@ -103,7 +103,6 @@ a tile-group, both the group map and tile-group map are active.")
   (kbd "F8")  "gselect 8"
   (kbd "F9")  "gselect 9"
   (kbd "F10") "gselect 10"
-  (kbd "?")   "help"
   (kbd "h")   '*help-map*)
 
 (fill-keymap *group-top-map*

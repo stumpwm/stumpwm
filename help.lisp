@@ -63,10 +63,6 @@
                         (print-key-seq key-seq)
                         (columnize data cols))))
 
-(defcommand help () ()
-"Display all the bindings in @var{*root-map*}."
-  (display-bindings-for-keymaps (list *escape-key*) *root-map*))
-
 (defcommand commands () ()
   (let* ((screen (current-screen))
          (data (all-commands))
