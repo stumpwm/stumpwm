@@ -502,11 +502,13 @@ Volume
       (mpd-send-command "pause 0"))))
 
 (defcommand mpd-toggle-random () ()
+  (mpd-update-status)
   (if (mpd-shuffle-p)
       (mpd-send-command "random 0")
     (mpd-send-command "random 1")))
 
 (defcommand mpd-toggle-repeat () ()
+  (mpd-update-status)
   (if (mpd-repeating-p)
       (mpd-send-command "repeat 0")
     (mpd-send-command "repeat 1")))
