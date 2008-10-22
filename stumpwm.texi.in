@@ -1193,7 +1193,6 @@ section.
 !!! window-send-string
 !!! reload
 !!! loadrc
-!!! help
 !!! keyboard-quit
 !!! quit
 !!! soft-restart
