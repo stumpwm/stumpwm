@@ -116,7 +116,7 @@ when missing.
 
 Alternatively, instead of specifying nil for PROMPT or leaving it
 out, an element can just be the argument type."
-  (check-type name symbol)
+  (check-type name (or symbol list))
   (let ((docstring (if (stringp (first body))
                      (first body)
                      (warn (make-condition 'command-docstring-warning :command name))))

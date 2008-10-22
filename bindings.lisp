@@ -196,7 +196,7 @@ a tile-group, both the group map and tile-group map are active.")
   (kbd "N")     "gnext-with-window"
   (kbd "p")     "gprev"
   (kbd "C-p")   "gprev"
-  (kbd "P")     "gprev-with-window")
+  (kbd "P")     "gprev-with-window"
   (kbd "o")     "gother"
   (kbd "'")     "gselect"
   (kbd "\"")    "grouplist"
