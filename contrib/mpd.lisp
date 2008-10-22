@@ -494,6 +494,7 @@ Volume
  (mpd-send-command "kill"))
 
 (defcommand mpd-toggle-pause () ()
+  (mpd-update-status)
   (cond
    ((equal (mpd-get-status) "Playing")
     (mpd-send-command "pause 1"))
