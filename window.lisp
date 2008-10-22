@@ -907,11 +907,6 @@ is using the number, then the windows swap numbers. Defaults to current group."
 		     (mapcar 'window-number windows))
 		   0))))))
 
-(defcommand gravity (gravity) ((:gravity "Gravity: "))
-  (when (current-window)
-    (setf (window-gravity (current-window)) gravity)
-    (maximize-window (current-window))))
-
 (defcommand windowlist (&optional (fmt *window-format*)) (:rest)
 "Allow the user to Select a window from the list of windows and focus
 the selected window. For information of menu bindings
