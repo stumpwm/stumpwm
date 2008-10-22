@@ -104,7 +104,8 @@ List the groups using @var{*group-format*}
                                         (#\h fmt-head)
                                         (#\n fmt-group)
                                         (#\W fmt-head-window-list)
-                                        (#\u fmt-urgent-window-list))
+                                        (#\u fmt-urgent-window-list)
+                                        (#\d fmt-modeline-time))
   "An alist containing format character format function pairs for
 formatting screen mode-lines. functions are passed the screen's
 current group.")
@@ -182,6 +183,10 @@ timer.")
                           str)))
                   (sort1 (head-windows (mode-line-current-group ml) (mode-line-head ml))
                          #'< :key #'window-number))))
+
+(defun fmt-modeline-time (ml)
+  (declare (ignore ml))
+  (format-expand *time-format-string-alist* *time-modeline-string*))
 
 (defvar *bar-med-color* "^B")
 (defvar *bar-hi-color* "^B^3*")

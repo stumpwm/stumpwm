@@ -55,20 +55,6 @@
 (defvar *time-day-names*
   #("Monday" "Tuesday" "Wednesday" "Thursday" "Friday" "Saturday" "Sunday"))
 
-(defcommand echo-date () ()
-  "Display the date and time."
-  (message "~a" (format-expand *time-format-string-alist*
-			       *time-format-string-default*)))
-
-(defcommand-alias time echo-date)
-
-(defun time-modeline (ml)
-  (declare (ignore ml))
-  (format-expand *time-format-string-alist* *time-modeline-string*))
-
-(dolist (a '((#\d time-modeline)))
-  (pushnew a *screen-mode-line-formatters* :test 'equal))
-
 ;; `date --help` with date_6.12
 (defvar *time-format-string-alist*
   '((#\a time-dow-shortname)
@@ -117,16 +103,22 @@
     ;; %Z   alphabetic time zone abbreviation (e.g., EDT)
     ))
 
+(defcommand echo-date () ()
+  "Display the date and time."
+  (message "~a" (format-expand *time-format-string-alist*
+			       *time-format-string-default*)))
+
+(defcommand-alias time echo-date)
+
 ;;; ------------------------------------------------------------------
 ;;; Helper functions
 ;;; ------------------------------------------------------------------
 
 (defun time-plist (&optional time)
-  (setf *time*
-	(multiple-value-bind (sec min hour dom mon year dow dstp tz)
-	    (or time (get-decoded-time))
-	  (list :second sec :minute min :hour hour :dom dom :month mon
-		:year year :dow dow :dlsavings-p dstp :tz tz))))
+  (multiple-value-bind (sec min hour dom mon year dow dstp tz)
+      (or time (get-decoded-time))
+    (list :second sec :minute min :hour hour :dom dom :month mon
+          :year year :dow dow :dlsavings-p dstp :tz tz)))
 
 (defun time-second ()
   (format nil "~2,'0D" (getf (time-plist) :second)))
