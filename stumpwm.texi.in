@@ -112,6 +112,7 @@ Key Bindings
 
 * List of Default Keybindings::  
 * Binding Keys::                
+* Modifiers::                   
 
 Message and Input Bar
 
@@ -145,6 +146,7 @@ Screens
 Miscellaneous Commands
 
 * Menus::                       
+* StumpWM's Data Directory::    
 * Debugging StumpWM::           
 * Timers::                      
 * Getting Help::                
@@ -306,6 +308,7 @@ mimics GNU Screen's keyboard handling. StumpWM's default prefix key is
 @menu
 * List of Default Keybindings::  
 * Binding Keys::                
+* Modifiers::                   
 @end menu
 
 @node List of Default Keybindings, Binding Keys, Key Bindings, Key Bindings
@@ -488,6 +491,16 @@ Create a new group.
 @itemx C-t g C-SPC
 Go to the next group in the list.
 
+@item C-t g N
+Go to the next group in the list and bring the current window along.
+
+@item C-t g p
+@itemx C-t g C-p
+Go to the previous group in the list.
+
+@item C-t g P
+Go to the previous group in the list and bring the current window along.
+
 @item C-t g '
 Select a group by name or by number.
 
@@ -535,7 +548,7 @@ List all key sequences that are bound to the specified command
 Describe the specified command.
 @end table
 
-@node Binding Keys,  , List of Default Keybindings, Key Bindings
+@node Binding Keys, Modifiers, List of Default Keybindings, Key Bindings
 @section Binding Keys
 
 @@@ define-key
@@ -550,7 +563,141 @@ Describe the specified command.
 ### *groups-map*
 
 !!! bind
- 
+
+@node Modifiers,  , Binding Keys, Key Bindings
+@section Modifiers
+
+Many users have had some difficulty with setting up modifiers for
+StumpWM keybindings. This is caused by a combination of how StumpWM
+handles modifiers and the default modifiers list for many users' X
+servers.
+
+@itemize
+
+@item
+My ``Super'' key doesn't work!
+
+This is most likely caused by having the Hyper and Super keys listed
+as the same modifier in the modifier list.
+
+@example
+$ xmodmap
+xmodmap:  up to 3 keys per modifier, (keycodes in parentheses):
+
+shift       Shift_L (0x32),  Shift_R (0x3e)
+lock        Caps_Lock (0x42)
+control     Control_L (0x25),  Control_R (0x6d)
+mod1        Alt_L (0x40),  Alt_R (0x71),  Meta_L (0x9c)
+mod2        Num_Lock (0x4d)
+mod3
+mod4        Super_L (0x7f),  Hyper_L (0x80)
+mod5        Mode_switch (0x5d),  ISO_Level3_Shift (0x7c)
+@end example
+
+The problem is in the line beginning with ``mod4''. The way to set up
+the modifier list correctly is to have just the Super key as the mod4
+modifier. The following xmodmap commands will do just that.
+
+@example
+# clear out the mod4 modifier
+$ xmodmap -e 'clear mod4'
+$ xmodmap
+xmodmap:  up to 3 keys per modifier, (keycodes in parentheses):
+
+shift       Shift_L (0x32),  Shift_R (0x3e)
+lock        Caps_Lock (0x42)
+control     Control_L (0x25),  Control_R (0x6d)
+mod1        Alt_L (0x40),  Alt_R (0x71),  Meta_L (0x9c)
+mod2        Num_Lock (0x4d)
+mod3
+mod4
+mod5        Mode_switch (0x5d),  ISO_Level3_Shift (0x7c)
+
+# add Super as a mod4 modifier
+$ xmodmap -e 'add mod4 = Super_L'
+$ xmodmap
+xmodmap:  up to 3 keys per modifier, (keycodes in parentheses):
+
+shift       Shift_L (0x32),  Shift_R (0x3e)
+lock        Caps_Lock (0x42)
+control     Control_L (0x25),  Control_R (0x6d)
+mod1        Alt_L (0x40),  Alt_R (0x71),  Meta_L (0x9c)
+mod2        Num_Lock (0x4d)
+mod3
+mod4        Super_L (0x73),  Super_L (0x7f)
+mod5        Mode_switch (0x5d),  ISO_Level3_Shift (0x7c)
+@end example
+
+You can automate this by storing the commands in a file and calling
+xmodmap when you start your X session.
+
+@example
+$ cat ~/.Xmodmap
+clear mod4
+add mod4 = Super_L
+@end example
+
+If you use "startx", modify your ~/.xsession or ~/.xinitrc file.
+
+@example
+$ cat ~/.xsession
+#!/bin/sh
+
+xmodmap ~/.Xmodmap
+exec /usr/bin/stumpwm
+@end example
+
+If you use a graphical login manager (GDM, KDM, etc.), your ~/.Xmodmap
+file should fed to xmodmap when you log in. FIXME: verify this.
+
+@item
+Handling Meta and Alt: when do I use ``M-'' and ``A-''?
+
+If you have no Meta keys defined (see the output of the ``xmodmap''
+command), then StumpWM will treat the ``M-'' prefix in keybindings to
+mean Alt. However, if there are Meta keys defined, then the ``M-''
+prefix refers to them, and the ``A-'' prefix refers to Alt.
+
+Most users will simply use ``M-'' to refer to their Alt keys. However,
+users that define separate Meta and Alt keys will use ``M-'' to refer
+to the former, and ``A-'' to refer to the latter.
+
+@item
+How can I set up a Hyper key and use it with StumpWM?
+
+To set up a Hyper key, you need to do two things: bind a physical key
+to be a Hyper key, and add that key to the modifiers list.
+
+The following example shows how to bind the control key at the
+bottom-left of most keyboards to be Hyper. This is useful if you've
+made Caps Lock into a control key, and have no use for the bottom-left
+key.
+
+@example
+$ xmodmap -e 'keycode 37 = Hyper_L'
+$ xmodmap -e 'clear mod5'
+$ xmodmap -e 'add mod5 = Hyper_L'
+@end example
+
+To use a different key for Hyper, replace the keycode ``37'' above.
+Use the ``xev'' program to see the keycode that any physical key has.
+Refer to the section above on setting up the Super key to see how to
+automate setting the Hyper key when you start X.
+
+Now you can use ``H-'' as a prefix in StumpWM bindings.
+
+@example
+(define-key *top-map* (kbd "H-RET") "fullscreen")
+(define-key *top-map* (kbd "H-Left") "gprev")
+(define-key *top-map* (kbd "H-Right") "gnext")
+(define-key *top-map* (kbd "H-TAB") "other")
+@end example
+
+Since essentially no programs have Hyper bindings, you can safely bind
+commands to the top-map.
+
+@end itemize
+
 @node Commands, Message and Input Bar, Key Bindings, Top
 @chapter Commands
 If you've used emacs before you'll find commands and functions
@@ -955,6 +1102,8 @@ Groups in StumpWM are more commonly known as @dfn{virtual desktops} or
 !!! gnewbg
 !!! gnext
 !!! gprev
+!!! gnext-with-window
+!!! gprev-with-window
 !!! gother
 !!! gmerge
 !!! groups
@@ -1077,12 +1226,13 @@ section.
 
 @menu
 * Menus::                       
+* StumpWM's Data Directory::    
 * Debugging StumpWM::           
 * Timers::                      
 * Getting Help::                
 @end menu
 
-@node Menus, Debugging StumpWM, Miscellaneous Commands, Miscellaneous Commands
+@node Menus, StumpWM's Data Directory, Miscellaneous Commands, Miscellaneous Commands
 @section Menus
 Some commands present the options in a menu. The following are the menu key bindings:
 
@@ -1106,11 +1256,22 @@ Select the highlighted option.
 
 @end table
 
-@node Debugging StumpWM, Timers, Menus, Miscellaneous Commands
+@node StumpWM's Data Directory, Debugging StumpWM, Menus, Miscellaneous Commands
+@section StumpWM's Data Directory
+If you want to store StumpWM data between sessions, the recommended
+method is to store them in @file{~/.stumpwm.d/}. StumpWM supplies
+some functions to make doing this easier.
+
+### *data-dir*
+@@@ data-dir-file
+%%% with-data-file
+
+@node Debugging StumpWM, Timers, StumpWM's Data Directory, Miscellaneous Commands
 @section Debugging StumpWM
 
 ### *debug-level*
 ### *debug-stream*
+@@@ redirect-all-output
 
 @node Timers, Getting Help, Debugging StumpWM, Miscellaneous Commands
 @section Timers
@@ -1249,6 +1410,7 @@ $$$ *focus-group-hook*
 $$$ *key-press-hook*
 $$$ *root-click-hook*
 $$$ *mode-line-click-hook*
+$$$ *urgent-window-hook*
 
 @node Modules, Hacking, Hooks, Top
 @chapter Modules

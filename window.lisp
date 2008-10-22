@@ -278,6 +278,26 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
 ;;                           0 0 300 200 t)
 ;;      (xlib:clear-area (window-parent window)))))
 
+(defun get-normalized-normal-hints (xwin)
+  (macrolet ((validate-hint (fn)
+               (setf fn (intern (concatenate 'string (string :wm-size-hints-) (string fn)) :xlib))
+               `(setf (,fn hints) (and (,fn hints)
+                                       (plusp (,fn hints))
+                                       (,fn hints)))))
+    (let ((hints (xlib:wm-normal-hints xwin)))
+      (when hints
+        (validate-hint :min-width)
+        (validate-hint :min-height)
+        (validate-hint :max-width)
+        (validate-hint :max-height)
+        (validate-hint :base-width)
+        (validate-hint :base-height)
+        (validate-hint :width-inc)
+        (validate-hint :height-inc)
+        (validate-hint :min-aspect)
+        (validate-hint :max-aspect))
+      hints)))
+
 (defun xwin-net-wm-name (win)
   "Return the netwm wm name"
   (let ((name (xlib:get-property win :_NET_WM_NAME)))
@@ -421,7 +441,7 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
 
 (defun xwin-maxsize-p (win)
   "Returns T if WIN specifies maximum dimensions."
-  (let ((hints (xlib:wm-normal-hints win)))
+  (let ((hints (get-normalized-normal-hints win)))
     (and hints (or (xlib:wm-size-hints-max-width hints)
                    (xlib:wm-size-hints-max-height hints)
                    (xlib:wm-size-hints-min-aspect hints)
@@ -576,7 +596,7 @@ and bottom_end_x."
 
 (defun xwin-grab-keys (win screen)
   (labels ((grabit (w key)
-             (let* ((code (xlib:keysym->keycodes *display* (key-keysym key))))
+             (loop for code in (multiple-value-list (xlib:keysym->keycodes *display* (key-keysym key))) do
                ;; some keysyms aren't mapped to keycodes so just ignore them.
                (when code
                  ;; Some keysyms, such as upper case letters, need the
@@ -691,7 +711,7 @@ needed."
           (window-res window) (xwin-res-name (window-xwin window))
           (window-role window) (xwin-role (window-xwin window))
           (window-type window) (xwin-type (window-xwin window))
-          (window-normal-hints window) (xlib:wm-normal-hints (window-xwin window))
+          (window-normal-hints window) (get-normalized-normal-hints (window-xwin window))
           (window-number window) (find-free-window-number (window-group window))
           (window-state window) +iconic-state+
           (xwin-state (window-xwin window)) +iconic-state+
@@ -748,6 +768,7 @@ needed."
           (delete window (screen-urgent-windows screen)))
     (dformat 1 "destroy window ~a~%" screen)
     (dformat 3 "destroying parent window~%")
+    (dformat 7 "parent window is ~a~%" (window-parent window))
     (xlib:destroy-window (window-parent window))))
 
 (defun move-window-to-head (group window)
@@ -871,6 +892,25 @@ is using the number, then the windows swap numbers. Defaults to current group."
         (setf (window-number (group-current-window group)) nt))))
 
 (defcommand-alias number renumber)
+
+(defcommand repack-window-numbers (&optional preserved) ()
+  "Ensure that used window numbers do not have gaps; ignore PRESERVED window numbers."
+  (let* ((group (current-group))
+	 (windows (sort-windows group)))
+    (loop for w in windows
+	  do (unless (find (window-number w) preserved)
+	       (setf
+		 (window-number w)
+		 (find-free-number
+		   (remove
+		     (window-number w)
+		     (mapcar 'window-number windows))
+		   0))))))
+
+(defcommand gravity (gravity) ((:gravity "Gravity: "))
+  (when (current-window)
+    (setf (window-gravity (current-window)) gravity)
+    (maximize-window (current-window))))
 
 (defcommand windowlist (&optional (fmt *window-format*)) (:rest)
 "Allow the user to Select a window from the list of windows and focus

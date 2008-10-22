@@ -133,6 +133,59 @@
       (second-pass dpy)
       (xlib:close-display dpy))))
 
+(defun test-wm-class (map-p)
+  "Test the robustness of CLX's wm-class function. If MAP-P is T then
+map the window. Useful if you want to test the running window
+manager."
+  (labels ((test-it (w &rest strings)
+             (xlib:change-property w :WM_CLASS
+                                   (apply #'concatenate '(vector xlib:card8)
+                                          strings)
+                                   :string 8)
+             (print (multiple-value-list (xlib:get-wm-class w)))
+             ;; give the wm a chance to try out the value
+             (when map-p
+               (sleep 1)))
+           (convert (s)
+             (map '(vector xlib:card8) #'xlib:char->card8 s)))
+    (let* ((dpy (xlib:open-default-display))
+           (screen (first (xlib:display-roots dpy)))
+           (root (xlib:screen-root screen))
+           (win (xlib:create-window :parent root :x 0 :y 0 :width 100 :height 100 :background (xlib:screen-white-pixel screen))))
+      (unwind-protect
+           (when map-p
+             (xlib:map-window win))
+           (progn
+             (test-it win
+                      (convert "string 1")
+                      #(0)
+                      (convert "string 2")
+                      #(0))
+             (test-it win
+                      (convert "Manifold X")
+                      #(0)
+                      (convert "Powercoupling Y")
+                      #(0)
+                      (convert "Magistrate Z")
+                      #(0))
+             (test-it win
+                      #(0))
+             (test-it win)
+             (test-it win
+                      #(0)
+                      (convert "checkity checkfoo"))
+             (test-it win
+                      (convert "ohh bother")
+                      #(0)
+                      (convert "Magic Fudge"))
+             (test-it win
+                      (convert "You Gellin?")
+                      #(0))
+             (test-it win
+                      (convert "Blinky The Cloon")))
+        (xlib:close-display dpy))
+      (values))))
+
 (defun get-wm-hints ()
   "simias reports that on sbcl the wm-hints property is all screwed up
 when he runs an x server on 32 or 64bit freebsd and runs any x client

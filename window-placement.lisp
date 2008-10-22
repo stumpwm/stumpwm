@@ -13,7 +13,7 @@
    :res (xwin-res-name xwin)
    :role (xwin-role xwin)
    :type (xwin-type xwin)
-   :normal-hints (xlib:wm-normal-hints xwin)
+   :normal-hints (get-normalized-normal-hints xwin)
    :state +iconic-state+
    :plist (make-hash-table)
    :unmap-ignores 0))
@@ -117,7 +117,7 @@ housekeeping."
       (setq preferred-frame
             (handler-case
                 (funcall *new-window-preferred-frame* window)
-              (error (c)
+              (t (c)
                 (message "^1*^BError while calling ^b^3**new-window-preferred-frame*^1*^B: ^n~a" c)
                 default))))
     (cond

@@ -63,8 +63,11 @@
                                                 (string= "DISPLAY=" str :end2 (min 8 (length str))))
                                               (sb-ext:posix-environ)))
                 opts)
-  #+openmcl (apply #'ccl:run-program prog args :wait wait :output t :error t)
-  #-(or allegro clisp cmu gcl liquid lispworks lucid sbcl openmcl)
+  #+ccl (ccl:run-program prog (mapcar (lambda (s)
+                                        (if (simple-string-p s) s (coerce s 'simple-string)))
+                                      args)
+                         :wait wait :output t :error t)
+  #-(or allegro clisp cmu gcl liquid lispworks lucid sbcl ccl)
   (error 'not-implemented :proc (list 'run-prog prog opts)))
 
 ;;; XXX: DISPLAY isn't set for cmucl
@@ -94,9 +97,12 @@
                                                   (remove-if (lambda (str)
                                                                (string= "DISPLAY=" str :end2 (min 8 (length str))))
                                                              (sb-ext:posix-environ)))))
-  #+openmcl (with-output-to-string (s)
-              (ccl:run-program prog args :wait t :output s :error t))
-  #-(or allegro clisp cmu sbcl openmcl)
+  #+ccl (with-output-to-string (s)
+          (ccl:run-program prog (mapcar (lambda (s)
+                                          (if (simple-string-p s) s (coerce s 'simple-string)))
+                                        args)
+                           :wait t :output s :error t))
+  #-(or allegro clisp cmu sbcl ccl)
   (error 'not-implemented :proc (list 'pipe-input prog args)))
 
 (defun getenv (var)
@@ -172,9 +178,9 @@
   "print a backtrace of FRAMES number of frames to standard-output"
   #+sbcl (sb-debug:backtrace frames *standard-output*)
   #+clisp (ext:show-stack 1 frames (sys::the-frame))
-  #+openmcl (ccl:print-call-history :count frames)
+  #+ccl (ccl:print-call-history :count frames :stream *standard-output* :detailed-p nil)
 
-  #-(or sbcl clisp openmcl) (write-line "Sorry, no backtrace for you."))
+  #-(or sbcl clisp ccl) (write-line "Sorry, no backtrace for you."))
 
 (defun bytes-to-string (data)
   "Convert a list of bytes into a string."
@@ -235,70 +241,17 @@ they should be windows. So use this function to make a window out of them."
   #+(or clisp sbcl) (invoke-restart :one)
   #-(or clisp sbcl) (error "unimplemented"))
 
-;;; SBCL workaround for a clx caching bug. This is taken from portable-clx's display.lisp
+;;; CLISP does not include features to distinguish different Unix
+;;; flavours (at least until version 2.46). Until this is fixed, use a
+;;; hack to determine them.
 
-;; Define functions to find the CLX data types given a display and resource-id
-;; If the data type is being cached, look there first.
-#+sbcl (in-package #:xlib)
-#+sbcl
-(macrolet ((generate-lookup-functions (useless-name &body types)
-	    `(within-definition (,useless-name generate-lookup-functions)
-	       ,@(mapcar
-		   #'(lambda (type)
-		       `(defun ,(xintern 'lookup- type)
-			       (display id)
-			  (declare (type display display)
-				   (type resource-id id))
-			  (declare (clx-values ,type))
-			  ,(if (member type +clx-cached-types+)
-			       `(let ((,type (lookup-resource-id display id)))
-				  (cond ((null ,type) ;; Not found, create and save it.
-					 (setq ,type (,(xintern 'make- type)
-						      :display display :id id))
-					 (save-id display id ,type))
-					;; Found.  Check the type
-                                        ((type? ,type ',type) ,type)
-                                        (t 
-                                         (restart-case
-                                             (x-error 'lookup-error
-                                                      :id id
-                                                      :display display
-                                                      :type ',type
-                                                      :object ,type)
-                                           (:one ()
-                                             :report "Invalidate this cache entry"
-                                             (save-id display id (,(xintern 'make- type) :display display :id id)))
-                                           (:all ()
-                                             :report "Invalidate all display cache"
-                                             (clrhash (display-resource-id-map display))
-                                             (save-id display id (,(xintern 'make- type) :display display :id id)))))))
-			       ;; Not being cached.  Create a new one each time.
-			       `(,(xintern 'make- type)
-				 :display display :id id))))
-		   types))))
-  (generate-lookup-functions ignore
-    drawable
-    window
-    pixmap
-    gcontext
-    cursor
-    colormap
-    font))
-#+sbcl (in-package #:stumpwm)
-
-
-;;; CLISP does not include a :linux feature on Linux (at least until
-;;; version 2.46). Until this is fixed, use a hack to determine
-;;; whether this is run on Linux.
-
-#+ (and clisp (not linux))
+#+ (and clisp (not (or linux freebsd)))
 (eval-when (eval load compile)
-  (when (string= "Linux"
-                 (let ((str (ext:run-program "uname" :wait t :output :stream)))
-                   (unwind-protect 
-                        (read-line str)
-                     (close str))))
-    (push :linux *features*)))
+  (let ((osname (os:uname-sysname (os:uname))))
+    (cond
+      ((string= osname "Linux") (pushnew :linux *features*))
+      ((string= osname "FreeBSD") (pushnew :freebsd *features*))
+      (t (warn "Your operating system is not recognized.")))))
 
 ;;; On GNU/Linux some contribs use sysfs to figure out useful info for
 ;;; the user. SBCL upto at least 1.0.16 (but probably much later) has

@@ -2,7 +2,7 @@
 
 This file documents user visible changes between versions of StumpWM
 
-* Changes since 0.9.4.1
+* Changes since 0.9.5
 ** new top/root keymaps
 The *root-map* keymap and *top-map* have been split into several based
 on what group it applies to, tiling, floating, both.
@@ -10,11 +10,41 @@ on what group it applies to, tiling, floating, both.
 ** new floating group
 StumpWM now has a floating window group mode.
 
+* Changes since 0.9.4.1
+** new module, aumix.lisp
+
+** new command, repack-window-numbers
+
+** new module, productivity.lisp
+
+** _NET_FRAME_EXTENTS property is set on client windows
+
+** define-key acts like undefine-key when nil is passed as the command
+
+** new command, show-window-properties 
+
+** select-from-menu lets you type regex to match an item
+
+** new commands, gnext-with-window and gprev-with-window
+
+** run-or-raise now cycles through matching windows
+
+** new function add-screen-mode-line-formatter
+
+** new module wifi.lisp
+
+** new module battery-portable.lisp
+>>>>>>> master:NEWS
+
 ** new command load-module
 
 ** added install/uninstall Makefile rules
 
 ** added info command
+
+** added g{next,prev}-with-window commands
+
+** added show-window-properties command
 
 * Changes since 0.9.3
 ** new %interactivep% variable

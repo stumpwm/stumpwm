@@ -107,8 +107,10 @@
           *data-dir*
           add-hook
           clear-window-placement-rules
+          data-dir-file
           dformat
           define-frame-preference
+          redirect-all-output
           remove-hook
           run-hook
           run-hook-with-args
@@ -499,11 +501,12 @@ restart from a menu of possible restarts. If a restart is not
 chosen, resignal the error."
   (let ((c (gensym)))
     `(handler-bind
-      ((error
-        (lambda (,c)
-          (restarts-menu ,c)
-          (signal ,c))))
-      ,@body)))
+         ((warning #'muffle-warning)
+          ((or serious-condition error)
+           (lambda (,c)
+             (restarts-menu ,c)
+             (signal ,c))))
+       ,@body)))
 
 ;;; Hook functionality
 
@@ -515,7 +518,7 @@ chosen, resignal the error."
             (dolist (fn hook)
               (with-simple-restart (continue-hooks "Continue running the remaining hooks.")
                 (apply fn args)))))
-    (error (c) (message "^B^1*Error on hook ^b~S^B!~% ^n~A" hook c) (values nil c))))
+    (t (c) (message "^B^1*Error on hook ^b~S^B!~% ^n~A" hook c) (values nil c))))
 
 (defun run-hook (hook)
   "Call each function in HOOK."
@@ -645,13 +648,35 @@ output directly to a file.")
 (defun dformat (level fmt &rest args)
   (when (>= *debug-level* level)
     (multiple-value-bind (sec m h) (decode-universal-time (get-universal-time))
-      (format *debug-stream* "~d:~d:~d " h m sec))
+      (format *debug-stream* "~2,'0d:~2,'0d:~2,'0d " h m sec))
     ;; strip out non base-char chars quick-n-dirty like
     (write-string (map 'string (lambda (ch)
                                  (if (typep ch 'base-char)
                                      ch #\?))
                        (apply 'format nil fmt args))
                   *debug-stream*)))
+
+(defvar *redirect-stream* nil
+  "This variable Keeps track of the stream all output is sent to when
+`redirect-all-output' is called so if it changes we can close it
+before reopening.")
+
+(defun redirect-all-output (file)
+  "Elect to redirect all output to the specified file. For instance,
+if you want everything to go to ~/stumpwm.d/debug-output.txt you would
+do:
+
+@example
+(redirect-all-output (data-dir-file \"debug-output\" \"txt\"))
+@end example
+"
+  (when (typep *redirect-stream* 'file-stream)
+    (close *redirect-stream*))
+  (setf *redirect-stream* (open file :direction :output :if-exists :append :if-does-not-exist :create)
+        *error-output*    *redirect-stream*
+        *standard-output* *redirect-stream*
+        *trace-output*    *redirect-stream*
+        *debug-stream*    *redirect-stream*))
 
 ;;; 
 ;;; formatting routines
@@ -1009,6 +1034,11 @@ sync-all-frame-windows to see the change.")
                                                      (list ".stumpwm.d")))
   "The directory used by stumpwm to store data between sessions.")
 
+(defun data-dir-file (name &optional type)
+  "Return a pathname inside stumpwm's data dir with the specified name and type"
+  (ensure-directories-exist *data-dir*)
+  (make-pathname :name name :type type :defaults *data-dir*))
+
 (defmacro with-data-file ((s file &rest keys &key (if-exists :supersede) &allow-other-keys) &body body)
   "Open a file in StumpWM's data directory. keyword arguments are sent
 directly to OPEN. Note that IF-EXISTS defaults to :supersede, instead
@@ -1025,3 +1055,6 @@ of :error."
  `(progn
     (setf ,list (remove ,elt ,list))
     (push ,elt ,list)))
+
+(define-condition stumpwm-error (error)
+  () (:documentation "Any stumpwm specific error should inherit this."))

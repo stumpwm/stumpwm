@@ -47,6 +47,8 @@
           (define-key m (kbd "RET") 'menu-finish)
           m)))
 
+(defvar *current-menu-input* nil)
+
 (defstruct menu-state
   table prompt selected)
 
@@ -59,10 +61,12 @@
               (t (menu-state-selected menu)))))
 
 (defun menu-up (menu)
+  (setf *current-menu-input* "")
   (decf (menu-state-selected menu))
   (bound-check-menu menu))
 
 (defun menu-down (menu)
+  (setf *current-menu-input* "")
   (incf (menu-state-selected menu))
   (bound-check-menu menu))
 
@@ -72,6 +76,46 @@
 (defun menu-abort (menu)
   (declare (ignore menu))
   (throw :menu-quit nil))
+
+(defun get-input-char (key)
+  "If @var{key} is a character suitable for menu completion (e.g. not
+backspace or F9), return it otherwise return nil"
+  (let ((char (xlib:keysym->character *display* (key-keysym key))))
+    (if (or (key-mods-p key) (null char)
+            (not (characterp char)))
+        nil
+        char)))
+
+(defun menu-element-name (element)
+  (if (listp element)
+      (first element)
+      element))
+
+(defun check-menu-complete (menu key-seq)
+  "If the use entered a key not mapped in @var{*menu-map}, check if
+  he's trying to type an entry's name. Match is case insensitive as
+  long as the user types lower-case characters."
+  (let ((input-char (get-input-char key-seq)))
+    (when input-char
+      (setf *current-menu-input*
+	    (concatenate 'string
+			 *current-menu-input*
+			 (string input-char)))
+      (do* ((cur-pos 0 (1+ cur-pos))
+	    (rest-elem (menu-state-table menu)
+		       (cdr rest-elem))
+	    (cur-elem (car rest-elem) (car rest-elem))
+	    (cur-elem-name (menu-element-name cur-elem) (menu-element-name cur-elem))
+	    (current-input-length (length *current-menu-input*))
+	    (match-regex (ppcre:create-scanner *current-menu-input*
+					       :case-insensitive-mode
+					       (string= (string-downcase *current-menu-input*)
+							*current-menu-input*))))
+	   ((not cur-elem))
+	(when (and (>= (length cur-elem-name) current-input-length)
+		   (ppcre:scan match-regex cur-elem-name))
+	  (setf (menu-state-selected menu) cur-pos)
+	  (return))))))
 
 (defun select-from-menu (screen table &optional prompt (initial-selection 0))
   "Prompt the user to select from a menu on SCREEN. TABLE can be
@@ -88,16 +132,14 @@ See *menu-map* for menu bindings."
                 :table table
                 :prompt prompt
                 :selected initial-selection))
-         (menu-options (mapcar (lambda (elt)
-                                 (if (listp elt)
-                                     (first elt)
-                                     elt))
+         (menu-options (mapcar #'menu-element-name
                                table))
          (menu-text (if prompt
                         (cons prompt menu-options)
                         menu-options))
          (*record-last-msg-override* t)
-         (*suppress-echo-timeout* t))
+         (*suppress-echo-timeout* t)
+	 (*current-menu-input* ""))
     (bound-check-menu menu)
     (catch :menu-quit
       (unwind-protect
@@ -105,7 +147,8 @@ See *menu-map* for menu bindings."
              (loop
                 (echo-string-list screen menu-text
                                   (+ (menu-state-selected menu) (if prompt 1 0)))
-                (let ((action (read-from-keymap *menu-map*)))
-                  (when action
-                    (funcall action menu)))))
+                (multiple-value-bind (action key-seq) (read-from-keymap *menu-map*)
+		  (if action
+		      (funcall action menu)
+		      (check-menu-complete menu (first key-seq))))))
         (unmap-all-message-windows)))))

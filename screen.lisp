@@ -202,7 +202,8 @@ identity with a range check."
           (ccontext-default-fg (screen-message-cc screen)) fg
           (ccontext-default-bg (screen-message-cc screen)) bg))
   (dolist (i (list (screen-message-window screen)
-                   (screen-input-window screen)))
+                   (screen-input-window screen)
+                   (screen-frame-window screen)))
     (setf (xlib:window-border i) (screen-border-color screen)
           (xlib:window-background i) (screen-bg-color screen)))
   ;; update the backgrounds of all the managed windows
@@ -422,7 +423,10 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
                                              :colormap (xlib:screen-default-colormap
                                                         screen-number)
                                              :event-mask '(:exposure)))
-           (font (xlib:open-font *display* +default-font-name+))
+           (font (xlib:open-font *display*
+                                 (if (font-exists-p +default-font-name+)
+                                     +default-font-name+
+                                     "*")))
            (group (make-instance 'tile-group
                    :screen screen
                    :number 1

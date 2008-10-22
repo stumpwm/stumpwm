@@ -73,7 +73,7 @@ send_cmd ()
 usage ()
 {
     cat <<EOF
-Usage: stumpish [[-e] command [args...]]
+Usage: "$0" [[-e] command [args...]]
 
 StumpIsh is the StumpWM shell. Use it to interact a running StumpWM
 instance.  When run from a terminal with no arguments, stumpish
@@ -87,7 +87,7 @@ the first is considered the name of the command to execute and the
 remainder is concatenated to form the argument.
 
 Example:
-	echo '(group-windows (current-group))' | stumpish eval
+	echo '(group-windows (current-group))' | "$0" eval
 EOF
     exit 0;
 }
@@ -127,7 +127,7 @@ else
 	    # for backwards compatibility.
 	    COMMANDS="${TEMP:-${TEMPDIR:-/var/tmp}}/stumpish.commands.$$"
 	    echo `send_cmd "commands"` | sed 's/[[:space:]]\+/\n/g' | sort > "$COMMANDS"
-	    rlwrap -f "$COMMANDS" stumpish -r
+	    rlwrap -f "$COMMANDS" "$0" -r
 	    rm -f "$COMMANDS"
 	    exit
 	fi

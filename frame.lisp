@@ -66,7 +66,7 @@
   (sync-frame-windows group (window-frame window))
   ;; maybe show the window in its new frame
   (when (null (frame-window (window-frame window)))
-    (frame-raise-window (window-group window) (window-frame window) window)))
+    (really-raise-window window)))
 
 (defmethod group-current-window ((group tile-group))
   (frame-window (tile-group-current-frame group)))
@@ -624,13 +624,18 @@ either :width or :height"
   (check-type amount integer)
   ;; (check-type dim (member :width :height))
   (labels ((max-amount (parent node min dim-fn)
-             (dformat 10 "max ~@{~a~^ ~}~%" parent node min dim-fn)
-             (if parent
-                 (- (funcall dim-fn parent)
-                    (funcall dim-fn node)
-                    (* min (1- (length parent))))
-                 ;; no parent means the frame can't get any bigger.
-                 0)))
+             (let ((right-sibling (cadr (member node parent)))
+                   (left-sibling (cadr (member node (reverse parent)))))
+
+               (dformat 10 "max ~@{~a~^ ~}~%" parent node min dim-fn right-sibling left-sibling)
+               (if parent
+                   (cond (right-sibling
+                          (max 0 (- (funcall dim-fn right-sibling) min)))
+                         (left-sibling
+                          (max 0 (- (funcall dim-fn left-sibling) min)))
+                         (t 0))
+                   ;; no parent means the frame can't get any bigger.
+                   0))))
     (let* ((tree (tile-group-frame-tree group))
            (parent (tree-parent tree frame))
            (gparent (tree-parent tree parent))
@@ -887,7 +892,7 @@ space."
   "Delete all the frames but the current one and grow it to take up the entire head."
   (let* ((screen (current-screen))
          (group (screen-current-group screen))
-         (win (frame-window (tile-group-current-frame group)))
+         (win (group-current-window group))
          (head (current-head group))
          (frame (copy-frame head)))
     (if (atom (tile-group-frame-head group head))

@@ -126,11 +126,11 @@ than the root window's width and height."
       (t
        ;; if they have inc hints then start with the size and adjust
        ;; based on those increments until the window fits in the frame
-       (when hints-inc-x
+       (when (and hints-inc-x (plusp hints-inc-x))
          (let ((w (or hints-width (window-width win))))
            (setf width (+ w (* hints-inc-x
                                (+ (floor (- fwidth w) hints-inc-x)))))))
-       (when hints-inc-y
+       (when (and hints-inc-y (plusp hints-inc-y))
          (let ((h (or hints-height (window-height win))))
            (setf height (+ h (* hints-inc-y
                                 (+ (floor (- fheight h -1) hints-inc-y)))))))))
@@ -172,7 +172,13 @@ than the root window's width and height."
             (setf (xlib:drawable-width (window-parent win)) (- (frame-width frame)
                                                                (* 2 (xlib:drawable-border-width (window-parent win))))
                   (xlib:drawable-height (window-parent win)) (- (frame-display-height (window-group win) frame)
-                                                                (* 2 (xlib:drawable-border-width (window-parent win))))))))))
+                                                                (* 2 (xlib:drawable-border-width (window-parent win)))))))
+      ;; update the "extents"
+      (xlib:change-property (window-xwin win) :_NET_FRAME_EXTENTS
+                            (list wx wy
+                                  (- (xlib:drawable-width (window-parent win)) width wx)
+                                  (- (xlib:drawable-height (window-parent win)) height wy))
+                            :cardinal 32))))
 
 ;;;
 

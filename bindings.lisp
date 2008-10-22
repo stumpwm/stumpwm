@@ -193,8 +193,10 @@ a tile-group, both the group map and tile-group map are active.")
   (kbd "C-n")   "gnext"
   (kbd "SPC")   "gnext"
   (kbd "C-SPC") "gnext"
+  (kbd "N")     "gnext-with-window"
   (kbd "p")     "gprev"
   (kbd "C-p")   "gprev"
+  (kbd "P")     "gprev-with-window")
   (kbd "o")     "gother"
   (kbd "'")     "gselect"
   (kbd "\"")    "grouplist"
@@ -245,7 +247,7 @@ great example."
 (defcommand-alias escape set-prefix-key)
 
 (defcommand bind (key command)
-                 ((:text "Key Chord: ")
+                 ((:string "Key Chord: ")
                   (:rest "Command: "))
   "Hang a key binding off the escape key."
   (define-key *root-map* (kbd key) command))
