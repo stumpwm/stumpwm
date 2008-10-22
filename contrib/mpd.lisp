@@ -338,7 +338,8 @@
 	   (format-expand *mpd-formatters-alist* *mpd-status-fmt*)
 	 (progn
 	   (mpd-update-current-song)
-	   (format-expand *mpd-formatters-alist* *mpd-modeline-fmt*))))))
+	   (format-expand *mpd-formatters-alist* *mpd-modeline-fmt*))))
+      "Not connected to mpd"))
 
 (defvar *mpd-formatters-alist*
   '((#\a mpd-get-artist)
