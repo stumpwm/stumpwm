@@ -48,7 +48,9 @@
   (let ((percent (parse-integer
 		  (run-shell-command
 		   (concat "amixer sset " channel " " (or amount "toggle")
-			   "| tail -1" "| awk '{print substr($5, 2, 2)}'") t))))
+			   "| tail -1"
+			   "| sed 's/^.*\\[\\([[:digit:]]\\+\\)%\\].*$/\\1/'")
+		   t))))
     (message
      (concat "Mixer: " channel " " (or amount "toggled")
 	     (format nil "~C^B~A%" #\Newline percent) "^b [^[^7*"
