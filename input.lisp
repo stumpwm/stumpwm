@@ -274,9 +274,11 @@ to return a list of matches."
 
 (defun code-state->key (code state)
   (let* ((mods    (xlib:make-state-keys state))
-         (sym     (xlib:keycode->keysym *display* code 0))
-         (upsym   (xlib:keycode->keysym *display* code 1))
-         (shift-p (and (find :shift mods) t)))
+         (shift-p (and (find :shift mods) t))
+         (altgr-p (and (intersection (modifiers-altgr *modifiers*) mods) t))
+         (base    (if altgr-p 2 0))
+         (sym     (xlib:keycode->keysym *display* code base))
+         (upsym   (xlib:keycode->keysym *display* code (+ base 1))))
     ;; If a keysym has a shift modifier, then use the uppercase keysym
     ;; and remove remove the shift modifier.
     (make-key :keysym (if (and shift-p (not (eql sym upsym)))
@@ -599,7 +601,9 @@ input (pressing Return), nil otherwise."
                          (find-mod "Hyper_R" codes))
                      (push mod (modifiers-hyper modifiers)))
                     ((find-mod "Num_Lock" codes)
-                     (push mod (modifiers-numlock modifiers)))))
+                     (push mod (modifiers-numlock modifiers)))
+                    ((find-mod "ISO_Level3_Shift" codes)
+                     (push mod (modifiers-altgr modifiers)))))
         ;; If alt is defined but meta isn't set meta to alt and clear alt
         (when (and (modifiers-alt modifiers)
                    (null (modifiers-meta modifiers)))

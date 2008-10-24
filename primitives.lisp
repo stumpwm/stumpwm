@@ -467,6 +467,7 @@ single char keys are supported.")
   (alt nil)
   (hyper nil)
   (super nil)
+  (altgr nil)
   (numlock nil))
 
 (defvar *all-modifiers* nil

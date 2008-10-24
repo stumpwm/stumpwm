@@ -121,4 +121,5 @@ command prints the command bound to the specified key sequence."
            "Meta" (modifiers-meta *modifiers*)
            "Alt" (modifiers-alt *modifiers*)
            "Super" (modifiers-super *modifiers*)
-           "Hyper" (modifiers-hyper *modifiers*)))
+           "Hyper" (modifiers-hyper *modifiers*)
+           "AltGr" (modifiers-altgr *modifiers*)))
