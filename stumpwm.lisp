@@ -218,7 +218,7 @@ of those expired."
                (let ((*package* (find-package *default-package*)))
                  (multiple-value-bind (success err rc) (load-rc-file)
                    (if success
-                       (and *startup-message* (message "~a" *startup-message*))
+                       (and *startup-message* (message *startup-message* (print-key *escape-key*)))
                        (message "^B^1*Error loading ^b~A^B: ^n~A" rc err))))
                (when *last-unhandled-error*
                  (message-no-timeout "^B^1*StumpWM Crashed With An Unhandled Error!~%Copy the error to the clipboard with the 'copy-unhandled-error' command.~%^b~a^B^n~%~%~a"

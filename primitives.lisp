@@ -909,7 +909,7 @@ window, and returns the preferred frame or a list of the above preferences.")
     (print-backtrace)))
 
 (defvar *startup-message* "^2*Welcome to The ^BStump^b ^BW^bindow ^BM^banager!
-Press ^5*C-t ?^2* for help."
+Press ^5*~a ?^2* for help."
   "This is the message StumpWM displays when it starts. Set it to NIL to
 suppress.")
 
