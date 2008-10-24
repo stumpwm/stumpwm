@@ -349,4 +349,4 @@ like xprop."
                     (:utf8_string (format nil "~{~s~^, ~}"
                                           (mapcar 'utf8-to-string
                                                   (split-seq values '(0)))))
-                    (t values))))))))
+                    (t values)))))))
