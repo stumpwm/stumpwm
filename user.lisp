@@ -319,3 +319,25 @@ rules."
                         (string (window-type w))
                         (window-role w)
                         (window-title w))))
+
+(defcommand list-window-properties () ()
+  "List all the properties of the current window and their values,
+like xprop."
+  (message-no-timeout
+   "~{~30a: ~a~^~%~}"
+   (loop for i in (xlib:list-properties (window-xwin (current-window)))
+      collect i
+      collect (multiple-value-bind (values type)
+                  (xlib:get-property (window-xwin (current-window)) i)
+                (case type
+                  (:wm_state (format nil "~{~a~^, ~}"
+                                     (loop for v in values
+                                        collect (case v (0 "Iconic") (1 "Normal") (2 "Withdrawn") (t "Unknown")))))
+                  (:window i)
+                  (:cardinal (format nil "~{~d~^, ~}" values))
+                  (:atom (format nil "~{~a~^, ~}"
+                                 (mapcar (lambda (v) (xlib:atom-name *display* v)) values)))
+                  (:string (format nil "~{~s~^, ~}"
+                                   (mapcar (lambda (x) (coerce (mapcar 'xlib:card8->char x) 'string))
+                                           (split-seq values '(0)))))
+                  (t values))))))

@@ -1202,6 +1202,7 @@ section.
 !!! copy-unhandled-error
 !!! commands
 !!! lastmsg
+!!! list-window-properties
 
 @@@ run-commands
 
