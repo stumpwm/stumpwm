@@ -1224,6 +1224,8 @@ section.
 
 %%% defprogram-shortcut
 
+### *initializing*
+
 @menu
 * Menus::                       
 * StumpWM's Data Directory::    

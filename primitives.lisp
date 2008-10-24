@@ -483,7 +483,9 @@ single char keys are supported.")
   "The list of screens managed by stumpwm.")
 
 (defvar *initializing* nil
-  "True when starting stumpwm.")
+  "True when starting stumpwm. Use this variable in your rc file to
+run code that should only be executed once, when stumpwm starts up and
+loads the rc file.")
 
 (defvar *processing-existing-windows* nil
   "True when processing pre-existing windows at startup.")
