@@ -39,6 +39,13 @@
 (defmethod window-head ((window tile-window))
   (frame-head (window-group window) (window-frame window)))
 
+(defmethod (setf window-fullscreen) :after (val (window tile-window))
+  (if val
+      (maximize-window window)
+      (progn
+        (setf (xlib:drawable-border-width (window-parent window)) (default-border-width-for-type window))
+        (maximize-window window))))
+
 ;;;;
 
 (defun really-raise-window (window)
