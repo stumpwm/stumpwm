@@ -600,6 +600,21 @@ Useful for re-using the &REST arg after removing some options."
           (xlib:display-display *display*)
           (screen-id screen)))
 
+(defun split-seq (seq separators &key test default-value)
+  "split a sequence into sub sequences given the list of seperators."
+  (let ((seps separators))
+    (labels ((sep (c)
+               (find c seps :test test)))
+      (or (loop for i = (position-if (complement #'sep) seq)
+                then (position-if (complement #'sep) seq :start j)
+                as j = (position-if #'sep seq :start (or i 0))
+                while i
+                collect (subseq seq i j)
+                while j)
+          ;; the empty seq causes the above to return NIL, so help
+          ;; it out a little.
+          default-value))))
+
 (defun split-string (string &optional (separators "
 "))
   "Splits STRING into substrings where there are matches for SEPARATORS.
@@ -613,19 +628,8 @@ include a null substring for that.  Likewise, if there is a match
 at the end of STRING, we don't include a null substring for that.
 
 Modifies the match data; use `save-match-data' if necessary."
-  ;; FIXME: This let is here because movitz doesn't 'lend optional'
-  (let ((seps separators))
-    (labels ((sep (c)
-               (find c seps :test #'char=)))
-      (or (loop for i = (position-if (complement #'sep) string)
-                then (position-if (complement #'sep) string :start j)
-                as j = (position-if #'sep string :start (or i 0))
-                while i
-                collect (subseq string i j)
-                while j)
-          ;; the empty string causes the above to return NIL, so help
-          ;; it out a little.
-          '("")))))
+  (split-seq string separators :test #'char= :default-value '("")))
+
 
 (defun insert-before (list item nth)
   "Insert ITEM before the NTH element of LIST."
