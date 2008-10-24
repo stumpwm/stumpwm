@@ -39,7 +39,7 @@
                (:file "group")
                (:file "window")
                (:file "floating-group")
-               (:file "frame")
+               (:file "tile-group")
                (:file "tile-window")
                (:file "window-placement")
                (:file "message-window")
