@@ -334,10 +334,16 @@ like xprop."
                                      (loop for v in values
                                         collect (case v (0 "Iconic") (1 "Normal") (2 "Withdrawn") (t "Unknown")))))
                   (:window i)
-                  (:cardinal (format nil "~{~d~^, ~}" values))
+                  ;; _NET_WM_ICON is huuuuuge
+                  (:cardinal (if (> (length values) 20)
+                                 (format nil "~{~d~^, ~}..." (subseq values 0 15))
+                                 (format nil "~{~d~^, ~}" values)))
                   (:atom (format nil "~{~a~^, ~}"
                                  (mapcar (lambda (v) (xlib:atom-name *display* v)) values)))
                   (:string (format nil "~{~s~^, ~}"
                                    (mapcar (lambda (x) (coerce (mapcar 'xlib:card8->char x) 'string))
+                                           (split-seq values '(0)))))
+                  (:utf8_string (format nil "~{~s~^, ~}"
+                                   (mapcar 'utf8-to-string
                                            (split-seq values '(0)))))
                   (t values))))))
