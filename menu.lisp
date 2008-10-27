@@ -147,7 +147,7 @@ See *menu-map* for menu bindings."
              (loop
                 (echo-string-list screen menu-text
                                   (+ (menu-state-selected menu) (if prompt 1 0)))
-                (multiple-value-bind (action key-seq) (read-from-keymap *menu-map*)
+                (multiple-value-bind (action key-seq) (read-from-keymap (list *menu-map*))
 		  (if action
 		      (funcall action menu)
 		      (check-menu-complete menu (first key-seq))))))
