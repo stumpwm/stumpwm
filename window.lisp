@@ -676,9 +676,10 @@ needed."
       ;; is the current group or the rule's :lock attribute was
       ;; on. Either way the window's group should become the current
       ;; one (if it isn't already) if :raise is T.
-      (when (getf placement-data :raise)
-        (switch-to-group (window-group window)))
       (when placement-data
+        (if (getf placement-data :raise)
+          (switch-to-group (window-group window))
+          (message "Placing window ~a in group ~a" (window-name window) (group-name (window-group window))))
         (apply 'run-hook-with-args *place-window-hook* window (window-group window) placement-data)))
     ;; must call this after the group slot is set for the window.
     (grab-keys-on-window window)
