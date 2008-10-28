@@ -244,7 +244,13 @@ the @key{z} key. By most standards, a terrible prefix key but it makes a
 great example."
   (check-type key key)
   (copy-key-into key *escape-key*)
-  (copy-key-into (make-key :keysym (key-keysym key)) *escape-fake-key*)
+  ;; if the escape key has no modifiers then disable the fake key by
+  ;; giving it keysym -1, an impossible value. Otherwise you have 2
+  ;; identical bindings and the one that appears first in the list
+  ;; will be matched.
+  (copy-key-into (make-key :keysym (if (key-mods-p *escape-key*)
+                                       (key-keysym key)
+                                       -1)) *escape-fake-key*)
   (sync-keys))
 
 (defcommand-alias escape set-prefix-key)
