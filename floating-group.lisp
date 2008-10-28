@@ -196,6 +196,11 @@
                            (setf (xlib:drawable-x parent) (- (getf event-slots :x) relx)
                                  (xlib:drawable-y parent) (- (getf event-slots :y) rely))))
                        t)
+                      ;; We need to eat these events or they'll ALL
+                      ;; come blasting in later. Also things start
+                      ;; lagging hard if we don't (on clisp anyway).
+                      (:configure-notify t)
+                      (:exposure t)
                       (t
                        nil))))
            (xlib:grab-pointer (screen-root screen) '(:button-release :pointer-motion))
