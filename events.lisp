@@ -80,33 +80,34 @@
                                   (xlib:drawable-y (window-parent win))
                                   (window-width win) (window-height win) 0))
 
-(defun handle-managed-window (window width height stack-mode value-mask)
-  "This is a managed window so deal with it appropriately."
-  ;; Grant the stack-mode change (if it's mapped)
-  (set-window-geometry window :width width :height height)
-  (when (window-urgent-p window)
-    (window-clear-urgency window))
-  (group-resize-request (window-group window) window width height)
-  (when (= 64 (logand value-mask 64))
-    (group-raise-request (window-group window) window stack-mode))
-  (update-configuration window))
-
 (define-stump-event-handler :configure-request (stack-mode #|parent|# window #|above-sibling|# x y width height border-width value-mask)
-  (labels ((has-x (mask) (= 1 (logand mask 1)))
-           (has-y (mask) (= 2 (logand mask 2)))
-           (has-w (mask) (= 4 (logand mask 4)))
-           (has-h (mask) (= 8 (logand mask 8)))
-           (has-stackmode (mask) (= 64 (logand mask 64))))
+  (labels ((has-x () (= 1 (logand value-mask 1)))
+           (has-y () (= 2 (logand value-mask 2)))
+           (has-w () (= 4 (logand value-mask 4)))
+           (has-h () (= 8 (logand value-mask 8)))
+           (has-stackmode () (= 64 (logand value-mask 64))))
     ;; Grant the configure request but then maximize the window after the granting.
     (dformat 3 "CONFIGURE REQUEST ~@{~S ~}~%" stack-mode window x y width height border-width value-mask)
     (let ((win (find-window window)))
       (cond
         (win
-         (when (or (has-x value-mask) (has-y value-mask))
+         (when (or (has-w) (has-h) (has-stackmode))
+           ;; FIXME: I don't know why we need to clear the urgency bit
+           ;; here, but the old code would anytime a resize or raise
+           ;; request came in, so keep doing it. -sabetts
+           (when (window-urgent-p win)
+             (window-clear-urgency win)))
+         (when (or (has-x) (has-y))
            (group-move-request (window-group win) win x y :parent))
-         (when (or (has-w value-mask) (has-h value-mask) (has-stackmode value-mask))
-           (handle-managed-window win width height stack-mode value-mask)))
-        ((handle-mode-line-window window x y width height))
+         (when (or (has-w) (has-h))
+           (group-resize-request (window-group win) win width height))
+         (when (has-stackmode)
+           (group-raise-request (window-group win) win stack-mode))
+         ;; Just to be on the safe side, hit the client with a fake
+         ;; configure event. The ICCCM says we have to do this at
+         ;; certain times; exactly when, I've sorta forgotten.
+         (update-configuration win))
+        ((handle-mode-line-window win x y width height))
         (t (handle-unmanaged-window window x y width height border-width value-mask))))))
 
 (define-stump-event-handler :configure-notify (stack-mode #|parent|# window #|above-sibling|# x y width height border-width value-mask)

@@ -5,7 +5,52 @@
 ;;; floating window
 
 (defclass float-window (window)
-  ())
+  ((last-width :initform 0 :accessor float-window-last-width)
+   (last-height :initform 0 :accessor float-window-last-height)
+   (last-x :initform 0 :accessor float-window-last-x)
+   (last-y :initform 0 :accessor float-window-last-y))
+  )
+
+(defvar *float-window-border* 1)
+(defvar *float-window-title-height* 10)
+
+;; some book keeping functions
+(defmethod (setf window-x) :before (val (window float-window))
+  (unless (eql (window-x window) val)
+    (setf (float-window-last-x window) (window-x window))))
+
+(defmethod (setf window-y) :before (val (window float-window))
+  (unless (eql (window-y window) val)
+    (setf (float-window-last-y window) (window-y window))))
+
+(defmethod (setf window-width) :before (val (window float-window))
+  (unless (eql (window-width window) val)
+    (setf (float-window-last-width window) (window-width window))))
+
+(defmethod (setf window-height) :before (val (window float-window))
+  (unless (eql (window-height window) val)
+    (setf (float-window-last-height window) (window-height window))))
+
+(defun float-window-move-resize (win &key x y width height (border *float-window-border*))
+  ;; x and y position the parent window while width, height resize the
+  ;; xwin (meaning the parent will have a larger width).
+  (with-slots (xwin parent) win
+    (xlib:with-state (parent)
+      (xlib:with-state (xwin)
+        (when x
+          (setf (xlib:drawable-x parent) x
+                (window-x win) x))
+        (when y
+          (setf (xlib:drawable-y parent) y
+                (window-y win) y))
+        (when width
+          (setf (xlib:drawable-width parent) (+ (xlib:drawable-x xwin) width border)
+                (xlib:drawable-width xwin) width
+                (window-width win) width))
+        (when height
+          (setf (xlib:drawable-height parent) (+ (xlib:drawable-y xwin) height border)
+                (xlib:drawable-height xwin) height
+                (window-height win) height))))))
 
 (defmethod update-decoration ((window float-window))
   (let ((group (window-group window)))
@@ -33,6 +78,30 @@
 
 (defmethod window-visible-p ((win float-window))
   (eql (window-state win) +normal-state+))
+
+(defmethod (setf window-fullscreen) :after (val (window float-window))
+  (with-slots (last-x last-y last-width last-height parent) window
+    (if val
+        (let ((head (window-head window)))
+          (with-slots (x y width height) window
+            (format t "major on: ~a ~a ~a ~a~%" x y width height))
+          (set-window-geometry window :x 0 :y 0)
+          (float-window-move-resize window
+                                    :x (frame-x head)
+                                    :y (frame-y head)
+                                    :width (frame-width head)
+                                    :height (frame-height head)
+                                    :border 0)
+          (format t "loot after: ~a ~a ~a ~a~%" last-x last-y last-width last-height))
+        (progn
+          (format t "fullscreenage: ~a ~a ~a ~a~%" last-x last-y last-width last-height)
+          ;; restore the position
+          (set-window-geometry window :x *float-window-border* :y *float-window-title-height*)
+          (float-window-move-resize window
+                                    :x last-x
+                                    :y last-y
+                                    :width last-width
+                                    :height last-height)))))
 
 ;;; floating group
 
@@ -68,35 +137,20 @@
 
 (defun float-window-align (window)
   (with-slots (parent xwin width height) window
-    (let ((border (xlib:drawable-border-width parent)))
-      (xlib:with-state (parent)
-        (setf (xlib:drawable-x xwin) border
-              (xlib:drawable-y xwin) (+ border 10)
-              (xlib:drawable-width parent) (+ width
-                                              (* 2 border))
-              (xlib:drawable-height parent) (+ height 10
-                                               (* 2 border))
-              (xlib:window-background parent) (xlib:alloc-color (xlib:screen-default-colormap (screen-number (window-screen window)))
-                                                               "Orange")))
-      (xlib:clear-area (window-parent window)))))
+    (set-window-geometry window :x *float-window-border* :y *float-window-title-height*)
+    (xlib:with-state (parent)
+      (setf (xlib:drawable-width parent) (+ width (* 2 *float-window-border*))
+            (xlib:drawable-height parent) (+ height *float-window-title-height* *float-window-border*)
+            (xlib:window-background parent) (xlib:alloc-color (xlib:screen-default-colormap (screen-number (window-screen window)))
+                                                              "Orange")))
+    (xlib:clear-area (window-parent window))))
   
 (defmethod group-resize-request ((group float-group) window width height)
-  (with-slots (parent xwin) window
-    (xlib:with-state (parent)
-      (setf (xlib:drawable-width parent) (+ width
-                                            (* 2 (xlib:drawable-border-width parent)))
-            (xlib:drawable-height parent) (+ height 10
-                                             (* 2 (xlib:drawable-border-width parent))))
-      (xlib:with-state (xwin)
-        (setf (xlib:drawable-width xwin) width
-              (xlib:drawable-height xwin) height)))))
+  (float-window-move-resize window :width width :height height))
 
 (defmethod group-move-request ((group float-group) window x y relative-to)
   (declare (ignore relative-to))
-  (with-slots (parent) window
-    (xlib:with-state (parent)
-      (setf (xlib:drawable-x parent) x
-            (xlib:drawable-y parent) y))))
+  (float-window-move-resize window :x x :y y))
 
 (defmethod group-raise-request ((group float-group) window type)
   (declare (ignore type))
@@ -149,6 +203,9 @@
                 (loop for ev = (xlib:process-event *display* :handler #'move-window-event-handler :timeout nil)
                    until (eq ev :done))
              (ungrab-pointer))
+           ;; don't forget to update the cache
+           (setf (window-x window) (xlib:drawable-x (window-parent window))
+                 (window-y window) (xlib:drawable-y (window-parent window)))
            (message "Done."))))
       (t
        (when (eq *mouse-focus-policy* :click)

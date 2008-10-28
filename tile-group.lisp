@@ -87,7 +87,9 @@
         (pull-window window frame)))))
 
 (defmethod group-resize-request ((group tile-group) window width height)
-  (declare (ignore width height))
+  ;; it's important to grant the resize request first so that resize
+  ;; increment hints use the proper base size to resize from.
+  (set-window-geometry window :width width :height height)
   (maximize-window window))
 
 (defmethod group-raise-request ((group tile-group) window stack-mode)
