@@ -1,4 +1,4 @@
-;; Copyright (C) 2006 Martin Bishop
+;; Copyright (C) 2006-2008 Martin Bishop, Ivy Foster
 ;;
 ;;  This file is part of stumpwm.
 ;;
@@ -25,15 +25,14 @@
 
 (in-package :stumpwm)
 
-(export '(*version*))
+(export '(*version* version))
 
 (defparameter *version*
   #.(concatenate 'string "@PACKAGE_VERSION@ Compiled On "
 		 (format-expand *time-format-string-alist*
 			       *time-format-string-default*)))
 
-(defun echo-version (screen)
-  (echo-string screen *version*))
+(defcommand version () ()
+  (message *version*))
 
-(define-stumpwm-command "version" ()
-  (echo-version (current-screen)))
+;; End of file
