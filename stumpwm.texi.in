@@ -1029,11 +1029,8 @@ Select the highlighted option.
 The configuration of frames and groups can be saved and restored using
 the following commands.
 
-!!! dump-desktop
 !!! dump-desktop-to-file
-!!! dump-group
 !!! dump-group-to-file
-!!! dump-screen
 !!! dump-screen-to-file
 !!! restore-from-file
 !!! place-existing-windows
