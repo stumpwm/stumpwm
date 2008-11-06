@@ -18,19 +18,23 @@
    :plist (make-hash-table)
    :unmap-ignores 0))
 
+(defvar *rule-scanners-cache* (make-hash-table :test 'equal)
+  "A cache for the ppcre scanners")
+
+(defun get-or-create-rule-scanner (regex)
+  (or (gethash regex *rule-scanners-cache*)
+      (setf (gethash regex *rule-scanners-cache*)
+	    (ppcre:create-scanner regex))))
+
 (defun string-match (string pat)
-  (let ((l (length pat)))
-    (when (> l 0)
-      (if (and (> l 3) (equal (subseq pat 0 3) "..."))
-          (search (subseq pat 3 l) string)
-          (equal string pat)))))
+  (ppcre:scan (get-or-create-rule-scanner pat) string))
 
 (defun window-matches-properties-p (window &key class instance type role title)
   "Returns T if window matches all the given properties"
   (and
-   (if class (equal (window-class window) class) t)
-   (if instance (equal (window-res window) instance) t)
-   (if type (equal (window-type window) type) t)
+   (if class (string-match (window-class window) class) t)
+   (if instance (string-match (window-res window) instance) t)
+   (if type (string-match (window-type window) type) t)
    (if role (string-match (window-role window) role) t)
    (if title (string-match (window-title window) title) t) t))
 
