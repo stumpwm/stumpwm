@@ -519,18 +519,11 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
   (mapcar 'copy-frame (screen-heads screen)))
 
 
-;; Determining a frame's head based on position probably won't
-;; work with overlapping heads. Would it be better to walk
-;; up the frame tree?
 (defun frame-head (group frame)
+  "Return the head that FRAME exists in."
+  ;; Search each head's frame list for a match
   (dolist (head (screen-heads (group-screen group)))
-    (when (and
-           (>= (frame-x frame) (frame-x head))
-           (>= (frame-y frame) (frame-y head))
-           (<= (+ (frame-x frame) (frame-width frame))
-               (+ (frame-x head) (frame-width head)))
-           (<= (+ (frame-y frame) (frame-height frame))
-               (+ (frame-y head) (frame-height head))))
+    (when (find frame (head-frames group head))
       (return head))))
 
 (defun group-heads (group)
