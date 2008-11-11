@@ -196,7 +196,9 @@
 
 (defun frame-display-y (group frame)
   "Return a Y for frame that doesn't overlap the mode-line."
-  (let* ((head (frame-head group frame))
+  (let* ((head (if (typep frame 'head)
+                   frame
+                   (frame-head group frame)))
          (ml (head-mode-line head))
 	 (head-y (frame-y head))
 	 (rel-frame-y (- (frame-y frame) head-y)))
@@ -212,7 +214,9 @@
 
 (defun frame-display-height (group frame)
   "Return a HEIGHT for frame that doesn't overlap the mode-line."
-  (let* ((head (frame-head group frame))
+  (let* ((head (if (typep frame 'head)
+                   frame
+                   (frame-head group frame)))
          (ml (head-mode-line head)))
     (if (and ml (not (eq (mode-line-mode ml) :hidden)))
         (round (* (frame-height frame) (mode-line-factor ml)))
