@@ -24,10 +24,28 @@
 
 (in-package :stumpwm-user)
 
-;;; XXX This is only a workaround for SBCLs with a unreliable
-;;; run-program implementation (every version at least until
-;;; 1.0.21). If someone makes run-program race-free, this should be
-;;; removed! - Julian Stecklina (Oct 23th, 2008)
+;;; Overview of the Problem
+;;;
+;;; Stumpwm's EXEC-AND-COLLECT-OUTPUT tends to hang in all recent SBCL
+;;; versions (at least until 1.0.22) in rare cases which in turn
+;;; causes stumpwm to stop servicing requests and generally freezes
+;;; your desktop. The problem is a unsafe signal handler in SBCL's
+;;; RUN-PROGRAM. To quote François-René Rideau from the SBCL-DEVEL
+;;; mailing list:
+;;;
+;;;   [...] Long story short: SBCL tries to do excessively clever
+;;;   things inside signal handlers to track the status of children
+;;;   processes. This is a bad idea, because a signal handler can
+;;;   catch the Lisp with its pants down [...]
+;;;
+;;; The whole thread can be found at:
+;;; http://sourceforge.net/mailarchive/message.php?msg_id=87wsgazm20.fsf%40tabernacle.localnet
+;;;
+;;; Based on explanations in the above mentioned thread, I implemented
+;;; a workaround without using signals for
+;;; EXEC-AND-COLLECT-OUTPUT. Stumpwm's RUN-PROG should not be affected
+;;; by this bug.
+
 #+sbcl
 (progn
   (defun exec-and-collect-output (name args env)
@@ -44,14 +62,14 @@ the command has printed on stdout as string."
 	(multiple-value-bind (pipe-read pipe-write)
 	    (sb-posix:pipe)
 	  (unwind-protect
-	       (let ((child 
+	       (let ((child
 		      ;; Any nicer way to do this?
-		      (sb-sys:without-gcing 
+		      (sb-sys:without-gcing
 			(sb-impl::with-c-strvec (c-argv simplified-args)
 			  (sb-impl::with-c-strvec (c-env simplified-env)
-			    (sb-impl::spawn  progname c-argv devnull 
+			    (sb-impl::spawn  progname c-argv devnull
 					     pipe-write ; stdout
-					     devnull 1 c-env 
+					     devnull 1 c-env
 					     nil ; PTY
 					     1 ; wait? (seems to do nothing)
 					     ))))))
@@ -63,7 +81,7 @@ the command has printed on stdout as string."
 		 (with-output-to-string (out)
 		   ;; XXX Could probably be optimized. But shouldn't
 		   ;; make a difference for our use case.
-		   (loop 
+		   (loop
 		      with in-stream = (sb-sys:make-fd-stream pipe-read :buffering :none)
 		      for char = (read-char in-stream nil nil)
 		      while char
@@ -85,7 +103,11 @@ the command has printed on stdout as string."
 
   (defun stumpwm::run-prog-collect-output (prog &rest args)
     "run a command and read its output."
-    #+sbcl (exec-and-collect-output prog args (cons (stumpwm::screen-display-string (current-screen))
-						    (remove-if (lambda (str)
-								 (string= "DISPLAY=" str :end2 (min 8 (length str))))
-							       (sb-ext:posix-environ))))))
+    (exec-and-collect-output
+     prog args
+     (cons (stumpwm::screen-display-string (current-screen))
+           (remove-if (lambda (str)
+                        (string= "DISPLAY=" str :end2 (min 8 (length str))))
+                      (sb-ext:posix-environ))))))
+
+;;; EOF
