@@ -1,4 +1,4 @@
-;; Copyright (C) 2008 Julian Stecklina, Shawn Betts
+;; Copyright (C) 2008 Julian Stecklina, Shawn Betts, Ivy Foster
 ;;
 ;;  This file is part of stumpwm.
 ;;
@@ -19,9 +19,7 @@
 
 ;; Commentary:
 ;;
-;; FIXME: What happens when stumpwm is installed somewhere? The
-;; contrib modules should probably be installed somewhere and this
-;; code updated to load the modules from the correct place.
+;; Use `set-contrib-dir' to set the location stumpwm searches for modules.
 
 ;; Code:
 
@@ -29,6 +27,8 @@
 
 (export '(load-module
           list-modules
+	  *contrib-dir*
+	  set-contrib-dir
           find-module))
 
 ;; Handy functions from the unClog blog
@@ -59,6 +59,17 @@
                     :directory directory)
      (asdf-system-source-directory system))))
 
+(defvar *contrib-dir* (system-relative-pathname
+		       (asdf:find-system :stumpwm)
+		       (make-pathname :directory '(:relative "contrib")))
+  "The location of the contrib modules on your system.")
+
+(defcommand set-contrib-dir (dir) ((:string "Directory: "))
+  "Sets the location of the contrib modules"
+  (unless (string= "/" (subseq dir (1- (length dir))))
+    (setf dir (concat dir "/")))
+  (setf *contrib-dir* (pathname dir)))
+
 (define-stumpwm-type :module (input prompt)
   (or (argument-pop-rest input)
       (completing-read (current-screen) prompt (list-modules))))
@@ -66,17 +77,14 @@
 (defun list-modules ()
   "Return a list of the available modules."
   (mapcar 'pathname-name
-          (directory (system-relative-pathname
-                      (asdf:find-system :stumpwm) 
-                      (make-pathname :directory '(:relative "contrib")
-                                     :name :wild
-                                     :type "lisp")))))
+          (directory (make-pathname :directory *contrib-dir*
+				    :name :wild
+				    :type "lisp"))))
 
 (defun find-module (name)
-  (system-relative-pathname (asdf:find-system :stumpwm)
-                            (make-pathname :directory '(:relative "contrib")
-                                           :name name
-                                           :type "lisp")))
+  (make-pathname :directory *contrib-dir*
+		 :name name
+		 :type "lisp"))
 
 (defcommand load-module (name) ((:module "Load Module: "))
   "Loads the contributed module with the given NAME."
@@ -86,3 +94,5 @@
     (if module
         (load module)
         (error "No such module: ~a" name))))
+
+;; End of file

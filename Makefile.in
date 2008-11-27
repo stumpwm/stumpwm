@@ -57,13 +57,15 @@ clean:
 	rm -f *.fasl *.fas *.lib *.*fsl stumpwm stumpwm.texi stumpwm.info
 
 install: stumpwm.info stumpwm
-	test -z "$(bindir)" || mkdir -p "$(bindir)"
-	cp stumpwm $(bindir)
-	test -z "$(infodir)" || mkdir -p "$(infodir)"
-	cp stumpwm.info "$(infodir)"
-	install-info --info-dir="$(infodir)" "$(infodir)/stumpwm.info"
+	test -z "$(destdir)$(bindir)" || mkdir -p "$(destdir)$(bindir)"
+	cp stumpwm "$(destdir)$(bindir)"
+	test -z "$(destdir)$(infodir)" || mkdir -p "$(destdir)$(infodir)"
+	cp stumpwm.info "$(destdir)$(infodir)"
+	install-info --info-dir="$(destdir)$(infodir)" "$(destdir)$(infodir)/stumpwm.info"
 
 uninstall:
-	rm "$(bindir)/stumpwm"
-	rm "$(infodir)/stumpwm.info"
-	install-info --info-dir="$(infodir)" --remove "$(infodir)/stumpwm.info"
+	rm "$(destdir)$(bindir)/stumpwm"
+	install-info --info-dir="$(destdir)$(infodir)" --remove "$(destdir)$(infodir)/stumpwm.info"
+	rm "$(destdir)$(infodir)/stumpwm.info"
+
+# End of file
