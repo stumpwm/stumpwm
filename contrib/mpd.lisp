@@ -1,6 +1,6 @@
 ;;; MPD client & formatters for stumpwm
 ;;;
-;;; Copyright 2007 Morgan Veyret, Ivy Foster.
+;;; Copyright 2007-2008 Morgan Veyret, Ivy Foster.
 ;;;
 ;;; Maintainer: Morgan Veyret
 ;;;
@@ -44,7 +44,6 @@
 ;;; TODO:
 ;;;
 ;;; - Implement optional shortening for formatting functions
-;;; - Set-crossfade support
 
 ;;; CODE:
 
@@ -500,7 +499,9 @@ Volume
    ((equal (mpd-get-status) "Playing")
     (mpd-send-command "pause 1"))
    ((equal (mpd-get-status) "Paused")
-      (mpd-send-command "pause 0"))))
+      (mpd-send-command "pause 0"))
+   ((equal (mpd-get-status) "Stopped")
+    (mpd-play))))
 
 (defcommand mpd-toggle-random () ()
   (mpd-update-status)
@@ -513,6 +514,24 @@ Volume
   (if (mpd-repeating-p)
       (mpd-send-command "repeat 0")
     (mpd-send-command "repeat 1")))
+
+(defvar *mpd-xfade-default* 5
+  "The value to which to set crossfade by default.
+Can be set in your rc or using `mpd-set-xfade' (this session only).")
+
+(defcommand mpd-toggle-xfade () ()
+  "Toggles crossfade. Uses `mpd-xfade-default' when turning crossfade on."
+  (if (equal (assoc-value :xfade *mpd-status*) "0")
+      (mpd-send-command (concat "crossfade "
+                                (write-to-string *mpd-xfade-default*)))
+    (mpd-send-command "crossfade 0")))
+
+(defcommand mpd-set-xfade (xfade) ((:number "Fade: "))
+  "Sets the crossfade to the specified value (in seconds).
+Passed an argument of zero and if crossfade is on, toggles crossfade off."
+  (unless (equal xfade 0)
+    (setf *mpd-xfade-default* xfade))
+  (mpd-send-command (concat "crossfade " (write-to-string xfade))))
 
 (defcommand mpd-play () ()
   (mpd-send-command "play"))
@@ -662,53 +681,49 @@ Volume
 
 ;;Key map
 ;;FIXME: maybe some inferior mode would be a good idea (see resize in user.lisp)
-(setf *mpd-search-map*
-      (let ((m (make-sparse-keymap)))
-        (define-key m (kbd "a") "mpd-search-artist")
-        (define-key m (kbd "A") "mpd-search-album")
-        (define-key m (kbd "t") "mpd-search-title")
-        (define-key m (kbd "f") "mpd-search-file")
-        (define-key m (kbd "g") "mpd-search-genre")
-        m))
+(fill-keymap *mpd-search-map*
+             (kbd "a") "mpd-search-artist"
+             (kbd "A") "mpd-search-album"
+             (kbd "t") "mpd-search-title"
+             (kbd "f") "mpd-search-file"
+             (kbd "g") "mpd-search-genre")
 
-(setf *mpd-browse-map*
-      (let ((m (make-sparse-keymap)))
-        (define-key m (kbd "p") "mpd-browse-playlist")
-        (define-key m (kbd "l") "mpd-browse-albums")
-        (define-key m (kbd "a") "mpd-browse-artists")
-        m))
+(fill-keymap *mpd-browse-map*
+             (kbd "p") "mpd-browse-playlist"
+             (kbd "l") "mpd-browse-albums"
+             (kbd "a") "mpd-browse-artists")
 
-(setf *mpd-add-map*
-      (let ((m (make-sparse-keymap)))
-        (define-key m (kbd "a") "mpd-search-and-add-artist")
-        (define-key m (kbd "A") "mpd-search-and-add-album")
-        (define-key m (kbd "t") "mpd-search-and-add-title")
-        (define-key m (kbd "f") "mpd-search-and-add-file")
-        (define-key m (kbd "g") "mpd-search-and-add-genre")
-        (define-key m (kbd "F") "mpd-add-file")
-        m))
+(fill-keymap *mpd-add-map*
+             (kbd "a") "mpd-search-and-add-artist"
+             (kbd "A") "mpd-search-and-add-album"
+             (kbd "t") "mpd-search-and-add-title"
+             (kbd "f") "mpd-search-and-add-file"
+             (kbd "g") "mpd-search-and-add-genre"
+             (kbd "F") "mpd-add-file")
 
-(setf *mpd-map*
-      (let ((m (make-sparse-keymap)))
-        (define-key m (kbd "SPC") "mpd-toggle-pause")
-        (define-key m (kbd "s") "mpd-toggle-random")
-        (define-key m (kbd "r") "mpd-toggle-repeat")
-        (define-key m (kbd "S") "mpd-current-song")
-        (define-key m (kbd "p") "mpd-play")
-        (define-key m (kbd "q") "mpd-browse-playlist")
-        (define-key m (kbd "o") "mpd-stop")
-        (define-key m (kbd "m") "mpd-next")
-        (define-key m (kbd "l") "mpd-prev")
-        (define-key m (kbd "c") "mpd-clear")
-        (define-key m (kbd "x") "mpd-connect")
-        (define-key m (kbd "k") "mpd-kill")
-        (define-key m (kbd "u") "mpd-update")
-        (define-key m (kbd "a") "mpd-search-and-add-artist")
-        (define-key m (kbd "z") "mpd-playlist")
-        (define-key m (kbd "v") "mpd-set-volume")
-        (define-key m (kbd "e") "mpd-volume-up")
-        (define-key m (kbd "d") "mpd-volume-down")
-        (define-key m (kbd "S") '*mpd-search-map*)
-        (define-key m (kbd "b") '*mpd-browse-map*)
-        (define-key m (kbd "A") '*mpd-add-map*)
-        m))
+(fill-keymap *mpd-map*
+             (kbd "SPC") "mpd-toggle-pause"
+             (kbd "s") "mpd-toggle-random"
+             (kbd "r") "mpd-toggle-repeat"
+             (kbd "f") "mpd-toggle-xfade"
+             (kbd "F") "mpd-set-xfade"
+             (kbd "S") "mpd-current-song"
+             (kbd "p") "mpd-play"
+             (kbd "q") "mpd-browse-playlist"
+             (kbd "o") "mpd-stop"
+             (kbd "m") "mpd-next"
+             (kbd "l") "mpd-prev"
+             (kbd "c") "mpd-clear"
+             (kbd "x") "mpd-connect"
+             (kbd "k") "mpd-kill"
+             (kbd "u") "mpd-update"
+             (kbd "a") "mpd-search-and-add-artist"
+             (kbd "z") "mpd-playlist"
+             (kbd "v") "mpd-set-volume"
+             (kbd "e") "mpd-volume-up"
+             (kbd "d") "mpd-volume-down"
+             (kbd "S") '*mpd-search-map*
+             (kbd "b") '*mpd-browse-map*
+             (kbd "A") '*mpd-add-map*)
+
+;;; End of file
