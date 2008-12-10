@@ -220,12 +220,12 @@
   (format-expand *time-format-string-alist* "%Y-%m-%d"))
 
 (defun time-12hr-time ()
-  (format-expand *time-format-string-alist* "%I:%m:%S %P"))
+  (format-expand *time-format-string-alist* "%I:%M:%S %P"))
 
 (defun time-24hr-and-minute ()
-  (format-expand *time-format-string-alist* "%H:%m"))
+  (format-expand *time-format-string-alist* "%H:%M"))
 
 (defun time-24hr-time ()
-  (format-expand *time-format-string-alist* "%H:%m:%S"))
+  (format-expand *time-format-string-alist* "%H:%M:%S"))
 
 ;;; End of file
