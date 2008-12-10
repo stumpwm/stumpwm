@@ -58,9 +58,9 @@ clean:
 
 install: stumpwm.info stumpwm
 	test -z "$(destdir)$(bindir)" || mkdir -p "$(destdir)$(bindir)"
-	cp stumpwm "$(destdir)$(bindir)"
+	install -m 755 stumpwm "$(destdir)$(bindir)"
 	test -z "$(destdir)$(infodir)" || mkdir -p "$(destdir)$(infodir)"
-	cp stumpwm.info "$(destdir)$(infodir)"
+	install -m 644 stumpwm.info "$(destdir)$(infodir)"
 	install-info --info-dir="$(destdir)$(infodir)" "$(destdir)$(infodir)/stumpwm.info"
 
 uninstall:
