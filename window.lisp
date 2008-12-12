@@ -742,9 +742,9 @@ needed."
           (xwin-state (window-xwin window)) +withdrawn-state+)
     (xlib:unmap-window (window-parent window))
     ;; Clean up the window's entry in the screen and group
-    (screen-remove-mapped-window screen (window-xwin window))
     (setf (group-windows group)
           (delete window (group-windows group)))
+    (screen-remove-mapped-window screen (window-xwin window))
     (when (window-in-current-group-p window)
       ;; since the window doesn't exist, it doesn't have focus.
       (setf (screen-focus screen) nil))
