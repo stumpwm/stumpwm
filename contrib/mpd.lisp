@@ -679,6 +679,11 @@ Passed an argument of zero and if crossfade is on, toggles crossfade off."
 (defcommand mpd-search-genre (what) ((:rest "Search genre: "))
   (mpd-send-command (format nil "search genre \"~a\"" what)))
 
+(defvar *mpd-search-map* nil)
+(defvar *mpd-browse-map* nil)
+(defvar *mpd-add-map* nil)
+(defvar *mpd-map* nil)
+
 ;;Key map
 ;;FIXME: maybe some inferior mode would be a good idea (see resize in user.lisp)
 (fill-keymap *mpd-search-map*
