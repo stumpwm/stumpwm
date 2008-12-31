@@ -227,13 +227,6 @@ there exists one."
                                    (list i)
                                    :cardinal 32))))
 
-(defun kill-group (group to-group)
-  (unless (eq group to-group)
-    (let ((screen (group-screen group)))
-      (merge-groups group to-group)
-      (setf (screen-groups screen) (remove group (screen-groups screen)))
-      (netwm-update-groups screen))))
-
 (defun netwm-set-group-properties (screen)
   "Set NETWM properties regarding groups of SCREEN.
 Groups are known as \"virtual desktops\" in the NETWM standard."
@@ -256,6 +249,14 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
                                         (sort-groups screen))))
                             (apply #'concatenate 'list names))
                           :UTF8_STRING 8)))
+
+(defun kill-group (group to-group)
+  (unless (eq group to-group)
+    (let ((screen (group-screen group)))
+      (merge-groups group to-group)
+      (setf (screen-groups screen) (remove group (screen-groups screen)))
+      (netwm-update-groups screen)
+      (netwm-set-group-properties screen))))
 
 (defun add-group (screen name &optional (type *default-group-type*))
   "Create a new group in SCREEN with the supplied name. group names
