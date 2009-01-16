@@ -82,7 +82,7 @@
 				    :type "lisp"))))
 
 (defun find-module (name)
-  (make-pathname :directory *contrib-dir*
+  (make-pathname :defaults *contrib-dir*
 		 :name name
 		 :type "lisp"))
 
