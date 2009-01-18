@@ -321,10 +321,14 @@ current frame and raise it."
 @item left
 @item right
 @end table"
-  (let* ((frame-set (group-frames (window-group win))))
-    (exchange-windows win (frame-window (neighbour dir
-                                                   (window-frame win)
-                                                   frame-set)))))
+  (if win
+      (let* ((frame-set (group-frames (window-group win)))
+             (neighbour (neighbour dir (window-frame win) frame-set)))
+        (if (and neighbour (frame-window neighbour))
+            (exchange-windows win (frame-window neighbour))
+            (message "No window in direction ~A!" dir)))
+      (message "No window in current frame!")))
+
 
 (defcommand (echo-frame-windows tile-group) (&optional (fmt *window-format*)) (:rest)
   "Display a list of all the windows in the current frame."
