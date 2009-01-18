@@ -444,15 +444,16 @@ Use the window's resource name.
   (format stream "#S(frame ~d ~a ~d ~d ~d ~d)"
           (frame-number object) (frame-window object) (frame-x object) (frame-y object) (frame-width object) (frame-height object)))
 
-(defvar *frame-number-map* nil
-  "Set this to a string to remap the regular frame numbers to more convenient keys.
+(defvar *frame-number-map* "0123456789abcdefghijklmnopqrstuvxwyz"
+  "Set this to a string to remap the frame numbers to more convenient keys.
 For instance,
 
 \"hutenosa\"
 
-would map frame 0 to 7 to be selectable by hitting the
-appropriate homerow key on a dvorak keyboard. Currently only
-single char keys are supported.")
+would map frame 0 to 7 to be selectable by hitting the appropriate
+homerow key on a dvorak keyboard. Currently, only single char keys are
+supported. By default, the frame labels are the 36 (lower-case)
+alphanumeric characters, starting with numbers 0-9.")
 
 (defun get-frame-number-translation (frame)
   "Given a frame return its number translation using *frame-number-map* as a char."
