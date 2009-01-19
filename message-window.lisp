@@ -184,7 +184,7 @@ function expects to be wrapped in a with-state for win."
             (xlib:drawable-width win) width))
     (xlib:clear-area win)
     (xlib:display-finish-output *display*)
-    (xlib:draw-image-glyphs win gcontext 0 (xlib:font-ascent font) string)))
+    (xlib:draw-image-glyphs win gcontext 0 (xlib:font-ascent font) string :translate #'translate-id :size 16)))
 
 (defun push-last-message (screen strings highlights)
   ;; only push unique messages
