@@ -408,3 +408,23 @@ frame. Possible values are:
   (setf *window-placement-rules* (read-dump-from-file file)))
 
 (defcommand-alias restore-rules restore-window-placement-rules)
+
+(defcommand (redisplay tile-group) () ()
+  "Refresh current window by a pair of resizes, also make it occupy entire frame."
+  (let ((window (current-window)))
+    (with-slots (width height frame) window
+      (set-window-geometry window
+                           :width (- width (window-width-inc window))
+                           :height (- height (window-height-inc window)))
+      ;; make sure the first one goes through before sending the second
+      (xlib:display-finish-output *display*)
+      (set-window-geometry window
+                           :width (+ width
+                                     (* (window-width-inc window)
+                                        (floor (- (frame-width frame) width)
+                                               (window-width-inc window))))
+                           :height (+ height
+                                      (* (window-height-inc window)
+                                         (floor (- (frame-height frame) height)
+                                                (window-height-inc window)))))
+      (maximize-window window))))

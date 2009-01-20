@@ -521,6 +521,18 @@ and bottom_end_x."
         (:normal *normal-gravity*)
         ((:transient :dialog) *transient-gravity*))))
 
+(defun window-width-inc (window)
+  "Find out what is the correct step to change window width"
+  (or
+    (xlib:wm-size-hints-width-inc (window-normal-hints window))
+    1))
+
+(defun window-height-inc (window)
+  "Find out what is the correct step to change window height"
+  (or
+    (xlib:wm-size-hints-height-inc (window-normal-hints window))
+    1))
+
 (defun set-window-geometry (win &key x y width height border-width)
   (macrolet ((update (xfn wfn v)
                `(when ,v ;; (/= (,wfn win) ,v))
@@ -981,3 +993,17 @@ be used to override the default window formatting."
   (if (current-window)
       (message "~a" (format-expand *window-formatters* fmt (current-window)))
       (message "No Current Window")))
+
+(defcommand refresh () ()
+  "Refresh current window without changing its size."
+  (let* ((window (current-window))
+         (w (window-width window))
+         (h (window-height window)))
+    (set-window-geometry window
+                         :width (- w (window-width-inc window))
+                         :height (- h (window-height-inc window)))
+    ;; make sure the first one goes through before sending the second
+    (xlib:display-finish-output *display*)
+    (set-window-geometry window
+                         :width w
+                         :height h)))

@@ -464,6 +464,10 @@ Toggle the mark on the current window
 Display the last message. Hitting this keybinding again displays the
 message before that, and so on.
 
+@item C-t l
+@itemx C-t C-l
+redisplay the current window and force it to take up the entire frame.
+
 @item C-t G
 Display all groups and windows in each group. For more information @xref{Groups}.
 
@@ -855,6 +859,8 @@ An input function takes 2 arguments: the input structure and the key pressed.
 !!! windowlist
 !!! fullscreen
 !!! info
+!!! refresh
+!!! redisplay
 
 ### *window-format*
 ### *window-name-source*

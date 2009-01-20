@@ -183,7 +183,9 @@ from most specific groups to most general groups.")
   (kbd "M-Down")  "move-window down"
   (kbd "M-Left")  "move-window left"
   (kbd "M-Right") "move-window right"
-  (kbd "+")       "balance-frames")
+  (kbd "+")       "balance-frames"
+  (kbd "l")       "redisplay"
+  (kbd "C-l")     "redisplay")
 
 (fill-keymap *float-group-top-map*)
 (fill-keymap *float-group-root-map*)
