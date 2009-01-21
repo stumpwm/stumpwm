@@ -26,7 +26,7 @@ selection.lisp user.lisp iresize.lisp bindings.lisp events.lisp		\
 help.lisp fdump.lisp mode-line.lisp time.lisp color.lisp module.lisp	\
 stumpwm.lisp version.lisp
 
-all: stumpwm.info stumpwm
+all: stumpwm stumpwm.info
 
 stumpwm.info: stumpwm.texi
 	makeinfo stumpwm.texi
