@@ -28,6 +28,9 @@
 
 (export '(getenv))
 
+(define-condition not-implemented (stumpwm-error)
+  () (:documentation "Describes a non implemented functionnality."))
+
 ;;; XXX: DISPLAY env var isn't set for cmucl
 (defun run-prog (prog &rest opts &key args (wait t) &allow-other-keys)
   "Common interface to shell. Does not return anything useful."
@@ -68,7 +71,7 @@
                                       args)
                          :wait wait :output t :error t)
   #-(or allegro clisp cmu gcl liquid lispworks lucid sbcl ccl)
-  (error 'not-implemented :proc (list 'run-prog prog opts)))
+  (error 'not-implemented))
 
 ;;; XXX: DISPLAY isn't set for cmucl
 (defun run-prog-collect-output (prog &rest args)
@@ -103,7 +106,7 @@
                                         args)
                            :wait t :output s :error t))
   #-(or allegro clisp cmu sbcl ccl)
-  (error 'not-implemented :proc (list 'pipe-input prog args)))
+  (error 'not-implemented))
 
 (defun getenv (var)
   "Return the value of the environment variable."
@@ -119,7 +122,7 @@
   #+sbcl (sb-posix:getenv (string var))
   #+openmcl (ccl:getenv (string var))
   #-(or allegro clisp cmu gcl lispworks lucid mcl sbcl scl openmcl)
-  (error 'not-implemented :proc (list 'getenv var)))
+  (error 'not-implemented))
 
 (defun (setf getenv) (val var)
   "Set the value of the environment variable, @var{var} to @var{val}."
@@ -138,7 +141,7 @@
   #+sbcl (sb-posix:putenv (format nil "~A=~A" (string var) (string val)))
   #+openmcl (ccl:setenv (string var) (string val))
   #-(or allegro clisp cmu gcl lispworks lucid sbcl scl openmcl)
-  (error 'not-implemented :proc (list '(setf getenv) var)))
+  (error 'not-implemented))
 
 (defun pathname-is-executable-p (pathname)
   "Return T if the pathname describes an executable file."
@@ -230,7 +233,7 @@ they should be windows. So use this function to make a window out of them."
   #+clisp (make-instance 'xlib:window :id (slot-value xobject 'xlib::id) :display *display*)
   #+sbcl (xlib::make-window :id (slot-value xobject 'xlib::id) :display *display*)
   #-(or sbcl clisp)
-  (error 'not-implemented :proc (list 'make-xlib-window xobject)))
+  (error 'not-implemented))
 
 ;; Right now clisp and sbcl both work the same way
 (defun lookup-error-recoverable-p ()
@@ -239,7 +242,7 @@ they should be windows. So use this function to make a window out of them."
 
 (defun recover-from-lookup-error ()
   #+(or clisp sbcl) (invoke-restart :one)
-  #-(or clisp sbcl) (error "unimplemented"))
+  #-(or clisp sbcl) (error 'not-implemented))
 
 ;;; CLISP does not include features to distinguish different Unix
 ;;; flavours (at least until version 2.46). Until this is fixed, use a
