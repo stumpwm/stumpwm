@@ -323,12 +323,21 @@ submitting the bug report."
 (defmacro defprogram-shortcut (name &key (command (string-downcase (string name)))
                                          (props `'(:class ,(string-capitalize command)))
                                          (map *top-map*)
-                                         (key (kbd (concat "H-" (subseq command 0 1)))))
-  "define a command and key binding to run or raise a program."
+                                         (key (kbd (concat "H-" (subseq command 0 1))))
+                                         (pullp nil)
+                                         (pull-name (intern (concat (string-upcase name) "-PULL")))
+                                         (pull-key (kbd (concat "H-M-" (subseq command 0 1)))))
+  "Define a command and key binding to run or raise a program. If
+@var{pullp} is set, also define a command and key binding to run or
+pull the program."
   `(progn
      (defcommand ,name () ()
        (run-or-raise ,command ,props))
-     (define-key ,map ,key ,(string-downcase (string name)))))
+     (define-key ,map ,key ,(string-downcase (string name)))
+     (when ,pullp
+       (defcommand (,pull-name tile-group) () ()
+          (run-or-pull ,command ,props))
+       (define-key ,map ,pull-key ,(string-downcase (string pull-name))))))
 
 (defcommand show-window-properties () ()
   "Shows the properties of the current window. These properties can be
