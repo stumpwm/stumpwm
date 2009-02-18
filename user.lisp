@@ -221,6 +221,23 @@ differs from a theoretical hard restart, which would restart the unix
 process."
   (throw :top-level :restart))
 
+(defun find-matching-windows (props all-groups all-screens)
+  "Returns list of windows matching @var{props} (see run-or-raise
+documentation for details). @var{all-groups} will find windows on all
+groups. Same for @{all-screens}. Result is sorted by group and window
+number, with group being more significant (think radix sort)."
+  (let* ((screens (if all-screens
+                      *screen-list*
+                      (list (current-screen))))
+         (winlist (if all-groups
+                      (mapcan (lambda (s) (screen-windows s)) screens)
+                      (group-windows (current-group))))
+         (matches (remove-if-not (lambda (w)
+                                   (apply 'window-matches-properties-p w props))
+                                 winlist)))
+    (stable-sort (sort matches #'< :key #'window-number)
+                 #'< :key (lambda (w) (group-number (window-group w))))))
+
 (defun run-or-raise (cmd props &optional (all-groups *run-or-raise-all-groups*) (all-screens *run-or-raise-all-screens*))
   "Run the shell command, @var{cmd}, unless an existing window
 matches @var{props}. @var{props} is a property list with the following keys:
@@ -250,29 +267,34 @@ instance. @var{all-groups} overrides this default. Similarily for
            (frame-raise-window group frame win)
            (focus-all win)
            (unless (eq frame old-frame)
-             (show-frame-indicator group))))
-       (sort-windows-by-group (winlist)
-         (stable-sort (sort winlist #'< :key #'window-number)
-                      #'< :key #'(lambda (w) (group-number (window-group w)))))
-       (find-window (winlist)
-         (let* ((match (remove-if-not #'(lambda (w)
-                                          (apply 'window-matches-properties-p w props))
-                                      winlist))
-                (match-sorted (sort-windows-by-group match))
-                (rest (member (current-window) match-sorted)))
-           (if (<= (length rest) 1) ; current win not a match or no matches left
-               (car match-sorted)
-               (cadr rest)))))
-    (let* ((screens (if all-screens
-                        *screen-list*
-                        (list (current-screen))))
-           (winlist (if all-groups
-                        (mapcan (lambda (s) (screen-windows s)) screens)
-                        (group-windows (current-group))))
-           (win (find-window winlist)))
+             (show-frame-indicator group)))))
+    (let* ((matches (find-matching-windows props all-groups all-screens))
+           ;; other-matches is list of matches "after" the current
+           ;; win, if current win matches. getting 2nd element means
+           ;; skipping over the current win, to cycle through matches
+           (other-matches (member (current-window) matches))
+           (win (if (> (length other-matches) 1)
+                    (second other-matches)
+                    (first matches))))
       (if win
           (goto-win win)
           (run-shell-command cmd)))))
+
+(defun run-or-pull (cmd props &optional (all-groups *run-or-raise-all-groups*)
+                    (all-screens *run-or-raise-all-screens*))
+  "Similar to run-or-raise, but move the matching window to the
+current frame instead of switching to the window."
+  (let* ((matches (find-matching-windows props all-groups all-screens))
+         ;; other-matches is for cycling through matches
+         (other-matches (member (current-window) matches))
+         (win (if (> (length other-matches) 1)
+                  (second other-matches)
+                  (first matches))))
+    (if win
+        (progn
+          (move-window-to-group win (current-group))
+          (pull-window win))
+        (run-shell-command cmd))))
 
 (defcommand reload () ()
 "Reload StumpWM using @code{asdf}."
