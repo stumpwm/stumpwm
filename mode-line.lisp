@@ -73,8 +73,8 @@
 
 (defvar *hidden-window-color* "^5*"
   "Color command for hidden windows when using the
-fmt-head-window-list2 formatter. To disable coloring hidden windows,
-set this to an empty string.")
+fmt-head-window-list-hidden-windows formatter. To disable coloring
+hidden windows, set this to an empty string.")
 
 (defvar *screen-mode-line-format* "[^B%n^b] %W"
   "This variable describes what will be displayed on the modeline for each screen.
@@ -199,19 +199,16 @@ timer.")
 separated. The currently focused window is highlighted with
 fmt-highlight. Any non-visible windows are colored the
 *hidden-window-color*."
-  (let* ((group (mode-line-current-group ml))
-         (head (mode-line-head ml))
-         (all-wins (head-windows group head))
-         (top-wins (mapcar 'frame-window (head-frames group head)))
-         (non-top-wins (set-difference all-wins top-wins)))
+  (let* ((all (head-windows (mode-line-current-group ml) (mode-line-head ml)))
+         (non-top (set-difference all (top-windows))))
     (format nil "~{~a~^ ~}"
             (mapcar (lambda (w)
                       (let ((str (format-expand *window-formatters*
                                                 *window-format* w)))
                         (cond ((eq w (current-window)) (fmt-highlight str))
-                              ((find w non-top-wins) (fmt-hidden str))
+                              ((find w non-top) (fmt-hidden str))
                               (t str))))
-                    (sort1 all-wins #'< :key #'window-number)))))
+                    (sort1 all #'< :key #'window-number)))))
 
 (defun fmt-modeline-time (ml)
   (declare (ignore ml))
