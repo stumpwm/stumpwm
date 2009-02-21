@@ -665,7 +665,7 @@ Passed an argument of zero and if crossfade is on, toggles crossfade off."
   (mpd-send-command "play"))
 
 (defcommand mpd-play-track (track) ((:number "Track: "))
-  (mpd-send-command (concat "play " (write-to-string (1- track)))))
+  (mpd-format-command "play ~d"  track))
 
 (defcommand mpd-stop () ()
   (mpd-send-command "stop"))
