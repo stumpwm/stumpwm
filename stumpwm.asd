@@ -10,10 +10,6 @@
 #+cmu (progn
 	  (ignore-errors (require :cmucl-clx))
 	  (ignore-errors (require :clx)))
-;; Otherwise just load clx
-#+sbcl(require :clx)
-
-#+sbcl (require :sb-posix)
 
 (defsystem :stumpwm
   :name "StumpWM"
@@ -23,7 +19,7 @@
   ;; :license "GNU General Public License"
   :description "A tiling, keyboard driven window manager" 
   :serial t
-  :depends-on (:cl-ppcre)
+  :depends-on (:cl-ppcre #-(or cmu clisp) :clx #+sbcl :sb-posix)
   :components ((:file "package")
 	       (:file "primitives")
                (:file "workarounds")
