@@ -76,8 +76,6 @@ function expects to be wrapped in a with-state for win."
             (xlib:window-priority win) :above)
       (setup-win-gravity screen win *message-window-gravity*))
     (xlib:map-window win)
-    ;; Clear the window
-    (xlib:clear-area win)
     (incf (screen-ignore-msg-expose screen))
     ;; Have to flush this or the window might get cleared
     ;; after we've already started drawing it.

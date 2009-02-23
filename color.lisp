@@ -172,11 +172,24 @@ then call (update-color-map).")
          (width 0)
          (gc (ccontext-gc cc))
          (win (ccontext-win cc))
+         (px (ccontext-px cc))
          (*foreground* nil)
          (*background* nil)
          (*reverse* nil)
          (*color-stack* '())
          (*color-map* (screen-color-map-normal screen)))
+    (when draw
+      (when (or (not px)
+                (/= (xlib:drawable-width px) (xlib:drawable-width win))
+                (/= (xlib:drawable-height px) (xlib:drawable-height win)))
+        (when px (xlib:free-pixmap px))
+        (setf px (xlib:create-pixmap :drawable win
+                                     :width (xlib:drawable-width win)
+                                     :height (xlib:drawable-height win)
+                                     :depth (xlib:drawable-depth win))
+              (ccontext-px cc) px))
+      (xlib:with-gcontext (gc :foreground (xlib:gcontext-background gc))
+        (xlib:draw-rectangle px gc 0 0 (xlib:drawable-width px) (xlib:drawable-height px) t)))
     (loop for s in strings
           ;; We need this so we can track the row for each element
           for i from 0 to (length strings)
@@ -187,7 +200,7 @@ then call (update-color-map).")
                 do (progn
                      (let ((en (if (and en (eq #\^ (elt s (1+ en)))) (1+ en) en)))
                        (when draw
-                         (xlib:draw-image-glyphs win gc
+                         (xlib:draw-image-glyphs px gc
                                                  (+ padx x)
                                                  (+ pady (* i height)
                                                     (xlib:font-ascent (screen-font screen)))
@@ -200,10 +213,12 @@ then call (update-color-map).")
                      (setf width (max width x)))
                 while en))
           when (find i highlights :test 'eql)
-          do (when draw (invert-rect screen win
+          do (when draw (invert-rect screen px
                                      0 (* i height)
-                                     (xlib:drawable-width win)
+                                     (xlib:drawable-width px)
                                      height)))
+    (when draw
+      (xlib:copy-area px gc 0 0 (xlib:drawable-width px) (xlib:drawable-height px) win 0 0))
     (set-color screen cc "n" 0)
     width))
 

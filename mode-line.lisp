@@ -380,7 +380,6 @@ critical."
       (when (or force (not (string= (mode-line-contents ml) string)))
         (setf (mode-line-contents ml) string)
         (resize-mode-line ml)
-        (xlib:clear-area (mode-line-window ml))
         (render-strings (mode-line-screen ml) (mode-line-cc ml)
                         *mode-line-pad-x*     *mode-line-pad-y*
                         (split-string string (string #\Newline)) '())))))

@@ -429,6 +429,7 @@ Use the window's resource name.
 
 (defstruct ccontext
   win
+  px
   gc
   default-fg
   default-bright
@@ -436,6 +437,9 @@ Use the window's resource name.
 
 (defun screen-message-window (screen)
   (ccontext-win (screen-message-cc screen)))
+
+(defun screen-message-pixmap (screen)
+  (ccontext-px (screen-message-cc screen)))
 
 (defun screen-message-gc (screen)
   (ccontext-gc (screen-message-cc screen)))
