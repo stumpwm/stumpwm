@@ -468,13 +468,19 @@ Volume
           (define-key m (kbd "RET") (mpd-menu-action :mpd-playlist-play))
           m)))
 
+(defun mpd-uniq-and-sort-list (list criteria &optional do-sort)
+  (let ((lst (mapcar #'cadr (remove-if (lambda (item)
+					 (not (equal criteria
+						     (first item))))
+				       list))))
+    (if do-sort
+	(sort lst #'string<)
+	lst)))
+
 (defcommand mpd-browse-playlist (&optional current-song) ()
   (let* ((status (mpd-send-command "status"))
          (response (mpd-send-command "playlistinfo"))
-         (options (mapcar #'cadr (remove-if (lambda (item)
-                                              (not (equal :file
-                                                          (first item))))
-                                            response))))
+         (options (mpd-uniq-and-sort-list response :file)))
     (multiple-value-bind (action choice)
         (mpd-menu "Current playlist" options *mpd-playlist-menu-map*
                   (if current-song
@@ -532,10 +538,7 @@ Volume
                     (if genre
                         (format nil "list artist genre \"~a\"" genre)
                           "list artist")))
-         (options (mapcar #'cadr (remove-if (lambda (item)
-                                             (not (equal :artist
-                                                         (first item))))
-                                           response))))
+         (options (mpd-uniq-and-sort-list response :artist t)))
         (multiple-value-bind (action choice)
             (mpd-menu "Select artist" options *mpd-browse-menu-map*)
           (case action
@@ -552,10 +555,7 @@ Volume
 
 (defcommand mpd-browse-genres () ()
     (let* ((response (mpd-send-command "list genre"))
-           (options (mapcar #'cadr (remove-if (lambda (item)
-                                               (not (equal :genre
-                                                           (first item))))
-                                             response))))
+           (options (mpd-uniq-and-sort-list response :genre t)))
         (multiple-value-bind (action choice)
             (mpd-menu "Select genre" options *mpd-browse-menu-map*)
           (case action
@@ -572,9 +572,7 @@ Volume
                       (if artist
                           (format nil "list album artist \"~a\"" artist)
                           "list album")))
-           (options (mapcar #'cadr (remove-if (lambda (item)
-                                              (not (equal :album (first item))))
-                                             response))))
+           (options (mpd-uniq-and-sort-list response :album)))
         (multiple-value-bind (action choice)
             (mpd-menu "Select album" options *mpd-browse-menu-map*)
           (case action
@@ -592,9 +590,7 @@ Volume
 (defcommand mpd-browse-tracks (album &optional artist) ((:string "Album: "))
     (let* ((response (mpd-send-command
                           (format nil "list title album \"~a\"" album)))
-           (options (mapcar #'cadr (remove-if (lambda (item)
-                                              (not (equal :title (first item))))
-                                             response))))
+           (options (mpd-uniq-and-sort-list response :title)))
         (multiple-value-bind (action choice)
             (mpd-menu "Select track" options *mpd-browse-menu-map*)
           (case action
