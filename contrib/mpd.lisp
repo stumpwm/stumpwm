@@ -520,7 +520,7 @@ Volume
           (define-key m (kbd "ESC") 'menu-abort)
 
           (define-key m (kbd "RET") (mpd-menu-action :mpd-browse-add-and-quit))
-          (define-key m (kbd "SPC") (mpd-menu-action :mpd-browse-add))
+          (define-key m (kbd "S-RET") (mpd-menu-action :mpd-browse-add))
 
           (define-key m (kbd "Right") (mpd-menu-action :mpd-browse-next))
           (define-key m (kbd "Left") (mpd-menu-action :mpd-browse-previous))
