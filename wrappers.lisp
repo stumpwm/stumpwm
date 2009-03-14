@@ -187,9 +187,10 @@
 
 (defun bytes-to-string (data)
   "Convert a list of bytes into a string."
-  #+sbcl
-  (sb-ext:octets-to-string
-   (make-array (length data) :element-type '(unsigned-byte 8) :initial-contents data))
+  #+sbcl (handler-bind
+             ((sb-impl::octet-decoding-error #'(lambda (c) (invoke-restart 'use-value "?"))))
+          (sb-ext:octets-to-string
+           (make-array (length data) :element-type '(unsigned-byte 8) :initial-contents data)))
   #+clisp
   (ext:convert-string-from-bytes 
    (make-array (length data) :element-type '(unsigned-byte 8) :initial-contents data)
