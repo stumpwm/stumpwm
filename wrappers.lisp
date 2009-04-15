@@ -251,7 +251,7 @@ they should be windows. So use this function to make a window out of them."
 
 #+ (and clisp (not (or linux freebsd)))
 (eval-when (eval load compile)
-  (let ((osname (os:uname-sysname (os:uname))))
+  (let ((osname (posix:uname-sysname (posix:uname))))
     (cond
       ((string= osname "Linux") (pushnew :linux *features*))
       ((string= osname "FreeBSD") (pushnew :freebsd *features*))
