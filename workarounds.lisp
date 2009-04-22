@@ -89,3 +89,31 @@
                          (subseq (the string value) (1+ first-zero) second-zero))))
         (values (and (plusp (length name)) name)
                 (and (plusp (length class)) class))))))
+
+#+clisp
+(defmacro WITH-GCONTEXT ((gcontext &rest options) &body body)
+  (let ((saved (gensym)) (gcon (gensym)) (g0 (gensym)) (g1 (gensym))
+        (comps 0)
+        (setf-forms nil)
+        dashes? clip-mask?)
+    (do ((q options (cddr q)))
+        ((null q))
+      (cond ((eq (car q) :dashes)    (setf dashes? t))
+            ((eq (car q) :clip-mask) (setf clip-mask? t)))
+      (setf comps      (logior comps (%gcontext-key->mask (car q)))
+            setf-forms (nconc setf-forms
+                              (list (list (find-symbol (ext:string-concat "GCONTEXT-" (symbol-name (car q))) :xlib)
+                                          gcon)
+                                    (cadr q)))))
+    `(LET* ((,gcon ,gcontext)
+            (,saved (%SAVE-GCONTEXT-COMPONENTS ,gcon ,comps))
+            ,@(if dashes?    (list `(,g0 (GCONTEXT-DASHES    ,gcon))))
+            ,@(if clip-mask? (list `(,g1 (GCONTEXT-CLIP-MASK ,gcon)))))
+       (UNWIND-PROTECT
+            (PROGN
+              (SETF ,@setf-forms)
+              ,@body)
+         (PROGN
+           (%RESTORE-GCONTEXT-COMPONENTS ,gcon ,saved)
+           ,@(if dashes?    (list `(SETF (GCONTEXT-DASHES ,gcon) ,g0)))
+           ,@(if clip-mask? (list `(SETF (GCONTEXT-CLIP-MASK ,gcon) ,g1))))))))
