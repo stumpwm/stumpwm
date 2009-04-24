@@ -31,14 +31,14 @@
   (let ((attr (gensym "ATTR"))
         (obj (gensym "METAOBJ"))
         (val (gensym "METAVAL")))
-    `(defmacro ,(intern (format nil "DEF-~a-ATTR" thing)) (,attr)
+    `(defmacro ,(intern1 (format nil "DEF-~a-ATTR" thing)) (,attr)
       "Create a new attribute and corresponding get/set functions."
       (let ((,obj (gensym "OBJ"))
             (,val (gensym "VAL")))
         `(progn
-          (defun ,(intern (format nil ,(format nil "~a-~~a" thing) ,attr)) (,,obj)
+          (defun ,(intern1 (format nil ,(format nil "~a-~~a" thing) ,attr)) (,,obj)
             (gethash ,,attr (,(quote ,hash-slot) ,,obj)))
-          (defun (setf ,(intern (format nil ,(format nil "~a-~~a" thing) ,attr))) (,,val ,,obj)
+          (defun (setf ,(intern1 (format nil ,(format nil "~a-~~a" thing) ,attr))) (,,val ,,obj)
             (setf (gethash ,,attr (,(quote ,hash-slot) ,,obj))) ,,val))))))
 
 

@@ -280,7 +280,7 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
 
 (defun get-normalized-normal-hints (xwin)
   (macrolet ((validate-hint (fn)
-               (setf fn (intern (concatenate 'string (string :wm-size-hints-) (string fn)) :xlib))
+               (setf fn (intern1 (concatenate 'string (string '#:wm-size-hints-) (string fn)) :xlib))
                `(setf (,fn hints) (and (,fn hints)
                                        (plusp (,fn hints))
                                        (,fn hints)))))
@@ -359,9 +359,9 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
   (let ((win (gensym))
         (val (gensym)))
     `(progn
-      (defun ,(intern (format nil "WINDOW-~a" attr)) (,win)
+      (defun ,(intern1 (format nil "WINDOW-~a" attr)) (,win)
         (gethash ,attr (window-plist ,win)))
-      (defun (setf ,(intern (format nil "WINDOW-~a" attr))) (,val ,win)
+      (defun (setf ,(intern1 (format nil "WINDOW-~a" attr))) (,val ,win)
         (setf (gethash ,attr (window-plist ,win))) ,val))))
 
 (defun sort-windows (group)

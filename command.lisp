@@ -143,7 +143,7 @@ out, an element can just be the argument type."
 (defmacro define-stumpwm-command (name (&rest args) &body body)
   "Deprecated. use `defcommand' instead."
   (check-type name string)
-  (setf name (intern (string-upcase name)))
+  (setf name (intern1 name))
   `(progn
      (defun ,name ,(mapcar 'car args) ,@body)
      (setf (gethash ',name *command-hash*)

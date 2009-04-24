@@ -191,7 +191,7 @@ of those expired."
 	     '(simple-array character (*)))
      display screen
      (cond (protocol
-	    (intern (string-upcase protocol) :keyword))
+	    (intern1 protocol :keyword))
 	   ((or (string= host "")
 		(string-equal host "unix"))
 	    :local)

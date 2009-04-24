@@ -88,7 +88,7 @@ menu, the error is re-signalled."
 (defcommand banish (&optional where) (:rest)
   "Warp the mouse the lower right corner of the current head."
   (if where
-      (banish-pointer (intern (string-upcase where) :keyword))
+      (banish-pointer (intern1 where :keyword))
       (banish-pointer)))
 
 (defcommand ratwarp (x y) ((:number "X: ") (:number "Y: "))
@@ -325,7 +325,7 @@ submitting the bug report."
                                          (map *top-map*)
                                          (key (kbd (concat "H-" (subseq command 0 1))))
                                          (pullp nil)
-                                         (pull-name (intern (concat (string-upcase name) "-PULL")))
+                                         (pull-name (intern1 (concat name "-PULL")))
                                          (pull-key (kbd (concat "H-M-" (subseq command 0 1)))))
   "Define a command and key binding to run or raise a program. If
 @var{pullp} is set, also define a command and key binding to run or
