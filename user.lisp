@@ -325,7 +325,7 @@ submitting the bug report."
                                          (map *top-map*)
                                          (key (kbd (concat "H-" (subseq command 0 1))))
                                          (pullp nil)
-                                         (pull-name (intern1 (concat name "-PULL")))
+                                         (pull-name (intern1 (concat (string name) "-PULL")))
                                          (pull-key (kbd (concat "H-M-" (subseq command 0 1)))))
   "Define a command and key binding to run or raise a program. If
 @var{pullp} is set, also define a command and key binding to run or
