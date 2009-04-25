@@ -663,7 +663,7 @@ output directly to a file.")
       (format *debug-stream* "~2,'0d:~2,'0d:~2,'0d " h m sec))
     ;; strip out non base-char chars quick-n-dirty like
     (write-string (map 'string (lambda (ch)
-                                 (if (typep ch 'base-char)
+                                 (if (typep ch 'standard-char)
                                      ch #\?))
                        (apply 'format nil fmt args))
                   *debug-stream*)))
