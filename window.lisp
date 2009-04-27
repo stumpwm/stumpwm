@@ -826,6 +826,15 @@ needed."
   (dformat 3 "Kill client~%")
   (xlib:kill-client *display* (xlib:window-id window)))
 
+(defun select-window-from-menu (windows fmt)
+  "Allow the user to select a window from the list passed in @var{windows}.  The
+@var{fmt} argument specifies the window formatting used.  Returns the window
+selected."
+  (second (select-from-menu (current-screen)
+			    (mapcar (lambda (w)
+				      (list (format-expand *window-formatters* fmt w) w))
+				    windows))))
+
 ;;; Window commands
 
 (defcommand delete-window (&optional (window (current-window))) ()
@@ -928,12 +937,7 @@ override the default window formatting."
   (if (null (group-windows (current-group)))
       (message "No Managed Windows")
       (let* ((group (current-group))
-             (window (second (select-from-menu
-                              (current-screen)
-                              (mapcar (lambda (w)
-                                        (list (format-expand *window-formatters* fmt w) w))
-                                      (sort-windows group))))))
-
+             (window (select-window-from-menu (sort-windows group) fmt)))
         (if window
             (group-focus-window group window)
             (throw 'error :abort)))))

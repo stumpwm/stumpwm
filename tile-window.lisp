@@ -432,3 +432,16 @@ frame. Possible values are:
                                          (floor (- (frame-height frame) height)
                                                 (window-height-inc window)))))
       (maximize-window window))))
+
+(defcommand frame-windowlist (&optional (fmt *window-format*)) (:rest)
+  "Allow the user to select a window from the list of windows in the current
+frame and focus the selected window.  The optional argument @var{fmt} can be
+specified to override the default window formatting."
+  (let* ((group (current-group))
+	 (frame (tile-group-current-frame group)))
+    (if (null (frame-windows group frame))
+	(message "No Managed Windows")
+	(let ((window (select-window-from-menu (frame-sort-windows group frame) fmt)))
+	  (if window
+	      (group-focus-window group window)
+	      (throw 'error :abort))))))
