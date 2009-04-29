@@ -91,6 +91,7 @@
                 (and (plusp (length class)) class))))))
 
 #+clisp
+(when (fboundp '%gcontext-key->mask)
 (defmacro WITH-GCONTEXT ((gcontext &rest options) &body body)
   (let ((saved (gensym)) (gcon (gensym)) (g0 (gensym)) (g1 (gensym))
         (comps 0)
@@ -116,4 +117,4 @@
          (PROGN
            (%RESTORE-GCONTEXT-COMPONENTS ,gcon ,saved)
            ,@(if dashes?    (list `(SETF (GCONTEXT-DASHES ,gcon) ,g0)))
-           ,@(if clip-mask? (list `(SETF (GCONTEXT-CLIP-MASK ,gcon) ,g1))))))))
+           ,@(if clip-mask? (list `(SETF (GCONTEXT-CLIP-MASK ,gcon) ,g1)))))))))
