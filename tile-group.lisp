@@ -956,7 +956,7 @@ the current frame."
   (focus-next-frame (current-group)))
 
 (defcommand (sibling tile-group) () ()
-"Jump to the frame's sibling. If a frame is split into twe frames,
+"Jump to the frame's sibling. If a frame is split into two frames,
 these two frames are siblings."
   (focus-frame-next-sibling (current-group)))
 
