@@ -992,7 +992,7 @@ be used to override the default window formatting."
 
 (defcommand-alias windows echo-windows)
 
-(defcommand info (&optional (fmt *window-info-format*)) ()
+(defcommand info (&optional (fmt *window-info-format*)) (:rest)
   "Display information about the current window."
   (if (current-window)
       (message "~a" (format-expand *window-formatters* fmt (current-window)))
