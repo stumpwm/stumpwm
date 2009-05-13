@@ -116,7 +116,7 @@ each directory seperated by a colon."
    for dir = (probe-path p)
    when dir
    nconc (loop
-          for file in (directory (merge-pathnames (make-pathname :name :wild) dir))
+          for file in (directory (merge-pathnames (make-pathname :name :wild :type :wild) dir))
           for namestring = (file-namestring file)
 	    when (pathname-is-executable-p file)
 	    collect (if full-path
