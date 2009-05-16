@@ -25,7 +25,8 @@
 
 (in-package #:stumpwm)
 
-(export '(current-screen
+(export '(current-head
+          current-screen
           current-window
           screen-current-window
           set-fg-color
