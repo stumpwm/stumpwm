@@ -60,7 +60,7 @@
             (pick-preferred-frame window)))
   (when *processing-existing-windows*
     (setf (frame-window (window-frame window)) window))
-  (when raise
+  (when (and frame raise)
     (setf (tile-group-current-frame group) frame
           (frame-window frame) nil))
   (sync-frame-windows group (window-frame window))
