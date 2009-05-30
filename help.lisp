@@ -75,7 +75,10 @@
 (defcommand describe-key (keys) ((:key-seq "Describe Key: "))
 "Either interactively type the key sequence or supply it as text. This
 command prints the command bound to the specified key sequence."
-  (let ((cmd (lookup-key-sequence *top-map* keys)))
+  (let ((cmd))
+    (loop for map in (top-maps)
+       do (setf cmd (lookup-key-sequence map keys))
+       until cmd)
     (if cmd
         (message "~{~a~^ ~} is bound to \"~a\"." (mapcar 'print-key keys)  cmd)
         (message "~{~a~^ ~} is not bound." (mapcar 'print-key keys)))))
@@ -107,7 +110,7 @@ command prints the command bound to the specified key sequence."
 
 (defcommand where-is (cmd) ((:rest "Where is command: "))
 "Print the key sequences bound to the specified command."
-(let ((bindings (search-kmap cmd *top-map*)))
+(let ((bindings (loop for map in (top-maps) append (search-kmap cmd map))))
   (if bindings
       (message-no-timeout "\"~a\" is on ~{~a~^, ~}"
                       cmd
