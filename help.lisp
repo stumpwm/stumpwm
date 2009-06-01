@@ -75,10 +75,9 @@
 (defcommand describe-key (keys) ((:key-seq "Describe Key: "))
 "Either interactively type the key sequence or supply it as text. This
 command prints the command bound to the specified key sequence."
-  (let ((cmd))
-    (loop for map in (top-maps)
-       do (setf cmd (lookup-key-sequence map keys))
-       until cmd)
+  (let ((cmd (loop for map in (top-maps)
+                   for cmd = (lookup-key-sequence map keys)
+                   when cmd return cmd)))
     (if cmd
         (message "~{~a~^ ~} is bound to \"~a\"." (mapcar 'print-key keys)  cmd)
         (message "~{~a~^ ~} is not bound." (mapcar 'print-key keys)))))
