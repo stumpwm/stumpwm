@@ -203,7 +203,7 @@
    (make-array (length data) :element-type '(unsigned-byte 8) :initial-contents data)
    custom:*terminal-encoding*)
   #-(or sbcl clisp)
-  (map 'list #'code-char string))
+  (map 'string #'code-char data))
 
 (defun string-to-bytes (string)
   "Convert a string to a vector of octets."
