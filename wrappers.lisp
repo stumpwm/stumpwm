@@ -143,17 +143,24 @@
   #-(or allegro clisp cmu gcl lispworks lucid sbcl scl openmcl)
   (error 'not-implemented))
 
-(defun pathname-is-executable-p (pathname)
-  "Return T if the pathname describes an executable file."
-  #+sbcl
-  (let ((filename (coerce (sb-int:unix-namestring pathname) 'base-string)))
-    (and (eq (sb-unix:unix-file-kind filename) :file)
-         (sb-unix:unix-access filename sb-unix:x_ok)))
-  ;; FIXME: this is not exactly perfect
-  #+clisp
-  (logand (posix:convert-mode (posix:file-stat-mode (posix:file-stat pathname)))
-          (posix:convert-mode '(:xusr :xgrp :xoth)))
-  #-(or sbcl clisp) t)
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  ;; On 20th May 2009, SBCL lost unix-file-kind and replaced it with the
+  ;; internal native-file-kind. Since there's no overlap, we'd better cope with
+  ;; either possibility.
+  (let (#+sbcl (file-kind-fun
+                (or (find-symbol "NATIVE-FILE-KIND" :sb-impl)
+                    (find-symbol "UNIX-FILE-KIND" :sb-unix))))
+    (defun pathname-is-executable-p (pathname)
+      "Return T if the pathname describes an executable file."
+      #+sbcl
+      (let ((filename (coerce (file-namestring pathname) 'base-string)))
+        (and (eq (funcall file-kind-fun filename) :file)
+             (sb-unix:unix-access filename sb-unix:x_ok)))
+      ;; FIXME: this is not exactly perfect
+      #+clisp
+      (logand (posix:convert-mode (posix:file-stat-mode (posix:file-stat pathname)))
+              (posix:convert-mode '(:xusr :xgrp :xoth)))
+      #-(or sbcl clisp) t)))
 
 (defun probe-path (path)
   "Return the truename of a supplied path, or nil if it does not exist."
