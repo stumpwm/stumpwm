@@ -26,6 +26,8 @@
 
 (in-package :stumpwm)
 
+#+sbcl (require :sb-introspect)
+
 ;; handy for figuring out which symbol is borking the documentation
 (defun dprint (sym)
   (declare (ignorable sym))
@@ -44,7 +46,7 @@
                                     (*print-pretty* nil))
                                 (format s "@defun {~a} ~{~a~^ ~}~%~a~&@end defun~%~%"
                                         name
-                                        #+sbcl (sb-impl::%simple-fun-arglist fn)
+                                        #+sbcl (sb-introspect:function-arglist fn)
                                         #+clisp (ext:arglist fn)
                                         #- (or sbcl clisp) '("(Check the code for args list)")
                                         (documentation fn 'function))
@@ -57,7 +59,7 @@
                                      (*print-pretty* nil))
                                 (format s "@defmac {~a} ~{~a~^ ~}~%~a~&@end defmac~%~%"
                                         name
-                                        #+sbcl (sb-impl::%simple-fun-arglist (macro-function symbol))
+                                        #+sbcl (sb-introspect:function-arglist (macro-function symbol))
                                         #+clisp (ext:arglist symbol)
                                         #- (or sbcl clisp) '("(Check the code for args list)")
                                         ;;; FIXME: when clisp compiles
@@ -94,7 +96,7 @@
                               (let ((cmd (symbol-function (find-symbol (string-upcase name) :stumpwm))))
                                 (format s "@deffn {Command} ~a ~{~a~^ ~}~%~a~&@end deffn~%~%"
                                         name
-                                        #+sbcl (sb-impl::%simple-fun-arglist cmd)
+                                        #+sbcl (sb-introspect:function-arglist cmd)
                                         #+clisp (ext:arglist cmd)
                                         #- (or sbcl clisp) '("(Check the code for args list)")
                                         (documentation cmd 'function))
