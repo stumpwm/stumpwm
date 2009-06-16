@@ -252,6 +252,16 @@ they should be windows. So use this function to make a window out of them."
   #+(or clisp sbcl) (invoke-restart :one)
   #-(or clisp sbcl) (error 'not-implemented))
 
+(defun directory-no-deref (pathspec)
+  "Call directory without dereferencing symlinks in the results"
+  #+(or cmu scl) (directory pathspec :truenamep nil)
+  #+clisp (mapcar #'car (directory pathspec :full t))
+  #+lispworks (directory pathspec :link-transparency nil)
+  #+openmcl (directory pathspec :follow-links nil)
+  #+sbcl (directory pathspec :resolve-symlinks nil)
+  #-(or clisp cmu lispworks openmcl sbcl scl) (directory pathspec)
+  )
+
 ;;; CLISP does not include features to distinguish different Unix
 ;;; flavours (at least until version 2.46). Until this is fixed, use a
 ;;; hack to determine them.

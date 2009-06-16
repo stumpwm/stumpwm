@@ -120,8 +120,8 @@ each directory seperated by a colon."
                        ;; SBCL doesn't match files with types if type
                        ;; is not wild and CLISP won't match files
                        ;; without a type when type is wild. So cover all the bases
-                       (directory (merge-pathnames (make-pathname :name :wild) dir))
-                       (directory (merge-pathnames (make-pathname :name :wild :type :wild) dir))
+                       (directory-no-deref (merge-pathnames (make-pathname :name :wild) dir))
+                       (directory-no-deref (merge-pathnames (make-pathname :name :wild :type :wild) dir))
                        :test 'equal)
           for namestring = (file-namestring file)
 	    when (pathname-is-executable-p file)
