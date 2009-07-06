@@ -32,6 +32,7 @@
                (:file "command")
                (:file "menu")
                (:file "screen")
+               (:file "head")
                (:file "group")
                (:file "window")
                (:file "floating-group")
