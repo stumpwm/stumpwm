@@ -374,58 +374,57 @@ Use the window's resource name.
   ;; a bar along the top or bottom that displays anything you want.
   mode-line)
 
-(defstruct screen
-  id
-  host
-  number
-  ;; heads of screen
-  heads
-  ;; the list of groups available on this screen
-  groups
-  current-group
-  ;; various colors (as returned by alloc-color)
-  border-color
-  fg-color
-  bg-color
-  win-bg-color
-  focus-color
-  unfocus-color
-  msg-border-width
-  frame-outline-width
-  font
-  ;; A list of all mapped windows. These are the raw
-  ;; xlib:window's. window structures are stored in groups.
-  mapped-windows
-  ;; A list of withdrawn windows. These are of type stumpwm::window
-  ;; and when they're mapped again they'll be put back in the group
-  ;; they were in when they were unmapped unless that group doesn't
-  ;; exist, in which case they go into the current group.
-  withdrawn-windows
-  ;; a list of windows for which (window-urgent-p) currently true.
-  urgent-windows
-  input-window
-  ;; the window that accepts further keypresses after a toplevel key
-  ;; has been pressed.
-  key-window
-  ;; The window that gets focus when no window has focus
-  focus-window
-  ;;
-  frame-window
-  frame-outline-gc
-  ;; color contexts
-  message-cc
-  mode-line-cc
-  ;; color maps
-  color-map-normal
-  color-map-bright
-  ;; used to ignore the first expose even when mapping the message window.
-  ignore-msg-expose
-  ;; the window that has focus
-  focus
-  current-msg
-  current-msg-highlights
-  last-msg
-  last-msg-highlights)
+(defclass screen ()
+  ((id :initform nil :accessor screen-id)
+   (host :initform nil :accessor screen-host)
+   (number :initform nil :accessor screen-number)
+   (heads :initform nil :accessor screen-heads :documentation
+    "heads of screen")
+   (groups :initform nil :accessor screen-groups :documentation
+    "the list of groups available on this screen")
+   (current-group :initform nil :accessor screen-current-group)
+   ;; various colors (as returned by alloc-color)
+   (border-color :initform nil :accessor screen-border-color)
+   (fg-color :initform nil :accessor screen-fg-color)
+   (bg-color :initform nil :accessor screen-bg-color)
+   (win-bg-color :initform nil :accessor screen-win-bg-color)
+   (focus-color :initform nil :accessor screen-focus-color)
+   (unfocus-color :initform nil :accessor screen-unfocus-color)
+   (msg-border-width :initform nil :accessor screen-msg-border-width)
+   (frame-outline-width :initform nil :accessor screen-frame-outline-width)
+   (font :initform nil :accessor screen-font)
+   (mapped-windows :initform nil :accessor screen-mapped-windows :documentation
+    "A list of all mapped windows. These are the raw xlib:window's. window structures are stored in groups.")
+   (withdrawn-windows :initform nil :accessor screen-withdrawn-windows :documentation
+    "A list of withdrawn windows. These are of type stumpwm::window
+and when they're mapped again they'll be put back in the group
+they were in when they were unmapped unless that group doesn't
+exist, in which case they go into the current group.")
+   (urgent-windows :initform nil :accessor screen-urgent-windows :documentation
+    "a list of windows for which (window-urgent-p) currently true.")
+   (input-window :initform nil :accessor screen-input-window)
+
+   (key-window :initform nil :accessor screen-key-window :documentation
+    "the window that accepts further keypresses after a toplevel key has been pressed.")
+   (focus-window :initform nil :accessor screen-focus-window :documentation
+    "The window that gets focus when no window has focus")
+   ;;
+   (frame-window :initform nil :accessor screen-frame-window)
+   (frame-outline-gc :initform nil :accessor screen-frame-outline-gc)
+   ;; color contexts
+   (message-cc :initform nil :accessor screen-message-cc)
+   (mode-line-cc :initform nil :accessor screen-mode-line-cc)
+   ;; color maps
+   (color-map-normal :initform nil :accessor screen-color-map-normal)
+   (color-map-bright :initform nil :accessor screen-color-map-bright)
+   (ignore-msg-expose :initform nil :accessor screen-ignore-msg-expose :documentation
+    "used to ignore the first expose even when mapping the message window.")
+   ;; the window that has focus
+   (focus :initform nil :accessor screen-focus)
+   (current-msg :initform nil :accessor screen-current-msg)
+   (current-msg-highlights :initform nil :accessor screen-current-msg-highlights)
+   (last-msg :initform nil :accessor screen-last-msg)
+   (last-msg-highlights :initform nil :accessor screen-last-msg-highlights)))
 
 (defstruct ccontext
   win

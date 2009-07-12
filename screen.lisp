@@ -386,7 +386,7 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
   ;; Initialize the screen structure
   (labels ((ac (color)
              (xlib:alloc-color (xlib:screen-default-colormap screen-number) color)))
-    (let* ((screen (make-screen))
+    (let* ((screen (make-instance 'screen))
            (fg (ac +default-foreground-color+))
            (bg (ac +default-background-color+))
            (border (ac +default-border-color+))
