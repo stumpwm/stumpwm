@@ -3,6 +3,10 @@
 This file documents user visible changes between versions of StumpWM
 
 * Changes since 0.9.5
+** add restart-hard command
+
+** rename soft-restart to restart-soft
+
 ** new commands refresh and redisplay
 
 ** new command list-window-properties

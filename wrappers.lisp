@@ -153,7 +153,7 @@
     (defun pathname-is-executable-p (pathname)
       "Return T if the pathname describes an executable file."
       #+sbcl
-      (let ((filename (coerce (file-namestring pathname) 'base-string)))
+      (let ((filename (coerce (sb-ext:native-namestring pathname) 'base-string)))
         (and (eq (funcall file-kind-fun filename) :file)
              (sb-unix:unix-access filename sb-unix:x_ok)))
       ;; FIXME: this is not exactly perfect
@@ -315,5 +315,37 @@ regarding files in sysfs. Data is read in chunks of BLOCKSIZE bytes."
 
        (if (< pos blocksize)
 	   (return (subseq string 0 string-filled))))))
+
+(defun argv ()
+  #+sbcl (copy-list sb-ext:*posix-argv*)
+  #+clisp (coerce (ext:argv) 'list)
+  #-( or sbcl clisp)
+  (error "unimplemented"))
+
+(defun execv (program &rest arguments)
+  ;; FIXME: seems like there should be a way to do this in sbcl the way it's done in clisp. -sabetts
+  #+sbcl
+  (sb-alien:with-alien ((prg sb-alien:c-string program)
+                        (argv (array sb-alien:c-string 256)))
+    (loop
+       for i in arguments
+       for j below 255
+       do (setf (sb-alien:deref argv j) i))
+    (setf (sb-alien:deref argv (length arguments)) nil)
+    (sb-alien:alien-funcall (sb-alien:extern-alien "execv" (function sb-alien:int sb-alien:c-string (* sb-alien:c-string)))
+                            prg (sb-alien:cast argv (* sb-alien:c-string))))
+  #+clisp
+  (funcall (ffi::find-foreign-function "execv"
+                                       (ffi:parse-c-type '(ffi:c-function
+                                                           (:arguments
+                                                            (prg ffi:c-string)
+                                                            (args (ffi:c-array-ptr ffi:c-string))
+                                                            )
+                                                           (:return-type ffi:int)))
+                                       nil nil nil)
+           program
+           (coerce arguments 'array))
+  #-(or sbcl clisp)
+  (error "Unimplemented"))
 
 ;;; EOF

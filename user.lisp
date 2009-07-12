@@ -220,13 +220,28 @@ such a case, kill the shell command to resume StumpWM."
 "Quit StumpWM."
   (throw :top-level :quit))
 
-(defcommand soft-restart () ()
+(defcommand restart-soft () ()
   "Soft Restart StumpWM. The lisp process isn't restarted. Instead,
 control jumps to the very beginning of the stumpwm program. This
-differs from a theoretical hard restart, which would restart the unix
-process."
+differs from RESTART, which restarts the unix process.
+
+Since the process isn't restarted, existing customizations remain
+after the restart."
   (throw :top-level :restart))
 
+(defcommand restart-hard () ()
+  "Restart stumpwm. This is handy if a new stumpwm executable has been
+made and you wish to replace the existing process with it.
+
+Any run-time customizations will be lost after the restart."
+  ;; FIXME: clisp croaks with an 'attempt to use closed display' error
+  ;; when this is called. So skip it. And SBCL needs it called or it
+  ;; will croak with a "another window manager is running" error. arg!
+  #-clisp (xlib:close-display *display*)
+  (apply 'execv
+         (first (argv))
+         (argv)))
+                
 (defun find-matching-windows (props all-groups all-screens)
   "Returns list of windows matching @var{props} (see run-or-raise
 documentation for details). @var{all-groups} will find windows on all

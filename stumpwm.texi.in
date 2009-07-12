@@ -1198,7 +1198,8 @@ section.
 !!! loadrc
 !!! keyboard-quit
 !!! quit
-!!! soft-restart
+!!! restart-hard
+!!! restart-soft
 !!! getsel
 !!! putsel
 !!! command-mode
