@@ -258,7 +258,14 @@ they should be windows. So use this function to make a window out of them."
   #+clisp (mapcar #'car (directory pathspec :full t))
   #+lispworks (directory pathspec :link-transparency nil)
   #+openmcl (directory pathspec :follow-links nil)
-  #+sbcl (directory pathspec :resolve-symlinks nil)
+  ;; FIXME: seems like there ought to be a less cumbersome way to run
+  ;; different code based on the version.
+  #+sbcl (macrolet ((dir (p)
+                      (if (>= (parse-integer (third (split-seq (lisp-implementation-version) '(#\.))))
+                              24)
+                          `(directory ,p :resolve-symlinks nil)
+                          `(directory ,p))))
+           (dir pathspec))
   #-(or clisp cmu lispworks openmcl sbcl scl) (directory pathspec)
   )
 
