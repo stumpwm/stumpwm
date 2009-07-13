@@ -77,7 +77,7 @@
 (defun list-modules ()
   "Return a list of the available modules."
   (mapcar 'pathname-name
-          (directory (make-pathname :directory *contrib-dir*
+          (directory (make-pathname :defaults *contrib-dir*
 				    :name :wild
 				    :type "lisp"))))
 
