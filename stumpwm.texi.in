@@ -1102,7 +1102,9 @@ Groups in StumpWM are more commonly known as @dfn{virtual desktops} or
 @dfn{workspaces}. Why not create a new term for it?
 
 !!! gnew
+!!! gnew-float
 !!! gnewbg
+!!! gnewbg-float
 !!! gnext
 !!! gprev
 !!! gnext-with-window

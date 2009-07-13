@@ -220,5 +220,10 @@
   (declare (ignore x y where))
   )
 
-(defcommand gnew-float (name) ((:rest "Name: "))
-  (add-group (current-screen) name 'float-group))
+(defcommand gnew-float (name) ((:rest "Group Name: "))
+"Create a floating window group with the specified name and switch to it."
+  (add-group (current-screen) name :type 'float-group))
+
+(defcommand gnewbg-float (name) ((:rest "Group Name: "))
+"Create a floating window group with the specified name, but do not switch to it."
+  (add-group (current-screen) name :background t :type 'float-group))

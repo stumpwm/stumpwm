@@ -258,7 +258,7 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
       (netwm-update-groups screen)
       (netwm-set-group-properties screen))))
 
-(defun add-group (screen name &optional (type *default-group-type*))
+(defun add-group (screen name &key background (type *default-group-type*))
   "Create a new group in SCREEN with the supplied name. group names
     starting with a . are considered hidden groups. Hidden groups are
     skipped by gprev and gnext and do not show up in the group
@@ -266,19 +266,23 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
     numbers."
   (check-type screen screen)
   (check-type name string)
-  (unless (or (string= name "")
-              (string= name "."))
-    (or (find-group screen name)
-        (let ((ng (make-instance type
-                                 :screen screen
-                                 :number (if (char= (char name 0) #\.)
-                                             (find-free-hidden-group-number screen)
-                                             (find-free-group-number screen))
-                                 :name name)))
-          (setf (screen-groups screen) (append (screen-groups screen) (list ng)))
-          (netwm-set-group-properties screen)
-          (netwm-update-groups screen)
-          ng))))
+  (if (or (string= name "")
+          (string= name "."))
+      (error "Groups must have a name.")
+      (let ((ng (or (find-group screen name)
+                    (let ((ng (make-instance type
+                                             :screen screen
+                                             :number (if (char= (char name 0) #\.)
+                                                         (find-free-hidden-group-number screen)
+                                                         (find-free-group-number screen))
+                                             :name name)))
+                      (setf (screen-groups screen) (append (screen-groups screen) (list ng)))
+                      (netwm-set-group-properties screen)
+                      (netwm-update-groups screen)
+                      ng))))
+        (unless background
+          (switch-to-group ng))
+        ng)))
 
 (defun find-group (screen name)
   "Return the group with the name, NAME. Or NIL if none exists."
@@ -308,20 +312,16 @@ current window of the current group to the new one."
       (really-raise-window win))))
 
 (defcommand gnew (name) ((:string "Group Name: "))
-"Create a new group with the specified name. The new group becomes the
+  "Create a new group with the specified name. The new group becomes the
 current group. If @var{name} begins with a dot (``.'') the group new
 group will be created in the hidden state. Hidden groups have group
 numbers less than one and are invisible to from gprev, gnext, and, optionally,
 groups and vgroups commands."
-  (let ((group (add-group (current-screen) name)))
-    (if group
-        (switch-to-group group)
-        (message "^B^3*Groups must have a name!"))))
+  (add-group (current-screen) name))
 
 (defcommand gnewbg (name) ((:string "Group Name: "))
-"Create a new group but do not switch to it."
-  (unless (find-group (current-screen) name)
-    (add-group (current-screen) name)))
+  "Create a new group but do not switch to it."
+  (add-group (current-screen) name :background t))
 
 (defcommand gnext () ()
 "Cycle to the next group in the group list."
