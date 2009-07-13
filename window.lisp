@@ -621,12 +621,16 @@ and bottom_end_x."
                  (xlib:grab-key w code
                                 :modifiers (x11-mods key) :owner-p t
                                 :sync-pointer-p nil :sync-keyboard-p nil)
-                 ;; Ignore numlock by also grabbing the keycombo with
-                 ;; numlock on.
+                 ;; Ignore capslock and numlock by also grabbing the
+                 ;; keycombos with them on.
+                 (xlib:grab-key w code :modifiers (x11-mods key nil t) :owner-p t
+                                :sync-keyboard-p nil :sync-keyboard-p nil)
                  (when (modifiers-numlock *modifiers*)
                    (xlib:grab-key w code
-                                  :modifiers (x11-mods key t) :owner-p t
-                                  :sync-pointer-p nil :sync-keyboard-p nil))))))
+                                  :modifiers (x11-mods key t nil) :owner-p t
+                                  :sync-pointer-p nil :sync-keyboard-p nil)
+                   (xlib:grab-key w code :modifiers (x11-mods key t t) :owner-p t
+                                  :sync-keyboard-p nil :sync-keyboard-p nil))))))
     (dolist (map (dereference-kmaps (top-maps screen)))
       (dolist (i (kmap-bindings map))
         (grabit win (binding-key i))))))

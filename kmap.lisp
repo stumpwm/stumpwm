@@ -84,10 +84,11 @@ related bindings off @kbd{C-t C-f} one might use the following code:
       (key-hyper key)
       (key-super key)))
 
-(defun x11-mods (key &optional with-numlock)
-  "Return the modifiers for key in a format that clx
-understands. if WITH-NUMLOCK is non-nil then include the numlock
-modifier. Most of the time numlock just gets in the way."
+(defun x11-mods (key &optional with-numlock with-capslock)
+  "Return the modifiers for key in a format that clx understands. if
+WITH-NUMLOCK is non-nil then include the numlock modifier. if
+WITH-CAPSLOCK is non-nil then include the capslock modifier. Most of
+the time these just gets in the way."
   (let (mods)
     (when (key-shift key) (push :shift mods))
     (when (key-control key) (push :control mods))
@@ -96,6 +97,7 @@ modifier. Most of the time numlock just gets in the way."
     (when (key-hyper key) (setf mods (append (modifiers-hyper *modifiers*) mods)))
     (when (key-super key) (setf mods (append (modifiers-super *modifiers*) mods)))
     (when with-numlock (setf mods (append (modifiers-numlock *modifiers*) mods)))
+    (when with-capslock (push :lock mods))
     (apply 'xlib:make-state-mask mods)))
 
 (defun report-kbd-parse-error (c stream)
