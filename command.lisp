@@ -324,10 +324,9 @@ then describes the symbol."
 
 (define-stumpwm-type :command (input prompt)
   (or (argument-pop input)
-      (string-trim " "
-                   (completing-read (current-screen)
-                                    prompt
-                                    (all-commands)))))
+      (completing-read (current-screen)
+                       prompt
+                       (all-commands))))
 
 (define-stumpwm-type :key-seq (input prompt)
   (labels ((update (seq)
@@ -388,7 +387,7 @@ then describes the symbol."
                    ("down" :down)
                    ("left" :left)
                    ("right" :right)))
-         (dir (second (assoc (string-trim " " (argument-pop-or-read input prompt values))
+         (dir (second (assoc (argument-pop-or-read input prompt values)
                              values :test 'string-equal))))
     (or dir
         (throw 'error "No matching direction."))))
@@ -404,7 +403,7 @@ then describes the symbol."
                    ("top-left" :top-left)
                    ("bottom-right" :bottom-right)
                    ("bottom-left" :bottom-left)))
-         (gravity (second (assoc (string-trim " " (argument-pop-or-read input prompt values)) values :test 'string-equal))))
+         (gravity (second (assoc (argument-pop-or-read input prompt values)) values :test 'string-equal)))
     (or gravity
         (throw 'error "No matching gravity."))))
 
