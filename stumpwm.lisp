@@ -263,6 +263,10 @@ of those expired."
               (format t "~&Caught '~a' at the top level. Please report this.~%~a" 
                       (first ret) (second ret))
               (setf *last-unhandled-error* ret))
+             ;; we need to jump out of the event loop in order to hup
+             ;; the process because otherwise we get errors.
+             ((eq ret :hup-process)
+                  (apply 'execv (first (argv)) (argv)))
              ((eq ret :restart))
              (t 
               ;; the number is the unix return code

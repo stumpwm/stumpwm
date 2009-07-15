@@ -236,13 +236,7 @@ after the restart."
 made and you wish to replace the existing process with it.
 
 Any run-time customizations will be lost after the restart."
-  ;; FIXME: clisp croaks with an 'attempt to use closed display' error
-  ;; when this is called. So skip it. And SBCL needs it called or it
-  ;; will croak with a "another window manager is running" error. arg!
-  #-clisp (xlib:close-display *display*)
-  (apply 'execv
-         (first (argv))
-         (argv)))
+  (throw :top-level :hup-process))
                 
 (defun find-matching-windows (props all-groups all-screens)
   "Returns list of windows matching @var{props} (see run-or-raise
