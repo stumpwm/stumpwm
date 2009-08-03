@@ -3,6 +3,22 @@
 This file documents user visible changes between versions of StumpWM
 
 * Changes since 0.9.5
+** add frame-windowlist command
+
+** add run-or-pull command
+
+** add refresh and redisplay commands
+
+** use ppcre for window placement rule matching
+
+** add fmt-head-window-list
+colors hidden windows
+
+** new contrib modules
+time.lisp, disk.lisp, sbclfix.lisp, net.lisp, mem.lisp, maildir.lisp, window-tags.lisp
+
+** add automatic group creation/restoration
+
 ** add restart-hard command
 
 ** rename soft-restart to restart-soft
