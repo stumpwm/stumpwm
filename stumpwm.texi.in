@@ -1,7 +1,7 @@
 \input texinfo   @c -*-texinfo-*-
 @c %**start of header
 @setfilename stumpwm.info
-@settitle StumpWM manual
+@settitle StumpWM Manual
 @setchapternewpage odd
 @c %**end of header
 
@@ -42,6 +42,10 @@ under the above conditions for modified versions,
 except that this permission notice may be stated in a
 translation approved by the Free Software Foundation.
 @end ifinfo
+
+@iftex
+@kbdinputstyle code
+@end iftex
 
 @titlepage
 @sp 10
@@ -186,10 +190,10 @@ environment.
 
 @enumerate
 @item
-Install @samp{SBCL}, the @samp{portable-clx} package, and
-@samp{cl-ppcre}. In Debian, @samp{portable-clx} is the
-@samp{cl-clx-sbcl} package. You can also use @samp{asdf-install} to
-download and install clx:
+Install @command{sbcl}, the @command{portable-clx} package, and
+@command{cl-ppcre}. In Debian, @command{portable-clx} is the
+@command{cl-clx-sbcl} package. You can also use @command{asdf-install} to
+download and install@tie{}@command{clx}:
 
 @example
 $ sbcl
@@ -199,13 +203,13 @@ $ sbcl
 * (asdf-install:install :cl-ppcre)
 @end example
 
-Note that asdf-install requires @samp{gnupg}.
+Note that @command{asdf-install} requires @command{gnupg}.
 
 @item
-In the @file{stumpwm} directory, run @samp{./configure}.
+In the @file{stumpwm} directory, run @command{./configure}.
 
 @item
-run @samp{make}. If all goes well,
+run @command{make}. If all goes well,
 this should create a @file{stumpwm} executable.
 
 @item
@@ -223,9 +227,9 @@ successfully started StumpWM.
 @node Basic Usage, Interacting with the Lisp process, Starting StumpWM, Introduction
 @section Basic Usage
 Once you have StumpWM up and running, the first thing you might want
-to do is start @samp{Emacs}. Type @kbd{C-t e}, or in other words
+to do is start @command{emacs}. Type @kbd{C-t e}, or in other words
 @kbd{Control + t} followed by @kbd{e}. Now perhaps you want an
-@samp{xterm}. Type @kbd{C-t c}. Now you have some programs running.
+@command{xterm}. Type @kbd{C-t c}. Now you have some programs running.
 
 To see a list of windows StumpWM is managing, type @kbd{C-t w}. The
 highlighted window is the one you're looking at right now. It's the
@@ -233,34 +237,34 @@ focused window.
 
 All of StumpWM's keys are bound to named commands, which can be
 executed not only by keys but also from the input bar. Type @kbd{C-t
-;} to open a command prompt. Now type @samp{time} and press
-return. Note, @samp{time} can also be called by typing @kbd{C-t a}.
+;} to open a command prompt. Now type @command{time} and press
+return. Note, @command{time} can also be called by typing @kbd{C-t a}.
 Throughout this manual you'll find definitions for commands,
 functions, and variables. Any command you see in this manual can be
 executed from the input bar or bound to a key.
 
 At this point you probably want to switch back from your new
-@samp{xterm} to @samp{Emacs}. Type @kbd{C-t C-t}. This runs the
+@command{xterm} to @command{emacs}. Type @kbd{C-t C-t}. This runs the
 @command{other} command. Type it again and you're back to xterm.
 
-Perhaps you'd like to see @samp{emacs} and @samp{xterm}
+Perhaps you'd like to see @command{emacs} and @command{xterm}
 side-by-side. Type @kbd{C-t s}. You have now split the screen into 2
-@samp{frames}. For more information @xref{Frames}. To switch to the
+@command{frames}. For more information see @ref{Frames}. To switch to the
 empty frame type @kbd{C-t TAB}. Now let's pull the xterm window into
 this empty frame. Type @kbd{C-t w} for a window listing. Find the
-@samp{xterm} window. See the number beside it? Type @kbd{C-t} followed
-by @samp{xterm}'s window number.
+@command{xterm} window. See the number beside it? Type @kbd{C-t} followed
+by @command{xterm}'s window number.
 
 Another common activity is browsing the interwebs. Type @kbd{C-t !}.
 The input bar pops up again. You can now run a shell command.  Let's
-start a web browser: type @samp{firefox} into the input bar and press
+start a web browser: type @command{firefox} into the input bar and press
 return.
 
-Unfortunately, @samp{firefox} probably isn't wide enough because it's
+Unfortunately, @command{firefox} probably isn't wide enough because it's
 in one of the frames. Type @kbd{C-t Q} to remove all frames but the
 current one and resize it to fit the screen.
 
-For a full list of key bindings, @xref{List of Default Keybindings}.
+For a full list of key bindings, see @ref{List of Default Keybindings}.
 
 @node Interacting with the Lisp process, Contact the StumpWM developers, Basic Usage, Introduction
 @section Interacting with the Lisp process
@@ -270,19 +274,19 @@ Lisp code directly, on the same Lisp process that StumpWM is running on.
 Type @kbd{C-t :} and an input box will appear. Then type some Lisp
 expression.
 
-When you call eval this way, you will be in the COMMON-LISP-USER
+When you call @command{eval} this way, you will be in the COMMON-LISP-USER
 package. In order to use all the functions and variables defined in
-the StumpWM manual, you need to explicitly mention the package stumpwm:
+the StumpWM manual, you need to explicitly mention the package @code{stumpwm}:
 
-@table @asis
+@table @code
 @item stumpwm:*mode-line-border-width*
-Reads the value of *mode-line-border-width*.
+Reads the value of @var{*mode-line-border-width*}.
 
 @item (setf stumpwm:*mode-line-border-width* 3)
-Sets the variable *mode-line-border-width* to 3.
+Sets the variable @var{*mode-line-border-width*} to 3.
 
 @item (stumpwm:set-prefix-key (stumpwm:kbd "C-M-H-s-z"))
-Calls the set-prefix-key function (and sets a new keyboard prefix)
+Calls the @code{set-prefix-key} function (and sets a new keyboard prefix)
 @end table
 
 
@@ -297,7 +301,8 @@ you can subscribe to at
 @url{http://mail.nongnu.org/mailman/listinfo/stumpwm-devel}. Posting
 is restricted to subscribers to keep spam out of the archives.
 
-The StumpWM IRC channel can be found on Freenode at #stumpwm.
+The StumpWM IRC channel can be found on Freenode at
+@uref{irc://irc.freenode.net/#stumpwm, @code{#stumpwm}}.
 
 @node Key Bindings, Commands, Introduction, Top
 @chapter Key Bindings
@@ -316,29 +321,11 @@ mimics GNU Screen's keyboard handling. StumpWM's default prefix key is
 The following is a list of keybindings.
 
 @table @kbd
-@item C-t 0
-@itemx C-t 1
-@itemx C-t 2
-@itemx C-t 3
-@itemx C-t 4
-@itemx C-t 5
-@itemx C-t 6
-@itemx C-t 7
-@itemx C-t 8
-@itemx C-t 9
-Select the window with the corresponding number
+@item C-t @var{d}
+Select the window with the corresponding digit@tie{}@var{d}
 
-@item C-t C-0
-@itemx C-t C-1
-@itemx C-t C-2
-@itemx C-t C-3
-@itemx C-t C-4
-@itemx C-t C-5
-@itemx C-t C-6
-@itemx C-t C-7
-@itemx C-t C-8
-@itemx C-t C-9
-Pull the window with the corresponding number into the current frame
+@item C-t C-@var{d}
+Pull the window with the corresponding digit@tie{}@var{d} into the current frame
 
 @item C-t n
 @itemx C-t C-n
@@ -361,9 +348,6 @@ Abort the current command. This is useful if you accidentally hit @kbd{C-t}
 @item C-t w
 List all the windows
 
-@item C-t 0-9
-Select a window by number
-
 @item C-t i
 Display information about the current window.
 
@@ -381,19 +365,19 @@ Split current frame horizontally
 Sends a kill message to the current frame and the running program.
 
 @item C-t K
-Kills the current frame and running program; like a kill -9.
+Kills the current frame and running program; like a @command{kill -9}.
 
 @item C-t c
 @itemx C-t C-c
-Run an X terminal; by default xterm
+Run an X terminal; by default @command{xterm}
 
 @item C-t e
 @itemx C-t C-e
 Run Emacs or raise it if it is already running.
 
 @item C-t t
-Sends a @key{C-t} to the frame; this is useful for applications like Firefox
-which make heavy use of @key{C-t} (in Firefox's case, for opening a new
+Sends a @kbd{C-t} to the frame; this is useful for applications like Firefox
+which make heavy use of @kbd{C-t} (in Firefox's case, for opening a new
 tab). This is similar to how GNU screen uses @kbd{C-a a}.
 
 @item C-t w
@@ -469,19 +453,10 @@ message before that, and so on.
 redisplay the current window and force it to take up the entire frame.
 
 @item C-t G
-Display all groups and windows in each group. For more information @xref{Groups}.
+Display all groups and windows in each group. For more information see @ref{Groups}.
 
-@item C-t F1
-@itemx C-t F2
-@itemx C-t F3
-@itemx C-t F4
-@itemx C-t F5
-@itemx C-t F6
-@itemx C-t F7
-@itemx C-t F9
-@itemx C-t F9
-@itemx C-t F10
-Jump to the corresponding group. @kbd{C-t F1} jumps to group 1 and so on.
+@item C-t F@var{n}
+Jump to the corresponding group @var{n}. @kbd{C-t F1} jumps to group 1 and so on.
 
 @item C-t g g
 Show the list of groups.
@@ -521,17 +496,8 @@ Kill the current group. All windows are merged into the next group.
 @itemx C-t g r
 Change the current group's name.
 
-@item C-t g 1
-@itemx C-t g 2
-@itemx C-t g 3
-@itemx C-t g 4
-@itemx C-t g 5
-@itemx C-t g 6
-@itemx C-t g 7
-@itemx C-t g 8
-@itemx C-t g 9
-@itemx C-t g 0
-Go to the corresonding group. @kbd{C-t g 1} jumps to group 1 and so on.
+@item C-t g @var{d}
+Go to the group with digit @var{d}. @kbd{C-t g 1} jumps to group 1 and so on.
 
 @item C-t +
 Make frames the same height or width in the current frame's subtree.
@@ -600,7 +566,7 @@ mod5        Mode_switch (0x5d),  ISO_Level3_Shift (0x7c)
 
 The problem is in the line beginning with ``mod4''. The way to set up
 the modifier list correctly is to have just the Super key as the mod4
-modifier. The following xmodmap commands will do just that.
+modifier. The following @command{xmodmap} commands will do just that.
 
 @example
 # clear out the mod4 modifier
@@ -641,7 +607,7 @@ clear mod4
 add mod4 = Super_L
 @end example
 
-If you use "startx", modify your ~/.xsession or ~/.xinitrc file.
+If you use @command{startx}, modify your @file{~/.xsession} or @file{~/.xinitrc} file.
 
 @example
 $ cat ~/.xsession
@@ -651,20 +617,20 @@ xmodmap ~/.Xmodmap
 exec /usr/bin/stumpwm
 @end example
 
-If you use a graphical login manager (GDM, KDM, etc.), your ~/.Xmodmap
-file should fed to xmodmap when you log in. FIXME: verify this.
+If you use a graphical login manager (GDM, KDM, etc.), your @file{~/.Xmodmap}
+file should be fed to @command{xmodmap} when you log in. FIXME: verify this.
 
 @item
-Handling Meta and Alt: when do I use ``M-'' and ``A-''?
+Handling Meta and Alt: when do I use @kbd{M-} and @kbd{A-}?
 
-If you have no Meta keys defined (see the output of the ``xmodmap''
-command), then StumpWM will treat the ``M-'' prefix in keybindings to
-mean Alt. However, if there are Meta keys defined, then the ``M-''
-prefix refers to them, and the ``A-'' prefix refers to Alt.
+If you have no Meta keys defined (see the output of the @command{xmodmap}
+command), then StumpWM will treat the @kbd{M-} prefix in keybindings to
+mean Alt. However, if there are Meta keys defined, then the @kbd{M-}
+prefix refers to them, and the @kbd{A-} prefix refers to Alt.
 
-Most users will simply use ``M-'' to refer to their Alt keys. However,
-users that define separate Meta and Alt keys will use ``M-'' to refer
-to the former, and ``A-'' to refer to the latter.
+Most users will simply use @kbd{M-} to refer to their Alt keys. However,
+users that define separate Meta and Alt keys will use @kbd{M-} to refer
+to the former, and @kbd{A-} to refer to the latter.
 
 @item
 How can I set up a Hyper key and use it with StumpWM?
@@ -684,11 +650,11 @@ $ xmodmap -e 'add mod5 = Hyper_L'
 @end example
 
 To use a different key for Hyper, replace the keycode ``37'' above.
-Use the ``xev'' program to see the keycode that any physical key has.
+Use the @command{xev} program to see the keycode that any physical key has.
 Refer to the section above on setting up the Super key to see how to
 automate setting the Hyper key when you start X.
 
-Now you can use ``H-'' as a prefix in StumpWM bindings.
+Now you can use @kbd{H-} as a prefix in StumpWM bindings.
 
 @example
 (define-key *top-map* (kbd "H-RET") "fullscreen")
@@ -698,7 +664,7 @@ Now you can use ``H-'' as a prefix in StumpWM bindings.
 @end example
 
 Since essentially no programs have Hyper bindings, you can safely bind
-commands to the top-map.
+commands to the @var{*top-map*}.
 
 @end itemize
 
@@ -744,73 +710,75 @@ functions and variables.
 @node Using The Input Bar, Programming The Message Bar, Customizing The Bar, Message and Input Bar
 @section Using The Input Bar
 
-The following is a list of keybindings for the input bar.
+The following is a list of keybindings for the Input Bar. Users of Emacs
+will recognize them.
 
 @table @kbd
 @item DEL
-delete-backward-char
+Delete the character before point (@code{delete-backward-char}).
 
 @item M-DEL
-backward-kill-word
+Kill back to the beginning of the previous word (@code{backward-kill-word}).
 
 @item C-d
 @itemx Delete
-delete-forward-char
+Delete the character after point (@code{delete-forward-char}).
 
 @item M-d
-forward-kill-word
+Kill forward to the end of the next word (@code{forward-kill-word}).
 
 @item C-f
 @itemx Right
-forward-char
+Move forward one character (@code{forward-char}).
 
 @item M-f
-forward-word
+Move forward one word (@code{forward-word}).
 
 @item C-b
 @itemx Left
-backward-char
+Move backward one character (@code{backward-char}).
 
 @item M-b
-backward-word
+Move backward one word (@code{backward-word}).
 
 @item C-a
 @itemx Home
-move-beginning-of-line
+Move to the beginning of the current line (@code{move-beginning-of-line}).
 
 @item C-e
 @itemx End
-move-end-of-line
+Move to the end of the current line (@code{move-end-of-line}).
 
 @item C-k
-kill-line
+Kill to the end of the line (@code{kill-line}).
 
 @item C-u
-kill-to-beginning
+Kill to the beginning of the line (@code{kill-to-beginning}),
+the same as @kbd{C-a C-k}.
 
 @item C-p
 @itemx Up
-history-back
+Move to the next earlier entry saved in the command history (@command{history-back}).
 
 @item C-n
 @itemx Down
-history-forward
+Move to the next later entry saved in the command history (@command{history-forward}).
 
 @item RET
-submit
+Submit the entered command (@command{submit}).
 
 @item C-g
-abort
+Abort the current action by closing the Input Bar (@command{abort}).
 
 @item C-y
-yank-selection
+Paste text from clipboard into the Input Bar (@command{yank-selection}).
 
 @item TAB
-Clockwise tab complete the current string, if possible. Press @key{TAB} again to
+Clockwise tab complete the current string, if possible. Press @kbd{TAB} again to
 cycle through completions.
  
 @item S-TAB
-Counter-clockwise tab complete the current string, if possible. Press @key{S-TAB} again to
+Counter-clockwise tab complete the current string, if possible. Press @kbd{S-TAB} again to
 cycle through completions.
 
 @end table
@@ -1045,7 +1013,7 @@ the following commands.
 @chapter The Mode Line
 The mode line is a bar that runs across either the top or bottom of
 a head and is used to display information. By default the mode line
-displays the list of windows, similar to the output C-t w produces.
+displays the list of windows, similar to the output @kbd{C-t w} produces.
 
 Alternatively, external panel applications such as the GNOME panel and
 KDE's kicker may be used. Simply starting one of these programs is enough
@@ -1061,7 +1029,8 @@ head has its own mode line. For example:
 
 @example
 ;; turn on/off the mode line for the current head only.
-(stumpwm:toggle-mode-line (stumpwm:current-screen) (stumpwm:current-head))
+(stumpwm:toggle-mode-line (stumpwm:current-screen)
+                          (stumpwm:current-head))
 @end example
 
 The mode line is updated after every StumpWM command.
@@ -1307,7 +1276,7 @@ All text printed by stumpwm is run through a coloring engine before
 being displayed. All color commands start with a @samp{^} (caret)
 character and apply to all text after it.
 
-@table @asis
+@table @code
 @item ^0-9
 A caret followed by a single digit number changes the foreground color
 to the specified color. A @samp{*} can be used to specify the normal
@@ -1446,40 +1415,40 @@ this part should probably be fairly intuitive.
 
 @item
 Pay attention to file names and contents. If you're making changes to
-mode-line related code, don't put it in core.lisp. If you're
+mode-line related code, don't put it in @file{core.lisp}. If you're
 introducing some completely new featureset, consider putting all of
 the new code in a new file.
 
 @item
-Does a command need to be user-visible ("interactive") or is it just
+Does a command need to be user-visible (``interactive'') or is it just
 called by other commands?
 
 @itemize
 @item
 If it's not going to be user-visible, you can just use the familiar
-(defun foo ()...) syntax.
+@code{(defun foo () ...)} syntax.
 
 @item
 If you want the command to be used interactively, you use StumpWM's
-defcommand syntax, as in the examples below.
+@code{defcommand} syntax, as in the examples below.
 
 @example
-    (defcommand test (foo bar)
-       ((:string "How you're going to prompt for variable foo: ")
-        (:number "How you want to prompt for variable bar: "))
-       "This command is a test"
-       (body...))
+(defcommand test (foo bar)
+   ((:string "How you're going to prompt for variable foo: ")
+    (:number "How you want to prompt for variable bar: "))
+   "This command is a test"
+   (body...))
 
-    (defcommand test2 () ()
-       "This is also a test"
-       (body...))
+(defcommand test2 () ()
+   "This is also a test"
+   (body...))
 
-    (defcommand title (args) (interactive-args)
-       "Doc string"
-       (body...))
+(defcommand title (args) (interactive-args)
+   "Doc string"
+   (body...))
 @end example
 
-...so basically, inside the first set of parentheses after the
+So basically, inside the first set of parentheses after the
 function name, you specify what (if any) arguments will be passed to
 the command. The second set of parentheses tells StumpWM how to get
 those arguments if they're not explicitly passed to the command. For
@@ -1489,21 +1458,21 @@ example,
 ((:string "What do you want to do: "))
 @end example
 
-...will read a string from the input the user provides. The quoted
+will read a string from the input the user provides. The quoted
 text is the prompt the user will see. Of course, if you were to, say,
 call the command test, as defined above, from another piece of code,
 it wouldn't give the prompt as long as you fed it arguments.
 @end itemize
 
 @item
-Note that all commands defined using the defcommand syntax are
-available both to be called with "C-t ;" and from within other lisp
+Note that all commands defined using the @code{defcommand} syntax are
+available both to be called with @kbd{C-t ;} and from within other lisp
 programs, as though they had been defun-ned (which, in fact, they
 have).
 
 @item
 Any code that depends on external libraries or programs that some
-users might not have installed should be placed in the contrib/
+users might not have installed should be placed in the @file{contrib/}
 directory.
 
 @item
@@ -1526,7 +1495,7 @@ statement like this:
 (your-sbcl-code)
 @end example
 
-...to wrap the code for each lisp. Of course, the best option is to
+#to wrap the code for each lisp. Of course, the best option is to
 find a way to use the same code for clisp and SBCL.
 @end enumerate
 
@@ -1556,14 +1525,14 @@ $ git config --global user.name "Anne N. O'Nymous"
 $ git config --global user.email "anonymous@@foo.org"
 @end example
 
-Be sure to check out the manual for git-config--there are several
+Be sure to check out the manual for @command{git-config}--there are several
 options you might want to set, such as enabling colorized output or
 changing the editor and pager you use when making commits and viewing
 logs.
 
 For the sake of argument, let's say you want to make some major
-changes to both user.lisp and core.lisp, add a file called
-DANGEROUS_EXPERIMENT_DO_NOT_USE_OR_ELSE.lisp, and remove the manual
+changes to both @file{user.lisp} and @file{core.lisp}, add a file called
+@file{DANGEROUS_EXPERIMENT_DO_NOT_USE_OR_@-ELSE.lisp}, and remove the manual
 because you're too 1337 for such things. However, you don't want to
 break your entire StumpWM setup and start over. Thankfully, you don't
 have to. Before you get started, issue this command from the stumpwm
@@ -1574,9 +1543,9 @@ $ git checkout -b experimental
 @end example
 
 You should now find yourself in a new branch, called experimental. To
-confirm this, type "git branch" (without the quotes); there should be
+confirm this, type @command{git branch}; there should be
 an asterisk next to the branch you're currently viewing. At any time,
-you can type "git checkout master" to return to your master branch,
+you can type @command{git checkout master} to return to your master branch,
 and at any time you can have as many branches of the project as you
 like. If you want to create a new branch based not on the master
 branch but on your experimental branch, for example, you'd type:
@@ -1585,7 +1554,7 @@ branch but on your experimental branch, for example, you'd type:
 $ git checkout -b new-experiment experimental
 @end example
 
-This will place you in a newly-created branch called new-experiment
+This will place you in a newly-created branch called ``new-experiment''
 which should be identical to your experimental branch as of the last
 commit (more on that soon). If you're actually typing out the
 directions, switch back to your old experimental branch like so:
@@ -1595,7 +1564,7 @@ $ git checkout experimental
 @end example
 
 Anyway, now that you have a new branch, create that new file with the
-long name, which I'll just call danger.lisp for brevity. Make whatever
+long name, which I'll just call @file{danger.lisp} for brevity. Make whatever
 changes you want to it, and when you're done, tell git about your new
 file.
 
@@ -1612,7 +1581,7 @@ $ git commit -a
 
 This will open up a prompt in your editor of choice for you to
 describe your changes. Try to keep the first line short, and then add
-more explanation underneath (for an example, run the command "git log"
+more explanation underneath (for an example, run the command @command{git log}
 and take a look at some of the longer commit explanations). Save that
 file and then do this:
 
@@ -1621,23 +1590,23 @@ $ git checkout master
 $ ls
 @end example
 
-...and look for your new file. It's not there! That's because you've
+Then look for your new file. It's not there! That's because you've
 done all of your work in another branch, which git is currently hiding
-from you so that you can "check out" the branch called "master." All
+from you so that you can ``check out'' the branch called ``master.'' All
 is as it should be--your master repository is still safe.
 
 @example
 $ git checkout experimental
 @end example
 
-Now, delete manual.lisp and stumpwm.texi. That's right. Wipe them off
+Now, delete @file{manual.lisp} and @file{stumpwm.texi}. That's right. Wipe them off
 the face of the Earth, or at least off the hard drive of your
 computer. When you're done, you don't have to tell git you've deleted
 them; it'll figure it out on its own (though things may not compile
-properly unless you edit Makefile.in and stumpwm.asd. Anyway, go ahead
-and edit core.lisp and user.lisp. Really break 'em. Run free! When
+properly unless you edit @file{Makefile.in} and @file{stumpwm.asd}. Anyway, go ahead
+and edit @file{core.lisp} and @file{user.lisp}. Really break 'em. Run free! When
 you're done, do another commit, as above, and give it a stupid title
-like "lolz i b0rked stUmpwm guys wTF!?!?!!111!" Now try to compile.
+like ``lolz i b0rked stUmpwm guys wTF!?!?!!111!'' Now try to compile.
 Just try. It won't work. If it does, you're some kind of savant or
 something. Keep up the good work. If you've actually managed to break
 StumpWM like you were supposed to, never fear! You have two options at
@@ -1650,8 +1619,8 @@ just delete your experimental branch, like so:
 $ git branch -D
 @end example
 
-The "-D" means to force a delete, even if the changes you've made
-aren't available elsewhere. A "-d" means to delete the branch if and
+The ``@code{-D}'' means to force a delete, even if the changes you've made
+aren't available elsewhere. A ``@code{-d}'' means to delete the branch if and
 only if you've merged the changes in elsewhere.
 
 The other option is to create patches for each of your commits so far,
@@ -1662,9 +1631,9 @@ branch. Create your patches (after committing) like so:
 $ git format-patch -o patches origin
 @end example
 
-(Before doing that you can review your changes with "git log origin..")
+(Before doing that you can review your changes with @command{git log origin..})
 
-You can also use the format-patch command to create a patch of working
+You can also use the @command{format-patch} command to create a patch of working
 code to send in to the mailing list.
 
 A developer might ask you to try out something they're working on. To
@@ -1674,17 +1643,17 @@ fetch their master branch, you'd do this:
 $ git remote add -f -m master -t master foo git://bar.org/~foo/stumpwm
 @end example
 
-...where "foo" is the shorthand name you'll use to refer to that
+Here, ``foo'' is the shorthand name you'll use to refer to that
 repository in the future. To checkout a local copy of that repository,
-you'd then do this:
+you'd then do
 
 @example
 $ git checkout --track -b foo-master foo/master
 @end example
 
-...and could use "git pull foo" to update later while looking at that
-branch (and note that "git pull" with no arguments, in the master
-branch, will update your StumpWM from the official repository.
+Later you could use @command{git pull foo} to update while looking at that
+branch (and note that @command{git pull} with no arguments, in the master
+branch, will update your StumpWM from the official repository).
 
 Finally, if you want to move your experimental changes into your
 master branch, you'd checkout your master branch and run:
@@ -1693,14 +1662,14 @@ master branch, you'd checkout your master branch and run:
 $ git merge experimental
 @end example
 
-If there are file conflicts, "git diff" will show you where they are;
+If there are file conflicts, @command{git diff} will show you where they are;
 you have to fix them by hand. When you're done, do another
 
 @example
 $ git commit -a
 @end example
 
-...to finalize the changes to your master branch. You can then delete
+to finalize the changes to your master branch. You can then delete
 your experimental branch. Alternately, you can wait until your changes
 (assuming you sent them in) make it into the official repository
 before deleting your experimental branch.
