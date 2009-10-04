@@ -1,6 +1,8 @@
 *.fas
 *.lib
 *.fasl
+*.a
+*.o
 *~
 configure
 config.log

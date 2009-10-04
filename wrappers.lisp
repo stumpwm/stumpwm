@@ -70,7 +70,12 @@
                                         (if (simple-string-p s) s (coerce s 'simple-string)))
                                       args)
                          :wait wait :output t :error t)
-  #-(or allegro clisp cmu gcl liquid lispworks lucid sbcl ccl)
+  #+ecl (ext:system (format nil "DISPLAY=~a:~d.~d ~a~{ '~a'~}~@[ &~]" 
+                            (screen-host (current-screen))
+                            (xlib:display-display *display*)
+                            (screen-id (current-screen))
+                            prog args (not wait)))
+  #-(or allegro clisp cmu gcl liquid lispworks lucid sbcl ccl ecl)
   (error 'not-implemented))
 
 ;;; XXX: DISPLAY isn't set for cmucl
@@ -105,7 +110,18 @@
                                           (if (simple-string-p s) s (coerce s 'simple-string)))
                                         args)
                            :wait t :output s :error t))
-  #-(or allegro clisp cmu sbcl ccl)
+  #+ecl (with-output-to-string (s)
+          ;; Arg. We can't pass in an environment so just set the DISPLAY
+          ;; variable so it's inherited by the child process.
+          (setf (getenv "DISPLAY") (format nil "~a:~d.~d"
+                                           (screen-host (current-screen))
+                                           (xlib:display-display *display*)
+                                           (screen-id (current-screen))))
+          (let ((output (ext:run-program prog args :input nil)))
+            (loop for line = (read-line output nil)
+               while line
+               do (format s "~A~%" line))))
+  #-(or allegro clisp cmu sbcl ccl ecl)
   (error 'not-implemented))
 
 (defun getenv (var)
@@ -121,7 +137,8 @@
   #+mcl (ccl::getenv var)
   #+sbcl (sb-posix:getenv (string var))
   #+openmcl (ccl:getenv (string var))
-  #-(or allegro clisp cmu gcl lispworks lucid mcl sbcl scl openmcl)
+  #+ecl (ext:getenv (string var))
+  #-(or allegro clisp cmu gcl lispworks lucid mcl sbcl scl openmcl ecl)
   (error 'not-implemented))
 
 (defun (setf getenv) (val var)
@@ -140,7 +157,8 @@
   #+lucid (setf (lcl:environment-variable (string var)) (string val))
   #+sbcl (sb-posix:putenv (format nil "~A=~A" (string var) (string val)))
   #+openmcl (ccl:setenv (string var) (string val))
-  #-(or allegro clisp cmu gcl lispworks lucid sbcl scl openmcl)
+  #+ecl (ext:setenv (string var) (string val))
+  #-(or allegro clisp cmu gcl lispworks lucid sbcl scl openmcl ecl)
   (error 'not-implemented))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -189,7 +207,6 @@
   #+sbcl (sb-debug:backtrace frames *standard-output*)
   #+clisp (ext:show-stack 1 frames (sys::the-frame))
   #+ccl (ccl:print-call-history :count frames :stream *standard-output* :detailed-p nil)
-
   #-(or sbcl clisp ccl) (write-line "Sorry, no backtrace for you."))
 
 (defun bytes-to-string (data)
@@ -239,8 +256,8 @@
   "For some reason the clx xid cache screws up returns pixmaps when
 they should be windows. So use this function to make a window out of them."
   #+clisp (make-instance 'xlib:window :id (slot-value xobject 'xlib::id) :display *display*)
-  #+sbcl (xlib::make-window :id (slot-value xobject 'xlib::id) :display *display*)
-  #-(or sbcl clisp)
+  #+(or sbcl ecl) (xlib::make-window :id (slot-value xobject 'xlib::id) :display *display*)
+  #-(or sbcl clisp ecl)
   (error 'not-implemented))
 
 ;; Right now clisp and sbcl both work the same way

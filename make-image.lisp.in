@@ -48,4 +48,16 @@
                                               (stumpwm:stumpwm)
                                               (ccl:quit))))
 
-#-(or sbcl clisp openmcl) (error "This lisp implementation is not supported.")
+;;; ECL
+
+#+ ecl
+(progn
+  (require 'asdf)
+  (load "@PPCRE_PATH@/cl-ppcre.asd"))
+#+ ecl
+(asdf:make-build 'stumpwm :type :program :monolithic t
+                 :epilogue-code '(progn
+                                  (funcall (intern "STUMPWM" (find-package "STUMPWM")))
+                                  0))
+
+#-(or sbcl clisp openmcl ecl) (error "This lisp implementation is not supported.")
