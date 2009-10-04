@@ -403,7 +403,7 @@ then describes the symbol."
                    ("top-left" :top-left)
                    ("bottom-right" :bottom-right)
                    ("bottom-left" :bottom-left)))
-         (gravity (second (assoc (argument-pop-or-read input prompt values)) values :test 'string-equal)))
+         (gravity (second (assoc (argument-pop-or-read input prompt values) values :test 'string-equal))))
     (or gravity
         (throw 'error "No matching gravity."))))
 
