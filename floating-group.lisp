@@ -184,34 +184,56 @@
            (< y (xlib:drawable-y (window-xwin window)))
            (> y (+ (xlib:drawable-height (window-xwin window))
                    (xlib:drawable-y (window-xwin window)))))
-       (message "Move window! ~@{~a ~}" x y window)
-       (multiple-value-bind (relx rely) (xlib:query-pointer (window-parent window))
-         (labels ((move-window-event-handler (&rest event-slots &key event-key &allow-other-keys)
-                    (case event-key
-                      (:button-release
-                       :done)
-                      (:motion-notify
-                       (with-slots (parent) window
-                         (xlib:with-state (parent)
-                           (setf (xlib:drawable-x parent) (- (getf event-slots :x) relx)
-                                 (xlib:drawable-y parent) (- (getf event-slots :y) rely))))
-                       t)
-                      ;; We need to eat these events or they'll ALL
-                      ;; come blasting in later. Also things start
-                      ;; lagging hard if we don't (on clisp anyway).
-                      (:configure-notify t)
-                      (:exposure t)
-                      (t
-                       nil))))
-           (xlib:grab-pointer (screen-root screen) '(:button-release :pointer-motion))
-           (unwind-protect
-                (loop for ev = (xlib:process-event *display* :handler #'move-window-event-handler :timeout nil)
-                   until (eq ev :done))
-             (ungrab-pointer))
-           ;; don't forget to update the cache
-           (setf (window-x window) (xlib:drawable-x (window-parent window))
-                 (window-y window) (xlib:drawable-y (window-parent window)))
-           (message "Done."))))
+       (multiple-value-bind (relx rely same-screen-p child state-mask)
+           (xlib:query-pointer (window-parent window))
+         (let ((initial-width (xlib:drawable-width (slot-value window 'parent)))
+               (initial-height (xlib:drawable-height (slot-value window 'parent))))
+           (labels ((move-window-event-handler (&rest event-slots &key event-key &allow-other-keys)
+                      (case event-key
+                        (:button-release
+                         :done)
+                        (:motion-notify
+                         (with-slots (parent) window
+                           (xlib:with-state (parent)
+                             ;; Either move or resize the window
+                             (cond
+                               ((find :button-1 (xlib:make-state-keys state-mask))
+                                (setf (xlib:drawable-x parent) (- (getf event-slots :x) relx)
+                                      (xlib:drawable-y parent) (- (getf event-slots :y) rely)))
+                               ((find :button-3 (xlib:make-state-keys state-mask))
+                                (let ((w (+ initial-width
+                                            (- (getf event-slots :x)
+                                               relx
+                                               (xlib:drawable-x parent))))
+                                      (h (+ initial-height
+                                            (- (getf event-slots :y)
+                                               rely
+                                               (xlib:drawable-y parent)
+                                               *float-window-title-height*))))
+                                  ;; Don't let the window become too small
+                                  (float-window-move-resize window
+                                                            :width (max w *min-frame-width*)
+                                                            :height (max h *min-frame-height*)))))))
+                         t)
+                        ;; We need to eat these events or they'll ALL
+                        ;; come blasting in later. Also things start
+                        ;; lagging hard if we don't (on clisp anyway).
+                        (:configure-notify t)
+                        (:exposure t)
+                        (t
+                         nil))))
+             (xlib:grab-pointer (screen-root screen) '(:button-release :pointer-motion))
+             (unwind-protect
+                  ;; Wait until the mouse button is released
+                  (loop for ev = (xlib:process-event *display*
+                                                     :handler #'move-window-event-handler
+                                                     :timeout nil
+                                                     :discard-p t)
+                     until (eq ev :done))
+               (ungrab-pointer))
+             ;; don't forget to update the cache
+             (setf (window-x window) (xlib:drawable-x (window-parent window))
+                   (window-y window) (xlib:drawable-y (window-parent window)))))))
       (t
        (when (eq *mouse-focus-policy* :click)
          (focus-window window))))))
