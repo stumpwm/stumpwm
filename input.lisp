@@ -190,7 +190,8 @@ to return a list of matches."
   (let ((*input-completions* completions)
         (*input-current-completions* nil)
         (*input-current-completions-idx* nil))
-    (string-trim " " (read-one-line screen prompt initial-input))))
+    (let ((line (read-one-line screen prompt initial-input)))
+      (when line (string-trim " " line)))))
 
 (defun read-one-line (screen prompt &optional (initial-input ""))
   "Read a line of input through stumpwm and return it. returns nil if the user aborted."
