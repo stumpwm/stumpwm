@@ -495,7 +495,7 @@ converted to an atom is removed."
   (if (deny-request-p window *deny-raise-request*)
       (unless (or *suppress-deny-messages*
                   ;; don't mention windows that are already visible
-                  (group-window-visible-p (window-group window) window))
+                  (window-visible-p window))
         (if (eq (window-group window) (current-group))
             (echo-string (window-screen window) (format nil "'~a' denied raise request" (window-name window)))
             (echo-string (window-screen window) (format nil "'~a' denied raise request in group ~a" (window-name window) (group-name (window-group window))))))

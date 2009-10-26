@@ -127,9 +127,6 @@
     (focus-all where)
     (update-all-mode-lines)))
 
-(defmethod group-window-visible-p ((group tile-group) win)
-  (eq (frame-window (window-frame win)) win))
-
 (defmethod group-root-exposure ((group tile-group))
   (show-frame-outline group nil))
 
