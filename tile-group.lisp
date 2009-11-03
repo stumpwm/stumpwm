@@ -725,9 +725,8 @@ depending on the tree's split direction."
                        (sync-frame-windows group leaf))))))
 
 (defun split-frame (group how &optional (ratio 1/2))
-  "split the current frame into 2 frames. return new frame number
-  if it succeeded. NIL otherwise. Note: this function used to return
-  T on success"
+  "Split the current frame into 2 frames. Return new frame number, if
+  it succeeded. NIL otherwise."
   (check-type how (member :row :column))
   (let* ((frame (tile-group-current-frame group))
          (head (frame-head group frame)))
