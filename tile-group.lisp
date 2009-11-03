@@ -725,7 +725,9 @@ depending on the tree's split direction."
                        (sync-frame-windows group leaf))))))
 
 (defun split-frame (group how &optional (ratio 1/2))
-  "split the current frame into 2 frames. return T if it succeeded. NIL otherwise."
+  "split the current frame into 2 frames. return new frame number
+  if it succeeded. NIL otherwise. Note: this function used to return
+  T on success"
   (check-type how (member :row :column))
   (let* ((frame (tile-group-current-frame group))
          (head (frame-head group frame)))
@@ -760,7 +762,7 @@ depending on the tree's split direction."
         ;; we also need to show the new window in the other frame
         (when (frame-window f2)
           (unhide-window (frame-window f2)))
-        t))))
+        (frame-number f2)))))
 
 (defun draw-frame-outline (group f tl br)
   "Draw an outline around FRAME."
