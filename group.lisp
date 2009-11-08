@@ -180,16 +180,21 @@ at 0. Return a netwm compliant group id."
       (t
        (really-move-window window to-group)))))
 
-(defun next-group (current &optional (list (screen-groups (group-screen current))))
-  ;; ditch the negative groups
-  (setf list (non-hidden-groups list))
-  (let* ((matches (member current list)))
-    (if (null (cdr matches))
-        ;; If the last one in the list is current, then
-        ;; use the first one.
-        (car list)
-        ;; Otherwise, use the next one in the list.
-        (cadr matches))))
+(defun next-group (current &optional
+                   (groups (non-hidden-groups (screen-groups
+                                               (group-screen current)))))
+  "Return the group following @var{current} in @var{groups}. If none
+are found return @code{NIL}."
+  (let* ((matches (member current groups))
+         (next-group (if (null (cdr matches))
+                         ;; If the last one in the list is current, then
+                         ;; use the first one.
+                         (car groups)
+                         ;; Otherwise, use the next one in the list.
+                         (cadr matches))))
+    (if (eq next-group current)
+        nil
+        next-group)))
 
 (defun merge-groups (from-group to-group)
   "Merge all windows in FROM-GROUP into TO-GROUP."
@@ -295,9 +300,9 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 ;; together.
 
 (defun group-forward (current list)
-  "Switch to the next group in the list, if one exists. Returns the
-new group."
-  (let ((ng (next-group current list)))
+  "Switch to the next non-hidden-group in the list, if one
+exists. Returns the new group."
+  (let ((ng (next-group current (non-hidden-groups list))))
     (when ng
       (switch-to-group ng)
       ng)))
@@ -433,21 +438,24 @@ the default group formatting and window formatting, respectively."
 (defcommand gkill () ()
 "Kill the current group. All windows in the current group are migrated
 to the next group."
-  (let ((dead-group (current-group))
-	(to-group (next-group (current-group))))
-    (if (eq dead-group to-group)
-    (message "There's only one visible group")
-    (if (or (not %interactivep%)
-	    (not (group-windows dead-group))
-	    (y-or-n-p
-	     (format nil "You are about to kill non-empty group \"^B^3*~a^n\"
+  (let* ((dead-group (current-group))
+         (groups (screen-groups (current-screen)))
+         ;; If no "visible" group is found, try with all groups
+         (to-group (or (next-group dead-group (non-hidden-groups groups))
+                       (next-group dead-group groups))))
+    (if to-group
+        (if (or (not %interactivep%)
+            (not (group-windows dead-group))
+            (y-or-n-p
+             (format nil "You are about to kill non-empty group \"^B^3*~a^n\"
 The windows will be moved to group \"^B^2*~a^n\"
 ^B^6*Confirm?^n " (group-name dead-group) (group-name to-group))))
-	(progn
-	  (switch-to-group to-group)
-	  (kill-group dead-group to-group)
-	  (message "Deleted"))
-	(message "Canceled")))))
+            (progn
+              (switch-to-group to-group)
+              (kill-group dead-group to-group)
+              (message "Deleted"))
+            (message "Canceled"))
+        (message "There's only one group left"))))
 
 (defcommand gmerge (from) ((:group "From Group: "))
 "Merge @var{from} into the current group. @var{from} is not deleted."
