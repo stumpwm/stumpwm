@@ -88,10 +88,11 @@
   #+clisp (with-output-to-string (s)
             ;; Arg. We can't pass in an environment so just set the DISPLAY
             ;; variable so it's inherited by the child process.
-            (setf (getenv "DISPLAY") (format nil "~a:~d.~d"
-                                             (screen-host (current-screen))
-                                             (xlib:display-display *display*)
-                                             (screen-id (current-screen))))
+            (when (current-screen)
+              (setf (getenv "DISPLAY") (format nil "~a:~d.~d"
+                                               (screen-host (current-screen))
+                                               (xlib:display-display *display*)
+                                               (screen-id (current-screen)))))
             (let ((out (ext:run-program prog :arguments args :wait t :output :stream)))
               (loop for i = (read-char out nil out)
                     until (eq i out)
@@ -101,10 +102,15 @@
            (sb-ext:run-program prog args :output s :error s :wait t
                                ;; inject the DISPLAY variable in so programs show up
                                ;; on the right screen.
-                               :environment (cons (screen-display-string (current-screen))
-                                                  (remove-if (lambda (str)
-                                                               (string= "DISPLAY=" str :end2 (min 8 (length str))))
-                                                             (sb-ext:posix-environ)))))
+                               :environment
+                               (let ((env (remove-if (lambda (str)
+                                                       (string= "DISPLAY=" str :end2 (min 8 (length str))))
+                                                     (sb-ext:posix-environ)))
+                                     (current-screen (current-screen)))
+                                 (if current-screen
+                                     (cons (screen-display-string (current-screen))
+                                           env)
+                                     env))))
   #+ccl (with-output-to-string (s)
           (ccl:run-program prog (mapcar (lambda (s)
                                           (if (simple-string-p s) s (coerce s 'simple-string)))
