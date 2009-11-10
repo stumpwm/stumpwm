@@ -560,22 +560,18 @@ LEAF. Return tree with leaf removed."
     (expand-tree newtree amt dir)
     newtree))
 
-(defun resize-tree (tree w h &optional x y)
+(defun resize-tree (tree w h &optional (x (tree-x tree)) (y (tree-y tree)))
   "Scale TREE to width W and height H, ignoring aspect. If X and Y are
   provided, reposition the TREE as well."
   (let* ((tw (tree-width tree))
          (th (tree-height tree))
-         (wf (/ 1 (/ tw w)))
-         (hf (/ 1 (/ th h)))
-         (xo (if x (- x (tree-x tree)) 0))
-         (yo (if y (- y (tree-y tree)) 0)))
+         (wf (/ w tw))
+         (hf (/ h th)))
     (tree-iterate tree (lambda (f)
                          (setf (frame-height f) (round (* (frame-height f) hf))
-                               (frame-y f) (round (* (frame-y f) hf))
+                               (frame-y f) (+ (round (* (- (frame-y f) (tree-y tree)) hf)) y)
                                (frame-width f) (round (* (frame-width f) wf))
-                               (frame-x f) (round (* (frame-x f) wf)))
-                         (incf (frame-y f) yo)
-                         (incf (frame-x f) xo)))
+                               (frame-x f) (+ (round (* (- (frame-x f) (tree-x tree)) wf)) x))))
     (dformat 4 "resize-tree ~Dx~D -> ~Dx~D~%" tw th (tree-width tree) (tree-height tree))))
 
 (defun remove-frame (tree leaf)
