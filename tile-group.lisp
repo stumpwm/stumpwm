@@ -565,13 +565,15 @@ LEAF. Return tree with leaf removed."
   provided, reposition the TREE as well."
   (let* ((tw (tree-width tree))
          (th (tree-height tree))
+         (tx (tree-x tree))
+         (ty (tree-y tree))
          (wf (/ w tw))
          (hf (/ h th)))
     (tree-iterate tree (lambda (f)
                          (setf (frame-height f) (round (* (frame-height f) hf))
-                               (frame-y f) (+ (round (* (- (frame-y f) (tree-y tree)) hf)) y)
+                               (frame-y f) (+ (round (* (- (frame-y f) ty) hf)) y)
                                (frame-width f) (round (* (frame-width f) wf))
-                               (frame-x f) (+ (round (* (- (frame-x f) (tree-x tree)) wf)) x))))
+                               (frame-x f) (+ (round (* (- (frame-x f) tx) wf)) x))))
     (dformat 4 "resize-tree ~Dx~D -> ~Dx~D~%" tw th (tree-width tree) (tree-height tree))))
 
 (defun remove-frame (tree leaf)
