@@ -29,7 +29,7 @@
 
 (defparameter *version*
   #.(concatenate 'string
-                 (if (probe-file ".git")
+                 (if (probe-path ".git")
                      (string-trim '(#\Newline) (run-shell-command "git describe" t))
                      "@PACKAGE_VERSION@")
                  " Compiled On "
