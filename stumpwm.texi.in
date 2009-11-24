@@ -274,18 +274,18 @@ Lisp code directly, on the same Lisp process that StumpWM is running on.
 Type @kbd{C-t :} and an input box will appear. Then type some Lisp
 expression.
 
-When you call @command{eval} this way, you will be in the COMMON-LISP-USER
-package. In order to use all the functions and variables defined in
-the StumpWM manual, you need to explicitly mention the package @code{stumpwm}:
+When you call @command{eval} this way, you will be in the STUMPWM-USER
+package, which imports all the exported symbols from the main STUMPWM
+package.
 
 @table @code
-@item stumpwm:*mode-line-border-width*
+@item *mode-line-border-width*
 Reads the value of @var{*mode-line-border-width*}.
 
-@item (setf stumpwm:*mode-line-border-width* 3)
+@item (setf *mode-line-border-width* 3)
 Sets the variable @var{*mode-line-border-width*} to 3.
 
-@item (stumpwm:set-prefix-key (stumpwm:kbd "C-M-H-s-z"))
+@item (set-prefix-key (kbd "C-M-H-s-z"))
 Calls the @code{set-prefix-key} function (and sets a new keyboard prefix)
 @end table
 
