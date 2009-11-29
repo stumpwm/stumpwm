@@ -24,7 +24,6 @@
 (in-package :stumpwm)
 
 (export '(cancel-timer
-	  load-contrib
 	  run-with-timer
 	  stumpwm
 	  timer-p))
