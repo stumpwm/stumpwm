@@ -18,7 +18,7 @@
 ;; Is there a better way to use asdf.lisp than including it with stumpwm?
 #+clisp
 (progn
-  (load "asdf.lisp")
+  (require 'asdf '("asdf.lisp"))
   (load "stumpwm.asd")
   (load "@PPCRE_PATH@/cl-ppcre.asd"))
 #+clisp

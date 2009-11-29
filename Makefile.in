@@ -5,7 +5,7 @@ sbcl_BUILDOPTS=--load ./make-image.lisp
 openmcl_BUILDOPTS=--load ./make-image.lisp
 ecl_BUILDOPTS=-norc -shell ./make-image.lisp
 
-clisp_INFOOPTS=-K full -on-error exit -x "(load \"asdf.lisp\") (load \"stumpwm.asd\") (load \"@PPCRE_PATH@/cl-ppcre.asd\") (asdf:operate 'asdf:load-op :stumpwm) (load (compile-file \"manual.lisp\")) (stumpwm::generate-manual) (ext:exit)"
+clisp_INFOOPTS=-K full -on-error exit -x "(require 'asdf '(\"asdf.lisp\")) (load \"stumpwm.asd\") (load \"@PPCRE_PATH@/cl-ppcre.asd\") (asdf:operate 'asdf:load-op :stumpwm) (load (compile-file \"manual.lisp\")) (stumpwm::generate-manual) (ext:exit)"
 sbcl_INFOOPTS=--eval "(progn (require 'asdf) (require 'stumpwm) (load \"manual.lisp\"))" --eval "(progn (stumpwm::generate-manual) (sb-ext:quit))"
 openmcl_INFOOPTS=--eval "(require 'asdf) (require 'stumpwm) (load (compile-file \"manual.lisp\")) (stumpwm::generate-manual) (quit)"
 ecl_INFOOPTS=-eval "(progn (require 'asdf) (load \"@PPCRE_PATH@/cl-ppcre.asd\") (require 'stumpwm) (load \"manual.lisp\"))" -eval "(progn (stumpwm::generate-manual) (ext:quit))"
