@@ -262,8 +262,8 @@
   "For some reason the clx xid cache screws up returns pixmaps when
 they should be windows. So use this function to make a window out of them."
   #+clisp (make-instance 'xlib:window :id (slot-value xobject 'xlib::id) :display *display*)
-  #+(or sbcl ecl) (xlib::make-window :id (slot-value xobject 'xlib::id) :display *display*)
-  #-(or sbcl clisp ecl)
+  #+(or sbcl ecl openmcl) (xlib::make-window :id (slot-value xobject 'xlib::id) :display *display*)
+  #-(or sbcl clisp ecl openmcl)
   (error 'not-implemented))
 
 ;; Right now clisp and sbcl both work the same way
