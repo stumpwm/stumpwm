@@ -600,8 +600,9 @@ Useful for re-using the &REST arg after removing some options."
       (push (pop plist) copy))
     (setq plist (cddr plist))))
 
-(defun screen-display-string (screen)
-  (format nil "DISPLAY=~a:~d.~d"
+(defun screen-display-string (screen &optional (assign t))
+  (format nil
+          (if assign "DISPLAY=~a:~d.~d" "~a:~d.~d")
           (screen-host screen)
           (xlib:display-display *display*)
           (screen-id screen)))

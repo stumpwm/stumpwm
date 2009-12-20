@@ -31,104 +31,82 @@
 (define-condition not-implemented (stumpwm-error)
   () (:documentation "A function has been called that is not implemented yet."))
 
-;;; XXX: DISPLAY env var isn't set for cmucl
-(defun run-prog (prog &rest opts &key args (wait t) &allow-other-keys)
+(defun run-prog (prog &rest opts &key args output (wait t) &allow-other-keys)
   "Common interface to shell. Does not return anything useful."
-  #+gcl (declare (ignore wait))
-  (setq opts (remove-plist opts :args :wait))
-  #+allegro (apply #'excl:run-shell-command (apply #'vector prog prog args)
-                   :wait wait opts)
-  #+(and clisp      lisp=cl)
-  (progn
+  #+(or clisp ccl ecl gcl)
     ;; Arg. We can't pass in an environment so just set the DISPLAY
     ;; variable so it's inherited by the child process.
-    (setf (getenv "DISPLAY") (format nil "~a:~d.~d"
-                                     (screen-host (current-screen))
-                                     (xlib:display-display *display*)
-                                     (screen-id (current-screen))))
-    (apply #'ext:run-program prog :arguments args :wait wait opts))
-  #+(and clisp (not lisp=cl))
-  (if wait
-      (apply #'lisp:run-program prog :arguments args opts)
-      (lisp:shell (format nil "~a~{ '~a'~} &" prog args)))
-  #+cmu (apply #'ext:run-program prog args :output t :error t :wait wait opts)
-  #+gcl (apply #'si:run-process prog args)
-  #+liquid (apply #'lcl:run-program prog args)
-  #+lispworks (apply #'sys::call-system
-                     (format nil "~a~{ '~a'~}~@[ &~]" prog args (not wait))
-                     opts)
-  #+lucid (apply #'lcl:run-program prog :wait wait :arguments args opts)
-  #+sbcl (apply #'sb-ext:run-program prog args :output t :error t :wait wait
-                ;; inject the DISPLAY variable in so programs show up
-                ;; on the right screen.
-                :environment (cons (screen-display-string (current-screen))
-                                   (remove-if (lambda (str)
-                                                (string= "DISPLAY=" str :end2 (min 8 (length str))))
-                                              (sb-ext:posix-environ)))
-                opts)
-  #+ccl (ccl:run-program prog (mapcar (lambda (s)
-                                        (if (simple-string-p s) s (coerce s 'simple-string)))
-                                      args)
-                         :wait wait :output t :error t)
-  #+ecl (ext:system (format nil "DISPLAY=~a:~d.~d ~a~{ '~a'~}~@[ &~]" 
-                            (screen-host (current-screen))
-                            (xlib:display-display *display*)
-                            (screen-id (current-screen))
-                            prog args (not wait)))
-  #-(or allegro clisp cmu gcl liquid lispworks lucid sbcl ccl ecl)
+    (when (current-screen)
+      (setf (getenv "DISPLAY") (screen-display-string (current-screen) nil)))
+  (setq opts (remove-plist opts :args :output :wait))
+  #+allegro
+  (apply #'excl:run-shell-command (apply #'vector prog prog args)
+         :output output :wait wait :environment
+         (when (current-screen)
+           (list (cons "DISPLAY" (screen-display-string (current-screen)))))
+         opts)
+  #+ccl
+  (ccl:run-program prog (mapcar (lambda (s)
+                                  (if (simple-string-p s)
+                                      s
+                                      (coerce s 'simple-string)))
+                                args)
+                         :wait wait :output (if output output t) :error t)
+  #+clisp
+  (let ((stream (apply #'ext:run-program prog :arguments args :wait wait
+                       :output (if output :stream :terminal) opts)))
+    (when output
+      (loop for ch = (read-char stream nil stream)
+            until (eq ch stream)
+            do (write-char ch output))))
+  #+cmu
+  (let ((env ext:*environment-list*))
+    (when (current-screen)
+      (setf env (cons (cons "DISPLAY"
+                            (screen-display-string (current-screen) nil))
+                      env)))
+  (apply #'ext:run-program prog args :output (if output output t)
+         :env env :error t :wait wait opts))
+  #+ecl
+  (if output
+      (let ((stream (ext:run-program prog args :input nil)))
+        (loop for line = (read-line stream nil)
+           while line
+           do (format output "~A~%" line)))
+      (ext:system (format nil "~a~{ '~a'~}~@[ &~]" prog args (not wait))))
+  #+gcl
+  (let ((stream (apply #'si:run-process prog args)))
+    (when wait
+      (loop for ch = (read-char stream nil stream)
+            until (eq ch stream)
+            do (write-char ch output))))
+  #+liquid
+  (apply #'lcl:run-program prog :output output :wait wait :arguments args opts)
+  #+lispworks
+  (let ((cmdline (format nil "~a ~a~{ '~a'~}"
+                         (screen-display-string (current-screen) t)
+                         prog args (not wait))))
+    (if output
+        (apply #'sys::call-system-showing-output cmdline
+               :output-stream output :wait wait args)
+        (apply #'sys::call-system cmdline :wait wait args)))
+  #+sbcl
+  (let ((env (sb-ext:posix-environ)))
+    (when (current-screen)
+      (setf env (cons (screen-display-string (current-screen) t)
+                      (remove-if (lambda (str)
+                                   (string= "DISPLAY=" str
+                                            :end2 (min 8 (length str))))
+                                 env))))
+    (apply #'sb-ext:run-program prog args :output (if output output t)
+           :error t :wait wait :environment env opts))
+  #-(or allegro ccl clisp cmu ecl gcl liquid lispworks sbcl)
   (error 'not-implemented))
 
-;;; XXX: DISPLAY isn't set for cmucl
 (defun run-prog-collect-output (prog &rest args)
   "run a command and read its output."
-  #+allegro (with-output-to-string (s)
-              (excl:run-shell-command (format nil "~a~{ ~a~}" prog args)
-                                      :output s :wait t))
-  ;; FIXME: this is a dumb hack but I don't care right now.
-  #+clisp (with-output-to-string (s)
-            ;; Arg. We can't pass in an environment so just set the DISPLAY
-            ;; variable so it's inherited by the child process.
-            (when (current-screen)
-              (setf (getenv "DISPLAY") (format nil "~a:~d.~d"
-                                               (screen-host (current-screen))
-                                               (xlib:display-display *display*)
-                                               (screen-id (current-screen)))))
-            (let ((out (ext:run-program prog :arguments args :wait t :output :stream)))
-              (loop for i = (read-char out nil out)
-                    until (eq i out)
-                    do (write-char i s))))
-  #+cmu (with-output-to-string (s) (ext:run-program prog args :output s :error s :wait t))
-  #+sbcl (with-output-to-string (s)
-           (sb-ext:run-program prog args :output s :error s :wait t
-                               ;; inject the DISPLAY variable in so programs show up
-                               ;; on the right screen.
-                               :environment
-                               (let ((env (remove-if (lambda (str)
-                                                       (string= "DISPLAY=" str :end2 (min 8 (length str))))
-                                                     (sb-ext:posix-environ)))
-                                     (current-screen (current-screen)))
-                                 (if current-screen
-                                     (cons (screen-display-string (current-screen))
-                                           env)
-                                     env))))
-  #+ccl (with-output-to-string (s)
-          (ccl:run-program prog (mapcar (lambda (s)
-                                          (if (simple-string-p s) s (coerce s 'simple-string)))
-                                        args)
-                           :wait t :output s :error t))
-  #+ecl (with-output-to-string (s)
-          ;; Arg. We can't pass in an environment so just set the DISPLAY
-          ;; variable so it's inherited by the child process.
-          (setf (getenv "DISPLAY") (format nil "~a:~d.~d"
-                                           (screen-host (current-screen))
-                                           (xlib:display-display *display*)
-                                           (screen-id (current-screen))))
-          (let ((output (ext:run-program prog args :input nil)))
-            (loop for line = (read-line output nil)
-               while line
-               do (format s "~A~%" line))))
-  #-(or allegro clisp cmu sbcl ccl ecl)
-  (error 'not-implemented))
+  (with-output-to-string (s)
+    (run-prog prog :args args :output s :wait t)))
 
 (defun getenv (var)
   "Return the value of the environment variable."
