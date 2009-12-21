@@ -3,6 +3,7 @@
 *.fasl
 *.a
 *.o
+*.*fsl
 *~
 configure
 config.log
