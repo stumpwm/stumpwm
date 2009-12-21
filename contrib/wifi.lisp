@@ -75,7 +75,8 @@ prev-val."
   (or (loop
          for path in (directory (make-pathname :directory '(:absolute "sys" "class" "net" :wild)))
          thereis (let ((device-name (car (last (pathname-directory path)))))
-                   (if (probe-file (merge-pathnames (make-pathname :directory '(:relative "wireless"))
+                   (if (probe-file (merge-pathnames (make-pathname :directory '(:relative "wireless")
+                                                                   :name "status")
                                                     path))
                        device-name
                        nil)))
