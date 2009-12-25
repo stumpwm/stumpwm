@@ -332,14 +332,19 @@ regarding files in sysfs. Data is read in chunks of BLOCKSIZE bytes."
 	(stringlen blocksize))
 
     (loop
-       ; Read in the raw bytes
+       ;; Read in the raw bytes
        (setf bytes-read
 	     (sb-unix:unix-read fd (sb-sys:vector-sap buf) blocksize))
 
-       ; This is # bytes both read and in the correct line.
+       ;; Why does SBCL return NIL when an error occurs?
+       (when (or (null bytes-read)
+                 (< bytes-read 0))
+         (error "UNIX-READ failed."))
+
+       ;; This is # bytes both read and in the correct line.
        (setf pos (or (position (char-code #\Newline) buf) bytes-read))
 
-       ; Resize the string if necessary.
+       ;; Resize the string if necessary.
        (when (> (+ pos string-filled) stringlen)
 	 (setf stringlen (max (+ pos string-filled)
 			      (* 2 stringlen)))
@@ -347,7 +352,7 @@ regarding files in sysfs. Data is read in chunks of BLOCKSIZE bytes."
 	   (replace new string)
 	   (setq string new)))
 
-       ; Translate read bytes to string
+       ;; Translate read bytes to string
        (setf (subseq string string-filled)
 	     (sb-ext:octets-to-string (subseq buf 0 pos)))
 
