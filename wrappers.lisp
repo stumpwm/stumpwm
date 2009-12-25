@@ -240,7 +240,9 @@
 (defun utf8-to-string (octets)
   "Convert the list of octets to a string."
   #+sbcl (handler-bind
-             ((sb-impl::octet-decoding-error #'(lambda (c) (invoke-restart 'use-value "?"))))
+             ((sb-impl::octet-decoding-error #'(lambda (c) 
+                                                 (declare (ignore c))
+                                                 (invoke-restart 'use-value "?"))))
            (sb-ext:octets-to-string 
             (coerce octets '(vector (unsigned-byte 8)))
             :external-format :utf-8))
