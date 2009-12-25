@@ -111,7 +111,9 @@ is found, just displays nil."
         (let* ((qual (read-wifi-info-int device "link")))
           (format nil "~A ^[~A~D%^]"
                   essid (bar-zone-color qual 40 30 15 t) qual)))
-    (t (c) (format nil "Error ~A" c))))
+    ;; CLISP has annoying newlines in their error messages... Just
+    ;; print a string showing our confusion.
+    (t (c) "???")))
 
 ;;; Add mode-line formatter
 
