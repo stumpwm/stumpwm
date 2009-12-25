@@ -29,7 +29,7 @@
 (export '(getenv))
 
 (define-condition not-implemented (stumpwm-error)
-  () (:documentation "Describes a non implemented functionnality."))
+  () (:documentation "A function has been called that is not implemented yet."))
 
 ;;; XXX: DISPLAY env var isn't set for cmucl
 (defun run-prog (prog &rest opts &key args (wait t) &allow-other-keys)
