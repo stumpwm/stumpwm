@@ -128,11 +128,8 @@ utilization."
 
 (defvar *acpi-thermal-zone* (first (last
 				    (pathname-directory
-				     (first
-				      (directory (make-pathname 
-						  :directory '(:absolute 
-							       "proc" "acpi" "thermal_zone"
-							       :wild))))))))
+				     (first (list-directory "/proc/acpi/thermal_zone/"))))))
+
 (defun fmt-cpu-temp (ml)
   "Returns a string representing the current CPU temperature."
   (declare (ignore ml))

@@ -73,7 +73,7 @@ prev-val."
 
 (defun guess-wireless-device ()
   (or (loop
-         for path in (directory (make-pathname :directory '(:absolute "sys" "class" "net" :wild)))
+         for path in (list-directory "/sys/class/net/")
          thereis (let ((device-name (car (last (pathname-directory path)))))
                    (if (probe-file (merge-pathnames (make-pathname :directory '(:relative "wireless")
                                                                    :name "status")
@@ -113,7 +113,7 @@ is found, just displays nil."
                   essid (bar-zone-color qual 40 30 15 t) qual)))
     ;; CLISP has annoying newlines in their error messages... Just
     ;; print a string showing our confusion.
-    (t (c) "???")))
+    (t (c) (format nil "~A" c))))
 
 ;;; Add mode-line formatter
 

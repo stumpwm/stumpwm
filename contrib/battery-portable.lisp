@@ -134,8 +134,7 @@
   (defmethod all-batteries ((method procfs-method))
     (mapcar (lambda (p)
               (make-instance 'procfs-battery :path p))
-            (directory (make-pathname
-                        :directory '(:absolute "proc" "acpi" "battery" :wild)))))
+            (list-directory "/proc/acpi/battery/")))
 
   (defmethod state-of ((battery procfs-battery))
     (handler-case
@@ -202,8 +201,7 @@
                             (make-instance 'sysfs-battery
                                            :path path))
                         (file-error () nil)))
-                    (directory
-                     (make-pathname :directory '(:absolute "sys" "class" "power_supply" :wild))))))
+                    (list-directory "/sys/class/power_supply/"))))
 
   (defmethod state-of ((battery sysfs-battery))
     (handler-case
