@@ -4,7 +4,7 @@ The Stump Window Manager
 Stumpwm is a window manager written entirely in Common Lisp. It
 attempts to be highly customizable while relying entirely on the
 keyboard for input. You will not find buttons, icons, title bars, tool
-bars, or any of the other conventional GUI widgets. 
+bars, or any of the other conventional GUI widgets.
 
 These design decisions reflect the growing popularity of productive,
 customizable lisp based systems.
@@ -15,14 +15,14 @@ Build & Start Stumpwm
 Prerequisites
 =============
 
-* a common lisp distribution. clisp and SBCL both work.
+* a common lisp distribution. CCL, CLISP, and SBCL all work.
 * clx
 * cl-ppcre
 
-If you intend to use sbcl you need to install portable-clx. If you're
-using clisp, make sure you use at least version 2.42 and that clisp is
-compiled with new-clx. As of clisp 2.42, new-clx works fine with
-stumpwm. Any version before that is too buggy to run stumpwm.
+If you intend to use SBCL or CCL you need to install portable-clx. If
+you're using clisp, make sure you use at least version 2.42 and that
+clisp is compiled with new-clx. As of clisp 2.42, new-clx works fine
+with stumpwm. Any version before that is too buggy to run stumpwm.
 
 You can use asdf-install to install lisp libraries:
   $ sbcl
@@ -44,6 +44,8 @@ If using clisp, you'll need to install asdf first to use asdf-install.
     * (asdf:operate 'asdf:compile-op 'asdf-install)
     * (asdf:operate 'asdf:load-op 'asdf-install)
     * (asdf-install:install :cl-ppcre)
+
+CCL has asdf built in, but you will need to get asdf-install like with clisp.
 
 Your operating system distribution may also have these libraries
 available.
@@ -74,7 +76,10 @@ $ make
 
 If all goes well, you should have a stumpwm binary now. Sorry there's
 no install yet. Just copy the binary wherever you want or run it out
-of the stumpwm/ directory.
+of the stumpwm/ directory. If autoconf worked properly, you can
+install the binary, along with the .info documentation with:
+
+$ make install
 
 Now that you have a binary, call it from your ~/.xinitrc file:
 
@@ -91,13 +96,21 @@ common is sluggishness. It may also cause stumpwm to become
 unresponsive. If you use SBCL, consider using a version built without
 threads.
 
+CCL And Virtual Memory
+----------------------
+
+On 64bit platforms, CCL reserves a "very large" amount of virtual
+memory. If this bothers you for some reason, you can pass the -R or
+--heap-reserve option to the binary in your ~/.xinitrc file. See
+http://ccl.clozure.com/manual/chapter15.1.html for an explanation.
+
 Help
 ----
 
 There's a texinfo manual, stumpwm.texi. the build scripts generate an
 info file you can read in emacs or with the `info' program.
 
-For other stuff visit the stumpwm wiki: 
+For other stuff visit the stumpwm wiki:
 
 http://stumpwm.antidesktop.net/
 
