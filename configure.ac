@@ -9,12 +9,12 @@ AC_SUBST(LISP)
 AC_SUBST(PPCRE_PATH)
 
 # Checks for programs.
-AC_ARG_WITH(lisp, [ --with-lisp=IMPL      use the specified lisp (sbcl, clisp, openmcl or ecl)], LISP=$withval, LISP="sbcl")
-AC_ARG_WITH(sbcl, [ --with-sbcl=PATH      specify location of sbcl], SBCL_PATH=$withval, SBCL_PATH="")
-AC_ARG_WITH(clisp, [ --with-clisp=PATH     specify location of clisp], CLISP_PATH=$withval, CLISP_PATH="")
-AC_ARG_WITH(openmcl, [ --with-openmcl=PATH     specify location of openmcl], OPENMCL_PATH=$withval, OPENMCL_PATH="")
-AC_ARG_WITH(ecl, [ --with-ecl=PATH      specify location of ecl], ECL_PATH=$withval, ECL_PATH="")
-AC_ARG_WITH(ppcre, [ --with-ppcre=PATH     specify location of cl-ppcre], PPCRE_PATH=$withval, PPCRE_PATH="`pwd`/cl-ppcre")
+AC_ARG_WITH(lisp,    [  --with-lisp=IMPL        use the specified lisp (sbcl, clisp, ccl or ecl)], LISP=$withval, LISP="sbcl")
+AC_ARG_WITH(sbcl,    [  --with-sbcl=PATH        specify location of sbcl], SBCL_PATH=$withval, SBCL_PATH="")
+AC_ARG_WITH(clisp,   [  --with-clisp=PATH       specify location of clisp], CLISP_PATH=$withval, CLISP_PATH="")
+AC_ARG_WITH(ccl,     [  --with-ccl=PATH         specify location of ccl], CCL_PATH=$withval, CCL_PATH="")
+AC_ARG_WITH(ecl,     [  --with-ecl=PATH         specify location of ecl], ECL_PATH=$withval, ECL_PATH="")
+AC_ARG_WITH(ppcre,   [  --with-ppcre=PATH       specify location of cl-ppcre], PPCRE_PATH=$withval, PPCRE_PATH="`pwd`/cl-ppcre")
 
 if test -x "$SBCL_PATH"; then
    SBCL=$SBCL_PATH
@@ -32,12 +32,12 @@ else
    AC_PATH_PROG([CLISP],clisp,"")
 fi
 
-if test -x "$OPENMCL_PATH"; then
-   OPENMCL=$OPENMCL_PATH
-   AC_MSG_CHECKING([for openmcl])
-   AC_MSG_RESULT($OPENMCL)
+if test -x "$CCL_PATH"; then
+   CCL=$CCL_PATH
+   AC_MSG_CHECKING([for ccl])
+   AC_MSG_RESULT($CCL)
 else
-   AC_PATH_PROG([OPENMCL],openmcl,"")
+   AC_PATH_PROG([CCL],ccl,"")
 fi
 
 if test -x "$ECL_PATH"; then
@@ -62,12 +62,12 @@ elif test "x$LISP" = "xsbcl"; then
    else
       LISP_PROGRAM=$SBCL
    fi
-elif test "x$LISP" = "xopenmcl"; then
-   if test "x$OPENMCL" = "x"; then
+elif test "x$LISP" = "xccl"; then
+   if test "x$CCL" = "x"; then
       LISP=sbcl
       LISP_PROGRAM=$SBCL
    else
-      LISP_PROGRAM=$OPENMCL
+      LISP_PROGRAM=$CCL
    fi
 elif test "x$LISP" = "xecl"; then
    if test "x$ECL" = "x"; then
