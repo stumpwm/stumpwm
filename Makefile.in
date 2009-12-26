@@ -55,7 +55,9 @@ upload-release:
 	( echo rm stumpwm-latest.tgz.sig && echo rm stumpwm-latest.tgz && echo ln stumpwm-@PACKAGE_VERSION@.tgz stumpwm-latest.tgz && echo ln stumpwm-@PACKAGE_VERSION@.tgz.sig stumpwm-latest.tgz.sig ) | sftp -b - sabetts@dl.sv.nongnu.org:/releases/stumpwm/
 
 clean:
-	rm -f *.fasl *.fas *.lib *.*fsl stumpwm stumpwm.texi stumpwm.info
+	rm -f *.fasl *.fas *.lib *.*fsl
+	rm -f *.log *.fns *.fn *.aux *.cp *.ky *.log *.toc *.pg *.tp *.vr *.vrs
+	rm -f stumpwm stumpwm.texi stumpwm.info
 
 install: stumpwm.info stumpwm
 	test -z "$(destdir)$(bindir)" || mkdir -p "$(destdir)$(bindir)"
