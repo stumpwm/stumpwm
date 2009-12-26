@@ -176,6 +176,7 @@
                     (find-symbol "UNIX-FILE-KIND" :sb-unix))))
     (defun pathname-is-executable-p (pathname)
       "Return T if the pathname describes an executable file."
+      (declare (ignorable pathname))
       #+sbcl
       (let ((filename (coerce (sb-ext:native-namestring pathname) 'base-string)))
         (and (eq (funcall file-kind-fun filename) :file)
@@ -370,6 +371,7 @@ regarding files in sysfs. Data is read in chunks of BLOCKSIZE bytes."
   (error "unimplemented"))
 
 (defun execv (program &rest arguments)
+  (declare (ignorable program arguments))
   ;; FIXME: seems like there should be a way to do this in sbcl the way it's done in clisp. -sabetts
   #+sbcl
   (sb-alien:with-alien ((prg sb-alien:c-string program)

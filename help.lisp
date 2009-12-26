@@ -64,6 +64,7 @@
                         (columnize data cols))))
 
 (defcommand commands () ()
+"List all available commands."
   (let* ((screen (current-screen))
          (data (all-commands))
          (cols (ceiling (length data)

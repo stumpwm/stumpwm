@@ -186,6 +186,7 @@
                    (xlib:drawable-y (window-xwin window)))))
        (multiple-value-bind (relx rely same-screen-p child state-mask)
            (xlib:query-pointer (window-parent window))
+         (declare (ignore same-screen-p child))
          (let ((initial-width (xlib:drawable-width (slot-value window 'parent)))
                (initial-height (xlib:drawable-height (slot-value window 'parent))))
            (labels ((move-window-event-handler (&rest event-slots &key event-key &allow-other-keys)

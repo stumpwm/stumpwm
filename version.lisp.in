@@ -37,6 +37,7 @@
                                 *time-format-string-default*)))
 
 (defcommand version () ()
+"Print version information and compilation date."
   (message *version*))
 
 ;; End of file
