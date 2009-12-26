@@ -19,8 +19,7 @@
 
 ;; Commentary:
 ;;
-;; Window Manager commands that users can use to manipulate stumpwm
-;; and write custos.
+;; Window Manager commands that users can use to manipulate stumpwm.
 ;;
 ;; Code:
 
