@@ -24,6 +24,7 @@
 	       (:file "primitives")
                (:file "workarounds")
 	       (:file "wrappers")
+               (:file "pathnames")
 	       (:file "keysyms")
 	       (:file "keytrans")
 	       (:file "kmap")
