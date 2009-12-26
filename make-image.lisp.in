@@ -44,9 +44,7 @@
   (asdf:oos 'asdf:load-op 'stumpwm))
 #+openmcl
 (progn
-  (ccl:save-application "stumpwm" :toplevel-function (lambda ()
-                                              (stumpwm:stumpwm)
-                                              (ccl:quit))))
+  (ccl:save-application "stumpwm" :prepend-kernel t :toplevel-function #'stumpwm:stumpwm))
 
 ;;; ECL
 
