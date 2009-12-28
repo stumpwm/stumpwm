@@ -109,6 +109,9 @@
   ((current-window :accessor float-group-current-window))
   )
 
+(defmethod group-startup ((group float-group))
+  )
+
 (defmethod group-add-window ((group float-group) window &key &allow-other-keys)
   (change-class window 'float-window)
   (float-window-align window)

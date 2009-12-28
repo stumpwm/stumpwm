@@ -231,12 +231,8 @@ of those expired."
                  (mapc 'unhide-window (reverse (group-windows (screen-current-group s))))
                  ;; update groups
                  (dolist (g (reverse (screen-groups s)))
-                   ;; raise the current window and frame.
                    (dformat 3 "Group windows: ~S~%" (group-windows g))
-                   (let ((window (first (group-windows g))))
-                     (if window
-                         (focus-frame g (window-frame window))
-                         (focus-frame g (tile-group-current-frame g)))))
+                   (group-startup g))
                  ;; switch to the (old) current group.
                  (let ((netwm-id (first (xlib:get-property (screen-root s) :_NET_CURRENT_DESKTOP))))
                    (when (and netwm-id (< netwm-id (length (screen-groups s))))

@@ -37,6 +37,12 @@
     (setf (tile-group-frame-tree group) heads
           (tile-group-current-frame group) (first heads))))
 
+(defmethod group-startup ((group tile-group))
+  (let ((window (first (group-windows group))))
+    (if window
+        (focus-frame group (window-frame window))
+        (focus-frame group (tile-group-current-frame group)))))
+
 (defmethod group-wake-up ((group tile-group))
   (focus-frame group (tile-group-current-frame group))
   ;; doesn't get called by focus-frame
