@@ -536,7 +536,7 @@ chosen, resignal the error."
 display a message whenever you switch frames:
 
 @example
-\(defun my-rad-fn (from-frame to-frame)
+\(defun my-rad-fn (to-frame from-frame)
   (stumpwm:message \"Mustard!\"))
 
 \(stumpmwm:add-hook stumpwm:*focus-frame-hook* 'my-rad-fn)
