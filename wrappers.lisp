@@ -212,26 +212,24 @@
 
 (defun utf8-to-string (octets)
   "Convert the list of octets to a string."
-  #+sbcl (handler-bind
-             ((sb-impl::octet-decoding-error #'(lambda (c) 
-                                                 (declare (ignore c))
-                                                 (invoke-restart 'use-value "?"))))
-           (sb-ext:octets-to-string 
-            (coerce octets '(vector (unsigned-byte 8)))
-            :external-format :utf-8))
-  #+clisp (ext:convert-string-from-bytes (coerce octets '(vector (unsigned-byte 8)))
-                                         charset:utf-8)
-  #-(or sbcl clisp)
-  (map 'string #'code-char octets))
+  (let ((octets (coerce octets '(vector (unsigned-byte 8)))))
+    #+ccl (ccl:decode-string-from-octets octets :external-format :utf-8)
+    #+clisp (ext:convert-string-from-bytes octets charset:utf-8)
+    #+sbcl (handler-bind
+               ((sb-impl::octet-decoding-error #'(lambda (c)
+                                                   (declare (ignore c))
+                                                   (invoke-restart 'use-value "?"))))
+             (sb-ext:octets-to-string octets :external-format :utf-8))
+    #-(or ccl clisp sbcl) (map 'string #'code-char octets)))
 
 (defun string-to-utf8 (string)
   "Convert the string to a vector of octets."
+  #+ccl (ccl:encode-string-to-octets string :external-format :utf-8)
+  #+clisp (ext:convert-string-to-bytes string charset:utf-8)
   #+sbcl (sb-ext:string-to-octets
           string
           :external-format :utf-8)
-  #+clisp (ext:convert-string-to-bytes string charset:utf-8)
-  #-(or sbcl clisp)
-  (map 'list #'char-code string))
+  #-(or ccl clisp sbcl) (map 'list #'char-code string))
 
 (defun make-xlib-window (xobject)
   "For some reason the clx xid cache screws up returns pixmaps when
