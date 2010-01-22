@@ -114,6 +114,7 @@
   #(127 0 0 1)
   )
 (defparameter *mpd-port* 6600)
+(defparameter *mpd-password* nil)
 
 (defvar *mpd-timeout* 50)
 
@@ -204,7 +205,9 @@
     (when *mpd-timeout*
       (setf *mpd-timer*
             (run-with-timer *mpd-timeout* *mpd-timeout* 'mpd-ping)))
-    (read-line *mpd-socket*)))
+    (read-line *mpd-socket*)
+    (when *mpd-password*
+      (mpd-format-command "password \"~a\"" *mpd-password*))))
 
 (defun mpd-ping ()
   (mpd-send-command "ping"))
