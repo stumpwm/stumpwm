@@ -27,8 +27,10 @@
 (in-package :stumpwm)
 
 (export '(*suppress-abort-messages*
+          *suppress-frame-indicator*
           *timeout-wait*
           *timeout-frame-indicator-wait*
+          *frame-indicator-text*
           *frame-indicator-timer*
           *message-window-timer*
           *urgent-window-hook*
