@@ -180,26 +180,32 @@
   (make-array (length initial-input) :element-type 'character :initial-contents initial-input
               :adjustable t :fill-pointer t))
 
-(defun completing-read (screen prompt completions &optional (initial-input ""))
+(defun completing-read (screen prompt completions &optional (initial-input "") require-match)
   "Read a line of input through stumpwm and return it with TAB
 completion. completions can be a list, an fbound symbol, or a
-function. if its an fbound symbol or a function then that
-function is passed the substring to complete on and is expected
-to return a list of matches."
+function. if its an fbound symbol or a function then that function is
+passed the substring to complete on and is expected to return a list
+of matches. If require-match argument is non-nil then the input must
+match with an element of the completions."
   (check-type completions (or list function symbol))
   (let ((*input-completions* completions)
         (*input-current-completions* nil)
         (*input-current-completions-idx* nil))
-    (let ((line (read-one-line screen prompt initial-input)))
+    (let ((line (read-one-line screen prompt initial-input require-match)))
       (when line (string-trim " " line)))))
 
-(defun read-one-line (screen prompt &optional (initial-input ""))
+(defun read-one-line (screen prompt &optional (initial-input "") require-match)
   "Read a line of input through stumpwm and return it. returns nil if the user aborted."
   (let ((*input-last-command* nil)
         (input (make-input-line :string (make-input-string initial-input)
                                 :position (length initial-input)
                                 :history -1)))
-    (labels ((key-loop ()
+    (labels ((match-input ()
+               (let* ((in (string-trim " " (input-line-string input)))
+                      (compls (input-find-completions in *input-completions*)))
+                 (and (consp compls)
+                      (string= in (car compls)))))
+             (key-loop ()
                (loop for key = (read-key-or-selection) do
                      (cond ((stringp key)
                             ;; handle selection
@@ -208,7 +214,10 @@ to return a list of matches."
                            ;; skip modifiers
                            ((is-modifier (car key)))
                            ((process-input screen prompt input (car key) (cdr key))
-                            (return (input-line-string input)))))))
+                            (if (or (not require-match)
+                                    (match-input))
+                                (return (input-line-string input))
+                                (draw-input-bucket screen prompt input "^B^01[No match]" t)))))))
       (setup-input-window screen prompt input)
       (catch :abort
         (unwind-protect
@@ -223,18 +232,19 @@ to return a list of matches."
       (keycode->character (car k) (xlib:make-state-keys (cdr k))))))
 
 
-(defun draw-input-bucket (screen prompt input &optional errorp)
+(defun draw-input-bucket (screen prompt input &optional (tail "") errorp)
   "Draw to the screen's input window the contents of input."
   (let* ((gcontext (screen-message-gc screen))
          (win (screen-input-window screen))
          (prompt-width (xlib:text-width (screen-font screen) prompt :translate #'translate-id))
          (string (input-line-string input))
          (string-width (xlib:text-width (screen-font screen) string :translate #'translate-id))
-         (full-string-width (+ string-width
-                               (xlib:text-width (screen-font screen) " " :translate #'translate-id)))
+         (space-width  (xlib:text-width (screen-font screen) " "    :translate #'translate-id))
+         (tail-width   (xlib:text-width (screen-font screen) tail   :translate #'translate-id))
+         (full-string-width (+ string-width space-width))
          (pos (input-line-position input))
          (width (+ prompt-width
-                   (max 100 full-string-width))))
+                   (max 100 (+ full-string-width space-width tail-width)))))
     (xlib:with-state (win)
       (xlib:clear-area win :x (+ *message-window-padding*
                                  prompt-width
@@ -252,6 +262,12 @@ to return a list of matches."
                               (+ *message-window-padding* prompt-width)
                               (xlib:font-ascent (screen-font screen))
                               string
+                              :translate #'translate-id
+                              :size 16)
+      (xlib:draw-image-glyphs win gcontext
+                              (+ *message-window-padding* prompt-width full-string-width space-width)
+                              (xlib:font-ascent (screen-font screen))
+                              tail
                               :translate #'translate-id
                               :size 16)
       ;; draw a block cursor
@@ -559,7 +575,7 @@ input (pressing Return), nil otherwise."
        (throw :abort t))
       (:error
        ;; FIXME draw inverted text
-       (draw-input-bucket screen prompt input t)
+       (draw-input-bucket screen prompt input "" t)
        nil)
       (t
        (draw-input-bucket screen prompt input)

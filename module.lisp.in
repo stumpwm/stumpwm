@@ -45,7 +45,7 @@
 
 (define-stumpwm-type :module (input prompt)
   (or (argument-pop-rest input)
-      (completing-read (current-screen) prompt (list-modules))))
+      (completing-read (current-screen) prompt (list-modules) "" t)))
 
 (defun list-modules ()
   "Return a list of the available modules."
@@ -63,9 +63,10 @@
   "Loads the contributed module with the given NAME."
   ;; FIXME: This should use ASDF in the future. And maybe there should
   ;; be an extra stumpwm-contrib repository.
-  (let ((module (find-module name)))
-    (if module
-        (load module)
-        (error "No such module: ~a" name))))
+  (when name
+    (let ((module (find-module name)))
+      (when module
+          (load module)))))
+
 
 ;; End of file
