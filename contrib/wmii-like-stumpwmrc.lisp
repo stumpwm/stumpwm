@@ -1,5 +1,5 @@
 ;;; -*- Mode: Lisp -*-
-;;; Written by Julian Stecklina based on sample-stumpwmrc.lisp.
+;;; Written by Julian Stecklina, based on sample-stumpwmrc.lisp.
 
 ;;; This is a sample Wmii-like .stumpwmrc file using Super as modifier
 ;;; (which happens to be the Windows key on my keyboard). It doesn't
@@ -42,9 +42,9 @@
 (define-key *top-map* (kbd "s-SPC") "pull-hidden-next")
 
 ;;; s-DIGIT moves or creates to a numbered group.
-(loop for i from 1 to 9
-   do (define-key *top-map* (kbd (format nil "s-~A" i))
-	(format nil "gselect-or-create ~A" i)))
+(dotimes (i 9)
+  (define-key *top-map* (kbd (format nil "s-~A" (1+ i)))
+    (format nil "gselect-or-create ~A" (1+ i))))
 
 ;;; s-[hjkl] navigate through frames. If you press shift, it will move
 ;;; the current window in that direction.
@@ -70,21 +70,5 @@
 
 (defcommand exec-in-terminal (cmd) ((:string "Command: "))
   (run-shell-command (format nil "~A -e ~A" *terminal* cmd)))
-
-#+sbcl
-(defcommand swank-server (port) ((:number "Port: "))
-  (require :swank)
-  ;; When this is compiled, the SWANK package probably does not
-  ;; exist. So we have to intern the function name at runtime.
-  (funcall (intern "CREATE-SERVER" "SWANK") :port port :dont-close t))
-
-;; Message window font
-(set-font "-xos4-terminus-medium-r-normal--14-140-72-72-c-80-iso8859-15")
-
-;;; Define window placement policy...
-
-;; Clear rules
-(clear-window-placement-rules)
-
 
 ;;; EOF
