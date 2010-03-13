@@ -18,12 +18,6 @@
 ;; the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
 ;; Boston, MA 02111-1307 USA
 
-;;; XXX ECL's make-build does not include CLX, even though it is a
-;;; dependency. ASDF is also a special case, since we assume that it
-;;; is simply "there", which doesn't work on ECL either.
-#+ecl (require :clx)
-#+ecl (require :asdf)
-
 (defpackage :stumpwm
   (:use :cl)
   (:shadow #:yes-or-no-p #:y-or-n-p))

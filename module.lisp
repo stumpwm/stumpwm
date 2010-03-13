@@ -23,6 +23,10 @@
 
 ;; Code:
 
+#+ ecl
+(eval-when (load compile eval)
+  (require :asdf))
+
 (in-package #:stumpwm)
 
 (export '(load-module
