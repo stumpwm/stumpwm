@@ -4,6 +4,7 @@
 AC_PREREQ(2.59)
 AC_INIT(Stump Window Manager, 0.9.7-git, sabetts@gmail.com)
 
+AC_SUBST(CONTRIB_DIR)
 AC_SUBST(LISP_PROGRAM)
 AC_SUBST(LISP)
 AC_SUBST(PPCRE_PATH)
@@ -15,6 +16,10 @@ AC_ARG_WITH(clisp,   [  --with-clisp=PATH       specify location of clisp], CLIS
 AC_ARG_WITH(ccl,     [  --with-ccl=PATH         specify location of ccl], CCL_PATH=$withval, CCL_PATH="")
 AC_ARG_WITH(ecl,     [  --with-ecl=PATH         specify location of ecl], ECL_PATH=$withval, ECL_PATH="")
 AC_ARG_WITH(ppcre,   [  --with-ppcre=PATH       specify location of cl-ppcre], PPCRE_PATH=$withval, PPCRE_PATH="`pwd`/cl-ppcre")
+
+AC_ARG_WITH(contrib-dir,
+                     [  --with-contrib-dir=PATH specify location of contrib modules],
+                     CONTRIB_DIR=$withval, CONTRIB_DIR="`pwd`/contrib")
 
 if test -x "$SBCL_PATH"; then
    SBCL=$SBCL_PATH
@@ -117,3 +122,4 @@ fi
 AC_OUTPUT(Makefile)
 AC_OUTPUT(make-image.lisp)
 AC_OUTPUT(version.lisp)
+AC_OUTPUT(module.lisp)
