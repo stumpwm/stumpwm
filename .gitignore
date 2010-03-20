@@ -14,6 +14,7 @@ stumpwm
 stumpwm.info
 TAGS
 make-image.lisp
+module.lisp
 version.lisp
 stumpwm-*.tgz
 stumpwm-*.tgz.sig
