@@ -61,6 +61,7 @@
 
 #+ ecl
 (when (probe-file "stumpwm-mono")
+  (when (probe-file "stumpwm") (delete-file "stumpwm"))
   (rename-file "stumpwm-mono" "stumpwm"))
 
 #-(or sbcl clisp openmcl ecl) (error "This lisp implementation is not supported.")
