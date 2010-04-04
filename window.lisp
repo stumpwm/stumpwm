@@ -879,6 +879,13 @@ window. Default to the current window. if
 
 (defcommand-alias select select-window)
 
+(defcommand select-window-by-name (name) ((:window-name "Select: "))
+  "Switch to the first window whose name is exactly @var{name}."
+  (let ((win (find name (group-windows (current-group))
+                   :test #'string= :key #'window-name)))
+    (when win
+      (group-focus-window (current-group) win))))
+
 (defcommand select-window-by-number (num &optional (group (current-group)))
                                     ((:window-number "Select: "))
   "Find the window with the given number and focus it in its frame."
