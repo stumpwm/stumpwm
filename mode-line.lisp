@@ -301,7 +301,7 @@ critical."
   (setf (xlib:drawable-width (mode-line-window ml)) (- (frame-width (mode-line-head ml))
                                                        (* 2 (xlib:drawable-border-width (mode-line-window ml))))
         (xlib:drawable-height (mode-line-window ml)) (min (xlib:drawable-height (mode-line-window ml))
-                                                          (/ (head-height (mode-line-head ml)) 4))
+                                                          (truncate (head-height (mode-line-head ml)) 4))
         (mode-line-height ml) (+ (xlib:drawable-height (mode-line-window ml))
                                  (* 2 (xlib:drawable-border-width (mode-line-window ml))))
         (mode-line-factor ml) (- 1 (/ (mode-line-height ml)
