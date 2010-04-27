@@ -23,10 +23,6 @@
 
 ;; Code:
 
-#+ ecl
-(eval-when (load compile eval)
-  (require :asdf))
-
 (in-package #:stumpwm)
 
 (export '(load-module
@@ -35,44 +31,17 @@
 	  set-contrib-dir
           find-module))
 
-;; Handy functions from the unClog blog
-;; http://metabang.com/unclogit/?p=98
+(flet ((string-as-directory (dir)
+         (unless (string= "/" (subseq dir (1- (length dir))))
+           (setf dir (concat dir "/")))
+         (pathname dir)))
 
-;; FIXME: These functions are part of the current version of asdf so
-;; at some point we should remove them when there's no chance anyone
-;; is running an older version.
-(defun asdf-system-source-directory (system-name)
-  (make-pathname :name nil
-                 :type nil
-                 :defaults (asdf-system-source-file system-name)))
+  (defvar *contrib-dir* (string-as-directory "@CONTRIB_DIR@")
+    "The location of the contrib modules on your system.")
 
-(defun asdf-system-source-file (system-name)
-  (let ((system (asdf:find-system system-name)))
-    (make-pathname 
-     :type "asd"
-     :name (asdf:component-name system)
-     :defaults (asdf:component-relative-pathname system))))
-
-(defun system-relative-pathname (system pathname &key name type)
-  (let ((directory (pathname-directory pathname)))
-    (when (eq (car directory) :absolute)
-      (setf (car directory) :relative))
-    (merge-pathnames
-     (make-pathname :name (or name (pathname-name pathname))
-                    :type (or type (pathname-type pathname))
-                    :directory directory)
-     (asdf-system-source-directory system))))
-
-(defvar *contrib-dir* (system-relative-pathname
-		       (asdf:find-system :stumpwm)
-		       (make-pathname :directory '(:relative "contrib")))
-  "The location of the contrib modules on your system.")
-
-(defcommand set-contrib-dir (dir) ((:string "Directory: "))
-  "Sets the location of the contrib modules"
-  (unless (string= "/" (subseq dir (1- (length dir))))
-    (setf dir (concat dir "/")))
-  (setf *contrib-dir* (pathname dir)))
+  (defcommand set-contrib-dir (dir) ((:string "Directory: "))
+              "Sets the location of the contrib modules"
+                (setf *contrib-dir* (string-as-directory dir))))
 
 (define-stumpwm-type :module (input prompt)
   (or (argument-pop-rest input)

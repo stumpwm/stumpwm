@@ -4,7 +4,7 @@
 
 ;;; SBCL workaround for a clx caching bug. This is taken from portable-clx's display.lisp.
 
-;;; NOTE! The latest clx in Rhodes' repository has fixed this is a far
+;;; NOTE! The latest clx in Rhodes' repository has fixed this in a far
 ;;; better way by only caching XIDs created by the client.
 
 ;; Define functions to find the CLX data types given a display and resource-id
