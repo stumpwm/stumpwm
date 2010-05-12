@@ -180,7 +180,7 @@
   (make-array (length initial-input) :element-type 'character :initial-contents initial-input
               :adjustable t :fill-pointer t))
 
-(defun completing-read (screen prompt completions &optional (initial-input "") require-match)
+(defun completing-read (screen prompt completions &key (initial-input "") require-match)
   "Read a line of input through stumpwm and return it with TAB
 completion. completions can be a list, an fbound symbol, or a
 function. if its an fbound symbol or a function then that function is
@@ -191,10 +191,10 @@ match with an element of the completions."
   (let ((*input-completions* completions)
         (*input-current-completions* nil)
         (*input-current-completions-idx* nil))
-    (let ((line (read-one-line screen prompt initial-input require-match)))
+    (let ((line (read-one-line screen prompt :initial-input initial-input :require-match require-match)))
       (when line (string-trim " " line)))))
 
-(defun read-one-line (screen prompt &optional (initial-input "") require-match)
+(defun read-one-line (screen prompt &key (initial-input "") require-match)
   "Read a line of input through stumpwm and return it. returns nil if the user aborted."
   (let ((*input-last-command* nil)
         (input (make-input-line :string (make-input-string initial-input)
@@ -217,7 +217,7 @@ match with an element of the completions."
                             (if (or (not require-match)
                                     (match-input))
                                 (return (input-line-string input))
-                                (draw-input-bucket screen prompt input "^B^01[No match]" t)))))))
+                                (draw-input-bucket screen prompt input "[No match]" t)))))))
       (setup-input-window screen prompt input)
       (catch :abort
         (unwind-protect

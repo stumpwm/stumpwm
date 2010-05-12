@@ -545,7 +545,7 @@ know lisp very well. One might put the following in one's rc file:
 (defcommand colon (&optional initial-input) (:rest)
   "Read a command from the user. @var{initial-text} is optional. When
 supplied, the text will appear in the prompt."
-  (let ((cmd (completing-read (current-screen) ": " (all-commands) (or initial-input ""))))
+  (let ((cmd (completing-read (current-screen) ": " (all-commands) :initial-input (or initial-input "") :require-match t)))
     (unless cmd
       (throw 'error :abort))
     (when (plusp (length cmd))
