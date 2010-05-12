@@ -149,7 +149,7 @@
   "Return T if the pathname describes an executable file."
   (declare (ignorable pathname))
   #+sbcl
-  (let ((filename (coerce (sb-ext:native-namestring pathname) 'base-string)))
+  (let ((filename (coerce (sb-ext:native-namestring pathname) 'string)))
     (and (or (pathname-name pathname)
              (pathname-type pathname))
          (sb-unix:unix-access filename sb-unix:x_ok)))
