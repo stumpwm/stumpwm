@@ -31,21 +31,21 @@
 	  set-contrib-dir
           find-module))
 
-(flet ((string-as-directory (dir)
-         (unless (string= "/" (subseq dir (1- (length dir))))
-           (setf dir (concat dir "/")))
-         (pathname dir)))
+(defun module-string-as-directory (dir)
+  (unless (string= "/" (subseq dir (1- (length dir))))
+    (setf dir (concat dir "/")))
+  (pathname dir))
 
-  (defvar *contrib-dir* (string-as-directory "@CONTRIB_DIR@")
-    "The location of the contrib modules on your system.")
+(defvar *contrib-dir* (module-string-as-directory "@CONTRIB_DIR@")
+  "The location of the contrib modules on your system.")
 
-  (defcommand set-contrib-dir (dir) ((:string "Directory: "))
-              "Sets the location of the contrib modules"
-                (setf *contrib-dir* (string-as-directory dir))))
+(defcommand set-contrib-dir (dir) ((:string "Directory: "))
+    "Sets the location of the contrib modules"
+  (setf *contrib-dir* (module-string-as-directory dir)))
 
 (define-stumpwm-type :module (input prompt)
   (or (argument-pop-rest input)
-      (completing-read (current-screen) prompt (list-modules) "" t)))
+      (completing-read (current-screen) prompt (list-modules) :require-match t)))
 
 (defun list-modules ()
   "Return a list of the available modules."
