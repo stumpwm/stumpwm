@@ -2,6 +2,13 @@
 
 This file documents user visible changes between versions of StumpWM
 
+* Changes since 0.9.6
+** in float mode windows can be resized with the middle mouse button
+
+** support for CCL added
+
+** support for ECL added
+
 * Changes since 0.9.5
 ** add frame-windowlist command
 
