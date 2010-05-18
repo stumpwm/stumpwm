@@ -41,7 +41,7 @@ stumpwm: $(FILES)
 
 release:
 	git tag -a -m "version @PACKAGE_VERSION@" @PACKAGE_VERSION@
-	git-archive --format=tar --prefix=stumpwm-@PACKAGE_VERSION@/ HEAD > stumpwm-@PACKAGE_VERSION@.tar
+	git archive --format=tar --prefix=stumpwm-@PACKAGE_VERSION@/ HEAD > stumpwm-@PACKAGE_VERSION@.tar
 	tar xf stumpwm-@PACKAGE_VERSION@.tar
 	cd stumpwm-@PACKAGE_VERSION@ && tar zxf @PPCRE_PATH@/../cl-ppcre.tar.gz && mv cl-ppcre-* cl-ppcre
 	git log > stumpwm-@PACKAGE_VERSION@/ChangeLog
