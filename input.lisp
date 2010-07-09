@@ -596,11 +596,7 @@ input (pressing Return), nil otherwise."
 
 (defun get-modifier-map ()
   (labels ((find-mod (mod codes)
-             (find mod
-                   (mapcar (lambda (code)
-                             (keysym->keysym-name (xlib:keycode->keysym *display* code 0)))
-                           codes)
-                   :test 'string=)))
+             (find (xlib:keysym->keycodes *display* (keysym-name->keysym mod)) codes)))
     (let ((modifiers (make-modifiers)))
       (multiple-value-bind
             (shift-codes lock-codes control-codes mod1-codes mod2-codes mod3-codes mod4-codes mod5-codes)
