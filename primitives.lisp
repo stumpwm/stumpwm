@@ -109,6 +109,7 @@
           *data-dir*
           add-hook
           clear-window-placement-rules
+          concat
           data-dir-file
           dformat
           define-frame-preference
