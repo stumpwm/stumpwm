@@ -1,6 +1,7 @@
 ;; SURFRAW module for StumpWM.
 ;;
 ;; Copyright (C) 2008 Ivy Foster
+;; Copyright (C) 2010 Ivy Foster, Friedrich Delgado
 ;;
 ;; Maintainer: Ivy Foster
 ;;
@@ -45,140 +46,43 @@
 ;; Note that there are also "surfraw-selection" variants on each
 ;; command that work on the X selection.
 
-;;; FIXME:
-;;
-;; - Not all elvi are supported yet. Do they need to be?
-;; - It would be pretty cool to have a macro like the
-;;   surfraw-selection one but for regular surfraw commands.
-
-;; Supported elvi (feel free to add more):
-;;
-;;   - Alioth
-;;   - Amazon
-;;   - Archpkg
-;;   - BBCNews
-;;   - CDDB
-;;   - CNN
-;;   - DebBugs
-;;   - Deja
-;;   - Ebay
-;;   - Etym
-;;   - FreeBSD
-;;   - Freshmeat
-;;   - GenPkg
-;;   - Google
-;;   - Thesaurus
-;;   - Wayback
-;;   - Webster
-;;   - Wikipedia
-
 ;;; Code:
 
+(defun split-by-- (str)
+  (let ((pos (position #\- str :start (1+ (position #\- str)))))
+    (list (subseq str 0 (1- pos))
+          (subseq str (1+ pos)))))
+
+(defun surfraw-elvis-list ()
+  (mapcar (lambda (x)
+            (mapcar (lambda (x) (string-trim '(#\Space #\Tab #\Newline) x))
+                    (split-by-- x)))
+          (cdr (split-string (run-shell-command "surfraw -elvi" :collect-output-p)
+                             '(#\Newline)))))
+
+(defmacro auto-define-surfraw-commands-from-elvis-list ()
+  (let ((commands nil))
+    (dolist (elvi (surfraw-elvis-list))
+      (let ((key (first elvi))
+            (description (second elvi)))
+        (push `(defcommand ,(intern (concat "sr-" key)) (search)
+                 ((:string ,(concat description ": ")))
+                 ,description
+                 (surfraw ,key search))
+              commands)
+        (push `(defcommand ,(intern (concat "sr-sel-" key)) () ()
+                 (surfraw ,key (get-x-selection)))
+              commands)))
+    (cons 'progn (reverse commands))))
+(auto-define-surfraw-commands-from-elvis-list)
 ;;; Regular surfraw commands
 
-(defcommand surfraw (engine search) 
+(defcommand surfraw (engine search)
   ((:string "What engine? ") (:string "Search for what? "))
   "Use SURFRAW to surf the net; reclaim heathen lands."
   (check-type engine string)
   (check-type search string)
   (run-shell-command (concat "exec surfraw -g " engine " " search)))
-
-(defcommand alioth (search) 
-  ((:string "Search Alioth: "))
-  (surfraw "alioth" search))
-
-(defcommand amazon (search) 
-  ((:string "Search Amazon: "))
-  (surfraw "amazon" search))
-
-(defcommand archpkg (search) 
-  ((:string "Search Arch Linux packages: "))
-  (surfraw "archpkg" search))
-
-(defcommand bbcnews (search) 
-  ((:string "Search BBC News: "))
-  (surfraw "bbcnews" search))
-
-(defcommand cddb (search)
-  ((:string "Search the CDDB: "))
-  (surfraw "cddb" search))
-
-(defcommand cnn (search)
-  ((:string "Search CNN: "))
-  (surfraw "cnn" search))
-
-(defcommand debbugs (search)
-  ((:string "Search the Debian BTS: "))
-  (surfraw "debbugs" search))
-
-(defcommand deja (search)
-  ((:string "Search Google Groups: "))
-  (surfraw "deja" search))
-
-(defcommand ebay (search)
-  ((:string "Search Ebay: "))
-  (surfraw "ebay" search))
-
-(defcommand etym (search)
-  ((:string "Search Etymology Online: "))
-  (surfraw "etym" search))
-
-(defcommand freebsd (search)
-  ((:string "Search FreeBSD info: "))
-  (surfraw "freebsd" search))
-
-(defcommand freshmeat (search)
-  ((:string "Search Freshmeat: "))
-  (surfraw "freshmeat" search))
-
-(defcommand genpkg (search)
-  ((:string "Search Gentoo packages: "))
-  (surfraw "genpkg" search))
-
-(defcommand google (search) 
-  ((:string "Search google: "))
-  (surfraw "google" search))
-
-(defcommand thesaurus (search) 
-  ((:string "Search a thesaurus: "))
-  (surfraw "thesaurus" search))
-
-(defcommand wayback (search) 
-  ((:string "Search wayback: "))
-  (surfraw "wayback" search))
-
-(defcommand webster (search) 
-  ((:string "Search the Merriam-Webster Dictionary: "))
-  (surfraw "webster" search))
-
-(defcommand wikipedia (search) 
-  ((:string "Search wikipedia: "))
-  (surfraw "wikipedia" search))
-
-;;; X selection
-
-(defmacro surfraw-selection (name engine)
-  `(defcommand ,name () ()
-     (surfraw ,engine (get-x-selection))))
-
-(surfraw-selection alioth-selection    "alioth")
-(surfraw-selection amazon-selection    "amazon")
-(surfraw-selection archpkg-selection   "archpkg")
-(surfraw-selection bbcnews-selection   "bbcnews")
-(surfraw-selection cddb-selection      "cddb")
-(surfraw-selection cnn-selection       "cnn")
-(surfraw-selection debbugs-selection   "debbugs")
-(surfraw-selection deja-selection      "deja")
-(surfraw-selection ebay-selection      "ebay")
-(surfraw-selection etym-selection      "etym")
-(surfraw-selection freebsd-selection   "freebsd")
-(surfraw-selection freshmeat-selection "freshmeat")
-(surfraw-selection genpkg-selection    "genpkg")
-(surfraw-selection google-selection    "google")
-(surfraw-selection thesaurus-selection "thesaurus")
-(surfraw-selection wayback-selection   "wayback")
-(surfraw-selection webster-selection   "webster")
-(surfraw-selection wikipedia-selection "wikipedia")
 
 ;;; Bookmarks
 
