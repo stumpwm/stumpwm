@@ -189,21 +189,23 @@
 
 (defmethod group-button-press ((group float-group) x y (window float-window))
   (let ((screen (group-screen group)))
-    (cond
-      ((or (< x (xlib:drawable-x (window-xwin window)))
-           (> x (+ (xlib:drawable-width (window-xwin window))
-                   (xlib:drawable-x (window-xwin window))))
-           (< y (xlib:drawable-y (window-xwin window)))
-           (> y (+ (xlib:drawable-height (window-xwin window))
-                   (xlib:drawable-y (window-xwin window)))))
-       (multiple-value-bind (relx rely same-screen-p child state-mask)
-           (xlib:query-pointer (window-parent window))
-         (declare (ignore same-screen-p child))
-         (let ((initial-width (xlib:drawable-width (slot-value window 'parent)))
-               (initial-height (xlib:drawable-height (slot-value window 'parent))))
-           (labels ((move-window-event-handler (&rest event-slots &key event-key &allow-other-keys)
-                      (case event-key
-                        (:button-release
+    (when (eq *mouse-focus-policy* :click)
+      (focus-window window))
+    (when (or (< x (xlib:drawable-x (window-xwin window)))
+              (> x (+ (xlib:drawable-width (window-xwin window))
+                      (xlib:drawable-x (window-xwin window))))
+              (< y (xlib:drawable-y (window-xwin window)))
+              (> y (+ (xlib:drawable-height (window-xwin window))
+                      (xlib:drawable-y (window-xwin window)))))
+      (multiple-value-bind (relx rely same-screen-p child state-mask)
+          (xlib:query-pointer (window-parent window))
+        (declare (ignore same-screen-p child))
+        (let ((initial-width (xlib:drawable-width (slot-value window 'parent)))
+              (initial-height (xlib:drawable-height (slot-value window 'parent))))
+          (labels ((move-window-event-handler
+                       (&rest event-slots &key event-key &allow-other-keys)
+                     (case event-key
+                       (:button-release
                          :done)
                         (:motion-notify
                          (with-slots (parent) window
@@ -247,10 +249,7 @@
              (update-configuration window)
              ;; don't forget to update the cache
              (setf (window-x window) (xlib:drawable-x (window-parent window))
-                   (window-y window) (xlib:drawable-y (window-parent window)))))))
-      (t
-       (when (eq *mouse-focus-policy* :click)
-         (focus-window window))))))
+                   (window-y window) (xlib:drawable-y (window-parent window)))))))))
 
 (defmethod group-button-press ((group float-group) x y where)
   (declare (ignore x y where))
