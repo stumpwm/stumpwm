@@ -146,7 +146,7 @@
             (xlib:window-background parent) (xlib:alloc-color (xlib:screen-default-colormap (screen-number (window-screen window)))
                                                               "Orange")))
     (xlib:clear-area (window-parent window))))
-  
+
 (defmethod group-resize-request ((group float-group) window width height)
   (float-window-move-resize window :width width :height height))
 
@@ -187,78 +187,85 @@
   )
 
 (defmethod group-button-press ((group float-group) x y (window float-window))
-  (let ((screen (group-screen group)))
+  (let ((screen (group-screen group))
+        (initial-width (xlib:drawable-width (window-parent window)))
+        (initial-height (xlib:drawable-height (window-parent window))))
     (when (eq *mouse-focus-policy* :click)
       (focus-window window))
+
+    ;; When in border
     (when (or (< x (xlib:drawable-x (window-xwin window)))
               (> x (+ (xlib:drawable-width (window-xwin window))
                       (xlib:drawable-x (window-xwin window))))
               (< y (xlib:drawable-y (window-xwin window)))
               (> y (+ (xlib:drawable-height (window-xwin window))
                       (xlib:drawable-y (window-xwin window)))))
+
+      ;; When resizing warp pointer to left-right corner
+      (multiple-value-bind (relx rely same-screen-p child state-mask)
+          (xlib:query-pointer (window-parent window))
+        (declare (ignore relx rely same-screen-p child))
+        (when (find :button-3 (xlib:make-state-keys state-mask))
+          (xlib:warp-pointer (window-parent window) initial-width initial-height)))
+
       (multiple-value-bind (relx rely same-screen-p child state-mask)
           (xlib:query-pointer (window-parent window))
         (declare (ignore same-screen-p child))
-        (let ((initial-width (xlib:drawable-width (slot-value window 'parent)))
-              (initial-height (xlib:drawable-height (slot-value window 'parent))))
-          (labels ((move-window-event-handler
-                       (&rest event-slots &key event-key &allow-other-keys)
-                     (case event-key
-                       (:button-release
-                         :done)
-                        (:motion-notify
-                         (with-slots (parent) window
-                           (xlib:with-state (parent)
-                             ;; Either move or resize the window
-                             (cond
-                               ((find :button-1 (xlib:make-state-keys state-mask))
-                                (let ((newx (- (getf event-slots :x) relx))
-                                      (newy (- (getf event-slots :y) rely)))
-                                  (float-window-move-resize window :x newx :y newy)))
-                               ((find :button-3 (xlib:make-state-keys state-mask))
-                                (let ((w (+ initial-width
-                                            (- (getf event-slots :x)
-                                               relx
-                                               (xlib:drawable-x parent))))
-                                      (h (+ initial-height
-                                            (- (getf event-slots :y)
-                                               rely
-                                               (xlib:drawable-y parent)
-                                               *float-window-title-height*))))
-                                  ;; Don't let the window become too small
-                                  (float-window-move-resize window
-                                                            :width (max w *min-frame-width*)
-                                                            :height (max h *min-frame-height*)))))))
-                         t)
-                        ;; We need to eat these events or they'll ALL
-                        ;; come blasting in later. Also things start
-                        ;; lagging hard if we don't (on clisp anyway).
-                        (:configure-notify t)
-                        (:exposure t)
-                        (t
-                         nil))))
-             (xlib:grab-pointer (screen-root screen) '(:button-release :pointer-motion))
-             (unwind-protect
-                  ;; Wait until the mouse button is released
-                  (loop for ev = (xlib:process-event *display*
-                                                     :handler #'move-window-event-handler
-                                                     :timeout nil
-                                                     :discard-p t)
-                     until (eq ev :done))
-               (ungrab-pointer))
-             (update-configuration window)
-             ;; don't forget to update the cache
-             (setf (window-x window) (xlib:drawable-x (window-parent window))
-                   (window-y window) (xlib:drawable-y (window-parent window)))))))))
+        (labels ((move-window-event-handler
+                     (&rest event-slots &key event-key &allow-other-keys)
+                   (case event-key
+                     (:button-release :done)
+                     (:motion-notify
+                      (with-slots (parent) window
+                        (xlib:with-state (parent)
+                          ;; Either move or resize the window
+                          (cond
+                            ((find :button-1 (xlib:make-state-keys state-mask))
+                             (setf (xlib:drawable-x parent) (- (getf event-slots :x) relx)
+                                   (xlib:drawable-y parent) (- (getf event-slots :y) rely)))
+                            ((find :button-3 (xlib:make-state-keys state-mask))
+                             (let ((w (+ initial-width
+                                         (- (getf event-slots :x)
+                                            relx
+                                            (xlib:drawable-x parent))))
+                                   (h (+ initial-height
+                                         (- (getf event-slots :y)
+                                            rely
+                                            (xlib:drawable-y parent)
+                                            *float-window-title-height*))))
+                               ;; Don't let the window become too small
+                               (float-window-move-resize window
+                                                         :width (max w *min-frame-width*)
+                                                         :height (max h *min-frame-height*)))))))
+                      t)
+                     ;; We need to eat these events or they'll ALL
+                     ;; come blasting in later. Also things start
+                     ;; lagging hard if we don't (on clisp anyway).
+                     (:configure-notify t)
+                     (:exposure t)
+                     (t nil))))
+          (xlib:grab-pointer (screen-root screen) '(:button-release :pointer-motion))
+          (unwind-protect
+               ;; Wait until the mouse button is released
+               (loop for ev = (xlib:process-event *display*
+                                                  :handler #'move-window-event-handler
+                                                  :timeout nil
+                                                  :discard-p t)
+                  until (eq ev :done))
+            (ungrab-pointer))
+          (update-configuration window)
+          ;; don't forget to update the cache
+          (setf (window-x window) (xlib:drawable-x (window-parent window))
+                (window-y window) (xlib:drawable-y (window-parent window))))))))
 
 (defmethod group-button-press ((group float-group) x y where)
   (declare (ignore x y where))
   )
 
 (defcommand gnew-float (name) ((:rest "Group Name: "))
-"Create a floating window group with the specified name and switch to it."
+  "Create a floating window group with the specified name and switch to it."
   (add-group (current-screen) name :type 'float-group))
 
 (defcommand gnewbg-float (name) ((:rest "Group Name: "))
-"Create a floating window group with the specified name, but do not switch to it."
+  "Create a floating window group with the specified name, but do not switch to it."
   (add-group (current-screen) name :background t :type 'float-group))
