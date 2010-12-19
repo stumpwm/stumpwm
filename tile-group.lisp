@@ -353,7 +353,7 @@ T (default) then also focus the frame."
 
 (defun split-frame-h (group p ratio)
   "Return 2 new frames. The first one stealing P's number and window"
-  (let* ((w (truncate (* (frame-width p) ratio)))
+  (let* ((w (ratio-or-pixel (frame-width p) ratio))
          (h (frame-height p))
          (f1 (make-frame :number (frame-number p)
                          :x (frame-x p)
@@ -374,7 +374,7 @@ T (default) then also focus the frame."
 (defun split-frame-v (group p ratio)
   "Return 2 new frames. The first one stealing P's number and window"
   (let* ((w (frame-width p))
-         (h (truncate (* (frame-height p) ratio)))
+         (h (ratio-or-pixel (frame-height p) ratio))
          (f1 (make-frame :number (frame-number p)
                          :x (frame-x p)
                          :y (frame-y p)
@@ -390,6 +390,13 @@ T (default) then also focus the frame."
                          :window nil)))
     (run-hook-with-args *new-frame-hook* f2)
     (values f1 f2)))
+
+(defun ratio-or-pixel (length ratio)
+  "Return a ratio of length unless ratio is an integer.
+If ratio is an integer return the number of pixel desired."
+  (if (integerp ratio)
+      ratio
+      (truncate (* length ratio))))
 
 (defun funcall-on-leaf (tree leaf fn)
   "Return a new tree with LEAF replaced with the result of calling FN on LEAF."
@@ -764,7 +771,10 @@ depending on the tree's split direction."
 
 (defun split-frame (group how &optional (ratio 1/2))
   "Split the current frame into 2 frames. Return new frame number, if
-  it succeeded. NIL otherwise."
+it succeeded. NIL otherwise. RATIO is a fraction of the screen to
+allocate to the new split window. If ratio is an integer then the
+number of pixels will be used. This can be handy to setup the
+desktop when starting."
   (check-type how (member :row :column))
   (let* ((frame (tile-group-current-frame group))
          (head (frame-head group frame)))
@@ -870,9 +880,9 @@ windows used to draw the numbers in. The caller must destroy them."
 
 ;;; Frame commands
 
-(defun split-frame-in-dir (group dir)
+(defun split-frame-in-dir (group dir &optional (ratio 1/2))
   (let ((f (tile-group-current-frame group)))
-    (if (split-frame group dir)
+    (if (split-frame group dir ratio)
         (progn
           (when (frame-window f)
             (update-decoration (frame-window f)))
