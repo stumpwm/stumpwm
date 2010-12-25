@@ -72,15 +72,17 @@
 ;; work with overlapping heads. Would it be better to walk
 ;; up the frame tree?
 (defun frame-head (group frame)
-  (dolist (head (screen-heads (group-screen group)))
-    (when (and
-           (>= (frame-x frame) (frame-x head))
-           (>= (frame-y frame) (frame-y head))
-           (<= (+ (frame-x frame) (frame-width frame))
-               (+ (frame-x head) (frame-width head)))
-           (<= (+ (frame-y frame) (frame-height frame))
-               (+ (frame-y head) (frame-height head))))
-      (return head))))
+  (let ((center-x (+ (frame-x frame) (ash (frame-width frame) -1)))
+       (center-y (+ (frame-y frame) (ash (frame-height frame) -1))))
+    (dolist (head (screen-heads (group-screen group)))
+      (when (and
+            (>= center-x (frame-x head))
+            (>= center-y (frame-y head))
+            (<= center-x
+                (+ (frame-x head) (frame-width head)))
+            (<= center-y
+                (+ (frame-y head) (frame-height head))))
+       (return head)))))
 
 (defun group-heads (group)
   (screen-heads (group-screen group)))
