@@ -235,6 +235,7 @@
                                                      :discard-p t)
                      until (eq ev :done))
                (ungrab-pointer))
+             (update-configuration window)
              ;; don't forget to update the cache
              (setf (window-x window) (xlib:drawable-x (window-parent window))
                    (window-y window) (xlib:drawable-y (window-parent window)))))))
