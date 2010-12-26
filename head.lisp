@@ -87,6 +87,19 @@
 (defun group-heads (group)
   (screen-heads (group-screen group)))
 
+(defun resize-head (number x y width height)
+  "Resize head number `number' to given dimension."
+  (let* ((screen (current-screen))
+         (oh (find number (screen-heads screen) :key 'head-number))
+         (nh (make-head :number number
+                        :x x :y y
+                        :width width
+                        :height height
+                        :window nil)))
+    (scale-head screen oh nh)
+    (mapc 'group-add-head (screen-groups screen))
+    (update-mode-lines screen)))
+
 (defun tile-group-frame-head (group head)
   (elt (tile-group-frame-tree group) (position head (group-heads group))))
 
