@@ -136,7 +136,38 @@
 (defmethod group-root-exposure ((group tile-group))
   (show-frame-outline group nil))
 
-(defmethod group-add-head ((group tile-group))
+(defmethod group-add-head ((group tile-group) head)
+  (let ((new-frame-num (find-free-frame-number group)))
+    (setf (tile-group-frame-tree group)
+          (insert-before (tile-group-frame-tree group)
+                         (copy-frame head)
+                         (head-number head)))
+    ;; Try to put something in the new frame and give it an unused number
+    (let ((frame (tile-group-frame-head group head)))
+      (setf (frame-number frame) new-frame-num)
+        (choose-new-frame-window frame group)
+        (when (frame-window frame)
+          (unhide-window (frame-window frame))))))
+
+(defmethod group-remove-head ((group tile-group) head)
+  (let ((windows (head-windows group head)))
+    ;; Remove it from the frame tree.
+    (setf (tile-group-frame-tree group) (delete (tile-group-frame-head group head) (tile-group-frame-tree group)))
+    ;; Just set current frame to whatever.
+    (let ((frame (first (group-frames group))))
+      (setf (tile-group-current-frame group) frame
+            (tile-group-last-frame group) nil)
+      ;; Hide its windows.
+      (dolist (window windows)
+        (hide-window window)
+        (setf (window-frame window) frame))))
+  ;; Try to do something with the orphaned windows
+  (populate-frames group))
+
+(defmethod group-resize-head ((group tile-group) oh nh)
+  (resize-tree (tile-group-frame-head group oh) (head-width nh) (head-height nh) (head-x nh) (head-y nh)))
+
+(defmethod group-sync-all-heads ((group tile-group))
   (sync-all-frame-windows group))
 
 (defmethod group-sync-head ((group tile-group) head)
@@ -144,6 +175,12 @@
     (sync-frame-windows group f)))
 
 ;;;;;
+
+(defun tile-group-frame-head (group head)
+  (elt (tile-group-frame-tree group) (position head (group-heads group))))
+
+(defun (setf tile-group-frame-head) (frame group head)
+  (setf (elt (tile-group-frame-tree group) (position head (group-heads group))) frame))
 
 (defun populate-frames (group)
   "Try to fill empty frames in GROUP with hidden windows"

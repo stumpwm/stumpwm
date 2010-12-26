@@ -97,14 +97,8 @@
                         :height height
                         :window nil)))
     (scale-head screen oh nh)
-    (mapc 'group-add-head (screen-groups screen))
+    (dolist (group (screen-groups screen)) (group-sync-head group oh))
     (update-mode-lines screen)))
-
-(defun tile-group-frame-head (group head)
-  (elt (tile-group-frame-tree group) (position head (group-heads group))))
-
-(defun (setf tile-group-frame-head) (frame group head)
-  (setf (elt (tile-group-frame-tree group) (position head (group-heads group))) frame))
 
 (defun current-head (&optional (group (current-group)))
   (group-current-head group))
@@ -123,43 +117,21 @@
   (dformat 1 "Adding head #~D~%" (head-number head))
   (setf (screen-heads screen) (sort (push head (screen-heads screen)) #'< :key 'head-number))
   (dolist (group (screen-groups screen))
-    (let ((new-frame-num (find-free-frame-number group)))
-      (setf (tile-group-frame-tree group)
-            (insert-before (tile-group-frame-tree group)
-                           (copy-frame head)
-                           (head-number head)))
-      ;; Try to put something in the new frame and give it an unused number
-      (let ((frame (tile-group-frame-head group head)))
-        (setf (frame-number frame) new-frame-num)
-        (choose-new-frame-window frame group)
-        (when (frame-window frame)
-          (unhide-window (frame-window frame)))))))
+    (group-add-head group head)))
 
 (defun remove-head (screen head)
   (dformat 1 "Removing head #~D~%" (head-number head))
   (when (head-mode-line head)
     (toggle-mode-line screen head))
   (dolist (group (screen-groups screen))
-    ;; Hide its windows.
-    (let ((windows (head-windows group head)))
-      ;; Remove it from the frame tree.
-      (setf (tile-group-frame-tree group) (delete (tile-group-frame-head group head) (tile-group-frame-tree group)))
-      ;; Just set current frame to whatever.
-      (let ((frame (first (group-frames group))))
-        (setf (tile-group-current-frame group) frame
-              (tile-group-last-frame group) nil)
-        (dolist (window windows)
-          (hide-window window)
-          (setf (window-frame window) frame))))
-    ;; Try to do something with the orphaned windows
-    (populate-frames group))
+    (group-remove-head group head))
   ;; Remove it from SCREEN's head list.
   (setf (screen-heads screen) (delete head (screen-heads screen))))
 
 (defun scale-head (screen oh nh)
   "Scales head OH to match the dimensions of NH."
   (dolist (group (screen-groups screen))
-    (resize-tree (tile-group-frame-head group oh) (head-width nh) (head-height nh) (head-x nh) (head-y nh)))
+    (group-resize-head group oh nh))
   (setf (head-x oh) (head-x nh)
         (head-y oh) (head-y nh)
         (head-width oh) (head-width nh)

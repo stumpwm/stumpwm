@@ -171,7 +171,16 @@
 (defmethod group-root-exposure ((group float-group))
   )
 
-(defmethod group-add-head ((group float-group))
+(defmethod group-add-head ((group float-group) head)
+  (declare (ignore head)))
+
+(defmethod group-remove-head ((group float-group) head)
+  (declare (ignore head)))
+
+(defmethod group-resize-head ((group float-group) oh nh)
+  (declare (ignore oh nh)))
+
+(defmethod group-sync-all-heads ((group float-group))
   )
 
 (defmethod group-sync-head ((group float-group) head)

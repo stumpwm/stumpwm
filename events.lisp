@@ -126,7 +126,7 @@
              (if new-heads
                  (progn
                    (scale-screen screen new-heads)
-                   (mapc 'group-add-head (screen-groups screen))
+                   (mapc 'group-sync-all-heads (screen-groups screen))
                    (update-mode-lines screen))
                  (dformat 1 "Invalid configuration! ~S~%" new-heads)))))))))
 
