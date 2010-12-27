@@ -68,12 +68,14 @@
   (:documentation "Returns all recognized batteries."))
 
 (defun preferred-battery-method ()
-  #- linux
+  #- (or linux openbsd)
   nil
   #+ linux
   (if *prefer-sysfs*
       (make-instance 'sysfs-method)
-      (make-instance 'procfs-method)))
+      (make-instance 'procfs-method))
+  #+ openbsd
+  (make-instance 'usr-sbin-apm-method))
 
 ;;; Battery class
 
@@ -234,13 +236,70 @@
                   (t :unknown)))))
       (t () :unknown))))
 
+;;; OpenBSD /usr/sbin/apm implementation
+
+#+ openbsd
+(progn
+  (defclass usr-sbin-apm-method (battery-method) ()
+    (:documentation "Collect battery information through OpenBSD' /usr/sbin/apm program."))
+
+  (defclass usr-sbin-apm-battery (battery) ())
+
+  (defun read-usr-sbin-apm-info ()
+    (with-input-from-string (apm (run-shell-command "/usr/sbin/apm -ablm" t))
+      (let* ((state (ignore-errors (parse-integer (read-line apm))))
+             (percent (ignore-errors (parse-integer (read-line apm))))
+             (minutes (ignore-errors (parse-integer (read-line apm))))
+             (ac (ignore-errors (parse-integer (read-line apm)))))
+        (unless (and (or (null state) (eql state 4))
+                     (or (null ac) (eql ac 255)))
+          (values (case state
+                    (0 :high)
+                    (1 :low)
+                    (2 :critical)
+                    (3 :charging)
+                    (4 :absent)
+                    (t :unknown))
+                  percent
+                  minutes
+                  (case ac
+                    (0 :disconnected)
+                    (1 :connected)
+                    (2 :backup)
+                    (t :unknown)))))))
+
+  (defmethod all-batteries ((method usr-sbin-apm-method))
+    (unless (null (read-usr-sbin-apm-info))
+      (list (make-instance 'usr-sbin-apm-battery))))
+
+  (defmethod state-of ((battery usr-sbin-apm-battery))
+    (multiple-value-bind (state percent minutes ac)
+        (read-usr-sbin-apm-info)
+      (let ((percent (or percent 0))
+            (seconds (when minutes (* minutes 60))))
+        (case ac
+          ((:disconnected :backup)
+           (values :discharging percent seconds))
+          (:connected
+           (cond
+             ((or (eql state :absent)
+                  (eql state :unknown))
+              (values :unknown))
+             ((eql percent 100)
+              (values :charged percent))
+             (t
+              (values :charging percent seconds))))
+          (t
+           (values :unknown)))))))
+
 ;;; Interface to the outside world.
 
 (defun fmt-time (stream arg colonp atp)
   (declare (ignore colonp atp))
-  (multiple-value-bind (hours rest)
-      (truncate arg 3600)
-  (format stream "~D:~2,'0D" hours (floor rest 60))))
+  (when (numberp arg)
+    (multiple-value-bind (hours rest)
+        (truncate arg 3600)
+      (format stream "~D:~2,'0D" hours (floor rest 60)))))
 
 (defun battery-info-string ()
   "Compiles a string suitable for StumpWM's mode-line."
