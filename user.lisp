@@ -100,7 +100,8 @@ menu, the error is re-signalled."
 
 (defcommand ratclick (&optional (button 1)) (:number)
   "Simulate a pointer button event at the current pointer
-location. Note: this function rarely works."
+location. Note: this function is unlikely to work unless
+your CLX implementation supports XTEST."
   (when (current-window)
     (send-fake-click (current-window) button)))
 
