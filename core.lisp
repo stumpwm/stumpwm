@@ -71,7 +71,7 @@
 
 (defun send-fake-click (win button)
   "Send a fake click (button press + button release) to win."
-  (if (find-package :xtest)
+  (if (and (find-package :xtest) (xlib:query-extension *display* "XTEST"))
       (progn
         (xtest:fake-button-event *display* button t)
         (xtest:fake-button-event *display* button nil))
