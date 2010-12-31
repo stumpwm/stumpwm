@@ -71,28 +71,30 @@
 
 (defun send-fake-click (win button)
   "Send a fake click (button press + button release) to win."
-  (if (and (find-package :xtest) (xlib:query-extension *display* "XTEST"))
-      (progn
-        (xtest:fake-button-event *display* button t)
-        (xtest:fake-button-event *display* button nil))
-      (multiple-value-bind (x y) (xlib:query-pointer (window-xwin win))
-        (multiple-value-bind (rx ry) (xlib:query-pointer (screen-root (window-screen win)))
-          (xlib:send-event (window-xwin win) :button-press (xlib:make-event-mask :button-press)
-                           :display *display*
-                           :root (screen-root (window-screen win))
-                           :window (window-xwin win) :event-window (window-xwin win)
-                           :code button
-                           :state 0
-                           :x x :y y :root-x rx :root-y ry
-                           :same-screen-p t)
-          (xlib:send-event (window-xwin win) :button-release (xlib:make-event-mask :button-release)
-                           :display *display*
-                           :root (screen-root (window-screen win))
-                           :window (window-xwin win) :event-window (window-xwin win)
-                           :code button
-                           :state #x100
-                           :x x :y y :root-x rx :root-y ry
-                           :same-screen-p t)))))
+  (cond
+    #+clx-ext-test
+    ((xlib:query-extension *display* "XTEST")
+     (xtest:fake-button-event *display* button t)
+     (xtest:fake-button-event *display* button nil))
+    (t
+     (multiple-value-bind (x y) (xlib:query-pointer (window-xwin win))
+       (multiple-value-bind (rx ry) (xlib:query-pointer (screen-root (window-screen win)))
+         (xlib:send-event (window-xwin win) :button-press (xlib:make-event-mask :button-press)
+                          :display *display*
+                          :root (screen-root (window-screen win))
+                          :window (window-xwin win) :event-window (window-xwin win)
+                          :code button
+                          :state 0
+                          :x x :y y :root-x rx :root-y ry
+                          :same-screen-p t)
+         (xlib:send-event (window-xwin win) :button-release (xlib:make-event-mask :button-release)
+                          :display *display*
+                          :root (screen-root (window-screen win))
+                          :window (window-xwin win) :event-window (window-xwin win)
+                          :code button
+                          :state #x100
+                          :x x :y y :root-x rx :root-y ry
+                          :same-screen-p t))))))
 
 
 ;;; Pointer helper functions
