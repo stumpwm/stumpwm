@@ -157,30 +157,30 @@ housekeeping."
       ;; simply fall back to the default then.
       ((and (listp preferred-frame)
             (every #'keywordp preferred-frame))
-       (loop for i in preferred-frame
-          thereis (case i
-                    (:last
-                     ;; last-frame can be stale
-                     (and (> (length frames) 1)
-                          (tile-group-last-frame group)))
-                    (:unfocused
-                     (find-if (lambda (f)
-                                (not (eq f (tile-group-current-frame group))))
-                              frames))
-                    (:empty
-                     (find-if (lambda (f)
-                                (null (frame-window f)))
-                              frames))
-                    (:choice
-                     ;; Transient windows sometimes specify a location
-                     ;; relative to the TRANSIENT_FOR window. Just ignore
-                     ;; these hints.
-                     (unless (find (window-type window) '(:transient :dialog))
-                       (let ((hints (window-normal-hints window)))
-                         (when (and hints (xlib:wm-size-hints-user-specified-position-p hints))
-                           (find-frame group (window-x window) (window-y window))))))
-                    (t                  ; :focused or not recognized keyword
-                     default))))
+       (or
+        (loop for i in preferred-frame
+           thereis (case i
+                     (:last
+                      ;; last-frame can be stale
+                      (and (> (length frames) 1)
+                           (tile-group-last-frame group)))
+                     (:unfocused
+                      (find-if (lambda (f)
+                                 (not (eq f (tile-group-current-frame group))))
+                               frames))
+                     (:empty
+                      (find-if (lambda (f)
+                                 (null (frame-window f)))
+                               frames))
+                     (:choice
+                      ;; Transient windows sometimes specify a location
+                      ;; relative to the TRANSIENT_FOR window. Just ignore
+                      ;; these hints.
+                      (unless (find (window-type window) '(:transient :dialog))
+                        (let ((hints (window-normal-hints window)))
+                          (when (and hints (xlib:wm-size-hints-user-specified-position-p hints))
+                            (find-frame group (window-x window) (window-y window))))))))
+        default))
       ;; Not well formed `*new-window-preferred-frame*'.  Message an error and
       ;; return the default.
       (t (message "^1*^BInvalid ^b^3**new-window-preferred-frame*^1*^B: ^n~a"
