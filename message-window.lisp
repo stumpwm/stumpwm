@@ -215,16 +215,16 @@ function expects to be wrapped in a with-state for win."
       (setf (screen-current-msg screen)
             strings
             (screen-current-msg-highlights screen)
-            highlights))
+            highlights)
+      ;; Set a timer to hide the message after a number of seconds
+      (if *suppress-echo-timeout*
+          ;; any left over timers need to be canceled.
+          (when (timer-p *message-window-timer*)
+            (cancel-timer *message-window-timer*)
+            (setf *message-window-timer* nil))
+          (reset-message-window-timer)))
     (push-last-message screen strings highlights)
     (xlib:display-finish-output *display*)
-    ;; Set a timer to hide the message after a number of seconds
-    (if *suppress-echo-timeout*
-        ;; any left over timers need to be canceled.
-        (when (timer-p *message-window-timer*)
-          (cancel-timer *message-window-timer*)
-          (setf *message-window-timer* nil))
-        (reset-message-window-timer))
     (dformat 5 "Outputting a message:~%~{        ~a~%~}" strings)
     (apply 'run-hook-with-args *message-hook* strings)))
 
