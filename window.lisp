@@ -329,7 +329,7 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
   (setf (xlib:drawable-border-width win) width))
 
 (defun default-border-width-for-type (window)
-  (or (and (xwin-maxsize-p (window-xwin window))
+  (or (and (window-maxsize-p window)
            *maxsize-border-width*)
       (ecase (window-type window)
         (:dock 0)
@@ -439,9 +439,9 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
       (when (eq window (current-window))
         (group-lost-focus (window-group window))))))
 
-(defun xwin-maxsize-p (win)
+(defun window-maxsize-p (win)
   "Returns T if WIN specifies maximum dimensions."
-  (let ((hints (get-normalized-normal-hints win)))
+  (let ((hints (window-normal-hints win)))
     (and hints (or (xlib:wm-size-hints-max-width hints)
                    (xlib:wm-size-hints-max-height hints)
                    (xlib:wm-size-hints-min-aspect hints)
@@ -515,7 +515,7 @@ and bottom_end_x."
 
 (defun gravity-for-window (win)
   (or (window-gravity win)
-      (and (xwin-maxsize-p (window-xwin win)) *maxsize-gravity*)
+      (and (window-maxsize-p win) *maxsize-gravity*)
       (ecase (window-type win)
         (:dock *normal-gravity*)
         (:normal *normal-gravity*)
