@@ -126,13 +126,26 @@ utilization."
 	(format nil "~,2FGHz" (/ mhz 1000))
 	(format nil "~DMHz" mhz))))
 
-(defvar *acpi-thermal-zone* (first (last
-				    (pathname-directory
-				     (first (list-directory "/proc/acpi/thermal_zone/"))))))
+(defvar *acpi-thermal-zone*
+  (let ((proc-dir (list-directory #P"/proc/acpi/thermal_zone/"))
+        (sys-dir (list-directory #P"/sys/class/thermal/")))
+    (cond
+      (proc-dir
+       (cons :procfs
+             (make-pathname :directory (pathname-directory (first proc-dir))
+                            :name "temperature")))
+      (sys-dir
+       (cons :sysfs
+             (make-pathname :directory (pathname-directory (car (last sys-dir)))
+                            :name "temp"))))))
 
 (defun fmt-cpu-temp (ml)
   "Returns a string representing the current CPU temperature."
   (declare (ignore ml))
-  (get-proc-file-field (concatenate 'string "/proc/acpi/thermal_zone/"
-                                    *acpi-thermal-zone* "/temperature")
-                       "temperature"))
+  (format nil "~a°C"
+          (case (car *acpi-thermal-zone*)
+            (:procfs (parse-integer
+                      (get-proc-file-field (cdr *acpi-thermal-zone*) "temperature")
+                      :junk-allowed t))
+            (:sysfs   (with-open-file (f (cdr *acpi-thermal-zone*))
+                        (/ (read f) 1000))))))
