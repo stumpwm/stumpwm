@@ -70,7 +70,7 @@
     ;; (#\g)   last two digits of year of ISO week number (see %G)
     ;; (#\G)   year of ISO week  number (see %V); normally useful only with %V
     (#\h time-month-shortname)
-    (#\H time-hour)
+    (#\H time-hour-zero)
     (#\I time-hour-12hr-zero)
     ;; (#\j)   day of year (001..366)
     (#\k time-hour)
