@@ -89,19 +89,21 @@ on current view and new selection."
                  ((< (menu-state-selected menu)
                       (menu-state-view-start menu))
                   (progn (setf (menu-state-view-start menu)
-                               (- (menu-state-view-start menu)
+                               (- (menu-state-selected menu)
                                   *menu-scrolling-step*))
                          (setf (menu-state-view-end menu)
-                               (- (menu-state-view-end menu)
+                               (- (+ (menu-state-selected menu)
+                                     *menu-maximum-height*)
                                   *menu-scrolling-step*))))
                  ((>= (menu-state-selected menu)
                       (menu-state-view-end menu))
                   (progn (setf (menu-state-view-start menu)
-                               (+ (menu-state-view-start menu)
+                               (+ (- (menu-state-selected menu)
+                                     *menu-maximum-height*)
                                   *menu-scrolling-step*))
                          (setf (menu-state-view-end menu)
-                               (+ (menu-state-view-end menu)
-                                        *menu-scrolling-step*))))))))
+                               (+ (menu-state-selected menu)
+                                  *menu-scrolling-step*))))))))
 
 (defun menu-up (menu)
   (setf *current-menu-input* "")
@@ -184,8 +186,6 @@ backspace or F9), return it otherwise return nil"
           (bound-check-menu menu)
 	  (return))))))
 
-;; TODO: The maximum lines-number should be customizable or at least based on
-;; TODO: screen height
 (defun select-from-menu (screen table &optional prompt
                                                 (initial-selection 0))
   "Prompt the user to select from a menu on SCREEN. TABLE can be
