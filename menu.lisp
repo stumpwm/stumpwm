@@ -151,6 +151,7 @@ backspace or F9), return it otherwise return nil"
 	(when (and (>= (length cur-elem-name) current-input-length)
 		   (ppcre:scan match-regex cur-elem-name))
 	  (setf (menu-state-selected menu) cur-pos)
+          (bound-check-menu menu)
 	  (return))))))
 
 ;; TODO: The maximum lines-number should be customizable or at least based on
