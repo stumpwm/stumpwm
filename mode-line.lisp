@@ -212,7 +212,7 @@ fmt-highlight. Any non-visible windows are colored the
 
 (defun fmt-modeline-time (ml)
   (declare (ignore ml))
-  (format-expand *time-format-string-alist* *time-modeline-string*))
+  (time-format *time-modeline-string*))
 
 (defvar *bar-med-color* "^B")
 (defvar *bar-hi-color* "^B^3*")
