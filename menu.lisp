@@ -50,15 +50,51 @@
 (defvar *current-menu-input* nil)
 
 (defstruct menu-state
-  table prompt selected)
+  table prompt selected view-start view-end)
+
+(defun menu-scrolling-required-p (menu)
+  (and *menu-maximum-height*
+       (> (length (menu-state-table menu))
+          *menu-maximum-height*)))
 
 (defun bound-check-menu (menu)
+  "Adjust the menu view and selected item based
+on current view and new selection."
   (setf (menu-state-selected menu)
         (cond ((< (menu-state-selected menu) 0)
                (1- (length (menu-state-table menu))))
               ((>= (menu-state-selected menu) (length (menu-state-table menu)))
                0)
-              (t (menu-state-selected menu)))))
+              (t (menu-state-selected menu))))
+  (when (menu-scrolling-required-p menu)
+    (progn (cond ((< (menu-state-selected menu) *menu-maximum-height*)
+                  (progn (setf (menu-state-view-start menu) 0)
+                         (setf (menu-state-view-end menu)
+                               *menu-maximum-height*)))
+                 ((> (menu-state-selected menu)
+                     (- (length (menu-state-table menu))
+                        *menu-maximum-height*))
+                  (progn (setf (menu-state-view-start menu)
+                               (- (length (menu-state-table menu))
+                                  *menu-maximum-height*))
+                         (setf (menu-state-view-end menu)
+                               (length (menu-state-table menu)))))
+                 ((< (menu-state-selected menu)
+                      (menu-state-view-start menu))
+                  (progn (setf (menu-state-view-start menu)
+                               (- (menu-state-view-start menu)
+                                  *menu-scrolling-step*))
+                         (setf (menu-state-view-end menu)
+                               (- (menu-state-view-end menu)
+                                  *menu-scrolling-step*))))
+                 ((>= (menu-state-selected menu)
+                      (menu-state-view-end menu))
+                  (progn (setf (menu-state-view-start menu)
+                               (+ (menu-state-view-start menu)
+                                  *menu-scrolling-step*))
+                         (setf (menu-state-view-end menu)
+                               (+ (menu-state-selected menu)
+                                  *menu-scrolling-step*))))))))
 
 (defun menu-up (menu)
   (setf *current-menu-input* "")
@@ -117,7 +153,10 @@ backspace or F9), return it otherwise return nil"
 	  (setf (menu-state-selected menu) cur-pos)
 	  (return))))))
 
-(defun select-from-menu (screen table &optional prompt (initial-selection 0))
+;; TODO: The maximum lines-number should be customizable or at least based on
+;; TODO: screen height
+(defun select-from-menu (screen table &optional prompt
+                                                (initial-selection 0))
   "Prompt the user to select from a menu on SCREEN. TABLE can be
 a list of values or an alist. If it's an alist, the CAR of each
 element is displayed in the menu. What is displayed as menu items
@@ -128,27 +167,56 @@ See *menu-map* for menu bindings."
   (check-type table list)
   (check-type prompt (or null string))
   (check-type initial-selection integer)
-  (let* ((menu (make-menu-state
+  (let* ((menu-options (mapcar (lambda (elt)
+                                 (if (listp elt)
+                                     (first elt)
+                                   elt))
+                               table))
+         (menu-require-scrolling (and *menu-maximum-height*
+                                       (> (length menu-options)
+                                          *menu-maximum-height*)))
+         (menu (make-menu-state
                 :table table
                 :prompt prompt
+                :view-start (if menu-require-scrolling
+                                initial-selection
+                              0)
+                :view-end (if menu-require-scrolling
+                              (if (< (+ initial-selection
+                                        *menu-maximum-height*)
+                                     (length menu-options))
+                                  (+ initial-selection
+                                     *menu-maximum-height*)
+                                (- (length menu-options)
+                                   *menu-maximum-height*))
+                            (length menu-options))
                 :selected initial-selection))
-         (menu-options (mapcar #'menu-element-name
-                               table))
-         (menu-text (if prompt
-                        (cons prompt menu-options)
-                        menu-options))
          (*record-last-msg-override* t)
-         (*suppress-echo-timeout* t)
-	 (*current-menu-input* ""))
+         (*suppress-echo-timeout* t))
     (bound-check-menu menu)
     (catch :menu-quit
       (unwind-protect
            (with-focus (screen-key-window screen)
              (loop
-                (echo-string-list screen menu-text
-                                  (+ (menu-state-selected menu) (if prompt 1 0)))
+                (let* ((menu-view (subseq menu-options (menu-state-view-start menu) (menu-state-view-end menu)))
+                   (menu-text (let ((view-text menu-view))
+                                (unless (= 0 (menu-state-view-start menu))
+                                  (setf view-text
+                                        (cons "..." view-text)))
+                                (unless (= (length menu-options) (menu-state-view-end menu))
+                                  (setf view-text (append view-text '("..."))))
+                                (when prompt
+                                  (setf view-text
+                                        (cons prompt view-text)))
+                                view-text))
+                   (menu-highlight (+ (- (menu-state-selected menu)
+                                         (menu-state-view-start menu))
+                                      (if prompt 1 0)
+                                      (if (= 0 (menu-state-view-start menu)) 0 1))))
+              (echo-string-list screen menu-text menu-highlight))
                 (multiple-value-bind (action key-seq) (read-from-keymap (list *menu-map*))
 		  (if action
 		      (funcall action menu)
 		      (check-menu-complete menu (first key-seq))))))
         (unmap-all-message-windows)))))
+

@@ -235,6 +235,13 @@ the mode-line, the button clicked, and the x and y of the pointer.")
 (defvar *text-color* "white"
   "The color of message text.")
 
+(defvar *menu-maximum-height* nil
+  "Defines the maxium number of lines to display in the menu before enabling
+   scrolling. If NIL scrolling is disabled.")
+
+(defvar *menu-scrolling-step* 1
+  "Number of lines to scroll when hitting the menu list limit.")
+
 (defparameter +netwm-supported+
   '(:_NET_SUPPORTING_WM_CHECK
     :_NET_NUMBER_OF_DESKTOPS
