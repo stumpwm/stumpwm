@@ -54,10 +54,8 @@
           (define-key m (kbd "RET") 'menu-finish)
           m)))
 
-(defvar *current-menu-input* nil)
-
 (defstruct menu-state
-  table prompt selected view-start view-end)
+  table prompt selected view-start view-end current-input)
 
 (defun menu-scrolling-required-p (menu)
   (and *menu-maximum-height*
@@ -106,33 +104,33 @@ on current view and new selection."
                                   *menu-scrolling-step*))))))))
 
 (defun menu-up (menu)
-  (setf *current-menu-input* "")
+  (setf (menu-state-current-input menu) "")
   (decf (menu-state-selected menu))
   (bound-check-menu menu))
 
 (defun menu-down (menu)
-  (setf *current-menu-input* "")
+  (setf (menu-state-current-input menu) "")
   (incf (menu-state-selected menu))
   (bound-check-menu menu))
 
 (defun menu-scroll-up (menu)
-  (setf *current-menu-input* "")
+  (setf (menu-state-current-input menu) "")
   (decf (menu-state-selected menu) *menu-scrolling-step*)
   (bound-check-menu menu))
 
 (defun menu-scroll-down (menu)
-  (setf *current-menu-input* "")
+  (setf (menu-state-current-input menu) "")
   (incf (menu-state-selected menu) *menu-scrolling-step*)
   (bound-check-menu menu))
 
 (defun menu-page-up (menu)
-  (setf *current-menu-input* "")
+  (setf (menu-state-current-input menu) "")
   (decf (menu-state-selected menu) *menu-maximum-height*)
   (let ((*menu-scrolling-step* *menu-maximum-height*))
     (bound-check-menu menu)))
 
 (defun menu-page-down (menu)
-  (setf *current-menu-input* "")
+  (setf (menu-state-current-input menu) "")
   (incf (menu-state-selected menu) *menu-maximum-height*)
   (let ((*menu-scrolling-step* *menu-maximum-height*))
     (bound-check-menu menu)))
@@ -165,20 +163,20 @@ backspace or F9), return it otherwise return nil"
   long as the user types lower-case characters."
   (let ((input-char (get-input-char key-seq)))
     (when input-char
-      (setf *current-menu-input*
+      (setf (menu-state-current-input menu)
 	    (concatenate 'string
-			 *current-menu-input*
+			 (menu-state-current-input menu)
 			 (string input-char)))
       (do* ((cur-pos 0 (1+ cur-pos))
 	    (rest-elem (menu-state-table menu)
 		       (cdr rest-elem))
 	    (cur-elem (car rest-elem) (car rest-elem))
 	    (cur-elem-name (menu-element-name cur-elem) (menu-element-name cur-elem))
-	    (current-input-length (length *current-menu-input*))
-	    (match-regex (ppcre:create-scanner *current-menu-input*
+	    (current-input-length (length (menu-state-current-input menu)))
+	    (match-regex (ppcre:create-scanner (menu-state-current-input menu)
 					       :case-insensitive-mode
-					       (string= (string-downcase *current-menu-input*)
-							*current-menu-input*))))
+					       (string= (string-downcase (menu-state-current-input menu))
+							(menu-state-current-input menu)))))
 	   ((not cur-elem))
 	(when (and (>= (length cur-elem-name) current-input-length)
 		   (ppcre:scan match-regex cur-elem-name))
@@ -209,6 +207,7 @@ See *menu-map* for menu bindings."
          (menu (make-menu-state
                 :table table
                 :prompt prompt
+                :current-input ""
                 :view-start (if menu-require-scrolling
                                 initial-selection
                               0)
@@ -236,6 +235,9 @@ See *menu-map* for menu bindings."
                                         (cons "..." view-text)))
                                 (unless (= (length menu-options) (menu-state-view-end menu))
                                   (setf view-text (append view-text '("..."))))
+                                (unless (string= (menu-state-current-input menu) "")
+                                  (setf view-text
+                                        (cons (format nil "Search: ~a" (menu-state-current-input menu)) view-text)))
                                 (when prompt
                                   (setf view-text
                                         (cons prompt view-text)))
@@ -243,6 +245,8 @@ See *menu-map* for menu bindings."
                    (menu-highlight (+ (- (menu-state-selected menu)
                                          (menu-state-view-start menu))
                                       (if prompt 1 0)
+                                      (if (string= (menu-state-current-input menu) "")
+                                          0 1)
                                       (if (= 0 (menu-state-view-start menu)) 0 1))))
               (echo-string-list screen menu-text menu-highlight))
                 (multiple-value-bind (action key-seq) (read-from-keymap (list *menu-map*))
