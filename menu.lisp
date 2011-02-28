@@ -38,10 +38,17 @@
           (define-key m (kbd "C-p") 'menu-up)
           (define-key m (kbd "Up") 'menu-up)
           (define-key m (kbd "k") 'menu-up)
+          (define-key m (kbd "S-Up") 'menu-scroll-up)
+          (define-key m (kbd "SunPageUp") 'menu-page-up)
+          (define-key m (kbd "K") 'menu-page-up)
 
           (define-key m (kbd "C-n") 'menu-down)
           (define-key m (kbd "Down") 'menu-down)
           (define-key m (kbd "j") 'menu-down)
+          (define-key m (kbd "S-Down") 'menu-scroll-down)
+          (define-key m (kbd "SunPageDown") 'menu-page-down)
+          (define-key m (kbd "J") 'menu-page-down)
+
           (define-key m (kbd "C-g") 'menu-abort)
           (define-key m (kbd "ESC") 'menu-abort)
           (define-key m (kbd "RET") 'menu-finish)
@@ -93,8 +100,8 @@ on current view and new selection."
                                (+ (menu-state-view-start menu)
                                   *menu-scrolling-step*))
                          (setf (menu-state-view-end menu)
-                               (+ (menu-state-selected menu)
-                                  *menu-scrolling-step*))))))))
+                               (+ (menu-state-view-end menu)
+                                        *menu-scrolling-step*))))))))
 
 (defun menu-up (menu)
   (setf *current-menu-input* "")
@@ -105,6 +112,29 @@ on current view and new selection."
   (setf *current-menu-input* "")
   (incf (menu-state-selected menu))
   (bound-check-menu menu))
+
+(defun menu-scroll-up (menu)
+  (setf *current-menu-input* "")
+  (decf (menu-state-selected menu) *menu-scrolling-step*)
+  (bound-check-menu menu))
+
+(defun menu-scroll-down (menu)
+  (setf *current-menu-input* "")
+  (incf (menu-state-selected menu) *menu-scrolling-step*)
+  (bound-check-menu menu))
+
+(defun menu-page-up (menu)
+  (setf *current-menu-input* "")
+  (decf (menu-state-selected menu) *menu-maximum-height*)
+  (let ((*menu-scrolling-step* *menu-maximum-height*))
+    (bound-check-menu menu)))
+
+(defun menu-page-down (menu)
+  (setf *current-menu-input* "")
+  (incf (menu-state-selected menu) *menu-maximum-height*)
+  (let ((*menu-scrolling-step* *menu-maximum-height*))
+    (bound-check-menu menu)))
+
 
 (defun menu-finish (menu)
   (throw :menu-quit (nth (menu-state-selected menu) (menu-state-table menu))))
