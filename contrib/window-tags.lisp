@@ -210,3 +210,53 @@
 		  (really-raise-window window)
 		  window)
 		nil)))
+
+(defcommand search-tag (tag-regex) ((:rest "Tag regex to select: "))
+  (only)
+  (fclear)
+  (let*
+      (
+       (current (current-group (current-screen)))
+       (tag-store (find-group (current-screen) ".tag-store")))
+    (loop for w in (screen-windows (current-screen)) do
+         (if
+          (find-if (lambda (s) (cl-ppcre:scan (concatenate 'string "(?i)" tag-regex) s)) (window-tags w))
+          (move-window-to-group w current)
+          (move-window-to-group w tag-store)))))
+
+(defcommand search-tag-pull (tag-regex) ((:rest "Tag regex to pull: "))
+  (only)
+  (fclear)
+  (let*
+      (
+       (current (current-group (current-screen)))
+       (tag-store (find-group (current-screen) ".tag-store")))
+    (loop for w in (screen-windows (current-screen)) do
+         (if
+          (find-if (lambda (s) (cl-ppcre:scan (concatenate 'string "(?i)" tag-regex) s)) (window-tags w))
+          (move-window-to-group w current)
+          (progn)))))
+
+(defcommand select-by-title-regexp (regex) ((:rest "Title regex to select: "))
+  (only)
+  (fclear)
+  (let*
+      (
+       (current (current-group (current-screen)))
+       (tag-store (find-group (current-screen) ".tag-store")))
+    (loop for w in (screen-windows (current-screen)) do
+         (if (cl-ppcre:scan regex (window-title w))
+             (move-window-to-group w current)
+             (move-window-to-group w tag-store)))))
+
+(defcommand pull-by-title-regexp (regex) ((:rest "Title regex to select: "))
+  (only)
+  (fclear)
+  (let*
+      (
+       (current (current-group (current-screen)))
+       (tag-store (find-group (current-screen) ".tag-store")))
+    (loop for w in (screen-windows (current-screen)) do
+         (if (cl-ppcre:scan regex (window-title w))
+             (move-window-to-group w current)
+             (progn)))))
