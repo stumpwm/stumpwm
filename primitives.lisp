@@ -260,6 +260,7 @@ the mode-line, the button clicked, and the x and y of the pointer.")
     :_NET_CLIENT_LIST
     :_NET_CLIENT_LIST_STACKING
     :_NET_ACTIVE_WINDOW
+    :_NET_WM_DESKTOP
     :_KDE_NET_SYSTEM_TRAY_WINDOW_FOR)
   "Supported NETWM properties.
 Window types are in +WINDOW-TYPES+.")
@@ -676,7 +677,8 @@ output directly to a file.")
                                  (if (typep ch 'standard-char)
                                      ch #\?))
                        (apply 'format nil fmt args))
-                  *debug-stream*)))
+                  *debug-stream*)
+    (force-output *debug-stream*)))
 
 (defvar *redirect-stream* nil
   "This variable Keeps track of the stream all output is sent to when
