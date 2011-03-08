@@ -212,8 +212,11 @@ such a case, kill the shell command to resume StumpWM."
 (defcommand keyboard-quit () ()
     ""
   ;; This way you can exit from command mode
-  (when (pop-top-map)
-    (message "Exited.")))
+  (let ((in-command-mode (eq *top-map* *root-map*)))
+    (when (pop-top-map)
+      (if in-command-mode
+        (run-hook *command-mode-end-hook*)
+        (message "Exited.")))))
 
 (defcommand-alias abort keyboard-quit)
 

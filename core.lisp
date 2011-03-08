@@ -101,6 +101,7 @@
 
 (defun grab-pointer (screen)
   "Grab the pointer and set the pointer shape."
+  (incf *grab-pointer-count*)
   (let* ((white (xlib:make-color :red 1.0 :green 1.0 :blue 1.0))
          (black (xlib:make-color :red 0.0 :green 0.0 :blue 0.0))
          (cursor-font (xlib:open-font *display* "cursor"))
@@ -115,8 +116,10 @@
 
 (defun ungrab-pointer ()
   "Remove the grab on the cursor and restore the cursor shape."
-  (xlib:ungrab-pointer *display*)
-  (xlib:display-finish-output *display*))
+  (when (> *grab-pointer-count* 0) (decf *grab-pointer-count*))
+  (when (eq *grab-pointer-count* 0)
+    (xlib:ungrab-pointer *display*)
+    (xlib:display-finish-output *display*)))
 
 (defun grab-keyboard (xwin)
   (let ((ret (xlib:grab-keyboard xwin :owner-p nil

@@ -27,7 +27,6 @@
 
 (export '(*groups-map*
           *help-map*
-          *root-map*
 	  set-prefix-key))
 
 (defvar *escape-key* (kbd "C-t")
@@ -37,9 +36,6 @@ C-t.")
 
 (defvar *escape-fake-key* (kbd "t")
   "The binding that sends the fake escape key to the current window.")
-
-(defvar *root-map* nil
-  "This is the keymap by default bound to @kbd{C-t}. It is known as the @dfn{prefix map}.")
 
 (defvar *groups-map* nil
   "The keymap that group related key bindings sit on. It is bound to @kbd{C-t g} by default.")
@@ -232,7 +228,7 @@ from most specific groups to most general groups.")
 "Command mode allows you to type ratpoison commands without needing the
 @key{C-t} prefix. Keys not bound in StumpWM will still get sent to the
 current window. To exit command mode, type @key{C-g}."
-  (message "Press C-g to exit command-mode.")
+  (run-hook *command-mode-start-hook*)
   (push-top-map *root-map*))
 
 (defcommand set-prefix-key (key) ((:key "Key: "))

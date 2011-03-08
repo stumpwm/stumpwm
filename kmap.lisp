@@ -26,6 +26,7 @@
 (in-package stumpwm)
 
 (export '(*top-map*
+          *root-map*
           define-key
 	  kbd
 	  lookup-command
@@ -36,6 +37,9 @@
 (defvar *top-map* nil
   "The top level key map. This is where you'll find the binding for the
 @dfn{prefix map}.")
+
+(defvar *root-map* nil
+  "This is the keymap by default bound to @kbd{C-t}. It is known as the @dfn{prefix map}.")
 
 (defstruct key
   keysym shift control meta alt hyper super)

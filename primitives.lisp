@@ -33,6 +33,8 @@
           *frame-indicator-text*
           *frame-indicator-timer*
           *message-window-timer*
+          *command-mode-start-hook*
+          *command-mode-end-hook*
           *urgent-window-hook*
           *new-window-hook*
           *destroy-window-hook*
@@ -117,6 +119,8 @@
           remove-hook
           run-hook
           run-hook-with-args
+          command-mode-start-message
+          command-mode-end-message
           split-string
 	  with-restarts-menu
           with-data-file
@@ -146,7 +150,16 @@ be an integer.")
 (defvar *message-window-timer* nil
   "Keep track of the timer that hides the message window.")
 
+(defvar *grab-pointer-count* 0
+  "The number of times the pointer has been grabbed")
+
 ;;; Hooks
+
+(defvar *command-mode-start-hook* '(command-mode-start-message)
+  "A hook called whenever command mode is started")
+
+(defvar *command-mode-end-hook* '(command-mode-end-message)
+  "A hook called whenever command mode is ended")
 
 (defvar *urgent-window-hook* '()
   "A hook called whenever a window sets the property indicating that
@@ -1110,3 +1123,9 @@ of :error."
      (:preserve thing)
      (:invert (string-downcase thing)))
    package))
+
+(defun command-mode-start-message ()
+  (message "Press C-g to exit command-mode."))
+
+(defun command-mode-end-message ()
+  (message "Exited command-mode."))
