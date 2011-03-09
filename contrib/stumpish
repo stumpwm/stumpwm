@@ -28,6 +28,11 @@ then
     DELAY=1
 fi
 
+# replace -E with -r option for old versions of GNU sed
+if ! sed -E 1p /dev/null 2>/dev/null; then
+    sed() { shift; command sed -r "$@"; }
+fi
+
 # parse C-style backslash sequences by default
 if [ "$(echo -e foo)" = foo ]; then
     echo() { builtin echo -e "$@"; }
