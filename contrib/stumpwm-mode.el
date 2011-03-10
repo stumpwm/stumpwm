@@ -48,6 +48,7 @@
                (call-process stumpwm-shell-program nil (current-buffer) nil
                              "eval"
                              s)
+               (delete-char -1)
                (buffer-string)))))
 
 (defun stumpwm-eval-defun ()
