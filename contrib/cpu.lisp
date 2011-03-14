@@ -128,7 +128,13 @@ utilization."
 
 (defvar *acpi-thermal-zone*
   (let ((proc-dir (list-directory #P"/proc/acpi/thermal_zone/"))
-        (sys-dir (list-directory #P"/sys/class/thermal/")))
+        (sys-dir (sort
+                  (remove-if-not
+                   (lambda (x)
+                     (when (cl-ppcre:scan "^.*/thermal_zone\\d+/" (namestring x))
+                       x))
+                   (list-directory #P"/sys/class/thermal/"))
+                  #'string< :key #'namestring)))
     (cond
       (proc-dir
        (cons :procfs
@@ -136,7 +142,7 @@ utilization."
                             :name "temperature")))
       (sys-dir
        (cons :sysfs
-             (make-pathname :directory (pathname-directory (car (last sys-dir)))
+             (make-pathname :directory (pathname-directory (first sys-dir))
                             :name "temp"))))))
 
 (defun fmt-cpu-temp (ml)
