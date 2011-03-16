@@ -471,6 +471,12 @@ exist, in which case they go into the current group.")
   (format stream "#S(frame ~d ~a ~d ~d ~d ~d)"
           (frame-number object) (frame-window object) (frame-x object) (frame-y object) (frame-width object) (frame-height object)))
 
+(defvar *window-number-map* "0123456789"
+  "Set this to a string to remap the window numbers to something more convenient.")
+
+(defvar *group-number-map* "1234567890"
+  "Set this to a string to remap the group numbers to something more convenient.")
+
 (defvar *frame-number-map* "0123456789abcdefghijklmnopqrstuvxwyz"
   "Set this to a string to remap the frame numbers to more convenient keys.
 For instance,
@@ -757,7 +763,7 @@ do:
             (setf output (concatenate 'string output (string (car cur)))
                   cur (cdr cur)))))))
 
-(defvar *window-formatters* '((#\n window-number)
+(defvar *window-formatters* '((#\n window-map-number)
                               (#\s fmt-window-status)
                               (#\t window-name)
                               (#\c window-class)
@@ -775,7 +781,8 @@ with the following formatting options:
 
 @table @asis
 @item %n
-Substitute the window number.
+Substitutes the windows number translated via *window-number-map*, if there
+are more windows than *window-number-map* then will use the window-number.
 @item %s
 Substitute the window's status. * means current window, + means last
 window, and - means any other window.
@@ -796,7 +803,7 @@ characters.")
 (defvar *window-info-format* "%wx%h %n (%t)"
   "The format used in the info command. @xref{*window-format*} for formatting details.")
 
-(defvar *group-formatters* '((#\n group-number)
+(defvar *group-formatters* '((#\n group-map-number)
                              (#\s fmt-group-status)
                              (#\t group-name))
   "An alist of characters and formatter functions. The character can be
@@ -812,7 +819,8 @@ group listing. The following format options are available:
 
 @table @asis
 @item %n
-The group's number.
+Substitutes the group number translated via *group-number-map*, if there
+are more windows than *group-number-map* then will use the group-number.
 
 @item %s
 The group's status. Similar to a window's status.

@@ -253,6 +253,12 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
                    :format 32
                    :data data))
 
+(defun window-map-number (window)
+  (let ((num (window-number window)))
+    (or (and (< num (length *window-number-map*))
+             (char *window-number-map* num))
+        num)))
+
 (defun fmt-window-status (window)
   (let ((group (window-group window)))
     (cond ((eq window (group-current-window group))

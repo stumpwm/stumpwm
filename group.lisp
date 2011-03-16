@@ -106,6 +106,13 @@ otherwise specified."
   "Return a copy of the screen's group list sorted by number."
   (sort1 (screen-groups screen) '< :key 'group-number))
 
+(defun group-map-number (group)
+  (let* ((len (length *group-number-map*))
+         (num (group-number group)))
+    (if (<= num len)
+      (char *group-number-map* (- num 1))
+      num)))
+
 (defun fmt-group-status (group)
   (let ((screen (group-screen group)))
     (cond ((eq group (screen-current-group screen))
