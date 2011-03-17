@@ -256,7 +256,7 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
 (defun window-map-number (window)
   (let ((num (window-number window)))
     (or (and (< num (length *window-number-map*))
-             (char *window-number-map* num))
+             (elt *window-number-map* num))
         num)))
 
 (defun fmt-window-status (window)

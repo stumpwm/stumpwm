@@ -110,7 +110,7 @@ otherwise specified."
   (let* ((len (length *group-number-map*))
          (num (group-number group)))
     (if (<= num len)
-      (char *group-number-map* (- num 1))
+      (elt *group-number-map* (- num 1))
       num)))
 
 (defun fmt-group-status (group)
