@@ -3,6 +3,7 @@
 (require 'asdf #+clisp'("asdf.lisp"))
 #+(or clisp ecl) (load "@PPCRE_PATH@/cl-ppcre.asd")
 (asdf:oos 'asdf:load-op 'stumpwm)
+#-ecl (stumpwm:set-contrib-dir "@CONTRIB_DIR@")
 
 #+sbcl
 (sb-ext:save-lisp-and-die "stumpwm" :toplevel (lambda ()
@@ -26,5 +27,5 @@
                  :move-here "."
                  :name-suffix ""
                  :epilogue-code '(progn
-                                  (funcall (intern "STUMPWM" (find-package "STUMPWM")))
-                                  0))
+                                  (stumpwm:set-contrib-dir "@CONTRIB_DIR@")
+                                  (stumpwm:stumpwm)))

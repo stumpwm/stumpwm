@@ -36,7 +36,10 @@
     (setf dir (concat dir "/")))
   (pathname dir))
 
-(defvar *contrib-dir* (module-string-as-directory "@CONTRIB_DIR@")
+(defvar *contrib-dir*
+  #.(asdf:system-relative-pathname (asdf:find-system :stumpwm)
+                                   (make-pathname :directory
+                                                  '(:relative "contrib")))
   "The location of the contrib modules on your system.")
 
 (defcommand set-contrib-dir (dir) ((:string "Directory: "))

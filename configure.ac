@@ -122,4 +122,3 @@ fi
 AC_OUTPUT(Makefile)
 AC_OUTPUT(make-image.lisp)
 AC_OUTPUT(version.lisp)
-AC_OUTPUT(module.lisp)
