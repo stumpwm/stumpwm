@@ -107,11 +107,11 @@ otherwise specified."
   (sort1 (screen-groups screen) '< :key 'group-number))
 
 (defun group-map-number (group)
-  (let* ((len (length *group-number-map*))
-         (num (group-number group)))
-    (if (<= num len)
-      (elt *group-number-map* (- num 1))
-      num)))
+  (let* ((num (group-number group))
+         (index (1- (abs num))))
+    (if (< index (length *group-number-map*))
+        (format nil "~:[~;-~]~a" (minusp num) (elt *group-number-map* index))
+        num)))
 
 (defun fmt-group-status (group)
   (let ((screen (group-screen group)))
