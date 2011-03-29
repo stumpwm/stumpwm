@@ -344,15 +344,15 @@ then describes the symbol."
   (let ((n (or (argument-pop input)
                (completing-read (current-screen)
                                 prompt
-                                (mapcar 'prin1-to-string
-                                        (mapcar 'window-number
-                                                (group-windows (current-group))))))))
+                                (mapcar 'window-map-number
+                                        (group-windows (current-group)))))))
     (when n
-      (handler-case
-          (parse-integer n)
-        (parse-error (c)
-          (declare (ignore c))
-          (throw 'error "Number required."))))))
+      (let ((win (find n (group-windows (current-group))
+                       :test #'string=
+                       :key #'window-map-number)))
+        (if win
+            (window-number win)
+            (throw 'error "No Such Window."))))))
 
 (define-stumpwm-type :number (input prompt)
   (let ((n (or (argument-pop input)
