@@ -109,7 +109,8 @@ otherwise specified."
 (defun group-map-number (group)
   (let* ((num (group-number group))
          (index (1- (abs num))))
-    (if (< index (length *group-number-map*))
+    (if (and (>= index 0)
+             (< index (length *group-number-map*)))
         (format nil "~:[~;-~]~a" (minusp num) (elt *group-number-map* index))
         num)))
 
