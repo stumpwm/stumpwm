@@ -38,7 +38,7 @@
 	  read-one-line))
 
 (defstruct input-line
-  string position history history-bk)
+  string position history history-bk password)
 
 (defvar *input-map* nil
   "This is the keymap containing all input editing key bindings.")
@@ -194,12 +194,13 @@ match with an element of the completions."
     (let ((line (read-one-line screen prompt :initial-input initial-input :require-match require-match)))
       (when line (string-trim " " line)))))
 
-(defun read-one-line (screen prompt &key (initial-input "") require-match)
+(defun read-one-line (screen prompt &key (initial-input "") require-match password)
   "Read a line of input through stumpwm and return it. returns nil if the user aborted."
   (let ((*input-last-command* nil)
         (input (make-input-line :string (make-input-string initial-input)
                                 :position (length initial-input)
-                                :history -1)))
+                                :history -1
+                                :password password)))
     (labels ((match-input ()
                (let* ((in (string-trim " " (input-line-string input)))
                       (compls (input-find-completions in *input-completions*)))
@@ -237,7 +238,10 @@ match with an element of the completions."
   (let* ((gcontext (screen-message-gc screen))
          (win (screen-input-window screen))
          (prompt-width (xlib:text-width (screen-font screen) prompt :translate #'translate-id))
-         (string (input-line-string input))
+         (line-content (input-line-string input))
+         (string (if (input-line-password input)
+                     (make-string (length line-content) :initial-element #\*)
+                     line-content))
          (string-width (xlib:text-width (screen-font screen) string :translate #'translate-id))
          (space-width  (xlib:text-width (screen-font screen) " "    :translate #'translate-id))
          (tail-width   (xlib:text-width (screen-font screen) tail   :translate #'translate-id))
@@ -567,8 +571,9 @@ input (pressing Return), nil otherwise."
                    :error))))
     (case (process-key code state)
       (:done
-       (unless (and *input-history-ignore-duplicates*
-                    (string= (input-line-string input) (first *input-history*)))
+       (unless (or (input-line-password input)
+                   (and *input-history-ignore-duplicates*
+                        (string= (input-line-string input) (first *input-history*))))
          (push (input-line-string input) *input-history*))
        :done)
       (:abort

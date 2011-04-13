@@ -370,6 +370,10 @@ then describes the symbol."
   (or (argument-pop input)
       (read-one-line (current-screen) prompt)))
 
+(define-stumpwm-type :password (input prompt)
+  (or (argument-pop input)
+      (read-one-line (current-screen) prompt :password t)))
+
 (define-stumpwm-type :key (input prompt)
   (let ((s (or (argument-pop input)
                (read-one-line (current-screen) prompt))))
