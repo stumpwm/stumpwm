@@ -368,6 +368,7 @@ T (default) then also focus the frame."
                          :width (- (frame-width p) w)
                          :height h
                          :window nil)))
+    (run-hook-with-args *split-frame-hook* p f1 f2)
     (run-hook-with-args *new-frame-hook* f2)
     (values f1 f2)))
 
@@ -388,6 +389,7 @@ T (default) then also focus the frame."
                          ;; gobble up the modulo
                          :height (- (frame-height p) h)
                          :window nil)))
+    (run-hook-with-args *split-frame-hook* p f1 f2)
     (run-hook-with-args *new-frame-hook* f2)
     (values f1 f2)))
 
