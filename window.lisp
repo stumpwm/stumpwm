@@ -843,7 +843,9 @@ selected."
   (second (select-from-menu (current-screen)
 			    (mapcar (lambda (w)
 				      (list (format-expand *window-formatters* fmt w) w))
-				    windows))))
+                                    windows)
+                            nil
+                            (or (position (current-window) windows) 0))))
 
 ;;; Window commands
 
