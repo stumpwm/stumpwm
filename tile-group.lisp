@@ -891,13 +891,13 @@ windows used to draw the numbers in. The caller must destroy them."
           (show-frame-indicator group))
         (message "Cannot split smaller than minimum size."))))
 
-(defcommand (hsplit tile-group) () ()
+(defcommand (hsplit tile-group) (&optional (ratio "1/2")) (:string)
 "Split the current frame into 2 side-by-side frames."
-  (split-frame-in-dir (current-group) :column))
+  (split-frame-in-dir (current-group) :column (read-from-string ratio)))
 
-(defcommand (vsplit tile-group) () ()
+(defcommand (vsplit tile-group) (&optional (ratio "1/2")) (:string)
 "Split the current frame into 2 frames, one on top of the other."
-  (split-frame-in-dir (current-group) :row))
+  (split-frame-in-dir (current-group) :row (read-from-string ratio)))
 
 (defcommand (remove-split tile-group) (&optional (group (current-group)) (frame (tile-group-current-frame group))) ()
 "Remove the specified frame in the specified group (defaults to current
