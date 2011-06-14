@@ -88,14 +88,6 @@ $ startx
 
 Hopefully that will put you in X running stumpwm!
 
-SBCL And Threads
-----------------
-
-SBCL compiled with threads causes problems with stumpwm. The most
-common is sluggishness. It may also cause stumpwm to become
-unresponsive. If you use SBCL, consider using a version built without
-threads.
-
 CCL And Virtual Memory
 ----------------------
 
