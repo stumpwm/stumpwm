@@ -15,76 +15,54 @@ Build & Start Stumpwm
 Prerequisites
 =============
 
-* a common lisp distribution. CCL, CLISP, and SBCL all work.
+* a common lisp distribution.  sbcl, clisp, ccl and ecl all work.
+* asdf
 * clx
 * cl-ppcre
 
-If you intend to use SBCL or CCL you need to install portable-clx. If
-you're using clisp, make sure you use at least version 2.42 and that
-clisp is compiled with new-clx. As of clisp 2.42, new-clx works fine
-with stumpwm. Any version before that is too buggy to run stumpwm.
+The recommended way to install the dependencies is using Quicklisp.
+Follow the instructions at http://www.quicklisp.org/ to install and
+add it to your lisp init file.  Then, in a repl:
 
-You can use asdf-install to install lisp libraries:
-  $ sbcl
-    * (require 'asdf)
-    * (require 'asdf-install)
-    * (asdf-install:install 'clx)
-    * (asdf-install:install 'cl-ppcre)
-
-If using clisp, you'll need to install asdf first to use asdf-install.
-  $ mkdir -p ~/.cl/asdf && cd ~/.cl
-  $ wget http://cclan.cvs.sourceforge.net/*checkout*/cclan/asdf/asdf.lisp -O ~/.cl/asdf/asdf.lisp
-  $ echo "(load #p\"/home/USER/.cl/asdf/asdf\")" >> ~/.clisprc.lisp
-  $ mkdir -p ~/.cl/systems
-  $ echo "(push #p\"/home/USER/.cl/systems\" asdf:*central-registry*)" >> ~/.clisprc.lisp
-  $ wget http://common-lisp.net/project/asdf-install/asdf-install_latest.tar.gz
-  $ tar xf asdf-install_latest.tar.gz
-  $ ln -s ~/.cl/asdf-install/asdf-install/asdf-install.asd ~/.cl/systems/
-  $ clisp
-    * (asdf:operate 'asdf:compile-op 'asdf-install)
-    * (asdf:operate 'asdf:load-op 'asdf-install)
-    * (asdf-install:install :cl-ppcre)
-
-CCL has asdf built in, but you will need to get asdf-install like with clisp.
-
-Your operating system distribution may also have these libraries
-available.
+ (ql:quickload "clx")
+ (ql:quickload "cl-ppcre")
 
 Building
 ========
 
-Building stumpwm from CVS requires that you build the configure script:
+Building stumpwm from git requires that you build the configure script:
 
-$ autoconf
+ autoconf
 
 If there's already a configure script then just run it.
 
-$ ./configure
+ ./configure
 
-By default stumpwm elects sbcl. If you have both installed, you can
-explicitly select clisp like so:
+By default stumpwm elects sbcl.  If you have multiple lisps installed,
+you can explicitly select clisp, ccl, or ecl like so:
 
-$ ./configure --with-lisp=clisp
+ ./configure --with-lisp=clisp
 
-If your lisps are in strange places you may need to tell the script where to find them:
+If your lisps are in strange places you may need to tell the script
+where to find them:
 
-$ configure --with-sbcl=/home/sabetts/opt/bin/sbcl --with-clisp=/usr/local/downstairs/to/the/left/clisp
+ ./configure --with-sbcl=/home/sabetts/opt/bin/sbcl
+ ./configure --with-clisp=/usr/local/downstairs/to/the/left/clisp
 
 Now build it:
 
-$ make
+ make
 
-If all goes well, you should have a stumpwm binary now. Sorry there's
-no install yet. Just copy the binary wherever you want or run it out
-of the stumpwm/ directory. If autoconf worked properly, you can
-install the binary, along with the .info documentation with:
+If all goes well, you should have a stumpwm binary now.  You can run
+the binary from where it is or install it, along with the .info
+documentation, with:
 
-$ make install
+ make install
 
 Now that you have a binary, call it from your ~/.xinitrc file:
 
-$ echo /path/to/stumpwm >> ~/.xinitrc
-$ startx
+ echo /path/to/stumpwm >> ~/.xinitrc
+ startx
 
 Hopefully that will put you in X running stumpwm!
 
@@ -99,17 +77,17 @@ http://ccl.clozure.com/manual/chapter15.1.html for an explanation.
 Help
 ----
 
-There's a texinfo manual, stumpwm.texi. the build scripts generate an
-info file you can read in emacs or with the `info' program.
+There's a texinfo manual, stumpwm.texi.  The build scripts generate an
+info file you can read in emacs or with the `info' program.  The
+manual for the latest release is available to read online at:
+
+http://www.nongnu.org/stumpwm/manual/stumpwm.html
 
 For other stuff visit the stumpwm wiki:
 
 http://stumpwm.antidesktop.net/
 
 There's a #stumpwm channel on irc.freenode.net, too.
-
-Questions?
-----------
 
 See http://stumpwm.nongnu.org/community.html for more information on
 contacting stumpwm developers and users.
