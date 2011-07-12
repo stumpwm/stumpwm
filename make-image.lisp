@@ -1,7 +1,6 @@
 #-(or sbcl clisp openmcl ecl) (error "This lisp implementation is not supported.")
 
-(require 'asdf #+clisp'("asdf.lisp"))
-#+(or clisp ecl) (load "@PPCRE_PATH@/cl-ppcre.asd")
+(require 'asdf)
 (asdf:oos 'asdf:load-op 'stumpwm)
 #-ecl (stumpwm:set-contrib-dir "@CONTRIB_DIR@")
 
