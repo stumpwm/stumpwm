@@ -21,8 +21,12 @@ Prerequisites
 * cl-ppcre
 
 The recommended way to install the dependencies is using Quicklisp.
-Follow the instructions at http://www.quicklisp.org/ to install and
-add it to your lisp init file.  Then, in a repl:
+Follow the instructions at http://www.quicklisp.org/ to install it.
+Make sure you have added it to your lisp init file using:
+
+ (ql:add-to-init-file)
+
+Then, in a repl:
 
  (ql:quickload "clx")
  (ql:quickload "cl-ppcre")
