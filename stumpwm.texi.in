@@ -862,6 +862,8 @@ list. Some commands operate only on marked windows.
 @@@ set-win-bg-color
 @@@ set-focus-color
 @@@ set-unfocus-color
+@@@ set-float-focus-color
+@@@ set-float-unfocus-color
 @@@ set-normal-gravity
 @@@ set-maxsize-gravity
 @@@ set-transient-gravity

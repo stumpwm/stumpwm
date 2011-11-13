@@ -55,10 +55,9 @@
 (defmethod update-decoration ((window float-window))
   (let ((group (window-group window)))
     (setf (xlib:window-background (window-parent window))
-          (xlib:alloc-color (xlib:screen-default-colormap (screen-number (window-screen window)))
-                            (if (eq (group-current-window group) window)
-                                "Orange"
-                                "SteelBlue4")))
+          (if (eq (group-current-window group) window)
+              (screen-float-focus-color (window-screen window))
+              (screen-float-unfocus-color (window-screen window))))
     (xlib:clear-area (window-parent window))))
 
 (defmethod window-sync ((window float-window) hint)

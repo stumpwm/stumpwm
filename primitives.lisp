@@ -357,6 +357,8 @@ are valid values.
 (defparameter +default-font-name+ "9x15bold")
 (defparameter +default-focus-color+ "White")
 (defparameter +default-unfocus-color+ "Black")
+(defparameter +default-float-focus-color+ "Orange")
+(defparameter +default-float-unfocus-color+ "SteelBlue4")
 (defparameter +default-frame-outline-width+ 2)
 
 ;; Don't set these variables directly, use set-<var name> instead
@@ -419,6 +421,8 @@ Use the window's resource name.
    (win-bg-color :initform nil :accessor screen-win-bg-color)
    (focus-color :initform nil :accessor screen-focus-color)
    (unfocus-color :initform nil :accessor screen-unfocus-color)
+   (float-focus-color :initform nil :accessor screen-float-focus-color)
+   (float-unfocus-color :initform nil :accessor screen-float-unfocus-color)
    (msg-border-width :initform nil :accessor screen-msg-border-width)
    (frame-outline-width :initform nil :accessor screen-frame-outline-width)
    (font :initform nil :accessor screen-font)

@@ -34,6 +34,8 @@
           set-win-bg-color
           set-focus-color
           set-unfocus-color
+          set-float-focus-color
+          set-float-unfocus-color
           set-msg-border-width
           set-frame-outline-width
           set-font))
@@ -287,6 +289,14 @@ there is more than one frame."
 there is more than one frame."
   (set-any-color screen-unfocus-color color))
 
+(defun set-float-focus-color (color)
+  "Set the border color for focused windows in a float group."
+  (set-any-color screen-float-focus-color color))
+
+(defun set-float-unfocus-color (color)
+  "Set the border color for windows without focus in a float group."
+  (set-any-color screen-float-unfocus-color color))
+
 (defun set-msg-border-width (width)
   "Set the border width for the message bar and input
 bar."
@@ -392,6 +402,8 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
            (border (ac +default-border-color+))
            (focus (ac +default-focus-color+))
            (unfocus (ac +default-unfocus-color+))
+           (float-focus (ac +default-float-focus-color+))
+           (float-unfocus (ac +default-float-unfocus-color+))
            (win-bg (ac +default-window-background-color+))
            (input-window (xlib:create-window :parent (xlib:screen-root screen-number)
                                              :x 0 :y 0 :width 20 :height 20
@@ -447,6 +459,8 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
             (screen-border-color screen) border
             (screen-focus-color screen) focus
             (screen-unfocus-color screen) unfocus
+            (screen-float-focus-color screen) float-focus
+            (screen-float-unfocus-color screen) float-unfocus
             (screen-msg-border-width screen) 1
             (screen-frame-outline-width screen) +default-frame-outline-width+
             (screen-input-window screen) input-window
