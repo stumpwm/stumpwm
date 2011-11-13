@@ -591,7 +591,8 @@ the window in it's frame."
   (let (screen ml win)
     (cond
       ((and (setf screen (find-screen window)) (not child))
-       (group-button-press (screen-current-group screen) x y :root))
+       (group-button-press (screen-current-group screen) x y :root)
+       (run-hook-with-args *root-click-hook* screen code x y))
       ((setf ml (find-mode-line-window window))
        (run-hook-with-args *mode-line-click-hook* ml code x y))
       ((setf win (find-window-by-parent window (top-windows)))
