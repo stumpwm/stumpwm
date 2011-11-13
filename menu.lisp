@@ -107,16 +107,18 @@ on current view and new selection."
   (bound-check-menu menu))
 
 (defun menu-page-up (menu)
-  (setf (fill-pointer (menu-state-current-input menu)) 0)
-  (decf (menu-state-selected menu) *menu-maximum-height*)
-  (let ((*menu-scrolling-step* *menu-maximum-height*))
-    (bound-check-menu menu)))
+  (when *menu-maximum-height* ;;No scrolling = no page up/down
+    (setf (fill-pointer (menu-state-current-input menu)) 0)
+    (decf (menu-state-selected menu) *menu-maximum-height*)
+    (let ((*menu-scrolling-step* *menu-maximum-height*))
+      (bound-check-menu menu))))
 
 (defun menu-page-down (menu)
-  (setf (fill-pointer (menu-state-current-input menu)) 0)
-  (incf (menu-state-selected menu) *menu-maximum-height*)
-  (let ((*menu-scrolling-step* *menu-maximum-height*))
-    (bound-check-menu menu)))
+  (when *menu-maximum-height*
+    (setf (fill-pointer (menu-state-current-input menu)) 0)
+    (incf (menu-state-selected menu) *menu-maximum-height*)
+    (let ((*menu-scrolling-step* *menu-maximum-height*))
+      (bound-check-menu menu))))
 
 
 (defun menu-finish (menu)
