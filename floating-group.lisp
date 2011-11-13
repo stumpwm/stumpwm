@@ -212,8 +212,9 @@
                              ;; Either move or resize the window
                              (cond
                                ((find :button-1 (xlib:make-state-keys state-mask))
-                                (setf (xlib:drawable-x parent) (- (getf event-slots :x) relx)
-                                      (xlib:drawable-y parent) (- (getf event-slots :y) rely)))
+                                (let ((newx (- (getf event-slots :x) relx))
+                                      (newy (- (getf event-slots :y) rely)))
+                                  (float-window-move-resize window :x newx :y newy)))
                                ((find :button-3 (xlib:make-state-keys state-mask))
                                 (let ((w (+ initial-width
                                             (- (getf event-slots :x)
