@@ -54,7 +54,8 @@
           m)))
 
 (defstruct menu-state
-  table prompt selected view-start view-end current-input)
+  table prompt selected view-start view-end
+  (current-input (make-array 10 :element-type 'character :adjustable t :fill-pointer 0)))
 
 (defun bound-check-menu (menu)
   "Adjust the menu view and selected item based
@@ -86,33 +87,33 @@ on current view and new selection."
                              (menu-state-view-end menu)))))))))
 
 (defun menu-up (menu)
-  (setf (menu-state-current-input menu) "")
+  (setf (fill-pointer (menu-state-current-input menu)) 0)
   (decf (menu-state-selected menu))
   (bound-check-menu menu))
 
 (defun menu-down (menu)
-  (setf (menu-state-current-input menu) "")
+  (setf (fill-pointer (menu-state-current-input menu)) 0)
   (incf (menu-state-selected menu))
   (bound-check-menu menu))
 
 (defun menu-scroll-up (menu)
-  (setf (menu-state-current-input menu) "")
+  (setf (fill-pointer (menu-state-current-input menu)) 0)
   (decf (menu-state-selected menu) *menu-scrolling-step*)
   (bound-check-menu menu))
 
 (defun menu-scroll-down (menu)
-  (setf (menu-state-current-input menu) "")
+  (setf (fill-pointer (menu-state-current-input menu)) 0)
   (incf (menu-state-selected menu) *menu-scrolling-step*)
   (bound-check-menu menu))
 
 (defun menu-page-up (menu)
-  (setf (menu-state-current-input menu) "")
+  (setf (fill-pointer (menu-state-current-input menu)) 0)
   (decf (menu-state-selected menu) *menu-maximum-height*)
   (let ((*menu-scrolling-step* *menu-maximum-height*))
     (bound-check-menu menu)))
 
 (defun menu-page-down (menu)
-  (setf (menu-state-current-input menu) "")
+  (setf (fill-pointer (menu-state-current-input menu)) 0)
   (incf (menu-state-selected menu) *menu-maximum-height*)
   (let ((*menu-scrolling-step* *menu-maximum-height*))
     (bound-check-menu menu)))
@@ -145,10 +146,7 @@ backspace or F9), return it otherwise return nil"
   long as the user types lower-case characters."
   (let ((input-char (get-input-char key-seq)))
     (when input-char
-      (setf (menu-state-current-input menu)
-	    (concatenate 'string
-			 (menu-state-current-input menu)
-			 (string input-char)))
+      (vector-push-extend input-char (menu-state-current-input menu))
       (do* ((cur-pos 0 (1+ cur-pos))
 	    (rest-elem (menu-state-table menu)
 		       (cdr rest-elem))
@@ -185,7 +183,6 @@ See *menu-map* for menu bindings."
          (menu (make-menu-state
                 :table table
                 :prompt prompt
-                :current-input ""
                 :view-start (if menu-require-scrolling initial-selection 0)
                 :view-end (if menu-require-scrolling
                               (+ initial-selection *menu-maximum-height*)
@@ -208,7 +205,7 @@ See *menu-map* for menu bindings."
                     (incf highlight))
                   (unless (= (length menu-options) (menu-state-view-end menu))
                     (setf strings (nconc strings '("..."))))
-                  (unless (string= (menu-state-current-input menu) "")
+                  (unless (= (fill-pointer (menu-state-current-input menu)) 0)
                     (setf strings
                           (cons (format nil "Search: ~a"
                                         (menu-state-current-input menu))
