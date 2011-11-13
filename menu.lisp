@@ -48,6 +48,8 @@
           (define-key m (kbd "SunPageDown") 'menu-page-down)
           (define-key m (kbd "J") 'menu-page-down)
 
+          (define-key m (kbd "DEL") 'menu-backspace)
+
           (define-key m (kbd "C-g") 'menu-abort)
           (define-key m (kbd "ESC") 'menu-abort)
           (define-key m (kbd "RET") 'menu-finish)
@@ -142,13 +144,21 @@ backspace or F9), return it otherwise return nil"
       (first element)
       element))
 
+(defun menu-backspace (menu)
+  (when (> (fill-pointer (menu-state-current-input menu)) 0)
+    (vector-pop (menu-state-current-input menu))
+    (check-menu-complete menu nil)))
+
 (defun check-menu-complete (menu key-seq)
   "If the use entered a key not mapped in @var{*menu-map}, check if
   he's trying to type an entry's name. Match is case insensitive as
-  long as the user types lower-case characters."
-  (let ((input-char (get-input-char key-seq)))
+  long as the user types lower-case characters. If @var{key-seq} is
+  nil, some other function has manipulated the current-input and is
+  requesting a re-computation of the match."
+  (let ((input-char (and key-seq (get-input-char key-seq))))
     (when input-char
-      (vector-push-extend input-char (menu-state-current-input menu))
+      (vector-push-extend input-char (menu-state-current-input menu)))
+    (when (or input-char (not key-seq))
       (do* ((cur-pos 0 (1+ cur-pos))
 	    (rest-elem (menu-state-table menu)
 		       (cdr rest-elem))
