@@ -1099,8 +1099,7 @@ Like :tight but no border is ever visible.
 After changing this variable you may need to call
 sync-all-frame-windows to see the change.")
 
-(defvar *data-dir* (make-pathname :directory (append (pathname-directory (user-homedir-pathname))
-                                                     (list ".stumpwm.d")))
+(defvar *data-dir* nil
   "The directory used by stumpwm to store data between sessions.")
 
 (defun data-dir-file (name &optional type)

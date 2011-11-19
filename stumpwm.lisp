@@ -248,6 +248,9 @@ of those expired."
 ;; Usage: (stumpwm)
 (defun stumpwm (&optional (display-str (or (getenv "DISPLAY") ":0")))
   "Start the stump window manager."
+  (setf *data-dir*
+        (make-pathname :directory (append (pathname-directory (user-homedir-pathname))
+                                          (list ".stumpwm.d"))))
   (loop
      (let ((ret (catch :top-level
                   (stumpwm-internal display-str))))
