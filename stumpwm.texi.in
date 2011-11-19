@@ -190,27 +190,8 @@ environment.
 
 @enumerate
 @item
-Install @command{sbcl}, the @command{portable-clx} package, and
-@command{cl-ppcre}. In Debian, @command{portable-clx} is the
-@command{cl-clx-sbcl} package. You can also use @command{asdf-install} to
-download and install@tie{}@command{clx}:
-
-@example
-$ sbcl
-* (require :asdf)
-* (require :asdf-install)
-* (asdf-install:install :clx)
-* (asdf-install:install :cl-ppcre)
-@end example
-
-Note that @command{asdf-install} requires @command{gnupg}.
-
-@item
-In the @file{stumpwm} directory, run @command{./configure}.
-
-@item
-run @command{make}. If all goes well,
-this should create a @file{stumpwm} executable.
+Install the prerequisites and build StumpWM as described in
+@file{README}.  This should give you a @file{stumpwm} executable.
 
 @item
 In your @file{~/.xinitrc} file include the line
