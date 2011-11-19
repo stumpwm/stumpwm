@@ -413,7 +413,7 @@ then describes the symbol."
 (defun select-group (screen query)
   "Attempt to match string QUERY against group number or partial name."
   (labels ((match-num (grp)
-             (string-equal (princ-to-string (group-map-number grp)) query))
+             (string-equal (group-map-number grp) query))
            (match-whole (grp)
              (string-equal (group-name grp) query))
            (match-partial (grp)

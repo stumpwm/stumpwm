@@ -111,7 +111,7 @@ otherwise specified."
     (if (and (>= index 0)
              (< index (length *group-number-map*)))
         (format nil "~:[~;-~]~a" (minusp num) (elt *group-number-map* index))
-        num)))
+        (princ-to-string num))))
 
 (defun fmt-group-status (group)
   (let ((screen (group-screen group)))
