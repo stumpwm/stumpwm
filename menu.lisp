@@ -36,17 +36,13 @@
         (let ((m (make-sparse-keymap)))
           (define-key m (kbd "C-p") 'menu-up)
           (define-key m (kbd "Up") 'menu-up)
-          (define-key m (kbd "k") 'menu-up)
           (define-key m (kbd "S-Up") 'menu-scroll-up)
           (define-key m (kbd "SunPageUp") 'menu-page-up)
-          (define-key m (kbd "K") 'menu-page-up)
 
           (define-key m (kbd "C-n") 'menu-down)
           (define-key m (kbd "Down") 'menu-down)
-          (define-key m (kbd "j") 'menu-down)
           (define-key m (kbd "S-Down") 'menu-scroll-down)
           (define-key m (kbd "SunPageDown") 'menu-page-down)
-          (define-key m (kbd "J") 'menu-page-down)
 
           (define-key m (kbd "DEL") 'menu-backspace)
 
