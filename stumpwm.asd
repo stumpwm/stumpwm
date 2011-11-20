@@ -14,7 +14,7 @@
 (defsystem :stumpwm
   :name "StumpWM"
   :author "Shawn Betts <sabetts@vcn.bc.ca>"
-  :version "CVS"
+  :version "0.9.7"
   :maintainer "Shawn Betts <sabetts@vcn.bc.ca>"
   ;; :license "GNU General Public License"
   :description "A tiling, keyboard driven window manager" 

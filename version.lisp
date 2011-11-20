@@ -27,13 +27,18 @@
 (export '(*version* version))
 
 (defparameter *version*
-  #.(concatenate 'string
-                 (if (probe-path ".git")
-                     (string-trim '(#\Newline) (run-shell-command "git describe" t))
-                     "@PACKAGE_VERSION@")
-                 " Compiled On "
-		 (format-expand *time-format-string-alist*
-                                *time-format-string-default*)))
+  #.(concatenate
+     'string
+     (let* ((sys (asdf:find-system :stumpwm))
+            (git-dir (probe-path (asdf:system-relative-pathname sys ".git"))))
+       (if git-dir
+           (string-trim '(#\Newline)
+                        (run-shell-command
+                         (format nil "GIT_DIR=~a git describe" git-dir) t))
+           (asdf:component-version sys)))
+  " Compiled On "
+  (format-expand *time-format-string-alist*
+                 *time-format-string-default*)))
 
 (defcommand version () ()
 "Print version information and compilation date."
