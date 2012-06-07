@@ -66,7 +66,9 @@ then call (update-color-map).")
   (xlib:alloc-color (xlib:screen-default-colormap (screen-number screen)) color))
 
 (defun lookup-color (screen color)
-  (xlib:lookup-color (xlib:screen-default-colormap (screen-number screen)) color))
+  (cond
+    ((typep color 'xlib:color) color)
+    (t (xlib:lookup-color (xlib:screen-default-colormap (screen-number screen)) color))))
 
 ;; Normal colors are dimmed and bright colors are intensified in order
 ;; to more closely resemble the VGA pallet.
@@ -75,7 +77,7 @@ then call (update-color-map).")
   (let ((scm (xlib:screen-default-colormap (screen-number screen))))
     (labels ((map-colors (amt)
                (loop for c in *colors*
-                     as color = (xlib:lookup-color scm c)
+                     as color = (lookup-color screen c)
                      do (adjust-color color amt)
                      collect (xlib:alloc-color scm color))))
       (setf (screen-color-map-normal screen) (apply #'vector (map-colors -0.25))
