@@ -161,23 +161,21 @@ of those expired."
                     (continue)))
              ;; and if that fails treat it like a top level error.
              (perform-top-level-error-action c))))
-       ;; Note: process-event appears to hang for an unknown
-       ;; reason. This is why it is passed a timeout in hopes that
-       ;; this will keep it from hanging.
-       (let ((timeout (get-next-timeout *timer-list*)))
+       ;; ;; Note: process-event appears to hang for an unknown
+       ;; ;; reason. This is why it is passed a timeout in hopes that
+       ;; ;; this will keep it from hanging.
+       (xlib:display-finish-output *display*)
+       (let* ((to (get-next-timeout *timer-list*))
+              (timeout (and to (ceiling to)))
+              (nevents (xlib:event-listen *display* timeout)))
          (dformat 10 "timeout: ~a~%" timeout)
-         (if timeout
-             (let* ((nevents (xlib:event-listen *display* (ceiling timeout))))
-               (setf *timer-list* (run-expired-timers *timer-list*))
-               (when nevents
-                 (xlib:process-event *display* :handler #'handle-event)))
-             ;; Otherwise, simply wait for an event
-             (xlib:process-event *display* :handler #'handle-event))
-         ;; flush any pending output. You'd think process-event would, but
-         ;; it seems not.
-         (xlib:display-finish-output *display*)
-         ;;(dformat 10 "toplevel focus: ~a~%" (multiple-value-list (xlib:input-focus *display*)))
-         ))))
+         (when timeout
+           (setf *timer-list* (run-expired-timers *timer-list*)))
+         (xlib:with-event-queue (*display*)
+           (when nevents
+             (run-hook *event-processing-hook*)
+             (xlib:process-event *display* :handler #'handle-event :timeout 0))))
+       )))
 
 (defun parse-display-string (display)
   "Parse an X11 DISPLAY string and return the host and display from it."
