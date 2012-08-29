@@ -317,8 +317,8 @@ bar."
   "Set the font for the message bar and input bar."
   (when (font-exists-p font)
     (dolist (i *screen-list*)
-      (let ((fobj (xlib:open-font *display* (first (xlib:list-font-names *display* font :max-fonts 1)))))
-        (xlib:close-font (screen-font i))
+      (let ((fobj (open-font *display* font)))
+        (close-font (screen-font i))
         (setf (screen-font i) fobj
               (xlib:gcontext-font (screen-message-gc i)) fobj)
         ;; update the modelines too
@@ -434,10 +434,10 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
                                              :colormap (xlib:screen-default-colormap
                                                         screen-number)
                                              :event-mask '(:exposure)))
-           (font (xlib:open-font *display*
-                                 (if (font-exists-p +default-font-name+)
-                                     +default-font-name+
-                                     "*")))
+           (font (open-font *display*
+                            (if (font-exists-p +default-font-name+)
+                                +default-font-name+
+                                "*")))
            (group (make-instance 'tile-group
                    :screen screen
                    :number 1
