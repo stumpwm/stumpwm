@@ -1,5 +1,4 @@
 
-
 (in-package :stumpwm)
 
 (defgeneric open-font (display font)
@@ -14,13 +13,13 @@
 (defgeneric text-lines-height (font string))
 
 
-(defgeneric text-line-width (font text &key start end translate))
+(defgeneric text-line-width (font text &rest keys &key start end translate))
 
 
 (defgeneric draw-image-glyphs (drawable gcontext
                                font
                                x y
-                               sequence &key start end translate width size))
+                               sequence &rest keys &key start end translate width size))
 
 ;;;; X11 fonts
 
@@ -36,20 +35,19 @@
 (defmethod font-descent ((font xlib:font))
   (xlib:font-descent font))
 
-(defmethod text-line-width ((font xlib:font) text &key (start 0) end translate)
-  (xlib:text-width font text :start start :end end :translate translate))
+(defmethod text-line-width ((font xlib:font) text &rest keys &key (start 0) end translate)
+  (apply 'xlib:text-width font text keys))
 
 (defmethod draw-image-glyphs (drawable 
                               gcontext
                               (font xlib:font)
                               x y
-                              sequence &key start end translate width size)
+                              sequence &rest keys &key (start 0) end translate width size)
   (setf (xlib:gcontext-font gcontext) font)
-  (xlib:draw-image-glyphs drawable 
-                          gcontext
-                          x y
-                          sequence :start start
-                                   :end end :translate translate :width width :size size))
+  (apply 'xlib:draw-image-glyphs drawable 
+         gcontext
+         x y
+         sequence keys))
 
 ;;;; TTF fonts
 
@@ -65,20 +63,22 @@
 (defmethod font-descent ((font xft:font))
   (xft:font-descent (screen-number (current-screen)) font))
 
-(defmethod text-line-width ((font xft:font) text &key (start 0) end translate)
-  (declare (ignorable translate))
-  (xft:text-line-width (screen-number (current-screen)) font text :start start :end end))
+(defmethod text-line-width ((font xft:font) text &rest keys &key (start 0) end translate)
+  (declare (ignorable start end translate))
+  (apply 'xft:text-line-width (screen-number (current-screen)) font text
+         :allow-other-keys t keys))
 
 (defmethod draw-image-glyphs (drawable 
                               gcontext
                               (font xft:font)
                               x y
-                              sequence &key start end translate width size)
-  (declare (ignorable translate width size))
-  (xft:draw-text-line drawable 
-                      gcontext
-                      font
-                      sequence
-                      x y
-                      :start start
-                      :end end :draw-background-p t))
+                              sequence &rest keys &key (start 0) end translate width size)
+  (declare (ignorable start end translate width size))
+  (apply 'xft:draw-text-line drawable 
+         gcontext
+         font
+         sequence
+         x y
+         :draw-background-p t
+         :allow-other-keys t
+         keys))
