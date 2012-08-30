@@ -171,7 +171,7 @@ function expects to be wrapped in a with-state for win."
 (defun echo-in-window (win font fg bg string)
   (let* ((height (font-height font))
          (gcontext (xlib:create-gcontext :drawable win
-                                         :font font
+                                         :font (when (typep font 'xlib:font) font)
                                          :foreground fg
                                          :background bg))
          (width (text-line-width font string)))

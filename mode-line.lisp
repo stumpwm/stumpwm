@@ -349,7 +349,7 @@ critical."
 
 (defun make-mode-line-gc (window screen)
   (xlib:create-gcontext :drawable window
-                        :font (screen-font screen)
+                        :font (when (typep (screen-font screen) 'xlib:font))
                         :foreground (alloc-color screen *mode-line-foreground-color*)
                         :background (alloc-color screen *mode-line-background-color*)))
 

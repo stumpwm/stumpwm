@@ -473,11 +473,11 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
             (screen-message-cc screen) (make-ccontext :win message-window
                                                       :gc (xlib:create-gcontext
                                                            :drawable message-window
-                                                           :font font
+                                                           :font (when (typep font 'xlib:font font))
                                                            :foreground fg
                                                            :background bg))
             (screen-frame-outline-gc screen) (xlib:create-gcontext :drawable (screen-root screen)
-                                                                   :font font
+                                                                   :font (when (typep font 'xlib:font font))
                                                                    :foreground fg
                                                                    :background fg
                                                                    :line-style :double-dash
