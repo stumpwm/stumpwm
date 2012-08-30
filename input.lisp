@@ -109,8 +109,7 @@
 
 (defun setup-input-window (screen prompt input)
   "Set the input window up to read input"
-  (let* ((height (+ (font-descent (screen-font screen))
-                    (font-ascent (screen-font screen))))
+  (let* ((height (font-height (screen-font screen)))
          (win (screen-input-window screen)))
     ;; Window dimensions
     (xlib:with-state (win)
@@ -283,8 +282,7 @@ match with an element of the completions."
                                                              " "
                                                              (string (char string pos)))
                                     :translate #'translate-id)
-                   (+ (font-descent (screen-font screen))
-                      (font-ascent (screen-font screen))))
+                   (font-height (screen-font screen)))
       ;; draw the error
       (when errorp
         (invert-rect screen win 0 0 (xlib:drawable-width win) (xlib:drawable-height win))

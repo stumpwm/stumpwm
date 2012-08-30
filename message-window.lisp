@@ -65,8 +65,7 @@ function expects to be wrapped in a with-state for win."
 
 (defun setup-message-window (screen lines width)
   (let ((height (* lines
-                   (+ (font-ascent (screen-font screen))
-                      (font-descent (screen-font screen)))))
+                   (font-height (screen-font screen))))
         (win (screen-message-window screen)))
     ;; Now that we know the dimensions, raise and resize it.
     (xlib:with-state (win)

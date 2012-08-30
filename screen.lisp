@@ -243,9 +243,9 @@ identity with a range check."
             always (xlib:lookup-color (xlib:screen-default-colormap (screen-number i)) color))
     (xlib:name-error () nil)))
 
-(defun font-exists-p (font-name)
-  ;; if we can list the font then it exists
-  (plusp (length (xlib:list-font-names *display* font-name :max-fonts 1))))
+;; (defun font-exists-p (font-name)
+;;   ;; if we can list the font then it exists
+;;   (plusp (length (xlib:list-font-names *display* font-name :max-fonts 1))))
 
 (defmacro set-any-color (val color)
   `(progn (dolist (s *screen-list*)
@@ -319,13 +319,16 @@ bar."
     (dolist (i *screen-list*)
       (let ((fobj (open-font *display* font)))
         (close-font (screen-font i))
-        (setf (screen-font i) fobj
-              (xlib:gcontext-font (screen-message-gc i)) fobj)
+        (setf (screen-font i) fobj)
+        (when (typep fobj 'xlib:font)
+          (setf
+           (xlib:gcontext-font (screen-message-gc i)) fobj))
         ;; update the modelines too
         (dolist (h (screen-heads i))
           (when (and (head-mode-line h)
                      (eq (mode-line-mode (head-mode-line h)) :stump))
-            (setf (xlib:gcontext-font (mode-line-gc (head-mode-line h))) fobj)
+            (when (typep fobj 'xlib:font)
+              (setf (xlib:gcontext-font (mode-line-gc (head-mode-line h))) fobj))
             (resize-mode-line (head-mode-line h))
             (sync-mode-line (head-mode-line h))))))
     t))
