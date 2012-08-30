@@ -36,7 +36,8 @@
   (xlib:font-descent font))
 
 (defmethod text-line-width ((font xlib:font) text &rest keys &key (start 0) end translate)
-  (apply 'xlib:text-width font text keys))
+  (apply 'xlib:text-width font text keys)
+  )
 
 (defmethod draw-image-glyphs (drawable 
                               gcontext
