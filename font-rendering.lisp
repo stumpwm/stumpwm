@@ -53,8 +53,7 @@
                               gcontext
                               (font xlib:font)
                               x y
-                              sequence &rest keys &key (start 0) end translate width size)
-  (setf (xlib:gcontext-font gcontext) font)
+                              sequence &rest keys &key (start 0) end translate width size) 
   (apply 'xlib:draw-image-glyphs drawable 
          gcontext
          x y
