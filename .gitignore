@@ -3,6 +3,7 @@
 *.fasl
 *.a
 *.o
+*.*fasl
 *.*fsl
 *~
 configure

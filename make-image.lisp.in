@@ -1,30 +1,73 @@
-#-(or sbcl clisp openmcl ecl) (error "This lisp implementation is not supported.")
+;;;; -*- Mode: Lisp; Syntax: ANSI-Common-Lisp; indent-tabs-mode: nil; -*-
+
+(in-package #:cl-user)
+
+#-(or sbcl clisp openmcl ecl lispworks)
+(error "This ~S lisp implementation is not supported."
+       (lisp-implementation-type))
+
+#+lispworks
+(progn
+  (load-all-patches)
+  (lw:set-default-character-element-type 'lw:simple-char)
+
+  (unless
+      (dolist (install-path
+               '("quicklisp" ".quicklisp"))
+        (let ((quicklisp-init
+                (merge-pathnames (make-pathname :directory `(:relative ,install-path)
+                                                :name "setup.lisp")
+                                 (user-homedir-pathname))))
+          (when (probe-file quicklisp-init)
+            (load quicklisp-init)
+            (return t))))
+
+    (error "Quicklisp must be installed in order to build StumpWM with ~S."
+           (lisp-implementation-type))))
 
 (require 'asdf)
+
+(pushnew #P"./" asdf:*central-registry* :test #'equal)
 (asdf:oos 'asdf:load-op 'stumpwm)
-#-ecl (stumpwm:set-contrib-dir "@CONTRIB_DIR@")
+
+#-ecl
+(stumpwm:set-contrib-dir "@CONTRIB_DIR@")
 
 #+sbcl
-(sb-ext:save-lisp-and-die "stumpwm" :toplevel (lambda ()
-                                                ;; asdf requires sbcl_home to be set, so set it to the value when the image was built
-                                                (sb-posix:putenv (format nil "SBCL_HOME=~A" #.(sb-ext:posix-getenv "SBCL_HOME")))
-                                                (stumpwm:stumpwm)
-                                                0)
+(sb-ext:save-lisp-and-die "stumpwm"
+                          :toplevel (lambda ()
+                                      ;; asdf requires sbcl_home to be set, so set it to the value when the image was built
+                                      (sb-posix:putenv (format nil "SBCL_HOME=~A" #.(sb-ext:posix-getenv "SBCL_HOME")))
+                                      (stumpwm:stumpwm)
+                                      0)
                           :executable t)
 
 #+clisp
-(ext:saveinitmem "stumpwm" :init-function (lambda ()
-                                            (stumpwm:stumpwm)
-                                            (ext:quit))
-                 :executable t :keep-global-handlers t :norc t :documentation "The StumpWM Executable")
+(ext:saveinitmem "stumpwm"
+                 :init-function (lambda ()
+                                  (stumpwm:stumpwm)
+                                  (ext:quit))
+                 :executable t
+                 :keep-global-handlers t
+                 :norc t
+                 :documentation "The StumpWM Executable")
 
 #+ccl
-(ccl:save-application "stumpwm" :prepend-kernel t :toplevel-function #'stumpwm:stumpwm)
+(ccl:save-application "stumpwm"
+                      :prepend-kernel t
+                      :toplevel-function #'stumpwm:stumpwm)
 
 #+ecl
-(asdf:make-build 'stumpwm :type :program :monolithic t
+(asdf:make-build 'stumpwm
+                 :type :program
+                 :monolithic t
                  :move-here "."
                  :name-suffix ""
                  :epilogue-code '(progn
                                   (stumpwm:set-contrib-dir "@CONTRIB_DIR@")
                                   (stumpwm:stumpwm)))
+
+#+lispworks
+(lw:deliver #'stumpwm:stumpwm "stumpwm" 0
+            :interface nil
+            :multiprocessing t)
