@@ -70,4 +70,6 @@
 #+lispworks
 (lw:deliver #'stumpwm:stumpwm "stumpwm" 0
             :interface nil
-            :multiprocessing t)
+            :multiprocessing t
+            :keep-pretty-printer t)
+
