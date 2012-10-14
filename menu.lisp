@@ -146,7 +146,7 @@ backspace or F9), return it otherwise return nil"
     (check-menu-complete menu nil)))
 
 (defun check-menu-complete (menu key-seq)
-  "If the use entered a key not mapped in @var{*menu-map}, check if
+  "If the user entered a key not mapped in @var{*menu-map}, check if
   he's trying to type an entry's name. Match is case insensitive as
   long as the user types lower-case characters. If @var{key-seq} is
   nil, some other function has manipulated the current-input and is
