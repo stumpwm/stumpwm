@@ -2,8 +2,8 @@
 
 (in-package #:cl-user)
 
-#-(or sbcl clisp openmcl ecl lispworks)
-(error "This ~S lisp implementation is not supported."
+#-(or sbcl clisp openmcl ecl (and lispworks6 (not lispworks-personal-edition)))
+(error "Sorry, this ~S lisp implementation is not supported."
        (lisp-implementation-type))
 
 #+lispworks
@@ -26,7 +26,6 @@
            (lisp-implementation-type))))
 
 (require 'asdf)
-
 (pushnew #P"./" asdf:*central-registry* :test #'equal)
 (asdf:oos 'asdf:load-op 'stumpwm)
 
@@ -67,9 +66,20 @@
                                   (stumpwm:set-contrib-dir "@CONTRIB_DIR@")
                                   (stumpwm:stumpwm)))
 
-#+lispworks
+;;; if you want to save an image
+#+(and lispworks)
+(hcl:save-image "stumpwm"
+                :multiprocessing t
+                :environment nil
+                :load-init-files t
+                :restart-function (compile nil
+                                           #'(lambda ()
+                                               (stumpwm:stumpwm)
+                                               (lw:quit :status 0))))
+
+;;; if you want to save a standalone executable
+#+(and lispworks nil)
 (lw:deliver #'stumpwm:stumpwm "stumpwm" 0
             :interface nil
             :multiprocessing t
             :keep-pretty-printer t)
-
