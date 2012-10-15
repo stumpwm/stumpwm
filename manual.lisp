@@ -19,11 +19,34 @@
 ;; Commentary:
 ;;
 ;; Generate the texinfo manual from docstrings in the source. Note,
-;; this only works in sbcl and clisp
+;; this only works in sbcl, clisp and lispworks
 ;;
 ;; Code:
 
-(in-package :stumpwm)
+(in-package #:cl-user)
+
+#+lispworks
+(progn
+  (lw:set-default-character-element-type 'lw:simple-char)
+
+  (unless
+      (dolist (install-path
+               '("quicklisp" ".quicklisp"))
+        (let ((quicklisp-init
+                (merge-pathnames (make-pathname :directory `(:relative ,install-path)
+                                                :name "setup.lisp")
+                                 (user-homedir-pathname))))
+          (when (probe-file quicklisp-init)
+            (load quicklisp-init)
+            (return t))))
+
+    (error "Quicklisp must be installed in order to build StumpWM with ~S."
+           (lisp-implementation-type)))
+
+  (pushnew #P"./" asdf:*central-registry* :test #'equal)
+  (asdf:oos 'asdf:load-op 'stumpwm))
+
+(in-package #:stumpwm)
 
 #+sbcl (require :sb-introspect)
 
@@ -47,7 +70,8 @@
                                         name
                                         #+sbcl (sb-introspect:function-lambda-list fn)
                                         #+clisp (ext:arglist fn)
-                                        #- (or sbcl clisp) '("(Check the code for args list)")
+                                        #+lispworks (lw:function-lambda-list fn)
+                                        #- (or sbcl clisp lispworks) '("(Check the code for args list)")
                                         (documentation fn 'function))
                                 t)))
 
@@ -60,7 +84,8 @@
                                         name
                                         #+sbcl (sb-introspect:function-lambda-list (macro-function symbol))
                                         #+clisp (ext:arglist symbol)
-                                        #- (or sbcl clisp) '("(Check the code for args list)")
+                                        #+lispworks (lw:function-lambda-list symbol)
+                                        #- (or sbcl clisp lispworks) '("(Check the code for args list)")
                                         ;;; FIXME: when clisp compiles
                                         ;;; a macro it discards the
                                         ;;; documentation string! So
@@ -97,7 +122,8 @@
                                         name
                                         #+sbcl (sb-introspect:function-lambda-list cmd)
                                         #+clisp (ext:arglist cmd)
-                                        #- (or sbcl clisp) '("(Check the code for args list)")
+                                        #+lispworks (lw:function-lambda-list cmd)
+                                        #- (or sbcl clisp lispworks) '("(Check the code for args list)")
                                         (documentation cmd 'function))
                                 t)))
 

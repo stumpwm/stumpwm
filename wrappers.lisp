@@ -82,13 +82,13 @@
   #+liquid
   (apply #'lcl:run-program prog :output output :wait wait :arguments args opts)
   #+lispworks
-  (let ((cmdline (format nil "~a ~a~{ '~a'~}"
-                         (screen-display-string (current-screen) t)
-                         prog args (not wait))))
-    (if output
-        (apply #'sys::call-system-showing-output cmdline
-               :output-stream output :wait wait args)
-        (apply #'sys::call-system cmdline :wait wait args)))
+  (let ((cmdline (format nil "~@[~A ~]~A~{ '~A'~}"
+                         (and (current-screen)
+                              (screen-display-string (current-screen) t))
+                         prog args)))
+    (sys:call-system-showing-output cmdline
+                                    :show-cmd nil :prefix nil :wait wait
+                                    :output-stream output))
   #+sbcl
   (let ((env (sb-ext:posix-environ)))
     (when (current-screen)
@@ -185,7 +185,14 @@
   #+sbcl (sb-debug:backtrace frames *standard-output*)
   #+clisp (ext:show-stack 1 frames (sys::the-frame))
   #+ccl (ccl:print-call-history :count frames :stream *standard-output* :detailed-p nil)
-  #-(or sbcl clisp ccl) (write-line "Sorry, no backtrace for you."))
+  ;; borrowed from 'trivial-backtrace'
+  #+lispworks (let ((dbg::*debugger-stack*
+                      (dbg::grab-stack nil :how-many frames))
+                    (*debug-io* *standard-output*)
+                    (dbg:*debug-print-level* nil)
+                    (dbg:*debug-print-length* nil))
+                (dbg:bug-backtrace nil))
+  #-(or sbcl clisp ccl lispworks) (write-line "Sorry, no backtrace for you."))
 
 (defun bytes-to-string (data)
   "Convert a list of bytes into a string."
@@ -194,10 +201,14 @@
           (sb-ext:octets-to-string
            (make-array (length data) :element-type '(unsigned-byte 8) :initial-contents data)))
   #+clisp
-  (ext:convert-string-from-bytes 
+  (ext:convert-string-from-bytes
    (make-array (length data) :element-type '(unsigned-byte 8) :initial-contents data)
    custom:*terminal-encoding*)
-  #-(or sbcl clisp)
+  #+lispworks
+  (ef:decode-external-string
+   (make-array (length data) :element-type '(unsigned-byte 8) :initial-contents data)
+   :ascii)
+  #-(or sbcl clisp lispworks)
   (map 'string #'code-char data))
 
 (defun string-to-bytes (string)
@@ -206,7 +217,9 @@
   (sb-ext:string-to-octets string)
   #+clisp
   (ext:convert-string-to-bytes string custom:*terminal-encoding*)
-  #-(or sbcl clisp)
+  #+lispworks
+  (ef:encode-lisp-string string :ascii)
+  #-(or sbcl clisp lispworks)
   (map 'list #'char-code string))
 
 (defun utf8-to-string (octets)
@@ -219,7 +232,12 @@
                                                    (declare (ignore c))
                                                    (invoke-restart 'use-value "?"))))
              (sb-ext:octets-to-string octets :external-format :utf-8))
-    #-(or ccl clisp sbcl) (map 'string #'code-char octets)))
+    #+lispworks
+    (ef:decode-external-string
+     (make-array (length octets) :element-type '(unsigned-byte 8) :initial-contents octets)
+     :utf-8)
+    #-(or ccl clisp sbcl lispworks)
+    (map 'string #'code-char octets)))
 
 (defun string-to-utf8 (string)
   "Convert the string to a vector of octets."
@@ -228,14 +246,17 @@
   #+sbcl (sb-ext:string-to-octets
           string
           :external-format :utf-8)
-  #-(or ccl clisp sbcl) (map 'list #'char-code string))
+  #+lispworks
+  (ef:encode-lisp-string string :utf-8)
+  #-(or ccl clisp sbcl lispworks)
+  (map 'list #'char-code string))
 
 (defun make-xlib-window (xobject)
   "For some reason the clx xid cache screws up returns pixmaps when
 they should be windows. So use this function to make a window out of them."
   #+clisp (make-instance 'xlib:window :id (slot-value xobject 'xlib::id) :display *display*)
-  #+(or sbcl ecl openmcl) (xlib::make-window :id (slot-value xobject 'xlib::id) :display *display*)
-  #-(or sbcl clisp ecl openmcl)
+  #+(or sbcl ecl openmcl lispworks) (xlib::make-window :id (slot-value xobject 'xlib::id) :display *display*)
+  #-(or sbcl clisp ecl openmcl lispworks)
   (error 'not-implemented))
 
 ;; Right now clisp and sbcl both work the same way
@@ -336,7 +357,8 @@ regarding files in sysfs. Data is read in chunks of BLOCKSIZE bytes."
 (defun argv ()
   #+sbcl (copy-list sb-ext:*posix-argv*)
   #+clisp (coerce (ext:argv) 'list)
-  #-( or sbcl clisp)
+  #+lispworks (copy-list sys:*line-arguments-list*)
+  #-(or sbcl clisp lispworks)
   (error "unimplemented"))
 
 (defun execv (program &rest arguments)
