@@ -22,6 +22,7 @@
 
 (require 'asdf)
 (asdf:oos 'asdf:load-op 'stumpwm)
+
 #-ecl (stumpwm:set-contrib-dir "@CONTRIB_DIR@")
 
 #+sbcl
