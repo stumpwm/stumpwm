@@ -14,6 +14,7 @@ AC_ARG_WITH(sbcl,    [  --with-sbcl=PATH        specify location of sbcl], SBCL_
 AC_ARG_WITH(clisp,   [  --with-clisp=PATH       specify location of clisp], CLISP_PATH=$withval, CLISP_PATH="")
 AC_ARG_WITH(ccl,     [  --with-ccl=PATH         specify location of ccl], CCL_PATH=$withval, CCL_PATH="")
 AC_ARG_WITH(ecl,     [  --with-ecl=PATH         specify location of ecl], ECL_PATH=$withval, ECL_PATH="")
+AC_ARG_WITH(lw,      [  --with-lw=PATH          specify location of lispworks], LW_PATH=$withval, LW_PATH="")
 
 AC_ARG_WITH(contrib-dir,
                      [  --with-contrib-dir=PATH specify location of contrib modules],
@@ -51,6 +52,13 @@ else
    AC_PATH_PROG([ECL], ecl,"")
 fi
 
+if test -x "$LW_PATH"; then
+   LW=$LW_PATH
+   AC_MSG_CHECKING([for lispworks])
+   AC_MSG_RESULT($LW)
+else
+   AC_PATH_PROG([LW], lw,"")
+fi
 
 if test "x$LISP" = "xany"; then
    if test "$SBCL"; then
@@ -61,6 +69,8 @@ if test "x$LISP" = "xany"; then
       LISP=ccl
    elif test "$ECL"; then
       LISP=ecl
+   elif test "$LW"; then
+      LISP=lw
    fi
 fi
 
@@ -72,6 +82,8 @@ elif test "x$LISP" = "xccl"; then
    LISP_PROGRAM=$CCL
 elif test "x$LISP" = "xecl"; then
    LISP_PROGRAM=$ECL
+elif test "x$LISP" = "xlw"; then
+   LISP_PROGRAM=$LW
 fi
 
 if test "x$LISP_PROGRAM" = "x"; then
