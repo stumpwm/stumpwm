@@ -47,7 +47,8 @@
 
 ;;; CODE:
 
-#-(or sbcl clisp) (error "unimplemented")
+#-(or sbcl clisp lispworks6)
+(error "Unimplemented for ~S." (lisp-implementation-type))
 
 (in-package :stumpwm)
 
@@ -104,10 +105,14 @@
 	  *mpd-browse-map*
 	  *mpd-search-map*))
 
+#+lispworks
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (require "comm"))
+
 ;;mpd client
 (defparameter *mpd-socket* nil)
 (defparameter *mpd-server*
-  #+clisp
+  #+(or clisp lispworks)
   "localhost"
   #+sbcl
   #(127 0 0 1)
@@ -135,12 +140,14 @@
 (defun mpd-send (command)
   "Send command to stream ending with newline"
   (with-mpd-connection
-   (#+clisp
-    ext:write-char-sequence
-    #+sbcl
-    write-sequence
-    (concatenate  'string command (string #\Newline))
-    *mpd-socket*)))
+    (let ((cmd (concatenate 'string command (string #\Newline))))
+      #+clisp
+      (ext:write-char-sequence cmd *mpd-socket*)
+      #+sbcl
+      (write-sequence cmd *mpd-socket*)
+      #+lispworks
+      (write-sequence (ef:encode-lisp-string cmd :utf-8) *mpd-socket*))
+    (force-output *mpd-socket*)))
 
 (defun mpd-send-command (cmd)
   (mpd-send cmd)
@@ -170,14 +177,25 @@
 (defun assoc-value (name list)
   (cadr (assoc name list)))
 
-(defun mpd-receive ()
-  "Returns a list containing all data sent by mpd."
+(defun mpd-receive (&optional ignore-data-p)
+  "Unless IGNORE-DATA-P is T returns a list containing all data sent by mpd."
   (with-mpd-connection
-   (loop for i = (read-line *mpd-socket*)
-         when (mpd-error-p i)
-         do (message "Error sent back by mpd: ~a" i)
-         until (mpd-termination-p i)
-         collect (mpd-tokenize i))))
+    (flet ((read-line (stream)
+             #+(or sbcl clisp)
+             (read-line stream)
+             #+lispworks
+             (let ((bytes
+                     (loop for b = (read-byte stream)
+                           until (char= (code-char b) #\Newline)
+                           collect b)))
+               (ef:decode-external-string (coerce bytes 'vector) :utf-8))))
+      (if ignore-data-p
+          (read-line *mpd-socket*)
+          (loop for i = (read-line *mpd-socket*)
+                when (mpd-error-p i)
+                  do (message "Error sent back by mpd: ~a" i)
+                until (mpd-termination-p i)
+                collect (mpd-tokenize i))))))
 
 (defun init-mpd-connection ()
   "Connect to mpd server"
@@ -199,12 +217,21 @@
                                                              :buffering :none))
                         ((or simple-error error)
                          (err)
-                       (format t  "Error connecting to mpd: ~a~%" err))))
+                       (format t  "Error connecting to mpd: ~a~%" err)))
+          #+lispworks
+          (handler-case
+              (comm:open-tcp-stream *mpd-server* *mpd-port*
+                                    :direction :io
+                                    :element-type '(unsigned-byte 8)
+                                    :errorp t)
+            (error
+              (err)
+              (format t  "Error connecting to mpd: ~a~%" err))))
   (when *mpd-socket*
     (when *mpd-timeout*
       (setf *mpd-timer*
             (run-with-timer *mpd-timeout* *mpd-timeout* 'mpd-ping)))
-    (read-line *mpd-socket*)
+    (mpd-receive t)
     (when *mpd-password*
       (mpd-format-command "password \"~a\"" *mpd-password*))))
 
