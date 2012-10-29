@@ -180,7 +180,7 @@
 (defun mpd-receive (&optional ignore-data-p)
   "Unless IGNORE-DATA-P is T returns a list containing all data sent by mpd."
   (with-mpd-connection
-    (flet ((read-line (stream)
+    (flet ((receive-line (stream)
              #+(or sbcl clisp)
              (read-line stream)
              #+lispworks
@@ -190,8 +190,8 @@
                            collect b)))
                (ef:decode-external-string (coerce bytes 'vector) :utf-8))))
       (if ignore-data-p
-          (read-line *mpd-socket*)
-          (loop for i = (read-line *mpd-socket*)
+          (receive-line *mpd-socket*)
+          (loop for i = (receive-line *mpd-socket*)
                 when (mpd-error-p i)
                   do (message "Error sent back by mpd: ~a" i)
                 until (mpd-termination-p i)
