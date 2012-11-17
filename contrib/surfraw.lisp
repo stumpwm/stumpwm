@@ -56,8 +56,9 @@
   (mapcar (lambda (x)
             (mapcar (lambda (x) (string-trim '(#\Space #\Tab #\Newline) x))
                     (split-by-- x)))
-          (cdr (split-string (run-shell-command "surfraw -elvi" :collect-output-p)
-                             '(#\Newline)))))
+          (remove-if-not #'(lambda (string) (search "--" string))
+                         (split-string (run-shell-command "surfraw -elvi" :collect-output-p)
+                                       '(#\Newline)))))
 
 (defmacro auto-define-surfraw-commands-from-elvis-list ()
   (let ((commands nil))
