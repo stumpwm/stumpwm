@@ -238,6 +238,71 @@
                   (t :unknown)))))
       (t () :unknown))))
 
+;;; DBus implementation
+#+ linux
+(progn
+
+  (defclass dbus-method (battery-method)
+    ()
+    (:documentation "Collect battery information through DBus interface."))
+
+  (defclass dbus-battery (battery)
+    ((object :initarg :object :initform
+	     (error ":object missing for dbus battery")
+	     :reader object-of)))
+
+  (defun list-dbus-batteries (path destination)
+    "List the batteries that UPower knows about, ignoring line power objects.
+An example PATH is /org/freedesktop/UPower and an example DESTINATION is org.freedesktop.UPower"
+    (dbus::with-open-bus
+	(bus (dbus::system-server-addresses))
+      (remove nil
+	      (mapcar (lambda (path)
+			(if (cl-ppcre:scan ".*battery.*" path)
+			    path))
+		      (dbus::with-introspected-object (bat0 bus path destination)
+			(bat0 destination "EnumerateDevices"))))))
+
+  (defmethod all-batteries ((method dbus-method))
+    (remove nil
+	    (mapcar (lambda (path)
+		      (make-instance 'dbus-battery
+				     :object
+				     (let ((dbus_conn
+					    (dbus:open-connection
+					     (make-instance 'iolib.multiplex:event-base)
+					     (dbus::system-server-addresses))))
+				       (dbus::authenticate
+					(dbus:supported-authentication-mechanisms dbus_conn) dbus_conn)
+				       (dbus:hello dbus_conn)
+				       (dbus::make-object-from-introspection
+					dbus_conn
+					path "org.freedesktop.UPower"))))
+		    (list-dbus-batteries "/org/freedesktop/UPower" "org.freedesktop.UPower"))))
+
+  (defmethod state-of ((battery dbus-battery))
+    (let ((state (dbus::object-invoke (object-of battery)
+				      "org.freedesktop.DBus.Properties" "Get"
+				      "org.freedesktop.UPower.Device" "State"))
+	  (percent (dbus::object-invoke (object-of battery)
+					"org.freedesktop.DBus.Properties" "Get"
+					"org.freedesktop.UPower.Device" "Percentage"))
+	  (time-to-empty (dbus::object-invoke (object-of battery)
+					      "org.freedesktop.DBus.Properties" "Get"
+					      "org.freedesktop.UPower.Device" "TimeToEmpty"))
+	  (time-to-full (dbus::object-invoke (object-of battery)
+					     "org.freedesktop.DBus.Properties" "Get"
+					     "org.freedesktop.UPower.Device" "TimeToFull")))
+      (cond ((equalp state 0) :unknown)
+	    ((equalp state 1) (values :charging percent time-to-full))
+	    ((equalp state 2) (values :discharging percent time-to-empty))
+	    ((equalp state 3) :unknown)
+	    ((equalp state 4) (values :charged percent))
+	    ((equalp state 5) (values :charging percent time-to-full)) ; pending-charge
+	    ((equalp state 6) (values :discharging percent time-to-empty))))) ;pending-discharge
+
+)
+
 ;;; OpenBSD /usr/sbin/apm implementation
 
 #+ openbsd
