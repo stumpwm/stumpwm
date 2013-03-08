@@ -47,7 +47,7 @@
 
 ;;; CODE:
 
-#-(or sbcl clisp lispworks6)
+#-(or sbcl clisp lispworks6 ccl)
 (error "Unimplemented for ~S." (lisp-implementation-type))
 
 (in-package :stumpwm)
@@ -112,7 +112,7 @@
 ;;mpd client
 (defparameter *mpd-socket* nil)
 (defparameter *mpd-server*
-  #+(or clisp lispworks)
+  #+(or clisp lispworks ccl)
   "localhost"
   #+sbcl
   #(127 0 0 1)
@@ -130,11 +130,12 @@
 (defmacro with-mpd-connection (&body body)
   `(if *mpd-socket*
        (handler-case (progn ,@body)
-                     (error (c) (progn
-                                  (message "Error with mpd connection: ~a" c)
-                                  (setf *mpd-socket* nil)
-                                  (when *mpd-timer*
-                                    (cancel-timer *mpd-timer*)))))
+         (error (c)
+           (progn
+             (message "Error with mpd connection: ~a" c)
+             (setf *mpd-socket* nil)
+             (when *mpd-timer*
+               (cancel-timer *mpd-timer*)))))
      (message "Error: not connected to mpd")))
 
 (defun mpd-send (command)
@@ -143,7 +144,7 @@
     (let ((cmd (concatenate 'string command (string #\Newline))))
       #+clisp
       (ext:write-char-sequence cmd *mpd-socket*)
-      #+sbcl
+      #+(or sbcl ccl)
       (write-sequence cmd *mpd-socket*)
       #+lispworks
       (write-sequence (ef:encode-lisp-string cmd :utf-8) *mpd-socket*))
@@ -199,34 +200,26 @@
 
 (defun init-mpd-connection ()
   "Connect to mpd server"
-    (setf *mpd-socket*
-          #+clisp
-        (handler-case (socket:socket-connect *mpd-port* *mpd-server*
-                                             :element-type 'character)
-                      ((or system::simple-os-error error)
-                       (err)
-                         (format t  "Error connecting to mpd: ~a~%" err)))
-          #+sbcl
-          (handler-case (let ((s (make-instance 'sb-bsd-sockets:inet-socket
-                                                :type :stream :protocol :tcp)))
-                          (sb-bsd-sockets:socket-connect s *mpd-server*
-                                                         *mpd-port*)
-                          (sb-bsd-sockets:socket-make-stream s
-                                                             :input t
-                                                             :output t
-                                                             :buffering :none))
-                        ((or simple-error error)
-                         (err)
-                       (format t  "Error connecting to mpd: ~a~%" err)))
-          #+lispworks
-          (handler-case
-              (comm:open-tcp-stream *mpd-server* *mpd-port*
-                                    :direction :io
-                                    :element-type '(unsigned-byte 8)
-                                    :errorp t)
-            (error
-              (err)
-              (format t  "Error connecting to mpd: ~a~%" err))))
+  (handler-case
+      (setf *mpd-socket*
+            #+clisp
+            (socket:socket-connect *mpd-port* *mpd-server* :element-type 'character)
+            #+sbcl
+            (let ((s (make-instance 'sb-bsd-sockets:inet-socket
+                                    :type :stream :protocol :tcp)))
+              (sb-bsd-sockets:socket-connect s *mpd-server* *mpd-port*)
+              (sb-bsd-sockets:socket-make-stream s :input t :output t :buffering :none))
+            #+lispworks
+            (comm:open-tcp-stream *mpd-server* *mpd-port*
+                                  :direction :io
+                                  :element-type '(unsigned-byte 8)
+                                  :error t)
+            #+ccl
+            (ccl:make-socket :remote-host *mpd-server*
+                             :remote-port *mpd-port*
+                             :external-format :utf-8))
+    (error (err)
+      (format t  "Error connecting to mpd: ~a~%" err)))
   (when *mpd-socket*
     (when *mpd-timeout*
       (setf *mpd-timer*
