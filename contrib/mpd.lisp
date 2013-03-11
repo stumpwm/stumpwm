@@ -182,7 +182,7 @@
   "Unless IGNORE-DATA-P is T returns a list containing all data sent by mpd."
   (with-mpd-connection
     (flet ((receive-line (stream)
-             #+(or sbcl clisp)
+             #+(or sbcl clisp ccl)
              (read-line stream)
              #+lispworks
              (let ((bytes
