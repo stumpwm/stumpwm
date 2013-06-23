@@ -38,16 +38,20 @@
 
 (defpackage :stumpwm.contrib.wifi
   (:use :common-lisp :stumpwm )
-  (:export #:*iwconfig-path*
-           #:*wireless-device*))
+  (:export #:*iw-path*
+           #:*wireless-device*
+           #:*wireless-cache-interval*))
 (in-package :stumpwm.contrib.wifi)
 
-(defvar *iwconfig-path* "/sbin/iwconfig"
-  "Location if iwconfig, defaults to /sbin/iwconfig.")
+(defvar *iw-path* "/sbin/iw"
+  "Location if iw, defaults to /sbin/iw.")
 
 (defvar *wireless-device* nil
   "Set to the name of the wireless device you want to monitor. If set
   to NIL, try to guess.")
+
+(defvar *wireless-cache-interval* 5
+  "The number of seconds that can pass before refreshing.")
 
 (defmacro defun-cached (name interval arglist &body body)
   "Creates a function that does simple caching. The body must be
@@ -71,45 +75,65 @@ prev-val."
            ,prev-val)))))
 
 (defun guess-wireless-device ()
-  (or (loop
-         for path in (list-directory "/sys/class/net/")
-         thereis (let ((device-name (car (last (pathname-directory path)))))
-                   (if (probe-file (merge-pathnames (make-pathname :directory '(:relative "wireless")
-                                                                   :name "status")
-                                                    path))
-                       device-name
-                       nil)))
-      (error "No wireless device found.")))
+  (multiple-value-bind (match? sub)
+      (cl-ppcre:scan-to-strings
+       "Interface (.*)"
+       (run-shell-command (format nil "~A dev" *iw-path*) t))
+    (if match?
+        (aref sub 0)
+        (error "No wireless device found."))))
 
-(defun read-wifi-info (device what)
-  (let ((path (make-pathname :directory `(:absolute "sys" "class" "net" ,device "wireless"))))
-    (with-open-file (in (merge-pathnames (make-pathname :name what)
-                                         path))
-      (read-line-from-sysfs in))))
+(defun read-wifi-info (device)
+  (let ((info (run-shell-command (format nil "~A dev ~A link" *iw-path* device) t)))
+    (list
+     :ssid
+     (multiple-value-bind (match? sub)
+         (cl-ppcre:scan-to-strings "SSID: (.*)" info)
+       (if match? (aref sub 0) nil))
+     :freq
+     (multiple-value-bind (match? sub)
+         (cl-ppcre:scan-to-strings "freq: (.*)" info)
+       (if match? (parse-integer (aref sub 0)) nil))
+     :signal
+     (multiple-value-bind (match? sub)
+         (cl-ppcre:scan-to-strings "signal: (.*) dBm" info)
+       (if match? (parse-integer (aref sub 0)) nil))
+     :tx-bitrate
+     (multiple-value-bind (match? sub)
+         (cl-ppcre:scan-to-strings "tx bitrate: (.*)" info)
+       (if match? (aref sub 0) nil)))))
 
-(defun read-wifi-info-int (device what)
-  (parse-integer (read-wifi-info device what)))
 
+(defun color-signal-strength (signal-strength)
+  (bar-zone-color
+   (if (numberp signal-strength)
+       signal-strength
+       0)
+   -50 -70 -80 t))
 
-(defun-cached fmt-wifi 5 (ml)
+(defun-cached fmt-wifi *wireless-cache-interval* (ml)
   "Formatter for wifi status. Displays the ESSID of the access point
 you're connected to as well as the signal strength. When no valid data
 is found, just displays nil."
   (declare (ignore ml))
   (handler-case
-      (let* ((device (or *wireless-device* (guess-wireless-device)))
-             (essid (multiple-value-bind (match? sub)
-                        (cl-ppcre:scan-to-strings "ESSID:\"(.*)\""
-                                                  (run-shell-command (format nil "~A ~A 2>/dev/null"
-                                                                             *iwconfig-path*
-                                                                             device)
-                                                                     t))
-                      (if match?
-                          (aref sub 0)
-                          (return-from fmt-wifi "no link")))))
-        (let* ((qual (read-wifi-info-int device "link")))
-          (format nil "~A ^[~A~D%^]"
-                  essid (bar-zone-color qual 40 30 15 t) qual)))
+      (Let* ((device (or *wireless-device* (guess-wireless-device))))
+        (destructuring-bind (&key ssid freq signal tx-bitrate)
+            (read-wifi-info device)
+            (format nil "~A ^[~A~D dBm^]" ssid (color-signal-strength signal) signal)))
+    ;; CLISP has annoying newlines in their error messages... Just
+    ;; print a string showing our confusion.
+    (t (c) (format nil "~A" c))))
+
+(defun-cached fmt-wifi-short *wireless-cache-interval* (ml)
+  "Formatter for wifi status. Displays the signal strength. When no
+valid data is found, just displays nil."
+  (declare (ignore ml))
+  (handler-case
+      (let* ((device (or *wireless-device* (guess-wireless-device))))
+        (destructuring-bind (&key ssid freq signal tx-bitrate)
+            (read-wifi-info device)
+            (format nil "^[~A~D dBm^]" (color-signal-strength signal) signal)))
     ;; CLISP has annoying newlines in their error messages... Just
     ;; print a string showing our confusion.
     (t (c) (format nil "~A" c))))
@@ -117,5 +141,7 @@ is found, just displays nil."
 ;;; Add mode-line formatter
 
 (add-screen-mode-line-formatter #\I #'fmt-wifi)
+
+(add-screen-mode-line-formatter #\i #'fmt-wifi-short)
 
 ;;; EOF
