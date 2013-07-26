@@ -114,7 +114,10 @@
 
 (defun add-head (screen head)
   (dformat 1 "Adding head #~D~%" (head-number head))
-  (setf (screen-heads screen) (sort (push head (screen-heads screen)) #'< :key 'head-number))
+  (setf (screen-heads screen) (sort (push head (screen-heads screen)) #'<
+                                    :key (lambda (head)
+                                           (+ (* (head-x head) (screen-height (current-screen)))
+                                              (head-y head)))))
   (dolist (group (screen-groups screen))
     (group-add-head group head)))
 
@@ -146,4 +149,3 @@
       (let ((nh (find (head-number h) heads  :test '= :key 'head-number))
             (oh (find (head-number h) oheads :test '= :key 'head-number)))
         (scale-head screen oh nh)))))
-
