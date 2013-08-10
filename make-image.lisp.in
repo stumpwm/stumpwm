@@ -22,7 +22,9 @@
 
 (require 'asdf)
 (asdf:oos 'asdf:load-op 'stumpwm)
-#-ecl (stumpwm:set-contrib-dir "@CONTRIB_DIR@")
+
+#-ecl
+(stumpwm:set-contrib-dir "@CONTRIB_DIR@")
 
 #+sbcl
 (sb-ext:save-lisp-and-die "stumpwm" :toplevel (lambda ()

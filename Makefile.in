@@ -1,7 +1,7 @@
 LISP=@LISP_PROGRAM@
 
 clisp_BUILDOPTS=-K full -on-error exit < ./make-image.lisp
-sbcl_BUILDOPTS=--load ./make-image.lisp
+sbcl_BUILDOPTS=--load ./stumpwm.asd --load ./make-image.lisp
 ccl_BUILDOPTS=--load ./make-image.lisp
 ecl_BUILDOPTS=-shell ./make-image.lisp
 lw_BUILDOPTS=-build ./make-image.lisp
