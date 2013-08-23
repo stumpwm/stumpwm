@@ -103,7 +103,8 @@
         (declare (ignore raise))
         (when to-group
           (unless (eq (window-group window) to-group)
-            (move-window-to-group window to-group))
+            (move-window-to-group window to-group)))
+        (when frame
           (unless (eq (window-frame window) frame)
             (pull-window window frame)))))))
 
