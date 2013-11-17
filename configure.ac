@@ -7,6 +7,7 @@ AC_INIT(Stump Window Manager, esyscmd(grep :version stumpwm.asd | cut -d\" -f2 |
 AC_SUBST(CONTRIB_DIR)
 AC_SUBST(LISP_PROGRAM)
 AC_SUBST(LISP)
+AC_SUBST(STUMPWM_ASDF_DIR)
 
 # Checks for programs.
 AC_ARG_WITH(lisp,    [  --with-lisp=IMPL        use the specified lisp (sbcl, clisp, ccl or ecl)], LISP=$withval, LISP="any")
@@ -19,6 +20,8 @@ AC_ARG_WITH(lw,      [  --with-lw=PATH          specify location of lispworks], 
 AC_ARG_WITH(contrib-dir,
                      [  --with-contrib-dir=PATH specify location of contrib modules],
                      CONTRIB_DIR=$withval, CONTRIB_DIR="`pwd`/contrib")
+
+STUMPWM_ASDF_DIR="`pwd`/"
 
 if test -x "$SBCL_PATH"; then
    SBCL=$SBCL_PATH
