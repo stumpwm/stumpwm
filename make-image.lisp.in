@@ -21,6 +21,7 @@
            (lisp-implementation-type))))
 
 (require 'asdf)
+(push #P"@STUMPWM_ASDF_DIR@" asdf:*central-registry*)
 (asdf:oos 'asdf:load-op 'stumpwm)
 #-ecl (stumpwm:set-contrib-dir "@CONTRIB_DIR@")
 
