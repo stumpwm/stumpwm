@@ -1,1 +1,2 @@
-((nil . ((indent-tabs-mode . nil))))
+((nil . ((indent-tabs-mode . nil)))
+ (makefile-mode . ((indent-tabs-mode . t))))
