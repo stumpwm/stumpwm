@@ -20,8 +20,7 @@
     (error "Quicklisp must be installed in order to build StumpWM with ~S."
            (lisp-implementation-type))))
 
-(require 'asdf)
-(asdf:oos 'asdf:load-op 'stumpwm)
+(load "load-stumpwm.lisp")
 #-ecl (stumpwm:set-contrib-dir "@CONTRIB_DIR@")
 
 #+sbcl
