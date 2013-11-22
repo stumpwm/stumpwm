@@ -150,8 +150,27 @@ be an integer.")
 (defvar *message-window-timer* nil
   "Keep track of the timer that hides the message window.")
 
+;;; Grabbed pointer
+
 (defvar *grab-pointer-count* 0
-  "The number of times the pointer has been grabbed")
+  "The number of times the pointer has been grabbed.")
+
+(defvar *grab-pointer-font* "cursor"
+  "The font used for the grabbed pointer.")
+
+(defvar *grab-pointer-character* 64
+  "ID of a character used for the grabbed pointer.")
+
+(defvar *grab-pointer-character-mask* 65
+  "ID of a character mask used for the grabbed pointer.")
+
+(defvar *grab-pointer-foreground*
+  (xlib:make-color :red 0.0 :green 0.0 :blue 0.0)
+  "The foreground color of the grabbed pointer.")
+
+(defvar *grab-pointer-background*
+  (xlib:make-color :red 1.0 :green 1.0 :blue 1.0)
+  "The background color of the grabbed pointer.")
 
 ;;; Hooks
 
