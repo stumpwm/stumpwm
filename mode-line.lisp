@@ -527,7 +527,7 @@ critical."
       (if (head-mode-line head)
           (when format
             (setf (mode-line-format (head-mode-line head)) format))
-          (toggle-mode-line screen head (or format *screen-mode-line-format*)))
+          (toggle-mode-line screen head (or format '*screen-mode-line-format*)))
       (when (head-mode-line head)
         (toggle-mode-line screen head))))
 
