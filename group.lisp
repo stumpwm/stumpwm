@@ -442,6 +442,13 @@ the default group formatting and window formatting, respectively."
              (current-window))
     (move-window-to-group (current-window) to-group)))
 
+(defcommand gmove-and-follow (to-group) ((:group "To Group: "))
+  "Move the current window to the specified group, and switch to it."
+  (let ((window (current-window)))
+    (gmove to-group)
+    (gselect to-group)
+    (when window (really-raise-window window))))
+
 (defcommand gmove-marked (to-group) ((:group "To Group: "))
   "move the marked windows to the specified group."
   (when to-group
