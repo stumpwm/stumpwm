@@ -368,7 +368,7 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
       (defun ,(intern1 (format nil "WINDOW-~a" attr)) (,win)
         (gethash ,attr (window-plist ,win)))
       (defun (setf ,(intern1 (format nil "WINDOW-~a" attr))) (,val ,win)
-        (setf (gethash ,attr (window-plist ,win))) ,val))))
+        (setf (gethash ,attr (window-plist ,win)) ,val)))))
 
 (defun sort-windows (group)
   "Return a copy of the screen's window list sorted by number."
@@ -812,7 +812,7 @@ needed."
       (move-screen-to-head screen))
     (when last-win
       (update-decoration last-win))))
-  
+
 (defmethod focus-window (window)
   "Make the window visible and give it keyboard focus."
   (dformat 3 "focus-window: ~s~%" window)
