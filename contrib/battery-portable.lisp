@@ -33,6 +33,19 @@
 ;;; in your .stumpwmrc. Battery information is then available via %B
 ;;; in your mode-line config.
 ;;;
+;;; If you would like to use D-Bus to interact with UPower, add
+;;;
+;;;     (setf stumpwm.contrib.battery-portable:*prefer-dbus* t)
+;;;     (setf stumpwm.contrib.battery-portable:*prefer-sysfs* nil)
+;;;
+;;; below the above line. This requires the dbus package to be installed,
+;;; either from death/dbus, lucashpandolfo/dbus or joseph-gay/dbus on github,
+;;; I use quicklisp (and local-projects) to accomplish this, and I add
+;;;
+;;;     (ql:quickload :dbus)
+;;;
+;;; above the previous settings.
+;;;
 ;;; If you have an older kernel and the above doesn't work, add
 ;;;
 ;;;     (setf stumpwm.contrib.battery-portable:*prefer-sysfs* nil)
@@ -43,6 +56,7 @@
   (:use :common-lisp :stumpwm :cl-ppcre)
   (:export #:*refresh-time*
            #:*prefer-sysfs*
+           #:*prefer-dbus*
            ))
 (in-package :stumpwm.contrib.battery-portable)
 
@@ -58,6 +72,11 @@
   "Prefer sysfs over procfs for information gathering. This has effect
   only on Linux.")
 
+(defvar *prefer-dbus* NIL
+  "Prefer DBus over sysfs and procfs for information gathering. This should
+  effect any system that has DBus and UPower installed.
+  This requires the :dbus package.")
+
 ;;; Method base class
 
 (defclass battery-method ()
@@ -71,9 +90,12 @@
   #- (or linux openbsd)
   nil
   #+ linux
-  (if *prefer-sysfs*
-      (make-instance 'sysfs-method)
-      (make-instance 'procfs-method))
+  (cond
+    (*prefer-sysfs* (make-instance 'sysfs-method))
+    (*prefer-dbus* (if (find-package :dbus)
+                       (make-instance 'dbus-method)
+                       nil))
+    (t (make-instance 'procfs-method)))
   #+ openbsd
   (make-instance 'usr-sbin-apm-method))
 
@@ -238,6 +260,71 @@
                   (t :unknown)))))
       (t () :unknown))))
 
+;;; DBus implementation
+#+ linux
+(progn
+
+  (defclass dbus-method (battery-method)
+    ()
+    (:documentation "Collect battery information through DBus interface."))
+
+  (defclass dbus-battery (battery)
+    ((object :initarg :object :initform
+	     (error ":object missing for dbus battery")
+	     :reader object-of)))
+
+  (defun list-dbus-batteries (path destination)
+    "List the batteries that UPower knows about, ignoring line power objects.
+An example PATH is /org/freedesktop/UPower and an example DESTINATION is org.freedesktop.UPower"
+    (dbus::with-open-bus
+	(bus (dbus::system-server-addresses))
+      (remove nil
+	      (mapcar (lambda (path)
+			(if (cl-ppcre:scan ".*battery.*" path)
+			    path))
+		      (dbus::with-introspected-object (bat0 bus path destination)
+			(bat0 destination "EnumerateDevices"))))))
+
+  (defmethod all-batteries ((method dbus-method))
+    (remove nil
+	    (mapcar (lambda (path)
+		      (make-instance 'dbus-battery
+				     :object
+				     (let ((dbus_conn
+					    (dbus:open-connection
+					     (make-instance 'iolib.multiplex:event-base)
+					     (dbus::system-server-addresses))))
+				       (dbus::authenticate
+					(dbus:supported-authentication-mechanisms dbus_conn) dbus_conn)
+				       (dbus:hello dbus_conn)
+				       (dbus::make-object-from-introspection
+					dbus_conn
+					path "org.freedesktop.UPower"))))
+		    (list-dbus-batteries "/org/freedesktop/UPower" "org.freedesktop.UPower"))))
+
+  (defmethod state-of ((battery dbus-battery))
+    (let ((state (dbus::object-invoke (object-of battery)
+				      "org.freedesktop.DBus.Properties" "Get"
+				      "org.freedesktop.UPower.Device" "State"))
+	  (percent (dbus::object-invoke (object-of battery)
+					"org.freedesktop.DBus.Properties" "Get"
+					"org.freedesktop.UPower.Device" "Percentage"))
+	  (time-to-empty (dbus::object-invoke (object-of battery)
+					      "org.freedesktop.DBus.Properties" "Get"
+					      "org.freedesktop.UPower.Device" "TimeToEmpty"))
+	  (time-to-full (dbus::object-invoke (object-of battery)
+					     "org.freedesktop.DBus.Properties" "Get"
+					     "org.freedesktop.UPower.Device" "TimeToFull")))
+      (cond ((equalp state 0) :unknown)
+	    ((equalp state 1) (values :charging percent time-to-full))
+	    ((equalp state 2) (values :discharging percent time-to-empty))
+	    ((equalp state 3) :unknown)
+	    ((equalp state 4) (values :charged percent))
+	    ((equalp state 5) (values :charging percent time-to-full)) ; pending-charge
+	    ((equalp state 6) (values :discharging percent time-to-empty))))) ;pending-discharge
+
+)
+
 ;;; OpenBSD /usr/sbin/apm implementation
 
 #+ openbsd
@@ -303,27 +390,42 @@
         (truncate arg 3600)
       (format stream "~D:~2,'0D" hours (floor rest 60)))))
 
-(defun battery-info-string ()
-  "Compiles a string suitable for StumpWM's mode-line."
-  (with-output-to-string (fmt)
-    (let ((batteries (all-batteries (or (preferred-battery-method)
-                                        (return-from battery-info-string
-                                          "(not implemented)")))))
+;;; To avoid generating an infinite number of connections or objects, we should generate it once
+;;; and then reuse the battery objects
+(let* ((pref-method (preferred-battery-method))
+       (batteries
+	(if pref-method
+	    (all-batteries pref-method)
+	    "(not implemented)")))
+  (defun battery-info-string ()
+    "Compiles a string suitable for StumpWM's mode-line."
+    (with-output-to-string (fmt)
+      (if (and (stringp batteries)
+	       (string-equal batteries "(not implemented)"))
+	  (return-from battery-info-string "(not implemented)"))
+; If the preferred battery method changes, regenerate the batteries list
+      (if (not (eq (class-of (preferred-battery-method)) (class-of (preferred-battery-method))))
+	  (progn
+	    (setf pref-method (preferred-battery-method))
+	    (setf batteries
+		  (if pref-method
+		      (all-batteries pref-method)
+		      (return-from battery-info-string "(not implemented)")))))
       (if (endp batteries)
-          (format fmt "(no battery)")
-          (loop
-             for bat in batteries
-             do (multiple-value-bind (state perc time)
-                    (state-of bat)
-                  (ecase state
-                    (:unknown (format fmt "(no info)"))
-                    (:charged (format fmt "~~ ~D%" (round perc)))
-                    ((:charging :discharging)
-                     (format fmt "~/stumpwm.contrib.battery-portable::fmt-time/~A ^[~A~D%^]"
-                             time
-                             (if (eq state :charging) #\+ #\-)
-                             (bar-zone-color perc 90 50 20 t)
-                             (round perc))))))))))
+	  (format fmt "(no battery)")
+	  (loop
+	     for bat in batteries
+	     do (multiple-value-bind (state perc time)
+		    (state-of bat)
+		  (ecase state
+		    (:unknown (format fmt "(no info)"))
+		    (:charged (format fmt "~~ ~D%" (round perc)))
+		    ((:charging :discharging)
+		     (format fmt "~/stumpwm.contrib.battery-portable::fmt-time/~A ^[~A~D%^]"
+			     time
+			     (if (eq state :charging) #\+ #\-)
+			     (bar-zone-color perc 90 50 20 t)
+			     (round perc))))))))))
 
 ;;; The actual mode-line format function. A bit ugly...
 (let ((next 0)
