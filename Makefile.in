@@ -6,10 +6,10 @@ ccl_BUILDOPTS=--load ./make-image.lisp
 ecl_BUILDOPTS=-shell ./make-image.lisp
 lw_BUILDOPTS=-build ./make-image.lisp
 
-clisp_INFOOPTS=-K full -on-error exit -x "(require 'asdf) (asdf:oos 'asdf:load-op :stumpwm) (load (compile-file \"manual.lisp\")) (stumpwm::generate-manual) (ext:exit)"
-sbcl_INFOOPTS=--eval "(progn (require 'asdf) (require 'stumpwm) (load \"manual.lisp\"))" --eval "(progn (stumpwm::generate-manual) (sb-ext:quit))"
-ccl_INFOOPTS=--eval "(progn (require 'asdf) (require 'stumpwm))" --load manual.lisp --eval "(progn (stumpwm::generate-manual) (quit))"
-ecl_INFOOPTS=-eval "(progn (require 'asdf) (require 'stumpwm) (load \"manual.lisp\"))" -eval "(progn (stumpwm::generate-manual) (ext:quit))"
+clisp_INFOOPTS=-K full -on-error exit -x "(load (compile-file \"load-stumpwm.lisp\")) (load (compile-file \"manual.lisp\")) (stumpwm::generate-manual) (ext:exit)"
+sbcl_INFOOPTS=--eval "(progn (load \"load-stumpwm.lisp\") (load \"manual.lisp\"))" --eval "(progn (stumpwm::generate-manual) (sb-ext:quit))"
+ccl_INFOOPTS=--eval "(load \"load-stumpwm.lisp\")" --load manual.lisp --eval "(progn (stumpwm::generate-manual) (quit))"
+ecl_INFOOPTS=-eval "(progn (load \"load-stumpwm.lisp\") (load \"manual.lisp\"))" -eval "(progn (stumpwm::generate-manual) (ext:quit))"
 lw_INFOOPTS=-eval "(progn (require 'asdf) (load \"manual.lisp\"))" -eval "(progn (stumpwm::generate-manual) (lw:quit))"
 
 datarootdir = @datarootdir@
