@@ -1,6 +1,5 @@
 # The Stump Window Manager
 
-
 Stumpwm is a window manager written entirely in Common Lisp. It
 attempts to be highly customizable while relying entirely on the
 keyboard for input. You will not find buttons, icons, title bars, tool
@@ -8,12 +7,16 @@ bars, or any of the other conventional GUI widgets.
 
 These design decisions reflect the growing popularity of productive,
 customizable lisp based systems.
+## Philosophy 
+
+Stumpwm is a "everything-and-the-kitchen-sink WM" or "the emacs of
+WMs." In the same way Emacs provides a lisp-based framework for
+editing text, Stumpwm provides a common-lisp based framework for
+managing windows.
 
 # Build & Start Stumpwm
 
-
 ## Prerequisites
-
 
 * a common lisp distribution.  sbcl, clisp, ccl and ecl all work.
 * quicklisp
@@ -22,8 +25,20 @@ customizable lisp based systems.
 
 The recommended way to install the dependencies is using Quicklisp.
 Follow the instructions at http://www.quicklisp.org/ to install it.
-Make sure you have added it to your lisp init file using:
+In short: 
+```
+$ curl -O http://beta.quicklisp.org/quicklisp.lisp
+```
 
+```
+$ sbcl --load quicklisp.lisp
+```
+Or insert your favorite lisp distribution (clisp, ccl or ecl). 
+Then at the REPL:
+```lisp
+(quicklisp-quickstart:install)
+```
+Make sure you have added it to your lisp init file using:
 ```lisp
  (ql:add-to-init-file)
 ```
@@ -79,7 +94,6 @@ memory. If this bothers you for some reason, you can pass the -R or
 http://ccl.clozure.com/manual/chapter15.1.html for an explanation.
 
 # Help
-
 
 There's a texinfo manual, stumpwm.texi.  The build scripts generate an
 info file you can read in emacs or with the `info' program.  The
