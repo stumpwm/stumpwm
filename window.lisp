@@ -836,16 +836,19 @@ needed."
   (dformat 3 "Kill client~%")
   (xlib:kill-client *display* (xlib:window-id window)))
 
-(defun select-window-from-menu (windows fmt)
+(defun select-window-from-menu (windows fmt &optional initial-selection)
   "Allow the user to select a window from the list passed in @var{windows}.  The
-@var{fmt} argument specifies the window formatting used.  Returns the window
-selected."
+@var{fmt} argument specifies the window formatting used. Initially, the menu
+will have the window numbered @var{initial-selection} or the current window
+selected. Returns the window selected."
   (second (select-from-menu (current-screen)
 			    (mapcar (lambda (w)
 				      (list (format-expand *window-formatters* fmt w) w))
                                     windows)
                             nil
-                            (or (position (current-window) windows) 0))))
+                            (or initial-selection
+                                (position (current-window) windows)
+                                0))))
 
 ;;; Window commands
 
@@ -948,19 +951,21 @@ is using the number, then the windows swap numbers. Defaults to current group."
 		     (mapcar 'window-number windows))
 		   0))))))
 
-(defcommand windowlist (&optional (fmt *window-format*)) (:rest)
+(defcommand windowlist (&optional (fmt *window-format*) initial-selection) (:string :number)
 "Allow the user to Select a window from the list of windows and focus
 the selected window. For information of menu bindings
 @xref{Menus}. The optional argument @var{fmt} can be specified to
-override the default window formatting."
+override the default window formatting. The list will initially have
+@var{initial-selection} selected, if provided."
   (if (null (group-windows (current-group)))
       (message "No Managed Windows")
       (let* ((group (current-group))
-             (window (select-window-from-menu (sort-windows group) fmt)))
+             (window (select-window-from-menu (sort-windows group)
+                                              fmt
+                                              initial-selection)))
         (if window
             (group-focus-window group window)
             (throw 'error :abort)))))
-
 
 (defcommand window-send-string (string &optional (window (current-window))) ((:rest "Insert: "))
   "Send the string of characters to the current window as if they'd been typed."
