@@ -1,5 +1,5 @@
-The Stump Window Manager
-------------------------
+# The Stump Window Manager
+
 
 Stumpwm is a window manager written entirely in Common Lisp. It
 attempts to be highly customizable while relying entirely on the
@@ -9,14 +9,14 @@ bars, or any of the other conventional GUI widgets.
 These design decisions reflect the growing popularity of productive,
 customizable lisp based systems.
 
-Build & Start Stumpwm
----------------------
+# Build & Start Stumpwm
 
-Prerequisites
-=============
+
+## Prerequisites
+
 
 * a common lisp distribution.  sbcl, clisp, ccl and ecl all work.
-* asdf
+* quicklisp
 * clx
 * cl-ppcre
 
@@ -24,62 +24,62 @@ The recommended way to install the dependencies is using Quicklisp.
 Follow the instructions at http://www.quicklisp.org/ to install it.
 Make sure you have added it to your lisp init file using:
 
+```lisp
  (ql:add-to-init-file)
-
+```
 Then, in a repl:
-
+```lisp
  (ql:quickload "clx")
  (ql:quickload "cl-ppcre")
-
-Building
-========
+```
+## Building
 
 Building stumpwm from git requires that you build the configure script:
-
+```
  autoconf
-
+```
 If there's already a configure script then just run it.
-
+```
  ./configure
-
+```
 By default stumpwm elects sbcl.  If you have multiple lisps installed,
 you can explicitly select clisp, ccl, or ecl like so:
-
+```
  ./configure --with-lisp=clisp
-
+```
 If your lisps are in strange places you may need to tell the script
 where to find them:
-
+```
  ./configure --with-sbcl=/home/sabetts/opt/bin/sbcl
  ./configure --with-clisp=/usr/local/downstairs/to/the/left/clisp
-
+```
 Now build it:
-
+```
  make
-
+```
 If all goes well, you should have a stumpwm binary now.  You can run
 the binary from where it is or install it, along with the .info
 documentation, with:
-
+```
  make install
-
+```
 Now that you have a binary, call it from your ~/.xinitrc file:
-
+```
  echo /path/to/stumpwm >> ~/.xinitrc
  startx
-
+```
 Hopefully that will put you in X running stumpwm!
 
-CCL And Virtual Memory
-----------------------
+# CCL And Virtual Memory
+
 
 On 64bit platforms, CCL reserves a "very large" amount of virtual
 memory. If this bothers you for some reason, you can pass the -R or
 --heap-reserve option to the binary in your ~/.xinitrc file. See
 http://ccl.clozure.com/manual/chapter15.1.html for an explanation.
 
-Help
-----
+# Help
+
 
 There's a texinfo manual, stumpwm.texi.  The build scripts generate an
 info file you can read in emacs or with the `info' program.  The
