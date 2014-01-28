@@ -101,15 +101,13 @@
 (defun grab-pointer (screen)
   "Grab the pointer and set the pointer shape."
   (incf *grab-pointer-count*)
-  (let* ((white (xlib:make-color :red 1.0 :green 1.0 :blue 1.0))
-         (black (xlib:make-color :red 0.0 :green 0.0 :blue 0.0))
-         (cursor-font (xlib:open-font *display* "cursor"))
+  (let* ((cursor-font (xlib:open-font *display* *grab-pointer-font*))
          (cursor (xlib:create-glyph-cursor :source-font cursor-font
-                                           :source-char 64
+                                           :source-char *grab-pointer-character*
                                            :mask-font cursor-font
-                                           :mask-char 65
-                                           :foreground black
-                                           :background white)))
+                                           :mask-char *grab-pointer-character-mask*
+                                           :foreground *grab-pointer-foreground*
+                                           :background *grab-pointer-background*)))
     (xlib:grab-pointer (screen-root screen) nil :owner-p nil
                        :cursor cursor)))
 
