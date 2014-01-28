@@ -41,6 +41,7 @@
           *place-window-hook*
           *start-hook*
           *internal-loop-hook*
+          *event-processing-hook*
           *focus-frame-hook*
           *new-frame-hook*
           *split-frame-hook*
@@ -192,6 +193,10 @@ window group and frame")
 
 (defvar *internal-loop-hook* '()
   "A hook called inside stumpwm's inner loop.")
+
+(defvar *event-processing-hook* '()
+  "A hook called inside stumpwm's inner loop, before the default event
+  processing takes place. This hook is run inside (with-event-queue ...).")
 
 (defvar *focus-frame-hook* '()
   "A hook called when a frame is given focus. The hook functions are

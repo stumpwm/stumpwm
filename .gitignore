@@ -6,6 +6,8 @@
 *.*fasl
 *.*fsl
 *~
+*.swp
+\#*#
 configure
 config.log
 config.status
