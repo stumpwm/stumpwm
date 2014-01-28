@@ -22,6 +22,7 @@ managing windows.
 * quicklisp
 * clx
 * cl-ppcre
+* cl-xembed
 
 The recommended way to install the dependencies is using Quicklisp.
 Follow the instructions at http://www.quicklisp.org/ to install it.
@@ -46,6 +47,7 @@ Then, in a repl:
 ```lisp
  (ql:quickload "clx")
  (ql:quickload "cl-ppcre")
+ (ql:quickload "xembed")
 ```
 ## Building
 
