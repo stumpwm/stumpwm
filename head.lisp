@@ -140,6 +140,7 @@
         (head-height oh) (head-height nh)))
 
 (defun scale-screen (screen heads)
+  "Scale all frames of all groups of SCREEN to match the dimensions of HEADS."
   (let ((oheads (screen-heads screen)))
     (dolist (h (set-difference oheads heads :test '= :key 'head-number))
       (remove-head screen h))
