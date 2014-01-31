@@ -30,6 +30,7 @@
 (defvar stumpwm-shell-program "stumpish"
   "program name, including path if needed, for the stumpish program.")
 
+;;;###autoload 
 (define-minor-mode stumpwm-mode
     "add some bindings to eval code into a running stumpwm using stumpish."
   :global nil
