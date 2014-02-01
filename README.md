@@ -7,12 +7,33 @@ bars, or any of the other conventional GUI widgets.
 
 These design decisions reflect the growing popularity of productive,
 customizable lisp based systems.
+
 ## Philosophy 
 
 Stumpwm is a "everything-and-the-kitchen-sink WM" or "the emacs of
-WMs." In the same way Emacs provides a lisp-based framework for
-editing text, Stumpwm provides a common-lisp based framework for
-managing windows.
+WMs."
+
+**StumpWM:Emacs::Text:Windows**
+
+* StumpWM is
+  * Hackable
+  * A tileable window manager
+  * Includes support for floats
+  * Written in Common Lisp
+  * Compatible with many lisp distributions
+  * A Superior window managing experience 
+* StumpWM is *not*
+  * Minimalist
+  * Narrow Scope
+  * Configured by editing the source directly
+  * A full blown desktop environment
+If you want a minimalist tiling window manager, then StumpWM is *not*
+what you're looking for.  The code base is ~15k sloc, the binaries
+produced are ~60mb.  
+
+StumpWM manages windows the way emacs manages buffers, or the way
+screen manages terminals. If you want a flexible, customizable,
+hackable desktop experience, look no further.
 
 # Build & Start Stumpwm
 
