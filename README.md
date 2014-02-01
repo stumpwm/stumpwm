@@ -13,7 +13,7 @@ customizable lisp based systems.
 Stumpwm is a "everything-and-the-kitchen-sink WM" or "the emacs of
 WMs."
 
-**StumpWM:Emacs::Text:Windows**
+**StumpWM:Windows::Emacs:Text**
 
 * StumpWM is
   * Hackable

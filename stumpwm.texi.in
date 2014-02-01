@@ -1495,7 +1495,7 @@ bleeding-edge source code from the official git repository with
 a single command:
 
 @example
-$ git clone git://git.savannah.nongnu.org/stumpwm.git
+$ git clone git@@github.com:sabetts/stumpwm.git
 @end example
 
 After this, you'll have a complete git repository, along with the
