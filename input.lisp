@@ -126,10 +126,16 @@
 (defun shutdown-input-window (screen)
   (xlib:ungrab-keyboard *display*)
   (xlib:unmap-window (screen-input-window screen)))
-
+;; Hack to avoid clobbering input from numpads with numlock on.
+(defparameter *numpad-map* '((87 . 10) (88 . 11) (89 . 12) 
+                             (83 . 13) (84 . 14) (85 . 15) 
+                             (79 . 16) (80 . 17) (81 . 18) 
+                             (91 . 60) (90 . 19)))
 (defun input-handle-key-press-event (&rest event-slots &key event-key root code state &allow-other-keys)
   (declare (ignore event-slots root))
   ;; FIXME: don't use a cons
+  (when (assoc code *numpad-map*)
+    (setf code (rest (assoc code *numpad-map*))))
   (list* event-key code state))
 
 (defun input-handle-selection-event (&key window selection property &allow-other-keys)
