@@ -127,16 +127,21 @@
   (xlib:ungrab-keyboard *display*)
   (xlib:unmap-window (screen-input-window screen)))
 ;; Hack to avoid clobbering input from numpads with numlock on.
-(defparameter *numpad-map* '((87 . 10) (88 . 11) (89 . 12) 
-                             (83 . 13) (84 . 14) (85 . 15) 
-                             (79 . 16) (80 . 17) (81 . 18) 
-                             (91 . 60) (90 . 19)))
-(defun input-handle-key-press-event (&rest event-slots &key event-key root code state &allow-other-keys)
+(defun input-handle-key-press-event (&rest event-slots 
+                                     &key event-key root code state 
+                                       &allow-other-keys)
   (declare (ignore event-slots root))
-  ;; FIXME: don't use a cons
-  (when (assoc code *numpad-map*)
-    (setf code (rest (assoc code *numpad-map*))))
-  (list* event-key code state))
+  (let* ((numpad-map '((87 10 . 16) (88  11 . 16) (89 12 . 16) (106 61 . 16)
+                      (83 13 . 16) (84  14 . 16) (85 15 . 16) (86  21 . 17)
+                      (79 16 . 16) (80  17 . 16) (81 18 . 16) (63  17 . 17) 
+                      (82 20 . 16) (104 36 . 16) (91 60 . 16) (90  19 . 17)))
+         (numlock-on-p (= 2 (logand 2 (nth-value 4 (xlib:keyboard-control *display*)))))
+         (numpad-key (assoc code numpad-map)))
+    (when (and numlock-on-p numpad-key)
+      (setf code (first (rest numpad-key))
+            state (rest (rest numpad-key))))
+    ;; FIXME: don't use a cons
+    (list* event-key code state)))
 
 (defun input-handle-selection-event (&key window selection property &allow-other-keys)
   (declare (ignore selection))
@@ -165,7 +170,7 @@
   (loop for ev = (xlib:process-event *display* :handler #'read-key-handle-event :timeout nil) do
        (when (and (consp ev)
                   (eq (first ev) :key-press))
-           (return (cdr ev)))))
+           (return (rest ev)))))
 
 (defun read-key-no-modifiers ()
   "Like read-key but never returns a modifier key."
@@ -179,7 +184,7 @@
               (return ev))
              ((and (consp ev)
                    (eq (first ev) :key-press))
-              (return (cdr ev))))))
+              (return (rest ev))))))
 
 (defun make-input-string (initial-input)
   (make-array (length initial-input) :element-type 'character :initial-contents initial-input
