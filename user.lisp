@@ -298,7 +298,7 @@ instance. @var{all-groups} overrides this default. Similarily for
       (if win
           (if (eq (type-of (window-group win)) 'float-group)
               (group-focus-window (window-group win) win)
-              (goto-win-tile win))
+              (goto-win win))
           (run-shell-command cmd)))))
 
 (defun run-or-pull (cmd props &optional (all-groups *run-or-raise-all-groups*)
