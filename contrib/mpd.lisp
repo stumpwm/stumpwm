@@ -213,7 +213,7 @@
             (comm:open-tcp-stream *mpd-server* *mpd-port*
                                   :direction :io
                                   :element-type '(unsigned-byte 8)
-                                  :error t)
+                                  :errorp t)
             #+ccl
             (ccl:make-socket :remote-host *mpd-server*
                              :remote-port *mpd-port*
