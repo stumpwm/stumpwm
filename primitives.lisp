@@ -864,9 +864,9 @@ The group's name.
 (defvar *list-hidden-groups* nil
   "Controls whether hidden groups are displayed by 'groups' and 'vgroups' commands")
 
-(defun font-height (font)
-  (+ (xlib:font-descent font)
-     (xlib:font-ascent font)))
+;; (defun font-height (font)
+;;   (+ (font-descent font)
+;;      (font-ascent font)))
 
 (defvar *x-selection* nil
   "This holds stumpwm's current selection. It is generally set

@@ -31,7 +31,7 @@
 (defun max-width (font l)
   "Return the width of the longest string in L using FONT."
   (loop for i in l
-        maximize (xlib:text-width font i :translate #'translate-id)))
+        maximize (text-line-width font i :translate #'translate-id)))
 
 (defun get-gravity-coords (gravity width height minx miny maxx maxy)
   "Return the x y coords for a window on with gravity etc"
@@ -65,8 +65,7 @@ function expects to be wrapped in a with-state for win."
 
 (defun setup-message-window (screen lines width)
   (let ((height (* lines
-                   (+ (xlib:font-ascent (screen-font screen))
-                      (xlib:font-descent (screen-font screen)))))
+                   (font-height (screen-font screen))))
         (win (screen-message-window screen)))
     ;; Now that we know the dimensions, raise and resize it.
     (xlib:with-state (win)
@@ -161,7 +160,7 @@ function expects to be wrapped in a with-state for win."
         (xlib:unmap-window w)
         (xlib:with-state (w)
           (setf (xlib:drawable-x w) (+ (frame-x frame)
-                                       (truncate (- (frame-width frame) (xlib:text-width font string)) 2))
+                                       (truncate (- (frame-width frame) (text-line-width font string)) 2))
                 (xlib:drawable-y w) (+ (frame-display-y group frame)
                                        (truncate (- (frame-height frame) (font-height font)) 2))
                 (xlib:window-priority w) :above))
@@ -172,16 +171,17 @@ function expects to be wrapped in a with-state for win."
 (defun echo-in-window (win font fg bg string)
   (let* ((height (font-height font))
          (gcontext (xlib:create-gcontext :drawable win
-                                         :font font
+                                         :font (when (typep font 'xlib:font) font)
                                          :foreground fg
                                          :background bg))
-         (width (xlib:text-width font string)))
+         (width (text-line-width font string)))
     (xlib:with-state (win)
       (setf (xlib:drawable-height win) height
             (xlib:drawable-width win) width))
     (xlib:clear-area win)
     (xlib:display-finish-output *display*)
-    (xlib:draw-image-glyphs win gcontext 0 (xlib:font-ascent font) string :translate #'translate-id :size 16)))
+    (draw-image-glyphs win gcontext font 0
+                       (font-ascent font) string :translate #'translate-id :size 16)))
 
 (defun push-last-message (screen strings highlights)
   ;; only push unique messages
