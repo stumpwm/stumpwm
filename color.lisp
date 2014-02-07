@@ -64,11 +64,13 @@ then call (update-color-map).")
 
 (defun alloc-color (screen color)
   (xlib:alloc-color (xlib:screen-default-colormap (screen-number screen)) color))
+
 (defun hex-to-xlib-color (color)
   (let* ((red (/ (parse-integer (subseq color 1 3) :radix 16) 255.0))
          (green (/ (parse-integer (subseq color 3 5) :radix 16) 255.0))
          (blue (/ (parse-integer (subseq color 5 7) :radix 16) 255.0)))
     (xlib:make-color :red red :green green :blue blue)))
+
 (defun lookup-color (screen color)
   (cond
     ((typep color 'xlib:color) color)
