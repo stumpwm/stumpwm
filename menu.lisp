@@ -26,7 +26,7 @@
 
 (in-package #:stumpwm)
 
-(export '())
+(export '(select-from-menu))
 
 (defvar *menu-map* nil
   "The keymap used by the interactive menu.")
