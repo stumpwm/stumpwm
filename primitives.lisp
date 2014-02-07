@@ -27,6 +27,7 @@
 
 (export '(*suppress-abort-messages*
           *suppress-frame-indicator*
+          *suppress-window-placement-indicator*
           *timeout-wait*
           *timeout-frame-indicator-wait*
           *frame-indicator-text*
@@ -147,6 +148,10 @@ be an integer.")
 
 (defvar *suppress-frame-indicator* nil
   "Set this to T if you never want to see the frame indicator.")
+
+(defvar *suppress-window-placement-indicator* nil
+  "Set to T if you never want to see messages that windows were placed
+  according to rules.")
 
 (defvar *message-window-timer* nil
   "Keep track of the timer that hides the message window.")

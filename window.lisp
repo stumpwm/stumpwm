@@ -706,7 +706,8 @@ needed."
       (when placement-data
         (if (getf placement-data :raise)
           (switch-to-group (window-group window))
-          (message "Placing window ~a in group ~a" (window-name window) (group-name (window-group window))))
+          (unless *suppress-window-placement-indicator*
+            (message "Placing window ~a in group ~a" (window-name window) (group-name (window-group window)))))
         (apply 'run-hook-with-args *place-window-hook* window (window-group window) placement-data)))
     ;; must call this after the group slot is set for the window.
     (grab-keys-on-window window)
