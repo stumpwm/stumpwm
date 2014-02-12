@@ -1,26 +1,9 @@
-#-(or sbcl clisp openmcl ecl (and lispworks6 (not lispworks-personal-edition)))
-(error "This lisp implementation is not supported.")
+;;;; -*- Mode: Lisp; Syntax: ANSI-Common-Lisp; indent-tabs-mode: nil; external-format: utf-8; -*-
 
-#+lispworks
-(progn
-  (load-all-patches)
-  (lw:set-default-character-element-type 'lw:simple-char)
-
-  (unless
-      (dolist (install-path
-               '("quicklisp" ".quicklisp"))
-        (let ((quicklisp-init
-                (merge-pathnames (make-pathname :directory `(:relative ,install-path)
-                                                :name "setup.lisp")
-                                 (user-homedir-pathname))))
-          (when (probe-file quicklisp-init)
-            (load quicklisp-init)
-            (return t))))
-
-    (error "Quicklisp must be installed in order to build StumpWM with ~S."
-           (lisp-implementation-type))))
+(in-package #:cl-user)
 
 (load "load-stumpwm.lisp")
+
 #-ecl (stumpwm:set-contrib-dir "@CONTRIB_DIR@")
 
 #+sbcl
@@ -49,7 +32,7 @@
                                   (stumpwm:stumpwm)))
 
 ;;; if you want to save an image
-#+(and lispworks)
+#+(and lispworks (not lispworks-personal-edition))
 (hcl:save-image "stumpwm"
                 :multiprocessing t
                 :environment nil
@@ -58,10 +41,11 @@
                                            #'(lambda ()
                                                (stumpwm:stumpwm)
                                                (lw:quit :status 0))))
-
 ;;; if you want to save a standalone executable
-#+(and lispworks nil)
+#+(and nil lispworks (not lispworks-personal-edition))
 (lw:deliver #'stumpwm:stumpwm "stumpwm" 0
             :interface nil
             :multiprocessing t
             :keep-pretty-printer t)
+#+(and lispworks lispworks-personal-edition)
+(warn "StumpWM can be saved as an image only in LispWorks Pro/Enterprise editions.")

@@ -10,7 +10,7 @@ clisp_INFOOPTS=-K full -on-error exit -x "(load (compile-file \"load-stumpwm.lis
 sbcl_INFOOPTS=--eval "(progn (load \"load-stumpwm.lisp\") (load \"manual.lisp\"))" --eval "(progn (stumpwm::generate-manual) (sb-ext:quit))"
 ccl_INFOOPTS=--eval "(load \"load-stumpwm.lisp\")" --load manual.lisp --eval "(progn (stumpwm::generate-manual) (quit))"
 ecl_INFOOPTS=-eval "(progn (load \"load-stumpwm.lisp\") (load \"manual.lisp\"))" -eval "(progn (stumpwm::generate-manual) (ext:quit))"
-lw_INFOOPTS=-eval "(progn (require 'asdf) (load \"manual.lisp\"))" -eval "(progn (stumpwm::generate-manual) (lw:quit))"
+lw_INFOOPTS=-eval "(progn (load \"load-stumpwm.lisp\") (load \"manual.lisp\"))" -eval "(progn (stumpwm::generate-manual) (lw:quit))"
 
 datarootdir = @datarootdir@
 prefix=@prefix@
