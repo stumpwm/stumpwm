@@ -40,7 +40,7 @@ hackable desktop experience, look no further.
 
 ## Prerequisites
 
-* a common lisp distribution.  sbcl, clisp, ccl and ecl all work.
+* a common lisp distribution.  sbcl, clisp, ccl and ecl([?](https://github.com/sabetts/stumpwm/issues/55)) all work.
 * quicklisp
 * clx
 * cl-ppcre
@@ -69,7 +69,6 @@ Then, in a repl:
 ```lisp
  (ql:quickload "clx")
  (ql:quickload "cl-ppcre")
- (ql:quickload "xembed")
 ```
 ## Building
 
@@ -107,7 +106,39 @@ Now that you have a binary, call it from your ~/.xinitrc file:
  echo /path/to/stumpwm >> ~/.xinitrc
  startx
 ```
-Hopefully that will put you in X running stumpwm!
+Hopefully that will put you in X running stumpwm! See [StartUp on the
+wiki](https://github.com/sabetts/stumpwm/wiki/StartUp) for more
+examples.
+
+# Contributing
+
+Pull requests are always welcome! Here are some guidelines to ensure
+that your contribution gets merged in a timely manner: 
+* Do's 
+  * Preserve comments or docstrings explaining what code does, and
+    update them if your patch changes them in a significant way
+  * Try to follow an "80 column rule." The current code base does not
+    follow this all the time, so don't use it as an example
+  * [Use lisp idioms](http://people.ace.ed.ac.uk/staff/medward2/class/moz/cm/doc/contrib/lispstyle.html)
+  * If you are working on a major change to the internals, keep us
+    informed on stumpwm-devel! Also, it will probably help if the
+    changes are made and the incrementally applied to the codebase in
+    order to avoid introducing show-stopping bugs.
+* Do not's
+  * Include emacs local variables 
+  * Change whitespace 
+  * Write lots of code without supporting comments/documentation
+  * Delete comments or docstrings (yes this is a duplicate of above!)
+  * Export symbols from packages that aren't widely useful (many times
+    a little more thought will reveal how to implement your internal
+    change without having to export/break encapsulation)
+  * Make stylistic changes that suit your coding style/way of thinking 
+
+Our wiki has fallen into disarray/disrepair, but it is shaping up.  If
+you aren't a lisp hacker, you can contribute in the form of
+documenting and organizing the wiki. There's a lot of information
+floating around, if you find it where you didn't expect it, move or
+link to it in a more logical place.
 
 # CCL And Virtual Memory
 
