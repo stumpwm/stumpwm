@@ -824,18 +824,34 @@ needed."
   (dformat 3 "focus-window: ~s~%" window)
   (let* ((group (window-group window))
          (screen (group-screen group))
-         (cw (screen-focus screen)))
-    ;; If window to focus is already focused then our work is done.
-    (unless (eq window cw)
-      (raise-window window)
-      (screen-set-focus screen window)
-      ;;(send-client-message window :WM_PROTOCOLS +wm-take-focus+)
-      (update-decoration window)
-      (when cw
-        (update-decoration cw))
-      ;; Move the window to the head of the mapped-windows list
-      (move-window-to-head group window)
-      (run-hook-with-args *focus-window-hook* window cw))))
+         (cw (screen-focus screen))
+         (xwin (window-xwin window)))
+    (cond
+      ((eq window cw)
+       ;; If window to focus is already focused then our work is done.
+       )
+      ((member :WM_TAKE_FOCUS (xlib:wm-protocols xwin) :test #'eq)
+       (raise-window window)
+       (let ((hints (xlib:wm-hints xwin)))
+         (when (or (null hints) (eq (xlib:wm-hints-input hints) :on))
+           (screen-set-focus screen window)
+           (update-decoration window)
+           (when cw
+             (update-decoration cw))))
+       (move-window-to-head group window)
+       (send-client-message window :WM_PROTOCOLS
+                            (xlib:intern-atom *display* :WM_TAKE_FOCUS)
+                            *current-event-time*)
+       (run-hook-with-args *focus-window-hook* window cw))
+      (t
+       (raise-window window)
+       (screen-set-focus screen window)
+       (update-decoration window)
+       (when cw
+         (update-decoration cw))
+       ;; Move the window to the head of the mapped-windows list
+       (move-window-to-head group window)
+       (run-hook-with-args *focus-window-hook* window cw)))))
 
 (defun xwin-kill (window)
   "Kill the client associated with window."

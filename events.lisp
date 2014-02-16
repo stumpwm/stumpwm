@@ -29,6 +29,8 @@
 (defparameter *event-fn-table* (make-hash-table)
   "A hash of event types to functions")
 
+(defvar *current-event-time* nil)
+
 (defmacro define-stump-event-handler (event keys &body body)
   (let ((fn-name (gensym))
         (event-slots (gensym)))
@@ -607,7 +609,8 @@ the window in it's frame."
   (declare (ignore display))
   (dformat 1 ">>> ~S~%" event-key)
   (let ((eventfn (gethash event-key *event-fn-table*))
-        (win (getf event-slots :window)))
+        (win (getf event-slots :window))
+        (*current-event-time* (getf event-slots :time)))
     (when eventfn
       ;; XXX: In both the clisp and sbcl clx libraries, sometimes what
       ;; should be a window will be a pixmap instead. In this case, we
