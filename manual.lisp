@@ -1,3 +1,5 @@
+;;;; -*- Mode: Lisp; Syntax: ANSI-Common-Lisp; indent-tabs-mode: nil; external-format: utf-8; -*-
+
 ;; Copyright (C) 2007-2008 Shawn Betts
 ;;
 ;;  This file is part of stumpwm.
@@ -22,29 +24,6 @@
 ;; this only works in sbcl, clisp and lispworks
 ;;
 ;; Code:
-
-(in-package #:cl-user)
-
-#+lispworks
-(progn
-  (lw:set-default-character-element-type 'lw:simple-char)
-
-  (unless
-      (dolist (install-path
-               '("quicklisp" ".quicklisp"))
-        (let ((quicklisp-init
-                (merge-pathnames (make-pathname :directory `(:relative ,install-path)
-                                                :name "setup.lisp")
-                                 (user-homedir-pathname))))
-          (when (probe-file quicklisp-init)
-            (load quicklisp-init)
-            (return t))))
-
-    (error "Quicklisp must be installed in order to build StumpWM with ~S."
-           (lisp-implementation-type)))
-
-  (pushnew #P"./" asdf:*central-registry* :test #'equal)
-  (asdf:oos 'asdf:load-op 'stumpwm))
 
 (in-package #:stumpwm)
 
