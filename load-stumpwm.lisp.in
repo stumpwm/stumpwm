@@ -1,5 +1,3 @@
-;;;; -*- Mode: Lisp; Syntax: ANSI-Common-Lisp; indent-tabs-mode: nil; external-format: utf-8; -*-
-
 (in-package #:cl-user)
 
 #-(or sbcl clisp ccl ecl lispworks6)

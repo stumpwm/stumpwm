@@ -1,5 +1,3 @@
-;;;; -*- Mode: Lisp; Syntax: ANSI-Common-Lisp; indent-tabs-mode: nil; external-format: utf-8; -*-
-
 ;; Copyright (C) 2007-2008 Shawn Betts
 ;;
 ;;  This file is part of stumpwm.
