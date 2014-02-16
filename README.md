@@ -27,6 +27,7 @@ WMs."
   * Narrow Scope
   * Configured by editing the source directly
   * A full blown desktop environment
+
 If you want a minimalist tiling window manager, then StumpWM is *not*
 what you're looking for.  The code base is ~15k sloc, the binaries
 produced are ~60mb.  
