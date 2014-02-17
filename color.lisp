@@ -36,7 +36,7 @@
 
 (in-package :stumpwm)
 
-(export '(*colors* update-color-map adjust-color update-screen-color-context))
+(export '(*colors* update-color-map adjust-color update-screen-color-context lookup-color))
 
 (defvar *colors*
   '("black"
@@ -62,14 +62,18 @@ then call (update-color-map).")
           (xlib:color-green color) (max-min (xlib:color-green color) amt)
           (xlib:color-blue color) (max-min (xlib:color-blue color) amt))))
 
-(defun alloc-color (screen color)
-  (xlib:alloc-color (xlib:screen-default-colormap (screen-number screen)) color))
-
 (defun hex-to-xlib-color (color)
   (let* ((red (/ (parse-integer (subseq color 1 3) :radix 16) 255.0))
          (green (/ (parse-integer (subseq color 3 5) :radix 16) 255.0))
          (blue (/ (parse-integer (subseq color 5 7) :radix 16) 255.0)))
     (xlib:make-color :red red :green green :blue blue)))
+
+(defun alloc-color (screen color)
+  (let ((colormap (xlib:screen-default-colormap (screen-number screen))))
+    (cond ((and (stringp color) (= 7 (length color)) 
+                (string-equal "#" (subseq color 0 1))) (xlib:alloc-color colormap 
+                                                                         (hex-to-xlib-color color)))
+          (t (xlib:alloc-color colormap color)))))
 
 (defun lookup-color (screen color)
   (cond
