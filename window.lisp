@@ -830,7 +830,8 @@ needed."
       ((eq window cw)
        ;; If window to focus is already focused then our work is done.
        )
-      ((member :WM_TAKE_FOCUS (xlib:wm-protocols xwin) :test #'eq)
+      ((and *current-event-time* 
+            (member :WM_TAKE_FOCUS (xlib:wm-protocols xwin) :test #'eq))
        (raise-window window)
        (let ((hints (xlib:wm-hints xwin)))
          (when (or (null hints) (eq (xlib:wm-hints-input hints) :on))
