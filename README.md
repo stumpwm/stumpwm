@@ -40,8 +40,8 @@ hackable desktop experience, look no further.
 
 ## Prerequisites
 
-* a common lisp distribution.  sbcl, clisp, ccl and ecl([?](https://github.com/sabetts/stumpwm/issues/55)) all work.
-* quicklisp
+* a common lisp distribution.  sbcl, clisp, ccl and ecl all work (ecl must have been built with clx support, must use version >= 13.5.1 [see here for discussion](https://github.com/sabetts/stumpwm/issues/55)).
+* quicklisp (for obtaining the following dependencies, not needed if you use your distribution's package manager.)
 * clx
 * cl-ppcre
 * cl-xembed
