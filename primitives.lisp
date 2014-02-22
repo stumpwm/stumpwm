@@ -25,6 +25,8 @@
 
 (in-package :stumpwm)
 
+#+ecl (require "clx")
+
 (export '(*suppress-abort-messages*
           *suppress-frame-indicator*
           *suppress-window-placement-indicator*
