@@ -784,7 +784,7 @@ do:
                   (format t "%~a~@[~a~]" len from-left-p)
                   (let* ((fmt (cadr (assoc (car cur) fmt-alist :test 'char=)))
                          (str (cond (fmt
-                                     ;; it can return any type, not jut as string.
+                                     ;; it can return any type, not just a string.
                                      (format nil "~a" (apply fmt args)))
                                     ((char= (car cur) #\%)
                                      (string #\%))
