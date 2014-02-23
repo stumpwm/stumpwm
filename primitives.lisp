@@ -763,6 +763,16 @@ do:
 ;;; 
 ;;; formatting routines
 
+(defun escape-caret (str)
+  "Escape carets by doubling them"
+  (let (buf)
+    (map nil #'(lambda (ch)
+                 (push ch buf)
+                 (when (char= ch #\^)
+                   (push #\^ buf)))
+         str)
+    (coerce (reverse buf) 'string)))
+
 (defun format-expand (fmt-alist fmt &rest args)
   (let* ((chars (coerce fmt 'list))
          (output "")
@@ -783,9 +793,9 @@ do:
               (if (null cur)
                   (format t "%~a~@[~a~]" len from-left-p)
                   (let* ((fmt (cadr (assoc (car cur) fmt-alist :test 'char=)))
-                         (str (cond (fmt
-                                     ;; it can return any type, not just a string.
-                                     (format nil "~a" (apply fmt args)))
+                         (str (cond (fmt (escape-caret
+                                          ;; it can return any type, not just a string.
+                                          (format nil "~a" (apply fmt args))))
                                     ((char= (car cur) #\%)
                                      (string #\%))
                                     (t
