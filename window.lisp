@@ -283,6 +283,15 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
 ;;      (xlib:draw-rectangle (window-parent window) (screen-marked-gc (window-screen window))
 ;;                           0 0 300 200 t)
 ;;      (xlib:clear-area (window-parent window)))))
+(defun escape-caret (str)
+  "Escape carets by doubling them"
+  (let (buf)
+    (map nil #'(lambda (ch)
+                 (push ch buf)
+                 (when (char= ch #\^)
+                   (push #\^ buf)))
+         str)
+    (coerce (reverse buf) 'string)))
 
 (defun get-normalized-normal-hints (xwin)
   (macrolet ((validate-hint (fn)
@@ -311,9 +320,9 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
       (utf8-to-string name))))
 
 (defun xwin-name (win)
-  (or
-   (xwin-net-wm-name win)
-   (xlib:wm-name win)))
+  (escape-caret (or
+                 (xwin-net-wm-name win)
+                 (xlib:wm-name win))))
 
 ;; FIXME: should we raise the window or its parent?
 (defmethod raise-window (win)

@@ -762,17 +762,6 @@ do:
 
 ;;; 
 ;;; formatting routines
-
-(defun escape-caret (str)
-  "Escape carets by doubling them"
-  (let (buf)
-    (map nil #'(lambda (ch)
-                 (push ch buf)
-                 (when (char= ch #\^)
-                   (push #\^ buf)))
-         str)
-    (coerce (reverse buf) 'string)))
-
 (defun format-expand (fmt-alist fmt &rest args)
   (let* ((chars (coerce fmt 'list))
          (output "")
