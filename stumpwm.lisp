@@ -264,5 +264,6 @@ of those expired."
                   (apply 'execv (first (argv)) (argv)))
              ((eq ret :restart))
              (t 
+              (run-hook *quit-hook*)
               ;; the number is the unix return code
               (return-from stumpwm 0))))))
