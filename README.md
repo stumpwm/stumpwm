@@ -1,3 +1,4 @@
+![](http://www.kenanb.com/static/img/stumpwm-logo/stumpwm-logo-stripe.png)
 # The Stump Window Manager
 
 Stumpwm is a window manager written entirely in Common Lisp. It
