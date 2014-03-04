@@ -283,7 +283,6 @@ instance. @var{all-groups} overrides this default. Similarily for
          (let* ((group (window-group win))
                 (frame (window-frame win))
                 (old-frame (tile-group-current-frame group)))
-           (frame-raise-window group frame win)
            (focus-all win)
            (unless (eq frame old-frame)
              (show-frame-indicator group)))))
