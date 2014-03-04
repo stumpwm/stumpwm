@@ -115,9 +115,7 @@
 (defun add-head (screen head)
   (dformat 1 "Adding head #~D~%" (head-number head))
   (setf (screen-heads screen) (sort (push head (screen-heads screen)) #'<
-                                    :key (lambda (head)
-                                           (+ (* (head-x head) (screen-height (current-screen)))
-                                              (head-y head)))))
+                                    :key 'head-number))
   (dolist (group (screen-groups screen))
     (group-add-head group head)))
 
@@ -142,6 +140,14 @@
 (defun scale-screen (screen heads)
   "Scale all frames of all groups of SCREEN to match the dimensions of HEADS."
   (let ((oheads (screen-heads screen)))
+    (when (< (length heads) (length oheads))
+      ;; Some heads were removed (or cloned), try to guess which.
+      (dolist (oh oheads)
+        (dolist (nh heads)
+          (when (and (= (head-x nh) (head-x oh))
+                     (= (head-y nh) (head-y oh)))
+          ;; Same screen position; probably the same head.
+            (setf (head-number nh) (head-number oh))))))
     (dolist (h (set-difference oheads heads :test '= :key 'head-number))
       (remove-head screen h))
     (dolist (h (set-difference heads oheads :test '= :key 'head-number))

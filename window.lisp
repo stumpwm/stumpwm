@@ -283,6 +283,15 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
 ;;      (xlib:draw-rectangle (window-parent window) (screen-marked-gc (window-screen window))
 ;;                           0 0 300 200 t)
 ;;      (xlib:clear-area (window-parent window)))))
+(defun escape-caret (str)
+  "Escape carets by doubling them"
+  (let (buf)
+    (map nil #'(lambda (ch)
+                 (push ch buf)
+                 (when (char= ch #\^)
+                   (push #\^ buf)))
+         str)
+    (coerce (reverse buf) 'string)))
 
 (defun get-normalized-normal-hints (xwin)
   (macrolet ((validate-hint (fn)
@@ -311,9 +320,9 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
       (utf8-to-string name))))
 
 (defun xwin-name (win)
-  (or
-   (xwin-net-wm-name win)
-   (xlib:wm-name win)))
+  (escape-caret (or
+                 (xwin-net-wm-name win)
+                 (xlib:wm-name win))))
 
 ;; FIXME: should we raise the window or its parent?
 (defmethod raise-window (win)
@@ -830,7 +839,8 @@ needed."
       ((eq window cw)
        ;; If window to focus is already focused then our work is done.
        )
-      ((member :WM_TAKE_FOCUS (xlib:wm-protocols xwin) :test #'eq)
+      ((and *current-event-time* 
+            (member :WM_TAKE_FOCUS (xlib:wm-protocols xwin) :test #'eq))
        (raise-window window)
        (let ((hints (xlib:wm-hints xwin)))
          (when (or (null hints) (eq (xlib:wm-hints-input hints) :on))

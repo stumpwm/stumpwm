@@ -34,7 +34,7 @@
        (if git-dir
            (string-trim '(#\Newline)
                         (run-shell-command
-                         (format nil "GIT_DIR=~a git describe" git-dir) t))
+                         (format nil "GIT_DIR=~a git describe --tags" git-dir) t))
            (asdf:component-version sys)))
   " Compiled On "
   (format-expand *time-format-string-alist*

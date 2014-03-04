@@ -25,6 +25,8 @@
 
 (in-package :stumpwm)
 
+#+ecl (require "clx")
+
 (export '(*suppress-abort-messages*
           *suppress-frame-indicator*
           *suppress-window-placement-indicator*
@@ -41,6 +43,7 @@
           *focus-window-hook*
           *place-window-hook*
           *start-hook*
+          *quit-hook*
           *internal-loop-hook*
           *event-processing-hook*
           *focus-frame-hook*
@@ -51,6 +54,8 @@
           *focus-group-hook*
           *key-press-hook*
           *root-click-hook*
+          *new-mode-line-hook*
+          *destroy-mode-line-hook*
           *mode-line-click-hook*
           *display*
           *shell-program*
@@ -215,6 +220,9 @@ window group and frame")
 (defvar *start-hook* '()
   "A hook called when stumpwm starts.")
 
+(defvar *quit-hook* '()
+  "A hook called when stumpwm quits.")
+
 (defvar *internal-loop-hook* '()
   "A hook called inside stumpwm's inner loop.")
 
@@ -256,6 +264,14 @@ sequence it is a part of, and command value bound to the key.")
   "A hook called whenever there is a mouse click on the root
 window. Called with 4 arguments, the screen containing the root
 window, the button clicked, and the x and y of the pointer.")
+
+(defvar *new-mode-line-hook* '()
+  "Called whenever the mode-line is created. It is called with argument,
+the mode-line")
+
+(defvar *destroy-mode-line-hook* '()
+  "Called whenever the mode-line is destroyed. It is called with argument,
+the mode-line")
 
 (defvar *mode-line-click-hook* '()
   "Called whenever the mode-line is clicked. It is called with 4 arguments,
@@ -760,7 +776,6 @@ do:
 
 ;;; 
 ;;; formatting routines
-
 (defun format-expand (fmt-alist fmt &rest args)
   (let* ((chars (coerce fmt 'list))
          (output "")

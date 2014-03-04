@@ -402,6 +402,7 @@ critical."
 
 (defun set-mode-line-window (ml xwin)
   "Use an external window as mode-line."
+  (run-hook-with-args *destroy-mode-line-hook* ml)
   (xlib:destroy-window (mode-line-window ml))
   (setf (mode-line-window ml) xwin
         (mode-line-mode ml) :visible
@@ -410,6 +411,7 @@ critical."
   (sync-mode-line ml))
 
 (defun destroy-mode-line-window (ml)
+  (run-hook-with-args *destroy-mode-line-hook* ml)
   (xlib:destroy-window (mode-line-window ml))
   (setf (head-mode-line (mode-line-head ml)) nil)
   (sync-mode-line ml))
@@ -501,6 +503,7 @@ critical."
            (xlib:map-window (mode-line-window ml)))
           (:stump
            ;; Delete it
+           (run-hook-with-args *destroy-mode-line-hook* ml)
            (xlib:destroy-window (mode-line-window ml))
            (xlib:free-gcontext (mode-line-gc ml))
            (setf (head-mode-line head) nil)
@@ -513,7 +516,8 @@ critical."
           (redraw-mode-line (head-mode-line head))
           (dformat 3 "modeline: ~s~%" (head-mode-line head))
           ;; setup the timer
-          (turn-on-mode-line-timer)))
+          (turn-on-mode-line-timer)
+          (run-hook-with-args *new-mode-line-hook* (head-mode-line head))))
     (dolist (group (screen-groups screen))
       (group-sync-head group head))))
 
