@@ -46,9 +46,9 @@
   (labels ( (mklist (x) (if (listp x) x (list x))) )
     (mapcan #'(lambda (x) (if (atom x) (mklist x) (flatten x))) ls)))
 
-(defun init-load-path (path)
-  "Recursively maps subdirectories of path, returning a list of all
-  subdirs which contain any files ending in .asd"
+(defun build-load-path (path)
+  "Maps subdirectories of path, returning a list of all subdirs in the
+  first two levels which contain any files ending in .asd"
   (flatten 
    (mapcar (lambda (dir) 
              (let ((asd-file (car (directory 
@@ -58,28 +58,31 @@
                                                   :type "asd")))))
                (when asd-file
                  (directory (directory-namestring asd-file))))) 
+           ;; TODO, make this truely recursive
            (directory (concat (if (stringp path) path
                                   (directory-namestring path)) "*/*")))))
-
-(defvar *load-path* (init-load-path contrib-dir)
+(defvar *load-path* nil
   "A list of paths in which modules can be found, by default it is
   populated by any asdf systems found in the first two levels of
   contrib-dir set from the configure script when StumpWM was built, or
   later by the user using `set-contrib-dir'")
-
 (defun sync-asdf-central-registry (load-path)
   "Sync `load-path' with `asdf:*central-registry*'"
   (setf asdf:*central-registry*
         (union load-path asdf:*central-registry*)))
 
-(sync-asdf-central-registry *load-path*)
+(defun init-load-path (path)
+  (let ((load-path (build-load-path path)))
+    (setf *load-path* load-path)
+    ;(format t "~{~a ~%~}" *load-path*)
+    (sync-asdf-central-registry load-path)))
+
+(init-load-path contrib-dir)
 
 (defcommand set-contrib-dir (dir) ((:string "Directory: "))
     "Sets the location of the contrib modules"
   (setf contrib-dir (module-string-as-directory dir))
-  (setf *load-path* (init-load-path contrib-dir))
-  ;; TODO: Remove old contrib dir entries from central-registry
-  (sync-asdf-central-registry *load-path*))
+  (init-load-path contrib-dir))
 
 (define-stumpwm-type :module (input prompt)
   (or (argument-pop-rest input)
