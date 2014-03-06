@@ -2,6 +2,12 @@
 
 (in-package :stumpwm)
 
+(export '(*ignore-wm-inc-hints*))
+
+(defvar *ignore-wm-inc-hints* nil
+  "Set this to T if you never want windows to resize based on incremental WM_HINTs,
+like xterm and emacs.")
+
 (defclass tile-window (window)
   ((frame   :initarg :frame   :accessor window-frame)))
 
@@ -133,11 +139,11 @@ than the root window's width and height."
       (t
        ;; if they have inc hints then start with the size and adjust
        ;; based on those increments until the window fits in the frame
-       (when (and hints-inc-x (plusp hints-inc-x))
+       (when (and (not *ignore-wm-inc-hints*) hints-inc-x (plusp hints-inc-x))
          (let ((w (or hints-width (window-width win))))
            (setf width (+ w (* hints-inc-x
                                (+ (floor (- fwidth w) hints-inc-x)))))))
-       (when (and hints-inc-y (plusp hints-inc-y))
+       (when (and (not *ignore-wm-inc-hints*) hints-inc-y (plusp hints-inc-y))
          (let ((h (or hints-height (window-height win))))
            (setf height (+ h (* hints-inc-y
                                 (+ (floor (- fheight h -1) hints-inc-y)))))))))
