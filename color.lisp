@@ -185,8 +185,7 @@ then call (update-color-map).")
     r))
 
 (defun render-strings (screen cc padx pady strings highlights &optional (draw t))
-  (let* ((height (+ (xlib:font-descent (screen-font screen))
-                    (xlib:font-ascent (screen-font screen))))
+  (let* ((height (font-height (screen-font screen)))
          (width 0)
          (gc (ccontext-gc cc))
          (win (ccontext-win cc))
@@ -220,14 +219,14 @@ then call (update-color-map).")
 				     ((and en (char= #\^ (char s (1+ en)))) (1+ en))
 				     (t en))))
 		       (when draw
-                         (xlib:draw-image-glyphs px gc
-                                                 (+ padx x)
-                                                 (+ pady (* i height)
-                                                    (xlib:font-ascent (screen-font screen)))
-                                                 (subseq s st en)
-                                                 :translate #'translate-id
-                                                 :size 16))
-		       (setf x (+ x (xlib:text-width (screen-font screen) (subseq s st en) :translate #'translate-id))
+                         (draw-image-glyphs px gc (screen-font screen)
+                                            (+ padx x)
+                                            (+ pady (* i height)
+                                               (font-ascent (screen-font screen)))
+                                            (subseq s st en)
+                                            :translate #'translate-id
+                                            :size 16))
+		       (setf x (+ x (text-line-width (screen-font screen) (subseq s st en) :translate #'translate-id))
 			     width (max width x)))
 		     (when (and en (< (1+ en) len))
 		       ;; right-align rest of string?

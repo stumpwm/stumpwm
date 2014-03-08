@@ -295,7 +295,7 @@ critical."
     ;; This is a StumpWM mode-line
     (setf (xlib:drawable-height (mode-line-window ml)) 
           (+ (* (1+ (count #\Newline (mode-line-contents ml) :test #'equal))
-                (font-height (xlib:gcontext-font (mode-line-gc ml))))
+                (font-height (screen-font (current-screen))))
              (* *mode-line-pad-y* 2))))
   (setf (xlib:drawable-width (mode-line-window ml)) (- (frame-width (mode-line-head ml))
                                                        (* 2 (xlib:drawable-border-width (mode-line-window ml))))
@@ -349,7 +349,7 @@ critical."
 
 (defun make-mode-line-gc (window screen)
   (xlib:create-gcontext :drawable window
-                        :font (screen-font screen)
+                        :font (when (typep (screen-font screen) 'xlib:font) (screen-font screen))
                         :foreground (alloc-color screen *mode-line-foreground-color*)
                         :background (alloc-color screen *mode-line-background-color*)))
 
