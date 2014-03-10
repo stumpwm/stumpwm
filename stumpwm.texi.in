@@ -512,6 +512,7 @@ Describe the specified command.
 ### *root-map*
 ### *top-map*
 ### *groups-map*
+### *exchange-window-map*
 
 !!! bind
 

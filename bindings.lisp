@@ -25,6 +25,7 @@
 (in-package #:stumpwm)
 
 (export '(*groups-map*
+          *movement-map* 
           *help-map*
 	  set-prefix-key))
 
@@ -38,6 +39,9 @@ C-t.")
 
 (defvar *groups-map* nil
   "The keymap that group related key bindings sit on. It is bound to @kbd{C-t g} by default.")
+
+(defvar *exchange-window-map* nil
+  "The keymap that exchange-window key bindings sit on. It is bound to @kbd{C-t x} by default.")
 
 (defvar *help-map* nil
   "Help related bindings hang from this keymap")
@@ -92,6 +96,7 @@ from most specific groups to most general groups.")
   (kbd "C-m") "lastmsg"
   (kbd "G")   "vgroups"
   (kbd "g")   '*groups-map*
+  (kbd "x")   '*exchange-window-map*
   (kbd "F1")  "gselect 1"
   (kbd "F2")  "gselect 2"
   (kbd "F3")  "gselect 3"
@@ -215,7 +220,19 @@ from most specific groups to most general groups.")
   (kbd "8")     "gselect 8"
   (kbd "9")     "gselect 9"
   (kbd "0")     "gselect 10")
-
+(fill-keymap *exchange-window-map*
+             (kbd "Up")    "exchange-direction up"   
+             (kbd "Down")  "exchange-direction down" 
+             (kbd "Left")  "exchange-direction left" 
+             (kbd "Right") "exchange-direction right"
+             (kbd "p")     "exchange-direction up"   
+             (kbd "n")     "exchange-direction down" 
+             (kbd "b")     "exchange-direction left" 
+             (kbd "f")     "exchange-direction right"
+             (kbd "k")     "exchange-direction up"   
+             (kbd "j")     "exchange-direction down" 
+             (kbd "l")     "exchange-direction left" 
+             (kbd "h")     "exchange-direction right")    
 (fill-keymap *help-map*
   (kbd "v") "describe-variable"
   (kbd "f") "describe-function"

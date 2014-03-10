@@ -320,7 +320,7 @@ current frame and raise it."
 
 (defcommand (exchange-direction tile-group) (dir &optional (win (current-window)))
     ((:direction "Direction: "))
-  "Exchange the current window (by default) with the top window of the frame in specified direction.
+  "Exchange the current window (by default) with the top window of the frame in specified direction. (bound to @kbd{C-t x} by default)
 @table @asis
 @item up
 @item down
