@@ -155,7 +155,9 @@ identity with a range check."
     ;;(format t "FOCUS TO: ~a ~a~%" window (window-xwin window))
     ;;(format t "FOCUS BEFORE: ~a~%" (multiple-value-list (xlib:input-focus *display*)))
     ;;(format t "FOCUS RET: ~a~%" (xlib:set-input-focus *display* (window-xwin window) :POINTER-ROOT))
-    (xlib:set-input-focus *display* (window-xwin window) :POINTER-ROOT)
+    (let ((hints (xlib:wm-hints (window-xwin window))))
+         (when (or (null hints) (eq (xlib:wm-hints-input hints) :on))
+           (xlib:set-input-focus *display* (window-xwin window) :POINTER-ROOT)))
     ;;(xlib:display-finish-output *display*)
     ;;(format t "FOCUS IS: ~a~%" (multiple-value-list (xlib:input-focus *display*)))
     (xlib:change-property (screen-root screen) :_NET_ACTIVE_WINDOW
