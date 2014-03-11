@@ -51,6 +51,7 @@
 	       (:file "time")
 	       (:file "mode-line")
 	       (:file "color")
+	       (:file "wse")
                (:file "module")
 	       (:file "stumpwm")
 	       ;; keep this last so it always gets recompiled if
