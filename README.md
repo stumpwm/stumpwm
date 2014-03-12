@@ -158,15 +158,15 @@ http://ccl.clozure.com/manual/chapter15.1.html for an explanation.
 
 There's a texinfo manual, stumpwm.texi.  The build scripts generate an
 info file you can read in emacs or with the `info' program.  The
-manual for the latest release is available to read online at:
+manual for the 0.9.7 (slightly out of date) is available to read
+online at: [The Manual](http://www.nongnu.org/stumpwm/manual/stumpwm.html)
 
-http://www.nongnu.org/stumpwm/manual/stumpwm.html
+And, as in emacs, you can always do "C-t h v,f,k,c,w" for docstrings
+of Variable,Functions,Keys,Commands, and Where-is respectively.
 
-For other stuff visit the stumpwm wiki:
-
-https://github.com/sabetts/stumpwm/wiki
+For other stuff (tips tricks and examples) visit the [stumpwm wiki](https://github.com/sabetts/stumpwm/wiki)
 
 There's a #stumpwm channel on irc.freenode.net, too.
 
-See http://stumpwm.nongnu.org/community.html for more information on
-contacting stumpwm developers and users.
+Finally, there's our mailing list (click to sign up)
+[stumpwm-devel@nongnu.org](https://lists.nongnu.org/mailman/listinfo/stumpwm-devel).
