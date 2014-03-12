@@ -23,9 +23,8 @@
 
 (in-package :stumpwm)
 
-(defgeneric 
-  list-windows (range)
-  "List all the windows in a set.")
+(defgeneric list-windows (range)
+  (:documenation "List all the windows in a set."))
 
 (defmethod list-windows ((range t))
   (error "Unknown kind of window set"))
