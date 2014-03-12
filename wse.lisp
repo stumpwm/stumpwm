@@ -36,7 +36,7 @@
 (defmethod list-windows ((range (eql :group)))
   (list-windows (current-group)))
 
-(defmethod list-windows ((range (eql :grame)))
+(defmethod list-windows ((range (eql :frame)))
   (list-windows (tile-group-current-frame (current-group))))
 
 (defmethod list-windows ((range screen))
