@@ -23,19 +23,20 @@
 
 (in-package :stumpwm)
 
-(defgeneric list-windows (range)
-  (:documenation "List all the windows in a set."))
+(defgeneric 
+  list-windows (range)
+  (:documentation "List all the windows in a set."))
 
 (defmethod list-windows ((range t))
   (error "Unknown kind of window set"))
 
-(defmethod list-windows ((range (eq :screen)))
+(defmethod list-windows ((range (eql :screen)))
   (list-windows (current-screen)))
 
-(defmethod list-windows ((range (eq :group)))
+(defmethod list-windows ((range (eql :group)))
   (list-windows (current-group)))
 
-(defmethod list-windows ((range (eq :grame)))
+(defmethod list-windows ((range (eql :grame)))
   (list-windows (tile-group-current-frame (current-group))))
 
 (defmethod list-windows ((range screen))
