@@ -19,7 +19,7 @@
   ;; :license "GNU General Public License"
   :description "A tiling, keyboard driven window manager" 
   :serial t
-  :depends-on (:cl-ppcre #-(or cmu clisp) :clx #+sbcl :sb-posix)
+  :depends-on (:cl-ppcre #-(or cmu clisp) :clx :clx-truetype #+sbcl :sb-posix)
   :components ((:file "package")
 	       (:file "primitives")
                (:file "workarounds")
@@ -54,6 +54,7 @@
 	       (:file "wse")
                (:file "module")
 	       (:file "stumpwm")
+	       (:file "font-rendering")
 	       ;; keep this last so it always gets recompiled if
 	       ;; anything changes
 	       (:file "version")))
