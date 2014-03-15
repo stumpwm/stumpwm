@@ -113,7 +113,6 @@
 
 (define-stump-event-handler :configure-notify (stack-mode #|parent|# window #|above-sibling|# x y width height border-width value-mask)
   (dformat 4 "CONFIGURE NOTIFY ~@{~S ~}~%" stack-mode window x y width height border-width value-mask)
-  (message (format nil "CONFIGURE NOTIFY ~@{~S ~}~%" stack-mode window x y width height border-width value-mask))
   (let ((screen (find-screen window)))
     (when screen
       (let ((old-heads (copy-list (screen-heads screen))))
