@@ -36,7 +36,7 @@
   (unless (string= "/" (subseq dir (1- (length dir))))
     (setf dir (concat dir "/")))
   (pathname dir))
-(defvar contrib-dir
+(defvar *contrib-dir*
   #.(asdf:system-relative-pathname (asdf:find-system :stumpwm)
                                    (make-pathname :directory
                                                   '(:relative "contrib")))
@@ -64,7 +64,7 @@
 (defvar *load-path* nil
   "A list of paths in which modules can be found, by default it is
   populated by any asdf systems found in the first two levels of
-  contrib-dir set from the configure script when StumpWM was built, or
+  `*contrib-dir*' set from the configure script when StumpWM was built, or
   later by the user using `set-contrib-dir'")
 (defun sync-asdf-central-registry (load-path)
   "Sync `load-path' with `asdf:*central-registry*'"
@@ -77,12 +77,12 @@
     ;(format t "~{~a ~%~}" *load-path*)
     (sync-asdf-central-registry load-path)))
 
-(init-load-path contrib-dir)
+(init-load-path *contrib-dir*)
 
 (defcommand set-contrib-dir (dir) ((:string "Directory: "))
     "Sets the location of the contrib modules"
-  (setf contrib-dir (module-string-as-directory dir))
-  (init-load-path contrib-dir))
+  (setf *contrib-dir* (module-string-as-directory dir))
+  (init-load-path *contrib-dir*))
 
 (define-stumpwm-type :module (input prompt)
   (or (argument-pop-rest input)
