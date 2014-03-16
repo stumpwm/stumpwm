@@ -32,10 +32,6 @@
           find-module
           add-to-load-path))
 
-(defun module-string-as-directory (dir)
-  (unless (string= "/" (subseq dir (1- (length dir))))
-    (setf dir (concat dir "/")))
-  (pathname dir))
 (defvar contrib-dir
   #.(asdf:system-relative-pathname (asdf:find-system :stumpwm)
                                    (make-pathname :directory
@@ -80,8 +76,10 @@
 (init-load-path contrib-dir)
 
 (defcommand set-contrib-dir (dir) ((:string "Directory: "))
-    "Sets the location of the contrib modules"
-  (setf contrib-dir (module-string-as-directory dir))
+  "Sets the location of the contrib modules"
+  (when (stringp dir)
+    (setf dir (pathname (concat dir "/"))))
+  (setf contrib-dir dir)
   (init-load-path contrib-dir))
 
 (define-stumpwm-type :module (input prompt)
