@@ -83,87 +83,103 @@ This document explains how to use The Stump Window Manager.
 @end ifinfo
 
 @menu
-* Introduction::                
-* Key Bindings::                
-* Commands::                    
-* Message and Input Bar::       
-* Windows::                     
-* Frames::                      
-* Mode-line::                   
-* Groups::                      
-* Screens::                     
-* Interacting With Unix::       
-* Interacting With X11::        
-* Miscellaneous Commands::      
-* Colors::                      
-* Hooks::                       
-* Modules::                     
-* Hacking::                     
-* Command and Function Index::  
-* Variable Index::              
+* Introduction::
+* Key Bindings::
+* Commands::
+* Message and Input Bar::
+* Windows::
+* Frames::
+* Mode-line::
+* Groups::
+* Screens::
+* Interacting With Unix::
+* Interacting With X11::
+* Miscellaneous Commands::
+* Colors::
+* Hooks::
+* Modules::
+* Hacking::
+* Command and Function Index::
+* Variable Index::
 
 @detailmenu
  --- The Detailed Node Listing ---
 
 Introduction
 
-* Starting StumpWM::            
-* Basic Usage::                 
-* Interacting with the Lisp process::  
-* Contact the StumpWM developers::  
+* Starting StumpWM::
+* Basic Usage::
+* Basic Concepts::
+* Manipulating Frames and Windows::
+* Interacting with the Lisp process::
+* Contact the StumpWM developers::
+
+Basic Concepts
+
+* Screens and Heads::
+* Group Basics::
+* Floating Group Basics::
+* Frame Basics::
+* Window Basics::
+* System Trays and the Mode Line::
+
+Manipulating Frames and Windows
+
+* Moving Between Frames::
+* Manipulating Windows::
 
 Key Bindings
 
-* List of Default Keybindings::  
-* Binding Keys::                
-* Modifiers::                   
+* List of Default Keybindings::
+* Binding Keys::
+* Modifiers::
 
 Message and Input Bar
 
-* Customizing The Bar::         
-* Using The Input Bar::         
-* Programming The Message Bar::  
-* Programming the Input Bar::   
+* Customizing The Bar::
+* Using The Input Bar::
+* Programming The Message Bar::
+* Programming the Input Bar::
 
 Windows
 
-* Window Marks::                
-* Customizing Window Appearance::  
-* Controlling Raise And Map Requests::  
-* Programming With Windows::    
-* Rule Based Window Placement::  
+* Window Marks::
+* Customizing Window Appearance::
+* Controlling Raise And Map Requests::
+* Programming With Windows::
+* Rule Based Window Placement::
 
 Frames
 
-* Interactively Resizing Frames::  
-* Frame Dumping::               
+* Interactively Resizing Frames::
+* Frame Dumping::
 
 Groups
 
-* Customizing Groups::          
+* Customizing Groups::
 
 Screens
 
-* Xinerama::                    
-* Programming With Screens::    
+* Xinerama::
+* Programming With Screens::
 
 Miscellaneous Commands
 
-* Menus::                       
-* StumpWM's Data Directory::    
-* Debugging StumpWM::           
-* Timers::                      
-* Getting Help::                
+* Menus::
+* StumpWM's Data Directory::
+* Debugging StumpWM::
+* Timers::
+* Getting Help::
 
 Colors
 
-* Behind The Scenes Look At Colors::  
+* Behind The Scenes Look At Colors::
 
 Hacking
 
-* General Advice::              
-* Using git with StumpWM::      
-* Sending Patches::             
+* General Advice::
+* Using git with StumpWM::
+* Sending Patches::
 
 @end detailmenu
 @end menu
@@ -175,10 +191,12 @@ user interface goals are similar to ratpoison's but with an emphasis on
 customizability, completeness, and cushiness.
 
 @menu
-* Starting StumpWM::            
-* Basic Usage::                 
-* Interacting with the Lisp process::  
-* Contact the StumpWM developers::  
+* Starting StumpWM::
+* Basic Usage::
+* Basic Concepts::
+* Manipulating Frames and Windows::
+* Interacting with the Lisp process::
+* Contact the StumpWM developers::
 @end menu
 
 @node Starting StumpWM, Basic Usage, Introduction, Introduction
@@ -205,7 +223,7 @@ message pop up in the upper, right corner. At this point, you have
 successfully started StumpWM.
 @end enumerate
 
-@node Basic Usage, Interacting with the Lisp process, Starting StumpWM, Introduction
+@node Basic Usage, Basic Concepts, Starting StumpWM, Introduction
 @section Basic Usage
 Once you have StumpWM up and running, the first thing you might want
 to do is start @command{emacs}. Type @kbd{C-t e}, or in other words
@@ -247,7 +265,291 @@ current one and resize it to fit the screen.
 
 For a full list of key bindings, see @ref{List of Default Keybindings}.
 
-@node Interacting with the Lisp process, Contact the StumpWM developers, Basic Usage, Introduction
+@node Basic Concepts, Manipulating Frames and Windows, Basic Usage, Introduction
+@section Basic Concepts
+
+An introduction to some of the basic concepts used by StumpWM.
+
+@menu
+* Screens and Heads::
+* Group Basics::
+* Floating Group Basics::
+* Frame Basics::
+* Window Basics::
+* System Trays and the Mode Line::
+@end menu
+
+@node Screens and Heads, Group Basics, Basic Concepts, Basic Concepts
+@subsection Screens and Heads
+A screen is an Xlib concept representing a section of video memory
+onto which physical monitors, called ``heads'', are mapped. A screen can
+be thought of as an abstract rectangle containing all the heads
+arranged in a particular layout.
+
+With most modern systems, you'll only have a single screen no matter
+how many heads are connected to your computer. Each head will have its
+own frame, and you can move between heads using the normal frame
+movement commands.
+
+The layout of the heads within the screen can be specified in one of two
+ways: either at startup using your system's Xorg configuration files, or
+on the fly using tools like XRandR. If the computer is booted with
+multiple monitors attached, but without specifying a layout for them,
+they will all show identical output.
+
+StumpWM will attempt to detect the layout of the heads once at
+startup, or any time a RandR command is issued.
+
+In rarer setups you may have multiple screens, with one head per
+screen. That means that you'll move between heads using screen
+movement commands (`snext', `sprev', and `sother') rather than frame
+movement commands.
+
+@node Group Basics, Floating Group Basics, Screens and Heads, Basic Concepts
+@subsection Group Basics
+A group is usually referred to as a ``desktop'' or ``workspace'' in other
+window managers. StumpWM starts with a single group, called ``Default''.
+Each group has its own configuration of frames and windows that is
+separate from and independent of other groups. You can't have
+different groups display in different monitors: when you switch
+groups, all monitors switch to that group.
+
+Each group contains an ordered list of frames.
+
+@node Floating Group Basics, Frame Basics, Group Basics, Basic Concepts
+@subsection Floating Group Basics
+Within a floating group, windows behave more like they do in traditional
+window managers: rather than being arranged into frames, they each have
+their own box, which can be freely resized and repositioned, and allowed
+to overlap. Each window has a thicker border at the top. Left click in
+this border and drag to move the window, or right click and drag to
+resize it.
+
+Most of the window-switching commands listed below do not function in
+a floating group. You're restricted to `other', the `select-window-*'
+commands, and `windowlist'.
+
+@node Frame Basics, Window Basics, Floating Group Basics, Basic Concepts
+@subsection Frame Basics
+Frames are the boxes within which windows are displayed. StumpWM
+starts with a single frame per head, meaning that each monitor shows a
+single window, full screen. If you want to see windows side-by-side,
+you can ``split'' this frame in two, either vertically or horizontally.
+These frames can be further split, creating nested boxes.
+
+Technically speaking, frames live within a ``frame tree''. When you
+split a frame, the command actually creates @emph{two} new frames
+side-by-side within the original parent frame. This makes no practical
+difference, unless you use the `sibling' command, which will move to
+the other child frame within the parent frame.
+
+Within this frame tree model, all frames either contain other frames,
+or windows. The command `fclear' will hide all a frame's windows and
+show the background.
+
+@node Window Basics, System Trays and the Mode Line, Frame Basics, Basic Concepts
+@subsection Window Basics
+Windows are created by programs to display their output. They take the
+shape of the frame in which they are created. The windows within a
+frame are ordered by how recently that window was focused. Only the
+top window in the stack is visible.
+
+@node System Trays and the Mode Line,  , Window Basics, Basic Concepts
+@subsection System Trays and the Mode Line
+Many users choose to sacrifice a little screen real-estate to display
+some generally useful information: the current time and date, wireless
+network connections, the names of open windows, etc. StumpWM allows
+you to display this information in a bar across either the top or the
+bottom of the screen. There are two ways to do this: using external
+programs called system trays, or using StumpWM's own mode line.
+
+System trays are a special kind of X window. They advertise to running
+programs that they are available for embedding icons or notifications
+from those programs. They often also display clickable icons for each
+open window. Common tray programs include the GNOME panel or KDE's
+kicker, or simpler programs such as stalonetray. Simply starting one
+of these programs is usually enough for StumpWM to detect it, place it
+correctly, and allow it to function normally.
+
+The mode line, a concept borrowed from Emacs, is a built-in part of
+StumpWM. It is essentially a string of text that can include a variety
+of information about your current session, including the names of
+current groups and windows. Several contrib modules provide for
+different types of information. @xref{Mode-line, Mode Line}, (and the contrib
+directory) for more.
+
+@node Manipulating Frames and Windows, Interacting with the Lisp process, Basic Concepts, Introduction
+@section Manipulating Frames and Windows
+Frames and windows are concepts borrowed from Emacs and the GNU Screen
+program, and should be familiar to users of those programs. Others may
+find the terms a little confusing. In other window managers, a
+``window'' usually refers to a bounded box on the screen, showing output
+from a single program. StumpWM splits this into two concepts: the
+``frame'' is the bounded box, the ``window'' is the visible output of a
+program.
+
+One frame can contain many windows. As new windows are created, they
+appear at the top of the window-stack of the current frame. This is
+also a little different from other tiling window managers, many of
+which automatically create new frames for new windows.
+
+Both frames and windows are ordered by when they were last focused. In
+the following commands and documentation, the terms ``next'' and
+``previous'' refer to this order. ``Other'' refers to the most-recently
+focused object. Calling ``other'' commands multiple times will bounce
+back and forth between the two most recent objects.
+
+By default, StumpWM starts with a single group, called ``Default'',
+which contains one full-screen frame per head. You can split individual
+frames horizontally or vertically using the `hsplit' and `vsplit'
+commands, bound to ``C-t S'' and ``C-t s'' by default. When a frame is
+split, the next-most-recently-focused window is pulled into the new
+frame. @xref{Frames}, and @ref{Windows}, for a complete listing of
+commands.
+
+
+@menu
+* Moving Between Frames::
+* Manipulating Windows::
+@end menu
+
+@node Moving Between Frames, Manipulating Windows, Manipulating Frames and Windows, Manipulating Frames and Windows
+@subsection Moving Between Frames
+Once you have multiple frames, you can move between them in various
+ways:
+
+@itemize
+@item 
+@command{fnext} (@kbd{C-t o} or @kbd{C-t TAB}) jumps to the next frame in
+the current group's frame list.
+
+@item 
+@command{fother} (@kbd{C-t M-TAB}) jumps to the last frame that had
+focus.
+
+@item 
+@command{fselect} (@kbd{C-t f}) displays numbers on each visible frame: hit a
+number key to move to that frame.
+
+@item 
+@command{move-focus} (@kbd{C-t <arrow key>}) focus the frame in the direction of
+the arrow key pressed.
+
+@item 
+@command{sibling} (unbound by default) focus the frame from which the
+current frame was split.
+
+@end itemize
+
+@node Manipulating Windows,  , Moving Between Frames, Manipulating Frames and Windows
+@subsection Manipulating Windows
+
+Some commands change which window is currently focused, some move
+windows between frames, and some may do both at once.
+
+There are two general ways to move focus between windows: either
+between windows belonging to the current frame, or between all windows
+within the current group. Within a single frame:
+
+@itemize
+@item 
+@command{next-in-frame} (@kbd{C-t C-M-n}) focus the next window in the current
+frame's list of windows.
+
+@item 
+@command{prev-in-frame} (@kbd{C-t C-M-p}) focus the previous window in the
+current frame's list of windows.
+
+@item 
+@command{other-in-frame} (@kbd{C-t M-t}) focus the most recently focused window
+in the current frame's list of windows.
+
+@item 
+@command{frame-windowlist} (unbound by default) display a menu of windows in
+the currently-focused frame, and allow the user to choose one.
+Alternately, the command @command{frame-windows} will simply display the
+list of window names, with no menu choice available.
+
+@end itemize
+
+Within the current group, the following commands will go straight to
+the specified window. They will never move a window from its original
+frame, and so may result in focus switching frames.
+
+@itemize
+@item 
+@command{next} (@kbd{C-t M-n}) focus the next window in the current group.
+
+@item 
+@command{prev} (@kbd{C-t M-p}) focus the previous window in the current group.
+
+@item 
+@command{other} or @command{other-window} (unbound by default) focus the
+most recently focused window in the current group.
+
+@item 
+@command{next-urgent} (@kbd{C-t C-u}) focus the next window that has marked
+itself ``urgent''.
+
+@item 
+@command{select} or @command{select-window} (@kbd{C-t '}) prompt for the
+title of a window and focus it. Works with partial completion of the
+title.
+
+@item 
+@command{select-window-by-name} (unbound by default) prompt for the
+title of a window and focus it. Requires the window title to be entered
+exactly.
+
+@item 
+@command{select-window-by-number} (@kbd{C-t <number>}) choose a window by
+number.
+
+@item 
+@command{windowlist} (``C-t "") display a menu of windows in the
+currently-focused group, and allow the user to choose one.
+
+@end itemize
+
+The following commands always keep the current frame focused. If the
+selected window is not in the current frame, it will be pulled there
+from wherever it is (hence the ``pull'' naming scheme).
+
+@itemize
+@item 
+@command{pull} or @command{pull-window-by-number} (@kbd{C-t C-<number>})
+pull the numbered window into the current frame.
+
+@item 
+@command{pull-hidden-next} (@kbd{C-t n} or @kbd{C-t SPC}) pull the next
+currently undisplayed window in the window list into the current frame.
+
+@item 
+@command{pull-hidden-previous} (@kbd{C-t p}) pull the previous currently
+undisplayed window in the window list into the current frame.
+
+@item 
+@command{pull-hidden-other} (@kbd{C-t C-t}) pull the most recently
+focused, currently undisplayed window into the current frame.
+
+@end itemize
+
+The following commands move the current window from one frame to
+another, bringing focus with them.
+
+@itemize
+@item 
+@command{move-window} (@kbd{C-t M-<arrow>}) move the currently focused
+window in the direction indicated by the arrow key.
+
+@item 
+@command{exchange-direction} (unbound by default) prompt for a
+direction, then swap the currently focused window with the top window of
+the frame in that direction.
+
+@end itemize
+
+@node Interacting with the Lisp process, Contact the StumpWM developers, Manipulating Frames and Windows, Introduction
 @section Interacting with the Lisp process
 
 Since StumpWM is a Lisp program, there is a way for you to evaluate
@@ -292,9 +594,9 @@ mimics GNU Screen's keyboard handling. StumpWM's default prefix key is
 @kbd{C-t}.
 
 @menu
-* List of Default Keybindings::  
-* Binding Keys::                
-* Modifiers::                   
+* List of Default Keybindings::
+* Binding Keys::
+* Modifiers::
 @end menu
 
 @node List of Default Keybindings, Binding Keys, Key Bindings, Key Bindings
@@ -667,10 +969,10 @@ FIXME: actually write some docs here
 !!! colon
 
 @menu
-* Customizing The Bar::         
-* Using The Input Bar::         
-* Programming The Message Bar::  
-* Programming the Input Bar::   
+* Customizing The Bar::
+* Using The Input Bar::
+* Programming The Message Bar::
+* Programming the Input Bar::
 @end menu
 
 @node Customizing The Bar, Using The Input Bar, Message and Input Bar, Message and Input Bar
@@ -817,11 +1119,11 @@ An input function takes 2 arguments: the input structure and the key pressed.
 ### *new-window-prefered-frame*
 
 @menu
-* Window Marks::                
-* Customizing Window Appearance::  
-* Controlling Raise And Map Requests::  
-* Programming With Windows::    
-* Rule Based Window Placement::  
+* Window Marks::
+* Customizing Window Appearance::
+* Controlling Raise And Map Requests::
+* Programming With Windows::
+* Rule Based Window Placement::
 @end menu
 
 @node Window Marks, Customizing Window Appearance, Windows, Windows
@@ -935,8 +1237,8 @@ window pool, where windows and frames are not so tightly connected.
 ### *new-frame-action*
 
 @menu
-* Interactively Resizing Frames::  
-* Frame Dumping::               
+* Interactively Resizing Frames::
+* Frame Dumping::
 @end menu
 
 @node Interactively Resizing Frames, Frame Dumping, Frames, Frames
@@ -1073,7 +1375,7 @@ Groups in StumpWM are more commonly known as @dfn{virtual desktops} or
 !!! grouplist
 
 @menu
-* Customizing Groups::          
+* Customizing Groups::
 @end menu
 
 @node Customizing Groups,  , Groups, Groups
@@ -1093,8 +1395,8 @@ StumpWM handles multiple screens.
 !!! sother
 
 @menu
-* Xinerama::                    
-* Programming With Screens::    
+* Xinerama::
+* Programming With Screens::
 @end menu
 
 @node Xinerama, Programming With Screens, Screens, Screens
@@ -1188,11 +1490,11 @@ section.
 ### *initializing*
 
 @menu
-* Menus::                       
-* StumpWM's Data Directory::    
-* Debugging StumpWM::           
-* Timers::                      
-* Getting Help::                
+* Menus::
+* StumpWM's Data Directory::
+* Debugging StumpWM::
+* Timers::
+* Getting Help::
 @end menu
 
 @node Menus, StumpWM's Data Directory, Miscellaneous Commands, Miscellaneous Commands
@@ -1316,7 +1618,7 @@ two digits are left up to the user. @ref{Behind The Scenes Look At
 Colors} for information on customizing colors.
 
 @menu
-* Behind The Scenes Look At Colors::  
+* Behind The Scenes Look At Colors::
 @end menu
 
 @node Behind The Scenes Look At Colors,  , Colors, Colors
@@ -1390,9 +1692,9 @@ For those of you who have worked on Free Software projects before,
 this part should probably be fairly intuitive.
 
 @menu
-* General Advice::              
-* Using git with StumpWM::      
-* Sending Patches::             
+* General Advice::
+* Using git with StumpWM::
+* Sending Patches::
 @end menu
 
 @node General Advice, Using git with StumpWM, Hacking, Hacking
