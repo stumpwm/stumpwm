@@ -27,6 +27,7 @@
 (export '(current-screen
           current-window
           screen-current-window
+	  screen-number
           set-fg-color
           set-bg-color
           set-border-color

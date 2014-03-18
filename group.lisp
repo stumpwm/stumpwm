@@ -24,7 +24,7 @@
 
 (in-package #:stumpwm)
 
-(export '(current-group))
+(export '(current-group group-windows move-window-to-group))
 
 (defvar *default-group-type* 'tile-group
   "The type of group that should be created by default.")
