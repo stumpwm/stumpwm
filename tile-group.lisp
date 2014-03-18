@@ -1089,7 +1089,7 @@ jump to that frame."
                     (:left :left)
                     (:right :right)))
         (opposite (ecase direction
-                    (:up :bottom)
+                    (:up :down)
                     (:down :top)
                     (:left :right)
                     (:right :left)))
