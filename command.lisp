@@ -134,6 +134,7 @@ out, an element can just be the argument type."
 	     (*interactivep* nil))
 	 (declare (ignorable %interactivep%))
 	 ,@body))
+     (export ',name)
      (setf (gethash ',name *command-hash*)
            (make-command :name ',name
                          :class ',group
