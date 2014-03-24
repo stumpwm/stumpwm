@@ -215,7 +215,9 @@ match with an element of the completions."
                (let* ((in (string-trim " " (input-line-string input)))
                       (compls (input-find-completions in *input-completions*)))
                  (and (consp compls)
-                      (string= in (car compls)))))
+                      (string= in (if (consp (car compls))
+                                      (caar compls)
+                                      (car compls))))))
              (key-loop ()
                (loop for key = (read-key-or-selection) do
                      (cond ((stringp key)
