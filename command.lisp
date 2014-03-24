@@ -61,6 +61,11 @@
 if the command was called interactively. If it is non-NIL then it was
 called from a keybinding or from the colon command.
 
+The NAME argument can be a string, or a list of two symbols. If the
+latter, the first symbol names the command, and the second indicates
+the type of group under which this command will be usable. Currently,
+tile-group and floating-group are the two possible values.
+
 INTERACTIVE-ARGS is a list of the following form: ((TYPE PROMPT) (TYPE PROMPT) ...)
 
 each element in INTERACTIVE-ARGS declares the type and prompt for the
