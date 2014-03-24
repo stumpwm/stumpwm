@@ -134,6 +134,11 @@ Key Bindings
 * Binding Keys::
 * Modifiers::
 
+Commands
+
+* Writing Commands::
+* StumpWM Types::
+
 Message and Input Bar
 
 * Customizing The Bar::
@@ -953,13 +958,249 @@ commands to the @var{*top-map*}.
 
 @node Commands, Message and Input Bar, Key Bindings, Top
 @chapter Commands
-If you've used emacs before you'll find commands and functions
-familiar. Commands are functions that can be bound to keys and
-executed interactively from StumpWM's input bar. A command expects a
-certain number of arguments and any that are not supplied will be
-prompted for.
+If you've used Emacs before you'll find the distinction between
+commands and functions familiar. Commands are simply functions that
+can be bound to keys and executed interactively from StumpWM's input
+bar. Whereas, in Emacs, the special "(interactive)" declaration is
+used to turn a function into a command, in StumpWM commands are made
+with a separate @command{defcommand} macro.
 
-FIXME: actually write some docs here
+Once a command is defined, you can call it by invoking the
+@command{colon} command (@kbd{C-t ;}), and typing the name
+of the command. This may be sufficient for commands that aren't used
+very often. To see all the currently-defined commands, invoke the
+command called @command{commands}: ie press @kbd{C-t ;},
+type ``commands'', and hit return.
+
+Commonly-used commands can also be bound to a keystroke, which is much
+more convenient. To do this, use the @command{define-key}
+function (see @ref{Key Bindings}), giving the name of the command as a
+string. For example:
+
+@example
+(define-key *root-map* (kbd "d") "exchange-direction")
+@end example
+
+You cannot give the command name as a symbol, nor can you bind a key
+to a regular function defined with @command{defun}.
+
+If the command takes arguments (see @ref{Writing Commands}), you can fix
+those arguments when defining the key-binding, by including the
+arguments in the same string as the command name, separated by a
+space. For instance, the @command{exchange-direction} command,
+which is unbound by default, requires a direction in which to exchange
+windows. If you call @command{exchange-direction} directly, it
+will prompt you for the direction. If you know that you often exchange
+in left/right directions, and want those actions bound to keys, you
+can use the following in your customization file:
+
+@example
+(define-key *root-map* (kbd "[") "exchange-direction left")
+(define-key *root-map* (kbd "]") "exchange-direction right")
+@end example
+
+Multiple arguments can be included by adding them to the command
+string, separated by spaces. Not all argument types can be represented
+as strings, but StumpWM will do its best to convert types.
+
+StumpWM does not implement the Emacs concept of prefix arguments.
+
+@menu
+* Writing Commands::
+* StumpWM Types::
+@end menu
+
+@node Writing Commands, StumpWM Types, Commands, Commands
+@section Writing Commands
+StumpWM commands are written much like any Lisp function. The main
+difference is in the way command arguments are specified. The
+@command{defcommand} macro takes a list of arguments as its first
+form (similar to the @command{defun} macro), and a corresponding
+list of types as its second form. All arguments must belong to a
+``type''. Each type specification has two parts: a keyword specifying
+the argument type, and a string prompt that will be displayed when
+asking the user to enter the argument value. A typical
+@command{defcommand} might look like this:
+
+@example
+(defcommand now-we-are-six (name age)
+    ((:string "Enter your name: ")
+     (:number "Enter your age: "))
+  (message "~a, in six years you will be ~a" name (+ 6 age)))
+@end example
+
+If @command{now-we-are-six} is called interactively via the
+@command{colon} command, the user will be prompted for a string
+and a number, which will then be bound to ``name'' and ``age'',
+respectively, in the body of the command.
+
+When invoking the command via a key-binding, it is possible to provide
+some or all of the arguments directly:
+
+@example
+(define-key *root-map* (kbd "L") "now-we-are-six John")
+@end example
+
+In this case, hitting @kbd{C-t L} will only prompt for an age (the first
+string argument is already bound to ``John''). Argument values provided
+this way always bind to the earliest arguments defined: ie, it is not
+possible to specify an age, but prompt the user for a name.
+
+If the type declaration does not include a prompt (ie, it looks like
+``(:type nil)'', or ``(:type)'' or just ``:type''), the argument is
+considered optional. It can be provided via a key-binding invocation, as
+above, but if it isn't, the user will not be prompted, and the argument
+will be bound to nil.
+
+Lastly, it is possible to limit the scope under which the command will
+be usable: a command can be defined to work only in tile groups, or only
+in floating groups (the only two types of groups that currently exist).
+This is done by replacing the name of the command with a two-element
+list: the name of the command as a symbol, and either the symbol
+tile-group or floating-group. For instance, the @command{next} command,
+which only functions in tile groups, is defined this way:
+
+@example
+(defcommand (next tile-group) @dots{})
+@end example
+
+@node StumpWM Types,  , Writing Commands, Commands
+@section StumpWM Types
+All command arguments must be of a defined ``StumpWM type''. The
+following types are pre-defined:
+
+
+@table @var
+@item :y-or-n
+A yes or no question returning T or NIL.
+@item :variable
+A lisp variable
+@item :function
+A lisp function
+@item :command
+A stumpwm command as a string.
+@item :key-seq
+A key sequence starting from *TOP-MAP*
+@item :window-number
+An existing window number
+@item :number
+An integer number
+@item :string
+A string
+@item :key
+A single key chord
+@item :window-name
+An existing window's name
+@item :direction
+A direction symbol. One of :UP :DOWN :LEFT :RIGHT
+@item :gravity
+A gravity symbol. One of :center :top :right :bottom :left :top-right :top-left :bottom-right :bottom-left
+@item :group
+An existing group
+@item :frame
+A frame
+@item :shell
+A shell command
+@item :rest
+The rest of the input yes to be parsed.
+@item :module
+An existing stumpwm module
+@end table
+
+Additional types can be defined using the macro
+@command{define-stumpwm-type}. Emacs users who are accustomed to writing
+more complicated interactive declarations using "(interactive (list
+@dots{}))" forms will find that similar logic can be put into StumpWM
+type definitions. The macro is called like this:
+
+(define-stumpwm-type :type-name (input prompt)
+  body)
+
+The keyword :type-name will then be available for use in
+@command{defcommand} macros. When commands are called, the bodies
+of these type definitions are called in turn to produce actual
+argument values.
+
+Type definitions produce their value in one of several ways: by
+reading it from the argument line bound to a keystroke, by prompting
+the user to enter a value, or by generating it programmatically.
+
+Within the body of the type definition, the argument ``input'' is bound
+to the argument line provided in the command string, and ``prompt'' to
+the string prompt provided in the @command{defcommand} form. The
+usual convention is to first check if an argument has been provided in
+``input'' and, if it hasn't, to prompt for it using ``prompt''.
+
+StumpWM provides several convenience functions for handling the value
+of ``input'':
+
+@itemize
+@item
+@command{argument-pop} (input) pop the next space-delimited
+argument from the argument line.
+
+@item
+@command{argument-pop-rest} (input) return the remainder of the
+argument line as a single string, leaving input empty
+
+@item
+@command{argument-pop-or-read} (input prompt &optional
+completions) either pop an argument from the argument line, or if it
+is empty use ``prompt'' to prompt the user for a value
+
+@item
+@command{argument-pop-rest-or-read} (input prompt &optional
+completions) either return the remainder of the argument line as a
+string, leaving input empty, or use ``prompt'' to prompt the user for
+a value
+
+@end itemize
+
+As an example, here's a new type called :smart-direction. The
+existing :direction type simply asks for one of the four directions
+``left'', ``right'', ``up'' or ``down'', without checking to see if there's a
+frame in that direction. Our new type, :smart-direction, will look
+around the current frame, and only allow the user to choose a
+direction in which another frame lies. If only one direction is
+possible it will return that automatically without troubling the user.
+It signals an error for invalid directions; it could alternately
+return a ``nil'' value in those cases, and let the command handle that.
+
+@example
+(define-stumpwm-type :smart-direction (input prompt)
+  (let ((valid-dirs
+         (loop  ; gather all the directions in which there's a neighbouring frame
+            with values = '(("up" :up)
+                            ("down" :down)
+                            ("left" :left)
+                            ("right" :right))
+            with frame-set =
+              (group-frames (window-group (current-window)))
+            for dir in values
+            for neighbour = (neighbour
+                             (second dir)
+                             (window-frame (current-window)) frame-set)
+            if (and neighbour (frame-window neighbour))
+            collect dir))
+        (arg (argument-pop input)))  ; store a possible argument
+    (cond ((null valid-dirs)  ; no directions, bail out
+           (throw 'error "No valid directions"))
+          (arg  ; an arg was bound, but is it valid?
+           (or (second (assoc arg valid-dirs :test #'string=))
+               (throw 'error "Not a valid direction")))
+          ((= 1 (length valid-dirs))  ; only one valid direction
+           (second (car valid-dirs)))
+          (t  ; multiple possibilities, prompt for direction
+           (second (assoc (completing-read input prompt valid-dirs
+                                           :require-match t)
+                          valid-dirs :test #'string=))))))
+
+(defcommand smarty (dir) ((:smart-direction "Pick a direction: "))
+  ;; `dir' is a keyword here
+  (message "You're going ~a" (string-downcase dir)))
+
+(define-key *root-map* (kbd "R") "smarty right")
+@end example
 
 @node Message and Input Bar, Windows, Commands, Top
 @chapter Message and Input Bar
