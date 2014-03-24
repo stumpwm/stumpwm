@@ -486,9 +486,7 @@ user aborted."
                               (if (and (null prompt)
                                        (argument-line-end-p arg-line))
                                   (loop-finish)
-                                  ;; FIXME: Is it presumptuous to assume NIL means abort?
-                                  (or (funcall fn arg-line prompt)
-                                      (throw 'error :abort)))))))
+                                  (funcall fn arg-line prompt))))))
       ;; Did the whole string get parsed?
       (unless (or (argument-line-end-p arg-line)
                   (position-if 'alphanumericp (argument-line-string arg-line) :start (argument-line-start arg-line)))
