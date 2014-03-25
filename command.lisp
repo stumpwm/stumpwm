@@ -61,6 +61,11 @@
 if the command was called interactively. If it is non-NIL then it was
 called from a keybinding or from the colon command.
 
+The NAME argument can be a string, or a list of two symbols. If the
+latter, the first symbol names the command, and the second indicates
+the type of group under which this command will be usable. Currently,
+tile-group and floating-group are the two possible values.
+
 INTERACTIVE-ARGS is a list of the following form: ((TYPE PROMPT) (TYPE PROMPT) ...)
 
 each element in INTERACTIVE-ARGS declares the type and prompt for the
@@ -487,9 +492,7 @@ user aborted."
                               (if (and (null prompt)
                                        (argument-line-end-p arg-line))
                                   (loop-finish)
-                                  ;; FIXME: Is it presumptuous to assume NIL means abort?
-                                  (or (funcall fn arg-line prompt)
-                                      (throw 'error :abort)))))))
+                                  (funcall fn arg-line prompt))))))
       ;; Did the whole string get parsed?
       (unless (or (argument-line-end-p arg-line)
                   (position-if 'alphanumericp (argument-line-string arg-line) :start (argument-line-start arg-line)))
