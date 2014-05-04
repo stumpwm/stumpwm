@@ -69,7 +69,6 @@ Make sure you have added it to your lisp init file using:
 Then, in a repl:
 ```lisp
  (ql:quickload "clx")
- (ql:quickload "clx-truetype")
  (ql:quickload "cl-ppcre")
 ```
 ## Building
