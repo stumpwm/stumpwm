@@ -19,20 +19,21 @@
 (in-package :stumpwm)
 
 (export '(*mode-line-background-color*
-	  *mode-line-border-color*
-	  *mode-line-border-width*
-	  *mode-line-foreground-color*
-	  *mode-line-pad-x*
-	  *mode-line-pad-y*
-	  *mode-line-position*
-	  *mode-line-timeout*
+          *mode-line-border-color*
+          *mode-line-border-width*
+          *mode-line-foreground-color*
+          *mode-line-pad-x*
+          *mode-line-pad-y*
+          *mode-line-position*
+          *mode-line-timeout*
           *hidden-window-color*
-	  *screen-mode-line-format*
-	  *screen-mode-line-formatters*
+          *screen-mode-line-format*
+          *screen-mode-line-formatters*
           add-screen-mode-line-formatter
-	  enable-mode-line
-	  toggle-mode-line
-	  bar-zone-color))
+          enable-mode-line
+          toggle-mode-line
+          bar-zone-color
+          bar))
 
 (defstruct mode-line
   screen
