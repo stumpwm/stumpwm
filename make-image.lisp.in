@@ -2,8 +2,6 @@
 
 (load "load-stumpwm.lisp")
 
-#-ecl (stumpwm:set-contrib-dir "@CONTRIB_DIR@")
-
 #+sbcl
 (sb-ext:save-lisp-and-die "stumpwm" :toplevel (lambda ()
                                                 ;; asdf requires sbcl_home to be set, so set it to the value when the image was built
