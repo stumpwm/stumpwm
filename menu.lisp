@@ -26,13 +26,9 @@
 
 (in-package #:stumpwm)
 
-(export '(*menu-map*
-          select-from-menu
+(export '(select-from-menu
           menu-state-selected
-          menu-state-table
-          menu-up
-          menu-down
-          menu-abort))
+          menu-state-table))
 
 (defvar *menu-map* nil
   "The keymap used by the interactive menu.")
@@ -179,13 +175,15 @@ backspace or F9), return it otherwise return nil"
 	  (return))))))
 
 (defun select-from-menu (screen table &optional prompt
-                                                (initial-selection 0))
+                                        (initial-selection 0)
+                                        extra-keymap)
   "Prompt the user to select from a menu on SCREEN. TABLE can be
 a list of values or an alist. If it's an alist, the CAR of each
 element is displayed in the menu. What is displayed as menu items
-must be strings. Returns the selected element in TABLE or nil if aborted.
-
-See *menu-map* for menu bindings."
+must be strings.
+EXTRA-KEYMAP can be a keymap whose bindings will take precedence
+over the default bindings.
+Returns the selected element in TABLE or nil if aborted. "
   (check-type screen screen)
   (check-type table list)
   (check-type prompt (or null string))
@@ -229,7 +227,11 @@ See *menu-map* for menu bindings."
                     (setf strings (cons prompt strings))
                     (incf highlight))
                   (echo-string-list screen strings highlight))
-                (multiple-value-bind (action key-seq) (read-from-keymap (list *menu-map*))
+                (multiple-value-bind (action key-seq) (read-from-keymap
+                                                       (if extra-keymap
+                                                           (list extra-keymap
+                                                                 *menu-map*)
+                                                           (list *menu-map*)))
                   (if action
                       (funcall action menu)
                       (check-menu-complete menu (first key-seq))))))
