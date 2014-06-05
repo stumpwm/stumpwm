@@ -331,18 +331,37 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
   (escape-caret (or
                  (xwin-net-wm-name win)
                  (xlib:wm-name win))))
+(defun maxmin-equal-p (win)
+  (let* ((xwin (window-xwin win))
+         (hints (xlib:wm-normal-hints xwin)))
+    
+    (with-accessors
+     ((min-width xlib:wm-size-hints-min-width)
+      (max-width xlib:wm-size-hints-max-width)
+      (min-height xlib:wm-size-hints-min-height)
+      (max-height xlib:wm-size-hints-max-height)) hints
+      
+      (and
+       hints
+       max-height
+       min-height
+       max-width
+       min-width
+       (= min-height max-height)
+       (= min-width max-width)))))
 
 ;; FIXME: should we raise the window or its parent?
 (defmethod raise-window (win)
   "Map the window if needed and bring it to the top of the stack. Does not affect focus."
-  (when (window-urgent-p win)
-    (window-clear-urgency win))
-  (when (window-hidden-p win)
-    (unhide-window win)
-    (update-configuration win))
-  (when (window-in-current-group-p win)
-    (setf (xlib:window-priority (window-parent win)) :top-if)))
-
+  (let ((maxmin-notequal (not (maxmin-equal-p win))))
+    (when (window-urgent-p win)
+      (window-clear-urgency win))
+    (when (window-hidden-p win)
+      (unhide-window win)
+      (if maxmin-notequal
+          (update-configuration win)))
+    (when (and maxmin-notequal (window-in-current-group-p win))
+      (setf (xlib:window-priority (window-parent win)) :top-if))))
 ;; some handy wrappers
 
 (defun xwin-border-width (win)
