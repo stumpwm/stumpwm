@@ -129,9 +129,10 @@
           command-mode-start-message
           command-mode-end-message
           split-string
-	  with-restarts-menu
+          with-restarts-menu
           with-data-file
-	  move-to-head))
+          move-to-head
+          format-expand))
 
 
 ;;; Message Timer
