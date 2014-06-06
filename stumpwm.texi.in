@@ -1921,10 +1921,73 @@ $$$ *event-processing-hook*
 
 @node Modules, Hacking, Hooks, Top
 @chapter Modules
-StumpWM has a growing number of modules not loaded by default. All
-modules exist in the @file{contrib/} directory of StumpWM's archive.
+
+A StumpWM module is a Common Lisp package defined as an ASDF system.
+There is nothing special about a StumpWM module that makes it different
+from any other Common Lisp package.
+
+As any ASDF system, ASDF has to be able to find it @footnote{Refer to
+its manual to set it up}.
+
+To load a module, you can either follow ASDF instructions or use
+`load-module', which is a function that wraps around `asdf:load-system'
+and it's present to preserve backward compatibility.
 
 !!! load-module
+
+@menu
+* Writing a Module::
+@end menu
+
+@node Writing a Module
+@section Writing a Module
+
+To write a StumpWM module, you will need at least two files: an ASDF
+file and a Lisp source file.  You also need to put your module where
+ASDF can find it.
+
+As an example, create a
+`~/.local/share/common-lisp/source/a-stumpwm-module/' directory, so ASDF
+can find the ASDF system@footnote{`~/.local/share/common-lisp/source/'
+is a default place for installing Common Lisp software.}.
+
+Add to this directory these two files@footnote{It's costumary to have
+package definitions in a separate file.}:
+
+a-stumpwm-module.asd:
+
+@lisp
+(in-package :asdf)
+
+(defsystem a-stumpwm-module
+  :depends-on ("stumpwm")
+  :components ((:file "a-stumpwm-module")))
+@end lisp
+
+a-stumpwm-module.lisp:
+
+@lisp
+(defpackage :a-stumpwm-module
+  (:use :cl))
+
+(in-package :a-stumpwm-module)
+
+(defun hello-world ()
+  "Say hello to the StumpWM world."
+  (stumpwm:message "hello, world"))
+
+(stumpwm:defcommand hello-world-from-a-stumpwm-module () ()
+  "Call `hello-world' from `a-stumpwm-module'."
+  (hello-world))
+@end lisp
+
+You can then add to your `.stumpwmrc' file:
+
+@lisp
+(load-module :a-stumpwm-module)
+@end lisp
+
+You will then have a new command: `hello-world-from-a-stumpwm-module'.
 
 @node Hacking, Command and Function Index, Modules, Top
 @chapter Hacking

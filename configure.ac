@@ -4,7 +4,6 @@
 AC_PREREQ(2.59)
 AC_INIT(Stump Window Manager, esyscmd(grep :version stumpwm.asd | cut -d\" -f2 | tr -d \\n), sabetts@gmail.com)
 
-AC_SUBST(CONTRIB_DIR)
 AC_SUBST(LISP_PROGRAM)
 AC_SUBST(LISP)
 AC_SUBST(STUMPWM_ASDF_DIR)
@@ -16,10 +15,6 @@ AC_ARG_WITH(clisp,   [  --with-clisp=PATH       specify location of clisp], CLIS
 AC_ARG_WITH(ccl,     [  --with-ccl=PATH         specify location of ccl], CCL_PATH=$withval, CCL_PATH="")
 AC_ARG_WITH(ecl,     [  --with-ecl=PATH         specify location of ecl], ECL_PATH=$withval, ECL_PATH="")
 AC_ARG_WITH(lw,      [  --with-lw=PATH          specify location of lispworks], LW_PATH=$withval, LW_PATH="")
-
-AC_ARG_WITH(contrib-dir,
-                     [  --with-contrib-dir=PATH specify location of contrib modules],
-                     CONTRIB_DIR=$withval, CONTRIB_DIR="`pwd`/contrib")
 
 STUMPWM_ASDF_DIR="`pwd`"
 
