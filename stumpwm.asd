@@ -1,8 +1,5 @@
 ;;; -*- Mode: Lisp -*-
-
-(defpackage :stumpwm-system
-  (:use :cl :asdf))
-(in-package :stumpwm-system)
+(in-package :asdf)
 
 ;; This is a hack for debian because it calls cmucl's clx
 ;; cmucl-clx. *very* annoying. I don't actually know if debian still
