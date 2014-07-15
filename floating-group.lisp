@@ -224,15 +224,11 @@
                              (setf (xlib:drawable-x parent) (- (getf event-slots :x) relx)
                                    (xlib:drawable-y parent) (- (getf event-slots :y) rely)))
                             ((find :button-3 (xlib:make-state-keys state-mask))
-                             (let ((w (+ initial-width
-                                         (- (getf event-slots :x)
-                                            relx
-                                            (xlib:drawable-x parent))))
-                                   (h (+ initial-height
-                                         (- (getf event-slots :y)
-                                            rely
-                                            (xlib:drawable-y parent)
-                                            *float-window-title-height*))))
+                             (let ((w (- (getf event-slots :x)
+                                         (xlib:drawable-x parent)))
+                                   (h (- (getf event-slots :y)
+                                         (xlib:drawable-y parent)
+                                         *float-window-title-height*)))
                                ;; Don't let the window become too small
                                (float-window-move-resize window
                                                          :width (max w *min-frame-width*)
