@@ -144,9 +144,8 @@
       ;; Some heads were removed (or cloned), try to guess which.
       (dolist (oh oheads)
         (dolist (nh heads)
-          (when (and (= (head-x nh) (head-x oh))
-                     (= (head-y nh) (head-y oh)))
-          ;; Same screen position; probably the same head.
+          (when (= (head-number oh) (head-number nh))
+            ;; Same frame number, probably the same head
             (setf (head-number nh) (head-number oh))))))
     (dolist (h (set-difference oheads heads :test '= :key 'head-number))
       (remove-head screen h))
