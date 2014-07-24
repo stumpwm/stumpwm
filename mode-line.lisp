@@ -371,6 +371,7 @@ critical."
                     :format format
                     :position *mode-line-position*
                     :cc (make-ccontext :gc gc
+                                       :screen screen
                                        :win w
                                        :default-fg (xlib:gcontext-foreground gc)
                                        :default-bg (xlib:gcontext-background gc)))))

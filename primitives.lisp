@@ -505,12 +505,18 @@ exist, in which case they go into the current group.")
    (last-msg-highlights :initform nil :accessor screen-last-msg-highlights)))
 
 (defstruct ccontext
+  screen
   win
   px
   gc
   default-fg
   default-bright
-  default-bg)
+  default-bg
+  fg
+  bg
+  brightp
+  reversep
+  color-stack)
 
 (defun screen-message-window (screen)
   (ccontext-win (screen-message-cc screen)))

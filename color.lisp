@@ -1,4 +1,5 @@
 ;; Copyright (C) 2007-2008 Jonathan Moore Liles
+;; Copyright (C) 2014 Joram Schrijver
 ;;
 ;;  This file is part of stumpwm.
 ;;
@@ -18,25 +19,36 @@
 
 ;; Commentary:
 ;;
-;; This simplified implementation of the the C color code is as follows:
+;; A change in color, or presentation in general, is started by a ^. If that
+;; ^ is followed by a single number, that's taken as the index into the color
+;; map to be set as the foreground color. If the ^ is followed by two numbers,
+;; the first is taken as the index of the foreground color, and the second as
+;; the index of the background color. Either of those can also be *, which
+;; means the value should be set to default.
 ;;
-;; ^B bright
-;; ^b dim
-;; ^n normal (sgr0)
-;;
-;; ^00 black black
-;; ^10 red black
-;; ^01 black red
-;; ^1* red clear
-;;
-;; and so on.
-;;
-;; I won't explain here the many reasons that C is better than ANSI, so just
-;; take my word for it.
+;; ^n resets the foreground and background color back to default.
+;; ^A B turns bright colors on, and b turns them off.
+;; ^R turns reverse colors on and r turns them off.
+;; ^[ pushes the current settings onto the color stack. The current settings
+;;    remain unchanged.
+;; ^] pops color settings off the stack.
+;; ^^ prints a regular caret
+;; ^(<modifier> &rest arguments) allows for more complicated color settings:
+;;    <modifier> can be one of :fg, :bg, :reverse, :bright, :push and :pop.
+;;    The arguments for each modifier differ:
+;;    - :fg and :bg take a color as an argument, which can either be a numeric
+;;      index into the color map or a hexadecimal color in the form of "#fff"
+;;      or "#ffffff".
+;;    - :reverse and :bright take either t or nil as an argument. T enables
+;;      the setting and nil disables it.
 
 (in-package :stumpwm)
 
-(export '(*colors* update-color-map adjust-color update-screen-color-context lookup-color))
+(export '(*colors*
+          update-color-map
+          adjust-color
+          update-screen-color-context
+          lookup-color))
 
 (defvar *colors*
   '("black"
@@ -50,12 +62,6 @@
   "Eight colors by default. You can redefine these to whatever you like and
 then call (update-color-map).")
 
-(defvar *color-map* nil)
-(defvar *foreground* nil)
-(defvar *background* nil)
-(defvar *reverse* nil)
-(defvar *color-stack* '())
-
 (defun adjust-color (color amt)
   (labels ((max-min (x y) (max 0 (min 1 (+ x y)))))
     (setf (xlib:color-red color) (max-min (xlib:color-red color) amt)
@@ -63,36 +69,45 @@ then call (update-color-map).")
           (xlib:color-blue color) (max-min (xlib:color-blue color) amt))))
 
 (defun hex-to-xlib-color (color)
-  (let* ((red (/ (parse-integer (subseq color 1 3) :radix 16) 255.0))
-         (green (/ (parse-integer (subseq color 3 5) :radix 16) 255.0))
-         (blue (/ (parse-integer (subseq color 5 7) :radix 16) 255.0)))
-    (xlib:make-color :red red :green green :blue blue)))
-
-(defun alloc-color (screen color)
-  (let ((colormap (xlib:screen-default-colormap (screen-number screen))))
-    (cond ((and (stringp color) (= 7 (length color)) 
-                (string-equal "#" (subseq color 0 1))) (xlib:alloc-color colormap 
-                                                                         (hex-to-xlib-color color)))
-          (t (xlib:alloc-color colormap color)))))
+  (if (= 4 (length color))
+      (let ((red (/ (parse-integer (subseq color 1 2) :radix 16) 255.0))
+            (green (/ (parse-integer (subseq color 2 3) :radix 16) 255.0))
+            (blue (/ (parse-integer (subseq color 3 4) :radix 16) 255.0)))
+        (xlib:make-color :red (+ red (* 16 red))
+                         :green (+ green (* 16 green))
+                         :blue (+ blue (* 16 blue))))
+      (let ((red (/ (parse-integer (subseq color 1 3) :radix 16) 255.0))
+            (green (/ (parse-integer (subseq color 3 5) :radix 16) 255.0))
+            (blue (/ (parse-integer (subseq color 5 7) :radix 16) 255.0)))
+        (xlib:make-color :red red :green green :blue blue))))
 
 (defun lookup-color (screen color)
   (cond
     ((typep color 'xlib:color) color)
-    ((and (stringp color) (= 7 (length color)) (find #\# color)) (hex-to-xlib-color color))
-    (t (xlib:lookup-color (xlib:screen-default-colormap (screen-number screen)) color))))
+    ((and (stringp color)
+          (or (= 7 (length color))
+              (= 4 (length color)))
+          (char= #\# (elt color 0)))
+     (hex-to-xlib-color color))
+    (t (xlib:lookup-color (xlib:screen-default-colormap (screen-number screen))
+                          color))))
+
+(defun alloc-color (screen color)
+  (let ((colormap (xlib:screen-default-colormap (screen-number screen))))
+    (cond ((typep color 'xlib:color) (xlib:alloc-color colormap color))
+          (t (xlib:alloc-color colormap (lookup-color screen color))))))
 
 ;; Normal colors are dimmed and bright colors are intensified in order
 ;; to more closely resemble the VGA pallet.
 (defun update-color-map (screen)
   "Read *colors* and cache their pixel colors for use when rendering colored text."
-  (let ((scm (xlib:screen-default-colormap (screen-number screen))))
-    (labels ((map-colors (amt)
-               (loop for c in *colors*
-                     as color = (lookup-color screen c)
-                     do (adjust-color color amt)
-                     collect (xlib:alloc-color scm color))))
-      (setf (screen-color-map-normal screen) (apply #'vector (map-colors -0.25))
-            (screen-color-map-bright screen) (apply #'vector (map-colors 0.25))))))
+  (labels ((map-colors (amt)
+             (loop for c in *colors*
+                   as color = (lookup-color screen c)
+                   do (adjust-color color amt)
+                   collect (alloc-color screen color))))
+    (setf (screen-color-map-normal screen) (apply #'vector (map-colors -0.25))
+          (screen-color-map-bright screen) (apply #'vector (map-colors 0.25)))))
 
 (defun update-screen-color-context (screen)
   (let* ((cc (screen-message-cc screen))
@@ -103,225 +118,182 @@ then call (update-color-map).")
     (adjust-color bright 0.25)
     (setf (ccontext-default-bright cc) (alloc-color screen bright))))
 
-(defun get-bg-color (screen cc color)
-  (setf *background* color)
-  (if color
-      (svref (screen-color-map-normal screen) color)
-      (ccontext-default-bg cc)))
+;;; Parser for color strings
 
-(defun get-fg-color (screen cc color)
-  (setf *foreground* color)
-  (if color
-      (svref *color-map* color)
-      (if (eq *color-map* (screen-color-map-bright screen))
-          (ccontext-default-bright cc)
-          (ccontext-default-fg cc))))
-
-(defun set-color (screen cc s i)
-  (let* ((gc (ccontext-gc cc))
-         (l (- (length s) i))
-         (r 2)
-         (f (subseq s i (1+ i)))
-         (b (if (< l 2) "*" (subseq s (1+ i) (+ i 2)))))
-    (labels
-        ((set-fg-bg (fg bg)
-           (if *reverse*
-               (setf
-                (xlib:gcontext-foreground gc) bg
-                (xlib:gcontext-background gc) fg)
-               (setf
-                (xlib:gcontext-foreground gc) fg
-                (xlib:gcontext-background gc) bg)))
-         (update-colors ()
-           (set-fg-bg (get-fg-color screen cc *foreground*)
-                      (get-bg-color screen cc *background*))))
-      (case (elt f 0)
-        (#\n                            ; normal
-         (setf f "*" b "*" r 1
-               *color-map* (screen-color-map-normal screen)
-               *reverse* nil)
-         (get-fg-color screen cc nil)
-         (get-bg-color screen cc nil))
-        (#\b                            ; bright off
-         (setf *color-map* (screen-color-map-normal screen))
-         (update-colors)
-         (return-from set-color 1))
-        (#\B                            ; bright on
-         (setf *color-map* (screen-color-map-bright screen))
-         (update-colors)
-         (return-from set-color 1))
-        (#\R
-         (setf *reverse* t)
-         (update-colors)
-         (return-from set-color 1))
-        (#\r
-         (setf *reverse* nil)
-         (update-colors)
-         (return-from set-color 1))
-        (#\[
-         (push (list *foreground* *background* *color-map*) *color-stack*)
-         (return-from set-color 1))
-        (#\]
-         (let ((colors (pop *color-stack*)))
-           (when colors
-             (setf *foreground* (first colors)
-                   *background* (second colors)
-                   *color-map* (third colors))))
-         (update-colors)
-         (return-from set-color 1))
-        (#\^                            ; circumflex
-         (return-from set-color 1)))
-      (handler-case
-          (let ((fg (if (equal f "*") 
-                        (progn (get-fg-color screen cc nil) 
-                               (ccontext-default-fg cc)) 
-                        (get-fg-color screen cc (parse-integer f))))
-                (bg (if (equal b "*") 
-                        (progn (get-bg-color screen cc nil) 
-                               (ccontext-default-bg cc)) 
-                        (get-bg-color screen cc (parse-integer b)))))
-            (set-fg-bg fg bg))
-        (error (c) (dformat 1 "Invalid color code: ~A" c))))
-    r))
-
-(defun render-strings (screen cc padx pady strings highlights &optional (draw t))
-  (let* ((height (font-height (screen-font screen)))
-         (width 0)
-         (gc (ccontext-gc cc))
-         (win (ccontext-win cc))
-         (px (ccontext-px cc))
-         (*foreground* nil)
-         (*background* nil)
-         (*reverse* nil)
-         (*color-stack* '())
-         (*color-map* (screen-color-map-normal screen)))
-    (when draw
-      (when (or (not px)
-                (/= (xlib:drawable-width px) (xlib:drawable-width win))
-                (/= (xlib:drawable-height px) (xlib:drawable-height win)))
-        (when px (xlib:free-pixmap px))
-        (setf px (xlib:create-pixmap :drawable win
-                                     :width (xlib:drawable-width win)
-                                     :height (xlib:drawable-height win)
-                                     :depth (xlib:drawable-depth win))
-              (ccontext-px cc) px))
-      (xlib:with-gcontext (gc :foreground (xlib:gcontext-background gc))
-        (xlib:draw-rectangle px gc 0 0 (xlib:drawable-width px) (xlib:drawable-height px) t)))
-    (loop for s in strings
-          ;; We need this so we can track the row for each element
-          for i from 0 to (length strings)
-          do (let ((x 0) (off 0) (len (length s)))
-               (loop
-                for st = 0 then (+ en (1+ off))
-                as en = (position #\^ s :start st)
-                do (progn
-		     (let ((en (cond ((and en (= (1+ en) len)) nil)
-				     ((and en (char= #\^ (char s (1+ en)))) (1+ en))
-				     (t en))))
-		       (when draw
-                         (draw-image-glyphs px gc (screen-font screen)
-                                            (+ padx x)
-                                            (+ pady (* i height)
-                                               (font-ascent (screen-font screen)))
-                                            (subseq s st en)
-                                            :translate #'translate-id
-                                            :size 16))
-		       (setf x (+ x (text-line-width (screen-font screen) (subseq s st en) :translate #'translate-id))
-			     width (max width x)))
-		     (when (and en (< (1+ en) len))
-		       ;; right-align rest of string?
-		       (if (char= #\> (char s (1+ en)))
-			   (progn
-			     (when draw
-			       (setf x (- (xlib:drawable-width px) (* 2 padx)
-					  ;; get width of rest of s
-					  (render-strings screen cc padx pady
-							  (list (subseq s (+ en 2)))
-							  '() nil))
-				     width (- (xlib:drawable-width px) (* 2 padx))))
-			     (setf off 1))
-			   (setf off (set-color screen cc s (1+ en))))))
-		  while en))
-          when (find i highlights :test 'eql)
-          do (when draw (invert-rect screen px
-                                     0 (* i height)
-                                     (xlib:drawable-width px)
-                                     height)))
-    (when draw
-      (xlib:copy-area px gc 0 0 (xlib:drawable-width px) (xlib:drawable-height px) win 0 0))
-    (set-color screen cc "n" 0)
-    width))
-
-;;; FIXME: It would be nice if the output of this parser was used to
-;;; draw the text, but the current drawing implementation is probably
-;;; faster.
-(defun parse-color (s i)
-  (let ((l (- (length s) i)))
-    (when (zerop l)
-      (return-from parse-color (values `("^") 0)))
-    (let ((f (subseq s i (1+ i)))
-          (b (if (< l 2) "*" (subseq s (1+ i) (+ i 2)))))
-      (case (elt f 0)
-        (#\n                            ; normal
-         (values
-          `((:background "*")
-            (:foreground "*")
-            (:reverse nil))
-          1))
-        (#\b                            ; bright off
-         (values
-          `((:bright nil))
-          1))
-        (#\B                            ; bright on
-         (values 
-          `((:bright t))
-          1))
-        (#\R
-         (values
-          `((:reverse t))
-          1))
-        (#\r
-         (values
-          `((:reverse nil))
-          1))
-        (#\[
-         (values
-          `((:push))
-          1))
-        (#\]
-         (values
-          `((:pop))
-          1))
-        (#\^                            ; circumflex
-         (values `("^") 1))
-        ((#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
-         (values
-          `((:background ,(if (string= f "*")
-                              "*"
-                              (parse-integer f)))
-            (:foreground ,(if (string= b "*")
-                              "*"
-                              (parse-integer b))))
-          2))
-        (t
-         (values `(,(format nil "^~a" f)) 1))))))
+(defun parse-color (color)
+  "Parse a possible colorcode into a list of the appropriate modifiers.
+If COLOR isn't a colorcode a list containing COLOR is returned."
+  (if (and (> (length color) 1)
+           (char= (char color 0) #\^))
+      (let ((foreground (char color 1))
+            (background (if (> (length color) 2)
+                            (char color 2)
+                            :reset)))
+        (case foreground
+          ;; Normalize colors
+          (#\n '((:bg :reset)
+                 (:fg :reset)
+                 (:reverse nil)))
+          (#\R '((:reverse t)))
+          (#\r '((:reverse nil)))
+          (#\B '((:bright t)))
+          (#\b '((:bright nil)))
+          (#\[ '((:push)))
+          (#\] '((:pop)))
+          (#\^ '("^"))
+          (#\( (list (read-from-string (subseq color 1))))
+          ((#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9 :reset)
+           `((:bg ,(or (parse-integer (string background)
+                                      :junk-allowed t)
+                       :reset))
+             (:fg ,(or (parse-integer (string foreground)
+                                      :junk-allowed t)
+                       :reset))
+             (:reverse nil)))))
+      (list color))) ; this isn't a colorcode
 
 (defun parse-color-string (string)
-  "parse a color coded string into a list of strings and color codes"
-  (loop
-     with color = nil
-     with off = 0
-     for st = 0 then (min (+ en (1+ off)) (length string))
-     as en = (position #\^ string :start st)
-     ;; avoid empty strings at the beginning and end
-     unless (or (eql en st)
-                (eql st (length string)))
-     collect (subseq string st en)
-     while en
-     append (progn
-              (multiple-value-setq (color off) (parse-color string (1+ en)))
-              color)))
+  "Parse a color-coded string into a list of strings and color modifiers"
+  (let ((substrings
+          (remove-if (lambda (str) (zerop (length str)))
+                     (ppcre:split "(\\^[nrRbB\\[\\]^]|\\^[0-9*]{1,2}|\\^\\(.*?\\))"
+                                  string
+                                  :with-registers-p t))))
+    (loop for substring in substrings append (parse-color substring))))
 
 (defun uncolorify (string)
   "Remove any color markup in STRING"
   (format nil "~{~a~}" (remove-if-not 'stringp (parse-color-string string))))
+
+
+;;; Color modifiers and rendering code
+
+(defun find-color (color default cc &aux (screen (ccontext-screen cc)))
+  (cond ((or (null color)
+             (eq :reset color))
+         default)
+        ((integerp color)
+         (svref (if (ccontext-brightp cc)
+                    (screen-color-map-bright screen)
+                    (screen-color-map-normal screen))
+                color))
+        (t (alloc-color screen color))))
+
+(defgeneric apply-color (ccontext modifier &rest arguments))
+
+(defmethod apply-color ((cc ccontext) (modifier (eql :fg)) &rest args)
+  (setf (ccontext-fg cc) (first args))
+  (let* ((gcontext (ccontext-gc cc))
+         (specified-color (first args))
+         (color (find-color specified-color
+                            (if (ccontext-brightp cc)
+                                (ccontext-default-bright cc)
+                                (ccontext-default-fg cc))
+                            cc)))
+    (if (ccontext-reversep cc)
+        (setf (xlib:gcontext-background gcontext) color)
+        (setf (xlib:gcontext-foreground gcontext) color))))
+
+(defmethod apply-color ((cc ccontext) (modifier (eql :bg)) &rest args)
+  (setf (ccontext-bg cc) (first args))
+  (let* ((gcontext (ccontext-gc cc))
+         (specified-color (first args))
+         (color (find-color specified-color
+                            (ccontext-default-bg cc)
+                            cc)))
+    (if (ccontext-reversep cc)
+        (setf (xlib:gcontext-foreground gcontext) color)
+        (setf (xlib:gcontext-background gcontext) color))))
+
+(defmethod apply-color ((cc ccontext) (modifier (eql :reverse)) &rest args)
+  (setf (ccontext-reversep cc) (first args))
+  (let ((fg (ccontext-fg cc))
+        (bg (ccontext-bg cc)))
+    (apply-color cc :fg fg)
+    (apply-color cc :bg bg)))
+
+(defmethod apply-color ((cc ccontext) (modifier (eql :bright)) &rest args)
+  (setf (ccontext-brightp cc) (first args))
+  (let ((fg (ccontext-fg cc))
+        (bg (ccontext-bg cc)))
+    (apply-color cc :fg fg)
+    (apply-color cc :bg bg)))
+
+(defmethod apply-color ((cc ccontext) (modifier (eql :push)) &rest args)
+  (declare (ignore args))
+  (push (list (ccontext-fg cc)
+              (ccontext-bg cc)
+              (ccontext-brightp cc)
+              (ccontext-reversep cc))
+        (ccontext-color-stack cc)))
+
+(defmethod apply-color ((cc ccontext) (modifier (eql :pop)) &rest args)
+  (declare (ignore args))
+  (setf (values (ccontext-fg cc)
+                (ccontext-bg cc)
+                (ccontext-brightp cc)
+                (ccontext-reversep cc))
+        (pop (ccontext-color-stack cc))))
+
+
+(defun render-strings (screen cc padx pady strings highlights
+                       &optional (draw t))
+  (let ((height (font-height (screen-font screen)))
+        (width 0)
+        (gc (ccontext-gc cc))
+        (xwin (ccontext-win cc))
+        (px (ccontext-px cc)))
+    (when draw
+      ;; Create a new pixmap if there isn't one or if it doesn't match the
+      ;; window
+      (when (or (not px)
+                (/= (xlib:drawable-width px) (xlib:drawable-width xwin))
+                (/= (xlib:drawable-height px) (xlib:drawable-height xwin)))
+        (if px (xlib:free-pixmap px))
+        (setf px (xlib:create-pixmap :drawable xwin
+                                     :width (xlib:drawable-width xwin)
+                                     :height (xlib:drawable-height xwin)
+                                     :depth (xlib:drawable-depth xwin))
+              (ccontext-px cc) px))
+      ;; Clear the background
+      (xlib:with-gcontext (gc :foreground (xlib:gcontext-background gc))
+        (xlib:draw-rectangle px gc 0 0
+                             (xlib:drawable-width px)
+                             (xlib:drawable-height px) t)))
+    (loop for string in strings
+          for row from 0 to (length strings)
+          for x = 0
+          for parts = (if (stringp string)
+                          (parse-color-string string)
+                          string)
+          do (loop
+               for part in parts
+               if (stringp part)
+                 do (if draw
+                        (draw-image-glyphs
+                         px gc (screen-font screen)
+                         (+ padx x)
+                         (+ pady (* row height)
+                            (font-ascent (screen-font screen)))
+                         part
+                         :translate #'translate-id
+                         :size 16))
+                 and do (incf x (text-line-width (screen-font screen)
+                                                 part
+                                                 :translate #'translate-id))
+                 and do (setf width (max width x))
+               else
+                 do (apply #'apply-color cc (first part) (rest part)))
+          when (and draw (find row highlights :test 'eql))
+            do (invert-rect screen px 0 (* row height)
+                            (xlib:drawable-width px)
+                            height))
+    (when draw
+      (xlib:copy-area px gc 0 0
+                      (xlib:drawable-width px)
+                      (xlib:drawable-height px) xwin 0 0))
+    (apply-color cc :fg)
+    (apply-color cc :bright)
+    (apply-color cc :bg)
+    (apply-color cc :reverse)
+    width))
