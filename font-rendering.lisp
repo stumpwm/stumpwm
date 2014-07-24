@@ -60,3 +60,7 @@
          gcontext
          x y
          sequence keys))
+
+(defmethod font-height ((fonts cons))
+  (loop for font in fonts
+        maximizing (font-height font)))

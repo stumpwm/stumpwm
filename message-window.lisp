@@ -63,10 +63,8 @@ function expects to be wrapped in a with-state for win."
         (setf (xlib:drawable-y win) (max (head-y (current-head)) (+ (head-y (current-head)) y))
               (xlib:drawable-x win) (max (head-x (current-head)) (+ (head-x (current-head)) x)))))))
 
-(defun setup-message-window (screen lines width)
-  (let ((height (* lines
-                   (font-height (screen-font screen))))
-        (win (screen-message-window screen)))
+(defun setup-message-window (screen width height)
+  (let ((win (screen-message-window screen)))
     ;; Now that we know the dimensions, raise and resize it.
     (xlib:with-state (win)
       (setf (xlib:drawable-height win) height
@@ -208,8 +206,9 @@ function expects to be wrapped in a with-state for win."
   the nth entry to highlight."
   (when strings
     (unless *executing-stumpwm-command*
-      (let ((width (render-strings screen (screen-message-cc screen) *message-window-padding* 0 strings '() nil)))
-        (setup-message-window screen (length strings) width)
+      (multiple-value-bind (width height)
+          (render-strings screen (screen-message-cc screen) *message-window-padding* 0 strings '() nil)
+        (setup-message-window screen width height)
         (render-strings screen (screen-message-cc screen) *message-window-padding* 0 strings highlights))
       (setf (screen-current-msg screen)
             strings

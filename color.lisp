@@ -32,6 +32,7 @@
 ;; ^[ pushes the current settings onto the color stack. The current settings
 ;;    remain unchanged.
 ;; ^] pops color settings off the stack.
+;; ^f<n> switches to the font at index n in the screen's font stack.
 ;; ^^ prints a regular caret
 ;; ^(<modifier> &rest arguments) allows for more complicated color settings:
 ;;    <modifier> can be one of :fg, :bg, :reverse, :bright, :push and :pop.
@@ -41,6 +42,9 @@
 ;;      or "#ffffff".
 ;;    - :reverse and :bright take either t or nil as an argument. T enables
 ;;      the setting and nil disables it.
+;;    - :font takes a integer which is represents an index into the screen's
+;;      list of fonts, or, possibly, a literal font object that can immediately
+;;      be used. In a string you'll probably only want to specify an integer.
 
 (in-package :stumpwm)
 
@@ -140,6 +144,9 @@ If COLOR isn't a colorcode a list containing COLOR is returned."
           (#\b '((:bright nil)))
           (#\[ '((:push)))
           (#\] '((:pop)))
+          (#\f `((:font ,(or (parse-integer (string background)
+                                            :junk-allowed t)
+                             0))))
           (#\^ '("^"))
           (#\( (list (read-from-string (subseq color 1))))
           ((#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9 :reset)
@@ -155,10 +162,11 @@ If COLOR isn't a colorcode a list containing COLOR is returned."
 (defun parse-color-string (string)
   "Parse a color-coded string into a list of strings and color modifiers"
   (let ((substrings
-          (remove-if (lambda (str) (zerop (length str)))
-                     (ppcre:split "(\\^[nrRbB\\[\\]^]|\\^[0-9*]{1,2}|\\^\\(.*?\\))"
-                                  string
-                                  :with-registers-p t))))
+          (remove-if
+           (lambda (str) (zerop (length str)))
+           (ppcre:split
+            "(\\^[nrRbB\\[\\]^]|\\^[0-9*]{1,2}|\\^f[0-9]|\\^\\(.*?\\))"
+            string :with-registers-p t))))
     (loop for substring in substrings append (parse-color substring))))
 
 (defun uncolorify (string)
@@ -178,6 +186,11 @@ If COLOR isn't a colorcode a list containing COLOR is returned."
                     (screen-color-map-normal screen))
                 color))
         (t (alloc-color screen color))))
+
+(defun find-font (cc specified-font &aux (font (or specified-font 0)))
+  (if (integerp font)
+      (nth font (screen-fonts (ccontext-screen cc)))
+      font))
 
 (defgeneric apply-color (ccontext modifier &rest arguments))
 
@@ -235,14 +248,33 @@ If COLOR isn't a colorcode a list containing COLOR is returned."
                 (ccontext-reversep cc))
         (pop (ccontext-color-stack cc))))
 
+(defmethod apply-color ((cc ccontext) (modifier (eql :font)) &rest args)
+  (let ((font (or (first args) 0)))
+    (setf (ccontext-font cc) (find-font cc font))))
+
+(defun max-font-height (parts cc)
+  "Return the biggest font height for all of the fonts occurring in PARTS in
+the form of (:FONT ...) modifiers."
+  (font-height
+   (cons (ccontext-font cc)
+         (loop for part in parts
+               if (and (listp part)
+                       (eq :font (first part)))
+                 collect (find-font cc (second part))))))
+
 
 (defun render-strings (screen cc padx pady strings highlights
                        &optional (draw t))
-  (let ((height (font-height (screen-font screen)))
-        (width 0)
-        (gc (ccontext-gc cc))
-        (xwin (ccontext-win cc))
-        (px (ccontext-px cc)))
+  (let* ((width 0)
+         (gc (ccontext-gc cc))
+         (xwin (ccontext-win cc))
+         (px (ccontext-px cc))
+         (strings (mapcar (lambda (string)
+                            (if (stringp string)
+                                (parse-color-string string)
+                                string))
+                          strings))
+         (height 0))
     (when draw
       ;; Create a new pixmap if there isn't one or if it doesn't match the
       ;; window
@@ -260,34 +292,36 @@ If COLOR isn't a colorcode a list containing COLOR is returned."
         (xlib:draw-rectangle px gc 0 0
                              (xlib:drawable-width px)
                              (xlib:drawable-height px) t)))
-    (loop for string in strings
+    (loop for parts in strings
           for row from 0 to (length strings)
           for x = 0
-          for parts = (if (stringp string)
-                          (parse-color-string string)
-                          string)
+          for line-height = (max-font-height parts cc)
           do (loop
                for part in parts
+               for font-height-difference = (- line-height
+                                               (font-height (ccontext-font cc)))
+               for y-to-center = (floor (/ font-height-difference 2))
                if (stringp part)
                  do (if draw
                         (draw-image-glyphs
-                         px gc (screen-font screen)
+                         px gc (ccontext-font cc)
                          (+ padx x)
-                         (+ pady (* row height)
-                            (font-ascent (screen-font screen)))
+                         (+ pady height y-to-center
+                            (font-ascent (ccontext-font cc)))
                          part
                          :translate #'translate-id
                          :size 16))
-                 and do (incf x (text-line-width (screen-font screen)
+                 and do (incf x (text-line-width (ccontext-font cc)
                                                  part
                                                  :translate #'translate-id))
                  and do (setf width (max width x))
                else
                  do (apply #'apply-color cc (first part) (rest part)))
+          do (incf height line-height)
           when (and draw (find row highlights :test 'eql))
-            do (invert-rect screen px 0 (* row height)
+            do (invert-rect screen px 0 (* row line-height)
                             (xlib:drawable-width px)
-                            height))
+                            line-height))
     (when draw
       (xlib:copy-area px gc 0 0
                       (xlib:drawable-width px)
@@ -296,4 +330,5 @@ If COLOR isn't a colorcode a list containing COLOR is returned."
     (apply-color cc :bright)
     (apply-color cc :bg)
     (apply-color cc :reverse)
-    width))
+    (apply-color cc :font)
+    (values width height)))
