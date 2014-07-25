@@ -648,7 +648,7 @@ and bottom_end_x."
     (setf (window-state w) +normal-state+)
     (xwin-hide w)))
 
-(defun xwin-grab-keys (win screen)
+(defun xwin-grab-keys (win group)
   (labels ((add-shift-modifier (key)
              ;; don't butcher the caller's structure
              (let ((key (copy-structure key)))
@@ -678,7 +678,7 @@ and bottom_end_x."
                                     :sync-pointer-p nil :sync-keyboard-p nil)
                      (xlib:grab-key w code :modifiers (x11-mods key t t) :owner-p t
                                     :sync-keyboard-p nil :sync-keyboard-p nil)))))))
-    (dolist (map (dereference-kmaps (top-maps screen)))
+    (dolist (map (dereference-kmaps (top-maps group)))
       (dolist (i (kmap-bindings map))
         (grabit win (binding-key i))))))
 
@@ -714,8 +714,8 @@ and bottom_end_x."
                  do (xwin-ungrab-keys j))
         do (xlib:display-finish-output *display*)
         do (loop for j in (screen-mapped-windows i)
-                 do (xwin-grab-keys j i))
-        do (xwin-grab-keys (screen-focus-window i) i))
+                 do (xwin-grab-keys j (window-group (find-window j))))
+        do (xwin-grab-keys (screen-focus-window i) (screen-current-group i)))
   (xlib:display-finish-output *display*))
 
 (defun netwm-remove-window (window)

@@ -493,7 +493,7 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
       (netwm-set-properties screen focus-window)
       (update-colors-for-screen screen)
       (update-color-map screen)
-      (xwin-grab-keys focus-window screen)
+      (xwin-grab-keys focus-window group)
       screen)))
 
 ;;; Screen commands
