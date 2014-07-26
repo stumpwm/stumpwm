@@ -207,7 +207,7 @@ function expects to be wrapped in a with-state for win."
   (when strings
     (unless *executing-stumpwm-command*
       (multiple-value-bind (width height)
-          (render-strings screen (screen-message-cc screen) *message-window-padding* 0 strings '() nil)
+          (rendered-size strings (screen-message-cc screen))
         (setup-message-window screen width height)
         (render-strings screen (screen-message-cc screen) *message-window-padding* 0 strings highlights))
       (setf (screen-current-msg screen)

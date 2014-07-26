@@ -262,11 +262,74 @@ the form of (:FONT ...) modifiers."
                        (eq :font (first part)))
                  collect (find-font cc (second part))))))
 
+(defun reset-color-context (cc)
+  (apply-color cc :fg)
+  (apply-color cc :bright)
+  (apply-color cc :bg)
+  (apply-color cc :reverse)
+  (apply-color cc :font))
 
-(defun render-strings (screen cc padx pady strings highlights
-                       &optional (draw t))
-  (let* ((width 0)
-         (gc (ccontext-gc cc))
+(defun rendered-string-size (string-or-parts cc &optional (resetp t))
+  "Return the width and height needed to render STRING-OR-PARTS, a single-line
+string."
+  (let* ((parts (if (stringp string-or-parts)
+                    (parse-color-string string-or-parts)
+                    string-or-parts))
+         (height (max-font-height parts cc))
+         (width 0))
+    (loop
+      for part in parts
+      if (stringp part)
+        do (incf width (text-line-width (ccontext-font cc)
+                                        part
+                                        :translate #'translate-id))
+      else
+        do (apply #'apply-color cc (first part) (rest part)))
+    (if resetp (reset-color-context cc))
+    (values width height)))
+
+(defun rendered-size (strings cc)
+  "Return the width and height needed to render STRINGS"
+  (loop for string in strings
+        for (width line-height) = (multiple-value-list
+                                   (rendered-string-size string cc nil))
+        maximizing width into max-width
+        summing line-height into height
+        finally (progn
+                  (reset-color-context cc)
+                  (return (values max-width height)))))
+
+(defun render-string (string-or-parts cc x y)
+  "Renders STRING-OR-PARTS to the pixmap in CC. Returns the height and width of
+the rendered line as two values. The returned width is the value of X plus the
+rendered width."
+  (let* ((parts (if (stringp string-or-parts)
+                    (parse-color-string string-or-parts)
+                    string-or-parts))
+         (height (max-font-height parts cc)))
+    (loop
+      for part in parts
+      for font-height-difference = (- height
+                                      (font-height (ccontext-font cc)))
+      for y-to-center = (floor (/ font-height-difference 2))
+      if (stringp part)
+        do (draw-image-glyphs
+            (ccontext-px cc)
+            (ccontext-gc cc)
+            (ccontext-font cc)
+            x (+ y y-to-center (font-ascent (ccontext-font cc)))
+            part
+            :translate #'translate-id
+            :size 16)
+        and do (incf x (text-line-width (ccontext-font cc)
+                                        part
+                                        :translate #'translate-id))
+      else
+        do (apply #'apply-color cc (first part) (rest part)))
+    (values height x)))
+
+(defun render-strings (screen cc padx pady strings highlights)
+  (let* ((gc (ccontext-gc cc))
          (xwin (ccontext-win cc))
          (px (ccontext-px cc))
          (strings (mapcar (lambda (string)
@@ -274,61 +337,35 @@ the form of (:FONT ...) modifiers."
                                 (parse-color-string string)
                                 string))
                           strings))
-         (height 0))
-    (when draw
-      ;; Create a new pixmap if there isn't one or if it doesn't match the
-      ;; window
-      (when (or (not px)
-                (/= (xlib:drawable-width px) (xlib:drawable-width xwin))
-                (/= (xlib:drawable-height px) (xlib:drawable-height xwin)))
-        (if px (xlib:free-pixmap px))
-        (setf px (xlib:create-pixmap :drawable xwin
-                                     :width (xlib:drawable-width xwin)
-                                     :height (xlib:drawable-height xwin)
-                                     :depth (xlib:drawable-depth xwin))
-              (ccontext-px cc) px))
-      ;; Clear the background
-      (xlib:with-gcontext (gc :foreground (xlib:gcontext-background gc))
-        (xlib:draw-rectangle px gc 0 0
-                             (xlib:drawable-width px)
-                             (xlib:drawable-height px) t)))
+         (y 0))
+    ;; Create a new pixmap if there isn't one or if it doesn't match the
+    ;; window
+    (when (or (not px)
+              (/= (xlib:drawable-width px) (xlib:drawable-width xwin))
+              (/= (xlib:drawable-height px) (xlib:drawable-height xwin)))
+      (if px (xlib:free-pixmap px))
+      (setf px (xlib:create-pixmap :drawable xwin
+                                   :width (xlib:drawable-width xwin)
+                                   :height (xlib:drawable-height xwin)
+                                   :depth (xlib:drawable-depth xwin))
+            (ccontext-px cc) px))
+    ;; Clear the background
+    (xlib:with-gcontext (gc :foreground (xlib:gcontext-background gc))
+      (xlib:draw-rectangle px gc 0 0
+                           (xlib:drawable-width px)
+                           (xlib:drawable-height px) t))
     (loop for parts in strings
           for row from 0 to (length strings)
-          for x = 0
-          for line-height = (max-font-height parts cc)
-          do (loop
-               for part in parts
-               for font-height-difference = (- line-height
-                                               (font-height (ccontext-font cc)))
-               for y-to-center = (floor (/ font-height-difference 2))
-               if (stringp part)
-                 do (if draw
-                        (draw-image-glyphs
-                         px gc (ccontext-font cc)
-                         (+ padx x)
-                         (+ pady height y-to-center
-                            (font-ascent (ccontext-font cc)))
-                         part
-                         :translate #'translate-id
-                         :size 16))
-                 and do (incf x (text-line-width (ccontext-font cc)
-                                                 part
-                                                 :translate #'translate-id))
-                 and do (setf width (max width x))
-               else
-                 do (apply #'apply-color cc (first part) (rest part)))
-          do (incf height line-height)
-          when (and draw (find row highlights :test 'eql))
-            do (invert-rect screen px 0 (* row line-height)
+          for line-height = (render-string parts cc
+                                           (+ padx 0)
+                                           (+ pady y))
+          when (find row highlights :test 'eql)
+            do (invert-rect screen px 0 (+ pady y)
                             (xlib:drawable-width px)
-                            line-height))
-    (when draw
-      (xlib:copy-area px gc 0 0
-                      (xlib:drawable-width px)
-                      (xlib:drawable-height px) xwin 0 0))
-    (apply-color cc :fg)
-    (apply-color cc :bright)
-    (apply-color cc :bg)
-    (apply-color cc :reverse)
-    (apply-color cc :font)
-    (values width height)))
+                            line-height)
+          do (incf y line-height))
+    (xlib:copy-area px gc 0 0
+                    (xlib:drawable-width px)
+                    (xlib:drawable-height px) xwin 0 0)
+    (reset-color-context cc)
+    (values)))
