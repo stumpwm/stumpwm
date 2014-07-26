@@ -237,7 +237,8 @@ If COLOR isn't a colorcode a list containing COLOR is returned."
   (push (list (ccontext-fg cc)
               (ccontext-bg cc)
               (ccontext-brightp cc)
-              (ccontext-reversep cc))
+              (ccontext-reversep cc)
+              (ccontext-font cc))
         (ccontext-color-stack cc)))
 
 (defmethod apply-color ((cc ccontext) (modifier (eql :pop)) &rest args)
@@ -246,7 +247,8 @@ If COLOR isn't a colorcode a list containing COLOR is returned."
     (apply-color cc :fg (first values))
     (apply-color cc :bg (second values))
     (apply-color cc :bright (third values))
-    (apply-color cc :reverse (fourth values))))
+    (apply-color cc :reverse (fourth values))
+    (apply-color cc :font (fifth values))))
 
 (defmethod apply-color ((cc ccontext) (modifier (eql :font)) &rest args)
   (let ((font (or (first args) 0)))
