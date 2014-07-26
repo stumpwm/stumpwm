@@ -149,7 +149,7 @@ If COLOR isn't a colorcode a list containing COLOR is returned."
                              0))))
           (#\^ '("^"))
           (#\( (list (read-from-string (subseq color 1))))
-          ((#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9 :reset)
+          ((#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9 #\*)
            `((:bg ,(or (parse-integer (string background)
                                       :junk-allowed t)
                        :reset))
