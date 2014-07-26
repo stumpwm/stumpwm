@@ -404,8 +404,8 @@ converted to an atom is removed."
 (define-stump-event-handler :selection-request (requestor property selection target time)
   (send-selection requestor property selection target time))
 
-(define-stump-event-handler :selection-clear ()
-  (setf *x-selection* nil))
+(define-stump-event-handler :selection-clear (selection)
+  (setf (getf *x-selection* selection) nil))
 
 (defun find-message-window-screen (win)
   "Return the screen, if any, that message window WIN belongs."

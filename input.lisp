@@ -70,6 +70,7 @@
           (define-key map (kbd "C-g") 'input-abort)
           (define-key map (kbd "ESC") 'input-abort)
           (define-key map (kbd "C-y") 'input-yank-selection)
+          (define-key map (kbd "C-Y") 'input-yank-clipboard)
           (define-key map (kbd "TAB") 'input-complete-forward)
           (define-key map (kbd "ISO_Left_Tab") 'input-complete-backward)
           (define-key map t 'input-self-insert)
@@ -558,9 +559,13 @@ functions are passed this structure as their first argument."
 (defun input-yank-selection (input key)
   (declare (ignore key))
   ;; if we own the selection then just insert it.
-  (if *x-selection*
-      (input-insert-string input *x-selection*)
+  (if (getf *x-selection* :primary)
+      (input-insert-string input (getf *x-selection* :primary))
       (xlib:convert-selection :primary :string (screen-input-window (current-screen)) :stumpwm-selection)))
+
+(defun input-yank-clipboard (input key)
+  (declare (ignore input key))
+  (xlib:convert-selection :clipboard :string (screen-input-window (current-screen)) :stumpwm-selection))
 
 
 ;;; Misc functions

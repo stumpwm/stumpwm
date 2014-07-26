@@ -27,21 +27,22 @@
 (export '(get-x-selection
           set-x-selection))
 
-(defun export-selection ()
+(defun export-selection (selection)
   (let* ((screen (current-screen))
          (selwin (screen-focus-window (current-screen)))
          (root (screen-root screen)))
-    (xlib:set-selection-owner *display* :primary selwin)
-    (unless (xlib:window-equal (xlib:selection-owner *display* :primary) selwin)
+    (xlib:set-selection-owner *display* selection selwin)
+    (unless (xlib:window-equal (xlib:selection-owner *display* selection) selwin)
       (error "Can't set selection owner"))
     ;; also set the cut buffer for completeness
-    (xlib:change-property root :cut-buffer0 *x-selection* :string 8 :transform #'xlib:char->card8
-                          :mode :replace)))
+    (xlib:change-property root :cut-buffer0 (getf *x-selection* selection)
+                               :string 8 :transform #'xlib:char->card8
+                               :mode :replace)))
 
-(defun set-x-selection (text)
+(defun set-x-selection (text &optional (selection :primary))
   "Set the X11 selection string to @var{string}."
-  (setf *x-selection* text)
-  (export-selection))
+  (setf (getf *x-selection* selection) text)
+  (export-selection selection))
 
 (defun send-selection (requestor property selection target time)
   (dformat 1 "send-selection ~s ~s ~s ~s ~s~%" requestor property selection target time)
@@ -51,7 +52,8 @@
      (xlib:change-property requestor property (list :targets :string) target 8 :mode :replace))
     ;; send them a string
     ((find target '(:string ))
-     (xlib:change-property requestor property *x-selection* :string 8 :mode :replace :transform #'xlib:char->card8))
+     (xlib:change-property requestor property (getf *x-selection* selection)
+                           :string 8 :mode :replace :transform #'xlib:char->card8))
     ;; we don't know how to handle anything else
     (t
      (setf property nil)))
@@ -64,7 +66,7 @@
                    :time time)
   (xlib:display-finish-output *display*))
 
-(defun get-x-selection (&optional timeout)
+(defun get-x-selection (&optional timeout (selection :primary))
   "Return the x selection no matter what client own it."
   (labels ((wait-for-selection (&rest event-slots &key display event-key &allow-other-keys)
              (declare (ignore display))
@@ -73,10 +75,9 @@
                  (if property
                      (xlib:get-property window property :type :string :result-type 'string :transform #'xlib:card8->char :delete-p t)
                      "")))))
-    (if *x-selection*
-        *x-selection*
+    (or (getf *x-selection* selection)
         (progn
-          (xlib:convert-selection :primary :string (screen-input-window (current-screen)) :stumpwm-selection)
+          (xlib:convert-selection selection :string (screen-input-window (current-screen)) :stumpwm-selection)
           ;; Note: this may spend longer than timeout in this loop but it will eventually return.
           (let ((time (get-internal-real-time)))
             (loop for ret = (xlib:process-event *display* :handler #'wait-for-selection :timeout timeout :discard-p nil)
