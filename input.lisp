@@ -561,11 +561,17 @@ functions are passed this structure as their first argument."
   ;; if we own the selection then just insert it.
   (if (getf *x-selection* :primary)
       (input-insert-string input (getf *x-selection* :primary))
-      (xlib:convert-selection :primary :string (screen-input-window (current-screen)) :stumpwm-selection)))
+      (xlib:convert-selection :primary
+                              :string (screen-input-window (current-screen))
+                              :stumpwm-selection)))
 
 (defun input-yank-clipboard (input key)
-  (declare (ignore input key))
-  (xlib:convert-selection :clipboard :string (screen-input-window (current-screen)) :stumpwm-selection))
+  (declare (ignore key))
+  (if (getf *x-selection* :clipboard)
+      (input-insert-string input (getf *x-selection* :clipboard))
+      (xlib:convert-selection :clipboard
+                              :string (screen-input-window (current-screen))
+                              :stumpwm-selection)))
 
 
 ;;; Misc functions

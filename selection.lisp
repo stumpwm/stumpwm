@@ -34,7 +34,8 @@
     (xlib:set-selection-owner *display* selection selwin)
     (unless (xlib:window-equal (xlib:selection-owner *display* selection) selwin)
       (error "Can't set selection owner"))
-    ;; also set the cut buffer for completeness
+    ;; also set the cut buffer for completeness. Note that this always sets cut
+    ;; buffer 0.
     (xlib:change-property root :cut-buffer0 (getf *x-selection* selection)
                                :string 8 :transform #'xlib:char->card8
                                :mode :replace)))
