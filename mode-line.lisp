@@ -295,9 +295,10 @@ critical."
   (when (eq (mode-line-mode ml) :stump)
     ;; This is a StumpWM mode-line
     (setf (xlib:drawable-height (mode-line-window ml)) 
-          (+ (* (1+ (count #\Newline (mode-line-contents ml) :test #'equal))
-                (font-height (screen-font (current-screen))))
-             (* *mode-line-pad-y* 2))))
+          (+ (* 2 *mode-line-pad-y*)
+             (nth-value 1 (rendered-size (split-string (mode-line-contents ml)
+                                                       (string #\Newline))
+                                         (mode-line-cc ml))))))
   (setf (xlib:drawable-width (mode-line-window ml)) (- (frame-width (mode-line-head ml))
                                                        (* 2 (xlib:drawable-border-width (mode-line-window ml))))
         (xlib:drawable-height (mode-line-window ml)) (min (xlib:drawable-height (mode-line-window ml))
