@@ -377,6 +377,10 @@ are valid values.
 @item :bottom-left
 @item :bottom-right
 @item :center
+@item :top
+@item :left
+@item :right
+@item :bottom
 @end table")
 
 ;; line editor
@@ -392,6 +396,10 @@ are valid values.
 @item :bottom-left
 @item :bottom-right
 @item :center
+@item :top
+@item :left
+@item :right
+@item :bottom
 @end table")
 
 ;; default values. use the set-* functions to these attributes
