@@ -48,18 +48,12 @@
   "Position the x, y of the window according to its gravity. This
 function expects to be wrapped in a with-state for win."
   (xlib:with-state ((screen-root screen))
-    (let ((w (xlib:drawable-width win))
-          (h (xlib:drawable-height win))
+    (let ((w (+ (xlib:drawable-width win) (* (xlib:drawable-border-width win) 2)))
+          (h (+ (xlib:drawable-height win) (* (xlib:drawable-border-width win) 2)))
           (screen-width (head-width (current-head)))
           (screen-height (head-height (current-head))))
-      (let ((x (case gravity
-                 ((:top-left :bottom-left) 0)
-                 (:center (truncate (- screen-width w (* (xlib:drawable-border-width win) 2)) 2))
-                 (t (- screen-width w (* (xlib:drawable-border-width win) 2)))))
-            (y (case gravity
-                 ((:bottom-right :bottom-left) (- screen-height h (* (xlib:drawable-border-width win) 2)))
-                 (:center (truncate (- screen-height h (* (xlib:drawable-border-width win) 2)) 2))
-                 (t 0))))
+      (multiple-value-bind (x y)
+          (get-gravity-coords gravity w h 0 0 screen-width screen-height)
         (setf (xlib:drawable-y win) (max (head-y (current-head)) (+ (head-y (current-head)) y))
               (xlib:drawable-x win) (max (head-x (current-head)) (+ (head-x (current-head)) x)))))))
 
