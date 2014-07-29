@@ -144,6 +144,7 @@ If COLOR isn't a colorcode a list containing COLOR is returned."
           (#\b '((:bright nil)))
           (#\[ '((:push)))
           (#\] '((:pop)))
+          (#\> '((:>)))
           (#\f `((:font ,(or (parse-integer (string background)
                                             :junk-allowed t)
                              0))))
@@ -165,7 +166,7 @@ If COLOR isn't a colorcode a list containing COLOR is returned."
           (remove-if
            (lambda (str) (zerop (length str)))
            (ppcre:split
-            "(\\^[nrRbB\\[\\]^]|\\^[0-9*]{1,2}|\\^f[0-9]|\\^\\(.*?\\))"
+            "(\\^[nrRbB>\\[\\]^]|\\^[0-9*]{1,2}|\\^f[0-9]|\\^\\(.*?\\))"
             string :with-registers-p t))))
     (loop for substring in substrings append (parse-color substring))))
 
@@ -254,6 +255,11 @@ If COLOR isn't a colorcode a list containing COLOR is returned."
   (let ((font (or (first args) 0)))
     (setf (ccontext-font cc) (find-font cc font))))
 
+(defmethod apply-color ((cc ccontext) (modifier (eql :>)) &rest args)
+  ;; This is a special case in RENDER-STRING and is thus only called when not
+  ;; rendering. Since it doesn't otherwise have any effects, we just ignore it.
+  (declare (ignore cc modifier args)))
+
 (defun max-font-height (parts cc)
   "Return the biggest font height for all of the fonts occurring in PARTS in
 the form of (:FONT ...) modifiers."
@@ -301,7 +307,7 @@ string."
                   (reset-color-context cc)
                   (return (values max-width height)))))
 
-(defun render-string (string-or-parts cc x y)
+(defun render-string (string-or-parts cc x y &aux (draw-x x))
   "Renders STRING-OR-PARTS to the pixmap in CC. Returns the height and width of
 the rendered line as two values. The returned width is the value of X plus the
 rendered width."
@@ -310,7 +316,7 @@ rendered width."
                     string-or-parts))
          (height (max-font-height parts cc)))
     (loop
-      for part in parts
+      for (part . rest) on parts
       for font-height-difference = (- height
                                       (font-height (ccontext-font cc)))
       for y-to-center = (floor (/ font-height-difference 2))
@@ -319,16 +325,23 @@ rendered width."
             (ccontext-px cc)
             (ccontext-gc cc)
             (ccontext-font cc)
-            x (+ y y-to-center (font-ascent (ccontext-font cc)))
+            draw-x (+ y y-to-center (font-ascent (ccontext-font cc)))
             part
             :translate #'translate-id
             :size 16)
-        and do (incf x (text-line-width (ccontext-font cc)
+        and do (incf draw-x (text-line-width (ccontext-font cc)
                                         part
                                         :translate #'translate-id))
       else
-        do (apply #'apply-color cc (first part) (rest part)))
-    (values height x)))
+        do (if (eq :> (first part))
+               (progn (render-string rest cc
+                                     (- (xlib:drawable-width (ccontext-px cc))
+                                        x
+                                        (rendered-string-size rest cc))
+                                     y)
+                      (loop-finish))
+               (apply #'apply-color cc (first part) (rest part))))
+    (values height draw-x)))
 
 (defun render-strings (screen cc padx pady strings highlights)
   (let* ((gc (ccontext-gc cc))
