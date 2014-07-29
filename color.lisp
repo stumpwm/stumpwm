@@ -32,6 +32,7 @@
 ;; ^[ pushes the current settings onto the color stack. The current settings
 ;;    remain unchanged.
 ;; ^] pops color settings off the stack.
+;; ^> aligns the rest of the string to the right of the window.
 ;; ^f<n> switches to the font at index n in the screen's font stack.
 ;; ^^ prints a regular caret
 ;; ^(<modifier> &rest arguments) allows for more complicated color settings:

@@ -1838,6 +1838,9 @@ Push the current colors onto the color stack. The current colors remain unchange
 @item ^]
 Pop the colors off the color stack.
 
+@item ^>
+Align the rest of the line to the right of the window.
+
 @item ^f<n>
 Sets the current font to the font at index n in the screen's font list.
 
