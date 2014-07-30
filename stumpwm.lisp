@@ -36,8 +36,9 @@ doesn't exist. Returns a values list: whether the file loaded (t if no
 rc files exist), the error if it didn't, and the rc file that was
 loaded. When CATCH-ERRORS is nil, errors are left to be handled further up. "
   (let* ((user-rc (probe-file (merge-pathnames (user-homedir-pathname) #p".stumpwmrc")))
+         (conf-rc (probe-file (merge-pathnames (user-homedir-pathname) #p".config/stumpwm/config")))
          (etc-rc (probe-file #p"/etc/stumpwmrc"))
-         (rc (or user-rc etc-rc)))
+         (rc (or user-rc conf-rc etc-rc)))
     (if rc
         ;; TODO: Should we compile the file before we load it?
         (if catch-errors
