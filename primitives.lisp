@@ -369,7 +369,7 @@ Include only those we are ready to support.")
   "The number of pixels that pad the text in the message window.")
 
 (defvar *message-window-gravity* :top-right
-  "This variable controls where the message window appears. The follow
+  "This variable controls where the message window appears. The following
 are valid values.
 @table @asis
 @item :top-left
@@ -381,6 +381,7 @@ are valid values.
 @item :left
 @item :right
 @item :bottom
+@item '(<gravity> <x-offset> <y-offset>)
 @end table")
 
 ;; line editor
@@ -388,7 +389,7 @@ are valid values.
   "A list of key-bindings for line editing.")
 
 (defvar *input-window-gravity* :top-right
-  "This variable controls where the input window appears. The follow
+  "This variable controls where the input window appears. The following
 are valid values.
 @table @asis
 @item :top-left
@@ -400,6 +401,7 @@ are valid values.
 @item :left
 @item :right
 @item :bottom
+@item '(<gravity> <x-offset> <y-offset>)
 @end table")
 
 ;; default values. use the set-* functions to these attributes
