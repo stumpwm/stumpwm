@@ -35,14 +35,18 @@
 
 (defun get-gravity-coords (gravity width height minx miny maxx maxy)
   "Return the x y coords for a window on with gravity etc"
-  (values (case gravity
-            ((:top-right :bottom-right :right) (- maxx width))
-            ((:top :bottom :center) (truncate (- maxx minx width) 2))
-            (t minx))
-          (case gravity
-            ((:bottom-left :bottom-right :bottom) (- maxy height))
-            ((:left :right :center) (truncate (- maxy miny height) 2))
-            (t miny))))
+  (destructuring-bind (gravity &optional (x-offset 0) (y-offset 0))
+      (if (listp gravity) gravity (list gravity 0 0))
+    (values (+ x-offset
+               (case gravity
+                 ((:top-right :bottom-right :right) (- maxx width))
+                 ((:top :bottom :center) (truncate (- maxx minx width) 2))
+                 (t minx)))
+            (+ y-offset
+               (case gravity
+                 ((:bottom-left :bottom-right :bottom) (- maxy height))
+                 ((:left :right :center) (truncate (- maxy miny height) 2))
+                 (t miny))))))
 
 (defun setup-win-gravity (screen win gravity)
   "Position the x, y of the window according to its gravity. This

@@ -540,8 +540,8 @@ and bottom_end_x."
 (defun set-normal-gravity (gravity)
   "Set the default gravity for normal windows. Possible values are
 @code{:center} @code{:top} @code{:left} @code{:right} @code{:bottom}
-@code{:top-left} @code{:top-right} @code{:bottom-left} and
-@code{:bottom-right}."
+@code{:top-left} @code{:top-right} @code{:bottom-left} @code{:bottom-right}
+and @code{'(<gravity> <x-offset> <y-offset>)}."
   (setf *normal-gravity* gravity)
   (update-window-gravity))
 
