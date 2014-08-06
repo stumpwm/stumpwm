@@ -478,7 +478,7 @@ Use the window's resource name.
    (float-unfocus-color :initform nil :accessor screen-float-unfocus-color)
    (msg-border-width :initform nil :accessor screen-msg-border-width)
    (frame-outline-width :initform nil :accessor screen-frame-outline-width)
-   (font :initform nil :accessor screen-font)
+   (fonts :initform '(nil) :accessor screen-fonts)
    (mapped-windows :initform nil :accessor screen-mapped-windows :documentation
     "A list of all mapped windows. These are the raw xlib:window's. window structures are stored in groups.")
    (withdrawn-windows :initform nil :accessor screen-withdrawn-windows :documentation
@@ -513,12 +513,19 @@ exist, in which case they go into the current group.")
    (last-msg-highlights :initform nil :accessor screen-last-msg-highlights)))
 
 (defstruct ccontext
+  screen
   win
   px
   gc
   default-fg
   default-bright
-  default-bg)
+  default-bg
+  fg
+  bg
+  brightp
+  reversep
+  color-stack
+  font)
 
 (defun screen-message-window (screen)
   (ccontext-win (screen-message-cc screen)))
@@ -528,6 +535,9 @@ exist, in which case they go into the current group.")
 
 (defun screen-message-gc (screen)
   (ccontext-gc (screen-message-cc screen)))
+
+(defun screen-font (screen)
+  (first (screen-fonts screen)))
 
 (defmethod print-object ((object frame) stream)
   (format stream "#S(frame ~d ~a ~d ~d ~d ~d)"
