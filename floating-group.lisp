@@ -135,7 +135,9 @@
   (screen-focus (group-screen group)))
 
 (defmethod group-current-head ((group float-group))
-  (window-head (group-current-window group)))
+  (if (group-current-window group)
+      (window-head (group-current-window group))
+      (first (screen-heads (group-screen group)))))
 
 (defun float-window-align (window)
   (with-slots (parent xwin width height) window
