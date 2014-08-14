@@ -1177,7 +1177,7 @@ of :error."
   (declare (ignorable if-exists))
   `(progn
      (ensure-directories-exist *data-dir*)
-     (with-open-file (,s ,(merge-pathnames *data-dir* file)
+     (with-open-file (,s ,(merge-pathnames file *data-dir*)
                          ,@keys)
        ,@body)))
 
