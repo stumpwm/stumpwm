@@ -191,7 +191,8 @@ than the root window's width and height."
                             (list wx wy
                                   (- (xlib:drawable-width (window-parent win)) width wx)
                                   (- (xlib:drawable-height (window-parent win)) height wy))
-                            :cardinal 32))))
+                            :cardinal 32))
+    (update-configuration win)))
 
 ;;;
 
