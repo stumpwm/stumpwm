@@ -29,6 +29,7 @@
 	  programs-in-path
 	  restarts-menu
 	  run-or-raise
+          run-or-pull
 	  run-shell-command
           window-send-string))
 
