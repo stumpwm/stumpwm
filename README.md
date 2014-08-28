@@ -31,7 +31,7 @@ WMs."
 
 If you want a minimalist tiling window manager, then StumpWM is *not*
 what you're looking for.  The code base is ~15k sloc, the binaries
-produced are ~60mb.  
+produced are ~60mb.
 
 StumpWM manages windows the way emacs manages buffers, or the way
 screen manages terminals. If you want a flexible, customizable,
@@ -81,7 +81,7 @@ If there's already a configure script then just run it.
 ```
  ./configure
 ```
-By default stumpwm elects sbcl.  If you have multiple lisps installed,
+By default stumpwm selects sbcl.  If you have multiple lisps installed,
 you can explicitly select clisp, ccl, or ecl like so:
 ```
  ./configure --with-lisp=clisp
