@@ -121,6 +121,7 @@ For stumpwm to work as intended with multiple monitors setups the
 Pull requests are always welcome! Here are some guidelines to ensure
 that your contribution gets merged in a timely manner: 
 * Do's 
+  * Add your name to the list of AUTHORS with your pull request.  
   * Preserve comments or docstrings explaining what code does, and
     update them if your patch changes them in a significant way
   * Try to follow an "80 column rule." The current code base does not
