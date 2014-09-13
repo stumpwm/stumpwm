@@ -334,19 +334,21 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
 (defun maxmin-equal-p (win)
   (let* ((xwin (window-xwin win))
          (hints (xlib:wm-normal-hints xwin)))
-    
     (with-accessors
      ((min-width xlib:wm-size-hints-min-width)
       (max-width xlib:wm-size-hints-max-width)
       (min-height xlib:wm-size-hints-min-height)
-      (max-height xlib:wm-size-hints-max-height)) hints
-      
+      (max-height xlib:wm-size-hints-max-height)
+      (x xlib:wm-size-hints-x)
+      (y xlib:wm-size-hints-y))
+        hints
+
       (and
        hints
-       max-height
-       min-height
-       max-width
-       min-width
+       x y
+       max-height min-height
+       max-width min-width
+       (= x 0) (= y 0)
        (= min-height max-height)
        (= min-width max-width)))))
 
