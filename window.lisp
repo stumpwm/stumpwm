@@ -331,7 +331,8 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
   (escape-caret (or
                  (xwin-net-wm-name win)
                  (xlib:wm-name win))))
-(defun maxmin-equal-p (win)
+
+(defun window-fullscreen-locked-p (win)
   (let* ((xwin (window-xwin win))
          (hints (xlib:wm-normal-hints xwin)))
     (with-accessors
@@ -342,7 +343,6 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
       (x xlib:wm-size-hints-x)
       (y xlib:wm-size-hints-y))
         hints
-
       (and
        hints
        x y
@@ -355,7 +355,7 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
 ;; FIXME: should we raise the window or its parent?
 (defmethod raise-window (win)
   "Map the window if needed and bring it to the top of the stack. Does not affect focus."
-  (let ((maxmin-notequal (not (maxmin-equal-p win))))
+  (let ((maxmin-notequal (not (window-fullscreen-locked-p win))))
     (when (window-urgent-p win)
       (window-clear-urgency win))
     (when (window-hidden-p win)
