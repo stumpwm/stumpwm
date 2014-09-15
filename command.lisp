@@ -25,14 +25,15 @@
 (in-package #:stumpwm)
 
 (export '(argument-line-end-p
-	  argument-pop
-	  argument-pop-or-read
-	  argument-pop-rest
-	  define-stumpwm-command
+          argument-pop
+          argument-pop-or-read
+          argument-pop-rest
+          define-stumpwm-command
           defcommand
           defcommand-alias
-	  define-stumpwm-type
-	  run-commands))
+          define-stumpwm-type
+          run-commands
+          %interactivep%))
 
 (defstruct command-alias
   from to)

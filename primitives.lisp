@@ -129,9 +129,10 @@
           command-mode-start-message
           command-mode-end-message
           split-string
-	  with-restarts-menu
+          with-restarts-menu
           with-data-file
-	  move-to-head))
+          move-to-head
+          format-expand))
 
 
 ;;; Message Timer
@@ -376,6 +377,10 @@ are valid values.
 @item :bottom-left
 @item :bottom-right
 @item :center
+@item :top
+@item :left
+@item :right
+@item :bottom
 @end table")
 
 ;; line editor
@@ -391,6 +396,10 @@ are valid values.
 @item :bottom-left
 @item :bottom-right
 @item :center
+@item :top
+@item :left
+@item :right
+@item :bottom
 @end table")
 
 ;; default values. use the set-* functions to these attributes
@@ -469,7 +478,7 @@ Use the window's resource name.
    (float-unfocus-color :initform nil :accessor screen-float-unfocus-color)
    (msg-border-width :initform nil :accessor screen-msg-border-width)
    (frame-outline-width :initform nil :accessor screen-frame-outline-width)
-   (font :initform nil :accessor screen-font)
+   (fonts :initform '(nil) :accessor screen-fonts)
    (mapped-windows :initform nil :accessor screen-mapped-windows :documentation
     "A list of all mapped windows. These are the raw xlib:window's. window structures are stored in groups.")
    (withdrawn-windows :initform nil :accessor screen-withdrawn-windows :documentation
@@ -504,12 +513,19 @@ exist, in which case they go into the current group.")
    (last-msg-highlights :initform nil :accessor screen-last-msg-highlights)))
 
 (defstruct ccontext
+  screen
   win
   px
   gc
   default-fg
   default-bright
-  default-bg)
+  default-bg
+  fg
+  bg
+  brightp
+  reversep
+  color-stack
+  font)
 
 (defun screen-message-window (screen)
   (ccontext-win (screen-message-cc screen)))
@@ -519,6 +535,9 @@ exist, in which case they go into the current group.")
 
 (defun screen-message-gc (screen)
   (ccontext-gc (screen-message-cc screen)))
+
+(defun screen-font (screen)
+  (first (screen-fonts screen)))
 
 (defmethod print-object ((object frame) stream)
   (format stream "#S(frame ~d ~a ~d ~d ~d ~d)"
@@ -889,8 +908,8 @@ The group's name.
 ;;      (font-ascent font)))
 
 (defvar *x-selection* nil
-  "This holds stumpwm's current selection. It is generally set
-when killing text in the input bar.")
+  "This is a plist of stumpwm's current selections. The different properties are
+generally set when killing text in the input bar.")
 
 (defvar *last-command* nil
   "Set to the last interactive command run.")
@@ -1088,7 +1107,7 @@ input focus is transfered to the window you click on.")
 
 (defvar *root-click-focuses-frame* t
   "Set to NIL if you don't want clicking the root window to focus the frame
-  containing the pointer when *mouse-focus-policy* is :click.")
+  containing the pointer.")
 
 (defvar *banish-pointer-to* :head
   "Where to put the pointer when no argument is given to (banish-pointer) or the banish
@@ -1158,7 +1177,7 @@ of :error."
   (declare (ignorable if-exists))
   `(progn
      (ensure-directories-exist *data-dir*)
-     (with-open-file (,s ,(merge-pathnames *data-dir* file)
+     (with-open-file (,s ,(merge-pathnames file *data-dir*)
                          ,@keys)
        ,@body)))
 

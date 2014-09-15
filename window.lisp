@@ -332,17 +332,38 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
                  (xwin-net-wm-name win)
                  (xlib:wm-name win))))
 
+(defun window-fullscreen-locked-p (win)
+  (let* ((xwin (window-xwin win))
+         (hints (xlib:wm-normal-hints xwin)))
+    (with-accessors
+     ((min-width xlib:wm-size-hints-min-width)
+      (max-width xlib:wm-size-hints-max-width)
+      (min-height xlib:wm-size-hints-min-height)
+      (max-height xlib:wm-size-hints-max-height)
+      (x xlib:wm-size-hints-x)
+      (y xlib:wm-size-hints-y))
+        hints
+      (and
+       hints
+       x y
+       max-height min-height
+       max-width min-width
+       (= x 0) (= y 0)
+       (= min-height max-height)
+       (= min-width max-width)))))
+
 ;; FIXME: should we raise the window or its parent?
 (defmethod raise-window (win)
   "Map the window if needed and bring it to the top of the stack. Does not affect focus."
-  (when (window-urgent-p win)
-    (window-clear-urgency win))
-  (when (window-hidden-p win)
-    (unhide-window win)
-    (update-configuration win))
-  (when (window-in-current-group-p win)
-    (setf (xlib:window-priority (window-parent win)) :top-if)))
-
+  (let ((maxmin-notequal (not (window-fullscreen-locked-p win))))
+    (when (window-urgent-p win)
+      (window-clear-urgency win))
+    (when (window-hidden-p win)
+      (unhide-window win)
+      (if maxmin-notequal
+          (update-configuration win)))
+    (when (and maxmin-notequal (window-in-current-group-p win))
+      (setf (xlib:window-priority (window-parent win)) :top-if))))
 ;; some handy wrappers
 
 (defun xwin-border-width (win)
@@ -629,7 +650,7 @@ and bottom_end_x."
     (setf (window-state w) +normal-state+)
     (xwin-hide w)))
 
-(defun xwin-grab-keys (win screen)
+(defun xwin-grab-keys (win group)
   (labels ((add-shift-modifier (key)
              ;; don't butcher the caller's structure
              (let ((key (copy-structure key)))
@@ -659,7 +680,7 @@ and bottom_end_x."
                                     :sync-pointer-p nil :sync-keyboard-p nil)
                      (xlib:grab-key w code :modifiers (x11-mods key t t) :owner-p t
                                     :sync-keyboard-p nil :sync-keyboard-p nil)))))))
-    (dolist (map (dereference-kmaps (top-maps screen)))
+    (dolist (map (dereference-kmaps (top-maps group)))
       (dolist (i (kmap-bindings map))
         (grabit win (binding-key i))))))
 
@@ -695,8 +716,8 @@ and bottom_end_x."
                  do (xwin-ungrab-keys j))
         do (xlib:display-finish-output *display*)
         do (loop for j in (screen-mapped-windows i)
-                 do (xwin-grab-keys j i))
-        do (xwin-grab-keys (screen-focus-window i) i))
+                 do (xwin-grab-keys j (window-group (find-window j))))
+        do (xwin-grab-keys (screen-focus-window i) (screen-current-group i)))
   (xlib:display-finish-output *display*))
 
 (defun netwm-remove-window (window)

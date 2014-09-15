@@ -1838,6 +1838,33 @@ Push the current colors onto the color stack. The current colors remain unchange
 @item ^]
 Pop the colors off the color stack.
 
+@item ^>
+Align the rest of the line to the right of the window.
+
+@item ^f<n>
+Sets the current font to the font at index n in the screen's font list.
+
+@item ^(<modifier> &rest arguments)
+Allows for more complicated color settings:
+<modifier> can be one of :fg, :bg, :reverse, :bright, :push and :pop.
+The arguments for each modifier differ:
+
+@itemize
+@item
+:fg and :bg take a color as an argument, which can either be a numeric
+index into the color map or a hexadecimal color in the form of "#fff"
+or "#ffffff".
+@item
+:reverse and :bright take either t or nil as an argument. T enables
+the setting and nil disables it.
+@item
+:font takes a integer which is represents an index into the screen's
+list of fonts, or, possibly, a literal font object that can
+immediately be used. In a string you'll probably only want to specify
+an integer.
+
+@end itemize
+
 @item ^^
 Print a regular caret.
 @end table

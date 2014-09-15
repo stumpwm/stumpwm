@@ -19,20 +19,22 @@
 (in-package :stumpwm)
 
 (export '(*mode-line-background-color*
-	  *mode-line-border-color*
-	  *mode-line-border-width*
-	  *mode-line-foreground-color*
-	  *mode-line-pad-x*
-	  *mode-line-pad-y*
-	  *mode-line-position*
-	  *mode-line-timeout*
+          *mode-line-border-color*
+          *mode-line-border-width*
+          *mode-line-foreground-color*
+          *mode-line-pad-x*
+          *mode-line-pad-y*
+          *mode-line-position*
+          *mode-line-timeout*
           *hidden-window-color*
-	  *screen-mode-line-format*
-	  *screen-mode-line-formatters*
+          *mode-line-highlight-template*
+          *screen-mode-line-format*
+          *screen-mode-line-formatters*
           add-screen-mode-line-formatter
-	  enable-mode-line
-	  toggle-mode-line
-	  bar-zone-color))
+          enable-mode-line
+          toggle-mode-line
+          bar
+          bar-zone-color))
 
 (defstruct mode-line
   screen
@@ -74,6 +76,9 @@
   "Color command for hidden windows when using the
 fmt-head-window-list-hidden-windows formatter. To disable coloring
 hidden windows, set this to an empty string.")
+
+(defvar *mode-line-highlight-template* "^R~A^r"
+  "The string passed to FORMAT to highlight things in the mode line.")
 
 (defvar *screen-mode-line-format* "[^B%n^b] %W"
   "This variable describes what will be displayed on the modeline for each screen.
@@ -177,7 +182,7 @@ timer.")
   (format nil "~a" (group-name (mode-line-current-group ml))))
 
 (defun fmt-highlight (s)
-  (format nil "^R~A^r" s))
+  (format nil *mode-line-highlight-template* s))
 
 (defun fmt-head-window-list (ml)
   "Using *window-format*, return a 1 line list of the windows, space seperated."
@@ -294,9 +299,10 @@ critical."
   (when (eq (mode-line-mode ml) :stump)
     ;; This is a StumpWM mode-line
     (setf (xlib:drawable-height (mode-line-window ml)) 
-          (+ (* (1+ (count #\Newline (mode-line-contents ml) :test #'equal))
-                (font-height (screen-font (current-screen))))
-             (* *mode-line-pad-y* 2))))
+          (+ (* 2 *mode-line-pad-y*)
+             (nth-value 1 (rendered-size (split-string (mode-line-contents ml)
+                                                       (string #\Newline))
+                                         (mode-line-cc ml))))))
   (setf (xlib:drawable-width (mode-line-window ml)) (- (frame-width (mode-line-head ml))
                                                        (* 2 (xlib:drawable-border-width (mode-line-window ml))))
         (xlib:drawable-height (mode-line-window ml)) (min (xlib:drawable-height (mode-line-window ml))
@@ -370,6 +376,8 @@ critical."
                     :format format
                     :position *mode-line-position*
                     :cc (make-ccontext :gc gc
+                                       :screen screen
+                                       :font (screen-font screen)
                                        :win w
                                        :default-fg (xlib:gcontext-foreground gc)
                                        :default-bg (xlib:gcontext-background gc)))))

@@ -119,8 +119,7 @@
   (frame-raise-window group (window-frame win) win))
 
 (defmethod group-button-press ((group tile-group) x y (where (eql :root)))
-  (when (and (eq *mouse-focus-policy* :click)
-             *root-click-focuses-frame*)
+  (when *root-click-focuses-frame*
     (let* ((frame (find-frame group x y)))
       (when frame
         (focus-frame group frame)

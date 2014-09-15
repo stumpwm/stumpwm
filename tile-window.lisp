@@ -148,7 +148,7 @@ than the root window's width and height."
            (setf height (+ h (* hints-inc-y
                                 (+ (floor (- fheight h -1) hints-inc-y)))))))))
     ;; adjust for gravity
-    (multiple-value-bind (wx wy) (get-gravity-coords (gravity-for-window win)
+    (multiple-value-bind (wx wy) (gravity-coords (gravity-for-window win)
                                                      width height
                                                      0 0
                                                      fwidth fheight)
@@ -191,7 +191,8 @@ than the root window's width and height."
                             (list wx wy
                                   (- (xlib:drawable-width (window-parent win)) width wx)
                                   (- (xlib:drawable-height (window-parent win)) height wy))
-                            :cardinal 32))))
+                            :cardinal 32))
+    (update-configuration win)))
 
 ;;;
 

@@ -404,8 +404,8 @@ converted to an atom is removed."
 (define-stump-event-handler :selection-request (requestor property selection target time)
   (send-selection requestor property selection target time))
 
-(define-stump-event-handler :selection-clear ()
-  (setf *x-selection* nil))
+(define-stump-event-handler :selection-clear (selection)
+  (setf (getf *x-selection* selection) nil))
 
 (defun find-message-window-screen (win)
   "Return the screen, if any, that message window WIN belongs."
@@ -588,8 +588,6 @@ the window in it's frame."
         (update-all-mode-lines)))))
 
 (define-stump-event-handler :button-press (window code x y child time)
-  ;; Pass click to client
-  (xlib:allow-events *display* :replay-pointer time)
   (let (screen ml win)
     (cond
       ((and (setf screen (find-screen window)) (not child))
@@ -598,7 +596,9 @@ the window in it's frame."
       ((setf ml (find-mode-line-window window))
        (run-hook-with-args *mode-line-click-hook* ml code x y))
       ((setf win (find-window-by-parent window (top-windows)))
-       (group-button-press (window-group win) x y win)))))
+       (group-button-press (window-group win) x y win))))
+  ;; Pass click to client
+  (xlib:allow-events *display* :replay-pointer time))
 
 ;; Handling event :KEY-PRESS
 ;; (:DISPLAY #<XLIB:DISPLAY :0 (The X.Org Foundation R60700000)> :EVENT-KEY :KEY-PRESS :EVENT-CODE 2 :SEND-EVENT-P NIL :CODE 45 :SEQUENCE 1419 :TIME 98761213 :ROOT #<XLIB:WINDOW :0 96> :WINDOW #<XLIB:WINDOW :0 6291484> :EVENT-WINDOW #<XLIB:WINDOW :0 6291484> :CHILD

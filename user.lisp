@@ -29,6 +29,7 @@
 	  programs-in-path
 	  restarts-menu
 	  run-or-raise
+          run-or-pull
 	  run-shell-command
           window-send-string))
 
@@ -257,7 +258,8 @@ number, with group being more significant (think radix sort)."
     (stable-sort (sort matches #'< :key #'window-number)
                  #'< :key (lambda (w) (group-number (window-group w))))))
 
-(defun run-or-raise (cmd props &optional (all-groups *run-or-raise-all-groups*) (all-screens *run-or-raise-all-screens*))
+(defun run-or-raise (cmd props &optional (all-groups *run-or-raise-all-groups*)
+                                 (all-screens *run-or-raise-all-screens*))
   "Run the shell command, @var{cmd}, unless an existing window
 matches @var{props}. @var{props} is a property list with the following keys:
 
@@ -296,7 +298,7 @@ instance. @var{all-groups} overrides this default. Similarily for
                     (first matches))))
       (if win
           (if (eq (type-of (window-group win)) 'float-group)
-              (group-focus-window (window-group win) win)
+              (focus-all win)
               (goto-win win))
           (run-shell-command cmd)))))
 

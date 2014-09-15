@@ -46,15 +46,21 @@
      (font-descent font)))
 
 (defmethod text-line-width ((font xlib:font) text &rest keys &key (start 0) end translate)
-  (apply 'xlib:text-width font text keys)
-  )
+  (declare (ignorable start end translate))
+  (apply 'xlib:text-width font text keys))
 
 (defmethod draw-image-glyphs (drawable 
                               gcontext
                               (font xlib:font)
                               x y
                               sequence &rest keys &key (start 0) end translate width size) 
+  (declare (ignorable start end translate width size))
+  (setf (xlib:gcontext-font gcontext) font)
   (apply 'xlib:draw-image-glyphs drawable 
          gcontext
          x y
          sequence keys))
+
+(defmethod font-height ((fonts cons))
+  (loop for font in fonts
+        maximizing (font-height font)))

@@ -31,7 +31,7 @@ WMs."
 
 If you want a minimalist tiling window manager, then StumpWM is *not*
 what you're looking for.  The code base is ~15k sloc, the binaries
-produced are ~60mb.  
+produced are ~60mb.
 
 StumpWM manages windows the way emacs manages buffers, or the way
 screen manages terminals. If you want a flexible, customizable,
@@ -81,7 +81,7 @@ If there's already a configure script then just run it.
 ```
  ./configure
 ```
-By default stumpwm elects sbcl.  If you have multiple lisps installed,
+By default stumpwm selects sbcl.  If you have multiple lisps installed,
 you can explicitly select clisp, ccl, or ecl like so:
 ```
  ./configure --with-lisp=clisp
@@ -121,6 +121,7 @@ For stumpwm to work as intended with multiple monitors setups the
 Pull requests are always welcome! Here are some guidelines to ensure
 that your contribution gets merged in a timely manner: 
 * Do's 
+  * Add your name to the list of AUTHORS with your pull request.  
   * Preserve comments or docstrings explaining what code does, and
     update them if your patch changes them in a significant way
   * Try to follow an "80 column rule." The current code base does not
@@ -158,13 +159,13 @@ http://ccl.clozure.com/manual/chapter15.1.html for an explanation.
 
 There's a texinfo manual, stumpwm.texi.  The build scripts generate an
 info file you can read in emacs or with the `info' program.  The
-manual for the 0.9.7 (slightly out of date) is available to read
-online at: [The Manual](http://www.nongnu.org/stumpwm/manual/stumpwm.html)
+manual for the latest git version (may be slightly out of date) is
+available to read online at: [The Manual](https://stumpwm.github.io/)
 
 And, as in emacs, you can always do "C-t h v,f,k,c,w" for docstrings
 of Variable,Functions,Keys,Commands, and Where-is respectively.
 
-For other stuff (tips tricks and examples) visit the [stumpwm wiki](https://github.com/sabetts/stumpwm/wiki)
+For other stuff (tips tricks and examples) visit the [stumpwm wiki](https://github.com/stumpwm/stumpwm/wiki)
 
 There's a #stumpwm channel on irc.freenode.net, too.
 
