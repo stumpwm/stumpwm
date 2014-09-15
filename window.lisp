@@ -331,29 +331,31 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
   (escape-caret (or
                  (xwin-net-wm-name win)
                  (xlib:wm-name win))))
-(defun maxmin-equal-p (win)
+
+(defun window-fullscreen-locked-p (win)
   (let* ((xwin (window-xwin win))
          (hints (xlib:wm-normal-hints xwin)))
-    
     (with-accessors
      ((min-width xlib:wm-size-hints-min-width)
       (max-width xlib:wm-size-hints-max-width)
       (min-height xlib:wm-size-hints-min-height)
-      (max-height xlib:wm-size-hints-max-height)) hints
-      
+      (max-height xlib:wm-size-hints-max-height)
+      (x xlib:wm-size-hints-x)
+      (y xlib:wm-size-hints-y))
+        hints
       (and
        hints
-       max-height
-       min-height
-       max-width
-       min-width
+       x y
+       max-height min-height
+       max-width min-width
+       (= x 0) (= y 0)
        (= min-height max-height)
        (= min-width max-width)))))
 
 ;; FIXME: should we raise the window or its parent?
 (defmethod raise-window (win)
   "Map the window if needed and bring it to the top of the stack. Does not affect focus."
-  (let ((maxmin-notequal (not (maxmin-equal-p win))))
+  (let ((maxmin-notequal (not (window-fullscreen-locked-p win))))
     (when (window-urgent-p win)
       (window-clear-urgency win))
     (when (window-hidden-p win)
