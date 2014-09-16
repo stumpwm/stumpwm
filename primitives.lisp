@@ -146,7 +146,11 @@
           screen-focus
           screen-float-focus-color
           screen-float-unfocus-color
-))
+
+          ;; Window states
+          +withdrawn-state+
+          +normal-state+
+          +iconic-state+))
 
 
 ;;; Message Timer
