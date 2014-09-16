@@ -36,7 +36,9 @@
     window-gravity window-group window-number window-parent window-title
     window-user-title window-class window-type window-res window-role
     window-unmap-ignores window-state window-normal-hints window-marked
-    window-plist window-fullscreen window-screen update-configuration
+    window-plist window-fullscreen window-screen
+    ;; Window utilities
+    update-configuration no-focus
     ;; Window management API
     update-decoration focus-window raise-window window-visible-p window-sync
     window-head))
