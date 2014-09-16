@@ -132,7 +132,13 @@
           with-restarts-menu
           with-data-file
           move-to-head
-          format-expand))
+          format-expand
+
+          ;; Frame accessors
+          frame-x
+          frame-y
+          frame-width
+          frame-height))
 
 
 ;;; Message Timer
