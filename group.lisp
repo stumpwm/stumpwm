@@ -24,7 +24,7 @@
 
 (in-package #:stumpwm)
 
-(export '(current-group group-windows move-window-to-group
+(export '(current-group group-windows move-window-to-group add-group
           ;; Group accessors
           group group-screen group-windows group-number group-name
           ;; Group API
