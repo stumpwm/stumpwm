@@ -138,7 +138,15 @@
           frame-x
           frame-y
           frame-width
-          frame-height))
+          frame-height
+
+          ;; Screen accessors
+          screen-heads
+          screen-root
+          screen-focus
+          screen-float-focus-color
+          screen-float-unfocus-color
+))
 
 
 ;;; Message Timer
