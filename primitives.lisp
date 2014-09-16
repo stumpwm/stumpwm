@@ -150,7 +150,17 @@
           ;; Window states
           +withdrawn-state+
           +normal-state+
-          +iconic-state+))
+          +iconic-state+
+
+          ;; Modifiers
+          modifiers
+          modifiers-p
+          modifiers-alt
+          modifiers-altgr
+          modifiers-super
+          modifiers-meta
+          modifiers-hyper
+          modifiers-numlock))
 
 
 ;;; Message Timer
