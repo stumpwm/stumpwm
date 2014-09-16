@@ -25,6 +25,8 @@
 
 (in-package :stumpwm)
 
+(export '(grab-pointer ungrab-pointer))
+
 ;; Wow, is there an easier way to do this?
 (defmacro def-thing-attr-macro (thing hash-slot)
   (let ((attr (gensym "ATTR"))
