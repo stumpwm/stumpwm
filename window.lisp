@@ -32,12 +32,14 @@
           set-window-geometry))
 
 (export
-  '(
-    window-xwin window-width window-height window-x window-y window-gravity
-    window-group window-number window-parent window-title window-user-title
-    window-class window-type window-res window-role window-unmap-ignores
-    window-state window-normal-hints window-marked window-plist
-    window-fullscreen))
+  '(window window-xwin window-width window-height window-x window-y
+    window-gravity window-group window-number window-parent window-title
+    window-user-title window-class window-type window-res window-role
+    window-unmap-ignores window-state window-normal-hints window-marked
+    window-plist window-fullscreen window-screen update-configuration
+    ;; Window management API
+    update-decoration focus-window raise-window window-visible-p window-sync
+    window-head))
 
 (defvar *default-window-name* "Unnamed"
   "The name given to a window that does not supply its own name.")
@@ -331,6 +333,14 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
   (escape-caret (or
                  (xwin-net-wm-name win)
                  (xlib:wm-name win))))
+
+(defun update-configuration (win)
+  ;; Send a synthetic configure-notify event so that the window
+  ;; knows where it is onscreen.
+  (xwin-send-configuration-notify (window-xwin win)
+                                  (xlib:drawable-x (window-parent win))
+                                  (xlib:drawable-y (window-parent win))
+                                  (window-width win) (window-height win) 0))
 
 (defun window-fullscreen-locked-p (win)
   (let* ((xwin (window-xwin win))
