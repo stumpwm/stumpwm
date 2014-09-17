@@ -15,7 +15,7 @@
   :name "StumpWM"
   :author "Shawn Betts <sabetts@vcn.bc.ca>"
   :version "0.9.8"
-  :maintainer "Shawn Betts <sabetts@vcn.bc.ca>"
+  :maintainer "David Bjergaard <dbjergaard@gmail.com>"
   ;; :license "GNU General Public License"
   :description "A tiling, keyboard driven window manager" 
   :serial t

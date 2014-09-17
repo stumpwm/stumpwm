@@ -164,9 +164,9 @@ The action is to call FUNCTION with arguments ARGS."
                     (continue)))
              ;; and if that fails treat it like a top level error.
              (perform-top-level-error-action c))))
-       ;; ;; Note: process-event appears to hang for an unknown
-       ;; ;; reason. This is why it is passed a timeout in hopes that
-       ;; ;; this will keep it from hanging.
+       ;; Note: process-event appears to hang for an unknown
+       ;; reason. This is why it is passed a timeout in hopes that
+       ;; this will keep it from hanging.
        (xlib:display-finish-output *display*)
        (let* ((to (get-next-timeout *timer-list*))
               (timeout (and to (ceiling to)))
@@ -177,8 +177,7 @@ The action is to call FUNCTION with arguments ARGS."
          (xlib:with-event-queue (*display*)
            (when nevents
              (run-hook *event-processing-hook*)
-             (xlib:process-event *display* :handler #'handle-event :timeout 0))))
-       )))
+             (xlib:process-event *display* :handler #'handle-event :timeout 0)))))))
 
 (defun parse-display-string (display)
   "Parse an X11 DISPLAY string and return the host and display from it."
@@ -264,7 +263,7 @@ The action is to call FUNCTION with arguments ARGS."
              ;; we need to jump out of the event loop in order to hup
              ;; the process because otherwise we get errors.
              ((eq ret :hup-process)
-                  (apply 'execv (first (argv)) (argv)))
+              (apply 'execv (first (argv)) (argv)))
              ((eq ret :restart))
              (t 
               (run-hook *quit-hook*)

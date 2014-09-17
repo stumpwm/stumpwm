@@ -778,7 +778,7 @@ before reopening.")
 
 (defun redirect-all-output (file)
   "Elect to redirect all output to the specified file. For instance,
-if you want everything to go to ~/stumpwm.d/debug-output.txt you would
+if you want everything to go to ~/.stumpwm.d/debug-output.txt you would
 do:
 
 @example
