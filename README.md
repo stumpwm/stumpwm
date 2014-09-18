@@ -1,6 +1,6 @@
 ![](http://www.kenanb.com/static/img/stumpwm-logo/stumpwm-logo-stripe.png)
 # The Stump Window Manager
-
+![](https://travis-ci.org/stumpwm/stumpwm.svg)
 Stumpwm is a window manager written entirely in Common Lisp. It
 attempts to be highly customizable while relying entirely on the
 keyboard for input. You will not find buttons, icons, title bars, tool
