@@ -1,7 +1,7 @@
 ;;; -*- Mode: Lisp -*-
 
 (defpackage :stumpwm-system
-  (:use :cl :asdf))
+  (:use :cl :asdf :cl-xkeysym))
 (in-package :stumpwm-system)
 
 ;; This is a hack for debian because it calls cmucl's clx
@@ -19,13 +19,12 @@
   ;; :license "GNU General Public License"
   :description "A tiling, keyboard driven window manager" 
   :serial t
-  :depends-on (:cl-ppcre #-cmu :clx #+sbcl :sb-posix)
+  :depends-on (:cl-ppcre #-cmu :clx #+sbcl :sb-posix :cl-xkeysym)
   :components ((:file "package")
 	       (:file "primitives")
                (:file "workarounds")
 	       (:file "wrappers")
                (:file "pathnames")
-	       (:file "keysyms")
 	       (:file "keytrans")
 	       (:file "kmap")
 	       (:file "input")
