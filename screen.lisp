@@ -229,7 +229,8 @@ identity with a range check."
 
 (defun update-border-for-screen (screen)
   (setf (xlib:drawable-border-width (screen-input-window screen)) (screen-msg-border-width screen)
-        (xlib:drawable-border-width (screen-message-window screen)) (screen-msg-border-width screen)))
+        (xlib:drawable-border-width (screen-message-window screen)) (screen-msg-border-width screen)
+        (xlib:drawable-border-width (screen-frame-window screen)) (screen-msg-border-width screen)))
 
 (defun update-border-all-screens ()
   "After setting the border width call this to sync any existing windows."
@@ -302,8 +303,7 @@ there is more than one frame."
   (set-any-color screen-float-unfocus-color color))
 
 (defun set-msg-border-width (width)
-  "Set the border width for the message bar and input
-bar."
+  "Set the border width for the message bar, input bar and frame indicator."
   (check-type width (integer 0))
   (dolist (i *screen-list*)
     (setf (screen-msg-border-width i) width))
