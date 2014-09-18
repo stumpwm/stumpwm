@@ -1,12 +1,12 @@
 LISP=@LISP_PROGRAM@
 
-clisp_BUILDOPTS=-K full -on-error exit < ./make-image.lisp
+clisp_BUILDOPTS=-K base -on-error exit < ./make-image.lisp
 sbcl_BUILDOPTS=--load ./make-image.lisp
 ccl_BUILDOPTS=--load ./make-image.lisp
 ecl_BUILDOPTS=-shell ./make-image.lisp
 lw_BUILDOPTS=-build ./make-image.lisp
 
-clisp_INFOOPTS=-K full -on-error exit -x "(load (compile-file \"load-stumpwm.lisp\")) (load (compile-file \"manual.lisp\")) (stumpwm::generate-manual) (ext:exit)"
+clisp_INFOOPTS=-K base -on-error exit -x "(load (compile-file \"load-stumpwm.lisp\")) (load (compile-file \"manual.lisp\")) (stumpwm::generate-manual) (ext:exit)"
 sbcl_INFOOPTS=--eval "(progn (load \"load-stumpwm.lisp\") (load \"manual.lisp\"))" --eval "(progn (stumpwm::generate-manual) (sb-ext:quit))"
 ccl_INFOOPTS=--eval "(load \"load-stumpwm.lisp\")" --load manual.lisp --eval "(progn (stumpwm::generate-manual) (quit))"
 ecl_INFOOPTS=-eval "(progn (load \"load-stumpwm.lisp\") (load \"manual.lisp\"))" -eval "(progn (stumpwm::generate-manual) (ext:quit))"
