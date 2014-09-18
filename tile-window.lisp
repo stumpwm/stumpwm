@@ -423,7 +423,8 @@ frame. Possible values are:
 (defcommand (redisplay tile-group) () ()
   "Refresh current window by a pair of resizes, also make it occupy entire frame."
   (let ((window (current-window)))
-    (with-slots (width height frame) window
+    (when window
+      (with-slots (width height frame) window
       (set-window-geometry window
                            :width (- width (window-width-inc window))
                            :height (- height (window-height-inc window)))
@@ -438,7 +439,7 @@ frame. Possible values are:
                                       (* (window-height-inc window)
                                          (floor (- (frame-height frame) height)
                                                 (window-height-inc window)))))
-      (maximize-window window))))
+      (maximize-window window)))))
 
 (defcommand frame-windowlist (&optional (fmt *window-format*)) (:rest)
   "Allow the user to select a window from the list of windows in the current
