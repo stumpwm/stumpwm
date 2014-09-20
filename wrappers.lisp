@@ -197,7 +197,9 @@
 (defun bytes-to-string (data)
   "Convert a list of bytes into a string."
   #+sbcl (handler-bind
-             ((sb-impl::octet-decoding-error #'(lambda (c) (invoke-restart 'use-value "?"))))
+             ((sb-impl::octet-decoding-error #'(lambda (c)
+                                                 (declare (ignore c))
+                                                 (invoke-restart 'use-value "?"))))
           (sb-ext:octets-to-string
            (make-array (length data) :element-type '(unsigned-byte 8) :initial-contents data)))
   #+clisp
