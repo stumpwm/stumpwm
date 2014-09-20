@@ -376,6 +376,7 @@ regarding files in sysfs. Data is read in chunks of BLOCKSIZE bytes."
     (setf (sb-alien:deref argv (length arguments)) nil)
     (sb-alien:alien-funcall (sb-alien:extern-alien "execv" (function sb-alien:int sb-alien:c-string (* sb-alien:c-string)))
                             prg (sb-alien:cast argv (* sb-alien:c-string))))
+  ;; FIXME: Using unexported and undocumented functionality isn't nice
   #+clisp
   (funcall (ffi::find-foreign-function "execv"
                                        (ffi:parse-c-type '(ffi:c-function
@@ -384,7 +385,7 @@ regarding files in sysfs. Data is read in chunks of BLOCKSIZE bytes."
                                                             (args (ffi:c-array-ptr ffi:c-string))
                                                             )
                                                            (:return-type ffi:int)))
-                                       nil nil nil)
+                                       nil nil nil nil)
            program
            (coerce arguments 'array))
   #-(or sbcl clisp)
