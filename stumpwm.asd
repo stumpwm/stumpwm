@@ -45,6 +45,7 @@
                (:file "window-placement")
                (:file "message-window")
                (:file "selection")
+               (:file "stumpwm")
                (:file "user")
                (:file "iresize")
                (:file "help")
@@ -54,7 +55,6 @@
                (:file "color")
                (:file "wse")
                (:file "module")
-               (:file "stumpwm")
                ;; keep this last so it always gets recompiled if
                ;; anything changes
                (:file "version")))
