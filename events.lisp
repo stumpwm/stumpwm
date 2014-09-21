@@ -568,6 +568,13 @@ converted to an atom is removed."
 (define-stump-event-handler :focus-out (window mode kind)
   (dformat 5 "~@{~s ~}~%" window mode kind))
 
+(define-stump-event-handler :focus-in (window mode)
+  (let ((win (find-window window)))
+    (when (and win (eq mode :normal))
+      (let ((screen (window-screen win)))
+        (unless (eq win (screen-focus screen))
+          (setf (screen-focus screen) win))))))
+
 ;;; Mouse focus
 
 (defun focus-all (win)
