@@ -125,10 +125,7 @@
             (t
              (dformat 1 "Updating Xinerama configuration for ~S.~%" screen)
              (if new-heads
-                 (progn
-                   (scale-screen screen new-heads)
-                   (mapc 'group-sync-all-heads (screen-groups screen))
-                   (update-mode-lines screen))
+                 (head-force-refresh screen new-heads)
                  (dformat 1 "Invalid configuration! ~S~%" new-heads)))))))))
 
 (define-stump-event-handler :map-request (parent send-event-p window)

@@ -49,8 +49,8 @@
    (mapcar (lambda (dir) 
              (let ((asd-file (car (directory 
                                    (make-pathname :directory (directory-namestring dir) 
-                                                  :name :wild 
-                                                  :type "asd")))))
+                                                  :type "asd"
+                                                  :name #-clisp :wild #+clisp nil)))))
                (when asd-file
                  (directory (directory-namestring asd-file))))) 
            ;; TODO, make this truely recursive

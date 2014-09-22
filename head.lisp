@@ -155,3 +155,13 @@
       (let ((nh (find (head-number h) heads  :test '= :key 'head-number))
             (oh (find (head-number h) oheads :test '= :key 'head-number)))
         (scale-head screen oh nh)))))
+
+(defun head-force-refresh (screen new-heads)
+  (scale-screen screen new-heads)    
+  (mapc 'group-sync-all-heads (screen-groups screen))
+  (update-mode-lines screen))
+
+(defcommand refresh-heads (&optional (screen (current-screen))) ()
+  "Refresh screens in case a monitor was connected, but a
+  ConfigureNotify event was snarfed by another program."
+  (head-force-refresh screen (make-screen-heads screen (screen-root screen))))
