@@ -9,8 +9,8 @@ env:
     # - LISP=ccl32
     - LISP=clisp
     # - LISP=clisp32
-    - LISP=cmucl
-    - LISP=ecl
+    # - LISP=cmucl
+    # - LISP=ecl
 
 install:
   - sudo apt-get install texinfo
