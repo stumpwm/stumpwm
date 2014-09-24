@@ -36,16 +36,22 @@
 ;; ^f<n> switches to the font at index n in the screen's font stack.
 ;; ^^ prints a regular caret
 ;; ^(<modifier> &rest arguments) allows for more complicated color settings:
-;;    <modifier> can be one of :fg, :bg, :reverse, :bright, :push and :pop.
+;;    <modifier> can be one of :fg, :bg, :reverse, :bright, :push, :pop, :font
+;;    and :>.
 ;;    The arguments for each modifier differ:
 ;;    - :fg and :bg take a color as an argument, which can either be a numeric
 ;;      index into the color map or a hexadecimal color in the form of "#fff"
 ;;      or "#ffffff".
 ;;    - :reverse and :bright take either t or nil as an argument. T enables
 ;;      the setting and nil disables it.
-;;    - :font takes a integer which is represents an index into the screen's
-;;      list of fonts, or, possibly, a literal font object that can immediately
-;;      be used. In a string you'll probably only want to specify an integer.
+;;    - :push and :pop take no arguments. :push pushes the current settings onto
+;;      the color stack, leaving the current settings intact. :pop pops color
+;;      settings off the stack, updating the current settings.
+;;    - :font takes an integer that represents an index into the screen's list
+;;      of fonts, or, possibly, a literal font object that can immediately be
+;;      used. In a string you'll probably only want to specify an integer.
+;;    - :> takes no arguments. It triggers right-alignment for the rest of the
+;;      line.
 
 (in-package :stumpwm)
 
