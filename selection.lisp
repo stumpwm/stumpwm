@@ -56,7 +56,7 @@
      (xlib:change-property requestor property (getf *x-selection* selection)
                            :string 8 :mode :replace :transform #'xlib:char->card8))
     (:utf8_string
-     (xlib:change-property requestor property (string-to-utf8 *x-selection*) target 8 :mode :replace))
+     (xlib:change-property requestor property (string-to-utf8 (getf *x-selection* selection)) target 8 :mode :replace))
     ;; we don't know how to handle anything else
     (t
      (setf property nil)))
@@ -80,7 +80,7 @@
                      "")))))
     (or (getf *x-selection* selection)
         (progn
-          (xlib:convert-selection :primary :utf8_string (screen-input-window (current-screen)) :stumpwm-selection)
+          (xlib:convert-selection selection :utf8_string (screen-input-window (current-screen)) :stumpwm-selection)
           ;; Note: this may spend longer than timeout in this loop but it will eventually return.
           (let ((time (get-internal-real-time)))
             (loop for ret = (xlib:process-event *display* :handler #'wait-for-selection :timeout timeout :discard-p nil)
