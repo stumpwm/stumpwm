@@ -47,14 +47,16 @@
 
 (defun send-selection (requestor property selection target time)
   (dformat 1 "send-selection ~s ~s ~s ~s ~s~%" requestor property selection target time)
-  (cond
+  (case target
     ;; they're requesting what targets are available
-    ((eq target :targets)
-     (xlib:change-property requestor property (list :targets :string) target 8 :mode :replace))
+    (:targets
+     (xlib:change-property requestor property (list :targets :string :utf8_string) target 8 :mode :replace))
     ;; send them a string
-    ((find target '(:string ))
+    (:string
      (xlib:change-property requestor property (getf *x-selection* selection)
                            :string 8 :mode :replace :transform #'xlib:char->card8))
+    (:utf8_string
+     (xlib:change-property requestor property (string-to-utf8 *x-selection*) target 8 :mode :replace))
     ;; we don't know how to handle anything else
     (t
      (setf property nil)))
@@ -74,11 +76,11 @@
              (when (eq event-key :selection-notify)
                (destructuring-bind (&key window property &allow-other-keys) event-slots
                  (if property
-                     (xlib:get-property window property :type :string :result-type 'string :transform #'xlib:card8->char :delete-p t)
+                     (utf8-to-string (xlib:get-property window property :type :utf8_string :result-type 'vector :delete-p t))
                      "")))))
     (or (getf *x-selection* selection)
         (progn
-          (xlib:convert-selection selection :string (screen-input-window (current-screen)) :stumpwm-selection)
+          (xlib:convert-selection :primary :utf8_string (screen-input-window (current-screen)) :stumpwm-selection)
           ;; Note: this may spend longer than timeout in this loop but it will eventually return.
           (let ((time (get-internal-real-time)))
             (loop for ret = (xlib:process-event *display* :handler #'wait-for-selection :timeout timeout :discard-p nil)
