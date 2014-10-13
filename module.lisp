@@ -27,6 +27,7 @@
 (export '(load-module
           list-modules
           *load-path*
+          *contrib-dir*
           init-load-path
 	  set-contrib-dir
           find-module
