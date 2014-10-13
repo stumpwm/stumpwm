@@ -75,8 +75,6 @@
     ;(format t "~{~a ~%~}" *load-path*)
     (sync-asdf-central-registry load-path)))
 
-(init-load-path *contrib-dir*)
-
 (defcommand set-contrib-dir (dir) ((:string "Directory: "))
   "Sets the location of the contrib modules"
   (when (stringp dir)

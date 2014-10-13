@@ -132,15 +132,14 @@
                                        &allow-other-keys)
   (declare (ignore event-slots root))
   (let* ((numpad-map '((87 10 . 16) (88  11 . 16) (89 12 . 16) (106 61 . 16)
-                      (83 13 . 16) (84  14 . 16) (85 15 . 16) (86  21 . 17)
-                      (79 16 . 16) (80  17 . 16) (81 18 . 16) (63  17 . 17) 
-                      (82 20 . 16) (104 36 . 16) (91 60 . 16) (90  19 . 17)))
+                       (83 13 . 16) (84  14 . 16) (85 15 . 16) (86  21 . 17)
+                       (79 16 . 16) (80  17 . 16) (81 18 . 16) (63  17 . 17) 
+                       (82 20 . 16) (104 36 . 16) (91 60 . 16) (90  19 . 17)))
          (numlock-on-p (= 2 (logand 2 (nth-value 4 (xlib:keyboard-control *display*)))))
          (numpad-key (assoc code numpad-map)))
     (when (and numlock-on-p numpad-key)
       (setf code (first (rest numpad-key))
             state (rest (rest numpad-key))))
-    ;; FIXME: don't use a cons
     (list* event-key code state)))
 
 (defun input-handle-selection-event (&key window selection property &allow-other-keys)

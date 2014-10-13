@@ -251,6 +251,7 @@ The action is to call FUNCTION with arguments ARGS."
   (setf *data-dir*
         (make-pathname :directory (append (pathname-directory (user-homedir-pathname))
                                           (list ".stumpwm.d"))))
+  (init-load-path *contrib-dir*)
   (loop
      (let ((ret (catch :top-level
                   (stumpwm-internal display-str))))
