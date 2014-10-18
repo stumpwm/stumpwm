@@ -121,6 +121,7 @@
           concat
           data-dir-file
           dformat
+          flatten
           define-frame-preference
           redirect-all-output
           remove-hook
@@ -963,6 +964,11 @@ raise/map denial messages will be seen.")
                   (apply 'window-matches-properties-p window props))
                 deny-list)
        t)))
+
+(defun flatten (list)
+  "Flatten LIST"
+  (labels ( (mklist (x) (if (listp x) x (list x))) )
+    (mapcan #'(lambda (x) (if (atom x) (mklist x) (flatten x))) list)))
 
 (defun list-splice-replace (item list &rest replacements)
   "splice REPLACEMENTS into LIST where ITEM is, removing

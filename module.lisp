@@ -39,25 +39,16 @@
                                                   '(:relative "contrib")))
   "The location of the contrib modules on your system.")
 
-(defun flatten (ls)
-  (labels ( (mklist (x) (if (listp x) x (list x))) )
-    (mapcan #'(lambda (x) (if (atom x) (mklist x) (flatten x))) ls)))
+
 
 (defun build-load-path (path)
   "Maps subdirectories of path, returning a list of all subdirs in the
-  first two levels which contain any files ending in .asd"
-  (flatten 
-   (mapcar (lambda (dir) 
-             (let ((asd-file (car (directory 
-                                   (make-pathname :directory (directory-namestring dir) 
-                                                  :type "asd"
-                                                  :name #-clisp :wild #+clisp nil)))))
-               (when asd-file
-                 (directory (directory-namestring asd-file))))) 
-           ;; TODO, make this truely recursive
-           (directory (concat (if (stringp path) path
-                                  (directory-namestring path))
-                              "*/*")))))
+  path which contain any files ending in .asd"
+  (map 'list #'directory-namestring 
+       (remove-if-not (lambda (file) 
+                        (search "asd" 
+                                (file-namestring file))) 
+                      (list-directory-recursive path t))))
 
 (defvar *load-path* nil
   "A list of paths in which modules can be found, by default it is
@@ -86,14 +77,17 @@
 (define-stumpwm-type :module (input prompt)
   (or (argument-pop-rest input)
       (completing-read (current-screen) prompt (list-modules) :require-match t)))
-
+(defun find-asd-file (path)
+  "Returns the first file ending with asd in `PATH', nil else."
+  (first (remove-if-not 
+          (lambda (file) 
+            (search "asd" (file-namestring file)))
+          (list-directory path))))
 (defun list-modules ()
   "Return a list of the available modules."
   (flet ((list-module (dir) 
-           (mapcar 'pathname-name
-                   (directory (make-pathname :defaults dir
-                                             :name :wild
-                                             :type "asd")))))
+           (pathname-name 
+            (find-asd-file dir))))
     (flatten (mapcar #'list-module *load-path*))))
 
 (defun find-module (name)
@@ -110,9 +104,7 @@
 an asdf system, and if so add it to the central registry"
   (let* ((pathspec (find (ensure-pathname path)  *load-path*))
          (in-central-registry (find pathspec asdf:*central-registry*))
-         (is-asdf-path (directory (make-pathname :defaults path
-                                                 :name :wild
-                                                 :type "asd"))))
+         (is-asdf-path (find-asd-file path)))
     (cond ((and pathspec in-central-registry is-asdf-path) *load-path*)
           ((and pathspec is-asdf-path (not in-central-registry)) 
            (setf asdf:*central-registry* (append (list pathspec) asdf:*central-registry*)))
@@ -127,6 +119,4 @@ an asdf system, and if so add it to the central registry"
   (let ((module (find-module name)))
       (when module
         (asdf:operate 'asdf:load-op module))))
-
-
 ;; End of file

@@ -108,5 +108,15 @@ directory form - see PATHNAME-AS-DIRECTORY."
                          (cl::directory-subdirs dirname)))
   #-(or :sbcl :cmu :scl :lispworks :openmcl :allegro :clisp :cormanlisp :ecl :abcl :digitool)
   (error "LIST-DIRECTORY not implemented"))
-
+(defun list-directory-recursive (dirname &optional flatten-p)
+  "Returns a list of pathnames corresponding to the truenames all
+  files within the directory and in any subdirectories.  If
+  `FLATTEN-P' is non-nil, flatten the list."
+  (let ((files (map 'list (lambda (dir)
+               (if (directory-pathname-p dir)
+                   (list-directory-recursive dir)
+                   dir)) (list-directory dirname))))
+    (if flatten-p
+      (flatten files)
+      files)))
 ;;; EOF
