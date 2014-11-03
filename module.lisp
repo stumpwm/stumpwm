@@ -98,7 +98,9 @@
 (defun ensure-pathname (path)
   (if (stringp path) (first (directory path))
       path))
-
+(defcommand set-contrib-dir (path)
+  "Depreciated, use `add-to-load-path' instead"
+  (message "Use add-to-load-path instead."))
 (defcommand add-to-load-path (path) ((:string "Directory: "))
   "If `PATH' is not in `*LOAD-PATH*' add it, check if `PATH' contains
 an asdf system, and if so add it to the central registry"
