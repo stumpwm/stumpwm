@@ -379,8 +379,8 @@ correctly, and allow it to function normally.
 The mode line, a concept borrowed from Emacs, is a built-in part of
 StumpWM. It is essentially a string of text that can include a variety
 of information about your current session, including the names of
-current groups and windows. Several contrib modules provide for
-different types of information. @xref{Mode-line, Mode Line}, (and the contrib
+current groups and windows. Several modules provide for
+different types of information. @xref{Mode-line, Mode Line}, (and the modules
 directory) for more.
 
 @node Manipulating Frames and Windows, Interacting with the Lisp process, Basic Concepts, Introduction
@@ -582,7 +582,7 @@ Calls the @code{set-prefix-key} function (and sets a new keyboard prefix)
 @section Contact the StumpWM developers
 The StumpWM home page is @url{http://stumpwm.nongnu.org/}.
 
-You can reach Shawn Betts at @email{sabetts at vcn.bc.ca}.
+You can reach Shawn Betts at @email{sabetts at vcn.bc.ca}. 
 
 The StumpWM mailing list is @email{stumpwm-devel@@nongnu.org} which
 you can subscribe to at
@@ -1954,10 +1954,27 @@ $$$ *event-processing-hook*
 
 @node Modules, Hacking, Hooks, Top
 @chapter Modules
-StumpWM has a growing number of modules not loaded by default. All
-modules exist in the @file{contrib/} directory of StumpWM's archive.
+A module is a ASDF system that adds additional functionality to
+StumpWM.  StumpWM searches for modules in the
+@var{*data-dir*}@file{/modules} directory.  By default this is
+@file{~/.stumpwm.d/modules}. 
+
+Officially supported modules exist in a separate repository within the
+StumpWM organization on github.  You can install the latest copy by
+issuing @command{make install-modules} from StumpWM's root source
+directory.  This will run:
+@example
+git clone git@@github.com:stumpwm/stumpwm-contrib.git ~/.stumpwm.d/modules
+@end example
+
 
 !!! load-module
+@@@ list-modules
+### *load-path*
+!!! add-to-load-path
+@@@ init-load-path
+@@@ find-module
+
 
 @node Hacking, Command and Function Index, Modules, Top
 @chapter Hacking
@@ -2035,8 +2052,8 @@ have).
 
 @item
 Any code that depends on external libraries or programs that some
-users might not have installed should be placed in the @file{contrib/}
-directory.
+users might not have installed should be packaged as a module and
+placed in the @file{*data-dir*/modules/} directory.
 
 @item
 Don't be afraid to submit your patches to the StumpWM mailing list!
@@ -2072,7 +2089,7 @@ bleeding-edge source code from the official git repository with
 a single command:
 
 @example
-$ git clone git@@github.com:sabetts/stumpwm.git
+$ git clone git@@github.com:stumpwm/stumpwm.git
 @end example
 
 After this, you'll have a complete git repository, along with the
@@ -2239,8 +2256,12 @@ before deleting your experimental branch.
 
 @node Sending Patches,  , Using git with StumpWM, Hacking
 @section Sending Patches
-When sending patches to the mailing list for inclusion in StumpWM,
-there are a few guidelines that will make everything go smoother.
+While patches are still welcome on the mailing list, StumpWM's
+development has mostly migrated to github's issue tracker.  This means
+you can open a pull request to submit a patch to StumpWM.  The
+following guidelines apply to pull requests and patches sent to the
+mailing list. Here are a few guidelines that will make integrating
+your changes go smoother.
 
 @itemize
 @item

@@ -68,7 +68,8 @@ install: stumpwm.info stumpwm
 	test -z "$(destdir)$(infodir)" || mkdir -p "$(destdir)$(infodir)"
 	install -m 644 stumpwm.info "$(destdir)$(infodir)"
 	install-info --info-dir="$(destdir)$(infodir)" "$(destdir)$(infodir)/stumpwm.info"
-
+install-modules:
+	git clone git@github.com:stumpwm/stumpwm-contrib.git ~/.stumpwm.d/modules
 uninstall:
 	rm "$(destdir)$(bindir)/stumpwm"
 	install-info --info-dir="$(destdir)$(infodir)" --remove "$(destdir)$(infodir)/stumpwm.info"

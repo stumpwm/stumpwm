@@ -18,7 +18,7 @@
 
 ;; Commentary:
 ;;
-;; Use `set-contrib-dir' to set the location stumpwm searches for modules.
+;; Use `set-module-dir' to set the location stumpwm searches for modules.
 
 ;; Code:
 
@@ -27,13 +27,13 @@
 (export '(load-module
           list-modules
           *load-path*
-          *contrib-dir*
+          *module-dir*
           init-load-path
-	  set-contrib-dir
+	  set-module-dir
           find-module
           add-to-load-path))
 
-(defvar *contrib-dir*
+(defvar *module-dir*
   #.(asdf:system-relative-pathname (asdf:find-system :stumpwm)
                                    (make-pathname :directory
                                                   '(:relative "contrib")))
@@ -52,9 +52,9 @@
 
 (defvar *load-path* nil
   "A list of paths in which modules can be found, by default it is
-  populated by any asdf systems found in the first two levels of
-  `*contrib-dir*' set from the configure script when StumpWM was built, or
-  later by the user using `set-contrib-dir'")
+  populated by any asdf systems found in `*module-dir*' set from the
+  configure script when StumpWM was built, or later by the user using
+  `add-to-load-path'")
 
 (defun sync-asdf-central-registry (load-path)
   "Sync `LOAD-PATH' with `ASDF:*CENTRAL-REGISTRY*'"
@@ -67,12 +67,12 @@
     ;(format t "~{~a ~%~}" *load-path*)
     (sync-asdf-central-registry load-path)))
 
-(defcommand set-contrib-dir (dir) ((:string "Directory: "))
-  "Sets the location of the contrib modules"
+(defun set-module-dir (dir) 
+  "Sets the location of the for StumpWM to find modules"
   (when (stringp dir)
     (setf dir (pathname (concat dir "/"))))
-  (setf *contrib-dir* dir)
-  (init-load-path *contrib-dir*))
+  (setf *module-dir* dir)
+  (init-load-path *module-dir*))
 
 (define-stumpwm-type :module (input prompt)
   (or (argument-pop-rest input)
@@ -99,7 +99,7 @@
   (if (stringp path) (first (directory path))
       path))
 
-(defun add-to-load-path (path)
+(defcommand add-to-load-path (path) ((:string "Directory: "))
   "If `PATH' is not in `*LOAD-PATH*' add it, check if `PATH' contains
 an asdf system, and if so add it to the central registry"
   (let* ((pathspec (find (ensure-pathname path)  *load-path*))

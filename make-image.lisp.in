@@ -2,7 +2,7 @@
 
 (load "load-stumpwm.lisp")
 
-#-ecl (stumpwm:set-contrib-dir "@CONTRIB_DIR@")
+#-ecl (stumpwm:set-module-dir "@CONTRIB_DIR@")
 
 #+sbcl
 (sb-ext:save-lisp-and-die "stumpwm" :toplevel (lambda ()
@@ -26,7 +26,7 @@
                  :move-here "."
                  :name-suffix ""
                  :epilogue-code '(progn
-                                  (stumpwm:set-contrib-dir "@CONTRIB_DIR@")
+                                  (stumpwm:set-module-dir "@MODULE_DIR@")
                                   (stumpwm:stumpwm)))
 
 ;;; if you want to save an image
