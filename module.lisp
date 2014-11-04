@@ -98,7 +98,7 @@
 (defun ensure-pathname (path)
   (if (stringp path) (first (directory path))
       path))
-(defcommand set-contrib-dir (path)
+(defcommand set-contrib-dir (path) ((:string "Directory: "))
   "Depreciated, use `add-to-load-path' instead"
   (message "Use add-to-load-path instead."))
 (defcommand add-to-load-path (path) ((:string "Directory: "))
