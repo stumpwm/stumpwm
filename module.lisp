@@ -62,6 +62,8 @@
         (union load-path asdf:*central-registry*)))
 
 (defun init-load-path (path)
+  "Recursively builds a list of paths that contain modules.  This is
+called each time StumpWM starts with the argument `*module-dir'"
   (let ((load-path (build-load-path path)))
     (setf *load-path* load-path)
     ;(format t "~{~a ~%~}" *load-path*)

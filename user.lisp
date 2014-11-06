@@ -175,9 +175,11 @@ such a case, kill the shell command to resume StumpWM."
 (defcommand eval-line (cmd) ((:rest "Eval: "))
   "Evaluate the s-expression and display the result(s)."
   (handler-case
-      (message "^20~{~a~^~%~}"
+      (if cmd
+          (message "^20~{~a~^~%~}"
                (mapcar 'prin1-to-string
                        (multiple-value-list (eval (read-from-string cmd)))))
+          (throw 'error :abort))
     (error (c)
       (err "^B^1*~A" c))))
 

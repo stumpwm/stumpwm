@@ -165,7 +165,7 @@ Groups
 
 Screens
 
-* Xinerama::
+* External Monitors::
 * Programming With Screens::
 
 Miscellaneous Commands
@@ -180,6 +180,9 @@ Colors
 
 * Behind The Scenes Look At Colors::
 
+Modules
+* Writing Modules::
+
 Hacking
 
 * General Advice::
@@ -191,9 +194,18 @@ Hacking
 
 @node Introduction, Key Bindings, Top, Top
 @chapter Introduction
-StumpWM is an X11 window manager written entirely in Common Lisp. Its
-user interface goals are similar to ratpoison's but with an emphasis on
-customizability, completeness, and cushiness.
+StumpWM is a manual, tiling X11 window manager written entirely in
+Common Lisp. Unlike traditional window managers, StumpWM places
+windows in order to maximize the amount of the screen used.  The
+window layouts managed by StumpWM are defined by the user in much the
+same way that windows are managed by GNU screen, or emacs.  
+
+Before StumpWM, there was ratpoison, another tiling window manager
+written entirely in C.  StumpWM grew out of the authors' frustration
+with writing ratpoison in C. Very quickly we realized we were building
+into ratpoison lispy-emacs style paradigms. StumpWM's goals are
+similar to ratpoison's but with an emphasis on customizability,
+completeness, and cushiness.
 
 @menu
 * Starting StumpWM::
@@ -906,8 +918,10 @@ xmodmap ~/.Xmodmap
 exec /usr/bin/stumpwm
 @end example
 
-If you use a graphical login manager (GDM, KDM, etc.), your @file{~/.Xmodmap}
-file should be fed to @command{xmodmap} when you log in. FIXME: verify this.
+If you use a settings daemon from one of the major desktop
+environments (Gnome,KDE, or Unity) you may be able to set keyboard
+modifiers from their respective configuration GUIs.  If not,
+@command{xmodmap} should always work if invoked at the right place.
 
 @item
 Handling Meta and Alt: when do I use @kbd{M-} and @kbd{A-}?
@@ -1545,7 +1559,7 @@ displays the list of windows, similar to the output @kbd{C-t w} produces.
 Alternatively, external panel applications such as the GNOME panel and
 KDE's kicker may be used. Simply starting one of these programs is enough
 to set it as the mode line of the head it would like to be on (if the
-panel is Xinerama aware) or whichever head is available. In order to
+panel is XRandR aware) or whichever head is available. In order to
 avoid problems displaying menus, configure your panel application for
 positioning at the top or bottom of the head rather than relying on
 @var{*mode-line-position*}
@@ -1636,20 +1650,29 @@ StumpWM handles multiple screens.
 !!! sother
 
 @menu
-* Xinerama::
+* External Monitors::
 * Programming With Screens::
 @end menu
 
-@node Xinerama, Programming With Screens, Screens, Screens
-@section Xinerama
-StumpWM will attempt to detect Xinerama heads at startup (and at no other
-time.) Heads are logically contained by screens. In a dual-monitor Xinerama
-configuration, there will be one screen with two heads. Non-rectangular layouts
-are supported (frames will not be created in the 'dead zone'.) And message
-windows will be displayed on the current head--that is, the head to which the
-currently focused frame belongs.
+@node External Monitors, Programming With Screens, Screens, Screens
+@section External Monitors
+StumpWM will attempt to detect external monitors (via @code{xdpyinfo})
+at startup. StumpWM refers to each monitor as a
+head. Heads are logically contained by screens. In a dual-monitor
+configuration, there will be one screen with two
+heads. Non-rectangular layouts are supported (frames will not be
+created in the 'dead zone'.) And message windows will be displayed on
+the current head--that is, the head to which the currently focused
+frame belongs.
 
-@node Programming With Screens,  , Xinerama, Screens
+In addition, StumpWM listens for XRandR events and re-configures the
+heads to match the new monitor configuration. Occasionally StumpWM
+will miss an XRandR event, use @code{refresh-heads} to synchronize
+the head configuration.  
+
+!!! refresh-heads
+
+@node Programming With Screens,  , External Monitors, Screens
 @section Programming With Screens
 
 @@@ current-screen
@@ -1974,7 +1997,74 @@ git clone git@@github.com:stumpwm/stumpwm-contrib.git ~/.stumpwm.d/modules
 !!! add-to-load-path
 @@@ init-load-path
 @@@ find-module
+@section Writing Modules
+Make sure to read the @ref{Hacking}. If you are familiar with writing
+ASDF then you can jump in and get started.  In either case, quicklisp
+ships a @code{quickproject} package that makes setting up a new module
+very easy.  After installing quicklisp (see the README.md for a link):
 
+We're going to put our new module in the @file{modules/} directory of
+@var{*data-dir*} so that it will be immediately loadable by stumpwm.
+
+First make the directory @file{new-module}, then from a REPL issue:
+@example
+(ql:quickload "quickproject")
+(quickproject:make-project #p"~/.stumpwm.d/modules/new-module" :depends-on '(stumpwm) :name "new-module")
+@end example
+This will create:
+@example
+  -rw-rw-r--  1 dave dave   68 Apr  6 19:38 package.lisp
+  -rw-rw-r--  1 dave dave   53 Mar 16  2014 README.txt
+  -rw-rw-r--  1 dave dave  271 Mar 16  2014 new-module.asd
+  -rw-rw-r--  1 dave dave 1.8K Apr  6 17:51 new-module.lisp
+@end example
+
+The file @file{new-module.lisp} will contain the actual implementation
+of your module.  ASDF requires two other files in order to understand
+how to load and compile your module.  They are @file{new-module.asd}
+and @file{package.lisp}.  In our example, @file{new-module.asd} should
+contain:
+@example
+(asdf:defsystem #:new-module
+  :serial t
+  :description "Describe new-module here"
+  :author "Anne N. O'Nymous"
+  :license "GPLv3"
+  :depends-on (#:stumpwm)
+  :components ((:file "package")
+               (:file "new-module"))) ; any other files you make go here
+@end example
+The @file{package.lisp} will contain:
+@example
+(defpackage #:new-module
+  (:use #:cl :stumpwm))
+@end example
+With these two files defined, and the implementation written in
+@file{new-module.lisp}, you should be able to load your module.
+
+Before we load it, we have to add the path to our @var{*load-path*}.
+This can be accomplished by running the following from a REPL:
+@example
+(stumpwm:add-to-load-path "~/.stumpwm.d/modules/new-module")
+@end example
+You can also run this interactively with @kbd{C-t ;}, which is bound
+to the @command{colon} command. 
+
+Because we've put our module in a sub-directory of the default
+@var{*module-dir*}, it will automatically get added to the
+@var{*load-path*} the next time StumpWM starts.  If you choose to
+develop your module somewhere else (e.g.
+@file{~/quicklisp/local-projects}), then you'll have add 
+@example
+(add-to-load-path "~/quicklisp/local-projects/new-module")
+@end example
+to your @file{.stumpwmrc}.  
+
+When you've finished writing your module, you can distribute it
+however you see fit.  If it becomes very popular, or you would like
+the StumpWM devs to maintain it (and they agree), you can have your
+module merged with the stumpwm-contrib repository on github, just open
+a pull request to start the discussion.
 
 @node Hacking, Command and Function Index, Modules, Top
 @chapter Hacking
@@ -2062,7 +2152,7 @@ individual users might find it useful and apply it to their own setup,
 or might be willing to offer suggestions on how to improve the code.
 
 @item
-Remember:  StumpWM is designed to run on both clisp and on SBCL. If
+Remember:  StumpWM is designed to run on many lisp systems. If
 you must use code specific to one or the other, at the very least warn
 people that it only works with one lisp implementation. Better yet,
 figure out how to do it in the other distribution and write a
@@ -2084,9 +2174,8 @@ find a way to use the same code for clisp and SBCL.
 
 For quite a while now, StumpWM has been using the git version control
 system for development. If you're one using one of the official
-releases or still using the now-obsolete CVS version, you can get the
-bleeding-edge source code from the official git repository with
-a single command:
+releases, you can get the bleeding-edge source code from the official
+git repository with a single command:
 
 @example
 $ git clone git@@github.com:stumpwm/stumpwm.git
@@ -2260,8 +2349,7 @@ While patches are still welcome on the mailing list, StumpWM's
 development has mostly migrated to github's issue tracker.  This means
 you can open a pull request to submit a patch to StumpWM.  The
 following guidelines apply to pull requests and patches sent to the
-mailing list. Here are a few guidelines that will make integrating
-your changes go smoother.
+mailing list. 
 
 @itemize
 @item
