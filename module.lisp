@@ -101,7 +101,7 @@ called each time StumpWM starts with the argument `*module-dir'"
   (if (stringp path) (first (directory path))
       path))
 (defcommand set-contrib-dir (path) ((:string "Directory: "))
-  "Depreciated, use `add-to-load-path' instead"
+  "Deprecated, use `add-to-load-path' instead"
   (message "Use add-to-load-path instead."))
 (defcommand add-to-load-path (path) ((:string "Directory: "))
   "If `PATH' is not in `*LOAD-PATH*' add it, check if `PATH' contains
