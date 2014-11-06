@@ -18,7 +18,7 @@ install:
     then
       ./install.sh;
     else
-      curl https://raw2.github.com/luismbo/cl-travis/master/install.sh | sh;
+      https://raw.githubusercontent.com/luismbo/cl-travis/master/install.sh | sh;
     fi
   - cl-launch -i '(ql:quickload "clx")' -i '(ql:quickload "cl-ppcre")'
 
