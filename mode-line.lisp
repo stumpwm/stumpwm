@@ -107,13 +107,32 @@ List all windows on the current head of the current group using
 
 @item %g
 List the groups using @var{*group-format*}
-@end table")
 
-(defvar *screen-mode-line-formatters* '((#\w fmt-window-list)
-                                        (#\g fmt-group-list)
-                                        (#\h fmt-head)
-                                        (#\n fmt-group)
+@item %n
+The current group's name
+
+@item %u
+Using @var{*window-format*}, return a 1 line list of the urgent windows, space seperated.
+
+@item %v
+Using @var{*window-format*}, return a 1 line list of the windows, space
+separated. The currently focused window is highlighted with
+fmt-highlight. Any non-visible windows are colored the
+*hidden-window-color*.
+
+@item %d
+Using @var{*time-modeline-string*}, print the time.
+
+@end table
+
+A number of modules have been written that extends the possible
+formatting strings.  See their documentation for details.")
+
+(defvar *screen-mode-line-formatters* '((#\h fmt-head)
+                                        (#\w fmt-window-list)
                                         (#\W fmt-head-window-list)
+                                        (#\g fmt-group-list)
+                                        (#\n fmt-group)
                                         (#\u fmt-urgent-window-list)
                                         (#\v fmt-head-window-list-hidden-windows)
                                         (#\d fmt-modeline-time))
@@ -150,7 +169,7 @@ timer.")
 ;; ',' and the ';' are provided as strings [not yet implemented]).
 
 (defun fmt-urgent-window-list (ml)
-  "Using *window-format*, return a 1 line list of the urgent windows, space seperated."
+  "Using `*window-format*', return a 1 line list of the urgent windows, space seperated."
    (format nil "~{~a~^ ~}"
           (mapcar (lambda (w)
                     (let ((str (format-expand *window-formatters* *window-format* w)))

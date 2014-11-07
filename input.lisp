@@ -25,6 +25,7 @@
 
 (export '(*input-history-ignore-duplicates*
           *input-map*
+          *numpad-map*
 	  completing-read
 	  input-delete-region
 	  input-goto-char

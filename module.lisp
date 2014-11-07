@@ -1,4 +1,5 @@
 ;; Copyright (C) 2008 Julian Stecklina, Shawn Betts, Ivy Foster
+;; Copyright (C) 2014 David Bjergaard
 ;;
 ;;  This file is part of stumpwm.
 ;;

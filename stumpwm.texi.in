@@ -14,6 +14,7 @@
 This is the Stump Window Manager user manual.
 
 Copyright @copyright{} 2000-2008 Shawn Betts
+Copyright @copyright{} 2014 David Bjergaard
 
 Permission is granted to make and distribute verbatim
 copies of this manual provided the copyright notice and
@@ -50,11 +51,12 @@ translation approved by the Free Software Foundation.
 @titlepage
 @sp 10
 @titlefont{The Stump Window Manager}
-@author Shawn Betts
+@author Shawn Betts, David Bjergaard
 
 @page
 @vskip 0pt plus 1filll
 Copyright @copyright{} 2000-2008 Shawn Betts
+Copyright @copyright{} 2014 David Bjergaard
 
 Permission is granted to make and distribute verbatim
 copies of this manual provided the copyright notice and
@@ -271,7 +273,7 @@ this empty frame. Type @kbd{C-t w} for a window listing. Find the
 @command{xterm} window. See the number beside it? Type @kbd{C-t} followed
 by @command{xterm}'s window number.
 
-Another common activity is browsing the interwebs. Type @kbd{C-t !}.
+Another common activity is browsing the internet. Type @kbd{C-t !}.
 The input bar pops up again. You can now run a shell command.  Let's
 start a web browser: type @command{firefox} into the input bar and press
 return.
@@ -1233,7 +1235,8 @@ return a ``nil'' value in those cases, and let the command handle that.
 @node Customizing The Bar, Using The Input Bar, Message and Input Bar, Message and Input Bar
 @section Customizing The Bar
 The bar's appearance and behavior can be modified with the following
-functions and variables.
+functions and variables. See @ref{Colors} for an explanation of how to
+set these color variables.
 
 @@@ set-fg-color
 @@@ set-bg-color
@@ -1397,6 +1400,9 @@ list. Some commands operate only on marked windows.
 ### *transient-border-width*
 ### *normal-border-width*
 ### *window-border-style*
+
+See @ref{Colors} for an explanation of how to set these color
+variables.
 
 @@@ set-win-bg-color
 @@@ set-focus-color
@@ -1595,7 +1601,8 @@ might do the following:
 ### *screen-mode-line-format*
 
 The following variables control the color, position, and size of the
-mode line.
+mode line. See @ref{Colors} for an explanation of how to set these
+color variables.
 
 ### *mode-line-position*
 ### *mode-line-border-width* 1
@@ -1824,9 +1831,14 @@ Return T if TIMER is a timer structure.
 
 @node Colors, Hooks, Miscellaneous Commands, Top
 @chapter Colors
+When specifying a color, it is possible to use its X11 Color Name
+(usually in the file @file{/etc/X11/rgb.txt}).  You can also use a
+six digit hex string prefixed by a '#' character in the same way that
+you can specify colors in HTML.  
+
 All text printed by stumpwm is run through a coloring engine before
 being displayed. All color commands start with a @samp{^} (caret)
-character and apply to all text after it.
+character and apply to all text after it. 
 
 @table @code
 @item ^0-9
