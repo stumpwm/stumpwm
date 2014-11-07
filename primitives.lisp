@@ -876,7 +876,8 @@ characters.")
   "The format used in the info command. @xref{*window-format*} for formatting details.")
 
 (defparameter *window-format-by-class* "%m%n %c %s%50t"
-  "The format used in the info winlist-by-classe command. @xref{*window-format*} for formatting details.")
+  "The format used in the info winlist-by-class
+  command. @xref{*window-format*} for formatting details.")
 
 (defvar *group-formatters* '((#\n group-map-number)
                              (#\s fmt-group-status)

@@ -1039,23 +1039,24 @@ is using the number, then the windows swap numbers. Defaults to current group."
 		     (mapcar 'window-number windows))
 		   0))))))
 
-(defcommand windowlist (&optional (fmt *window-format*)
-                                  (window-list (sort-windows-by-number (group-windows (current-group)))))
+(defcommand windowlist (&optional (fmt *window-format*))
     (:rest)
   "Allow the user to Select a window from the list of windows and focus
 the selected window. For information of menu bindings
 @xref{Menus}. The optional argument @var{fmt} can be specified to
 override the default window formatting."
-  (if (null window-list)
+  (if (null (group-windows (current-group)))
       (message "No Managed Windows")
       (let* ((group (current-group))
-             (window (select-window-from-menu window-list fmt)))
+             (window-list (sort-windows (group-windows group))))
+        (window (select-window-from-menu window-list fmt))
         (if window
             (group-focus-window group window)
             (throw 'error :abort)))))
 
 (defcommand windowlist-by-class (&optional (fmt *window-format-by-class*)) (:rest)
-  "Same as @xref{windowlist} but sorts the windows by their classes."
+  "Lists windows sorted by their respective classes, see
+@xref{windowlist} for more information"
   (windowlist fmt (sort-windows-by-class (group-windows (current-group)))))
 
 (defcommand window-send-string (string &optional (window (current-window))) ((:rest "Insert: "))
