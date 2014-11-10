@@ -2,7 +2,7 @@
 
 (load "load-stumpwm.lisp")
 
-#-ecl (stumpwm:set-module-dir "@CONTRIB_DIR@")
+#-ecl (stumpwm:set-module-dir "@MODULE_DIR@")
 
 #+sbcl
 (sb-ext:save-lisp-and-die "stumpwm" :toplevel (lambda ()
