@@ -408,9 +408,39 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
       (defun (setf ,(intern1 (format nil "WINDOW-~a" attr))) (,val ,win)
         (setf (gethash ,attr (window-plist ,win)) ,val)))))
 
-(defun sort-windows (group)
+(defgeneric sort-windows-by-number (window-list-spec)
+  (:documentation "Return a copy of the provided window list sorted by number."))
+
+(defmethod sort-windows-by-number ((window-list list))
+  "Return a copy of the screen's window list sorted by number."
+  (sort1 window-list '< :key 'window-number))
+
+(defmethod sort-windows-by-number ((group group))
   "Return a copy of the screen's window list sorted by number."
   (sort1 (group-windows group) '< :key 'window-number))
+
+
+(defgeneric sort-windows-by-class (window-list-spec)
+  (:documentation "Return a copy of the provided window list sortes by class
+ then by numer."))
+
+(defmethod sort-windows-by-class ((window-list list))
+  "Return a copy of the provided window list sorted by class then by number."
+  (sort1 window-list (lambda (w1 w2)
+		       (let ((class1 (window-class w1))
+			     (class2 (window-class w2)))
+			 (if (string= class1 class2)
+			     (< (window-number w1) (window-number w2))
+			     (string< class1 class2))))))
+
+(defmethod sort-windows-by-class (group)
+  "Return a copy of the provided window list sorted by class then by number."
+  (sort-windows-by-class (group-windows group)))
+
+
+(defun sort-windows (group)
+  "Return a copy of the screen's window list sorted by number."
+    (sort-windows-by-number group))
 
 (defun marked-windows (group)
   "Return the marked windows in the specified group."
@@ -897,7 +927,7 @@ needed."
   (dformat 3 "Kill client~%")
   (xlib:kill-client *display* (xlib:window-id window)))
 
-(defun select-window-from-menu (windows fmt)
+(defun select-window-from-menu (windows fmt &optional prompt)
   "Allow the user to select a window from the list passed in @var{windows}.  The
 @var{fmt} argument specifies the window formatting used.  Returns the window
 selected."
@@ -905,7 +935,7 @@ selected."
 			    (mapcar (lambda (w)
 				      (list (format-expand *window-formatters* fmt w) w))
                                     windows)
-                            nil
+                            prompt
                             (or (position (current-window) windows) 0))))
 
 ;;; Window commands
@@ -1009,19 +1039,25 @@ is using the number, then the windows swap numbers. Defaults to current group."
 		     (mapcar 'window-number windows))
 		   0))))))
 
-(defcommand windowlist (&optional (fmt *window-format*)) (:rest)
-"Allow the user to Select a window from the list of windows and focus
+(defcommand windowlist (&optional (fmt *window-format*)
+                                  (window-list (sort-windows-by-number 
+                                                (group-windows (current-group))))) (:rest)
+  "Allow the user to Select a window from the list of windows and focus
 the selected window. For information of menu bindings
 @xref{Menus}. The optional argument @var{fmt} can be specified to
 override the default window formatting."
-  (if (null (group-windows (current-group)))
+  (if (null window-list)
       (message "No Managed Windows")
-      (let* ((group (current-group))
-             (window (select-window-from-menu (sort-windows group) fmt)))
+      (let ((window (select-window-from-menu window-list fmt)))
         (if window
-            (group-focus-window group window)
+            (group-focus-window (current-group) window)
             (throw 'error :abort)))))
 
+
+(defcommand windowlist-by-class (&optional (fmt *window-format-by-class*)) (:rest)
+  "Lists windows sorted by their respective classes, see
+@xref{windowlist} for more information"
+  (windowlist fmt (sort-windows-by-class (group-windows (current-group)))))
 
 (defcommand window-send-string (string &optional (window (current-window))) ((:rest "Insert: "))
   "Send the string of characters to the current window as if they'd been typed."

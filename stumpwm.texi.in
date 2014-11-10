@@ -175,6 +175,7 @@ Miscellaneous Commands
 * Menus::
 * StumpWM's Data Directory::
 * Debugging StumpWM::
+* Sending a Bug Report::
 * Timers::
 * Getting Help::
 
@@ -596,12 +597,12 @@ Calls the @code{set-prefix-key} function (and sets a new keyboard prefix)
 @section Contact the StumpWM developers
 The StumpWM home page is @url{http://stumpwm.nongnu.org/}.
 
-You can reach Shawn Betts at @email{sabetts at vcn.bc.ca}. 
-
 The StumpWM mailing list is @email{stumpwm-devel@@nongnu.org} which
 you can subscribe to at
-@url{http://mail.nongnu.org/mailman/listinfo/stumpwm-devel}. Posting
-is restricted to subscribers to keep spam out of the archives.
+@url{https://lists.nongnu.org/mailman/listinfo/stumpwm-devel}. It is
+the preferred way of contacting developers for questions.  If you have
+a bug report or patch, please open an issue or pull request at
+@url{https://github.com/stumpwm/stumpwm/issues}. 
 
 The StumpWM IRC channel can be found on Freenode at
 @uref{irc://irc.freenode.net/#stumpwm, @code{#stumpwm}}.
@@ -1764,6 +1765,7 @@ section.
 * Menus::
 * StumpWM's Data Directory::
 * Debugging StumpWM::
+* Sending a Bug Report::
 * Timers::
 * Getting Help::
 @end menu
@@ -1802,14 +1804,43 @@ some functions to make doing this easier.
 @@@ data-dir-file
 %%% with-data-file
 
-@node Debugging StumpWM, Timers, StumpWM's Data Directory, Miscellaneous Commands
+@node Debugging StumpWM, Sending a Bug Report, StumpWM's Data Directory, Miscellaneous Commands
 @section Debugging StumpWM
 
 ### *debug-level*
 ### *debug-stream*
 @@@ redirect-all-output
 
-@node Timers, Getting Help, Debugging StumpWM, Miscellaneous Commands
+@node Sending a Bug Report, Timers, Debugging StumpWM, Miscellaneous Commands
+@section Sending a Bug Report
+While StumpWM's code-base is quite mature, it still contains some
+bugs. If you encounter one here are some guidelines for making sure
+the developers can fix it:
+@itemize @bullet
+@item
+Include a procedure for reproducing the bug/bad behavior. Ideally this
+will include numbered steps starting with instructions on how you
+start stumpwm. Also include what the expected behavior was.
+@item 
+Be as detailed as possible. Then add more detail!
+@item 
+Make sure its not something you introduced by using an empty @file{.xinitrc}
+containing only 'exec /path/to/stumpwm'. 
+@item
+Make sure the bug is present even when @file{.stumwmrc} is empty.
+@item
+If you are using the git version, include the hash of the master
+branch, or better include the commit when you started to notice the
+bug.
+@item 
+If you have code that fixes the bug, then open a pull request at
+@url{https://github.com/stumpwm/stumpwm/compare/}.
+@item
+If you don't have code to fix the bug, then open an issue at
+@url{https://github.com/stumpwm/stumpwm/issues/new}.
+@end itemize
+
+@node Timers, Getting Help, Sending a Bug Report, Miscellaneous Commands
 @section Timers
 StumpWM has a timer system similar to that of @dfn{Emacs}.
 
@@ -2016,10 +2047,11 @@ git clone git@@github.com:stumpwm/stumpwm-contrib.git ~/.stumpwm.d/modules
 
 @node Writing Modules,  , Modules, Modules
 @section Writing Modules
-Make sure to read the @ref{Hacking}. If you are familiar with writing
-ASDF then you can jump in and get started.  In either case, quicklisp
-ships a @code{quickproject} package that makes setting up a new module
-very easy.  After installing quicklisp (see the README.md for a link):
+Make sure to read @ref{Hacking}. If you are familiar with writing lisp
+packages for ASDF then you can jump in and get started.  In either
+case, quicklisp ships a @code{quickproject} package that makes setting
+up a new module very easy.  After installing quicklisp (see the
+README.md for a link):
 
 We're going to put our new module in the @file{modules/} directory of
 @var{*data-dir*} so that it will be immediately loadable by stumpwm.
