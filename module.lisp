@@ -34,10 +34,7 @@
           find-module
           add-to-load-path))
 
-(defvar *module-dir*
-  #.(asdf:system-relative-pathname (asdf:find-system :stumpwm)
-                                   (make-pathname :directory
-                                                  '(:relative "contrib")))
+(defvar *module-dir* (make-pathname :directory (concat (getenv "HOME") ".stumpwm.d/modules"))
   "The location of the contrib modules on your system.")
 
 
@@ -101,7 +98,7 @@ called each time StumpWM starts with the argument `*module-dir'"
 (defun ensure-pathname (path)
   (if (stringp path) (first (directory path))
       path))
-(defcommand set-contrib-dir (path) ((:string "Directory: "))
+(defcommand set-contrib-dir () (:rest)
   "Deprecated, use `add-to-load-path' instead"
   (message "Use add-to-load-path instead."))
 (defcommand add-to-load-path (path) ((:string "Directory: "))
