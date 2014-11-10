@@ -1818,9 +1818,9 @@ bugs. If you encounter one here are some guidelines for making sure
 the developers can fix it:
 @itemize @bullet
 @item
-Include a procedure for reproducing the bug/bad behavior. Numbered
-steps starting with instructions on how you start stumpwm. Also
-include what the expected behavior was.
+Include a procedure for reproducing the bug/bad behavior. Ideally this
+will include numbered steps starting with instructions on how you
+start stumpwm. Also include what the expected behavior was.
 @item 
 Be as detailed as possible. Then add more detail!
 @item 

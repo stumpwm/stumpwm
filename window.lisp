@@ -1039,20 +1039,20 @@ is using the number, then the windows swap numbers. Defaults to current group."
 		     (mapcar 'window-number windows))
 		   0))))))
 
-(defcommand windowlist (&optional (fmt *window-format*))
-    (:rest)
+(defcommand windowlist (&optional (fmt *window-format*)
+                                  (window-list (sort-windows-by-number 
+                                                (group-windows (current-group))))) (:rest)
   "Allow the user to Select a window from the list of windows and focus
 the selected window. For information of menu bindings
 @xref{Menus}. The optional argument @var{fmt} can be specified to
 override the default window formatting."
-  (if (null (group-windows (current-group)))
+  (if (null window-list)
       (message "No Managed Windows")
-      (let* ((group (current-group))
-             (window-list (sort-windows (group-windows group))))
-        (window (select-window-from-menu window-list fmt))
+      (let ((window (select-window-from-menu window-list fmt)))
         (if window
-            (group-focus-window group window)
+            (group-focus-window (current-group) window)
             (throw 'error :abort)))))
+
 
 (defcommand windowlist-by-class (&optional (fmt *window-format-by-class*)) (:rest)
   "Lists windows sorted by their respective classes, see
