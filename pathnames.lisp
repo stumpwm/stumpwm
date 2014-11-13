@@ -33,7 +33,8 @@
 
 (in-package :stumpwm)
 
-(export '(list-directory))
+(export '(list-directory
+          pathname-as-directory))
 
 (defun component-present-p (value)
   "Helper function for DIRECTORY-PATHNAME-P which checks whether VALUE
