@@ -6,12 +6,6 @@ ccl_BUILDOPTS=--load ./make-image.lisp
 ecl_BUILDOPTS=-shell ./make-image.lisp
 lw_BUILDOPTS=-build ./make-image.lisp
 
-clisp_INFOOPTS=-K base -on-error exit -x "(load (compile-file \"load-stumpwm.lisp\")) (load (compile-file \"manual.lisp\")) (stumpwm::generate-manual) (ext:exit)"
-sbcl_INFOOPTS=--eval "(progn (load \"load-stumpwm.lisp\") (load \"manual.lisp\"))" --eval "(progn (stumpwm::generate-manual) (sb-ext:quit))"
-ccl_INFOOPTS=--eval "(load \"load-stumpwm.lisp\")" --load manual.lisp --eval "(progn (stumpwm::generate-manual) (quit))"
-ecl_INFOOPTS=-eval "(progn (load \"load-stumpwm.lisp\") (load \"manual.lisp\"))" -eval "(progn (stumpwm::generate-manual) (ext:quit))"
-lw_INFOOPTS=-eval "(progn (load \"load-stumpwm.lisp\") (load \"manual.lisp\"))" -eval "(progn (stumpwm::generate-manual) (lw:quit))"
-
 datarootdir = @datarootdir@
 prefix=@prefix@
 exec_prefix= @exec_prefix@
@@ -30,14 +24,11 @@ message-window.lisp selection.lisp user.lisp iresize.lisp		\
 bindings.lisp events.lisp help.lisp fdump.lisp mode-line.lisp		\
 time.lisp color.lisp module.lisp stumpwm.lisp version.lisp
 
-all: stumpwm stumpwm.info
+all: stumpwm info
 
-stumpwm.info: stumpwm.texi
-	makeinfo stumpwm.texi
+info: stumpwm.info
 
-# FIXME: This rule is too hardcoded
-stumpwm.texi: stumpwm.texi.in
-	$(LISP) $(@LISP@_INFOOPTS)
+stumpwm.info:
 
 stumpwm: $(FILES)
 	$(LISP) $(@LISP@_BUILDOPTS)
@@ -60,7 +51,7 @@ upload-release:
 clean:
 	rm -f *.fasl *.fas *.lib *.*fsl
 	rm -f *.log *.fns *.fn *.aux *.cp *.ky *.log *.toc *.pg *.tp *.vr *.vrs
-	rm -f stumpwm stumpwm.texi stumpwm.info
+	rm -f stumpwm stumpwm.info
 
 install: stumpwm.info stumpwm
 	test -z "$(destdir)$(bindir)" || mkdir -p "$(destdir)$(bindir)"
