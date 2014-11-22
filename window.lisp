@@ -529,8 +529,10 @@ actually returned; see +NETWM-WINDOW-TYPES+."
   (or (let ((net-wm-window-type (xlib:get-property win :_NET_WM_WINDOW_TYPE)))
         (when net-wm-window-type
           (dolist (type-atom net-wm-window-type)
-            (when (assoc (xlib:atom-name *display* type-atom) +netwm-window-types+)
-              (return (cdr (assoc (xlib:atom-name *display* type-atom) +netwm-window-types+)))))))
+            (let ((net-wm-window-type
+                   (assoc (xlib:atom-name *display* type-atom) +netwm-window-types+)))
+              (when net-wm-window-type
+                (return (cdr net-wm-window-type)))))))
       (and (xlib:get-property win :WM_TRANSIENT_FOR)
            :transient)
       :normal))
@@ -1039,24 +1041,34 @@ is using the number, then the windows swap numbers. Defaults to current group."
 		     (mapcar 'window-number windows))
 		   0))))))
 
+;; It would make more sense that the window-list argument was before the fmt one
+;; but window-list was added latter and I didn't want to break other's code.
 (defcommand windowlist (&optional (fmt *window-format*)
-                                  (window-list (sort-windows-by-number 
-                                                (group-windows (current-group))))) (:rest)
-  "Allow the user to Select a window from the list of windows and focus
-the selected window. For information of menu bindings
-@xref{Menus}. The optional argument @var{fmt} can be specified to
-override the default window formatting."
-  (if (null window-list)
-      (message "No Managed Windows")
-      (let ((window (select-window-from-menu window-list fmt)))
-        (if window
-            (group-focus-window (current-group) window)
-            (throw 'error :abort)))))
+                                  window-list) (:rest)
+  "Allow the user to select a window from the list of windows and focus the 
+selected window. For information of menu bindings @xref{Menus}. The optional
+ argument @var{fmt} can be specified to override the default window formatting.
+The optional argument @var{window-list} can be provided to show a custom window
+list (see @command{windowlist-by-class}). The default window list is the list of
+all window in the current group. Also note that the default window list is sorted
+by number and if the @var{windows-list} is provided, it is shown unsorted (as-is)."
+  ;; Shadowing the window-list argument.
+  (let ((window-list (or window-list
+                         (sort-windows-by-number 
+                          (group-windows (current-group))))))
+    (if (null window-list)
+        (message "No Managed Windows")
+        (let ((window (select-window-from-menu window-list fmt)))
+          (if window
+              (group-focus-window (current-group) window)
+              (throw 'error :abort))))))
 
 
 (defcommand windowlist-by-class (&optional (fmt *window-format-by-class*)) (:rest)
-  "Lists windows sorted by their respective classes, see
-@xref{windowlist} for more information"
+  "Allow the user to select a window from the list of windows (sorted by class)
+ and focus the selected window. For information of menu bindings @xref{Menus}. 
+The optional argument @var{fmt} can be specified to override the default window
+formatting. This is a simple wrapper around the command @command{windowlist}."
   (windowlist fmt (sort-windows-by-class (group-windows (current-group)))))
 
 (defcommand window-send-string (string &optional (window (current-window))) ((:rest "Insert: "))
