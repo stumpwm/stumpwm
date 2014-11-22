@@ -529,8 +529,10 @@ actually returned; see +NETWM-WINDOW-TYPES+."
   (or (let ((net-wm-window-type (xlib:get-property win :_NET_WM_WINDOW_TYPE)))
         (when net-wm-window-type
           (dolist (type-atom net-wm-window-type)
-            (when (assoc (xlib:atom-name *display* type-atom) +netwm-window-types+)
-              (return (cdr (assoc (xlib:atom-name *display* type-atom) +netwm-window-types+)))))))
+            (let ((net-wm-window-type
+                   (assoc (xlib:atom-name *display* type-atom) +netwm-window-types+)))
+              (when net-wm-window-type
+                (return (cdr net-wm-window-type)))))))
       (and (xlib:get-property win :WM_TRANSIENT_FOR)
            :transient)
       :normal))
@@ -1047,9 +1049,9 @@ is using the number, then the windows swap numbers. Defaults to current group."
 selected window. For information of menu bindings @xref{Menus}. The optional
  argument @var{fmt} can be specified to override the default window formatting.
 The optional argument @var{window-list} can be provided to show a custom window
-list @xref{windowlist-by-class}. The default window list is the list of all 
-window in the current group. Also note that the default window list is sorted by
-number and if the @var{windows-list} is provided, it is shown unsorted (as-is)."
+list (see @command{windowlist-by-class}). The default window list is the list of
+all window in the current group. Also note that the default window list is sorted
+by number and if the @var{windows-list} is provided, it is shown unsorted (as-is)."
   ;; Shadowing the window-list argument.
   (let ((window-list (or window-list
                          (sort-windows-by-number 
@@ -1066,7 +1068,7 @@ number and if the @var{windows-list} is provided, it is shown unsorted (as-is)."
   "Allow the user to select a window from the list of windows (sorted by class)
  and focus the selected window. For information of menu bindings @xref{Menus}. 
 The optional argument @var{fmt} can be specified to override the default window
-formatting. This is a simple wrapper around the command @xref{windowlist}."
+formatting. This is a simple wrapper around the command @command{windowlist}."
   (windowlist fmt (sort-windows-by-class (group-windows (current-group)))))
 
 (defcommand window-send-string (string &optional (window (current-window))) ((:rest "Insert: "))
