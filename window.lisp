@@ -631,17 +631,27 @@ and bottom_end_x."
   ;; the mapnotify event before the reparent event. that's what fvwm
   ;; says.
   (xlib:with-server-grabbed (*display*)
-    (let ((master-window (xlib:create-window
-                          :parent (screen-root screen)
-                          :x (xlib:drawable-x (window-xwin window)) :y (xlib:drawable-y (window-xwin window))
-                          :width (window-width window)
-                          :height (window-height window)
-                          :background (if (eq (window-type window) :normal)
-                                          (screen-win-bg-color screen)
-                                          :none)
-                          :border (screen-unfocus-color screen)
-                          :border-width (default-border-width-for-type window)
-                          :event-mask *window-parent-events*)))
+    (let* ((xwin (window-xwin window))
+           (args (list
+                  :parent (screen-root screen)
+                  :x (xlib:drawable-x (window-xwin window))
+                  :y (xlib:drawable-y (window-xwin window))
+                  :width (window-width window)
+                  :height (window-height window)
+                  :background (if (eq (window-type window) :normal)
+                                  (screen-win-bg-color screen)
+                                  :none)
+                  :border (screen-unfocus-color screen)
+                  :border-width (default-border-width-for-type window)
+                  :event-mask *window-parent-events*))
+           (args1 (if (= 32 (xlib:drawable-depth xwin))
+                      (append args
+                              (list
+                               :depth 32
+                               :visual (xlib:window-visual-info xwin)
+                               :colormap (xlib:window-colormap xwin)))
+                      args))
+           (master-window (apply 'xlib:create-window args1)))
       (unless (eq (xlib:window-map-state (window-xwin window)) :unmapped)
         (incf (window-unmap-ignores window)))
       (xlib:reparent-window (window-xwin window) master-window 0 0)
