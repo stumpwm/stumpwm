@@ -24,7 +24,17 @@
 
 (in-package #:stumpwm)
 
-(export '(current-group group-windows move-window-to-group))
+(export '(current-group group-windows move-window-to-group add-group
+          ;; Group accessors
+          group group-screen group-windows group-number group-name
+          ;; Group API
+          group-startup group-add-window group-delete-window group-wake-up
+          group-suspend group-current-window group-current-head
+          group-resize-request group-move-request group-raise-request
+          group-lost-focus group-indicate-focus group-focus-window
+          group-button-press group-root-exposure group-add-head
+          group-remove-head group-resize-head group-sync-all-heads
+          group-sync-head))
 
 (defvar *default-group-type* 'tile-group
   "The type of group that should be created by default.")

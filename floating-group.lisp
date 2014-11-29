@@ -1,6 +1,8 @@
 ;;; implementation of a floating style window management group
+(defpackage #:stumpwm.floating-group
+  (:use :cl :stumpwm))
 
-(in-package :stumpwm)
+(in-package :stumpwm.floating-group)
 
 ;;; floating window
 
@@ -34,7 +36,9 @@
 (defun float-window-move-resize (win &key x y width height (border *float-window-border*))
   ;; x and y position the parent window while width, height resize the
   ;; xwin (meaning the parent will have a larger width).
-  (with-slots (xwin parent) win
+  (with-accessors ((xwin window-xwin)
+                   (parent window-parent))
+      win
     (xlib:with-state (parent)
       (xlib:with-state (xwin)
         (when x
@@ -79,10 +83,19 @@
   (eql (window-state win) +normal-state+))
 
 (defmethod (setf window-fullscreen) :after (val (window float-window))
-  (with-slots (last-x last-y last-width last-height parent) window
+  (with-accessors ((last-x float-window-last-x)
+                   (last-y float-window-last-y)
+                   (last-width float-window-last-width)
+                   (last-height float-window-last-height)
+                   (parent window-parent))
+      window
     (if val
         (let ((head (window-head window)))
-          (with-slots (x y width height) window
+          (with-accessors ((x window-x)
+                           (y window-y)
+                           (width window-width)
+                           (height window-height))
+              window
             (format t "major on: ~a ~a ~a ~a~%" x y width height))
           (set-window-geometry window :x 0 :y 0)
           (float-window-move-resize window
@@ -140,7 +153,11 @@
       (first (screen-heads (group-screen group)))))
 
 (defun float-window-align (window)
-  (with-slots (parent xwin width height) window
+  (with-accessors ((parent window-parent)
+                   (xwin window-xwin)
+                   (width window-width)
+                   (height window-height))
+      window
     (set-window-geometry window :x *float-window-border* :y *float-window-title-height*)
     (xlib:with-state (parent)
       (setf (xlib:drawable-width parent) (+ width (* 2 *float-window-border*))
@@ -219,7 +236,8 @@
                      (case event-key
                        (:button-release :done)
                        (:motion-notify
-                        (with-slots (parent) window
+                        (with-accessors ((parent window-parent))
+                            window
                           (xlib:with-state (parent)
                             ;; Either move or resize the window
                             (cond

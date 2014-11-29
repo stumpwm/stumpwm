@@ -73,14 +73,6 @@
       (when (has-bw value-mask)
         (setf (xlib:drawable-border-width xwin) border-width)))))
 
-(defun update-configuration (win)
-  ;; Send a synthetic configure-notify event so that the window
-  ;; knows where it is onscreen.
-  (xwin-send-configuration-notify (window-xwin win)
-                                  (xlib:drawable-x (window-parent win))
-                                  (xlib:drawable-y (window-parent win))
-                                  (window-width win) (window-height win) 0))
-
 (define-stump-event-handler :configure-request (stack-mode #|parent|# window #|above-sibling|# x y width height border-width value-mask)
   (labels ((has-x () (= 1 (logand value-mask 1)))
            (has-y () (= 2 (logand value-mask 2)))
