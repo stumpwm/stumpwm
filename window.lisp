@@ -631,9 +631,11 @@ and bottom_end_x."
   ;; the mapnotify event before the reparent event. that's what fvwm
   ;; says.
   (xlib:with-server-grabbed (*display*)
-    (let ((master-window (xlib:create-window
+    (let* ((xwin (window-xwin window))
+           (args (append (list
                           :parent (screen-root screen)
-                          :x (xlib:drawable-x (window-xwin window)) :y (xlib:drawable-y (window-xwin window))
+                          :x (xlib:drawable-x (window-xwin window))
+                          :y (xlib:drawable-y (window-xwin window))
                           :width (window-width window)
                           :height (window-height window)
                           :background (if (eq (window-type window) :normal)
@@ -641,7 +643,15 @@ and bottom_end_x."
                                           :none)
                           :border (screen-unfocus-color screen)
                           :border-width (default-border-width-for-type window)
-                          :event-mask *window-parent-events*)))
+                          :event-mask *window-parent-events*)
+                         ;; If the window has a depth of 32 the new parent
+                         ;; should also, to allow for transparency
+                         (when (= 32 (xlib:drawable-depth xwin))
+                           (list
+                            :depth 32
+                            :visual (xlib:window-visual-info xwin)
+                            :colormap (xlib:window-colormap xwin)))))
+           (master-window (apply 'xlib:create-window args)))
       (unless (eq (xlib:window-map-state (window-xwin window)) :unmapped)
         (incf (window-unmap-ignores window)))
       (xlib:reparent-window (window-xwin window) master-window 0 0)
