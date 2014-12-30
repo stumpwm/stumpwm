@@ -15,7 +15,9 @@ install:
     else
       curl https://raw.githubusercontent.com/luismbo/cl-travis/master/install.sh | sh;
     fi
-  - cl-launch -i '(ql:quickload "clx")' -i '(ql:quickload "cl-ppcre")'
+
+  - echo "(load \"/home/travis/asdf\")" > "$HOME/.clisprc.lisp"
+  - cl -l clx -l cl-ppcre -e '(ql-util:without-prompting (ql:add-to-init-file))'
 
 before_script:
   - ./autogen.sh
