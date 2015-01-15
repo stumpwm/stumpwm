@@ -1368,12 +1368,14 @@ An input function takes 2 arguments: the input structure and the key pressed.
 !!! select-window-by-number
 !!! title
 !!! windowlist
+!!! windowlist-by-class
 !!! fullscreen
 !!! info
 !!! refresh
 !!! redisplay
 
 ### *window-format*
+### *window-info-format*
 ### *window-name-source*
 ### *new-window-prefered-frame*
 
