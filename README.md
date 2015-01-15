@@ -147,6 +147,39 @@ documenting and organizing the wiki. There's a lot of information
 floating around, if you find it where you didn't expect it, move or
 link to it in a more logical place.
 
+# Wishlist 
+
+Fancy yourself a lisp hacker? Here's a wishlist of features for the
+StumpWM universe (in no particular order):
+* float-splits (ie allow floating windows over tiled ones)
+* Float windows within parent applications (specifically dialogs in
+  gimp or firefox).
+* tab-list showing the contents of the current frame at the side, top,
+  or bottom of the frame
+* Emacs' iswitchb function implemented in emacs
+  * Re-arranging windows between groups
+  * Killing windows
+  * Marking windows for batch operations
+  * Deleting/adding groups
+  * Import data from stumpwm to emacs, use an emacs minor mode to
+    implement the above features, then export the data back to stumpwm
+    and let stumpwm perform the appropriate actions 
+* Emacs' completing-read-multiple function
+* Dynamic tiling
+* Lock Screen (with support for leaving notes, bonus points if emacs
+  is involved)
+* Wallpapers! (support pulling from remote sources, changing based on
+  timers, and other hacky features)
+* Shutdown, restart, suspend, and hibernate functions that don't
+  require root access
+* Revamped, mouse-friendly mode-line. 
+  * Support fixed number of chars for window titles
+  * Dynamically trimp window titles to fit them all on the mode-line
+  * Split the mode-line into multiple cells for containing different information
+  * Implement widget icons to indicate system status (new mail, low
+    battery, network etc)
+  * Support raising windows when left-clicked, closing/killing when right-clicked  
+
 # CCL And Virtual Memory
 
 
