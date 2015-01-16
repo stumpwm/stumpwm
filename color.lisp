@@ -380,13 +380,15 @@ rendered width."
                            (xlib:drawable-height px) t))
     (loop for parts in strings
           for row from 0 to (length strings)
-          for line-height = (render-string parts cc
-                                           (+ padx 0)
-                                           (+ pady y))
-          when (find row highlights :test 'eql)
-            do (invert-rect screen px 0 (+ pady y)
-                            (xlib:drawable-width px)
-                            line-height)
+          for line-height = (max-font-height parts cc)
+          if (find row highlights :test 'eql)
+            do (xlib:draw-rectangle px gc 0 y (xlib:drawable-width px) line-height t)
+            and do (xlib:with-gcontext (gc :foreground (xlib:gcontext-background gc)
+                                           :background (xlib:gcontext-foreground gc))
+                     (render-string parts cc (+ padx 0) (+ pady y)))
+          else
+            do (render-string parts cc (+ padx 0) (+ pady y))
+          end
           do (incf y line-height))
     (xlib:copy-area px gc 0 0
                     (xlib:drawable-width px)
