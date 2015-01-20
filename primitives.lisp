@@ -408,7 +408,7 @@ are valid values.
 (defparameter +default-background-color+ "Black")
 (defparameter +default-window-background-color+ "Black")
 (defparameter +default-border-color+ "White")
-(defparameter +default-font-name+ "9x15bold")
+(defparameter +default-font-name+ "9x15")
 (defparameter +default-focus-color+ "White")
 (defparameter +default-unfocus-color+ "Black")
 (defparameter +default-float-focus-color+ "Orange")
