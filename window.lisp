@@ -214,7 +214,9 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
        (window-gang window))
       (t
        (let ((w (window-by-id tr)))
-         (append (list w) (transients-of w)))))))
+         (if w
+             (append (list w) (transients-of w))
+           '()))))))
 
 (defun only-transients (windows)
   "Out of WINDOWS, return a list of those which are transient."

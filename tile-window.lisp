@@ -9,7 +9,8 @@
 like xterm and emacs.")
 
 (defclass tile-window (window)
-  ((frame   :initarg :frame   :accessor window-frame)))
+  ((frame   :initarg :frame   :accessor window-frame)
+   (normal-size :initform nil :accessor window-normal-size)))
 
 (defmethod update-decoration ((window tile-window))
   ;; give it a colored border but only if there are more than 1 frames.
@@ -88,6 +89,8 @@ than the root window's width and height."
          (hints-max-height (and hints (xlib:wm-size-hints-max-height hints)))
          (hints-width (and hints (xlib:wm-size-hints-base-width hints)))
          (hints-height (and hints (xlib:wm-size-hints-base-height hints)))
+         (hints-spec-width (and hints (xlib:wm-size-hints-width hints)))
+         (hints-spec-height (and hints (xlib:wm-size-hints-height hints)))
          (hints-inc-x (and hints (xlib:wm-size-hints-width-inc hints)))
          (hints-inc-y (and hints (xlib:wm-size-hints-height-inc hints)))
          (hints-min-aspect (and hints (xlib:wm-size-hints-min-aspect hints)))
@@ -119,6 +122,12 @@ than the root window's width and height."
                               (or hints-min-height 0)
                               (window-height win))
                          height)))
+      ;; Set requested size for non-maximized windows
+      ((and (window-normal-size win)
+            hints-spec-width hints-spec-height)
+       (setf center t
+             width (min hints-spec-width width)
+             height (min hints-spec-height height)))
       ;; aspect hints are handled similar to max size hints
       ((and hints-min-aspect hints-max-aspect)
        (let ((ratio (/ width height)))
@@ -440,6 +449,19 @@ frame. Possible values are:
                                          (floor (- (frame-height frame) height)
                                                 (window-height-inc window)))))
       (maximize-window window)))))
+
+(defcommand (unmaximize tile-group) () ()
+  "Use the size the program requested for current window (if any) instead of maximizing it."
+  (let* ((window (current-window))
+         (status (not (window-normal-size window)))
+         (hints (window-normal-hints window)))
+    (if (and (xlib:wm-size-hints-width hints)
+             (xlib:wm-size-hints-height hints))
+        (progn
+          (setf (window-normal-size window) status)
+          ;; This makes the naming a bit funny.
+          (maximize-window window))
+        (message "Window has no normal size."))))
 
 (defcommand frame-windowlist (&optional (fmt *window-format*)) (:rest)
   "Allow the user to select a window from the list of windows in the current
