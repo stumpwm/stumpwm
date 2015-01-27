@@ -25,8 +25,26 @@
 
 (in-package :stumpwm)
 
-;;; keyboard helper functions
+(export '(grab-pointer ungrab-pointer))
 
+;; Wow, is there an easier way to do this?
+(defmacro def-thing-attr-macro (thing hash-slot)
+  (let ((attr (gensym "ATTR"))
+        (obj (gensym "METAOBJ"))
+        (val (gensym "METAVAL")))
+    `(defmacro ,(intern1 (format nil "DEF-~a-ATTR" thing)) (,attr)
+      "Create a new attribute and corresponding get/set functions."
+      (let ((,obj (gensym "OBJ"))
+            (,val (gensym "VAL")))
+        `(progn
+          (defun ,(intern1 (format nil ,(format nil "~a-~~a" thing) ,attr)) (,,obj)
+            (gethash ,,attr (,(quote ,hash-slot) ,,obj)))
+          (defun (setf ,(intern1 (format nil ,(format nil "~a-~~a" thing) ,attr))) (,,val ,,obj)
+            (setf (gethash ,,attr (,(quote ,hash-slot) ,,obj))) ,,val))))))
+
+
+
+;;; keyboard helper functions
 (defun key-to-keycode+state (key)
   (let ((code (xlib:keysym->keycodes *display* (key-keysym key))))
     (cond ((eq (xlib:keycode->keysym *display* code 0) (key-keysym key))

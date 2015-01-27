@@ -133,7 +133,35 @@
           with-restarts-menu
           with-data-file
           move-to-head
-          format-expand))
+          format-expand
+
+          ;; Frame accessors
+          frame-x
+          frame-y
+          frame-width
+          frame-height
+
+          ;; Screen accessors
+          screen-heads
+          screen-root
+          screen-focus
+          screen-float-focus-color
+          screen-float-unfocus-color
+
+          ;; Window states
+          +withdrawn-state+
+          +normal-state+
+          +iconic-state+
+
+          ;; Modifiers
+          modifiers
+          modifiers-p
+          modifiers-alt
+          modifiers-altgr
+          modifiers-super
+          modifiers-meta
+          modifiers-hyper
+          modifiers-numlock))
 
 
 ;;; Message Timer
