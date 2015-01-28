@@ -5,6 +5,7 @@
 (in-package :stumpwm.floating-group)
 
 ;;; floating window
+(export '(gnew-float gnewbg-float))
 
 (defclass float-window (window)
   ((last-width :initform 0 :accessor float-window-last-width)
