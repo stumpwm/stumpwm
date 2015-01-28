@@ -10,8 +10,7 @@
   ((last-width :initform 0 :accessor float-window-last-width)
    (last-height :initform 0 :accessor float-window-last-height)
    (last-x :initform 0 :accessor float-window-last-x)
-   (last-y :initform 0 :accessor float-window-last-y))
-  )
+   (last-y :initform 0 :accessor float-window-last-y)))
 
 (defvar *float-window-border* 1)
 (defvar *float-window-title-height* 10)
@@ -65,8 +64,7 @@
     (xlib:clear-area (window-parent window))))
 
 (defmethod window-sync ((window float-window) hint)
-  (declare (ignore hint))
-  )
+  (declare (ignore hint)))
 
 (defmethod window-head ((window float-window))
   (let ((left (window-x window))
@@ -128,11 +126,9 @@
 ;;; floating group
 
 (defclass float-group (group)
-  ((current-window :accessor float-group-current-window))
-  )
+  ((current-window :accessor float-group-current-window)))
 
-(defmethod group-startup ((group float-group))
-  )
+(defmethod group-startup ((group float-group)))
 
 (defmethod group-add-window ((group float-group) window &key &allow-other-keys)
   (change-class window 'float-window)
@@ -151,8 +147,7 @@
 (defmethod group-wake-up ((group float-group))
   (&float-focus-next group))
 
-(defmethod group-suspend ((group float-group))
-  )
+(defmethod group-suspend ((group float-group)))
 
 (defmethod group-current-window ((group float-group))
   (screen-focus (group-screen group)))
@@ -286,8 +281,7 @@
                   (window-y window) (xlib:drawable-y (window-parent window)))))))))
 
 (defmethod group-button-press ((group float-group) x y where)
-  (declare (ignore x y where))
-  )
+  (declare (ignore x y where)))
 
 (defcommand gnew-float (name) ((:rest "Group Name: "))
   "Create a floating window group with the specified name and switch to it."
