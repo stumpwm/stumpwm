@@ -2,10 +2,11 @@
 (defpackage #:stumpwm.floating-group
   (:use :cl :stumpwm))
 
+(export '(gnew-float gnewbg-float))
+
 (in-package :stumpwm.floating-group)
 
 ;;; floating window
-(export '(gnew-float gnewbg-float))
 
 (defclass float-window (window)
   ((last-width :initform 0 :accessor float-window-last-width)
@@ -284,6 +285,7 @@
 (defmethod group-button-press ((group float-group) x y where)
   (declare (ignore x y where)))
 
+(in-package :stumpwm)
 (defcommand gnew-float (name) ((:rest "Group Name: "))
   "Create a floating window group with the specified name and switch to it."
   (add-group (current-screen) name :type 'float-group))
