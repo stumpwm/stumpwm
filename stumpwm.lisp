@@ -43,10 +43,12 @@ further up. "
                  dir)))
          (user-rc
            (probe-file (merge-pathnames #p".stumpwmrc" (user-homedir-pathname))))
+         (dir-rc
+           (probe-file (merge-pathnames #p".stumpwm.d/init.lisp" (user-homedir-pathname))))
          (conf-rc
            (probe-file (merge-pathnames #p"stumpwm/config" xdg-config-dir)))
          (etc-rc (probe-file #p"/etc/stumpwmrc"))
-         (rc (or user-rc conf-rc etc-rc)))
+         (rc (or user-rc dir-rc conf-rc etc-rc)))
     (if rc
         (if catch-errors
             (handler-case (load rc)
