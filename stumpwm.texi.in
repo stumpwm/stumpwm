@@ -114,6 +114,7 @@ Introduction
 * Basic Concepts::
 * Manipulating Frames and Windows::
 * Interacting with the Lisp process::
+* Init File::
 * Contact the StumpWM developers::
 
 Basic Concepts
@@ -216,6 +217,7 @@ completeness, and cushiness.
 * Basic Concepts::
 * Manipulating Frames and Windows::
 * Interacting with the Lisp process::
+* Init File::
 * Contact the StumpWM developers::
 @end menu
 
@@ -569,7 +571,7 @@ the frame in that direction.
 
 @end itemize
 
-@node Interacting with the Lisp process, Contact the StumpWM developers, Manipulating Frames and Windows, Introduction
+@node Interacting with the Lisp process, Init File, Manipulating Frames and Windows, Introduction
 @section Interacting with the Lisp process
 
 Since StumpWM is a Lisp program, there is a way for you to evaluate
@@ -592,8 +594,41 @@ Sets the variable @var{*mode-line-border-width*} to 3.
 Calls the @code{set-prefix-key} function (and sets a new keyboard prefix)
 @end table
 
+@node Init File, Contact the StumpWM developers, Interacting with the Lisp process, Introduction
+@section Init File
 
-@node Contact the StumpWM developers,  , Interacting with the Lisp process, Introduction
+Like other window managers, StumpWM's configuration and startup
+state can be controlled by an initialization file. Unlike other
+window managers, StumpWM's init is not limited to changing settings
+and keybindings. The init file is itself a Common Lisp program
+running in a Common Lisp environment, so you can write your own
+hacks and make them a part of your StumpWM experience.
+
+On launch, StumpWM searches for an init file of different names and
+locations on your system, and will use the first one found in this
+order:
+
+@itemize
+@item `~/.stumpwmrc' is the classic UNIX-style configuration name;
+
+@item `~/.stumpwm.d/init.lisp' is an Emacs-style location and name;
+
+@item `~/.config/stumpwm/config' is the XDG standard;
+
+@item `/etc/stumpwmrc' is a system-wide file giving all users a 
+standardized environment.
+@end itemize
+
+StumpWM includes a basic `sample-stumpwm.lisp' in its source
+directory. You can use this as a template when you're starting out: 
+copy it to the above name and location you prefer and edit it to 
+suit your preferences.
+
+It is possible to split your initialization among multiple files,
+if you call the additional files from within an init file matching
+the names and locations listed above.
+
+@node Contact the StumpWM developers,  , Init File, Introduction
 @section Contact the StumpWM developers
 The StumpWM home page is @url{http://stumpwm.nongnu.org/}.
 
