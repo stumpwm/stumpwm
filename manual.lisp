@@ -47,8 +47,9 @@
                                         name
                                         #+sbcl (sb-introspect:function-lambda-list fn)
                                         #+clisp (ext:arglist fn)
+                                        #+ccl (ccl:arglist fn)
                                         #+lispworks (lw:function-lambda-list fn)
-                                        #- (or sbcl clisp lispworks) '("(Check the code for args list)")
+                                        #- (or sbcl clisp ccl lispworks) '("(Check the code for args list)")
                                         (documentation fn 'function))
                                 t)))
 
@@ -61,8 +62,9 @@
                                         name
                                         #+sbcl (sb-introspect:function-lambda-list (macro-function symbol))
                                         #+clisp (ext:arglist symbol)
+                                        #+ccl (ccl:arglist symbol)
                                         #+lispworks (lw:function-lambda-list symbol)
-                                        #- (or sbcl clisp lispworks) '("(Check the code for args list)")
+                                        #- (or sbcl clisp ccl lispworks) '("(Check the code for args list)")
                                         ;;; FIXME: when clisp compiles
                                         ;;; a macro it discards the
                                         ;;; documentation string! So
@@ -99,8 +101,9 @@
                                         name
                                         #+sbcl (sb-introspect:function-lambda-list cmd)
                                         #+clisp (ext:arglist cmd)
+                                        #+ccl (ccl:arglist cmd)
                                         #+lispworks (lw:function-lambda-list cmd)
-                                        #- (or sbcl clisp lispworks) '("(Check the code for args list)")
+                                        #- (or sbcl clisp ccl lispworks) '("(Check the code for args list)")
                                         (documentation cmd 'function))
                                 t)))
 
