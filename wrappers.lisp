@@ -279,8 +279,8 @@ they should be windows. So use this function to make a window out of them."
   ;; FIXME: seems like there ought to be a less cumbersome way to run
   ;; different code based on the version.
   #+sbcl (macrolet ((dir (p)
-                      (if (>= (parse-integer (third (split-seq (lisp-implementation-version) '(#\.))) :junk-allowed t)
-                              24)
+                      (if (or (equal (lisp-implementation-version) "-dirty") (>= (parse-integer (third (split-seq (lisp-implementation-version) '(#\.))) :junk-allowed t)
+                              24))
                           `(directory ,p :resolve-symlinks nil)
                           `(directory ,p))))
            (dir pathspec))
