@@ -1,6 +1,10 @@
 ;;; implementation of a floating style window management group
+(defpackage #:stumpwm.floating-group
+  (:use :cl :stumpwm))
 
-(in-package :stumpwm)
+(export '(gnew-float gnewbg-float))
+
+(in-package :stumpwm.floating-group)
 
 ;;; floating window
 
@@ -8,8 +12,7 @@
   ((last-width :initform 0 :accessor float-window-last-width)
    (last-height :initform 0 :accessor float-window-last-height)
    (last-x :initform 0 :accessor float-window-last-x)
-   (last-y :initform 0 :accessor float-window-last-y))
-  )
+   (last-y :initform 0 :accessor float-window-last-y)))
 
 (defvar *float-window-border* 1)
 (defvar *float-window-title-height* 10)
@@ -34,7 +37,9 @@
 (defun float-window-move-resize (win &key x y width height (border *float-window-border*))
   ;; x and y position the parent window while width, height resize the
   ;; xwin (meaning the parent will have a larger width).
-  (with-slots (xwin parent) win
+  (with-accessors ((xwin window-xwin)
+                   (parent window-parent))
+      win
     (xlib:with-state (parent)
       (xlib:with-state (xwin)
         (when x
@@ -61,8 +66,7 @@
     (xlib:clear-area (window-parent window))))
 
 (defmethod window-sync ((window float-window) hint)
-  (declare (ignore hint))
-  )
+  (declare (ignore hint)))
 
 (defmethod window-head ((window float-window))
   (let ((left (window-x window))
@@ -89,10 +93,19 @@
   (eql (window-state win) +normal-state+))
 
 (defmethod (setf window-fullscreen) :after (val (window float-window))
-  (with-slots (last-x last-y last-width last-height parent) window
+  (with-accessors ((last-x float-window-last-x)
+                   (last-y float-window-last-y)
+                   (last-width float-window-last-width)
+                   (last-height float-window-last-height)
+                   (parent window-parent))
+      window
     (if val
         (let ((head (window-head window)))
-          (with-slots (x y width height) window
+          (with-accessors ((x window-x)
+                           (y window-y)
+                           (width window-width)
+                           (height window-height))
+              window
             (format t "major on: ~a ~a ~a ~a~%" x y width height))
           (set-window-geometry window :x 0 :y 0)
           (float-window-move-resize window
@@ -115,11 +128,9 @@
 ;;; floating group
 
 (defclass float-group (group)
-  ((current-window :accessor float-group-current-window))
-  )
+  ((current-window :accessor float-group-current-window)))
 
-(defmethod group-startup ((group float-group))
-  )
+(defmethod group-startup ((group float-group)))
 
 (defmethod group-add-window ((group float-group) window &key &allow-other-keys)
   (change-class window 'float-window)
@@ -138,8 +149,7 @@
 (defmethod group-wake-up ((group float-group))
   (&float-focus-next group))
 
-(defmethod group-suspend ((group float-group))
-  )
+(defmethod group-suspend ((group float-group)))
 
 (defmethod group-current-window ((group float-group))
   (screen-focus (group-screen group)))
@@ -150,7 +160,11 @@
       (first (screen-heads (group-screen group)))))
 
 (defun float-window-align (window)
-  (with-slots (parent xwin width height) window
+  (with-accessors ((parent window-parent)
+                   (xwin window-xwin)
+                   (width window-width)
+                   (height window-height))
+      window
     (set-window-geometry window :x *float-window-border* :y *float-window-title-height*)
     (xlib:with-state (parent)
       (setf (xlib:drawable-width parent) (+ width (* 2 *float-window-border*))
@@ -229,7 +243,8 @@
                      (case event-key
                        (:button-release :done)
                        (:motion-notify
-                        (with-slots (parent) window
+                        (with-accessors ((parent window-parent))
+                            window
                           (xlib:with-state (parent)
                             ;; Either move or resize the window
                             (cond
@@ -268,9 +283,9 @@
                   (window-y window) (xlib:drawable-y (window-parent window)))))))))
 
 (defmethod group-button-press ((group float-group) x y where)
-  (declare (ignore x y where))
-  )
+  (declare (ignore x y where)))
 
+(in-package :stumpwm)
 (defcommand gnew-float (name) ((:rest "Group Name: "))
   "Create a floating window group with the specified name and switch to it."
   (add-group (current-screen) name :type 'float-group))
