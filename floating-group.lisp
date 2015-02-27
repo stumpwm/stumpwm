@@ -1,8 +1,7 @@
 ;;; implementation of a floating style window management group
 (defpackage #:stumpwm.floating-group
-  (:use :cl :stumpwm))
-
-(export '(gnew-float gnewbg-float))
+  (:use :cl :stumpwm)
+  (:export #:float-group))
 
 (in-package :stumpwm.floating-group)
 
@@ -284,6 +283,13 @@
 
 (defmethod group-button-press ((group float-group) x y where)
   (declare (ignore x y where)))
+
+;;; Bindings
+
+(pushnew '(float-group *float-group-top-map*) *group-top-maps*)
+(defvar *float-group-top-map* (make-sparse-keymap))
+(defvar *float-group-root-map* (make-sparse-keymap))
+
 
 (in-package :stumpwm)
 (defcommand gnew-float (name) ((:rest "Group Name: "))

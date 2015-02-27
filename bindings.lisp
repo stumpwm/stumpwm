@@ -25,9 +25,10 @@
 (in-package #:stumpwm)
 
 (export '(*groups-map*
-          *movement-map* 
+          *group-top-maps*
+          *movement-map*
           *help-map*
-	  set-prefix-key))
+          set-prefix-key))
 
 (defvar *escape-key* (kbd "C-t")
   "The escape key. Any keymap that wants to hang off the escape key
@@ -47,7 +48,6 @@ C-t.")
   "Help related bindings hang from this keymap")
 
 (defvar *group-top-maps* '((tile-group *tile-group-top-map*)
-                           (float-group *float-group-top-map*)
                            (group *group-top-map*))
   "An alist of the top level maps for each group type. For a given
 group, all maps whose type matches the given group are active. So for
@@ -61,8 +61,6 @@ from most specific groups to most general groups.")
 (defvar *group-root-map* nil)
 (defvar *tile-group-top-map* nil)
 (defvar *tile-group-root-map* nil)
-(defvar *float-group-top-map* nil)
-(defvar *float-group-root-map* nil)
 
 ;; Do it this way so its easier to wipe the map and get a clean one.
 (defmacro fill-keymap (map &rest bindings)
@@ -186,10 +184,6 @@ from most specific groups to most general groups.")
   (kbd "+")       "balance-frames"
   (kbd "l")       "redisplay"
   (kbd "C-l")     "redisplay")
-
-(fill-keymap *float-group-top-map*)
-(fill-keymap *float-group-root-map*)
-             
 
 (fill-keymap *groups-map*
   (kbd "g")     "groups"
