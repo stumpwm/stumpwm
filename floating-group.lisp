@@ -294,8 +294,8 @@
 (in-package :stumpwm)
 (defcommand gnew-float (name) ((:rest "Group Name: "))
   "Create a floating window group with the specified name and switch to it."
-  (add-group (current-screen) name :type 'float-group))
+  (add-group (current-screen) name :type 'stumpwm.floating-group:float-group))
 
 (defcommand gnewbg-float (name) ((:rest "Group Name: "))
   "Create a floating window group with the specified name, but do not switch to it."
-  (add-group (current-screen) name :background t :type 'float-group))
+  (add-group (current-screen) name :background t :type 'stumpwm.floating-group:float-group))
