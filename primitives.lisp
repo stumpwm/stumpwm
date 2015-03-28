@@ -590,10 +590,11 @@ supported. By default, the frame labels are the 36 (lower-case)
 alphanumeric characters, starting with numbers 0-9.")
 
 (defun get-frame-number-translation (frame)
-  "Given a frame return its number translation using *frame-number-map* as a char."
+  "Given a frame return its number translation using *frame-number-map* as a
+char."
   (let ((num (frame-number frame)))
-    (or (and (< num (length *frame-number-map*))
-             (char *frame-number-map* num))
+    (if (< num (length *frame-number-map*))
+        (char *frame-number-map* num)
         ;; translate the frame number to a char. FIXME: it loops after 9
         (char (prin1-to-string num) 0))))
 
@@ -630,7 +631,7 @@ loads the rc file.")
 
 (defvar *interactivep* nil
   "True when a defcommand is executed from colon or a keybinding")
- 
+
 ;;; The restarts menu macro
 
 (defmacro with-restarts-menu (&body body)
