@@ -303,50 +303,8 @@ they should be windows. So use this function to make a window out of them."
 (defun read-line-from-sysfs (stream &optional (blocksize 80))
   "READ-LINE, but with a workaround for a known SBCL/Linux bug
 regarding files in sysfs. Data is read in chunks of BLOCKSIZE bytes."
-  #- sbcl
   (declare (ignore blocksize))
-  #- sbcl
-  (read-line stream)
-  #+ sbcl
-  (let ((buf (make-array blocksize
-			 :element-type '(unsigned-byte 8)
-			 :initial-element 0))
-	(fd (sb-sys:fd-stream-fd stream))
-	(string-filled 0)
-	(string (make-string blocksize))
-	bytes-read
-	pos
-	(stringlen blocksize))
-
-    (loop
-       ;; Read in the raw bytes
-       (setf bytes-read
-	     (sb-unix:unix-read fd (sb-sys:vector-sap buf) blocksize))
-
-       ;; Why does SBCL return NIL when an error occurs?
-       (when (or (null bytes-read)
-                 (< bytes-read 0))
-         (error "UNIX-READ failed."))
-
-       ;; This is # bytes both read and in the correct line.
-       (setf pos (or (position (char-code #\Newline) buf) bytes-read))
-
-       ;; Resize the string if necessary.
-       (when (> (+ pos string-filled) stringlen)
-	 (setf stringlen (max (+ pos string-filled)
-			      (* 2 stringlen)))
-	 (let ((new (make-string stringlen)))
-	   (replace new string)
-	   (setq string new)))
-
-       ;; Translate read bytes to string
-       (setf (subseq string string-filled)
-	     (sb-ext:octets-to-string (subseq buf 0 pos)))
-
-       (incf string-filled pos)
-
-       (if (< pos blocksize)
-	   (return (subseq string 0 string-filled))))))
+  (read-line stream))
 
 (defun argv ()
   #+sbcl (copy-list sb-ext:*posix-argv*)
