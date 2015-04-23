@@ -1102,7 +1102,7 @@ formatting. This is a simple wrapper around the command @command{windowlist}."
                                  (stumpwm-name->keysym "TAB"))
                                 ((char= ch #\Newline)
                                  (stumpwm-name->keysym "RET"))
-                                (t nil))))
+                                (t (first (xlib:character->keysyms ch *display*))))))
                  (when sym
                    (send-fake-key window
                                   (make-key :keysym sym)))))
