@@ -1523,6 +1523,22 @@ actions, for example getting all the windows titled XTerm into the
 current group:
 @code{(act-on-matching-windows (w) (titled-p w "XTerm") (pull-w w))}
 
+!!! move-windows-to-group
+!!! act-on-matching-windows
+!!! pull-w
+!!! titled-p
+!!! title-re-p
+!!! classed-p
+!!! class-re-p
+!!! typed-p
+!!! type-re-p
+!!! roled-p
+!!! role-re-p
+!!! resed-p
+!!! res-re-p
+!!! grouped-p
+!!! in-frame-p
+
 @node Frames, Mode-line, Windows, Top
 @chapter Frames
 Frames contain windows. All windows exist within a frame.
