@@ -754,8 +754,7 @@ Useful for re-using the &REST arg after removing some options."
           ;; it out a little.
           default-value))))
 
-(defun split-string (string &optional (separators "
-"))
+(defun split-string (string &optional (separators (string #\Newline)))
   "Splits STRING into substrings where there are matches for SEPARATORS.
 Each match for SEPARATORS is a splitting point.
 The substrings between the splitting points are made into a list
