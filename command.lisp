@@ -300,21 +300,37 @@ then describes the symbol."
     (when s
       (values (list (equal s "y"))))))
 
+(defun string-symbol (string)
+  "Return the string that would name the symbol according to the `readcase' of
+  the current *readtable*"
+  (case (readtable-case *readtable*)
+    (:upcase (string-upcase string))
+    (:downcase (string-downcase string))
+    (:preserve string)
+    (:invert (progn
+               (warn 'stumpwm-style-warning :message
+                     "The current *readtable* reacase is set to :invert. stumpwm:lookup-symbol does not support that option.")  string))))
+
+(defun %lookup-symbol (string &optional (package *package* package-provided-p))
+  (when package-provided-p
+    (setf package (find-package (string-symbol package))))
+  (let ((symbol (find-symbol (string-symbol string) package)))
+    (values symbol package string)))
+
 (defun lookup-symbol (string)
-  ;; FIXME: should we really use string-upcase?
-  (let* ((ofs (split-string string ":"))
-  (let* ((ofs (split-sequence #\: string))
-         (pkg (if (> (length ofs) 1)
-                  (find-package (string-upcase (pop ofs)))
-                  *package*))
-         (var (string-upcase (pop ofs)))
-         (ret (find-symbol var pkg)))
-    (when (plusp (length ofs))
-      (throw 'error "Too many :'s"))
-    (if ret
-        (values ret pkg var)
-        (throw 'error (format nil "No such symbol: ~a::~a."
-                              (package-name pkg) var)))))
+  "Lookup symbol by the name of `string'. The symbol may qualify its
+package. The function returns 3 values, the symbol, the package and the
+symbol-name used to lookup the symbol."
+  (let ((list-of-symbols (split-sequence #\: string)))
+    (multiple-value-bind (symbol package symbol-name)
+        (case (length list-of-symbols)
+          (1 (%lookup-symbol (car list-of-symbols)))
+          (2 (%lookup-symbol (second list-of-symbols) (car list-of-symbols)))
+          (t (throw 'error "Too many :'s")))
+      (if symbol
+          (values symbol package symbol-name)
+          (throw 'error (format nil "No such symbol: ~A::~A."
+                              (package-name package) symbol-name))))))
 
 (define-stumpwm-type :variable (input prompt)
   (lookup-symbol (argument-pop-or-read input prompt)))
