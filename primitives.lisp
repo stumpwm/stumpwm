@@ -161,7 +161,10 @@
           modifiers-super
           modifiers-meta
           modifiers-hyper
-          modifiers-numlock))
+          modifiers-numlock
+
+          ;; Conditions
+          stumpwm-error))
 
 
 ;;; Message Timer
