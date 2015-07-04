@@ -47,14 +47,11 @@
 (defvar *max-command-alias-depth* 10
   "")
 
-;; XXX: I'd like to just use straight warn, but sbcl drops to the
-;; debugger when compiling so i've made a style warning instead
-;; -sabetts
-(define-condition command-docstring-warning (style-warning)
-  ((command :initarg :command))
+(define-condition command-docstring-warning (warning)
+  ((command-name :initarg :command-name :reader command-name))
   (:report
-   (lambda (c s)
-     (format s "command ~a doesn't have a docstring" (slot-value c 'command)))))
+   (lambda (condition stream)
+     (format stream "The command ~A doesn't have a docstring" (command-name condition)))))
 
 (defmacro defcommand (name (&rest args) (&rest interactive-args) &body body)
   "Create a command function and store its interactive hints in
@@ -124,7 +121,8 @@ out, an element can just be the argument type."
   (check-type name (or symbol list))
   (let ((docstring (if (stringp (first body))
                      (first body)
-                     (warn (make-condition 'command-docstring-warning :command name))))
+                     (warn (make-condition 'command-docstring-warning
+                                           :command-name name))))
         (body (if (stringp (first body))
                   (cdr body) body))
         (name (if (atom name)
