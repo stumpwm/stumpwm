@@ -161,7 +161,12 @@
           modifiers-super
           modifiers-meta
           modifiers-hyper
-          modifiers-numlock))
+          modifiers-numlock
+
+          ;; Conditions
+          stumpwm-condition
+          stumpwm-error
+          stumpwm-warning))
 
 
 ;;; Message Timer
@@ -1211,8 +1216,20 @@ of :error."
     (setf ,list (remove ,elt ,list))
     (push ,elt ,list)))
 
-(define-condition stumpwm-error (error)
-  () (:documentation "Any stumpwm specific error should inherit this."))
+(define-condition stumpwm-condition (condition)
+  ((message :initarg :message :reader warning-message))
+  (:documentation "Any stumpmwm specific condition should inherit from this.")
+  (:report (lambda (condition stream)
+            (format stream "~A~%" (warning-message condition)))))
+
+(define-condition stumpwm-error (stumpwm-condition error)
+  ()
+  (:documentation "Any stumpwm specific error should inherit this."))
+
+(define-condition stumpwm-warning (warning stumpwm-condition)
+  ()
+  (:documentation "Adds a message slot to warning. Any stumpwm specific warning
+  should inherit from this."))
 
 (defun intern1 (thing &optional (package *package*) (rt *readtable*))
   "A DWIM intern."
