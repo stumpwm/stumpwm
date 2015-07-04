@@ -141,7 +141,7 @@ kbd-parse if the key failed to parse."
 
 (defun parse-key-seq (keys)
   "KEYS is a key sequence. Parse it and return the list of keys."
-  (mapcar 'parse-key (split-string keys)))
+  (mapcar 'parse-key (split-sequence #\Newline keys)))
 
 (defun kbd (keys)
   "This compiles a key string into a key structure used by

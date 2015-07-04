@@ -319,8 +319,7 @@ critical."
     ;; This is a StumpWM mode-line
     (setf (xlib:drawable-height (mode-line-window ml)) 
           (+ (* 2 *mode-line-pad-y*)
-             (nth-value 1 (rendered-size (split-string (mode-line-contents ml)
-                                                       (string #\Newline))
+             (nth-value 1 (rendered-size (split-sequence #\Newline (mode-line-contents ml))
                                          (mode-line-cc ml))))))
   (setf (xlib:drawable-width (mode-line-window ml)) (- (frame-width (mode-line-head ml))
                                                        (* 2 (xlib:drawable-border-width (mode-line-window ml))))
@@ -414,7 +413,7 @@ critical."
         (resize-mode-line ml)
         (render-strings (mode-line-screen ml) (mode-line-cc ml)
                         *mode-line-pad-x*     *mode-line-pad-y*
-                        (split-string string (string #\Newline)) '())))))
+                        (split-sequence #\Newline string) '())))))
 
 (defun find-mode-line-window (xwin)
   (dolist (s *screen-list*)

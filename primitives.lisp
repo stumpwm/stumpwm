@@ -754,22 +754,6 @@ Useful for re-using the &REST arg after removing some options."
           ;; it out a little.
           default-value))))
 
-(defun split-string (string &optional (separators "
-"))
-  "Splits STRING into substrings where there are matches for SEPARATORS.
-Each match for SEPARATORS is a splitting point.
-The substrings between the splitting points are made into a list
-which is returned.
-***If SEPARATORS is absent, it defaults to \"[ \f\t\n\r\v]+\".
-
-If there is match for SEPARATORS at the beginning of STRING, we do not
-include a null substring for that.  Likewise, if there is a match
-at the end of STRING, we don't include a null substring for that.
-
-Modifies the match data; use `save-match-data' if necessary."
-  (split-seq string separators :test #'char= :default-value '("")))
-
-
 (defun insert-before (list item nth)
   "Insert ITEM before the NTH element of LIST."
   (declare (type (integer 0 *) nth))

@@ -19,6 +19,8 @@
 
 (defpackage :stumpwm
   (:use :cl)
+  (:import-from #:split-sequence
+                #:split-sequence)
   (:shadow #:yes-or-no-p #:y-or-n-p))
 
 (defpackage :stumpwm-user

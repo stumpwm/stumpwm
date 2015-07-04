@@ -305,6 +305,7 @@ then describes the symbol."
 (defun lookup-symbol (string)
   ;; FIXME: should we really use string-upcase?
   (let* ((ofs (split-string string ":"))
+  (let* ((ofs (split-sequence #\: string))
          (pkg (if (> (length ofs) 1)
                   (find-package (string-upcase (pop ofs)))
                   *package*))
