@@ -51,7 +51,7 @@ The recommended way to install the dependencies is using Quicklisp.
 Follow the instructions at http://www.quicklisp.org/ to install it.
 In short: 
 ```
-$ curl -O http://beta.quicklisp.org/quicklisp.lisp
+$ curl -O https://beta.quicklisp.org/quicklisp.lisp
 ```
 
 ```
