@@ -28,16 +28,13 @@
 (export '(load-module
           list-modules
           *load-path*
-          *module-dir*
+          module-dir
           init-load-path
-	  set-module-dir
           find-module
           add-to-load-path))
 
 (defvar *module-dir* (pathname-as-directory (concat (getenv "HOME") ".stumpwm.d/modules"))
   "The location of the contrib modules on your system.")
-
-
 
 (defun build-load-path (path)
   "Maps subdirectories of path, returning a list of all subdirs in the
@@ -67,22 +64,29 @@ called each time StumpWM starts with the argument `*module-dir'"
     ;(format t "~{~a ~%~}" *load-path*)
     (sync-asdf-central-registry load-path)))
 
-(defun set-module-dir (dir) 
-  "Sets the location of the for StumpWM to find modules"
+(defun module-dir ()
+  "Returns the location of the directory used by StumpWM to find modules"
+  *module-dir*)
+
+(defun (setf module-dir) (dir)
+  "Sets the location of the `dir' used by StumpWM to find modules"
   (when (stringp dir)
     (setf dir (pathname (concat dir "/"))))
   (setf *module-dir* dir)
-  (init-load-path *module-dir*))
+  (init-load-path *module-dir*)
+  dir)
 
 (define-stumpwm-type :module (input prompt)
   (or (argument-pop-rest input)
       (completing-read (current-screen) prompt (list-modules) :require-match t)))
+
 (defun find-asd-file (path)
   "Returns the first file ending with asd in `PATH', nil else."
   (first (remove-if-not 
           (lambda (file) 
             (search "asd" (file-namestring file)))
           (list-directory path))))
+
 (defun list-modules ()
   "Return a list of the available modules."
   (flet ((list-module (dir) 
@@ -98,9 +102,11 @@ called each time StumpWM starts with the argument `*module-dir'"
 (defun ensure-pathname (path)
   (if (stringp path) (first (directory path))
       path))
+
 (defcommand set-contrib-dir () (:rest)
   "Deprecated, use `add-to-load-path' instead"
   (message "Use add-to-load-path instead."))
+
 (defcommand add-to-load-path (path) ((:string "Directory: "))
   "If `PATH' is not in `*LOAD-PATH*' add it, check if `PATH' contains
 an asdf system, and if so add it to the central registry"
