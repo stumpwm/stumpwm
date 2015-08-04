@@ -34,7 +34,8 @@
           find-module
           add-to-load-path))
 
-(defvar *module-dir* (pathname-as-directory (concat (getenv "HOME") ".stumpwm.d/modules"))
+(defvar *module-dir*
+  (pathname-as-directory (concat (getenv "HOME") "/.stumpwm.d/modules"))
   "The location of the contrib modules on your system.")
 
 
