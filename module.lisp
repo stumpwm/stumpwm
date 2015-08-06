@@ -34,18 +34,17 @@
           find-module
           add-to-load-path))
 
-(defvar *module-dir* (pathname-as-directory (concat (getenv "HOME") ".stumpwm.d/modules"))
+(defvar *module-dir*
+  (pathname-as-directory (concat (getenv "HOME") "/.stumpwm.d/modules"))
   "The location of the contrib modules on your system.")
-
-
 
 (defun build-load-path (path)
   "Maps subdirectories of path, returning a list of all subdirs in the
   path which contain any files ending in .asd"
-  (map 'list #'directory-namestring 
-       (remove-if-not (lambda (file) 
-                        (search "asd" 
-                                (file-namestring file))) 
+  (map 'list #'directory-namestring
+       (remove-if-not (lambda (file)
+                        (search "asd"
+                                (file-namestring file)))
                       (list-directory-recursive path t))))
 
 (defvar *load-path* nil
@@ -67,7 +66,7 @@ called each time StumpWM starts with the argument `*module-dir'"
     ;(format t "~{~a ~%~}" *load-path*)
     (sync-asdf-central-registry load-path)))
 
-(defun set-module-dir (dir) 
+(defun set-module-dir (dir)
   "Sets the location of the for StumpWM to find modules"
   (when (stringp dir)
     (setf dir (pathname (concat dir "/"))))
@@ -79,14 +78,14 @@ called each time StumpWM starts with the argument `*module-dir'"
       (completing-read (current-screen) prompt (list-modules) :require-match t)))
 (defun find-asd-file (path)
   "Returns the first file ending with asd in `PATH', nil else."
-  (first (remove-if-not 
-          (lambda (file) 
+  (first (remove-if-not
+          (lambda (file)
             (search "asd" (file-namestring file)))
           (list-directory path))))
 (defun list-modules ()
   "Return a list of the available modules."
-  (flet ((list-module (dir) 
-           (pathname-name 
+  (flet ((list-module (dir)
+           (pathname-name
             (find-asd-file dir))))
     (flatten (mapcar #'list-module *load-path*))))
 
@@ -108,10 +107,10 @@ an asdf system, and if so add it to the central registry"
          (in-central-registry (find pathspec asdf:*central-registry*))
          (is-asdf-path (find-asd-file path)))
     (cond ((and pathspec in-central-registry is-asdf-path) *load-path*)
-          ((and pathspec is-asdf-path (not in-central-registry)) 
+          ((and pathspec is-asdf-path (not in-central-registry))
            (setf asdf:*central-registry* (append (list pathspec) asdf:*central-registry*)))
-          ((and is-asdf-path (not pathspec)) 
-           (setf asdf:*central-registry* 
+          ((and is-asdf-path (not pathspec))
+           (setf asdf:*central-registry*
                  (append (list (ensure-pathname path)) asdf:*central-registry*))
            (setf *load-path* (append (list (ensure-pathname path)) *load-path*)))
           (T *load-path*))))
