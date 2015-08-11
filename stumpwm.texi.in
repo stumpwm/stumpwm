@@ -1524,7 +1524,7 @@ current group:
 @code{(act-on-matching-windows (w) (titled-p w "XTerm") (pull-w w))}
 
 !!! move-windows-to-group
-!!! act-on-matching-windows
+%%% act-on-matching-windows
 !!! pull-w
 !!! titled-p
 !!! title-re-p
