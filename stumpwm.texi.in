@@ -1389,14 +1389,15 @@ An input function takes 2 arguments: the input structure and the key pressed.
 @chapter Windows
 
 !!! next
-!!! pull-hidden-next
 !!! prev
-!!! pull-hidden-previous
 !!! delete-window
 !!! kill-window
 !!! echo-windows
 !!! other-window
+!!! pull-hidden-next
+!!! pull-hidden-previous
 !!! pull-hidden-other
+!!! pull-from-windowlist
 !!! renumber
 !!! meta
 !!! select-window
