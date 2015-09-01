@@ -1,4 +1,5 @@
-language: lisp
+language: common-lisp
+sudo: required
 
 env:
   matrix:
@@ -15,8 +16,6 @@ install:
     else
       curl https://raw.githubusercontent.com/luismbo/cl-travis/master/install.sh | sh;
     fi
-
-  - echo "(load \"/home/travis/asdf\")" > "$HOME/.clisprc.lisp"
   - cl -l clx -l cl-ppcre -e '(ql-util:without-prompting (ql:add-to-init-file))'
 
 before_script:
