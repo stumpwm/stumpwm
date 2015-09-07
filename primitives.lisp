@@ -457,7 +457,7 @@ and to *standard-output*.
 Valid values are :message, :break, :abort. :break will break to the
 debugger. This can be problematic because if the user hit's a
 mapped key the ENTIRE keyboard will be frozen and you will have
-to login remotely to regain control. :abort quits stumpmwm.")
+to login remotely to regain control. :abort quits stumpwm.")
 
 (defvar *window-name-source* :title
   "This variable controls what is used for the window's name. The default is @code{:title}.
@@ -671,7 +671,7 @@ display a message whenever you switch frames:
 \(defun my-rad-fn (to-frame from-frame)
   (stumpwm:message \"Mustard!\"))
 
-\(stumpmwm:add-hook stumpwm:*focus-frame-hook* 'my-rad-fn)
+\(stumpwm:add-hook stumpwm:*focus-frame-hook* 'my-rad-fn)
 @end example"
   `(setf ,hook (adjoin ,fn ,hook)))
 
