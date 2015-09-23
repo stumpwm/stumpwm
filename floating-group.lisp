@@ -186,7 +186,7 @@
   )
 
 (defmethod group-focus-window ((group float-group) window)
-  (focus-window window))
+  (focus-window window nil))
 
 (defmethod group-root-exposure ((group float-group))
   )
@@ -211,7 +211,7 @@
   (let ((screen (group-screen group))
         (initial-width (xlib:drawable-width (window-parent window)))
         (initial-height (xlib:drawable-height (window-parent window))))
-    (when (eq *mouse-focus-policy* :click)
+    (when (or (eq *mouse-focus-policy* :click) (eq *mouse-focus-policy* :sloppy))
       (focus-window window))
 
     ;; When in border
