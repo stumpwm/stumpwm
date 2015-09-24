@@ -211,7 +211,7 @@
   (let ((screen (group-screen group))
         (initial-width (xlib:drawable-width (window-parent window)))
         (initial-height (xlib:drawable-height (window-parent window))))
-    (when (or (eq *mouse-focus-policy* :click) (eq *mouse-focus-policy* :sloppy))
+    (when (member *mouse-focus-policy* '(:click :sloppy))
       (focus-window window))
 
     ;; When in border
