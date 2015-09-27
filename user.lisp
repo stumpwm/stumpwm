@@ -370,12 +370,14 @@ pull the program."
 used for matching windows with run-or-raise or window placement
 rules."
   (let ((w (current-window)))
-    (message-no-timeout "class: ~A~%instance: ~A~%type: :~A~%role: ~A~%title: ~A"
-                        (window-class w)
-                        (window-res w)
-                        (string (window-type w))
-                        (window-role w)
-                        (window-title w))))
+    (if (not w)
+        (message "No active window!")
+        (message-no-timeout "class: ~A~%instance: ~A~%type: :~A~%role: ~A~%title: ~A"
+                            (window-class w)
+                            (window-res w)
+                            (string (window-type w))
+                            (window-role w)
+                            (window-title w)))))
 
 (defcommand list-window-properties () ()
   "List all the properties of the current window and their values,
