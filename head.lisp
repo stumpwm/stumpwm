@@ -49,7 +49,7 @@
                 for i = 0 then (1+ i)
                 for h in
                 (delete-duplicates
-                 (loop for i in (split-string (run-shell-command "xdpyinfo -ext XINERAMA" t))
+                 (loop for i in (split-sequence #\Newline (run-shell-command "xdpyinfo -ext XINERAMA" t))
                     for head = (parse-xinerama-head i)
                     when head
                     collect head)
