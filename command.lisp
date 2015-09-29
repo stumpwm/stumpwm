@@ -47,14 +47,12 @@
 (defvar *max-command-alias-depth* 10
   "")
 
-;; XXX: I'd like to just use straight warn, but sbcl drops to the
-;; debugger when compiling so i've made a style warning instead
-;; -sabetts
-(define-condition command-docstring-warning (style-warning)
+(define-condition command-docstring-warning (warning)
+  ;; Don't define an accessor to prevent collision with the generic command
   ((command :initarg :command))
   (:report
-   (lambda (c s)
-     (format s "command ~a doesn't have a docstring" (slot-value c 'command)))))
+   (lambda (condition stream)
+     (format stream "The command ~A doesn't have a docstring" (slot-value condition 'command)))))
 
 (defmacro defcommand (name (&rest args) (&rest interactive-args) &body body)
   "Create a command function and store its interactive hints in
