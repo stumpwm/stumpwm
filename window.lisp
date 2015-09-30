@@ -77,8 +77,8 @@
 
 (defgeneric update-decoration (window)
   (:documentation "Update the window decoration."))
-(defgeneric focus-window (window)
-  (:documentation "Give the specified window keyboard focus."))
+(defgeneric focus-window (window &optional raise)
+  (:documentation "Give the specified window keyboard focus and (optionally) raise."))
 (defgeneric raise-window (window)
   (:documentation "Bring the window to the top of the window stack."))
 (defgeneric window-visible-p (window)
@@ -908,20 +908,21 @@ needed."
     (when last-win
       (update-decoration last-win))))
 
-(defmethod focus-window (window)
-  "Make the window visible and give it keyboard focus."
+(defmethod focus-window (window &optional (raise t))
+  "Make the window visible and give it keyboard focus. If raise is t, raise the window."
   (dformat 3 "focus-window: ~s~%" window)
   (let* ((group (window-group window))
          (screen (group-screen group))
          (cw (screen-focus screen))
          (xwin (window-xwin window)))
+    (when raise
+      (raise-window window))
     (cond
       ((eq window cw)
        ;; If window to focus is already focused then our work is done.
        )
       ((and *current-event-time* 
             (member :WM_TAKE_FOCUS (xlib:wm-protocols xwin) :test #'eq))
-       (raise-window window)
        (let ((hints (xlib:wm-hints xwin)))
          (when (or (null hints) (eq (xlib:wm-hints-input hints) :on))
            (screen-set-focus screen window)
@@ -934,7 +935,6 @@ needed."
                             *current-event-time*)
        (run-hook-with-args *focus-window-hook* window cw))
       (t
-       (raise-window window)
        (screen-set-focus screen window)
        (update-decoration window)
        (when cw
