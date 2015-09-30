@@ -725,6 +725,7 @@ either :width or :height"
         (dformat 10 "bounds ~d ~d ~d~%" amount max min))
       ;; if FRAME is taking up the whole DIM or if AMOUNT = 0, do nothing
       (unless (zerop amount)
+        (run-hook-with-args *resize-frame-hook* group frame)
         (let* ((resize-parent (or (and (eq split-type :column)
                                        (eq dim :height))
                                   (and (eq split-type :row)
@@ -954,6 +955,7 @@ space."
     (if (atom (tile-group-frame-head group head))
         (message "There's only one frame.")
         (progn
+          (run-hook-with-args *only-frame-hook* group frame win)
           (mapc (lambda (w)
                   ;; windows in other frames disappear
                   (unless (eq (window-frame w) (tile-group-current-frame group))
@@ -1162,5 +1164,7 @@ direction. The following are valid directions:
          (tree (tree-parent (tile-group-frame-head group (current-head))
                             (tile-group-current-frame group))))
     (if tree
-        (balance-frames-internal (current-group) tree)
+        (progn
+          (balance-frames-internal (current-group) tree)
+          (run-hook-with-args *balance-frames-hook* group tree))
         (message "There's only one frame."))))
