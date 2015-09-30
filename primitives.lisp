@@ -57,6 +57,9 @@
           *new-mode-line-hook*
           *destroy-mode-line-hook*
           *mode-line-click-hook*
+          *balance-frames-hook*
+          *resize-frame-hook*
+          *only-frame-hook*
           *display*
           *shell-program*
           *maxsize-border-width*
@@ -310,6 +313,18 @@ the mode-line")
 (defvar *mode-line-click-hook* '()
   "Called whenever the mode-line is clicked. It is called with 4 arguments,
 the mode-line, the button clicked, and the x and y of the pointer.")
+
+(defvar *balance-frames-hook* '()
+  "Called whenever the frames are balanced. It is called with 2 arguments,
+the group being balanced and the frames tree.")
+
+(defvar *resize-frame-hook* '()
+  "Called whenever a frame is resized. It is called with 2 arguments,
+the group and the frame being resized.")
+
+(defvar *only-frame-hook* '()
+  "Called whenever the only command is called. It is called with 3 arguments,
+the group, the frame and the window.")
 
 ;; Data types and globals used by stumpwm
 
