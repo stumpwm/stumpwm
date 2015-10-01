@@ -137,10 +137,10 @@ out, an element can just be the argument type."
        (let ((%interactivep% *interactivep*)
              (*interactivep* nil))
          (declare (ignorable %interactivep%))
-         (run-hook-with-args *pre-command-hook* ',name (list ,@args))
+         (run-hook-with-args *pre-command-hook* ',name)
          (multiple-value-prog1
              (progn ,@body)
-           (run-hook-with-args *post-command-hook* ',name (list ,@args)))))
+           (run-hook-with-args *post-command-hook* ',name))))
      (export ',name)
      (setf (gethash ',name *command-hash*)
            (make-command :name ',name
