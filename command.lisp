@@ -135,9 +135,11 @@ out, an element can just be the argument type."
      (defun ,name ,args
        ,docstring
        (let ((%interactivep% *interactivep*)
-	     (*interactivep* nil))
-	 (declare (ignorable %interactivep%))
-	 ,@body))
+             (*interactivep* nil))
+         (declare (ignorable %interactivep%))
+         (run-hook-with-args *pre-command-hook* ',name (list ,@args))
+         ,@body
+         (run-hook-with-args *post-command-hook* ',name (list ,@args))))
      (export ',name)
      (setf (gethash ',name *command-hash*)
            (make-command :name ',name
