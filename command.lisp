@@ -47,7 +47,7 @@
 (defvar *max-command-alias-depth* 10
   "")
 
-(define-condition command-docstring-warning (warning)
+(define-condition command-docstring-warning (style-warning)
   ;; Don't define an accessor to prevent collision with the generic command
   ((command :initarg :command))
   (:report
