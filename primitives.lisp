@@ -57,6 +57,8 @@
           *new-mode-line-hook*
           *destroy-mode-line-hook*
           *mode-line-click-hook*
+          *pre-command-hook*
+          *post-command-hook*
           *display*
           *shell-program*
           *maxsize-border-width*
@@ -310,6 +312,14 @@ the mode-line")
 (defvar *mode-line-click-hook* '()
   "Called whenever the mode-line is clicked. It is called with 4 arguments,
 the mode-line, the button clicked, and the x and y of the pointer.")
+
+(defvar *pre-command-hook* '()
+  "Called before a command is called. It is called with 1 argument:
+the command as a symbol.")
+
+(defvar *post-command-hook* '()
+  "Called after a command is called. It is called with 1 argument:
+the command as a symbol.")
 
 ;; Data types and globals used by stumpwm
 
