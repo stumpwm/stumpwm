@@ -41,7 +41,7 @@
     update-configuration no-focus
     ;; Window management API
     update-decoration focus-window raise-window window-visible-p window-sync
-    window-head))
+    window-head really-raise-window))
 
 (defvar *default-window-name* "Unnamed"
   "The name given to a window that does not supply its own name.")
@@ -88,6 +88,8 @@
 may need to sync itself. WHAT-CHANGED is a hint at what changed."))
 (defgeneric window-head (window)
   (:documentation "Report what window the head is currently on."))
+(defgeneric really-raise-window (window)
+  (:documentation "Really bring the window to the top of the window stack in group"))
 
 ;; Urgency / demands attention
 

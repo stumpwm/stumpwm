@@ -120,6 +120,9 @@
                                     :width last-width
                                     :height last-height)))))
 
+(defmethod really-raise-window ((window float-window))
+  (raise-window window))
+
 ;;; floating group
 
 (defclass float-group (group)
