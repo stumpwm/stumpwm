@@ -55,7 +55,7 @@ like xterm and emacs.")
 
 ;;;;
 
-(defun really-raise-window (window)
+(defmethod really-raise-window ((window tile-window))
   (frame-raise-window (window-group window) (window-frame window) window))
 
 (defun raise-modals-of (window)
