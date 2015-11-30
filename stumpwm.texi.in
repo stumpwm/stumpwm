@@ -2091,6 +2091,8 @@ $$$ *root-click-hook*
 $$$ *mode-line-click-hook*
 $$$ *urgent-window-hook*
 $$$ *event-processing-hook*
+$$$ *pre-command-hook*
+$$$ *post-command-hook*
 
 @node Modules, Hacking, Hooks, Top
 @chapter Modules
