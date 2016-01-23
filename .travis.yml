@@ -9,7 +9,7 @@ env:
     # - LISP=ecl
 
 install:
-  - sudo apt-get install texinfo
+  - sudo apt-get install info install-info
   - if [ -x ./install.sh ] && head -2 ./install.sh | grep '^#cl-travis' > /dev/null;
     then
       ./install.sh;
