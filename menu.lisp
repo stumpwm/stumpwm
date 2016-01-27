@@ -54,37 +54,57 @@
           m)))
 
 (defstruct menu-state
-  table prompt selected view-start view-end
+  unfiltered-table table prompt selected view-start view-end
   (current-input (make-array 10 :element-type 'character :adjustable t :fill-pointer 0)))
+
+(defun menu-scrolling-required (menu)
+  (and *menu-maximum-height*
+       (> (length (menu-state-table menu))
+          *menu-maximum-height*)))
+
+(defun menu-height (menu)
+  (let ((len (length (menu-state-table menu))))
+    (min (or *menu-maximum-height* len) len)))
+
+(defun menu-view-valid (start end)
+  (assert (>= start 0))
+  (assert (<= start (- len menu-height)))
+  (assert (>= end (1- menu-height)))
+  (assert (< end len)))
 
 (defun bound-check-menu (menu)
   "Adjust the menu view and selected item based
 on current view and new selection."
   (let ((len (length (menu-state-table menu))))
+    ;; Wrap around
     (setf (menu-state-selected menu)
           (cond ((< (menu-state-selected menu) 0) (1- len))
                 ((>= (menu-state-selected menu) len) 0)
                 (t (menu-state-selected menu))))
-    (when (and *menu-maximum-height*
-               (> len *menu-maximum-height*))  ; scrolling required
-      (let ((sel (menu-state-selected menu)))
+    (if 0
+        (setf (menu-state-view-start menu) 0
+              (menu-state-view-end menu) (length (menu-state-table menu)))
         (setf (values (menu-state-view-start menu)
                       (menu-state-view-end menu))
-              (cond ((< sel *menu-maximum-height*)
-                     (values 0 *menu-maximum-height*))
-                    ((> sel (- len *menu-maximum-height*))
-                     (values (- len *menu-maximum-height*) len))
-                    ((< sel (menu-state-view-start menu))
-                     (values (- sel *menu-scrolling-step*)
-                             (- (+ sel *menu-maximum-height*)
-                                *menu-scrolling-step*)))
-                    ((>= sel (menu-state-view-end menu))
-                     (values (+ (- sel *menu-maximum-height*)
-                                *menu-scrolling-step*)
-                             (+ sel *menu-scrolling-step*)))
-                    (t
-                     (values (menu-state-view-start menu)
-                             (menu-state-view-end menu)))))))))
+              (if (= len 0)
+                  (values 0 0)
+                  (let* ((menu-height (menu-height menu))
+                         (len (length (menu-state-table menu)))
+                         (sel (menu-state-selected menu))
+                         (start (- sel (floor (/ menu-height 2))))
+                         (end (+ sel menu-height -1)))
+                    (labels ((validate-view (start end)
+                               (assert (>= start 0))
+                               (assert (<= start (- len menu-height)))
+                               (assert (>= end (1- menu-height)))
+                               (assert (< end len))
+                               (values start end)))
+                      (apply #'validate-view
+                             ;; Scrolling required
+                             (cond ((< start 0) (list 0 (1- menu-height)))
+                                   ((>= end len) (list (- len menu-height) (1- len)))
+                                   (t (list start end)))))))))))
+
 
 (defun menu-up (menu)
   (setf (fill-pointer (menu-state-current-input menu)) 0)
@@ -124,7 +144,7 @@ on current view and new selection."
 (defun menu-finish (menu)
   (throw :menu-quit (nth (menu-state-selected menu) (menu-state-table menu))))
 
-(defun menu-abort (menu)
+(defun menu-abort (mpenu)
   (declare (ignore menu))
   (throw :menu-quit nil))
 
@@ -149,30 +169,24 @@ backspace or F9), return it otherwise return nil"
 
 (defun check-menu-complete (menu key-seq)
   "If the user entered a key not mapped in @var{*menu-map}, check if
-  he's trying to type an entry's name. Match is case insensitive as
-  long as the user types lower-case characters. If @var{key-seq} is
-  nil, some other function has manipulated the current-input and is
-  requesting a re-computation of the match."
+  he's trying to type an entry's name. Match is case insensitive. If
+  @var{key-seq} is nil, some other function has manipulated the
+  current-input and is requesting a re-computation of the match."
   (let ((input-char (and key-seq (get-input-char key-seq))))
     (when input-char
       (vector-push-extend input-char (menu-state-current-input menu)))
-    (when (or input-char (not key-seq))
-      (do* ((cur-pos 0 (1+ cur-pos))
-	    (rest-elem (menu-state-table menu)
-		       (cdr rest-elem))
-	    (cur-elem (car rest-elem) (car rest-elem))
-	    (cur-elem-name (menu-element-name cur-elem) (menu-element-name cur-elem))
-	    (current-input-length (length (menu-state-current-input menu)))
-	    (match-regex (ppcre:create-scanner (menu-state-current-input menu)
-					       :case-insensitive-mode
-					       (string= (string-downcase (menu-state-current-input menu))
-							(menu-state-current-input menu)))))
-	   ((not cur-elem))
-	(when (and (>= (length cur-elem-name) current-input-length)
-		   (ppcre:scan match-regex cur-elem-name))
-	  (setf (menu-state-selected menu) cur-pos)
-          (bound-check-menu menu)
-	  (return))))))
+    (handler-case
+        (when (or input-char (not key-seq))
+          (let* ((match-regex (ppcre:create-scanner (menu-state-current-input menu)
+                                                    :case-insensitive-mode t))
+                 (match-p (lambda (element)
+                            (ppcre:scan match-regex (menu-element-name element)))))
+            (setf (menu-state-table menu) (remove-if-not match-p (menu-state-unfiltered-table menu))
+                  (menu-state-selected menu) 0
+                  (menu-state-view-start menu) 0
+                  (menu-state-view-end menu) 0)
+            (bound-check-menu menu)))
+      (cl-ppcre:ppcre-syntax-error (condition)))))
 
 (defun select-from-menu (screen table &optional prompt
                                         (initial-selection 0)
@@ -188,51 +202,54 @@ Returns the selected element in TABLE or nil if aborted. "
   (check-type table list)
   (check-type prompt (or null string))
   (check-type initial-selection integer)
-  (let* ((menu-options (mapcar #'menu-element-name table))
-         (menu-require-scrolling (and *menu-maximum-height*
-                                       (> (length menu-options)
-                                          *menu-maximum-height*)))
-         (menu (make-menu-state
-                :table table
-                :prompt prompt
-                :view-start (if menu-require-scrolling initial-selection 0)
-                :view-end (if menu-require-scrolling
-                              (+ initial-selection *menu-maximum-height*)
-                              (length menu-options))
-                :selected initial-selection))
-         (*record-last-msg-override* t)
-         (*suppress-echo-timeout* t))
-    (bound-check-menu menu)
-    (catch :menu-quit
-      (unwind-protect
-           (with-focus (screen-key-window screen)
-             (loop
-                (let ((strings (subseq menu-options
+
+  ;; TODO: Handle the case where the table is empty
+  (unless (= (length table) 0)
+    (let ((*record-last-msg-override* t)
+          (*suppress-echo-timeout* t)
+          (menu (make-menu-state
+                 :unfiltered-table table
+                 :table table
+                 :prompt prompt
+                 :view-start 0
+                 :view-end 0
+                 :selected 0))
+          (max-width (apply #'max
+                            (mapcar (lambda (i) (length (menu-element-name i)))
+                                    table))))
+      (bound-check-menu menu)
+      (catch :menu-quit
+        (unwind-protect
+             (with-focus (screen-key-window screen)
+               (loop
+                  (let* ((prompt-row (format nil "~A ~A"
+                                             (or prompt "Search:")
+                                             (menu-state-current-input menu)))
+                         (menu-items (mapcar #'menu-element-name
+                                             (subseq (menu-state-table menu)
+                                                     (menu-state-view-start menu)
+                                                     (menu-state-view-end menu))))
+                         (strings (cons prompt-row menu-items))
+                         (num-elements (length strings))
+                         (highlight (- (menu-state-selected menu
+                                        )
                                        (menu-state-view-start menu)
-                                       (menu-state-view-end menu)))
-                      (highlight (- (menu-state-selected menu)
-                                    (menu-state-view-start menu))))
-                  (unless (= 0 (menu-state-view-start menu))
-                    (setf strings (cons "..." strings))
-                    (incf highlight))
-                  (unless (= (length menu-options) (menu-state-view-end menu))
-                    (setf strings (nconc strings '("..."))))
-                  (unless (= (fill-pointer (menu-state-current-input menu)) 0)
-                    (setf strings
-                          (cons (format nil "Search: ~a"
-                                        (menu-state-current-input menu))
-                                strings))
-                    (incf highlight))
-                  (when prompt
-                    (setf strings (cons prompt strings))
-                    (incf highlight))
-                  (echo-string-list screen strings highlight))
-                (multiple-value-bind (action key-seq) (read-from-keymap
-                                                       (if extra-keymap
-                                                           (list extra-keymap
-                                                                 *menu-map*)
-                                                           (list *menu-map*)))
-                  (if action
-                      (funcall action menu)
-                      (check-menu-complete menu (first key-seq))))))
-        (unmap-all-message-windows)))))
+                                       -1)))
+                    (unless (= 0 (menu-state-view-start menu))
+                      (setf strings (cons "..." strings))
+                      (incf highlight))
+                    (unless (= num-elements (menu-state-view-end menu))
+                      (setf strings (nconc strings '("..."))))
+                    ;; (when prompt
+                    ;;   (setf strings (cons prompt strings))
+                    ;;   (incf highlight))
+                    (echo-string-list screen strings highlight))
+                  (multiple-value-bind (action key-seq) (read-from-keymap
+                                                         (if extra-keymap
+                                                             (list extra-keymap *menu-map*)
+                                                             (list *menu-map*)))
+                    (if action
+                        (progn (funcall action menu)
+                               (bound-check-menu menu))
+                        (check-menu-complete menu (first key-seq))))))
+          (unmap-all-message-windows))))))
