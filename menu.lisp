@@ -177,10 +177,13 @@ backspace or F9), return it otherwise return nil"
       (vector-push-extend input-char (menu-state-current-input menu)))
     (handler-case
         (when (or input-char (not key-seq))
-          (let* ((match-regex (ppcre:create-scanner (menu-state-current-input menu)
-                                                    :case-insensitive-mode t))
-                 (match-p (lambda (element)
-                            (ppcre:scan match-regex (menu-element-name element)))))
+          (let* ((arg-line (make-argument-line :string (menu-state-current-input menu)
+                                               :start 0))
+                 (match-regexes (loop while (setf arg (argument-pop arg-line))
+                                   collect (ppcre:create-scanner arg :case-insensitive-mode t)))
+                 (match-p (lambda (item)
+                            (loop for re in match-regexes
+                               always (ppcre:scan re (menu-element-name item))))))
             (setf (menu-state-table menu) (remove-if-not match-p (menu-state-unfiltered-table menu))
                   (menu-state-selected menu) 0
                   (menu-state-view-start menu) 0
@@ -188,7 +191,7 @@ backspace or F9), return it otherwise return nil"
             (bound-check-menu menu)))
       (cl-ppcre:ppcre-syntax-error (condition)))))
 
-(defun select-from-menu (screen table &optional prompt
+(defun select-from-menu (screen table &optional (prompt "Search:")
                                         (initial-selection 0)
                                         extra-keymap)
   "Prompt the user to select from a menu on SCREEN. TABLE can be
@@ -203,51 +206,42 @@ Returns the selected element in TABLE or nil if aborted. "
   (check-type prompt (or null string))
   (check-type initial-selection integer)
 
-  ;; TODO: Handle the case where the table is empty
-  (unless (= (length table) 0)
-    (let ((*record-last-msg-override* t)
-          (*suppress-echo-timeout* t)
-          (menu (make-menu-state
-                 :unfiltered-table table
-                 :table table
-                 :prompt prompt
-                 :view-start 0
-                 :view-end 0
-                 :selected 0))
-          (max-width (apply #'max
-                            (mapcar (lambda (i) (length (menu-element-name i)))
-                                    table))))
+  (when table
+    (let* ((*record-last-msg-override* t)
+           (*suppress-echo-timeout* t)
+           (menu (make-menu-state
+                  :unfiltered-table table
+                  :table table
+                  :prompt prompt
+                  :view-start 0
+                  :view-end 0
+                  :selected 0))
+           (keymap (if extra-keymap
+                       (list extra-keymap *menu-map*)
+                       (list *menu-map*))))
       (bound-check-menu menu)
       (catch :menu-quit
         (unwind-protect
              (with-focus (screen-key-window screen)
                (loop
                   (let* ((prompt-row (format nil "~A ~A"
-                                             (or prompt "Search:")
-                                             (menu-state-current-input menu)))
-                         (menu-items (mapcar #'menu-element-name
-                                             (subseq (menu-state-table menu)
-                                                     (menu-state-view-start menu)
-                                                     (menu-state-view-end menu))))
-                         (strings (cons prompt-row menu-items))
-                         (num-elements (length strings))
-                         (highlight (- (menu-state-selected menu
-                                        )
+                                             prompt (menu-state-current-input menu)))
+                         (item-strings (mapcar #'menu-element-name
+                                               (subseq (menu-state-table menu)
+                                                       (menu-state-view-start menu)
+                                                       (menu-state-view-end menu))))
+                         (strings (cons prompt-row item-strings))
+                         (num-items (length strings))
+                         (highlight (- (menu-state-selected menu)
                                        (menu-state-view-start menu)
                                        -1)))
                     (unless (= 0 (menu-state-view-start menu))
                       (setf strings (cons "..." strings))
                       (incf highlight))
-                    (unless (= num-elements (menu-state-view-end menu))
+                    (unless (= (1- num-items) (menu-state-view-end menu))
                       (setf strings (nconc strings '("..."))))
-                    ;; (when prompt
-                    ;;   (setf strings (cons prompt strings))
-                    ;;   (incf highlight))
                     (echo-string-list screen strings highlight))
-                  (multiple-value-bind (action key-seq) (read-from-keymap
-                                                         (if extra-keymap
-                                                             (list extra-keymap *menu-map*)
-                                                             (list *menu-map*)))
+                  (multiple-value-bind (action key-seq) (read-from-keymap keymap)
                     (if action
                         (progn (funcall action menu)
                                (bound-check-menu menu))
