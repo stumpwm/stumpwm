@@ -66,12 +66,6 @@
   (let ((len (length (menu-state-table menu))))
     (min (or *menu-maximum-height* len) len)))
 
-(defun menu-view-valid (start end)
-  (assert (>= start 0))
-  (assert (<= start (- len menu-height)))
-  (assert (>= end (1- menu-height)))
-  (assert (< end len)))
-
 (defun bound-check-menu (menu)
   "Adjust the menu view and selected item based
 on current view and new selection."
@@ -94,10 +88,8 @@ on current view and new selection."
                          (start (- sel (floor (/ menu-height 2))))
                          (end (+ sel menu-height -1)))
                     (labels ((validate-view (start end)
-                               (assert (>= start 0))
-                               (assert (<= start (- len menu-height)))
-                               (assert (>= end (1- menu-height)))
-                               (assert (< end len))
+                               (assert (<= 0 start (- len menu-height)) (start))
+                               (assert (< menu-height end len) (end))
                                (values start end)))
                       (apply #'validate-view
                              ;; Scrolling required
@@ -144,7 +136,7 @@ on current view and new selection."
 (defun menu-finish (menu)
   (throw :menu-quit (nth (menu-state-selected menu) (menu-state-table menu))))
 
-(defun menu-abort (mpenu)
+(defun menu-abort (menu)
   (declare (ignore menu))
   (throw :menu-quit nil))
 
@@ -235,7 +227,7 @@ Returns the selected element in TABLE or nil if aborted. "
                          (highlight (- (menu-state-selected menu)
                                        (menu-state-view-start menu)
                                        -1)))
-                    (unless (= 0 (menu-state-view-start menu))
+                    (unless (zerop (menu-state-view-start menu))
                       (setf strings (cons "..." strings))
                       (incf highlight))
                     (unless (= (1- num-items) (menu-state-view-end menu))
