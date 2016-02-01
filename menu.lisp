@@ -77,23 +77,19 @@ on current view and new selection."
                 (t (menu-state-selected menu))))
     (setf (values (menu-state-view-start menu)
                   (menu-state-view-end menu))
-          (if (= len 0)
+          (if (zerop len)
               (values 0 0)
               (let* ((menu-height (menu-height menu))
-                     (len (length (menu-state-table menu)))
                      (sel (menu-state-selected menu))
-                     (start (- sel (floor (/ menu-height 2))))
+                     (start (- sel 1))
                      (end (+ sel menu-height -1)))
-                (labels ((validate-view (start end)
-                           (assert (<= 0 start (- len menu-height)) (start))
-                           (assert (<= menu-height end len) (end))
-                           (values start end)))
-                  (apply #'validate-view
-                         ;; Scrolling required
-                         (cond ((< start 0) (list 0 (1- menu-height)))
-                               ((>= end len) (list (- len menu-height) (1- len)))
-                               (t (list start end))))))))))
-
+                (multiple-value-bind
+                      (start end) (cond ((< start 0) (values 0 menu-height))
+                                        ((> end len) (values (- len menu-height) len))
+                                        (t (values start end)))
+                  (assert (<= 0 start (- len menu-height)) (start))
+                  (assert (<= menu-height end len) (end))
+                  (values start end)))))))
 
 (defun menu-up (menu)
   (setf (fill-pointer (menu-state-current-input menu)) 0)
@@ -175,9 +171,7 @@ backspace or F9), return it otherwise return nil"
                             (loop for re in match-regexes
                                always (ppcre:scan re (menu-element-name item))))))
             (setf (menu-state-table menu) (remove-if-not match-p (menu-state-unfiltered-table menu))
-                  (menu-state-selected menu) 0
-                  (menu-state-view-start menu) 0
-                  (menu-state-view-end menu) 0)
+                  (menu-state-selected menu) 0)
             (bound-check-menu menu)))
       (cl-ppcre:ppcre-syntax-error ()))))
 
@@ -214,22 +208,24 @@ Returns the selected element in TABLE or nil if aborted. "
         (unwind-protect
              (with-focus (screen-key-window screen)
                (loop
-                  (let* ((prompt-row (format nil "~@[~A ~] ~A"
-                                             prompt (menu-state-current-input menu)))
-                         (item-strings (mapcar #'menu-element-name
-                                               (subseq (menu-state-table menu)
-                                                       (menu-state-view-start menu)
-                                                       (menu-state-view-end menu))))
-                         (strings (cons prompt-row item-strings))
-                         (num-items (length strings))
-                         (highlight (- (menu-state-selected menu)
-                                       (menu-state-view-start menu)
-                                       -1)))
-                    (unless (zerop (menu-state-view-start menu))
+                  (let* ((sel (menu-state-selected menu))
+                         (start (menu-state-view-start menu))
+                         (end (menu-state-view-end menu))
+                         (len (length (menu-state-table menu)))
+                         (prompt-line (format nil "~@[~A ~] ~A"
+                                              prompt (menu-state-current-input menu)))
+                         (strings (mapcar #'menu-element-name
+                                          (subseq (menu-state-table menu)
+                                                  start end)))
+                         (num-items (- end start))
+                         (highlight (- sel start)))
+                    (unless (zerop start)
                       (setf strings (cons "..." strings))
                       (incf highlight))
-                    (unless (= (1- num-items) (menu-state-view-end menu))
+                    (unless (= len end)
                       (setf strings (nconc strings '("..."))))
+                    (setf strings (cons prompt-line strings))
+                    (incf highlight)
                     (echo-string-list screen strings highlight))
                   (multiple-value-bind (action key-seq) (read-from-keymap keymap)
                     (if action
