@@ -75,27 +75,24 @@ on current view and new selection."
           (cond ((< (menu-state-selected menu) 0) (1- len))
                 ((>= (menu-state-selected menu) len) 0)
                 (t (menu-state-selected menu))))
-    (if 0
-        (setf (menu-state-view-start menu) 0
-              (menu-state-view-end menu) (length (menu-state-table menu)))
-        (setf (values (menu-state-view-start menu)
-                      (menu-state-view-end menu))
-              (if (= len 0)
-                  (values 0 0)
-                  (let* ((menu-height (menu-height menu))
-                         (len (length (menu-state-table menu)))
-                         (sel (menu-state-selected menu))
-                         (start (- sel (floor (/ menu-height 2))))
-                         (end (+ sel menu-height -1)))
-                    (labels ((validate-view (start end)
-                               (assert (<= 0 start (- len menu-height)) (start))
-                               (assert (< menu-height end len) (end))
-                               (values start end)))
-                      (apply #'validate-view
-                             ;; Scrolling required
-                             (cond ((< start 0) (list 0 (1- menu-height)))
-                                   ((>= end len) (list (- len menu-height) (1- len)))
-                                   (t (list start end)))))))))))
+    (setf (values (menu-state-view-start menu)
+                  (menu-state-view-end menu))
+          (if (= len 0)
+              (values 0 0)
+              (let* ((menu-height (menu-height menu))
+                     (len (length (menu-state-table menu)))
+                     (sel (menu-state-selected menu))
+                     (start (- sel (floor (/ menu-height 2))))
+                     (end (+ sel menu-height -1)))
+                (labels ((validate-view (start end)
+                           (assert (<= 0 start (- len menu-height)) (start))
+                           (assert (<= menu-height end len) (end))
+                           (values start end)))
+                  (apply #'validate-view
+                         ;; Scrolling required
+                         (cond ((< start 0) (list 0 (1- menu-height)))
+                               ((>= end len) (list (- len menu-height) (1- len)))
+                               (t (list start end))))))))))
 
 
 (defun menu-up (menu)
@@ -171,7 +168,8 @@ backspace or F9), return it otherwise return nil"
         (when (or input-char (not key-seq))
           (let* ((arg-line (make-argument-line :string (menu-state-current-input menu)
                                                :start 0))
-                 (match-regexes (loop while (setf arg (argument-pop arg-line))
+                 (match-regexes (loop for arg = (argument-pop arg-line)
+                                   while arg
                                    collect (ppcre:create-scanner arg :case-insensitive-mode t)))
                  (match-p (lambda (item)
                             (loop for re in match-regexes
@@ -181,7 +179,7 @@ backspace or F9), return it otherwise return nil"
                   (menu-state-view-start menu) 0
                   (menu-state-view-end menu) 0)
             (bound-check-menu menu)))
-      (cl-ppcre:ppcre-syntax-error (condition)))))
+      (cl-ppcre:ppcre-syntax-error ()))))
 
 (defun select-from-menu (screen table &optional (prompt "Search:")
                                         (initial-selection 0)
@@ -216,7 +214,7 @@ Returns the selected element in TABLE or nil if aborted. "
         (unwind-protect
              (with-focus (screen-key-window screen)
                (loop
-                  (let* ((prompt-row (format nil "~A ~A"
+                  (let* ((prompt-row (format nil "~@[~A ~] ~A"
                                              prompt (menu-state-current-input menu)))
                          (item-strings (mapcar #'menu-element-name
                                                (subseq (menu-state-table menu)
