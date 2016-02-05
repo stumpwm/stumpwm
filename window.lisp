@@ -953,8 +953,8 @@ needed."
 (defun default-window-menu-filter (item-string item-object user-input)
   "The default filter predicate for window menus."
   (or (menu-item-matches-regexp item-string item-object user-input)
-      (loop for pattern in (split-string user-input " ")
-         always (ppcre:scan pattern (window-title item-object)))))
+      (match-all-regexps user-input (window-title item-object)
+                         :case-insensitive t)))
 
 (defvar *window-menu-filter* #'default-window-menu-filter
   "The filter predicate used to filter menu items in window menus

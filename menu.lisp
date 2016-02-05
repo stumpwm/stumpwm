@@ -177,9 +177,7 @@ backspace or F9), return it otherwise return nil"
 predicate, an item is visible when it matches all of the regular
 expressions in USER-INPUT (multiple regexps are separated by one or
 more spaces; ARGUMENT-POP is used to split the string)."
-  (loop for pattern in (split-string user-input " ")
-     always (let ((scanner (ppcre:create-scanner pattern :case-insensitive-mode t)))
-              (ppcre:scan pattern item-string))))
+  (match-all-regexps user-input item-string))
 
 (defun select-from-menu (screen table &optional (prompt "Search:")
                                         (initial-selection 0)
