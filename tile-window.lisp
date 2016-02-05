@@ -320,19 +320,14 @@ current frame and raise it."
     (pull-other-hidden-window group)))
 
 (defcommand (pull-from-windowlist tile-group) () ()
-"Pulls a window selected from the list of windows.
+  "Pulls a window selected from the list of windows.
 This allows a behavior similar to Emacs' switch-to-buffer
 when selecting another window."
-  (let ((pulled-window (select-from-menu
-                        (current-screen)
-                        (mapcar #'(lambda (w)
-                                    (list (format-expand *window-formatters*
-                                                         *window-format*
-                                                         w)
-                                          w))
-                                (group-windows (current-group))))))
+  (let ((pulled-window (select-window-from-menu
+                        (group-windows (current-group))
+                        *window-format*)))
     (when pulled-window
-      (pull-window (second pulled-window)))))
+      (pull-window pulled-window))))
 
 (defun exchange-windows (win1 win2)
   "Exchange the windows in their respective frames."

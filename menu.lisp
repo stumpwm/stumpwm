@@ -165,7 +165,7 @@ backspace or F9), return it otherwise return nil"
           (labels ((match-p (table-item)
                      (funcall (menu-state-filter-pred menu)
                               (car table-item)
-                              (cdr table-item)
+                              (second table-item)
                               (menu-state-current-input menu))))
             (setf (menu-state-table menu) (remove-if-not #'match-p (menu-state-unfiltered-table menu))
                   (menu-state-selected menu) 0)
