@@ -950,7 +950,19 @@ needed."
   (dformat 3 "Kill client~%")
   (xlib:kill-client *display* (xlib:window-id window)))
 
-(defun select-window-from-menu (windows fmt &optional prompt)
+(defun default-window-menu-filter (item-string item-object user-input)
+  "The default filter predicate for window menus."
+  (or (menu-item-matches-regexp item-string item-object user-input)
+      (match-all-regexps user-input (window-title item-object)
+                         :case-insensitive t)))
+
+(defvar *window-menu-filter* #'default-window-menu-filter
+  "The filter predicate used to filter menu items in window menus
+  created by SELECT-WINDOW-FROM-MENU. The interface for filter
+  predicates is described in the docstring for SELECT-FROM-ITEM.")
+
+(defun select-window-from-menu (windows fmt &optional prompt
+                                              (filter-pred *window-menu-filter*))
   "Allow the user to select a window from the list passed in @var{windows}.  The
 @var{fmt} argument specifies the window formatting used.  Returns the window
 selected."
@@ -959,7 +971,9 @@ selected."
 				      (list (format-expand *window-formatters* fmt w) w))
                                     windows)
                             prompt
-                            (or (position (current-window) windows) 0))))
+                            (or (position (current-window) windows) 0)  ; Initial selection
+                            nil  ; Extra keymap
+                            filter-pred)))
 
 ;;; Window commands
 

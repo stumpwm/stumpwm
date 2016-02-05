@@ -54,7 +54,7 @@
           m)))
 
 (defstruct menu-state
-  unfiltered-table table prompt selected view-start view-end
+  unfiltered-table table filter-pred prompt selected view-start view-end
   (current-input (make-array 10 :element-type 'character :adjustable t :fill-pointer 0)))
 
 (defun menu-scrolling-required (menu)
@@ -162,28 +162,38 @@ backspace or F9), return it otherwise return nil"
       (vector-push-extend input-char (menu-state-current-input menu)))
     (handler-case
         (when (or input-char (not key-seq))
-          (let* ((arg-line (make-argument-line :string (menu-state-current-input menu)
-                                               :start 0))
-                 (match-regexes (loop for arg = (argument-pop arg-line)
-                                   while arg
-                                   collect (ppcre:create-scanner arg :case-insensitive-mode t)))
-                 (match-p (lambda (item)
-                            (loop for re in match-regexes
-                               always (ppcre:scan re (menu-element-name item))))))
-            (setf (menu-state-table menu) (remove-if-not match-p (menu-state-unfiltered-table menu))
+          (labels ((match-p (table-item)
+                     (funcall (menu-state-filter-pred menu)
+                              (car table-item)
+                              (second table-item)
+                              (menu-state-current-input menu))))
+            (setf (menu-state-table menu) (remove-if-not #'match-p (menu-state-unfiltered-table menu))
                   (menu-state-selected menu) 0)
             (bound-check-menu menu)))
       (cl-ppcre:ppcre-syntax-error ()))))
 
+(defun menu-item-matches-regexp (item-string item-object user-input)
+  "The default filter predicate for SELECT-FROM-MENU. When using this
+predicate, an item is visible when it matches all of the regular
+expressions in USER-INPUT (multiple regexps are separated by one or
+more spaces; ARGUMENT-POP is used to split the string)."
+  (match-all-regexps user-input item-string))
+
 (defun select-from-menu (screen table &optional (prompt "Search:")
                                         (initial-selection 0)
-                                        extra-keymap)
+                                        extra-keymap
+                                        (filter-pred #'menu-item-matches-regexp))
   "Prompt the user to select from a menu on SCREEN. TABLE can be
 a list of values or an alist. If it's an alist, the CAR of each
 element is displayed in the menu. What is displayed as menu items
 must be strings.
 EXTRA-KEYMAP can be a keymap whose bindings will take precedence
 over the default bindings.
+FILTER-PRED should be a a function returning T when a certain menu
+item should be visible to the user.  It should accept arguments
+ITEM-STRING (the string shown to the user), ITEM-OBJECT (the object
+corresponding to the menu item), and USER-INPUT (the current user
+input). The default is MENU-ITEM-MATCHES-REGEXP.
 Returns the selected element in TABLE or nil if aborted. "
   (check-type screen screen)
   (check-type table list)
@@ -196,6 +206,7 @@ Returns the selected element in TABLE or nil if aborted. "
            (menu (make-menu-state
                   :unfiltered-table table
                   :table table
+                  :filter-pred filter-pred
                   :prompt prompt
                   :view-start 0
                   :view-end 0
@@ -212,7 +223,7 @@ Returns the selected element in TABLE or nil if aborted. "
                          (start (menu-state-view-start menu))
                          (end (menu-state-view-end menu))
                          (len (length (menu-state-table menu)))
-                         (prompt-line (format nil "~@[~A ~] ~A"
+                         (prompt-line (format nil "~@[~A ~]~A"
                                               prompt (menu-state-current-input menu)))
                          (strings (mapcar #'menu-element-name
                                           (subseq (menu-state-table menu)
