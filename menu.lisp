@@ -173,24 +173,13 @@ backspace or F9), return it otherwise return nil"
       (cl-ppcre:ppcre-syntax-error ()))))
 
 (defun menu-item-matches-regexp (item-string item-object user-input)
-  "This is a menu item filter predicate: returns T when the menu item
-corresponding to the object ITEM-OBJECT, shown to the user as
-ITEM-STRING, should be visible to the user when the current user input
-is USER-INPUT (a string).
-
-In particular, the item is visible when it matches all of the regular
+  "The default filter predicate for SELECT-FROM-MENU. When using this
+predicate, an item is visible when it matches all of the regular
 expressions in USER-INPUT (multiple regexps are separated by one or
-more spaces; ARGUMENT-POP is used to split the string).
-
- This function is the default behavior (the default value of the
-FILTER-PRED argument to SELECT-FROM-MENU)"
-  (let* ((arg-line (make-argument-line :string user-input
-                                       :start 0))
-         (match-regexes (loop for arg = (argument-pop arg-line)
-                           while arg
-                           collect (ppcre:create-scanner arg :case-insensitive-mode t))))
-    (loop for re in match-regexes
-       always (ppcre:scan re item-string))))
+more spaces; ARGUMENT-POP is used to split the string)."
+  (loop for pattern in (split-string user-input " ")
+     always (let ((scanner (ppcre:create-scanner pattern :case-insensitive-mode t)))
+              (ppcre:scan pattern item-string))))
 
 (defun select-from-menu (screen table &optional (prompt "Search:")
                                         (initial-selection 0)
@@ -202,6 +191,11 @@ element is displayed in the menu. What is displayed as menu items
 must be strings.
 EXTRA-KEYMAP can be a keymap whose bindings will take precedence
 over the default bindings.
+FILTER-PRED should be a a function returning T when a certain menu
+item should be visible to the user.  It should accept arguments
+ITEM-STRING (the string shown to the user), ITEM-OBJECT (the object
+corresponding to the menu item), and USER-INPUT (the current user
+input). The default is MENU-ITEM-MATCHES-REGEXP.
 Returns the selected element in TABLE or nil if aborted. "
   (check-type screen screen)
   (check-type table list)
