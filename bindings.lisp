@@ -114,6 +114,7 @@ from most specific groups to most general groups.")
   (kbd "C-u") "next-urgent"
   (kbd "w")   "windows"
   (kbd "C-w") "windows"
+  (kbd "DEL") "repack-window-numbers"
   (kbd "k")   "delete"
   (kbd "C-k") "delete"
   (kbd "K")   "kill"
@@ -133,7 +134,8 @@ from most specific groups to most general groups.")
   (kbd "#")   "mark"
   (kbd "F11") "fullscreen"
   (kbd "A")   "title"
-  (kbd "i")   "info")
+  (kbd "i")   "info"
+  (kbd "I")   "show-window-properties")
 
 (fill-keymap *tile-group-top-map*
   *escape-key* '*tile-group-root-map*)
