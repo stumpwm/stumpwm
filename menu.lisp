@@ -210,7 +210,7 @@ Returns the selected element in TABLE or nil if aborted. "
                   :prompt prompt
                   :view-start 0
                   :view-end 0
-                  :selected 0))
+                  :selected initial-selection))
            (keymap (if extra-keymap
                        (list extra-keymap *menu-map*)
                        (list *menu-map*))))
