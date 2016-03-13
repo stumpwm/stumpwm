@@ -147,8 +147,9 @@
          ;; anyway.
          t)
         (t
-         (let ((window (process-mapped-window screen window)))
-           (group-raise-request (window-group window) window :map)))))))
+         (xlib:with-server-grabbed (*display*)
+           (let ((window (process-mapped-window screen window)))
+             (group-raise-request (window-group window) window :map))))))))
 
 (define-stump-event-handler :unmap-notify (send-event-p event-window window #|configure-p|#)
   ;; There are two kinds of unmap notify events: the straight up
