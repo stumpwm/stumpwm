@@ -66,6 +66,10 @@
   (let ((len (length (menu-state-table menu))))
     (min (or *menu-maximum-height* len) len)))
 
+(defun menu-prompt-visible (menu)
+  (or (menu-state-prompt menu)
+      (> (length (menu-state-current-input menu)) 0)))
+
 (defun bound-check-menu (menu)
   "Adjust the menu view and selected item based
 on current view and new selection."
@@ -223,20 +227,21 @@ Returns the selected element in TABLE or nil if aborted. "
                          (start (menu-state-view-start menu))
                          (end (menu-state-view-end menu))
                          (len (length (menu-state-table menu)))
-                         (prompt-line (format nil "~@[~A ~]~A"
-                                              prompt (menu-state-current-input menu)))
+                         (prompt-line (when (menu-prompt-visible menu)
+                                        (format nil "~@[~A ~]~A"
+                                                prompt (menu-state-current-input menu))))
                          (strings (mapcar #'menu-element-name
                                           (subseq (menu-state-table menu)
                                                   start end)))
-                         (num-items (- end start))
                          (highlight (- sel start)))
                     (unless (zerop start)
                       (setf strings (cons "..." strings))
                       (incf highlight))
                     (unless (= len end)
                       (setf strings (nconc strings '("..."))))
-                    (setf strings (cons prompt-line strings))
-                    (incf highlight)
+                    (when prompt-line
+                      (push prompt-line strings)
+                      (incf highlight))
                     (echo-string-list screen strings highlight))
                   (multiple-value-bind (action key-seq) (read-from-keymap keymap)
                     (if action
