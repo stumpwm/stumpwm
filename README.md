@@ -129,7 +129,7 @@ that your contribution gets merged in a timely manner:
   * [Use lisp idioms](http://people.ace.ed.ac.uk/staff/medward2/class/moz/cm/doc/contrib/lispstyle.html)
   * If you are working on a major change to the internals, keep us
     informed on stumpwm-devel! Also, it will probably help if the
-    changes are made and the incrementally applied to the codebase in
+    changes are made and then incrementally applied to the codebase in
     order to avoid introducing show-stopping bugs.
 * Do not's
   * Include emacs local variables 
@@ -174,7 +174,7 @@ StumpWM universe (in no particular order):
   require root access
 * Revamped, mouse-friendly mode-line. 
   * Support fixed number of chars for window titles
-  * Dynamically trimp window titles to fit them all on the mode-line
+  * Dynamically trim window titles to fit them all on the mode-line
   * Split the mode-line into multiple cells for containing different information
   * Implement widget icons to indicate system status (new mail, low
     battery, network etc)
