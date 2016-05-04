@@ -97,15 +97,6 @@ function expects to be wrapped in a with-state for win."
     ;; after we've already started drawing it.
     (xlib:display-finish-output *display*)))
 
-(defun invert-rect (screen win x y width height)
-  "invert the color in the rectangular area. Used for highlighting text."
-  (let ((gcontext (xlib:create-gcontext :drawable win
-                                        :foreground (screen-fg-color screen)
-                                        :function boole-xor)))
-    (xlib:draw-rectangle win gcontext x y width height t)
-    (setf (xlib:gcontext-foreground gcontext) (screen-bg-color screen))
-    (xlib:draw-rectangle win gcontext x y width height t)))
-
 (defun unmap-message-window (screen)
   "Unmap the screen's message window, if it is mapped."
   (unless (eq (xlib:window-map-state (screen-message-window screen)) :unmapped)
