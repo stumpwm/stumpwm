@@ -25,7 +25,7 @@
 
 ;; Web jump (works for Google and Imdb)
 (defmacro make-web-jump (name prefix)
-  `(defcommand ,name (search) ((:rest ,(concatenate 'string name " search: ")))
+  `(defcommand ,(intern name) (search) ((:rest ,(concatenate 'string name " search: ")))
     (substitute #\+ #\Space search)
     (run-shell-command (concatenate 'string ,prefix search))))
 

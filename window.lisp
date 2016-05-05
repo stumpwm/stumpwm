@@ -41,7 +41,7 @@
     update-configuration no-focus
     ;; Window management API
     update-decoration focus-window raise-window window-visible-p window-sync
-    window-head))
+    window-head really-raise-window))
 
 (defvar *default-window-name* "Unnamed"
   "The name given to a window that does not supply its own name.")
@@ -77,8 +77,8 @@
 
 (defgeneric update-decoration (window)
   (:documentation "Update the window decoration."))
-(defgeneric focus-window (window)
-  (:documentation "Give the specified window keyboard focus."))
+(defgeneric focus-window (window &optional raise)
+  (:documentation "Give the specified window keyboard focus and (optionally) raise."))
 (defgeneric raise-window (window)
   (:documentation "Bring the window to the top of the window stack."))
 (defgeneric window-visible-p (window)
@@ -88,6 +88,8 @@
 may need to sync itself. WHAT-CHANGED is a hint at what changed."))
 (defgeneric window-head (window)
   (:documentation "Report what window the head is currently on."))
+(defgeneric really-raise-window (window)
+  (:documentation "Really bring the window to the top of the window stack in group"))
 
 ;; Urgency / demands attention
 
@@ -346,38 +348,16 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
                                   (xlib:drawable-y (window-parent win))
                                   (window-width win) (window-height win) 0))
 
-(defun window-fullscreen-locked-p (win)
-  (let* ((xwin (window-xwin win))
-         (hints (xlib:wm-normal-hints xwin)))
-    (with-accessors
-     ((min-width xlib:wm-size-hints-min-width)
-      (max-width xlib:wm-size-hints-max-width)
-      (min-height xlib:wm-size-hints-min-height)
-      (max-height xlib:wm-size-hints-max-height)
-      (x xlib:wm-size-hints-x)
-      (y xlib:wm-size-hints-y))
-        hints
-      (and
-       hints
-       x y
-       max-height min-height
-       max-width min-width
-       (= x 0) (= y 0)
-       (= min-height max-height)
-       (= min-width max-width)))))
-
 ;; FIXME: should we raise the window or its parent?
 (defmethod raise-window (win)
   "Map the window if needed and bring it to the top of the stack. Does not affect focus."
-  (let ((maxmin-notequal (not (window-fullscreen-locked-p win))))
-    (when (window-urgent-p win)
-      (window-clear-urgency win))
-    (when (window-hidden-p win)
-      (unhide-window win)
-      (if maxmin-notequal
-          (update-configuration win)))
-    (when (and maxmin-notequal (window-in-current-group-p win))
-      (setf (xlib:window-priority (window-parent win)) :top-if))))
+  (when (window-urgent-p win)
+    (window-clear-urgency win))
+  (when (window-hidden-p win)
+    (unhide-window win)
+    (update-configuration win))
+  (when (window-in-current-group-p win)
+    (setf (xlib:window-priority (window-parent win)) :top-if)))
 ;; some handy wrappers
 
 (defun xwin-border-width (win)
@@ -644,32 +624,31 @@ and bottom_end_x."
   ;; apparently we need to grab the server so the client doesn't get
   ;; the mapnotify event before the reparent event. that's what fvwm
   ;; says.
-  (xlib:with-server-grabbed (*display*)
-    (let* ((xwin (window-xwin window))
-           (master-window (xlib:create-window
-                           :parent (screen-root screen)
-                           :x (xlib:drawable-x (window-xwin window))
-                           :y (xlib:drawable-y (window-xwin window))
-                           :width (window-width window)
-                           :height (window-height window)
-                           :background (if (eq (window-type window) :normal)
-                                           (screen-win-bg-color screen)
-                                           :none)
-                           :border (screen-unfocus-color screen)
-                           :border-width (default-border-width-for-type window)
-                           :event-mask *window-parent-events*
-                           :depth (xlib:drawable-depth xwin)
-                           :visual (xlib:window-visual-info xwin)
-                           :colormap (xlib:window-colormap xwin))))
-      (unless (eq (xlib:window-map-state (window-xwin window)) :unmapped)
-        (incf (window-unmap-ignores window)))
-      (xlib:reparent-window (window-xwin window) master-window 0 0)
-      (xwin-grab-buttons master-window)
-      ;;     ;; we need to update these values since they get set to 0,0 on reparent
-      ;;     (setf (window-x window) 0
-      ;;          (window-y window) 0)
-      (xlib:add-to-save-set (window-xwin window))
-      (setf (window-parent window) master-window))))
+  (let* ((xwin (window-xwin window))
+         (master-window (xlib:create-window
+                         :parent (screen-root screen)
+                         :x (xlib:drawable-x (window-xwin window))
+                         :y (xlib:drawable-y (window-xwin window))
+                         :width (window-width window)
+                         :height (window-height window)
+                         :background (if (eq (window-type window) :normal)
+                                         (screen-win-bg-color screen)
+                                         :none)
+                         :border (screen-unfocus-color screen)
+                         :border-width (default-border-width-for-type window)
+                         :event-mask *window-parent-events*
+                         :depth (xlib:drawable-depth xwin)
+                         :visual (xlib:window-visual-info xwin)
+                         :colormap (xlib:window-colormap xwin))))
+    (unless (eq (xlib:window-map-state (window-xwin window)) :unmapped)
+      (incf (window-unmap-ignores window)))
+    (xlib:reparent-window (window-xwin window) master-window 0 0)
+    (xwin-grab-buttons master-window)
+    ;;     ;; we need to update these values since they get set to 0,0 on reparent
+    ;;     (setf (window-x window) 0
+    ;;          (window-y window) 0)
+    (xlib:add-to-save-set (window-xwin window))
+    (setf (window-parent window) master-window)))
 
 (defun process-existing-windows (screen)
   "Windows present when stumpwm starts up must be absorbed by stumpwm."
@@ -696,7 +675,8 @@ and bottom_end_x."
                       (eql wm-state +iconic-state+))
                   (progn
                     (dformat 1 "Processing ~S ~S~%" (xwin-name win) win)
-                    (process-mapped-window screen win))))))))
+                    (xlib:with-server-grabbed (*display*)
+                      (process-mapped-window screen win)))))))))
   (dolist (w (screen-windows screen))
     (setf (window-state w) +normal-state+)
     (xwin-hide w)))
@@ -908,20 +888,21 @@ needed."
     (when last-win
       (update-decoration last-win))))
 
-(defmethod focus-window (window)
-  "Make the window visible and give it keyboard focus."
+(defmethod focus-window (window &optional (raise t))
+  "Make the window visible and give it keyboard focus. If raise is t, raise the window."
   (dformat 3 "focus-window: ~s~%" window)
   (let* ((group (window-group window))
          (screen (group-screen group))
          (cw (screen-focus screen))
          (xwin (window-xwin window)))
+    (when raise
+      (raise-window window))
     (cond
       ((eq window cw)
        ;; If window to focus is already focused then our work is done.
        )
       ((and *current-event-time* 
             (member :WM_TAKE_FOCUS (xlib:wm-protocols xwin) :test #'eq))
-       (raise-window window)
        (let ((hints (xlib:wm-hints xwin)))
          (when (or (null hints) (eq (xlib:wm-hints-input hints) :on))
            (screen-set-focus screen window)
@@ -934,7 +915,6 @@ needed."
                             *current-event-time*)
        (run-hook-with-args *focus-window-hook* window cw))
       (t
-       (raise-window window)
        (screen-set-focus screen window)
        (update-decoration window)
        (when cw
@@ -948,7 +928,19 @@ needed."
   (dformat 3 "Kill client~%")
   (xlib:kill-client *display* (xlib:window-id window)))
 
-(defun select-window-from-menu (windows fmt &optional prompt)
+(defun default-window-menu-filter (item-string item-object user-input)
+  "The default filter predicate for window menus."
+  (or (menu-item-matches-regexp item-string item-object user-input)
+      (match-all-regexps user-input (window-title item-object)
+                         :case-insensitive t)))
+
+(defvar *window-menu-filter* #'default-window-menu-filter
+  "The filter predicate used to filter menu items in window menus
+  created by SELECT-WINDOW-FROM-MENU. The interface for filter
+  predicates is described in the docstring for SELECT-FROM-ITEM.")
+
+(defun select-window-from-menu (windows fmt &optional prompt
+                                              (filter-pred *window-menu-filter*))
   "Allow the user to select a window from the list passed in @var{windows}.  The
 @var{fmt} argument specifies the window formatting used.  Returns the window
 selected."
@@ -957,7 +949,9 @@ selected."
 				      (list (format-expand *window-formatters* fmt w) w))
                                     windows)
                             prompt
-                            (or (position (current-window) windows) 0))))
+                            (or (position (current-window) windows) 0)  ; Initial selection
+                            nil  ; Extra keymap
+                            filter-pred)))
 
 ;;; Window commands
 
@@ -1102,7 +1096,7 @@ formatting. This is a simple wrapper around the command @command{windowlist}."
                                  (stumpwm-name->keysym "TAB"))
                                 ((char= ch #\Newline)
                                  (stumpwm-name->keysym "RET"))
-                                (t nil))))
+                                (t (first (xlib:character->keysyms ch *display*))))))
                  (when sym
                    (send-fake-key window
                                   (make-key :keysym sym)))))

@@ -100,12 +100,12 @@ AC_MSG_NOTICE([Using $LISP at $LISP_PROGRAM])
 AC_CHECK_PROG(MAKEINFO,makeinfo,yes,no)
 
 if test "$MAKEINFO" = "no"; then
-   AC_MSG_ERROR([Please install makeinfo for the manual.])
+   AC_MSG_WARN([Please install makeinfo for the manual.])
 fi
 
 AC_CHECK_PROG(XDPYINFO,xdpyinfo,yes,no)
 if test "$XDPINFO" = "no"; then
-   AC_MSG_WARN([xdpyinfo is needed for xinerama support.])
+   AC_MSG_ERROR([xdpyinfo is needed for xinerama support.])
 fi
 
 # Checks for libraries.

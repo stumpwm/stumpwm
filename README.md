@@ -1,4 +1,4 @@
-![](http://www.kenanb.com/static/img/stumpwm-logo/stumpwm-logo-stripe.png)
+![](https://stumpwm.github.io/images/stumpwm-logo-stripe.png)
 # The Stump Window Manager
 ![](https://travis-ci.org/stumpwm/stumpwm.svg)
 Stumpwm is a window manager written entirely in Common Lisp. It
@@ -51,7 +51,7 @@ The recommended way to install the dependencies is using Quicklisp.
 Follow the instructions at http://www.quicklisp.org/ to install it.
 In short: 
 ```
-$ curl -O http://beta.quicklisp.org/quicklisp.lisp
+$ curl -O https://beta.quicklisp.org/quicklisp.lisp
 ```
 
 ```
@@ -129,7 +129,7 @@ that your contribution gets merged in a timely manner:
   * [Use lisp idioms](http://people.ace.ed.ac.uk/staff/medward2/class/moz/cm/doc/contrib/lispstyle.html)
   * If you are working on a major change to the internals, keep us
     informed on stumpwm-devel! Also, it will probably help if the
-    changes are made and the incrementally applied to the codebase in
+    changes are made and then incrementally applied to the codebase in
     order to avoid introducing show-stopping bugs.
 * Do not's
   * Include emacs local variables 
@@ -174,7 +174,7 @@ StumpWM universe (in no particular order):
   require root access
 * Revamped, mouse-friendly mode-line. 
   * Support fixed number of chars for window titles
-  * Dynamically trimp window titles to fit them all on the mode-line
+  * Dynamically trim window titles to fit them all on the mode-line
   * Split the mode-line into multiple cells for containing different information
   * Implement widget icons to indicate system status (new mail, low
     battery, network etc)

@@ -20,18 +20,11 @@ infodir=@infodir@
 
 # You shouldn't have to edit past this
 
-# This is copied from the .asd file. It'd be nice to have the list in
-# one place, but oh well.
-FILES=stumpwm.asd package.lisp primitives.lisp wrappers.lisp		\
-pathnames.lisp keysyms.lisp keytrans.lisp kmap.lisp input.lisp		\
-core.lisp command.lisp menu.lisp screen.lisp head.lisp group.lisp	\
-window.lisp floating-group.lisp tile-window.lisp window-placement.lisp	\
-message-window.lisp selection.lisp user.lisp iresize.lisp		\
-bindings.lisp events.lisp help.lisp fdump.lisp mode-line.lisp		\
-time.lisp color.lisp module.lisp stumpwm.lisp version.lisp
+FILES=stumpwm.asd $(shell grep -o ":file \".*\"" stumpwm.asd | sed 's,:file ",,g' | sed 's,",.lisp,g' )
 
 all: stumpwm stumpwm.info
 
+travis: stumpwm
 stumpwm.info: stumpwm.texi
 	makeinfo stumpwm.texi
 

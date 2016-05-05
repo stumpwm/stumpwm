@@ -1389,14 +1389,15 @@ An input function takes 2 arguments: the input structure and the key pressed.
 @chapter Windows
 
 !!! next
-!!! pull-hidden-next
 !!! prev
-!!! pull-hidden-previous
 !!! delete-window
 !!! kill-window
 !!! echo-windows
 !!! other-window
+!!! pull-hidden-next
+!!! pull-hidden-previous
 !!! pull-hidden-other
+!!! pull-from-windowlist
 !!! renumber
 !!! meta
 !!! select-window
@@ -1522,6 +1523,22 @@ The @code{act-on-matching-windows} function also allows performing some
 actions, for example getting all the windows titled XTerm into the
 current group:
 @code{(act-on-matching-windows (w) (titled-p w "XTerm") (pull-w w))}
+
+!!! move-windows-to-group
+%%% act-on-matching-windows
+!!! pull-w
+!!! titled-p
+!!! title-re-p
+!!! classed-p
+!!! class-re-p
+!!! typed-p
+!!! type-re-p
+!!! roled-p
+!!! role-re-p
+!!! resed-p
+!!! res-re-p
+!!! grouped-p
+!!! in-frame-p
 
 @node Frames, Mode-line, Windows, Top
 @chapter Frames
@@ -2074,6 +2091,8 @@ $$$ *root-click-hook*
 $$$ *mode-line-click-hook*
 $$$ *urgent-window-hook*
 $$$ *event-processing-hook*
+$$$ *pre-command-hook*
+$$$ *post-command-hook*
 
 @node Modules, Hacking, Hooks, Top
 @chapter Modules

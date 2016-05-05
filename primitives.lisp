@@ -57,6 +57,8 @@
           *new-mode-line-hook*
           *destroy-mode-line-hook*
           *mode-line-click-hook*
+          *pre-command-hook*
+          *post-command-hook*
           *display*
           *shell-program*
           *maxsize-border-width*
@@ -161,7 +163,11 @@
           modifiers-super
           modifiers-meta
           modifiers-hyper
-          modifiers-numlock))
+          modifiers-numlock
+          ;; Conditions
+          stumpwm-condition
+          stumpwm-error
+          stumpwm-warning))
 
 
 ;;; Message Timer
@@ -306,6 +312,14 @@ the mode-line")
 (defvar *mode-line-click-hook* '()
   "Called whenever the mode-line is clicked. It is called with 4 arguments,
 the mode-line, the button clicked, and the x and y of the pointer.")
+
+(defvar *pre-command-hook* '()
+  "Called before a command is called. It is called with 1 argument:
+the command as a symbol.")
+
+(defvar *post-command-hook* '()
+  "Called after a command is called. It is called with 1 argument:
+the command as a symbol.")
 
 ;; Data types and globals used by stumpwm
 
@@ -457,7 +471,7 @@ and to *standard-output*.
 Valid values are :message, :break, :abort. :break will break to the
 debugger. This can be problematic because if the user hit's a
 mapped key the ENTIRE keyboard will be frozen and you will have
-to login remotely to regain control. :abort quits stumpmwm.")
+to login remotely to regain control. :abort quits stumpwm.")
 
 (defvar *window-name-source* :title
   "This variable controls what is used for the window's name. The default is @code{:title}.
@@ -671,7 +685,7 @@ display a message whenever you switch frames:
 \(defun my-rad-fn (to-frame from-frame)
   (stumpwm:message \"Mustard!\"))
 
-\(stumpmwm:add-hook stumpwm:*focus-frame-hook* 'my-rad-fn)
+\(stumpwm:add-hook stumpwm:*focus-frame-hook* 'my-rad-fn)
 @end example"
   `(setf ,hook (adjoin ,fn ,hook)))
 
@@ -769,6 +783,17 @@ at the end of STRING, we don't include a null substring for that.
 Modifies the match data; use `save-match-data' if necessary."
   (split-seq string separators :test #'char= :default-value '("")))
 
+(defun match-all-regexps (regexps target-string &key (case-insensitive t))
+  "Return T if TARGET-STRING matches all regexps in REGEXPS.
+REGEXPS can be a list of strings (one regexp per element) or a single
+string which is split to obtain the individual regexps. "
+  (let* ((regexps (if (listp regexps)
+                      regexps
+                      (split-string regexps " "))))
+    (loop for pattern in regexps
+       always (let ((scanner (ppcre:create-scanner pattern
+                                                   :case-insensitive-mode case-insensitive)))
+                (ppcre:scan scanner target-string)))))
 
 (defun insert-before (list item nth)
   "Insert ITEM before the NTH element of LIST."
@@ -1227,8 +1252,20 @@ of :error."
     (setf ,list (remove ,elt ,list))
     (push ,elt ,list)))
 
-(define-condition stumpwm-error (error)
-  () (:documentation "Any stumpwm specific error should inherit this."))
+(define-condition stumpwm-condition (condition)
+  ((message :initarg :message :reader warning-message))
+  (:documentation "Any stumpmwm specific condition should inherit from this.")
+  (:report (lambda (condition stream)
+            (format stream "~A~%" (warning-message condition)))))
+
+(define-condition stumpwm-error (stumpwm-condition error)
+  ()
+  (:documentation "Any stumpwm specific error should inherit this."))
+
+(define-condition stumpwm-warning (warning stumpwm-condition)
+  ()
+  (:documentation "Adds a message slot to warning. Any stumpwm specific warning
+  should inherit from this."))
 
 (defun intern1 (thing &optional (package *package*) (rt *readtable*))
   "A DWIM intern."

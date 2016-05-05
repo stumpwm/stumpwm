@@ -18,20 +18,16 @@
 
 ;; some book keeping functions
 (defmethod (setf window-x) :before (val (window float-window))
-  (unless (eql (window-x window) val)
-    (setf (float-window-last-x window) (window-x window))))
+  (setf (float-window-last-x window) (window-x window)))
 
 (defmethod (setf window-y) :before (val (window float-window))
-  (unless (eql (window-y window) val)
-    (setf (float-window-last-y window) (window-y window))))
+  (setf (float-window-last-y window) (window-y window)))
 
 (defmethod (setf window-width) :before (val (window float-window))
-  (unless (eql (window-width window) val)
-    (setf (float-window-last-width window) (window-width window))))
+  (setf (float-window-last-width window) (window-width window)))
 
 (defmethod (setf window-height) :before (val (window float-window))
-  (unless (eql (window-height window) val)
-    (setf (float-window-last-height window) (window-height window))))
+  (setf (float-window-last-height window) (window-height window)))
 
 (defun float-window-move-resize (win &key x y width height (border *float-window-border*))
   ;; x and y position the parent window while width, height resize the
@@ -124,6 +120,9 @@
                                     :width last-width
                                     :height last-height)))))
 
+(defmethod really-raise-window ((window float-window))
+  (raise-window window))
+
 ;;; floating group
 
 (defclass float-group (group)
@@ -190,7 +189,7 @@
   )
 
 (defmethod group-focus-window ((group float-group) window)
-  (focus-window window))
+  (focus-window window nil))
 
 (defmethod group-root-exposure ((group float-group))
   )
@@ -215,7 +214,7 @@
   (let ((screen (group-screen group))
         (initial-width (xlib:drawable-width (window-parent window)))
         (initial-height (xlib:drawable-height (window-parent window))))
-    (when (eq *mouse-focus-policy* :click)
+    (when (member *mouse-focus-policy* '(:click :sloppy))
       (focus-window window))
 
     ;; When in border

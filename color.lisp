@@ -80,17 +80,19 @@ then call (update-color-map).")
           (xlib:color-blue color) (max-min (xlib:color-blue color) amt))))
 
 (defun hex-to-xlib-color (color)
-  (if (= 4 (length color))
-      (let ((red (/ (parse-integer (subseq color 1 2) :radix 16) 255.0))
-            (green (/ (parse-integer (subseq color 2 3) :radix 16) 255.0))
-            (blue (/ (parse-integer (subseq color 3 4) :radix 16) 255.0)))
-        (xlib:make-color :red (+ red (* 16 red))
-                         :green (+ green (* 16 green))
-                         :blue (+ blue (* 16 blue))))
-      (let ((red (/ (parse-integer (subseq color 1 3) :radix 16) 255.0))
-            (green (/ (parse-integer (subseq color 3 5) :radix 16) 255.0))
-            (blue (/ (parse-integer (subseq color 5 7) :radix 16) 255.0)))
-        (xlib:make-color :red red :green green :blue blue))))
+  (cond
+   ((= 4 (length color))
+    (let ((red (/ (parse-integer (subseq color 1 2) :radix 16) 255.0))
+          (green (/ (parse-integer (subseq color 2 3) :radix 16) 255.0))
+          (blue (/ (parse-integer (subseq color 3 4) :radix 16) 255.0)))
+      (xlib:make-color :red (+ red (* 16 red))
+                       :green (+ green (* 16 green))
+                       :blue (+ blue (* 16 blue)))))
+   ((= 7 (length color))
+    (let ((red (/ (parse-integer (subseq color 1 3) :radix 16) 255.0))
+          (green (/ (parse-integer (subseq color 3 5) :radix 16) 255.0))
+          (blue (/ (parse-integer (subseq color 5 7) :radix 16) 255.0)))
+      (xlib:make-color :red red :green green :blue blue)))))
 
 (defun lookup-color (screen color)
   (cond
@@ -323,31 +325,31 @@ rendered width."
                     string-or-parts))
          (height (max-font-height parts cc)))
     (loop
-      for (part . rest) on parts
-      for font-height-difference = (- height
-                                      (font-height (ccontext-font cc)))
-      for y-to-center = (floor (/ font-height-difference 2))
-      if (stringp part)
-        do (draw-image-glyphs
-            (ccontext-px cc)
-            (ccontext-gc cc)
-            (ccontext-font cc)
-            draw-x (+ y y-to-center (font-ascent (ccontext-font cc)))
-            part
-            :translate #'translate-id
-            :size 16)
-        and do (incf draw-x (text-line-width (ccontext-font cc)
-                                        part
-                                        :translate #'translate-id))
-      else
-        do (if (eq :> (first part))
-               (progn (render-string rest cc
-                                     (- (xlib:drawable-width (ccontext-px cc))
-                                        x
-                                        (rendered-string-size rest cc))
-                                     y)
-                      (loop-finish))
-               (apply #'apply-color cc (first part) (rest part))))
+       for (part . rest) on parts
+       for font-height-difference = (- height
+                                       (font-height (ccontext-font cc)))
+       for y-to-center = (floor (/ font-height-difference 2))
+       if (stringp part)
+       do (draw-image-glyphs
+           (ccontext-px cc)
+           (ccontext-gc cc)
+           (ccontext-font cc)
+           draw-x (+ y y-to-center (font-ascent (ccontext-font cc)))
+           part
+           :translate #'translate-id
+           :size 16)
+         (incf draw-x (text-line-width (ccontext-font cc)
+                                       part
+                                       :translate #'translate-id))
+       else
+       do (if (eq :> (first part))
+              (progn (render-string rest cc
+                                    (- (xlib:drawable-width (ccontext-px cc))
+                                       x
+                                       (rendered-string-size rest cc))
+                                    y)
+                     (loop-finish))
+              (apply #'apply-color cc (first part) (rest part))))
     (values height draw-x)))
 
 (defun render-strings (screen cc padx pady strings highlights)
@@ -377,15 +379,17 @@ rendered width."
                            (xlib:drawable-width px)
                            (xlib:drawable-height px) t))
     (loop for parts in strings
-          for row from 0 to (length strings)
-          for line-height = (render-string parts cc
-                                           (+ padx 0)
-                                           (+ pady y))
-          when (find row highlights :test 'eql)
-            do (invert-rect screen px 0 (+ pady y)
-                            (xlib:drawable-width px)
-                            line-height)
-          do (incf y line-height))
+       for row from 0 to (length strings)
+       for line-height = (max-font-height parts cc)
+       if (find row highlights :test 'eql)
+       do (xlib:draw-rectangle px gc 0 y (xlib:drawable-width px) line-height t)
+         (xlib:with-gcontext (gc :foreground (xlib:gcontext-background gc)
+                                 :background (xlib:gcontext-foreground gc))
+           (render-string parts cc (+ padx 0) (+ pady y)))
+       else
+       do (render-string parts cc (+ padx 0) (+ pady y))
+       end
+       do (incf y line-height))
     (xlib:copy-area px gc 0 0
                     (xlib:drawable-width px)
                     (xlib:drawable-height px) xwin 0 0)

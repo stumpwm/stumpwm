@@ -55,7 +55,7 @@ like xterm and emacs.")
 
 ;;;;
 
-(defun really-raise-window (window)
+(defmethod really-raise-window ((window tile-window))
   (frame-raise-window (window-group window) (window-frame window) window))
 
 (defun raise-modals-of (window)
@@ -318,6 +318,16 @@ current frame and raise it."
 "Pull the last focused, hidden window into the current frame."
   (let ((group (current-group)))
     (pull-other-hidden-window group)))
+
+(defcommand (pull-from-windowlist tile-group) () ()
+  "Pulls a window selected from the list of windows.
+This allows a behavior similar to Emacs' switch-to-buffer
+when selecting another window."
+  (let ((pulled-window (select-window-from-menu
+                        (group-windows (current-group))
+                        *window-format*)))
+    (when pulled-window
+      (pull-window pulled-window))))
 
 (defun exchange-windows (win1 win2)
   "Exchange the windows in their respective frames."
