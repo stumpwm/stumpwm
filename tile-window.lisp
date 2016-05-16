@@ -415,7 +415,7 @@ frame. Possible values are:
                                   ((:y-or-n "Lock to group? ")
                                    (:y-or-n "Use title? "))
   "Make a generic placement rule for the current window. Might be too specific/not specific enough!"
-  (make-rule-for-window (current-window) (first lock) (first title)))
+  (make-rule-for-window (current-window) lock title))
 
 (defcommand (forget tile-group) () ()
   "Forget the window placement rule that matches the current window."

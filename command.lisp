@@ -300,8 +300,7 @@ then describes the symbol."
 (define-stumpwm-type :y-or-n (input prompt)
   (let ((s (or (argument-pop input)
                (read-one-line (current-screen) (concat prompt "(y/n): ")))))
-    (when s
-      (values (list (equal s "y"))))))
+    (equal s "y")))
 
 (defun lookup-symbol (string)
   ;; FIXME: should we really use string-upcase?
