@@ -29,26 +29,26 @@
 (defun columnize (list columns &key col-aligns (pad 1) (char #\Space) (align :left))
   ;; only somewhat nasty
   (let* ((rows (ceiling (length list) columns))
-         (data (loop for i from 0 below (length list) by rows
-                     collect (subseq list i (min (+ i rows) (length list)))))
+         (data (loop for i from 0 below (length list) by (max rows 1)
+                  collect (subseq list i (min (+ i rows) (length list)))))
          (max (mapcar (lambda (col)
                         (reduce 'max col :key 'length :initial-value 0))
                       data))
-         (padstr (make-string pad :initial-element char)))
-    (apply 'mapcar 'concat
-           ;; normalize width
-           (loop
-            for i in data
-            for j in max
-            for c from 0
-            collect (loop
-                     for k from 0 below rows
-                     for s = (or (nth k i) "")
-                     for len = (make-string (- j (length s))
-                                            :initial-element char)
-                     collect (ecase (or (nth c col-aligns) align)
-                               (:left (format nil "~a~a~a" (if (= c 0) "" padstr) s len))
-                               (:right (format nil "~a~a~a" (if (= c 0) "" padstr) len s))))))))
+         (padstr (make-string pad :initial-element char))
+         (cols ;; normalize width
+          (loop
+             for i in data
+             for j in max
+             for c from 0
+             collect (loop
+                        for k from 0 below rows
+                        for s = (or (nth k i) "")
+                        for len = (make-string (- j (length s))
+                                               :initial-element char)
+                        collect (ecase (or (nth c col-aligns) align)
+                                  (:left (format nil "~a~a~a" (if (= c 0) "" padstr) s len))
+                                  (:right (format nil "~a~a~a" (if (= c 0) "" padstr) len s)))))))
+    (apply 'mapcar 'concat (or cols '(nil)))))
 
 (defun display-bindings-for-keymaps (key-seq &rest keymaps)
   (let* ((screen (current-screen))
@@ -60,7 +60,7 @@
                                   (font-height (screen-font screen))))))
     (message-no-timeout "Prefix: ~a~%~{~a~^~%~}"
                         (print-key-seq key-seq)
-                        (columnize data cols))))
+                        (or (columnize data cols) '("(EMPTY MAP)")))))
 
 (defcommand commands () ()
 "List all available commands."
