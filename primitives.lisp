@@ -695,10 +695,6 @@ display a message whenever you switch frames:
 
 ;; Misc. utility functions
 
-(defun conc1 (list arg)
-  "Append arg to the end of list"
-  (nconc list (list arg)))
-
 (defun sort1 (list sort-fn &rest keys &key &allow-other-keys)
   "Return a sorted copy of list."
   (let ((copy (copy-list list)))
