@@ -259,6 +259,9 @@ window group and frame")
 (defvar *quit-hook* '()
   "A hook called when stumpwm quits.")
 
+(defvar *restart-hook* '()
+  "A hook called when stumpwm restarts.")
+
 (defvar *internal-loop-hook* '()
   "A hook called inside stumpwm's inner loop.")
 
