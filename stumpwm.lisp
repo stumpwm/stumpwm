@@ -61,7 +61,7 @@ further up. "
 
 (defun error-handler (display error-key &rest key-vals &key asynchronous &allow-other-keys)
   "Handle X errors"
-  (cond
+  (cond 
     ;; ignore asynchronous window errors
     ((and asynchronous
           (find error-key '(xlib:window-error xlib:drawable-error xlib:match-error)))
@@ -185,7 +185,7 @@ The action is to call FUNCTION with arguments ARGS."
   "Parse an X11 DISPLAY string and return the host and display from it."
   (ppcre:register-groups-bind (protocol host ('parse-integer display screen))
 			      ("^(?:(.*?)/)?(.*?)?:(\\d+)(?:\\.(\\d+))?" display :sharedp t)
-    (values
+    (values 
      ;; clx doesn't like (vector character *)
      (coerce (or host "")
 	     '(simple-array character (*)))
@@ -260,7 +260,7 @@ The action is to call FUNCTION with arguments ARGS."
        (setf *last-unhandled-error* nil)
        (cond ((and (consp ret)
                    (typep (first ret) 'condition))
-              (format t "~&Caught '~a' at the top level. Please report this.~%~a"
+              (format t "~&Caught '~a' at the top level. Please report this.~%~a" 
                       (first ret) (second ret))
               (setf *last-unhandled-error* ret))
              ;; we need to jump out of the event loop in order to hup
