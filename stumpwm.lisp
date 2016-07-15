@@ -266,9 +266,11 @@ The action is to call FUNCTION with arguments ARGS."
              ;; we need to jump out of the event loop in order to hup
              ;; the process because otherwise we get errors.
              ((eq ret :hup-process)
+              (run-hook *restart-hook*)
               (apply 'execv (first (argv)) (argv)))
-             ((eq ret :restart))
-             (t 
+             ((eq ret :restart)
+              (run-hook *restart-hook*))
+             (t
               (run-hook *quit-hook*)
               ;; the number is the unix return code
               (return-from stumpwm 0))))))
