@@ -43,6 +43,7 @@
           *focus-window-hook*
           *place-window-hook*
           *start-hook*
+          *restart-hook*
           *quit-hook*
           *internal-loop-hook*
           *event-processing-hook*
