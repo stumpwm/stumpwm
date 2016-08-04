@@ -123,6 +123,89 @@
   (defmethod io-channel-fd ((channel xlib:display))
     (io-channel-fd (xlib::display-input-stream channel))))
 
+#-sbcl
+(progn
+  (defstruct io-loop
+    (display-ch nil)
+    (display nil)
+    (timers '()))
+
+  (defmethod io-loop-add ((info io-loop) channel)
+    (let ((fd (io-channel-fd channel)))
+      (cond
+        ((and (listp fd) (eq (first fd) :display))
+         (when (io-loop-display-ch info)
+           (error "Dummy I/O loop implementation only supports one XLIB display"))
+         (setf (io-loop-display-ch info) channel
+               (io-loop-display info) (second fd)))
+        ((null fd)
+         (when (find channel (io-loop-timers info))
+           (error "Timer channel is already registered"))
+         (push channel (io-loop-timers info)))
+        (t (error "Non-display, non-pure-timeout channels not supported by dummy I/O loop")))))
+
+  (defmethod io-loop-remove ((info io-loop) channel)
+    (cond ((eq (io-loop-display-ch info) channel)
+           (setf (io-loop-display-ch info) nil
+                 (io-loop-display info) nil))
+          ((find channel (io-loop-timers info))
+           (setf (io-loop-timers info)
+                 (delete channel (io-loop-timers info))))
+          (t (error "I/O channel is not currently registered"))))
+  
+  (defmethod io-loop-update ((info io-loop) channel)
+    (declare (ignore info channel)))
+
+  (defun io-loop (info &key description)
+    (declare (type io-loop info))
+    (with-simple-restart (quit-ioloop "Quit I/O loop~A"
+                                      (if description
+                                          (format nil " (~A)" description)
+                                          ""))
+      (labels ((channel-timeout (ch)
+                 (let ((evs (io-channel-events ch)))
+                   (second (find :timeout evs :key (lambda (ev) (and (listp ev) (car ev)))))))
+               (next-timeout ()
+                 (let ((timers (remove nil (mapcar #'channel-timeout (io-loop-timers info)))))
+                   (and timers
+                        (max (/ (- (apply 'min timers)
+                                   (get-internal-real-time))
+                                internal-time-units-per-second)
+                             0)))))
+        (block io-loop
+          (loop
+             (with-simple-restart (restart-ioloop "Restart at I/O loop~A"
+                                                  (if description
+                                                      (format nil " (~A)" description)
+                                                      ""))
+               (let ((rem-ch '()))
+                 (dolist (channel (io-loop-timers info))
+                   (let ((evs (io-channel-events channel)))
+                     (cond ((null evs)
+                            (push channel rem-ch))
+                           ((find :loop evs)
+                            (io-channel-handle channel :loop)))))
+                 (dolist (channel rem-ch)
+                   (io-loop-remove info channel)))
+               (let ((timeout (next-timeout)))
+                 (cond ((io-loop-display-ch info)
+                        (let ((nevents (xlib:event-listen (io-loop-display info) (and timeout (ceiling timeout)))))
+                          (when nevents
+                            (io-channel-handle (io-loop-display-ch info) :read))))
+                       (timeout
+                        (sleep timeout))
+                       (t (return-from io-loop))))
+               (when (io-loop-timers info)
+                 (let ((now (get-internal-real-time)))
+                   (dolist (channel (io-loop-timers info))
+                     (when (< (channel-timeout channel) now)
+                       (io-channel-handle channel :timeout)
+                       (when (not (channel-timeout channel))
+                         (io-loop-remove info channel))))))))))))
+
+  (defmethod io-channel-fd ((channel xlib:display))
+    (list :display channel)))
+
 (defmethod io-channel-fd ((channel synonym-stream))
   (io-channel-fd (symbol-value (synonym-stream-symbol channel))))
 
