@@ -189,6 +189,7 @@
                    (io-loop-remove info channel)))
                (let ((timeout (next-timeout)))
                  (cond ((io-loop-display-ch info)
+                        (io-channel-handle (io-loop-display-ch info) :loop)
                         (let ((nevents (xlib:event-listen (io-loop-display info) (and timeout (ceiling timeout)))))
                           (when nevents
                             (io-channel-handle (io-loop-display-ch info) :read))))
@@ -199,9 +200,7 @@
                  (let ((now (get-internal-real-time)))
                    (dolist (channel (io-loop-timers info))
                      (when (< (channel-timeout channel) now)
-                       (io-channel-handle channel :timeout)
-                       (when (not (channel-timeout channel))
-                         (io-loop-remove info channel))))))))))))
+                       (io-channel-handle channel :timeout)))))))))))
 
   (defmethod io-channel-fd ((channel xlib:display))
     (list :display channel)))
