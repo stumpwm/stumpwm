@@ -183,32 +183,34 @@ The action is to call FUNCTION with arguments ARGS."
     (dispatch-all (slot-value channel 'display))))
 
 (defun stumpwm-internal-loop ()
-  (let ((io (make-instance *default-io-loop*)))
-    (io-loop-add io (make-instance 'stumpwm-timer-channel))
-    (io-loop-add io (make-instance 'display-channel :display *display*))
-    (setf *toplevel-io* io)
-    (loop
-       (handler-bind
-           ((xlib:lookup-error (lambda (c)
-                                 (if (lookup-error-recoverable-p)
-                                     (recover-from-lookup-error)
-                                     (error c))))
-            (warning #'muffle-warning)
-            ((or serious-condition error)
-             (lambda (c)
-               (run-hook *top-level-error-hook*)
-               (perform-top-level-error-action c)))
-            (t
-             (lambda (c)
-               ;; some other wacko condition was raised so first try
-               ;; what we can to keep going.
-               (cond ((find-restart 'muffle-warning)
-                      (muffle-warning))
-                     ((find-restart 'continue)
-                      (continue)))
-               ;; and if that fails treat it like a top level error.
-               (perform-top-level-error-action c))))
-         (io-loop io :description "StumpWM")))))
+  (loop
+     (with-simple-restart (:new-io-loop "Recreate I/O loop")
+       (let ((io (make-instance *default-io-loop*)))
+         (io-loop-add io (make-instance 'stumpwm-timer-channel))
+         (io-loop-add io (make-instance 'display-channel :display *display*))
+         (setf *toplevel-io* io)
+         (loop
+            (handler-bind
+                ((xlib:lookup-error (lambda (c)
+                                      (if (lookup-error-recoverable-p)
+                                          (recover-from-lookup-error)
+                                          (error c))))
+                 (warning #'muffle-warning)
+                 ((or serious-condition error)
+                  (lambda (c)
+                    (run-hook *top-level-error-hook*)
+                    (perform-top-level-error-action c)))
+                 (t
+                  (lambda (c)
+                    ;; some other wacko condition was raised so first try
+                    ;; what we can to keep going.
+                    (cond ((find-restart 'muffle-warning)
+                           (muffle-warning))
+                          ((find-restart 'continue)
+                           (continue)))
+                    ;; and if that fails treat it like a top level error.
+                    (perform-top-level-error-action c))))
+              (io-loop io :description "StumpWM")))))))
 
 (defun parse-display-string (display)
   "Parse an X11 DISPLAY string and return the host and display from it."
