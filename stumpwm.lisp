@@ -148,7 +148,8 @@ The action is to call FUNCTION with arguments ARGS."
 
 (defclass stumpwm-timer-channel () ())
 
-(defmethod io-channel-fd ((channel stumpwm-timer-channel))
+(defmethod io-channel-ioport (io-loop (channel stumpwm-timer-channel))
+  (declare (ignore io-loop))
   nil)
 (defmethod io-channel-events ((channel stumpwm-timer-channel))
   (if *timer-list*
@@ -160,8 +161,8 @@ The action is to call FUNCTION with arguments ARGS."
 (defclass display-channel ()
   ((display :initarg :display)))
 
-(defmethod io-channel-fd ((channel display-channel))
-  (io-channel-fd (slot-value channel 'display)))
+(defmethod io-channel-ioport (io-loop (channel display-channel))
+  (io-channel-ioport io-loop (slot-value channel 'display)))
 (defmethod io-channel-events ((channel display-channel))
   (list :read :loop))
 (flet ((dispatch-all (display)
@@ -182,7 +183,7 @@ The action is to call FUNCTION with arguments ARGS."
     (dispatch-all (slot-value channel 'display))))
 
 (defun stumpwm-internal-loop ()
-  (let ((io (make-io-loop)))
+  (let ((io (make-instance *default-io-loop*)))
     (io-loop-add io (make-instance 'stumpwm-timer-channel))
     (io-loop-add io (make-instance 'display-channel :display *display*))
     (setf *toplevel-io* io)

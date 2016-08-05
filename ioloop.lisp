@@ -1,41 +1,41 @@
 (in-package :stumpwm)
 
-(export '(io-channel-fd io-channel-events io-channel-handle
-          io-loop make-io-loop io-loop-add io-loop-remove io-loop-update
+(export '(io-channel-ioport io-channel-events io-channel-handle
+          *default-io-loop* io-loop io-loop-add io-loop-remove io-loop-update
           callback-channel callback-channel-stream callback-channel-events))
 
-(defgeneric io-channel-fd (channel))
+(defgeneric io-channel-ioport (io-loop channel))
 (defgeneric io-channel-events (channel))
 (defgeneric io-channel-handle (channel event &key &allow-other-keys))
 
 (defgeneric io-loop-add (io-loop channel))
 (defgeneric io-loop-remove (io-loop channel))
 (defgeneric io-loop-update (io-loop channel))
+(defgeneric io-loop (io-loop &key &allow-other-keys))
+
+(defvar *default-io-loop* nil)
 
 #+sbcl
 (progn
-  (defstruct (io-loop (:constructor %make-io-loop))
-    (channels '()))
+  (defclass sbcl-io-loop ()
+    ((channels :initform '())))
 
-  (defun make-io-loop ()
-    (%make-io-loop :channels '()))
+  (defmethod io-loop-add ((info sbcl-io-loop) channel)
+    (with-slots (channels) info
+      (when (find channel channels)
+        (error "I/O channel is already registered"))
+      (push channel channels)))
 
-  (defmethod io-loop-add ((info io-loop) channel)
-    (when (find channel (io-loop-channels info))
-      (error "I/O channel is already registered"))
-    (push channel (io-loop-channels info)))
+  (defmethod io-loop-remove ((info sbcl-io-loop) channel)
+    (with-slots (channels) info
+      (when (not (find channel channels))
+        (error "I/O channel is not currently registered"))
+      (setf channels (delete channel channels))))
 
-  (defmethod io-loop-remove ((info io-loop) channel)
-    (when (not (find channel (io-loop-channels info)))
-      (error "I/O channel is not currently registered"))
-    (setf (io-loop-channels info)
-          (delete channel (io-loop-channels info))))
-
-  (defmethod io-loop-update ((info io-loop) channel)
+  (defmethod io-loop-update ((info sbcl-io-loop) channel)
     (declare (ignore info channel)))
 
-  (defun io-loop (info &key description)
-    (declare (type io-loop info))
+  (defmethod io-loop ((info sbcl-io-loop) &key description)
     (with-simple-restart (quit-ioloop "Quit I/O loop~A"
                                       (if description
                                           (format nil " (~A)" description)
@@ -50,8 +50,8 @@
                    (timeouts '())
                    (loop-ch '()))
                (let ((remove '()))
-                 (dolist (channel (io-loop-channels info))
-                   (let ((fd (io-channel-fd channel)))
+                 (dolist (channel (slot-value info 'channels))
+                   (let ((fd (io-channel-ioport info channel)))
                      (let ((events (io-channel-events channel)))
                        (if events
                            (dolist (event (io-channel-events channel))
@@ -74,7 +74,7 @@
                            (push channel remove)))))
                  (dolist (channel remove)
                    (io-loop-remove info channel))
-                 (unless (io-loop-channels info)
+                 (unless (slot-value info 'channels)
                    (return-from io-loop)))
                (dolist (channel loop-ch)
                  (io-channel-handle channel :loop))
@@ -118,68 +118,69 @@
                            (io-channel-handle (cdr to) :timeout)
                            (return-from timeouts))))))))))))
 
-  (defmethod io-channel-fd ((channel sb-sys:fd-stream))
+  (defmethod io-channel-ioport (io-loop (channel sb-sys:fd-stream))
+    (declare (ignore io-loop))
     (sb-sys:fd-stream-fd channel))
-  (defmethod io-channel-fd ((channel xlib:display))
-    (io-channel-fd (xlib::display-input-stream channel))))
+  (defmethod io-channel-ioport ((io-loop sbcl-io-loop) (channel xlib:display))
+    (io-channel-ioport io-loop (xlib::display-input-stream channel))))
 
-#-sbcl
-(progn
-  (defstruct io-loop
-    (display-ch nil)
-    (display nil)
-    (timers '()))
+(defclass xlib-io-loop ()
+  ((display-ch :initform nil)
+   (display :initform nil)
+   (timers :initform '())))
 
-  (defmethod io-loop-add ((info io-loop) channel)
-    (let ((fd (io-channel-fd channel)))
-      (cond
-        ((and (listp fd) (eq (first fd) :display))
-         (when (io-loop-display-ch info)
+(defmethod io-loop-add ((info xlib-io-loop) channel)
+  (let ((fd (io-channel-ioport info channel)))
+    (cond
+      ((and (listp fd) (eq (first fd) :display))
+       (with-slots (display-ch display) info
+         (when display-ch
            (error "Dummy I/O loop implementation only supports one XLIB display"))
-         (setf (io-loop-display-ch info) channel
-               (io-loop-display info) (second fd)))
-        ((null fd)
-         (when (find channel (io-loop-timers info))
+         (setf display-ch channel
+               display (second fd))))
+      ((null fd)
+       (with-slots (timers) info
+         (when (find channel timers)
            (error "Timer channel is already registered"))
-         (push channel (io-loop-timers info)))
-        (t (error "Non-display, non-pure-timeout channels not supported by dummy I/O loop")))))
+         (push channel timers)))
+      (t (error "Non-display, non-pure-timeout channels not supported by dummy I/O loop")))))
 
-  (defmethod io-loop-remove ((info io-loop) channel)
-    (cond ((eq (io-loop-display-ch info) channel)
-           (setf (io-loop-display-ch info) nil
-                 (io-loop-display info) nil))
-          ((find channel (io-loop-timers info))
-           (setf (io-loop-timers info)
-                 (delete channel (io-loop-timers info))))
-          (t (error "I/O channel is not currently registered"))))
-  
-  (defmethod io-loop-update ((info io-loop) channel)
-    (declare (ignore info channel)))
+(defmethod io-loop-remove ((info xlib-io-loop) channel)
+  (with-slots (display display-ch timers) info
+    (cond ((eq display-ch channel)
+           (setf display-ch nil
+                 display nil))
+          ((find channel timers)
+           (setf timers (delete channel timers)))
+          (t (error "I/O channel is not currently registered")))))
 
-  (defun io-loop (info &key description)
-    (declare (type io-loop info))
-    (with-simple-restart (quit-ioloop "Quit I/O loop~A"
-                                      (if description
-                                          (format nil " (~A)" description)
-                                          ""))
-      (labels ((channel-timeout (ch)
-                 (let ((evs (io-channel-events ch)))
-                   (second (find :timeout evs :key (lambda (ev) (and (listp ev) (car ev)))))))
-               (next-timeout ()
-                 (let ((timers (remove nil (mapcar #'channel-timeout (io-loop-timers info)))))
-                   (and timers
-                        (max (/ (- (apply 'min timers)
-                                   (get-internal-real-time))
-                                internal-time-units-per-second)
-                             0)))))
-        (block io-loop
-          (loop
-             (with-simple-restart (restart-ioloop "Restart at I/O loop~A"
-                                                  (if description
-                                                      (format nil " (~A)" description)
-                                                      ""))
+(defmethod io-loop-update ((info xlib-io-loop) channel)
+  (declare (ignore info channel)))
+
+(defmethod io-loop ((info xlib-io-loop) &key description)
+  (with-simple-restart (quit-ioloop "Quit I/O loop~A"
+                                    (if description
+                                        (format nil " (~A)" description)
+                                        ""))
+    (labels ((channel-timeout (ch)
+               (let ((evs (io-channel-events ch)))
+                 (second (find :timeout evs :key (lambda (ev) (and (listp ev) (car ev)))))))
+             (next-timeout ()
+               (let ((timers (remove nil (mapcar #'channel-timeout (slot-value info 'timers)))))
+                 (and timers
+                      (max (/ (- (apply 'min timers)
+                                 (get-internal-real-time))
+                              internal-time-units-per-second)
+                           0)))))
+      (block io-loop
+        (loop
+           (with-simple-restart (restart-ioloop "Restart at I/O loop~A"
+                                                (if description
+                                                    (format nil " (~A)" description)
+                                                    ""))
+             (with-slots (display-ch display timers) info
                (let ((rem-ch '()))
-                 (dolist (channel (io-loop-timers info))
+                 (dolist (channel timers)
                    (let ((evs (io-channel-events channel)))
                      (cond ((null evs)
                             (push channel rem-ch))
@@ -188,25 +189,28 @@
                  (dolist (channel rem-ch)
                    (io-loop-remove info channel)))
                (let ((timeout (next-timeout)))
-                 (cond ((io-loop-display-ch info)
-                        (io-channel-handle (io-loop-display-ch info) :loop)
-                        (let ((nevents (xlib:event-listen (io-loop-display info) (and timeout (ceiling timeout)))))
+                 (cond (display-ch
+                        (io-channel-handle display-ch :loop)
+                        (let ((nevents (xlib:event-listen display (and timeout (ceiling timeout)))))
                           (when nevents
-                            (io-channel-handle (io-loop-display-ch info) :read))))
+                            (io-channel-handle display-ch :read))))
                        (timeout
                         (sleep timeout))
                        (t (return-from io-loop))))
-               (when (io-loop-timers info)
+               (when timers
                  (let ((now (get-internal-real-time)))
-                   (dolist (channel (io-loop-timers info))
+                   (dolist (channel timers)
                      (when (< (channel-timeout channel) now)
-                       (io-channel-handle channel :timeout)))))))))))
+                       (io-channel-handle channel :timeout))))))))))))
 
-  (defmethod io-channel-fd ((channel xlib:display))
-    (list :display channel)))
+(defmethod io-channel-ioport ((io-loop xlib-io-loop) (channel xlib:display))
+  (list :display channel))
 
-(defmethod io-channel-fd ((channel synonym-stream))
-  (io-channel-fd (symbol-value (synonym-stream-symbol channel))))
+#+sbcl (setf *default-io-loop* 'sbcl-io-loop)
+#-sbcl (setf *default-io-loop* 'xlib-io-loop)
+
+(defmethod io-channel-ioport (io-loop (channel synonym-stream))
+  (io-channel-ioport io-loop (symbol-value (synonym-stream-symbol channel))))
 
 (defmethod io-channel-handle (channel event &key &allow-other-keys)
   (declare (ignore channel event)))
@@ -226,8 +230,8 @@
 (defmethod io-loop-remove :after (info (channel callback-channel))
   (setf (slot-value channel 'current) nil))
 
-(defmethod io-channel-fd ((channel callback-channel))
-  (io-channel-fd (slot-value channel 'stream)))
+(defmethod io-channel-ioport (io-loop (channel callback-channel))
+  (io-channel-ioport io-loop (slot-value channel 'stream)))
 (defmethod io-channel-events ((channel callback-channel))
   (with-slots (events) channel
     (if (eq events :auto)
