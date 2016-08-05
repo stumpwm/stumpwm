@@ -24,6 +24,7 @@
 
 (export '(cancel-timer
 	  run-with-timer
+          *toplevel-io*
 	  stumpwm
 	  timer-p))
 
@@ -76,6 +77,9 @@ further up. "
       (apply 'error error-key :display display :error-key error-key key-vals))))
 
 ;;; Timers
+
+(defvar *toplevel-io* nil
+  "Top-level I/O loop")
 
 (defvar *timer-list* nil
   "List of active timers.")
@@ -142,44 +146,68 @@ The action is to call FUNCTION with arguments ARGS."
     (:abort
      (throw :top-level (list c (backtrace-string))))))
 
+(defclass stumpwm-timer-channel () ())
+
+(defmethod io-channel-fd ((channel stumpwm-timer-channel))
+  nil)
+(defmethod io-channel-events ((channel stumpwm-timer-channel))
+  (if *timer-list*
+      `((:timeout ,(timer-time (car *timer-list*))))
+      nil))
+(defmethod io-channel-handle ((channel stumpwm-timer-channel) (event (eql :timeout)) &key)
+  (run-expired-timers))
+
+(defclass display-channel ()
+  ((display :initarg :display)))
+
+(defmethod io-channel-fd ((channel display-channel))
+  (io-channel-fd (slot-value channel 'display)))
+(defmethod io-channel-events ((channel display-channel))
+  (list :read :loop))
+(flet ((dispatch-all (display)
+         (block handle
+           (loop
+              (xlib:display-finish-output display)
+              (let ((nevents (xlib:event-listen display 0)))
+                (unless nevents (return-from handle))
+                (xlib:with-event-queue (display)
+                  (run-hook *event-processing-hook*)
+                  ;; Note: process-event appears to hang for an unknown
+                  ;; reason. This is why it is passed a timeout in hopes that
+                  ;; this will keep it from hanging.
+                  (xlib:process-event display :handler #'handle-event :timeout 0)))))))
+  (defmethod io-channel-handle ((channel display-channel) (event (eql :read)) &key)
+    (dispatch-all (slot-value channel 'display)))
+  (defmethod io-channel-handle ((channel display-channel) (event (eql :loop)) &key)
+    (dispatch-all (slot-value channel 'display))))
+
 (defun stumpwm-internal-loop ()
-  "The internal loop that waits for events and handles them."
-  (loop
-     (run-hook *internal-loop-hook*)
-     (handler-bind
-         ((xlib:lookup-error (lambda (c)
-                               (if (lookup-error-recoverable-p)
-                                   (recover-from-lookup-error)
-                                   (error c))))
-          (warning #'muffle-warning)
-          ((or serious-condition error)
-           (lambda (c)
-             (run-hook *top-level-error-hook*)
-             (perform-top-level-error-action c)))
-          (t
-           (lambda (c)
-             ;; some other wacko condition was raised so first try
-             ;; what we can to keep going.
-             (cond ((find-restart 'muffle-warning)
-                    (muffle-warning))
-                   ((find-restart 'continue)
-                    (continue)))
-             ;; and if that fails treat it like a top level error.
-             (perform-top-level-error-action c))))
-       ;; Note: process-event appears to hang for an unknown
-       ;; reason. This is why it is passed a timeout in hopes that
-       ;; this will keep it from hanging.
-       (xlib:display-finish-output *display*)
-       (let* ((to (get-next-timeout *timer-list*))
-              (timeout (and to (ceiling to)))
-              (nevents (xlib:event-listen *display* timeout)))
-         (dformat 10 "timeout: ~a~%" timeout)
-         (when timeout
-           (run-expired-timers))
-         (xlib:with-event-queue (*display*)
-           (when nevents
-             (run-hook *event-processing-hook*)
-             (xlib:process-event *display* :handler #'handle-event :timeout 0)))))))
+  (let ((io (make-io-loop)))
+    (io-loop-add io (make-instance 'stumpwm-timer-channel))
+    (io-loop-add io (make-instance 'display-channel :display *display*))
+    (setf *toplevel-io* io)
+    (loop
+       (handler-bind
+           ((xlib:lookup-error (lambda (c)
+                                 (if (lookup-error-recoverable-p)
+                                     (recover-from-lookup-error)
+                                     (error c))))
+            (warning #'muffle-warning)
+            ((or serious-condition error)
+             (lambda (c)
+               (run-hook *top-level-error-hook*)
+               (perform-top-level-error-action c)))
+            (t
+             (lambda (c)
+               ;; some other wacko condition was raised so first try
+               ;; what we can to keep going.
+               (cond ((find-restart 'muffle-warning)
+                      (muffle-warning))
+                     ((find-restart 'continue)
+                      (continue)))
+               ;; and if that fails treat it like a top level error.
+               (perform-top-level-error-action c))))
+         (io-loop io :description "StumpWM")))))
 
 (defun parse-display-string (display)
   "Parse an X11 DISPLAY string and return the host and display from it."
