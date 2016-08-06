@@ -239,7 +239,7 @@ function expects to be wrapped in a with-state for win."
 
 (defun echo-string (screen msg)
   "Display @var{string} in the message bar on @var{screen}. You almost always want to use @command{message}."
-  (echo-string-list screen (split-string msg (string #\Newline))))
+  (echo-string-list screen (split-string msg)))
 
 (defun message (fmt &rest args)
   "run FMT and ARGS through `format' and echo the result to the current screen."
