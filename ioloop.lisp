@@ -207,7 +207,7 @@
                    (let ((fd (io-channel-ioport info channel)))
                      (let ((events (io-channel-events channel)))
                        (if events
-                           (dolist (event (io-channel-events channel))
+                           (dolist (event events)
                              (multiple-value-bind (event data)
                                  (if (consp event) (values (car event) (cdr event)) (values event nil))
                                (case event
