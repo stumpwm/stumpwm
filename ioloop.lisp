@@ -213,7 +213,7 @@
                                    nil)
                                  (:remove-channel ()
                                    :report (lambda (s)
-                                             (format s "Unregister channel ~S and conitnue" ,ch))
+                                             (format s "Unregister channel ~S and continue" ,ch))
                                    ,(or remove-code `(io-loop-remove info ,ch))
                                    nil))))))
                (let ((ch-map (make-hash-table :test 'eql)) (rfds 0) (wfds 0) (maxfd 0)
