@@ -46,6 +46,7 @@
                (:file "message-window")
                (:file "selection")
                (:file "module")
+               (:file "ioloop")
                (:file "stumpwm")
                (:file "user")
                (:file "iresize")
@@ -58,4 +59,3 @@
                ;; keep this last so it always gets recompiled if
                ;; anything changes
                (:file "version")))
-
