@@ -146,6 +146,11 @@ The action is to call FUNCTION with arguments ARGS."
   (muffle-warning))
 
 (defmethod handle-top-level-condition ((c serious-condition))
+  (when (and (find-restart :remove-channel)
+             (not (typep *current-io-channel*
+                         '(or stumpwm-timer-channel display-channel))))
+    (message "Removed channel ~S due to uncaught error '~A'." *current-io-channel* c)
+    (invoke-restart :remove-channel))
   (ecase *top-level-error-action*
     (:message
      (let ((s (format nil "~&Caught '~a' at the top level. Please report this." c)))
