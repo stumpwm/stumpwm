@@ -161,11 +161,6 @@ The action is to call FUNCTION with arguments ARGS."
     (:abort
      (throw :top-level (list c (backtrace-string))))))
 
-(defmethod handle-top-level-condition ((c xlib:lookup-error))
-  (if (lookup-error-recoverable-p)
-      (recover-from-lookup-error)
-      (call-next-method)))
-
 (defclass stumpwm-timer-channel () ())
 
 (defmethod io-channel-ioport (io-loop (channel stumpwm-timer-channel))
