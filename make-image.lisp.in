@@ -10,7 +10,8 @@
                                                 (sb-posix:putenv (format nil "SBCL_HOME=~A" #.(sb-ext:posix-getenv "SBCL_HOME")))
                                                 (stumpwm:stumpwm)
                                                 0)
-                          :executable t)
+                                    :executable t
+                                    :purify t)
 
 #+clisp
 (ext:saveinitmem "stumpwm" :init-function (lambda ()
