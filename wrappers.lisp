@@ -261,15 +261,6 @@ they should be windows. So use this function to make a window out of them."
   #-(or sbcl clisp ecl openmcl lispworks)
   (error 'not-implemented))
 
-;; Right now clisp and sbcl both work the same way
-(defun lookup-error-recoverable-p ()
-  #+(or clisp sbcl) (find :one (compute-restarts) :key 'restart-name)
-  #-(or clisp sbcl) nil)
-
-(defun recover-from-lookup-error ()
-  #+(or clisp sbcl) (invoke-restart :one)
-  #-(or clisp sbcl) (error 'not-implemented))
-
 (defun directory-no-deref (pathspec)
   "Call directory without dereferencing symlinks in the results"
   #+(or cmu scl) (directory pathspec :truenamep nil)
