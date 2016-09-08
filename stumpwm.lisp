@@ -152,9 +152,8 @@ The action is to call FUNCTION with arguments ARGS."
   (declare (ignore io-loop))
   nil)
 (defmethod io-channel-events ((channel stumpwm-timer-channel))
-  (if *timer-list*
-      `((:timeout ,(timer-time (car *timer-list*))))
-      nil))
+  (mapcar (lambda (timer)
+            `((:timeout ,(timer-time timer)))) *timer-list*))
 (defmethod io-channel-handle ((channel stumpwm-timer-channel) (event (eql :timeout)) &key)
   (run-expired-timers))
 
@@ -169,6 +168,10 @@ The action is to call FUNCTION with arguments ARGS."
          (block handle
            (loop
               (xlib:display-finish-output display)
+              (let* ((to (get-next-timeout *timer-list*))
+                     (timeout (and to (ceiling to))))
+                (when timeout
+                  (run-expired-timers)))
               (let ((nevents (xlib:event-listen display 0)))
                 (unless nevents (return-from handle))
                 (xlib:with-event-queue (display)
