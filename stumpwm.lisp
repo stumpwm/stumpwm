@@ -135,7 +135,22 @@ The action is to call FUNCTION with arguments ARGS."
             internal-time-units-per-second)
          0)))
 
-(defun perform-top-level-error-action (c)
+(defgeneric handle-top-level-condition (c))
+
+(defmethod handle-top-level-condition (c)
+  ;; Do nothing by default; there's nothing wrong with signalling
+  ;; arbitrary conditions
+  )
+
+(defmethod handle-top-level-condition ((c warning))
+  (muffle-warning))
+
+(defmethod handle-top-level-condition ((c serious-condition))
+  (when (and (find-restart :remove-channel)
+             (not (typep *current-io-channel*
+                         '(or stumpwm-timer-channel display-channel))))
+    (message "Removed channel ~S due to uncaught error '~A'." *current-io-channel* c)
+    (invoke-restart :remove-channel))
   (ecase *top-level-error-action*
     (:message
      (let ((s (format nil "~&Caught '~a' at the top level. Please report this." c)))
@@ -194,25 +209,8 @@ The action is to call FUNCTION with arguments ARGS."
          (setf *toplevel-io* io)
          (loop
             (handler-bind
-                ((xlib:lookup-error (lambda (c)
-                                      (if (lookup-error-recoverable-p)
-                                          (recover-from-lookup-error)
-                                          (error c))))
-                 (warning #'muffle-warning)
-                 ((or serious-condition error)
-                  (lambda (c)
-                    (run-hook *top-level-error-hook*)
-                    (perform-top-level-error-action c)))
-                 (t
-                  (lambda (c)
-                    ;; some other wacko condition was raised so first try
-                    ;; what we can to keep going.
-                    (cond ((find-restart 'muffle-warning)
-                           (muffle-warning))
-                          ((find-restart 'continue)
-                           (continue)))
-                    ;; and if that fails treat it like a top level error.
-                    (perform-top-level-error-action c))))
+                ((t (lambda (c)
+                      (handle-top-level-condition c))))
               (io-loop io :description "StumpWM")))))))
 
 (defun parse-display-string (display)
