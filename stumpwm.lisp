@@ -112,21 +112,35 @@ The action is to call FUNCTION with arguments ARGS."
   (setf (timer-time timer) (+ (get-internal-real-time)
                               (* when internal-time-units-per-second))))
 
-(defun run-expired-timers ()
+(defun sort-timers (timers)
   (let ((now (get-internal-real-time))
-	(timers *timer-list*)
-	(pending '())
-	(remaining '()))
-    (setf *timer-list*
-	  (dolist (timer timers (sort remaining #'< :key #'timer-time))
-	    (if (<= (timer-time timer) now)
-		(progn (push timer pending)
-		       (when (timer-repeat timer)
-			 (schedule-timer timer (timer-repeat timer))
-			 (push timer remaining)))
-		(push timer remaining))))
-    (dolist (timer pending)
-      (apply (timer-function timer) (timer-args timer)))))
+        (pending ())
+        (remaining ()))
+    (dolist (timer timers)
+      (if (<= (timer-time timer) now)
+          (progn (push timer pending)
+                 (when (timer-repeat timer)
+                   (schedule-timer timer (timer-repeat timer))
+                   (push timer remaining)))
+          (push timer remaining)))
+    (values pending remaining)))
+
+(defun update-timer-list (timers)
+  "Update the timer list, sorting the timers by which is closer expiry."
+  (setf *timer-list*
+        (sort timers #'< :key #'timer-time)))
+
+(defun execute-timers (timers)
+  (map nil #'execute-timer timers))
+
+(defun execute-timer (timer)
+  (apply (timer-function timer) (timer-args timer)))
+
+(defun run-expired-timers ()
+  (multiple-value-bind (pending remaining)
+      (sort-timers *timer-list*)
+    (update-timer-list remaining)
+    (execute-timers pending)))
 
 (defun get-next-timeout (timers)
   "Return the number of seconds until the next timeout or nil if there are no timers."
