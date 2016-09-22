@@ -182,7 +182,7 @@
 
 (defun print-backtrace (&optional (frames 100))
   "print a backtrace of FRAMES number of frames to standard-output"
-  #+sbcl (sb-debug:backtrace frames *standard-output*)
+  #+sbcl (sb-debug:print-backtrace :count frames :stream *standard-output*)
   #+clisp (ext:show-stack 1 frames (sys::the-frame))
   #+ccl (ccl:print-call-history :count frames :stream *standard-output* :detailed-p nil)
   ;; borrowed from 'trivial-backtrace'
