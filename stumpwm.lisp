@@ -183,8 +183,10 @@ The action is to call FUNCTION with arguments ARGS."
 (defmethod io-channel-events ((channel stumpwm-timer-channel))
   (if *timer-list*
       `((:timeout ,(timer-time (car *timer-list*))))
-      nil))
+      '(:loop)))
 (defmethod io-channel-handle ((channel stumpwm-timer-channel) (event (eql :timeout)) &key)
+  (run-expired-timers))
+(defmethod io-channel-handle ((channel stumpwm-timer-channel) (event (eql :loop)) &key)
   (run-expired-timers))
 
 (defclass display-channel ()
