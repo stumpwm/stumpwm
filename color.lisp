@@ -385,7 +385,12 @@ rendered width."
        do (xlib:draw-rectangle px gc 0 y (xlib:drawable-width px) line-height t)
          (xlib:with-gcontext (gc :foreground (xlib:gcontext-background gc)
                                  :background (xlib:gcontext-foreground gc))
-           (render-string parts cc (+ padx 0) (+ pady y)))
+           ;; If we don't switch the default colors, a color operation
+           ;; resetting either color to its default value would undo the
+           ;; switch.
+           (rotatef (ccontext-default-fg cc) (ccontext-default-bg cc))
+           (render-string parts cc (+ padx 0) (+ pady y))
+           (rotatef (ccontext-default-fg cc) (ccontext-default-bg cc)))
        else
        do (render-string parts cc (+ padx 0) (+ pady y))
        end
