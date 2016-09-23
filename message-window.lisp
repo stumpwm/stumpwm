@@ -220,7 +220,7 @@ function expects to be wrapped in a with-state for win."
       (multiple-value-bind (width height)
           (rendered-size strings (screen-message-cc screen))
         (setup-message-window screen width height)
-        (render-strings screen (screen-message-cc screen) *message-window-padding* 0 strings highlights))
+        (render-strings (screen-message-cc screen) *message-window-padding* 0 strings highlights))
       (setf (screen-current-msg screen)
             strings
             (screen-current-msg-highlights screen)

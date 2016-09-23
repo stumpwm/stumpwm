@@ -352,7 +352,7 @@ rendered width."
               (apply #'apply-color cc (first part) (rest part))))
     (values height draw-x)))
 
-(defun render-strings (screen cc padx pady strings highlights)
+(defun render-strings (cc padx pady strings highlights)
   (let* ((gc (ccontext-gc cc))
          (xwin (ccontext-win cc))
          (px (ccontext-px cc))
