@@ -4,6 +4,13 @@
 
 #-ecl (stumpwm:set-module-dir "@MODULE_DIR@")
 
+(when (uiop:version<= "3.1.5" (asdf:asdf-version))
+  ;; We register StumpWM and its dependencies as immutable, to stop ASDF from
+  ;; looking for their source code when loading modules.
+  (asdf:register-immutable-system :stumpwm)
+  (dolist (system-name (asdf:system-depends-on (asdf:find-system :stumpwm)))
+    (asdf:register-immutable-system system-name)))
+
 #+sbcl
 (sb-ext:save-lisp-and-die "stumpwm" :toplevel (lambda ()
                                                 ;; asdf requires sbcl_home to be set, so set it to the value when the image was built
