@@ -42,15 +42,6 @@
                                         ;(define-stump-event-handler :map-notify (event-window window override-redirect-p)
                                         ;  )
 
-(defun handle-mode-line-window (xwin x y width height)
-  (declare (ignore width))
-  (let ((ml (find-mode-line-window xwin)))
-    (when ml
-      (setf (xlib:drawable-height xwin) height)
-      (update-mode-line-position ml x y)
-      (resize-mode-line ml)
-      (sync-mode-line ml))))
-
 (defun handle-unmanaged-window (xwin x y width height border-width value-mask)
   "Call this function for windows that stumpwm isn't
   managing. Basically just give the window what it wants."
@@ -100,7 +91,6 @@
          ;; configure event. The ICCCM says we have to do this at
          ;; certain times; exactly when, I've sorta forgotten.
          (update-configuration win))
-        ((handle-mode-line-window win x y width height))
         (t (handle-unmanaged-window window x y width height border-width value-mask))))))
 
 (define-stump-event-handler :configure-notify (stack-mode #|parent|# window #|above-sibling|# x y width height border-width value-mask)
