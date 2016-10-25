@@ -506,51 +506,46 @@ Use the window's resource name.
   mode-line)
 
 (defclass screen ()
-  ((id :initform nil :accessor screen-id)
-   (host :initform nil :accessor screen-host)
-   (number :initform nil :accessor screen-number)
-   (heads :initform nil :accessor screen-heads :documentation
-    "heads of screen")
-   (groups :initform nil :accessor screen-groups :documentation
-    "the list of groups available on this screen")
-   (current-group :initform nil :accessor screen-current-group)
+  ((id :initarg :id :reader screen-id)
+   (host :initarg :host :reader screen-host)
+   (number :initarg :number :reader screen-number)
+   (heads :initform () :accessor screen-heads)
+   (groups :initform () :accessor screen-groups)
+   (current-group :accessor screen-current-group)
    ;; various colors (as returned by alloc-color)
-   (border-color :initform nil :accessor screen-border-color)
-   (fg-color :initform nil :accessor screen-fg-color)
-   (bg-color :initform nil :accessor screen-bg-color)
-   (win-bg-color :initform nil :accessor screen-win-bg-color)
-   (focus-color :initform nil :accessor screen-focus-color)
-   (unfocus-color :initform nil :accessor screen-unfocus-color)
-   (float-focus-color :initform nil :accessor screen-float-focus-color)
-   (float-unfocus-color :initform nil :accessor screen-float-unfocus-color)
-   (msg-border-width :initform nil :accessor screen-msg-border-width)
-   (frame-outline-width :initform nil :accessor screen-frame-outline-width)
-   (fonts :initform '(nil) :accessor screen-fonts)
-   (mapped-windows :initform nil :accessor screen-mapped-windows :documentation
+   (border-color :initarg :border-color :accessor screen-border-color)
+   (fg-color :initarg :fg-color :accessor screen-fg-color)
+   (bg-color :initarg :bg-color :accessor screen-bg-color)
+   (win-bg-color :initarg :win-bg-color :accessor screen-win-bg-color)
+   (focus-color :initarg :focus-color :accessor screen-focus-color)
+   (unfocus-color :initarg :unfocus-color :accessor screen-unfocus-color)
+   (float-focus-color :initarg :float-focus-color :accessor screen-float-focus-color)
+   (float-unfocus-color :initarg :float-unfocus-color :accessor screen-float-unfocus-color)
+   (msg-border-width :initarg :msg-border-width :accessor screen-msg-border-width)
+   (frame-outline-width :initarg :frame-outline-width :accessor screen-frame-outline-width)
+   (fonts :initarg :fonts :accessor screen-fonts)
+   (mapped-windows :initform () :accessor screen-mapped-windows :documentation
     "A list of all mapped windows. These are the raw xlib:window's. window structures are stored in groups.")
-   (withdrawn-windows :initform nil :accessor screen-withdrawn-windows :documentation
+   (withdrawn-windows :initform () :accessor screen-withdrawn-windows :documentation
     "A list of withdrawn windows. These are of type stumpwm::window
 and when they're mapped again they'll be put back in the group
 they were in when they were unmapped unless that group doesn't
 exist, in which case they go into the current group.")
-   (urgent-windows :initform nil :accessor screen-urgent-windows :documentation
+   (urgent-windows :initform () :accessor screen-urgent-windows :documentation
     "a list of windows for which (window-urgent-p) currently true.")
-   (input-window :initform nil :accessor screen-input-window)
-
-   (key-window :initform nil :accessor screen-key-window :documentation
+   (input-window :initarg :input-window :reader screen-input-window)
+   (key-window :initarg :key-window :reader screen-key-window :documentation
     "the window that accepts further keypresses after a toplevel key has been pressed.")
-   (focus-window :initform nil :accessor screen-focus-window :documentation
+   (focus-window :initarg :focus-window :reader screen-focus-window :documentation
     "The window that gets focus when no window has focus")
-   ;;
-   (frame-window :initform nil :accessor screen-frame-window)
-   (frame-outline-gc :initform nil :accessor screen-frame-outline-gc)
+   (frame-window :initarg :frame-window :reader screen-frame-window)
+   (frame-outline-gc :initarg :frame-outline-gc :reader screen-frame-outline-gc)
    ;; color contexts
-   (message-cc :initform nil :accessor screen-message-cc)
-   (mode-line-cc :initform nil :accessor screen-mode-line-cc)
+   (message-cc :initarg :message-cc :reader screen-message-cc)
    ;; color maps
    (color-map-normal :initform nil :accessor screen-color-map-normal)
    (color-map-bright :initform nil :accessor screen-color-map-bright)
-   (ignore-msg-expose :initform nil :accessor screen-ignore-msg-expose :documentation
+   (ignore-msg-expose :initform 0 :accessor screen-ignore-msg-expose :documentation
     "used to ignore the first expose even when mapping the message window.")
    ;; the window that has focus
    (focus :initform nil :accessor screen-focus)
