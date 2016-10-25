@@ -39,9 +39,6 @@
                ,@body))
       (setf (gethash ,event *event-fn-table*) #',fn-name))))
 
-                                        ;(define-stump-event-handler :map-notify (event-window window override-redirect-p)
-                                        ;  )
-
 (defun handle-unmanaged-window (xwin x y width height border-width value-mask)
   "Call this function for windows that stumpwm isn't
   managing. Basically just give the window what it wants."
@@ -156,12 +153,6 @@
               (dformat 3 "decrement ignores! ~d~%" (window-unmap-ignores window))
               (decf (window-unmap-ignores window)))
             (withdraw-window window))))))
-
-;;(define-stump-event-handler :create-notify (#|window parent x y width height border-width|# override-redirect-p))
-;; (unless (or override-redirect-p
-;;          (internal-window-p (window-screen window) window))
-;;    (process-new-window (window-screen window) window))
-;;    (run-hook-with-args *new-window-hook* window)))
 
 (define-stump-event-handler :destroy-notify (send-event-p event-window window)
   (unless (or send-event-p
@@ -584,11 +575,6 @@ the window in it's frame."
        (group-button-press (window-group win) x y win))))
   ;; Pass click to client
   (xlib:allow-events *display* :replay-pointer time))
-
-;; Handling event :KEY-PRESS
-;; (:DISPLAY #<XLIB:DISPLAY :0 (The X.Org Foundation R60700000)> :EVENT-KEY :KEY-PRESS :EVENT-CODE 2 :SEND-EVENT-P NIL :CODE 45 :SEQUENCE 1419 :TIME 98761213 :ROOT #<XLIB:WINDOW :0 96> :WINDOW #<XLIB:WINDOW :0 6291484> :EVENT-WINDOW #<XLIB:WINDOW :0 6291484> :CHILD
-;;  #<XLIB:WINDOW :0 6291485> :ROOT-X 754 :ROOT-Y 223 :X 753 :Y 222 :STATE 4 :SAME-SCREEN-P T)
-;; H
 
 (defun handle-event (&rest event-slots &key display event-key &allow-other-keys)
   (declare (ignore display))
