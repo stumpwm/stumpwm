@@ -107,18 +107,16 @@
   (dformat 4 "CONFIGURE NOTIFY ~@{~S ~}~%" stack-mode window x y width height border-width value-mask)
   (let ((screen (find-screen window)))
     (when screen
-      (let ((old-heads (copy-list (screen-heads screen))))
-        (setf (screen-heads screen) nil)
-        (let ((new-heads (make-screen-heads screen (screen-root screen))))
-          (setf (screen-heads screen) old-heads)
-          (cond
-            ((equalp old-heads new-heads)
-             (dformat 3 "Bogus configure-notify on root window of ~S~%" screen) t)
-            (t
-             (dformat 1 "Updating Xinerama configuration for ~S.~%" screen)
-             (if new-heads
-                 (head-force-refresh screen new-heads)
-                 (dformat 1 "Invalid configuration! ~S~%" new-heads)))))))))
+      (let ((old-heads (screen-heads screen))
+            (new-heads (make-screen-heads screen (screen-root screen))))
+        (cond
+          ((equalp old-heads new-heads)
+           (dformat 3 "Bogus configure-notify on root window of ~S~%" screen) t)
+          (t
+           (dformat 1 "Updating Xinerama configuration for ~S.~%" screen)
+           (if new-heads
+               (head-force-refresh screen new-heads)
+               (dformat 1 "Invalid configuration! ~S~%" new-heads))))))))
 
 (define-stump-event-handler :map-request (parent send-event-p window)
   (unless send-event-p
