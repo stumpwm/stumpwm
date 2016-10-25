@@ -88,6 +88,18 @@ identity with a range check."
 (defun screen-windows (screen)
   (mapcan (lambda (g) (copy-list (group-windows g))) (screen-groups screen)))
 
+(defun screen-message-window (screen)
+  (ccontext-win (screen-message-cc screen)))
+
+(defun screen-message-pixmap (screen)
+  (ccontext-px (screen-message-cc screen)))
+
+(defun screen-message-gc (screen)
+  (ccontext-gc (screen-message-cc screen)))
+
+(defun screen-font (screen)
+  (first (screen-fonts screen)))
+
 
 
 (defun netwm-update-client-list-stacking (screen)

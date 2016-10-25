@@ -569,18 +569,6 @@ exist, in which case they go into the current group.")
   color-stack
   font)
 
-(defun screen-message-window (screen)
-  (ccontext-win (screen-message-cc screen)))
-
-(defun screen-message-pixmap (screen)
-  (ccontext-px (screen-message-cc screen)))
-
-(defun screen-message-gc (screen)
-  (ccontext-gc (screen-message-cc screen)))
-
-(defun screen-font (screen)
-  (first (screen-fonts screen)))
-
 (defmethod print-object ((object frame) stream)
   (format stream "#S(frame ~d ~a ~d ~d ~d ~d)"
           (frame-number object) (frame-window object) (frame-x object) (frame-y object) (frame-width object) (frame-height object)))
