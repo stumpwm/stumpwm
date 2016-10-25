@@ -75,11 +75,6 @@ identity with a range check."
   (let ((root (screen-root screen)))
     (xlib:drawable-height root)))
 
-(defun screen-true-height (screen)
-  "Return the height of the screen regardless of the modeline"
-  (let ((root (screen-root screen)))
-    (xlib:drawable-height root)))
-
 (defun screen-width (screen)
   (let ((root (screen-root screen)))
     (xlib:drawable-width root)))
@@ -151,12 +146,7 @@ identity with a range check."
 (defun screen-set-focus (screen window)
   (when (eq (window-group window)
             (screen-current-group screen))
-    ;;(format t "FOCUS TO: ~a ~a~%" window (window-xwin window))
-    ;;(format t "FOCUS BEFORE: ~a~%" (multiple-value-list (xlib:input-focus *display*)))
-    ;;(format t "FOCUS RET: ~a~%" (xlib:set-input-focus *display* (window-xwin window) :POINTER-ROOT))
     (xlib:set-input-focus *display* (window-xwin window) :POINTER-ROOT)
-    ;;(xlib:display-finish-output *display*)
-    ;;(format t "FOCUS IS: ~a~%" (multiple-value-list (xlib:input-focus *display*)))
     (xlib:change-property (screen-root screen) :_NET_ACTIVE_WINDOW
                           (list (window-xwin window))
                           :window 32
@@ -236,16 +226,6 @@ identity with a range check."
       (xlib:window-equal (screen-input-window screen) win)
       (xlib:window-equal (screen-focus-window screen) win)
       (xlib:window-equal (screen-key-window screen) win)))
-
-(defun color-exists-p (color)
-  (handler-case
-      (loop for i in *screen-list*
-            always (xlib:lookup-color (xlib:screen-default-colormap (screen-number i)) color))
-    (xlib:name-error () nil)))
-
-;; (defun font-exists-p (font-name)
-;;   ;; if we can list the font then it exists
-;;   (plusp (length (xlib:list-font-names *display* font-name :max-fonts 1))))
 
 (defmacro set-any-color (val color)
   `(progn (dolist (s *screen-list*)
