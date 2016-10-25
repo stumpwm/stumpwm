@@ -704,14 +704,6 @@ display a message whenever you switch frames:
   (let ((copy (copy-list list)))
     (apply 'sort copy sort-fn keys)))
 
-(defun mapcar-hash (fn hash)
-  "Just like maphash except it accumulates the result in a list."
-  (let ((accum nil))
-    (labels ((mapfn (key val)
-               (push (funcall fn key val) accum)))
-      (maphash #'mapfn hash))
-    accum))
-
 (defun find-free-number (l &optional (min 0) dir)
   "Return a number that is not in the list l. If dir is :negative then
 look for a free number in the negative direction. anything else means
@@ -734,24 +726,6 @@ positive direction."
         (if max
             (+ inc max)
             min))))
-
-(defun remove-plist (plist &rest keys)
-  "Remove the keys from the plist.
-Useful for re-using the &REST arg after removing some options."
-  (do (copy rest)
-      ((null (setq rest (nth-value 2 (get-properties plist keys))))
-       (nreconc copy plist))
-    (do () ((eq plist rest))
-      (push (pop plist) copy)
-      (push (pop plist) copy))
-    (setq plist (cddr plist))))
-
-(defun screen-display-string (screen &optional (assign t))
-  (format nil
-          (if assign "DISPLAY=~a:~d.~d" "~a:~d.~d")
-          (screen-host screen)
-          (xlib:display-display *display*)
-          (screen-id screen)))
 
 (defun split-seq (seq separators &key test default-value)
   "split a sequence into sub sequences given the list of seperators."

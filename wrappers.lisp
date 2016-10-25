@@ -30,6 +30,13 @@
 (define-condition not-implemented (stumpwm-error)
   () (:documentation "A function has been called that is not implemented yet."))
 
+(defun screen-display-string (screen &optional (assign t))
+  (format nil
+          (if assign "DISPLAY=~a:~d.~d" "~a:~d.~d")
+          (screen-host screen)
+          (xlib:display-display *display*)
+          (screen-id screen)))
+
 (defun run-prog (prog &rest opts &key args output (wait t) &allow-other-keys)
   "Common interface to shell. Does not return anything useful."
   #+(or clisp ccl ecl gcl)
@@ -37,7 +44,9 @@
     ;; variable so it's inherited by the child process.
     (when (current-screen)
       (setf (getenv "DISPLAY") (screen-display-string (current-screen) nil)))
-  (setq opts (remove-plist opts :args :output :wait))
+  (remf opts :args)
+  (remf opts :output)
+  (remf opts :wait)
   #+allegro
   (apply #'excl:run-shell-command (apply #'vector prog prog args)
          :output output :wait wait :environment
