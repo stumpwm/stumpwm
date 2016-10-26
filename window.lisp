@@ -135,10 +135,6 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
                        (logtest 256 flags)))
         (find-wm-state (window-xwin window) :_NET_WM_STATE_DEMANDS_ATTENTION))))
 
-(defun only-urgent (windows)
-  "Return a list of all urgent windows on SCREEN"
-  (remove-if-not 'window-urgent-p (copy-list windows)))
-
 (defcommand next-urgent () ()
             "Jump to the next urgent window"
             (and (screen-urgent-windows (current-screen))
