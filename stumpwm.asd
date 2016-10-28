@@ -19,7 +19,7 @@
   ;; :license "GNU General Public License"
   :description "A tiling, keyboard driven window manager" 
   :serial t
-  :depends-on (:cl-ppcre #-cmu :clx #+sbcl :sb-posix)
+  :depends-on (:cl-ppcre #-cmu :clx #+sbcl :sb-posix :bordeaux-threads)
   :components ((:file "package")
                (:file "primitives")
                (:file "workarounds")
