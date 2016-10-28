@@ -189,6 +189,41 @@ The action is to call FUNCTION with arguments ARGS."
 (defmethod io-channel-handle ((channel stumpwm-timer-channel) (event (eql :loop)) &key)
   (run-expired-timers))
 
+(defun open-pipe (&key (element-type '(unsigned-byte 8)))
+  #+sbcl
+  (multiple-value-bind (in-fd out-fd)
+      (sb-posix:pipe)
+    (let ((in-stream (sb-sys:make-fd-stream in-fd :input t :element-type element-type))
+          (out-stream (sb-sys:make-fd-stream out-fd :output t :element-type element-type)))
+      (values in-stream out-stream)))
+  #+ccl
+  (multiple-value-bind (in-fd out-fd)
+      (ccl::pipe)
+    (let ((in-stream (ccl::make-fd-stream in-fd :direction :input :element-type element-type))
+          (out-stream (ccl::make-fd-stream out-fd :direction :output :element-type element-type)))
+      (values in-stream out-stream)))
+  #-(or sbcl ccl)
+  (error "Unsupported CL implementation"))
+
+(defun make-lock ()
+  #+sbcl
+  (sb-thread:make-mutex)
+  #+ccl
+  (ccl:make-lock "Anonymous lock")
+  #-(or sbcl ccl)
+  nil)
+
+(defmacro with-lock-held ((lock) &body body)
+  #+sbcl
+  `(sb-thread:with-mutex (,lock)
+     ,@body)
+  #+ccl
+  `(ccl:with-lock-grabbed (,lock)
+     ,@body)
+  #-(or sbcl ccl)
+  `(progn
+     ,@body))
+
 (defclass request-channel ()
   ((in    :initarg :in
           :reader request-channel-in)
@@ -196,22 +231,10 @@ The action is to call FUNCTION with arguments ARGS."
           :reader request-channel-out)
    (queue :initform nil
           :accessor request-channel-queue)
-   (lock  :initform (bordeaux-threads:make-lock)
+   (lock  :initform (make-lock)
           :reader request-channel-lock)))
 
 (defvar *request-channel* nil)
-
-#+sbcl
-(defun open-pipe (&key (element-type '(unsigned-byte 8)))
-  (multiple-value-bind (in-fd out-fd)
-      (sb-posix:pipe)
-    (let ((in-stream (sb-sys:make-fd-stream in-fd :input t :element-type element-type))
-          (out-stream (sb-sys:make-fd-stream out-fd :output t :element-type element-type)))
-      (values in-stream out-stream))))
-
-#-sbcl
-(defun open-pipe (&key (element-type '(unsigned-byte 8)))
-  (error "Unsupported CL implementation"))
 
 (defmethod io-channel-ioport (io-loop (channel request-channel))
   (io-channel-ioport io-loop (request-channel-in channel)))
@@ -227,15 +250,16 @@ The action is to call FUNCTION with arguments ARGS."
     with in = (request-channel-in channel)
     do (read-byte in)
     while (listen in))
-  (let ((events (bordeaux-threads:with-lock-held ((request-channel-lock channel))
+  (let ((events (with-lock-held ((request-channel-lock channel))
                   (let ((queue-copy (request-channel-queue channel)))
                     (setf (request-channel-queue channel) nil)
                     queue-copy))))
     (dolist (event (reverse events))
       (funcall event))))
 
+#+(or sbcl ccl)
 (defun call-in-main-thread (fn)
-  (bordeaux-threads:with-lock-held ((request-channel-lock *request-channel*))
+  (with-lock-held ((request-channel-lock *request-channel*))
     (push fn (request-channel-queue *request-channel*)))
   (let ((out (request-channel-out *request-channel*)))
     ;; For now, just write a single byte since all we want is for the
@@ -244,6 +268,10 @@ The action is to call FUNCTION with arguments ARGS."
     ;; the message sent indicates the event type instead.
     (write-byte 0 out)
     (finish-output out)))
+
+#-(or sbcl ccl)
+(defun call-in-main-thread (fn)
+  (funcall fn))
 
 (defclass display-channel ()
   ((display :initarg :display)))
@@ -275,11 +303,18 @@ The action is to call FUNCTION with arguments ARGS."
        (let ((io (make-instance *default-io-loop*)))
          (io-loop-add io (make-instance 'stumpwm-timer-channel))
          (io-loop-add io (make-instance 'display-channel :display *display*))
+
+         ;; If we have no implementation for the current CL, then
+         ;; don't register the channel, and the implementation of
+         ;; call-in-main-thread will simply call the function directly
+         ;; even though that's completely thread-unsafe.
+         #+(or sbcl ccl)
          (multiple-value-bind (in out)
              (open-pipe)
            (let ((channel (make-instance 'request-channel :in in :out out)))
              (io-loop-add io channel)
              (setq *request-channel* channel)))
+
          (setf *toplevel-io* io)
          (loop
             (handler-bind
