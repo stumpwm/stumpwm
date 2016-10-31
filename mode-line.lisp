@@ -1,4 +1,5 @@
 ;; Copyright (C) 2006-2008 Shawn Betts
+;; Copyright (C) 2016 Joram Schrijver
 ;;
 ;;  This file is part of stumpwm.
 ;;
@@ -32,20 +33,7 @@
           enable-mode-line
           toggle-mode-line))
 
-(defstruct mode-line
-  screen
-  head
-  window
-  format
-  position
-  contents
-  cc
-  height
-  factor
-  (mode :stump))
-
-(defun mode-line-gc (ml)
-  (ccontext-gc (mode-line-cc ml)))
+;;; Settings
 
 (defvar *mode-line-position* :top
   "Specifies where the mode line is displayed. Valid values are :top and :bottom.")
@@ -120,12 +108,6 @@ formatting strings.  See their documentation for details.")
   "An alist containing format character format function pairs for
 formatting screen mode-lines. functions are passed the mode line.")
 
-(defvar *current-mode-line-formatters* nil
-  "used in formatting modeline strings.")
-
-(defvar *current-mode-line-formatter-args* nil
-  "used in formatting modeline strings.")
-
 (defvar *mode-line-timeout* 60
   "The modeline updates after each command, when a new window appears or
 an existing one disappears, and on a timer. This variable controls how
@@ -144,11 +126,96 @@ timer.")
         (cons (list character fmt-fun)
               (remove character *screen-mode-line-formatters* :key #'first))))
 
+;;; Mode lines
 
-(defun make-mode-line-window (parent screen)
+(defvar *mode-lines* ()
+  "All current mode lines.")
+
+(defstruct (mode-line (:constructor %make-mode-line))
+  screen
+  head
+  window
+  format
+  position
+  contents
+  cc
+  height
+  factor
+  (mode :stump))
+
+;;; Utilities
+
+(defun screen-mode-lines (screen)
+  (remove-if (lambda (mode-line)
+               (not (eq screen (mode-line-screen mode-line))))
+             *mode-lines*))
+
+(defun head-mode-line (head)
+  (find head *mode-lines* :key #'mode-line-head))
+
+(defun find-mode-line-by-window (xwin)
+  (find xwin *mode-lines* :key #'mode-line-window))
+
+(defun mode-line-gc (ml)
+  (ccontext-gc (mode-line-cc ml)))
+
+(defun turn-on-mode-line-timer ()
+  (when (timer-p *mode-line-timer*)
+    (cancel-timer *mode-line-timer*))
+  (setf *mode-line-timer* (run-with-timer *mode-line-timeout*
+                                          *mode-line-timeout*
+                                          'update-all-mode-lines)))
+
+(defun maybe-cancel-mode-line-timer ()
+  (unless *mode-lines*
+    (when (timer-p *mode-line-timer*)
+      (cancel-timer *mode-line-timer*)
+      (setf *mode-line-timer* nil))))
+
+;;; Creation
+
+(defun resize-mode-line (mode-line)
+  (when (eq (mode-line-mode mode-line) :stump)
+    ;; This is a StumpWM mode-line
+    (setf (xlib:drawable-height (mode-line-window mode-line))
+          (+ (* 2 *mode-line-pad-y*)
+             (nth-value 1 (rendered-size
+                           (split-string (mode-line-contents mode-line)
+                                         (string #\Newline))
+                           (mode-line-cc mode-line))))))
+  (with-accessors ((window mode-line-window)
+                   (head mode-line-head)
+                   (position mode-line-position)
+                   (height mode-line-height)
+                   (factor mode-line-factor))
+      mode-line
+    (setf (xlib:drawable-width window) (- (frame-width head)
+                                          (* 2 (xlib:drawable-border-width
+                                                window)))
+          (xlib:drawable-height window) (min (xlib:drawable-height window)
+                                             (truncate (head-height head) 4))
+          height (+ (xlib:drawable-height window)
+                    (* 2 (xlib:drawable-border-width window)))
+          factor (- 1 (/ height
+                         (head-height head)))
+          (xlib:drawable-x window) (head-x head)
+          (xlib:drawable-y window) (if (eq position :top)
+                                       (head-y head)
+                                       (- (+ (head-y head)
+                                             (head-height head))
+                                          height)))))
+
+(defun update-mode-line-color-context (ml)
+  (let* ((cc (mode-line-cc ml))
+         (screen (mode-line-screen ml))
+         (bright (lookup-color screen *mode-line-foreground-color*)))
+    (adjust-color bright 0.25)
+    (setf (ccontext-default-bright cc) (alloc-color screen bright))))
+
+(defun make-mode-line-window (screen)
   "Create a window suitable for a modeline."
   (xlib:create-window
-   :parent parent
+   :parent (screen-root screen)
    :x 0 :y 0 :width 1 :height 1
    :background (alloc-color screen *mode-line-background-color*)
    :border (alloc-color screen *mode-line-border-color*)
@@ -158,41 +225,77 @@ timer.")
    ;; these windows are not controlled by the window manager
    :override-redirect :on))
 
-(defun resize-mode-line (ml)
-  (when (eq (mode-line-mode ml) :stump)
-    ;; This is a StumpWM mode-line
-    (setf (xlib:drawable-height (mode-line-window ml)) 
-          (+ (* 2 *mode-line-pad-y*)
-             (nth-value 1 (rendered-size (split-string (mode-line-contents ml)
-                                                       (string #\Newline))
-                                         (mode-line-cc ml))))))
-  (setf (xlib:drawable-width (mode-line-window ml)) (- (frame-width (mode-line-head ml))
-                                                       (* 2 (xlib:drawable-border-width (mode-line-window ml))))
-        (xlib:drawable-height (mode-line-window ml)) (min (xlib:drawable-height (mode-line-window ml))
-                                                          (truncate (head-height (mode-line-head ml)) 4))
-        (mode-line-height ml) (+ (xlib:drawable-height (mode-line-window ml))
-                                 (* 2 (xlib:drawable-border-width (mode-line-window ml))))
-        (mode-line-factor ml) (- 1 (/ (mode-line-height ml)
-                                      (head-height (mode-line-head ml))))
-        (xlib:drawable-x (mode-line-window ml)) (head-x (mode-line-head ml))
-        (xlib:drawable-y (mode-line-window ml)) (if (eq (mode-line-position ml) :top)
-                                                    (head-y (mode-line-head ml))
-                                                    (- (+ (head-y (mode-line-head ml))
-                                                          (head-height (mode-line-head ml)))
-                                                       (mode-line-height ml)))))
+(defun make-mode-line-gc (window screen)
+  (xlib:create-gcontext
+   :drawable window
+   :font (when (typep (screen-font screen) 'xlib:font)
+           (screen-font screen))
+   :foreground (alloc-color screen *mode-line-foreground-color*)
+   :background (alloc-color screen *mode-line-background-color*)))
+
+(defun make-mode-line-cc (window screen gc)
+  (make-ccontext :gc gc
+                 :screen screen
+                 :font (screen-font screen)
+                 :win window
+                 :default-fg (xlib:gcontext-foreground gc)
+                 :default-bg (xlib:gcontext-background gc)))
+
+(defun make-mode-line (screen head format)
+  (let* ((window (make-mode-line-window screen))
+         (gc (make-mode-line-gc window screen))
+         (cc (make-mode-line-cc window screen gc))
+         (mode-line (%make-mode-line :window window
+                                     :screen screen
+                                     :head head
+                                     :format format
+                                     :position *mode-line-position*
+                                     :cc cc)))
+    (prog1 mode-line
+      (push mode-line *mode-lines*)
+      (update-mode-line-color-context mode-line)
+      (resize-mode-line mode-line)
+      (xlib:map-window window)
+      (redraw-mode-line mode-line)
+      (dformat 3 "modeline: ~s~%" mode-line)
+      (turn-on-mode-line-timer)
+      (run-hook-with-args *new-mode-line-hook* mode-line))))
+
+;;; Destruction
+
+(defun sync-mode-line (ml)
+  (dolist (group (screen-groups (mode-line-screen ml)))
+    (group-sync-head group (mode-line-head ml))))
+
+(defun destroy-mode-line (ml)
+  (run-hook-with-args *destroy-mode-line-hook* ml)
+  (xlib:destroy-window (mode-line-window ml))
+  (xlib:free-gcontext (mode-line-gc ml))
+  (setf *mode-lines* (remove ml *mode-lines*))
+  (sync-mode-line ml)
+  (maybe-cancel-mode-line-timer))
+
+;;; Formatting
+
+(defvar *current-mode-line-formatters* nil
+  "used in formatting modeline strings.")
+
+(defvar *current-mode-line-formatter-args* nil
+  "used in formatting modeline strings.")
 
 (defgeneric mode-line-format-elt (elt))
 
 (defmethod mode-line-format-elt ((elt string))
-  (apply 'format-expand *current-mode-line-formatters* elt
+  (apply 'format-expand
+         *current-mode-line-formatters*
+         elt
          *current-mode-line-formatter-args*))
 
 (defmethod mode-line-format-elt ((elt symbol))
   (if (boundp elt)
       (let ((val (symbol-value elt)))
         ;; ignore T and nil, like emacs.
-        (unless (or (eq val t)
-                    (eq val nil))
+        (unless (typep val 'boolean)
           (mode-line-format-elt val)))
       (symbol-name elt)))
 
@@ -216,35 +319,6 @@ timer.")
 (defun mode-line-format-string (ml)
   (mode-line-format-elt (mode-line-format ml)))
 
-(defun make-mode-line-gc (window screen)
-  (xlib:create-gcontext :drawable window
-                        :font (when (typep (screen-font screen) 'xlib:font) (screen-font screen))
-                        :foreground (alloc-color screen *mode-line-foreground-color*)
-                        :background (alloc-color screen *mode-line-background-color*)))
-
-
-(defun update-mode-line-color-context (ml)
-  (let* ((cc (mode-line-cc ml))
-         (screen (mode-line-screen ml))
-         (bright (lookup-color screen *mode-line-foreground-color*)))
-    (adjust-color bright 0.25)
-    (setf (ccontext-default-bright cc) (alloc-color screen bright))))
-
-(defun make-head-mode-line (screen head format)
-  (let* ((w (make-mode-line-window (screen-root screen) screen))
-         (gc (make-mode-line-gc w screen)))
-    (make-mode-line :window w
-                    :screen screen
-                    :head head
-                    :format format
-                    :position *mode-line-position*
-                    :cc (make-ccontext :gc gc
-                                       :screen screen
-                                       :font (screen-font screen)
-                                       :win w
-                                       :default-fg (xlib:gcontext-foreground gc)
-                                       :default-bg (xlib:gcontext-background gc)))))
-
 (defun redraw-mode-line (ml &optional force)
   (when (eq (mode-line-mode ml) :stump)
     (let* ((*current-mode-line-formatters* *screen-mode-line-formatters*)
@@ -256,105 +330,61 @@ timer.")
         (render-strings (mode-line-cc ml) *mode-line-pad-x* *mode-line-pad-y*
                         (split-string string (string #\Newline)) ())))))
 
-(defun find-mode-line-window (xwin)
-  (dolist (s *screen-list*)
-    (dolist (h (screen-heads s))
-      (let ((mode-line (head-mode-line h)))
-        (when (and mode-line (eq (mode-line-window mode-line) xwin))
-          (return-from find-mode-line-window mode-line))))))
+(defun update-mode-lines (screen)
+  "Update all mode lines on SCREEN"
+  (dolist (mode-line (screen-mode-lines screen))
+    (redraw-mode-line mode-line)))
 
-(defun sync-mode-line (ml)
-  (dolist (group (screen-groups (mode-line-screen ml)))
-    (group-sync-head group (mode-line-head ml))))
+(defun update-all-mode-lines ()
+  "Update all mode lines."
+  (mapc 'redraw-mode-line *mode-lines*))
 
-(defun set-mode-line-window (ml xwin)
-  "Use an external window as mode-line."
-  (run-hook-with-args *destroy-mode-line-hook* ml)
-  (xlib:destroy-window (mode-line-window ml))
-  (setf (mode-line-window ml) xwin
-        (mode-line-mode ml) :visible
-        (xlib:window-priority (mode-line-window ml)) :above)
-  (resize-mode-line ml)
-  (sync-mode-line ml))
+;;; External mode lines
 
-(defun destroy-mode-line-window (ml)
-  (run-hook-with-args *destroy-mode-line-hook* ml)
-  (xlib:destroy-window (mode-line-window ml))
-  (setf (head-mode-line (mode-line-head ml)) nil)
-  (sync-mode-line ml))
+(defun move-mode-line-to-head (mode-line head)
+  (cond ((not (head-mode-line head))
+         (setf (mode-line-head mode-line) head))
+        ((mode-line-head mode-line)
+         (rotatef (mode-line-head mode-line)
+                  (mode-line-head (head-mode-line head))))))
 
-(defun move-mode-line-to-head (ml head)
-  (if (head-mode-line head)
-      (when (mode-line-head ml)
-        ;; head already has a mode-line. Try swapping them.
-        (let ((old-head (mode-line-head ml)))
-          (setf (mode-line-head ml) head
-                (head-mode-line old-head) (head-mode-line head)
-                (mode-line-head (head-mode-line head)) old-head
-                (head-mode-line head) ml)))
-      (progn
-        (when (mode-line-head ml)
-          (setf (head-mode-line (mode-line-head ml)) nil))
-        (setf (head-mode-line head) ml
-              (mode-line-head ml) head))))
-
-(defun update-mode-line-position (ml x y)
-  (let ((head
-         ;; Find the appropriate head
-         (find-if (lambda (h) (and (= x (head-x h))
-                                   (>= y (head-y h))
-                                   (< y (+ (head-y h) (head-height h)))))
-                  (screen-heads (mode-line-screen ml)))))
-    (when (or (not head)
-              (not (eq (head-mode-line head) ml)))
-      ;; No luck. Just try to find a head without a mode-line already.
-      (setf head (find-if-not #'head-mode-line (screen-heads (mode-line-screen ml)))))
-    (if head
-        (progn
-          (unless (eq ml (head-mode-line head))
-            (move-mode-line-to-head ml head))
-          (when (mode-line-head ml)
-            (setf (mode-line-position ml) (if (< y (/ (head-height (mode-line-head ml)) 2)) :top :bottom))))
-        nil)))
+(defun update-mode-line-position (mode-line x y)
+  (let ((head (or (find-if (lambda (h) (and (= x (head-x h))
+                                            (>= y (head-y h))
+                                            (< y (+ (head-y h)
+                                                    (head-height h)))))
+                           (screen-heads (mode-line-screen mode-line)))
+                  ;; No luck. Just try to find a head without a mode-line
+                  ;; already.
+                  (find-if-not #'head-mode-line
+                               (screen-heads (mode-line-screen mode-line))))))
+    (when head
+      (unless (eq head (mode-line-head mode-line))
+        (move-mode-line-to-head mode-line head))
+      (when (mode-line-head mode-line)
+        (setf (mode-line-position mode-line)
+              (if (< y (/ (head-height (mode-line-head mode-line)) 2))
+                  :top
+                  :bottom))))))
 
 (defun place-mode-line-window (screen xwin)
-  (let ((ml (make-mode-line :window xwin :screen screen :mode :visible :position *mode-line-position*)))
+  (let ((ml (%make-mode-line
+             :window xwin
+             :screen screen
+             :mode :visible
+             :position *mode-line-position*)))
     (xlib:reparent-window xwin (screen-root screen) 0 0)
-    (when (update-mode-line-position ml (xlib:drawable-x xwin) (xlib:drawable-y xwin))
+    (when (update-mode-line-position ml
+                                     (xlib:drawable-x xwin)
+                                     (xlib:drawable-y xwin))
       (resize-mode-line ml)
       (xlib:map-window xwin)
       (sync-mode-line ml))))
 
-(defun update-mode-lines (screen)
-  "Update all mode lines on SCREEN"
-  (dolist (h (screen-heads screen))
-    (let ((mode-line (head-mode-line h)))
-      (when mode-line
-        (redraw-mode-line mode-line)))))
+;;; Toggling
 
-(defun update-all-mode-lines ()
-  "Update all mode lines."
-  (mapc 'update-mode-lines *screen-list*))
-
-(defun turn-on-mode-line-timer ()
-  (when (timer-p *mode-line-timer*)
-    (cancel-timer *mode-line-timer*))
-  (setf *mode-line-timer* (run-with-timer *mode-line-timeout*
-                                          *mode-line-timeout*
-                                          'update-all-mode-lines)))
-
-(defun all-heads ()
-  "Return all heads on all screens."
-  (loop for s in *screen-list*
-        nconc (copy-list (screen-heads s))))
-
-(defun maybe-cancel-mode-line-timer ()
-  (unless (find-if 'head-mode-line (all-heads))
-    (when (timer-p *mode-line-timer*)
-      (cancel-timer *mode-line-timer*)
-      (setf *mode-line-timer* nil))))
-
-(defun toggle-mode-line (screen head &optional (format '*screen-mode-line-format*))
+(defun toggle-mode-line (screen head
+                         &optional (format '*screen-mode-line-format*))
   "Toggle the state of the mode line for the specified screen"
   (check-type format (or symbol list string))
   (let ((ml (head-mode-line head)))
@@ -370,21 +400,8 @@ timer.")
            (xlib:map-window (mode-line-window ml)))
           (:stump
            ;; Delete it
-           (run-hook-with-args *destroy-mode-line-hook* ml)
-           (xlib:destroy-window (mode-line-window ml))
-           (xlib:free-gcontext (mode-line-gc ml))
-           (setf (head-mode-line head) nil)
-           (maybe-cancel-mode-line-timer)))
-        (progn
-          (setf (head-mode-line head) (make-head-mode-line screen head format))
-          (update-mode-line-color-context (head-mode-line head))
-          (resize-mode-line (head-mode-line head))
-          (xlib:map-window (mode-line-window (head-mode-line head)))
-          (redraw-mode-line (head-mode-line head))
-          (dformat 3 "modeline: ~s~%" (head-mode-line head))
-          ;; setup the timer
-          (turn-on-mode-line-timer)
-          (run-hook-with-args *new-mode-line-hook* (head-mode-line head))))
+           (destroy-mode-line ml)))
+        (make-mode-line screen head format))
     (dolist (group (screen-groups screen))
       (group-sync-head group head))))
 
@@ -394,13 +411,15 @@ timer.")
   (check-type screen screen)
   (check-type head head)
   (check-type format (or symbol list string))
-  (if state
-      (if (head-mode-line head)
-          (when format
-            (setf (mode-line-format (head-mode-line head)) format))
-          (toggle-mode-line screen head (or format '*screen-mode-line-format*)))
-      (when (head-mode-line head)
-        (toggle-mode-line screen head))))
+  (let ((mode-line (head-mode-line head)))
+    (cond
+      ((and state mode-line)
+       (when format
+         (setf (mode-line-format mode-line) format)))
+      (state
+       (toggle-mode-line screen head (or format '*screen-mode-line-format*)))
+      (mode-line
+       (toggle-mode-line screen head)))))
 
 (defcommand mode-line () ()
   "A command to toggle the mode line visibility."
