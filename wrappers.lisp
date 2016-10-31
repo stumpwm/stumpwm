@@ -420,8 +420,8 @@ stream, and the second valus is the output stream."
   `(mp:with-lock (,lock)
      ,@body)
   #+ecl
-  (mp:with-lock (,lock)
-    ,@body)
+  `(mp:with-lock (,lock)
+     ,@body)
   #-(or sbcl ccl clisp ecl)
   `(progn
      ,@body))
