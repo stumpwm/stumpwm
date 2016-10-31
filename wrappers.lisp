@@ -397,13 +397,13 @@ stream, and the second valus is the output stream."
   (sb-thread:make-mutex)
   #+ccl
   (ccl:make-lock "Anonymous lock")
-  #+clisp
+  #+(and clisp mt)
   (mt:make-mutex)
   #+lispworks
   (mp:make-lock)
   #+ecl
   (mp:make-lock)
-  #-(or sbcl ccl clisp lispworks ecl)
+  #-(or sbcl ccl (and clisp mt) lispworks ecl)
   nil)
 
 (defmacro with-lock-held ((lock) &body body)
@@ -413,7 +413,7 @@ stream, and the second valus is the output stream."
   #+ccl
   `(ccl:with-lock-grabbed (,lock)
      ,@body)
-  #+clisp
+  #+(and clisp mt)
   `(mt:with-mutex-lock (,lock)
      ,@body)
   #+lispworks
@@ -422,7 +422,7 @@ stream, and the second valus is the output stream."
   #+ecl
   `(mp:with-lock (,lock)
      ,@body)
-  #-(or sbcl ccl clisp ecl)
+  #-(or sbcl ccl (and clisp mt) ecl)
   `(progn
      ,@body))
 
