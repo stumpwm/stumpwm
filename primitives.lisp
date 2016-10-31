@@ -499,11 +499,7 @@ Use the window's resource name.
   height
   window)
 
-(defstruct (head (:include frame))
-  ;; point back to the screen this head belongs to
-  screen
-  ;; a bar along the top or bottom that displays anything you want.
-  mode-line)
+(defstruct (head (:include frame)))
 
 (defclass screen ()
   ((id :initarg :id :reader screen-id)

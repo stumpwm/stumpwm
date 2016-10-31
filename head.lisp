@@ -121,8 +121,9 @@
 
 (defun remove-head (screen head)
   (dformat 1 "Removing head #~D~%" (head-number head))
-  (when (head-mode-line head)
-    (toggle-mode-line screen head))
+  (let ((mode-line (head-mode-line head)))
+    (when mode-line
+      (destroy-mode-line mode-line)))
   (dolist (group (screen-groups screen))
     (group-remove-head group head))
   ;; Remove it from SCREEN's head list.

@@ -166,8 +166,8 @@
       (if win
           (destroy-window win)
           (progn
-            (let ((ml (find-mode-line-window window)))
-              (when ml (destroy-mode-line-window ml))))))))
+            (let ((ml (find-mode-line-by-window window)))
+              (when ml (destroy-mode-line ml))))))))
 
 (defun read-from-keymap (kmaps &optional update-fn)
   "Read a sequence of keys from the user, guided by the keymaps,
@@ -406,7 +406,7 @@ converted to an atom is removed."
          (if (plusp (screen-ignore-msg-expose screen))
              (decf (screen-ignore-msg-expose screen))
              (redraw-current-message screen)))
-        ((setf ml (find-mode-line-window window))
+        ((setf ml (find-mode-line-by-window window))
          (setf screen (mode-line-screen ml))
          (redraw-mode-line ml t)))
       ;; Show the area.
@@ -570,7 +570,7 @@ the window in it's frame."
       ((and (setf screen (find-screen window)) (not child))
        (group-button-press (screen-current-group screen) x y :root)
        (run-hook-with-args *root-click-hook* screen code x y))
-      ((setf ml (find-mode-line-window window))
+      ((setf ml (find-mode-line-by-window window))
        (run-hook-with-args *mode-line-click-hook* ml code x y))
       ((setf win (find-window-by-parent window (top-windows)))
        (group-button-press (window-group win) x y win))))
