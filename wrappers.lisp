@@ -374,4 +374,56 @@ regarding files in sysfs. Data is read in chunks of BLOCKSIZE bytes."
   #-(or sbcl clisp)
   (error "Unimplemented"))
 
+(defun open-pipe (&key (element-type '(unsigned-byte 8)))
+  "Create a pipe and return two streams. The first value is the input
+stream, and the second valus is the output stream."
+  #+sbcl
+  (multiple-value-bind (in-fd out-fd)
+      (sb-posix:pipe)
+    (let ((in-stream (sb-sys:make-fd-stream in-fd :input t :element-type element-type))
+          (out-stream (sb-sys:make-fd-stream out-fd :output t :element-type element-type)))
+      (values in-stream out-stream)))
+  #+ccl
+  (multiple-value-bind (in-fd out-fd)
+      (ccl::pipe)
+    (let ((in-stream (ccl::make-fd-stream in-fd :direction :input :element-type element-type))
+          (out-stream (ccl::make-fd-stream out-fd :direction :output :element-type element-type)))
+      (values in-stream out-stream)))
+  #-(or sbcl ccl)
+  (error "Unsupported CL implementation"))
+
+(defun make-lock ()
+  #+sbcl
+  (sb-thread:make-mutex)
+  #+ccl
+  (ccl:make-lock "Anonymous lock")
+  #+clisp
+  (mt:make-mutex)
+  #+lispworks
+  (mp:make-lock)
+  #+ecl
+  (mp:make-lock)
+  #-(or sbcl ccl clisp lispworks ecl)
+  nil)
+
+(defmacro with-lock-held ((lock) &body body)
+  #+sbcl
+  `(sb-thread:with-mutex (,lock)
+     ,@body)
+  #+ccl
+  `(ccl:with-lock-grabbed (,lock)
+     ,@body)
+  #+clisp
+  `(mt:with-mutex-lock (,lock)
+     ,@body)
+  #+lispworks
+  `(mp:with-lock (,lock)
+     ,@body)
+  #+ecl
+  (mp:with-lock (,lock)
+    ,@body)
+  #-(or sbcl ccl clisp ecl)
+  `(progn
+     ,@body))
+
 ;;; EOF

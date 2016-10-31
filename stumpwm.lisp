@@ -189,41 +189,6 @@ The action is to call FUNCTION with arguments ARGS."
 (defmethod io-channel-handle ((channel stumpwm-timer-channel) (event (eql :loop)) &key)
   (run-expired-timers))
 
-(defun open-pipe (&key (element-type '(unsigned-byte 8)))
-  #+sbcl
-  (multiple-value-bind (in-fd out-fd)
-      (sb-posix:pipe)
-    (let ((in-stream (sb-sys:make-fd-stream in-fd :input t :element-type element-type))
-          (out-stream (sb-sys:make-fd-stream out-fd :output t :element-type element-type)))
-      (values in-stream out-stream)))
-  #+ccl
-  (multiple-value-bind (in-fd out-fd)
-      (ccl::pipe)
-    (let ((in-stream (ccl::make-fd-stream in-fd :direction :input :element-type element-type))
-          (out-stream (ccl::make-fd-stream out-fd :direction :output :element-type element-type)))
-      (values in-stream out-stream)))
-  #-(or sbcl ccl)
-  (error "Unsupported CL implementation"))
-
-(defun make-lock ()
-  #+sbcl
-  (sb-thread:make-mutex)
-  #+ccl
-  (ccl:make-lock "Anonymous lock")
-  #-(or sbcl ccl)
-  nil)
-
-(defmacro with-lock-held ((lock) &body body)
-  #+sbcl
-  `(sb-thread:with-mutex (,lock)
-     ,@body)
-  #+ccl
-  `(ccl:with-lock-grabbed (,lock)
-     ,@body)
-  #-(or sbcl ccl)
-  `(progn
-     ,@body))
-
 (defclass request-channel ()
   ((in    :initarg :in
           :reader request-channel-in)
@@ -271,7 +236,7 @@ The action is to call FUNCTION with arguments ARGS."
 
 #-(or sbcl ccl)
 (defun call-in-main-thread (fn)
-  (funcall fn))
+  (run-with-timer 0 nil fn))
 
 (defclass display-channel ()
   ((display :initarg :display)))
