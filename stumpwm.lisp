@@ -222,6 +222,11 @@ The action is to call FUNCTION with arguments ARGS."
     (dolist (event (reverse events))
       (funcall event))))
 
+#+ccl
+(defmethod io-channel-ioport (io-loop (channel ccl::fd-binary-input-stream))
+  (declare (ignore io-loop))
+  (ccl::stream-device channel :input))
+
 #+(or sbcl ccl)
 (defun call-in-main-thread (fn)
   (with-lock-held ((request-channel-lock *request-channel*))
