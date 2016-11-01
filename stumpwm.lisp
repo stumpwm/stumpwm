@@ -227,7 +227,7 @@ The action is to call FUNCTION with arguments ARGS."
   (declare (ignore io-loop))
   (ccl::stream-device channel :input))
 
-#+(or sbcl ccl)
+#+sbcl
 (defun call-in-main-thread (fn)
   (with-lock-held ((request-channel-lock *request-channel*))
     (push fn (request-channel-queue *request-channel*)))
@@ -239,7 +239,7 @@ The action is to call FUNCTION with arguments ARGS."
     (write-byte 0 out)
     (finish-output out)))
 
-#-(or sbcl ccl)
+#-sbcl
 (defun call-in-main-thread (fn)
   (run-with-timer 0 nil fn))
 
@@ -275,10 +275,8 @@ The action is to call FUNCTION with arguments ARGS."
          (io-loop-add io (make-instance 'display-channel :display *display*))
 
          ;; If we have no implementation for the current CL, then
-         ;; don't register the channel, and the implementation of
-         ;; call-in-main-thread will simply call the function directly
-         ;; even though that's completely thread-unsafe.
-         #+(or sbcl ccl)
+         ;; don't register the channel.
+         #+sbcl
          (multiple-value-bind (in out)
              (open-pipe)
            (let ((channel (make-instance 'request-channel :in in :out out)))
