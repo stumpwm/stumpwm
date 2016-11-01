@@ -31,11 +31,6 @@
           with-message-queuing
           *queue-messages-p*))
 
-(defun max-width (font l)
-  "Return the width of the longest string in L using FONT."
-  (loop for i in l
-        maximize (text-line-width font i :translate #'translate-id)))
-
 (defgeneric gravity-coords (gravity width height minx miny maxx maxy)
   (:documentation "Get the X and Y coordinates to place something of width WIDTH
 and height HEIGHT within an area defined by MINX MINY MAXX and MAXY, guided by
