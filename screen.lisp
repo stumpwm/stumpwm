@@ -196,28 +196,30 @@ identity with a range check."
 
 (defun update-colors-for-screen (screen)
   (let ((fg (screen-fg-color screen))
-        (bg (screen-bg-color screen)))
+        (bg (screen-bg-color screen))
+        (border (screen-border-color screen))
+        (win-bg (screen-win-bg-color screen)))
     (setf (xlib:gcontext-foreground (screen-message-gc screen)) fg
           (xlib:gcontext-background (screen-message-gc screen)) bg
           (xlib:gcontext-foreground (screen-frame-outline-gc screen)) fg
           (xlib:gcontext-background (screen-frame-outline-gc screen)) bg
           (ccontext-default-fg (screen-message-cc screen)) fg
-          (ccontext-default-bg (screen-message-cc screen)) bg))
-  (dolist (i (list (screen-message-window screen)
-                   (screen-input-window screen)
-                   (screen-frame-window screen)))
-    (setf (xlib:window-border i) (screen-border-color screen)
-          (xlib:window-background i) (screen-bg-color screen)))
-  ;; update the backgrounds of all the managed windows
-  (dolist (g (screen-groups screen))
-    (dolist (w (group-windows g))
-      (unless (eq w (group-current-window g))
-        (setf (xlib:window-background (window-parent w)) (screen-win-bg-color screen))
-        (xlib:clear-area (window-parent w)))))
-  (dolist (i (screen-withdrawn-windows screen))
-    (setf (xlib:window-background (window-parent i)) (screen-win-bg-color screen))
-    (xlib:clear-area (window-parent i)))
-  (update-screen-color-context screen))
+          (ccontext-default-bg (screen-message-cc screen)) bg)
+    (dolist (i (list (screen-message-window screen)
+                     (screen-input-window screen)
+                     (screen-frame-window screen)))
+      (setf (xlib:window-border i) border
+            (xlib:window-background i) bg))
+    ;; update the backgrounds of all the managed windows
+    (dolist (g (screen-groups screen))
+      (dolist (w (group-windows g))
+        (unless (eq w (group-current-window g))
+          (setf (xlib:window-background (window-parent w)) win-bg)
+          (xlib:clear-area (window-parent w)))))
+    (dolist (i (screen-withdrawn-windows screen))
+      (setf (xlib:window-background (window-parent i)) win-bg)
+      (xlib:clear-area (window-parent i)))
+    (update-screen-color-context screen)))
 
 (defun update-colors-all-screens ()
   "After setting the fg, bg, or border colors. call this to sync any existing windows."
