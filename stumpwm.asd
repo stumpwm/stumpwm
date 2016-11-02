@@ -26,6 +26,7 @@
                (:file "wrappers")
                (:file "pathnames")
                (:file "font-rendering")
+               (:file "gravity")
                (:file "keysyms")
                (:file "keytrans")
                (:file "kmap")
