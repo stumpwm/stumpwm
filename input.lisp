@@ -273,7 +273,7 @@ match with an element of the completions."
                            (xlib:drawable-width win)
                            (xlib:drawable-height win) t))
       (setf (xlib:drawable-width win) (+ width (* *message-window-padding* 2)))
-      (setup-win-gravity screen win *input-window-gravity*))
+      (gravitate-xwin screen (current-head) win *input-window-gravity*))
     (xlib:with-state (win)
       (draw-image-glyphs win gcontext (screen-font screen)
                          *message-window-padding*
