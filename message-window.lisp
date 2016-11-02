@@ -99,21 +99,6 @@
                              :timeout *timeout-frame-indicator-wait*
                              :text text)))))
 
-(defun echo-in-window (win font fg bg string)
-  (let* ((height (font-height font))
-         (gcontext (xlib:create-gcontext :drawable win
-                                         :font (when (typep font 'xlib:font) font)
-                                         :foreground fg
-                                         :background bg))
-         (width (text-line-width font string)))
-    (xlib:with-state (win)
-      (setf (xlib:drawable-height win) height
-            (xlib:drawable-width win) width))
-    (xlib:clear-area win)
-    (xlib:display-finish-output *display*)
-    (draw-image-glyphs win gcontext font 0
-                       (font-ascent font) string :translate #'translate-id :size 16)))
-
 (defun push-last-message (screen strings highlights)
   ;; only push unique messages
   (unless *record-last-msg-override*
