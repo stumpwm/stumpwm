@@ -58,6 +58,11 @@
                (:file "mode-line-formatters")
                (:file "color")
                (:file "wse")
+               (:module "stumpui"
+                :components (;; NOTE: The package definition is in package.lisp
+                             ;; above.
+                             (:file "protocols")
+                             (:file "windows")))
                ;; keep this last so it always gets recompiled if
                ;; anything changes
                (:file "version")))

@@ -23,3 +23,35 @@
 
 (defpackage :stumpwm-user
   (:use :cl :stumpwm))
+
+(defpackage :stumpui
+  (:use :cl)
+  (:export
+   ;; Window protocol
+   #:window-p
+   #:window-screen
+   #:window-event-mask
+   #:window-xwin
+   #:window-gravity
+   #:window-required-size
+   #:window-show
+   #:window-hide
+   #:window-redraw
+   ;; Text window protocol
+   #:text-window-p
+   #:text-window-ccontext
+   #:text-window-text
+   #:text-window-highlights
+   #:text-window-padding
+   #:text-window-foreground-color
+   #:text-window-background-color
+   #:text-window-border-color
+   #:text-window-border-width
+   ;; Timed window protocol
+   #:timed-window-p
+   #:timed-window-schedule-timeout
+   #:timed-window-cancel-timeout
+   ;; Implementing classes
+   #:window
+   #:text-window
+   #:timed-window))
