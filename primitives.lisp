@@ -534,7 +534,7 @@ exist, in which case they go into the current group.")
     "the window that accepts further keypresses after a toplevel key has been pressed.")
    (focus-window :initarg :focus-window :reader screen-focus-window :documentation
     "The window that gets focus when no window has focus")
-   (frame-window :initarg :frame-window :reader screen-frame-window)
+   (frame-indicator-window :accessor screen-frame-indicator-window)
    (frame-outline-gc :initarg :frame-outline-gc :reader screen-frame-outline-gc)
    ;; color contexts
    (message-cc :initarg :message-cc :reader screen-message-cc)

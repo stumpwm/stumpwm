@@ -53,17 +53,6 @@
     (cancel-timer *message-window-timer*)
     (setf *message-window-timer* nil)))
 
-(defun unmap-frame-indicator-window (screen)
-  "Unmap the screen's message window, if it is mapped."
-;;  (unless (eq (xlib:window-map-state (screen-frame-window screen)) :unmapped)
-    (xlib:unmap-window (screen-frame-window screen)))
-
-(defun unmap-all-frame-indicator-windows ()
-  (mapc #'unmap-frame-indicator-window *screen-list*)
-  (when (timer-p *frame-indicator-timer*)
-    (cancel-timer *frame-indicator-timer*)
-    (setf *frame-indicator-timer* nil)))
-
 (defun reset-message-window-timer ()
   "Set the message window timer to timeout in *timeout-wait* seconds."
   (unless *ignore-echo-timeout*
@@ -72,16 +61,9 @@
     (setf *message-window-timer* (run-with-timer *timeout-wait* nil
                                                  'unmap-all-message-windows))))
 
-(defun reset-frame-indicator-timer ()
-  "Set the message window timer to timeout in *timeout-wait* seconds."
-  (when (timer-p *frame-indicator-timer*)
-    (cancel-timer *frame-indicator-timer*))
-  (setf *frame-indicator-timer* (run-with-timer *timeout-frame-indicator-wait* nil
-                                                'unmap-all-frame-indicator-windows)))
-
 (defun show-frame-outline (group &optional (clear t))
   ;; Don't draw if this isn't a current group!
-  (when (find group (mapcar 'screen-current-group *screen-list*))
+  (when (find group *screen-list* :key #'screen-current-group)
     (dformat 5 "show-frame-outline!~%")
     ;; *resize-hides-windows* uses the frame outlines for display,
     ;; so try not to interfere.
@@ -95,32 +77,27 @@
           (unless (frame-window frame)
             (draw-frame-outline group frame t t)))))))
 
+(defclass frame-indicator-window (stumpui:text-window
+                                  stumpui:timed-window)
+  ()
+  (:default-initargs :event-mask '(:exposure)
+                     :padding 0))
+
 (defun show-frame-indicator (group &optional force)
   (show-frame-outline group)
-  ;; FIXME: Arg, these tests are already done in show-frame-outline
-  (when (find group (mapcar 'screen-current-group *screen-list*))
+  ;; FIXME: Arg, this test is already done in show-frame-outline
+  (when (find group *screen-list* :key #'screen-current-group)
     (when (or force
-              (and (or (> (length (tile-group-frame-tree group)) 1)
-                       (not (atom (first (tile-group-frame-tree group)))))
-                   (not *suppress-frame-indicator*)))
-      (let ((frame (tile-group-current-frame group))
-            (w (screen-frame-window (current-screen)))
-            (string (if (stringp *frame-indicator-text*)
-                        *frame-indicator-text*
-                        (prin1-to-string *frame-indicator-text*)))
-            (font (screen-font (current-screen))))
-        ;; If it's already mapped it'll appear briefly in the wrong
-        ;; place, so unmap it first.
-        (xlib:unmap-window w)
-        (xlib:with-state (w)
-          (setf (xlib:drawable-x w) (+ (frame-x frame)
-                                       (truncate (- (frame-width frame) (text-line-width font string)) 2))
-                (xlib:drawable-y w) (+ (frame-display-y group frame)
-                                       (truncate (- (frame-height frame) (font-height font)) 2))
-                (xlib:window-priority w) :above))
-        (xlib:map-window w)
-        (echo-in-window w font (screen-fg-color (current-screen)) (screen-bg-color (current-screen)) string)
-        (reset-frame-indicator-timer)))))
+              (and (not *suppress-frame-indicator*)
+                   (or (> (length (tile-group-frame-tree group)) 1)
+                       (not (atom (first (tile-group-frame-tree group)))))))
+      (let ((window (screen-frame-indicator-window (current-screen)))
+            (text (if (stringp *frame-indicator-text*)
+                      *frame-indicator-text*
+                      (prin1-to-string *frame-indicator-text*))))
+        (stumpui:window-show window (tile-group-current-frame group)
+                             :timeout *timeout-frame-indicator-wait*
+                             :text text)))))
 
 (defun echo-in-window (win font fg bg string)
   (let* ((height (font-height font))
