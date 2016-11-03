@@ -58,7 +58,6 @@
 (export '(*colors*
           update-color-map
           adjust-color
-          update-screen-color-context
           lookup-color))
 
 (defvar *colors*
@@ -121,15 +120,6 @@ then call (update-color-map).")
                    collect (alloc-color screen color))))
     (setf (screen-color-map-normal screen) (apply #'vector (map-colors -0.25))
           (screen-color-map-bright screen) (apply #'vector (map-colors 0.25)))))
-
-(defun update-screen-color-context (screen)
-  (let* ((cc (screen-message-cc screen))
-         (bright (lookup-color screen *text-color*)))
-    (setf
-     (ccontext-default-fg cc) (screen-fg-color screen)
-     (ccontext-default-bg cc) (screen-bg-color screen))
-    (adjust-color bright 0.25)
-    (setf (ccontext-default-bright cc) (alloc-color screen bright))))
 
 ;;; Parser for color strings
 

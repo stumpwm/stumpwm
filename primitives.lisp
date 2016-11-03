@@ -34,7 +34,6 @@
           *timeout-frame-indicator-wait*
           *frame-indicator-text*
           *frame-indicator-timer*
-          *message-window-timer*
           *command-mode-start-hook*
           *command-mode-end-hook*
           *urgent-window-hook*
@@ -194,9 +193,6 @@ be an integer.")
 (defvar *suppress-window-placement-indicator* nil
   "Set to T if you never want to see messages that windows were placed
   according to rules.")
-
-(defvar *message-window-timer* nil
-  "Keep track of the timer that hides the message window.")
 
 ;;; Grabbed pointer
 
@@ -536,8 +532,10 @@ exist, in which case they go into the current group.")
     "The window that gets focus when no window has focus")
    (frame-indicator-window :accessor screen-frame-indicator-window)
    (frame-outline-gc :initarg :frame-outline-gc :reader screen-frame-outline-gc)
-   ;; color contexts
-   (message-cc :initarg :message-cc :reader screen-message-cc)
+   ;; the message-window gc, maintained here because it's used by the input window
+   (input-gc :initarg :input-gc :reader screen-input-gc)
+   ;; the message window
+   (message-window :initarg :message-window :accessor screen-message-window)
    ;; color maps
    (color-map-normal :initform nil :accessor screen-color-map-normal)
    (color-map-bright :initform nil :accessor screen-color-map-bright)

@@ -379,9 +379,10 @@ converted to an atom is removed."
 
 (defun find-message-window-screen (win)
   "Return the screen, if any, that message window WIN belongs."
-  (dolist (screen *screen-list*)
-    (when (xlib:window-equal (screen-message-window screen) win)
-      (return screen))))
+  (find win *screen-list*
+        :key (lambda (screen)
+               (stumpui:window-xwin (screen-message-window screen)))
+        :test #'xlib:window-equal))
 
 (defun draw-cross (screen window x y width height)
   (xlib:draw-line window

@@ -248,7 +248,7 @@ match with an element of the completions."
 
 (defun draw-input-bucket (screen prompt input &optional (tail "") errorp)
   "Draw to the screen's input window the contents of input."
-  (let* ((gcontext (screen-message-gc screen))
+  (let* ((gcontext (screen-input-gc screen))
          (win (screen-input-window screen))
          (prompt-width (text-line-width (screen-font screen) prompt :translate #'translate-id))
          (line-content (input-line-string input))

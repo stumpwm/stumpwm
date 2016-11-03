@@ -28,38 +28,7 @@
           err
           message))
 
-(defun setup-message-window (screen width height)
-  (let ((win (screen-message-window screen)))
-    ;; Now that we know the dimensions, raise and resize it.
-    (xlib:with-state (win)
-      (setf (xlib:drawable-height win) height
-            (xlib:drawable-width win) (+ width (* *message-window-padding* 2))
-            (xlib:window-priority win) :above)
-      (gravitate-xwin screen (current-head) win *message-window-gravity*))
-    (xlib:map-window win)
-    (incf (screen-ignore-msg-expose screen))
-    ;; Have to flush this or the window might get cleared
-    ;; after we've already started drawing it.
-    (xlib:display-finish-output *display*)))
-
-(defun unmap-message-window (screen)
-  "Unmap the screen's message window, if it is mapped."
-  (unless (eq (xlib:window-map-state (screen-message-window screen)) :unmapped)
-    (xlib:unmap-window (screen-message-window screen))))
-
-(defun unmap-all-message-windows ()
-  (mapc #'unmap-message-window *screen-list*)
-  (when (timer-p *message-window-timer*)
-    (cancel-timer *message-window-timer*)
-    (setf *message-window-timer* nil)))
-
-(defun reset-message-window-timer ()
-  "Set the message window timer to timeout in *timeout-wait* seconds."
-  (unless *ignore-echo-timeout*
-    (when (timer-p *message-window-timer*)
-      (cancel-timer *message-window-timer*))
-    (setf *message-window-timer* (run-with-timer *timeout-wait* nil
-                                                 'unmap-all-message-windows))))
+;;; Frame indicators
 
 (defun show-frame-outline (group &optional (clear t))
   ;; Don't draw if this isn't a current group!
@@ -99,6 +68,32 @@
                              :timeout *timeout-frame-indicator-wait*
                              :text text)))))
 
+;;; Message window
+
+(defclass message-window (stumpui:text-window
+                          stumpui:timed-window)
+  ()
+  (:default-initargs :event-mask '(:exposure)))
+
+(defmethod stumpui:window-gravity ((window message-window))
+  *message-window-gravity*)
+
+(defmethod (setf stumpui:window-gravity) (gravity (window message-window))
+  (setf *message-window-gravity* gravity))
+
+(defmethod stumpui:text-window-padding ((window message-window))
+  *message-window-padding*)
+
+(defmethod (setf stumpui:text-window-padding) (padding (window message-window))
+  (setf *message-window-padding* padding))
+
+(defun unmap-message-window (screen)
+  "Unmap the screen's message window, if it is mapped."
+  (stumpui:window-hide (screen-message-window screen)))
+
+(defun unmap-all-message-windows ()
+  (mapc #'unmap-message-window *screen-list*))
+
 (defun push-last-message (screen strings highlights)
   ;; only push unique messages
   (unless *record-last-msg-override*
@@ -113,36 +108,29 @@
   (let ((*record-last-msg-override* t)
         (*ignore-echo-timeout* t))
     (dformat 5 "Redrawing message window!~%")
-    (apply 'echo-string-list screen (screen-current-msg screen) (screen-current-msg-highlights screen))))
+    (stumpui:window-redraw (screen-message-window screen))))
 
 (defun echo-nth-last-message (screen n)
   (let ((*record-last-msg-override* t))
-    (apply 'echo-string-list screen (nth n (screen-last-msg screen)) (nth n (screen-last-msg-highlights screen)))))
+    (apply 'echo-string-list
+           screen
+           (nth n (screen-last-msg screen))
+           (nth n (screen-last-msg-highlights screen)))))
 
 (defun echo-string-list (screen strings &rest highlights)
   "Draw each string in l in the screen's message window. HIGHLIGHT is
   the nth entry to highlight."
-  (when strings
-    (unless *executing-stumpwm-command*
-      (multiple-value-bind (width height)
-          (rendered-size strings (screen-message-cc screen))
-        (setup-message-window screen width height)
-        (render-strings (screen-message-cc screen) *message-window-padding* 0 strings highlights))
-      (setf (screen-current-msg screen)
-            strings
-            (screen-current-msg-highlights screen)
-            highlights)
-      ;; Set a timer to hide the message after a number of seconds
-      (if *suppress-echo-timeout*
-          ;; any left over timers need to be canceled.
-          (when (timer-p *message-window-timer*)
-            (cancel-timer *message-window-timer*)
-            (setf *message-window-timer* nil))
-          (reset-message-window-timer)))
-    (push-last-message screen strings highlights)
-    (xlib:display-finish-output *display*)
-    (dformat 5 "Outputting a message:~%~{        ~a~%~}" strings)
-    (apply 'run-hook-with-args *message-hook* strings)))
+  (unless *executing-stumpwm-command*
+    (stumpui:window-show (screen-message-window screen)
+                         (current-head)
+                         :text strings
+                         :highlights highlights
+                         :timeout (unless *suppress-echo-timeout*
+                                    *timeout-wait*)))
+  (push-last-message screen strings highlights)
+  (xlib:display-finish-output *display*)
+  (dformat 5 "Outputting a message:~%~{        ~a~%~}" strings)
+  (apply 'run-hook-with-args *message-hook* strings))
 
 (defun echo-string (screen msg)
   "Display @var{string} in the message bar on @var{screen}. You almost always want to use @command{message}."
