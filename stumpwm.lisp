@@ -162,7 +162,7 @@ The action is to call FUNCTION with arguments ARGS."
 (defmethod handle-top-level-condition ((c serious-condition))
   (when (and (find-restart :remove-channel)
              (not (typep *current-io-channel*
-                         '(or stumpwm-timer-channel display-channel))))
+                         '(or stumpwm-timer-channel display-channel request-channel))))
     (message "Removed channel ~S due to uncaught error '~A'." *current-io-channel* c)
     (invoke-restart :remove-channel))
   (ecase *top-level-error-action*
@@ -188,6 +188,60 @@ The action is to call FUNCTION with arguments ARGS."
   (run-expired-timers))
 (defmethod io-channel-handle ((channel stumpwm-timer-channel) (event (eql :loop)) &key)
   (run-expired-timers))
+
+(defclass request-channel ()
+  ((in    :initarg :in
+          :reader request-channel-in)
+   (out   :initarg :out
+          :reader request-channel-out)
+   (queue :initform nil
+          :accessor request-channel-queue)
+   (lock  :initform (make-lock)
+          :reader request-channel-lock)))
+
+(defvar *request-channel* nil)
+
+(defmethod io-channel-ioport (io-loop (channel request-channel))
+  (io-channel-ioport io-loop (request-channel-in channel)))
+
+(defmethod io-channel-events ((channel request-channel))
+  (list :read))
+
+(defmethod io-channel-handle ((channel request-channel) (event (eql :read)) &key)
+  ;; At this point, we know that there is at least one request written
+  ;; on the pipe. We read all the data off the pipe and then evaluate
+  ;; all the waiting jobs.
+  (loop
+    with in = (request-channel-in channel)
+    do (read-byte in)
+    while (listen in))
+  (let ((events (with-lock-held ((request-channel-lock channel))
+                  (let ((queue-copy (request-channel-queue channel)))
+                    (setf (request-channel-queue channel) nil)
+                    queue-copy))))
+    (dolist (event (reverse events))
+      (funcall event))))
+
+#+ccl
+(defmethod io-channel-ioport (io-loop (channel ccl::fd-binary-input-stream))
+  (declare (ignore io-loop))
+  (ccl::stream-device channel :input))
+
+#+sbcl
+(defun call-in-main-thread (fn)
+  (with-lock-held ((request-channel-lock *request-channel*))
+    (push fn (request-channel-queue *request-channel*)))
+  (let ((out (request-channel-out *request-channel*)))
+    ;; For now, just write a single byte since all we want is for the
+    ;; main thread to process the queue. If we want to handle
+    ;; different types of events, we'll have to change this so that
+    ;; the message sent indicates the event type instead.
+    (write-byte 0 out)
+    (finish-output out)))
+
+#-sbcl
+(defun call-in-main-thread (fn)
+  (run-with-timer 0 nil fn))
 
 (defclass display-channel ()
   ((display :initarg :display)))
@@ -219,6 +273,16 @@ The action is to call FUNCTION with arguments ARGS."
        (let ((io (make-instance *default-io-loop*)))
          (io-loop-add io (make-instance 'stumpwm-timer-channel))
          (io-loop-add io (make-instance 'display-channel :display *display*))
+
+         ;; If we have no implementation for the current CL, then
+         ;; don't register the channel.
+         #+sbcl
+         (multiple-value-bind (in out)
+             (open-pipe)
+           (let ((channel (make-instance 'request-channel :in in :out out)))
+             (io-loop-add io channel)
+             (setq *request-channel* channel)))
+
          (setf *toplevel-io* io)
          (loop
             (handler-bind
