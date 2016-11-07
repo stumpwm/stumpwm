@@ -385,7 +385,7 @@ regarding files in sysfs. Data is read in chunks of BLOCKSIZE bytes."
 
 (defun open-pipe (&key (element-type '(unsigned-byte 8)))
   "Create a pipe and return two streams. The first value is the input
-stream, and the second valus is the output stream."
+stream, and the second value is the output stream."
   #+sbcl
   (multiple-value-bind (in-fd out-fd)
       (sb-posix:pipe)
