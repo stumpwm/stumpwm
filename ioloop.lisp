@@ -397,8 +397,9 @@
                  (when timers
                    (let ((now (get-internal-real-time)))
                      (dolist (channel timers)
-                       (when (< (channel-timeout channel) now)
-                         (io-channel-handle channel :timeout)))))))))))))
+                       (let ((timeout (channel-timeout channel)))
+                         (when (and timeout (< timeout now))
+                           (io-channel-handle channel :timeout))))))))))))))
 
 (defmethod io-channel-ioport ((io-loop xlib-io-loop) (channel xlib:display))
   (list :display channel))
