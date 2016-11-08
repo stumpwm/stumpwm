@@ -412,7 +412,9 @@ stream, and the second value is the output stream."
   (mp:make-lock)
   #+ecl
   (mp:make-lock)
-  #-(or sbcl ccl (and clisp mt) lispworks ecl)
+  #+allegro
+  (mp:make-process-lock)
+  #-(or sbcl ccl (and clisp mt) lispworks ecl allegro)
   nil)
 
 (defmacro with-lock-held ((lock) &body body)
@@ -431,7 +433,10 @@ stream, and the second value is the output stream."
   #+ecl
   `(mp:with-lock (,lock)
      ,@body)
-  #-(or sbcl ccl (and clisp mt) ecl)
+  #+allegro
+  `(mp:with-process-lock (,lock :norecursive t)
+     ,@body)
+  #-(or sbcl ccl (and clisp mt) lispworks ecl allegro)
   `(progn
      ,@body))
 
