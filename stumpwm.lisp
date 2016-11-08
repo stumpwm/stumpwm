@@ -247,22 +247,23 @@ The action is to call FUNCTION with arguments ARGS."
 
 #+call-in-main-thread
 (defun call-in-main-thread (fn)
-  (cond (*in-main-thread*
-         (funcall fn))
-        (t
-         (with-lock-held ((request-channel-lock *request-channel*))
-           (push fn (request-channel-queue *request-channel*)))
-         (let ((out (request-channel-out *request-channel*)))
-           ;; For now, just write a single byte since all we want is for the
-           ;; main thread to process the queue. If we want to handle
-           ;; different types of events, we'll have to change this so that
-           ;; the message sent indicates the event type instead.
-           (write-byte 0 out)
-           (finish-output out)))))
-
-#-call-in-main-thread
-(defun call-in-main-thread (fn)
-  (run-with-timer 0 nil fn))
+  (if *in-main-thread*
+      (funcall fn)
+      ;; ELSE: Schedule the job in the main thread
+      (progn
+        #+call-in-main-thread
+        (progn
+          (with-lock-held ((request-channel-lock *request-channel*))
+            (push fn (request-channel-queue *request-channel*)))
+          (let ((out (request-channel-out *request-channel*)))
+            ;; For now, just write a single byte since all we want is for the
+            ;; main thread to process the queue. If we want to handle
+            ;; different types of events, we'll have to change this so that
+            ;; the message sent indicates the event type instead.
+            (write-byte 0 out)
+            (finish-output out)))
+        #-call-in-main-thread
+        (run-with-timer 0 nil fn))))
 
 (defclass display-channel ()
   ((display :initarg :display)))
