@@ -245,7 +245,6 @@ The action is to call FUNCTION with arguments ARGS."
   (declare (ignore io-loop))
   (ccl::stream-device channel :input))
 
-#+call-in-main-thread
 (defun call-in-main-thread (fn)
   (if *in-main-thread*
       (funcall fn)
