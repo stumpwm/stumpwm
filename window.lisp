@@ -901,10 +901,10 @@ needed."
             (member :WM_TAKE_FOCUS (xlib:wm-protocols xwin) :test #'eq))
        (let ((hints (xlib:wm-hints xwin)))
          (when (or (null hints) (eq (xlib:wm-hints-input hints) :on))
-           (screen-set-focus screen window)
-           (update-decoration window)
-           (when cw
-             (update-decoration cw))))
+           (screen-set-focus screen window)))
+       (update-decoration window)
+       (when cw
+         (update-decoration cw))
        (move-window-to-head group window)
        (send-client-message window :WM_PROTOCOLS
                             (xlib:intern-atom *display* :WM_TAKE_FOCUS)
