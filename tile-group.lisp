@@ -123,7 +123,8 @@
     (let* ((frame (find-frame group x y)))
       (when frame
         (focus-frame group frame)
-        (update-all-mode-lines)))))
+        (unless (eq *mouse-focus-policy* :click)
+          (update-all-mode-lines))))))
 
 (defmethod group-button-press ((group tile-group) x y (where window))
   (declare (ignore x y))
