@@ -168,7 +168,10 @@
           ;; Conditions
           stumpwm-condition
           stumpwm-error
-          stumpwm-warning))
+          stumpwm-warning
+
+          ;; Minor Mode
+          *enabled-minor-modes*))
 
 
 
@@ -302,7 +305,7 @@ run before the error is dealt with according to
 (defvar *focus-group-hook* '()
   "A hook called whenever stumpwm switches groups. It is called with 2 arguments: the current group and the last group.")
 
-(defvar *key-press-hook* '()
+(defvar *key-press-hook* `(which-key-mode-key-press-hook)
   "A hook called whenever a key under *top-map* is pressed.
 It is called with 3 argument: the key, the (possibly incomplete) key
 sequence it is a part of, and command value bound to the key.")
@@ -331,6 +334,11 @@ the command as a symbol.")
 (defvar *post-command-hook* '()
   "Called after a command is called. It is called with 1 argument:
 the command as a symbol.")
+
+;; Minor-mode related variables
+
+(defvar *enabled-minor-modes* '()
+  "Contains the list of enabled minor modes.")
 
 ;; Data types and globals used by stumpwm
 
