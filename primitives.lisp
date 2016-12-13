@@ -128,6 +128,7 @@
           define-frame-preference
           redirect-all-output
           remove-hook
+          remove-all-hooks
           run-hook
           run-hook-with-args
           command-mode-start-message
@@ -682,6 +683,10 @@ display a message whenever you switch frames:
 (defmacro remove-hook (hook fn)
 "Remove the specified function from the hook."
   `(setf ,hook (remove ,fn ,hook)))
+
+(defmacro remove-all-hooks (hook)
+"Remove all functions from a hook"
+  `(setf ,hook NIL))
 
 ;; Misc. utility functions
 
