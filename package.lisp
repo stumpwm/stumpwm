@@ -47,11 +47,11 @@
    #:text-window-background-color
    #:text-window-border-color
    #:text-window-border-width
-   ;; Timed window protocol
-   #:timed-window-p
-   #:timed-window-schedule-timeout
-   #:timed-window-cancel-timeout
+   ;; Window timeout protocol
+   #:window-supports-timeout-p
+   #:window-schedule-timeout
+   #:window-cancel-timeout
    ;; Implementing classes
    #:window
    #:text-window
-   #:timed-window))
+   #:window-timeout-mixin))

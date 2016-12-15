@@ -183,33 +183,33 @@
   (setf (xlib:drawable-border-width (window-xwin window))
         width))
 
-;;; Timed window --------------------------------------------------------------
-;;; The TIMED-WINDOW class implements the Timed window protocol.
+;;; Window timeout mixin ------------------------------------------------------
+;;; The WINDOW-TIMEOUT-MIXIN class implements the Window timeout protocol.
 
-(defclass timed-window (window)
+(defclass window-timeout-mixin ()
   ((timer :initform nil
-          :accessor %timed-window-timer)))
+          :accessor %window-timeout-mixin-timer)))
 
-(defmethod timed-window-p ((window timed-window)) t)
+(defmethod window-supports-timeout-p ((window window-timeout-mixin)) t)
 
-(defmethod timed-window-schedule-timeout ((window timed-window) seconds)
-  (timed-window-cancel-timeout window)
-  (setf (%timed-window-timer window)
+(defmethod window-schedule-timeout ((window window-timeout-mixin) seconds)
+  (window-cancel-timeout window)
+  (setf (%window-timeout-mixin-timer window)
         (stumpwm:run-with-timer seconds
                                 nil
                                 #'window-hide
                                 window)))
 
-(defmethod timed-window-cancel-timeout ((window timed-window))
-  (let ((timer (%timed-window-timer window)))
+(defmethod window-cancel-timeout ((window window-timeout-mixin))
+  (let ((timer (%window-timeout-mixin-timer window)))
     (when (stumpwm:timer-p timer)
       (stumpwm:cancel-timer timer))))
 
-(defmethod window-show :after ((window timed-window) frame
+(defmethod window-show :after ((window window-timeout-mixin) frame
                                &key
                                  timeout)
   (when timeout
-    (timed-window-schedule-timeout window timeout)))
+    (window-schedule-timeout window timeout)))
 
-(defmethod window-hide :after ((window timed-window))
-  (timed-window-cancel-timeout window))
+(defmethod window-hide :after ((window window-timeout-mixin))
+  (window-cancel-timeout window))

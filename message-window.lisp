@@ -47,7 +47,7 @@
             (draw-frame-outline group frame t t)))))))
 
 (defclass frame-indicator-window (stumpui:text-window
-                                  stumpui:timed-window)
+                                  stumpui:window-timeout-mixin)
   ()
   (:default-initargs :event-mask '(:exposure)
                      :padding 0))
@@ -71,7 +71,7 @@
 ;;; Message window
 
 (defclass message-window (stumpui:text-window
-                          stumpui:timed-window)
+                          stumpui:window-timeout-mixin)
   ()
   (:default-initargs :event-mask '(:exposure)))
 

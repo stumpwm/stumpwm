@@ -61,10 +61,10 @@
 (defgeneric (setf text-window-border-color) (color text-window))
 (defgeneric (setf text-window-border-width) (width text-window))
 
-;;; Timed window protocol -----------------------------------------------------
+;;; Window timeout protocol ---------------------------------------------------
 
-(defgeneric timed-window-p (object)
+(defgeneric window-supports-timeout-p (object)
   (:method (object) nil))
 
-(defgeneric timed-window-schedule-timeout (timed-window seconds))
-(defgeneric timed-window-cancel-timeout (timed-window))
+(defgeneric window-schedule-timeout (window seconds))
+(defgeneric window-cancel-timeout (window))
