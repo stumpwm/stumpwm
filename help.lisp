@@ -141,8 +141,7 @@ KMAPS are enabled"
 (defun which-key-mode-key-press-hook (key key-seq cmd)
   "*key-press-hook* for which-key-mode"
   (declare (ignore key))
-  (when (and (find 'which-key *enabled-minor-modes*)
-             (not (eq *top-map* *resize-map*)))
+  (when (not (eq *top-map* *resize-map*))
     (let* ((oriented-key-seq (reverse key-seq))
            (maps (get-kmaps-at-key-seq (dereference-kmaps (top-maps)) oriented-key-seq)))
       (when (remove-if-not 'kmap-p maps)
@@ -150,10 +149,9 @@ KMAPS are enabled"
 
 (defcommand which-key-mode () ()
   "Toggle which-key-mode"
-  (setf *enabled-minor-modes*
-        (if (find 'which-key *enabled-minor-modes*)
-            (remove 'which-key *enabled-minor-modes*)
-            (cons 'which-key *enabled-minor-modes*))))
+  (if (find 'which-key-mode-key-press-hook *key-press-hook*)
+      (remove-hook *key-press-hook* 'which-key-mode-key-press-hook)
+      (add-hook *key-press-hook* 'which-key-mode-key-press-hook)))
 
 (defcommand modifiers () ()
   "List the modifiers stumpwm recognizes and what MOD-X it thinks they're on."
