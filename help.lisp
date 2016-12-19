@@ -115,7 +115,43 @@ command prints the command bound to the specified key sequence."
                       cmd
                       (mapcar 'print-key-seq bindings))
       (message-no-timeout "Command \"~a\" is not currently bound"
-                      cmd))))
+                          cmd))))
+
+(defun get-kmaps-at-key (kmaps key)
+  (dereference-kmaps
+   (reduce
+    (lambda (result map)
+      (let* ((binding (find key (kmap-bindings map)
+                            :key 'binding-key :test 'equalp))
+             (command (when binding (binding-command binding))))
+        (if command
+            (setf result (cons command result))
+            result)))
+    kmaps
+    :initial-value ())))
+
+(defun get-kmaps-at-key-seq (kmaps key-seq)
+  "get a list of kmaps that are activated when pressing KEY-SEQ when
+KMAPS are enabled"
+  (if (= 1 (length key-seq))
+      (get-kmaps-at-key kmaps (first key-seq))
+      (get-kmaps-at-key-seq (get-kmaps-at-key kmaps (first key-seq))
+                            (rest key-seq))))
+
+(defun which-key-mode-key-press-hook (key key-seq cmd)
+  "*key-press-hook* for which-key-mode"
+  (declare (ignore key))
+  (when (not (eq *top-map* *resize-map*))
+    (let* ((oriented-key-seq (reverse key-seq))
+           (maps (get-kmaps-at-key-seq (dereference-kmaps (top-maps)) oriented-key-seq)))
+      (when (remove-if-not 'kmap-p maps)
+        (apply 'display-bindings-for-keymaps oriented-key-seq maps)))))
+
+(defcommand which-key-mode () ()
+  "Toggle which-key-mode"
+  (if (find 'which-key-mode-key-press-hook *key-press-hook*)
+      (remove-hook *key-press-hook* 'which-key-mode-key-press-hook)
+      (add-hook *key-press-hook* 'which-key-mode-key-press-hook)))
 
 (defcommand modifiers () ()
   "List the modifiers stumpwm recognizes and what MOD-X it thinks they're on."
