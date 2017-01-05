@@ -37,21 +37,30 @@
           (tile-group-current-frame group) (first heads))))
 
 (defmethod group-startup ((group tile-group))
-  (let ((window (first (group-windows group))))
-    (if window
-        (focus-frame group (window-frame window))
-        (focus-frame group (tile-group-current-frame group)))))
+  (let* ((window (first (group-tile-windows group)))
+         (frame (if (typep window 'tile-window)
+                    (window-frame window)
+                    (tile-group-current-frame group))))
+    (focus-frame group frame)))
 
 (defmethod group-wake-up ((group tile-group))
   (focus-frame group (tile-group-current-frame group))
   ;; doesn't get called by focus-frame
   (show-frame-indicator group))
 
-(defmethod group-delete-window ((group tile-group) window)
+(defmethod group-delete-window ((group tile-group) (window tile-window))
   (let ((f (window-frame window)))
     ;; maybe pick a new window for the old frame
     (when (eq (frame-window f) window)
       (frame-raise-window group f (first (frame-windows group f)) nil))))
+
+(defmethod group-delete-window ((group tile-group) (window stumpwm.floating-group::float-window))
+  (let* ((windows (group-windows group))
+         (float-w (some (lambda (w) (typep w 'stumpwm.floating-group::float-window)) windows))
+         (tile-w (some (lambda (w) (typep w 'tile-window)) windows)))
+    (cond (float-w (focus-window float-w))
+          (tile-w (frame-raise-window group (window-frame tile-w) tile-w))
+          (t (no-focus group nil)))))
 
 (defmethod group-add-window ((group tile-group) window &key frame raise &allow-other-keys)
   ;; This is important to get the frame slot
@@ -73,13 +82,7 @@
   (when (null (frame-window (window-frame window)))
     (really-raise-window window)))
 
-(defmethod group-current-window ((group tile-group))
-  (frame-window (tile-group-current-frame group)))
-
-(defmethod group-current-head ((group tile-group))
-  (frame-head group (tile-group-current-frame group)))
-
-(defmethod group-move-request ((group tile-group) window x y relative-to)
+(defmethod group-move-request ((group tile-group) (window tile-window) x y relative-to)
   (when *honor-window-moves*
     (dformat 3 "Window requested new position ~D,~D relative to ~S~%" x y relative-to)
     (let* ((pos  (if (eq relative-to :parent)
@@ -91,11 +94,18 @@
       (when frame
         (pull-window window frame)))))
 
-(defmethod group-resize-request ((group tile-group) window width height)
+(defmethod group-resize-request ((group tile-group) (window tile-window) width height)
   ;; it's important to grant the resize request first so that resize
   ;; increment hints use the proper base size to resize from.
   (set-window-geometry window :width width :height height)
   (maximize-window window))
+
+(defmethod group-resize-request ((group tile-group) (window stumpwm.floating-group::float-window) width height)
+  (stumpwm.floating-group::float-window-move-resize window :width width :height height))
+
+(defmethod group-move-request ((group tile-group) (window stumpwm.floating-group::float-window) x y relative-to)
+  (declare (ignore relative-to))
+  (stumpwm.floating-group::float-window-move-resize window :x x :y y))
 
 (defmethod group-raise-request ((group tile-group) window stack-mode)
   (when (window-in-current-group-p window)
@@ -115,8 +125,11 @@
 (defmethod group-indicate-focus ((group tile-group))
   (show-frame-indicator group))
 
-(defmethod group-focus-window ((group tile-group) win)
+(defmethod group-focus-window ((group tile-group) (win tile-window))
   (frame-raise-window group (window-frame win) win))
+
+(defmethod group-focus-window ((group tile-group) (window stumpwm.floating-group::float-window))
+  (focus-window window))
 
 (defmethod group-button-press ((group tile-group) x y (where (eql :root)))
   (when *root-click-focuses-frame*
@@ -128,6 +141,8 @@
 
 (defmethod group-button-press ((group tile-group) x y (where window))
   (declare (ignore x y))
+  (when (typep where 'stumpwm.floating-group::float-window)
+    (call-next-method))
   (when (eq *mouse-focus-policy* :click)
     (focus-all where)
     (update-all-mode-lines)))
@@ -148,6 +163,7 @@
         (when (frame-window frame)
           (unhide-window (frame-window frame))))))
 
+;; TODO: This method has not been updated for floating windows
 (defmethod group-remove-head ((group tile-group) head)
   (let ((windows (head-windows group head)))
     ;; Remove it from the frame tree.
@@ -179,6 +195,11 @@
 ;;         (frame-tree (tile-group-frame-tree group)))
 ;;     (when (> index (length frame-tree))
 ;;       (elt frame-tree index))))
+
+(defun group-tile-windows (group)
+  (remove-if-not (lambda (window) (typep window 'tile-window))
+                 (group-windows group)))
+
 (defun tile-group-frame-head (group head)
   (elt (tile-group-frame-tree group) (position head (group-heads group))))
 
@@ -322,10 +343,11 @@ T (default) then also focus the frame."
 
 (defun frame-windows (group f)
   (remove-if-not (lambda (w) (eq (window-frame w) f))
-                 (group-windows group)))
+                 (group-tile-windows group)))
 
 (defun frame-sort-windows (group f)
-  (remove-if-not (lambda (w) (eq (window-frame w) f))
+  (remove-if-not (lambda (w) (and (typep w 'tile-window)
+                                  (eq (window-frame w) f)))
                  (sort-windows group)))
 
 (defun copy-frame-tree (tree)
@@ -460,7 +482,7 @@ leaf is the most right/below of its siblings."
   (mapc (lambda (w)
           (when (eq (window-frame w) src)
             (setf (window-frame w) dest)))
-        (group-windows group)))
+        (group-tile-windows group)))
 
 (defun tree-accum-fn (tree acc fn)
   "Run an accumulator function on fn applied to each leaf"
@@ -647,7 +669,7 @@ one."
           (when (eq (window-frame w) frame)
             (dformat 3 "maximizing ~S~%" w)
             (maximize-window w)))
-        (group-windows group)))
+        (group-tile-windows group)))
 
 (defun sync-all-frame-windows (group)
   "synchronize all frames in GROUP."

@@ -1013,7 +1013,7 @@ window. Default to the current window. if
 
 (defcommand other-window (&optional (group (current-group))) ()
   "Switch to the window last focused."
-  (let* ((wins (group-windows group))
+  (let* ((wins (only-tile-windows (group-windows group)))
          ;; the frame could be empty
          (win (if (group-current-window group)
                   (second wins)

@@ -140,7 +140,7 @@
       (focus-window (first (group-windows group)))
       (no-focus group nil)))
 
-(defmethod group-delete-window ((group float-group) window)
+(defmethod group-delete-window ((group float-group) (window float-window))
   (declare (ignore window))
   (&float-focus-next group))
 
@@ -149,10 +149,10 @@
 
 (defmethod group-suspend ((group float-group)))
 
-(defmethod group-current-window ((group float-group))
+(defmethod group-current-window (group)
   (screen-focus (group-screen group)))
 
-(defmethod group-current-head ((group float-group))
+(defmethod group-current-head (group)
   (if (group-current-window group)
       (window-head (group-current-window group))
       (first (screen-heads (group-screen group)))))
@@ -210,7 +210,7 @@
   (declare (ignore head))
   )
 
-(defmethod group-button-press ((group float-group) x y (window float-window))
+(defmethod group-button-press (group x y (window float-window))
   (let ((screen (group-screen group))
         (initial-width (xlib:drawable-width (window-parent window)))
         (initial-height (xlib:drawable-height (window-parent window))))
@@ -279,9 +279,6 @@
             ;; don't forget to update the cache
             (setf (window-x window) (xlib:drawable-x (window-parent window))
                   (window-y window) (xlib:drawable-y (window-parent window)))))))))
-
-(defmethod group-button-press ((group float-group) x y where)
-  (declare (ignore x y where)))
 
 ;;; Bindings
 

@@ -205,13 +205,17 @@ than the root window's width and height."
 
 ;;;
 
+(defun only-tile-windows (windows)
+  (remove-if-not (lambda (w) (typep w 'tile-window))
+                 windows))
+
 (defun focus-next-window (group)
-  (focus-forward group (sort-windows group)))
+  (focus-forward group (only-tile-windows (sort-windows group))))
 
 (defun focus-prev-window (group)
   (focus-forward group
                  (reverse
-                  (sort-windows group))))
+                  (only-tile-windows (sort-windows group)))))
 
 (defcommand (next tile-group) () ()
   "Go to the next window in the window list."
@@ -283,7 +287,8 @@ frame."
 
 (defun other-hidden-window (group)
   "Return the last window that was accessed and that is hidden."
-  (let ((wins (remove-if (lambda (w) (eq (frame-window (window-frame w)) w)) (group-windows group))))
+  (let ((wins (remove-if (lambda (w) (eq (frame-window (window-frame w)) w))
+                         (only-tile-windows (group-windows group)))))
     (first wins)))
 
 (defun pull-other-hidden-window (group)
@@ -307,12 +312,14 @@ current frame and raise it."
 (defcommand (pull-hidden-next tile-group) () ()
 "Pull the next hidden window into the current frame."
   (let ((group (current-group)))
-    (focus-forward group (sort-windows group) t (lambda (w) (not (eq (frame-window (window-frame w)) w))))))
+    (focus-forward group (only-tile-windows (sort-windows group)) t
+                   (lambda (w) (not (eq (frame-window (window-frame w)) w))))))
 
 (defcommand (pull-hidden-previous tile-group) () ()
 "Pull the next hidden window into the current frame."
   (let ((group (current-group)))
-    (focus-forward group (nreverse (sort-windows group)) t (lambda (w) (not (eq (frame-window (window-frame w)) w))))))
+    (focus-forward group (nreverse (only-tile-windows (sort-windows group))) t
+                   (lambda (w) (not (eq (frame-window (window-frame w)) w))))))
 
 (defcommand (pull-hidden-other tile-group) () ()
 "Pull the last focused, hidden window into the current frame."

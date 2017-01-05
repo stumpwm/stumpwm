@@ -140,7 +140,7 @@ KMAPS are enabled"
 
 (defun which-key-mode-key-press-hook (key key-seq cmd)
   "*key-press-hook* for which-key-mode"
-  (declare (ignore key))
+  (declare (ignore key cmd))
   (when (not (eq *top-map* *resize-map*))
     (let* ((oriented-key-seq (reverse key-seq))
            (maps (get-kmaps-at-key-seq (dereference-kmaps (top-maps)) oriented-key-seq)))
