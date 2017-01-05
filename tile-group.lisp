@@ -64,23 +64,26 @@
 
 (defmethod group-add-window ((group tile-group) window &key frame raise &allow-other-keys)
   ;; This is important to get the frame slot
-  (change-class window 'tile-window)
-  ;; Try to put the window in the appropriate frame for the group.
-  (setf (window-frame window)
-        (or frame
-            (when *processing-existing-windows*
-              (find-frame group (xlib:drawable-x (window-parent window))
-                          (xlib:drawable-y (window-parent window))))
-            (pick-preferred-frame window)))
-  (when *processing-existing-windows*
-    (setf (frame-window (window-frame window)) window))
-  (when (and frame raise)
-    (setf (tile-group-current-frame group) frame
-          (frame-window frame) nil))
-  (sync-frame-windows group (window-frame window))
-  ;; maybe show the window in its new frame
-  (when (null (frame-window (window-frame window)))
-    (really-raise-window window)))
+  (if (typep window 'stumpwm.floating-group::float-window)
+      (call-next-method)
+      (progn
+        (change-class window 'tile-window)
+        ;; Try to put the window in the appropriate frame for the group.
+        (setf (window-frame window)
+              (or frame
+                  (when *processing-existing-windows*
+                    (find-frame group (xlib:drawable-x (window-parent window))
+                                (xlib:drawable-y (window-parent window))))
+                  (pick-preferred-frame window)))
+        (when *processing-existing-windows*
+          (setf (frame-window (window-frame window)) window))
+        (when (and frame raise)
+          (setf (tile-group-current-frame group) frame
+                (frame-window frame) nil))
+        (sync-frame-windows group (window-frame window))
+        ;; maybe show the window in its new frame
+        (when (null (frame-window (window-frame window)))
+          (really-raise-window window)))))
 
 (defmethod group-move-request ((group tile-group) (window tile-window) x y relative-to)
   (when *honor-window-moves*
