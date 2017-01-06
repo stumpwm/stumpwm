@@ -694,19 +694,29 @@ and bottom_end_x."
                                  (eql (key-keysym key) (xlib:keycode->keysym *display* code 1)))
                             (add-shift-modifier key)
                             key)))
-                   (xlib:grab-key w code
-                                  :modifiers (x11-mods key) :owner-p t
-                                  :sync-pointer-p nil :sync-keyboard-p nil)
-                   ;; Ignore capslock and numlock by also grabbing the
-                   ;; keycombos with them on.
-                   (xlib:grab-key w code :modifiers (x11-mods key nil t) :owner-p t
-                                  :sync-keyboard-p nil :sync-keyboard-p nil)
-                   (when (modifiers-numlock *modifiers*)
+                   ;; If a key requires a modifier that is not currently
+                   ;; mapped, x11-mods will return the a modifier mask without
+                   ;; that modifier set. Instead, it should just not be bound.
+                   (unless (and (zerop (x11-mods key))
+                                (or (key-shift key)
+                                    (key-control key)
+                                    (key-meta key)
+                                    (key-alt key)
+                                    (key-hyper key)
+                                    (key-super key)))
                      (xlib:grab-key w code
-                                    :modifiers (x11-mods key t nil) :owner-p t
+                                    :modifiers (x11-mods key) :owner-p t
                                     :sync-pointer-p nil :sync-keyboard-p nil)
-                     (xlib:grab-key w code :modifiers (x11-mods key t t) :owner-p t
-                                    :sync-keyboard-p nil :sync-keyboard-p nil)))))))
+                     ;; Ignore capslock and numlock by also grabbing the
+                     ;; keycombos with them on.
+                     (xlib:grab-key w code :modifiers (x11-mods key nil t) :owner-p t
+                                           :sync-keyboard-p nil :sync-keyboard-p nil)
+                     (when (modifiers-numlock *modifiers*)
+                       (xlib:grab-key w code
+                                      :modifiers (x11-mods key t nil) :owner-p t
+                                      :sync-pointer-p nil :sync-keyboard-p nil)
+                       (xlib:grab-key w code :modifiers (x11-mods key t t) :owner-p t
+                                             :sync-keyboard-p nil :sync-keyboard-p nil))))))))
     (dolist (map (dereference-kmaps (top-maps group)))
       (dolist (i (kmap-bindings map))
         (grabit win (binding-key i))))))
