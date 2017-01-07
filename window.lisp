@@ -353,8 +353,15 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
     (unhide-window win)
     (update-configuration win))
   (when (window-in-current-group-p win)
-    (setf (xlib:window-priority (window-parent win)) :top-if)))
+    (setf (xlib:window-priority (window-parent win)) :top-if))
+  (raise-top-windows))
 ;; some handy wrappers
+
+(defun raise-top-windows ()
+  (mapc (lambda (w)
+          (when (window-in-current-group-p w)
+            (setf (xlib:window-priority (window-parent w)) :top-if)))
+        (group-on-top-windows (current-group))))
 
 (defun xwin-border-width (win)
   (xlib:drawable-border-width win))
@@ -1154,3 +1161,13 @@ be used to override the default window formatting."
     (set-window-geometry window
                          :width w
                          :height h)))
+
+(defcommand toggle-always-on-top () ()
+  "Toggle whether the current window always appears over other windows.
+The order windows are added to this list determines priority."
+  (let ((w (current-window))
+        (windows (group-on-top-windows (current-group))))
+    (when w
+      (if (find w windows)
+          (setf (group-on-top-windows (current-group)) (remove w windows))
+          (push (current-window) (group-on-top-windows (current-group)))))))
