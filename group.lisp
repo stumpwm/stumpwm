@@ -161,6 +161,8 @@ at 0. Return a netwm compliant group id."
   (let ((screen (group-screen group)))
     (position group (sort-groups screen))))
 
+(defvar always-show-windows ())
+
 (defun switch-to-group (new-group)
   (let* ((screen (group-screen new-group))
          (old-group (screen-current-group screen)))
@@ -180,8 +182,18 @@ at 0. Return a netwm compliant group id."
       (xlib:change-property (screen-root screen) :_NET_CURRENT_DESKTOP
                             (list (netwm-group-id new-group))
                             :cardinal 32)
+      (mapc (lambda (w)
+              (xwin-unhide (window-xwin w) (window-parent w)))
+            always-show-windows)
       (update-all-mode-lines)
       (run-hook-with-args *focus-group-hook* new-group old-group))))
+
+(defcommand toggle-always-show () ()
+  (let ((w (current-window)))
+    (when w
+      (if (find w always-show-windows)
+          (setq always-show-windows (remove w always-show-windows))
+          (push w always-show-windows)))))
 
 (defun move-window-to-group (window to-group)
   (labels ((really-move-window (window to-group)
