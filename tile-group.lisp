@@ -56,9 +56,11 @@
 
 (defmethod group-delete-window ((group tile-group) (window stumpwm.floating-group::float-window))
   (let* ((windows (group-windows group))
-         (float-w (some (lambda (w) (typep w 'stumpwm.floating-group::float-window)) windows))
-         (tile-w (some (lambda (w) (typep w 'tile-window)) windows)))
-    (cond (float-w (focus-window float-w))
+         (float-w (some (lambda (w) (when (typep w 'stumpwm.floating-group::float-window) w))
+                        windows))
+         (tile-w (some (lambda (w) (when (typep w 'tile-window) w))
+                       windows)))
+    (cond (float-w (group-focus-window group float-w))
           (tile-w (frame-raise-window group (window-frame tile-w) tile-w))
           (t (no-focus group nil)))))
 
@@ -200,8 +202,7 @@
 ;;       (elt frame-tree index))))
 
 (defun group-tile-windows (group)
-  (remove-if-not (lambda (window) (typep window 'tile-window))
-                 (group-windows group)))
+  (only-tile-windows (group-windows group)))
 
 (defun tile-group-frame-head (group head)
   (elt (tile-group-frame-tree group) (position head (group-heads group))))

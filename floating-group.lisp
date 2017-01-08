@@ -130,7 +130,12 @@
 
 (defmethod group-startup ((group float-group)))
 
-(defmethod group-add-window (group window &key &allow-other-keys)
+(defmethod group-add-window ((group float-group) window &key &allow-other-keys)
+  (change-class window 'float-window)
+  (float-window-align window)
+  (focus-window window))
+
+(defmethod group-add-window (group (window float-window) &key &allow-other-keys)
   (change-class window 'float-window)
   (float-window-align window)
   (focus-window window))
@@ -148,14 +153,6 @@
   (&float-focus-next group))
 
 (defmethod group-suspend ((group float-group)))
-
-(defmethod group-current-window (group)
-  (screen-focus (group-screen group)))
-
-(defmethod group-current-head (group)
-  (if (group-current-window group)
-      (window-head (group-current-window group))
-      (first (screen-heads (group-screen group)))))
 
 (defun float-window-align (window)
   (with-accessors ((parent window-parent)
