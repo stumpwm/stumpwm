@@ -686,7 +686,12 @@ and bottom_end_x."
            (grabit (w key)
              (loop for code in (multiple-value-list (xlib:keysym->keycodes *display* (key-keysym key))) do
                ;; some keysyms aren't mapped to keycodes so just ignore them.
-               (when code
+               (when (and code
+                             ;;temporary hack to make sure H-a
+                             ;;doesn't cause "a" to be grabbed
+                             ;;when there is no H
+                             (or (not (key-hyper key))
+                                 (modifiers-hyper *modifiers*)))
                  ;; Some keysyms, such as upper case letters, need the
                  ;; shift modifier to be set in order to grab properly.
                  (let ((key
