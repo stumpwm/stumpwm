@@ -202,7 +202,7 @@ StumpWM is a manual, tiling X11 window manager written entirely in
 Common Lisp. Unlike traditional window managers, StumpWM places
 windows in order to maximize the amount of the screen used.  The
 window layouts managed by StumpWM are defined by the user in much the
-same way that windows are managed by GNU screen, or emacs.  
+same way that windows are managed by GNU screen, or emacs.
 
 Before StumpWM, there was ratpoison, another tiling window manager
 written entirely in C.  StumpWM grew out of the authors' frustration
@@ -441,23 +441,23 @@ Once you have multiple frames, you can move between them in various
 ways:
 
 @itemize
-@item 
+@item
 @command{fnext} (@kbd{C-t o} or @kbd{C-t TAB}) jumps to the next frame in
 the current group's frame list.
 
-@item 
+@item
 @command{fother} (@kbd{C-t M-TAB}) jumps to the last frame that had
 focus.
 
-@item 
+@item
 @command{fselect} (@kbd{C-t f}) displays numbers on each visible frame: hit a
 number key to move to that frame.
 
-@item 
+@item
 @command{move-focus} (@kbd{C-t <arrow key>}) focus the frame in the direction of
 the arrow key pressed.
 
-@item 
+@item
 @command{sibling} (unbound by default) focus the frame from which the
 current frame was split.
 
@@ -474,19 +474,19 @@ between windows belonging to the current frame, or between all windows
 within the current group. Within a single frame:
 
 @itemize
-@item 
+@item
 @command{next-in-frame} (@kbd{C-t C-M-n}) focus the next window in the current
 frame's list of windows.
 
-@item 
+@item
 @command{prev-in-frame} (@kbd{C-t C-M-p}) focus the previous window in the
 current frame's list of windows.
 
-@item 
+@item
 @command{other-in-frame} (@kbd{C-t M-t}) focus the most recently focused window
 in the current frame's list of windows.
 
-@item 
+@item
 @command{frame-windowlist} (unbound by default) display a menu of windows in
 the currently-focused frame, and allow the user to choose one.
 Alternately, the command @command{frame-windows} will simply display the
@@ -499,35 +499,35 @@ the specified window. They will never move a window from its original
 frame, and so may result in focus switching frames.
 
 @itemize
-@item 
+@item
 @command{next} (@kbd{C-t M-n}) focus the next window in the current group.
 
-@item 
+@item
 @command{prev} (@kbd{C-t M-p}) focus the previous window in the current group.
 
-@item 
+@item
 @command{other} or @command{other-window} (unbound by default) focus the
 most recently focused window in the current group.
 
-@item 
+@item
 @command{next-urgent} (@kbd{C-t C-u}) focus the next window that has marked
 itself ``urgent''.
 
-@item 
+@item
 @command{select} or @command{select-window} (@kbd{C-t '}) prompt for the
 title of a window and focus it. Works with partial completion of the
 title.
 
-@item 
+@item
 @command{select-window-by-name} (unbound by default) prompt for the
 title of a window and focus it. Requires the window title to be entered
 exactly.
 
-@item 
+@item
 @command{select-window-by-number} (@kbd{C-t <number>}) choose a window by
 number.
 
-@item 
+@item
 @command{windowlist} (``C-t "") display a menu of windows in the
 currently-focused group, and allow the user to choose one.
 
@@ -538,19 +538,19 @@ selected window is not in the current frame, it will be pulled there
 from wherever it is (hence the ``pull'' naming scheme).
 
 @itemize
-@item 
+@item
 @command{pull} or @command{pull-window-by-number} (@kbd{C-t C-<number>})
 pull the numbered window into the current frame.
 
-@item 
+@item
 @command{pull-hidden-next} (@kbd{C-t n} or @kbd{C-t SPC}) pull the next
 currently undisplayed window in the window list into the current frame.
 
-@item 
+@item
 @command{pull-hidden-previous} (@kbd{C-t p}) pull the previous currently
 undisplayed window in the window list into the current frame.
 
-@item 
+@item
 @command{pull-hidden-other} (@kbd{C-t C-t}) pull the most recently
 focused, currently undisplayed window into the current frame.
 
@@ -560,11 +560,11 @@ The following commands move the current window from one frame to
 another, bringing focus with them.
 
 @itemize
-@item 
+@item
 @command{move-window} (@kbd{C-t M-<arrow>}) move the currently focused
 window in the direction indicated by the arrow key.
 
-@item 
+@item
 @command{exchange-direction} (unbound by default) prompt for a
 direction, then swap the currently focused window with the top window of
 the frame in that direction.
@@ -615,13 +615,13 @@ order:
 
 @item `~/.config/stumpwm/config' is the XDG standard;
 
-@item `/etc/stumpwmrc' is a system-wide file giving all users a 
+@item `/etc/stumpwmrc' is a system-wide file giving all users a
 standardized environment.
 @end itemize
 
 StumpWM includes a basic `sample-stumpwm.lisp' in its source
-directory. You can use this as a template when you're starting out: 
-copy it to the above name and location you prefer and edit it to 
+directory. You can use this as a template when you're starting out:
+copy it to the above name and location you prefer and edit it to
 suit your preferences.
 
 It is possible to split your initialization among multiple files,
@@ -637,7 +637,7 @@ you can subscribe to at
 @url{https://lists.nongnu.org/mailman/listinfo/stumpwm-devel}. It is
 the preferred way of contacting developers for questions.  If you have
 a bug report or patch, please open an issue or pull request at
-@url{https://github.com/stumpwm/stumpwm/issues}. 
+@url{https://github.com/stumpwm/stumpwm/issues}.
 
 The StumpWM IRC channel can be found on Freenode at
 @uref{irc://irc.freenode.net/#stumpwm, @code{#stumpwm}}.
@@ -1016,7 +1016,8 @@ commands and functions familiar. Commands are simply functions that
 can be bound to keys and executed interactively from StumpWM's input
 bar. Whereas, in Emacs, the special "(interactive)" declaration is
 used to turn a function into a command, in StumpWM commands are made
-with a separate @command{defcommand} macro.
+with a separate @command{defcommand} or
+@command{define-interactive-keymap} macro.
 
 Once a command is defined, you can call it by invoking the
 @command{colon} command (@kbd{C-t ;}), and typing the name
@@ -1105,7 +1106,7 @@ considered optional. It can be provided via a key-binding invocation, as
 above, but if it isn't, the user will not be prompted, and the argument
 will be bound to nil.
 
-Lastly, it is possible to limit the scope under which the command will
+It is possible to limit the scope under which the command will
 be usable: a command can be defined to work only in tile groups, or only
 in floating groups (the only two types of groups that currently exist).
 This is done by replacing the name of the command with a two-element
@@ -1116,6 +1117,50 @@ which only functions in tile groups, is defined this way:
 @example
 (defcommand (next tile-group) @dots{})
 @end example
+
+@section Interactive Keymaps
+
+Interactive keymaps are a special type of command that basically
+pushes another keymap on top of the current one. The new keymap will
+only be removed after an exit command is run. An example is
+@command{iresize}.
+
+The macro @command{define-interactive-keymap} is used to define an
+interactive keymap. The first argument is the same as
+@command{defcommand}. The second argument is a list of extra
+configurations that can be used for controlling the command and the
+rest are the key bindings for the new command.
+
+For instance, a simple interactive keymap:
+
+@example
+(define-interactive-keymap my-new-command nil
+  ((kbd "a") "execute-a-command")
+  ((kbd "b") "execute-b-command"))
+@end example
+
+This creates a command called @code{my-new-command} that, when called,
+will activate the interactive keymap mode. In this mode, the user can
+press ``a'' or ``b'' repeatedly, omitting any prefix. The default exit
+commands are @code{RET}, @code{C-g} and @code{ESC}.
+
+The available configuration is @code{on-enter}, @code{on-exit} and
+@code{abort-if}:
+
+@example
+(defun before-foo () (message "start foo"))
+(defun after-foo () (message "end foo"))
+(defun foo-p () (and *bar* *bhaz*))
+
+(define-interactive-keymap foo (:on-enter #'before-foo
+                                :on-exit #'after-foo
+                                :abort-if #'foo-p))
+@end example
+
+In the above example, the message ``start foo'' will appear before
+starting the interactive keymap, ``end foo'' will appear right after
+the command exits. Also, the command executes only if the variables
+@code{*bar*} and @code{*bhaz*} are true.
 
 @node StumpWM Types,  , Writing Commands, Commands
 @section StumpWM Types
@@ -1354,7 +1399,7 @@ Paste text from clipboard into the Input Bar (@command{yank-selection}).
 @item TAB
 Clockwise tab complete the current string, if possible. Press @kbd{TAB} again to
 cycle through completions.
- 
+
 @item S-TAB
 Counter-clockwise tab complete the current string, if possible. Press @kbd{S-TAB} again to
 cycle through completions.
@@ -1615,8 +1660,6 @@ Select the highlighted option.
 @end table
 
 !!! iresize
-!!! abort-iresize
-!!! exit-iresize
 
 ### *resize-increment*
 
@@ -1681,11 +1724,11 @@ color variables.
 
 ### *mode-line-position*
 ### *mode-line-border-width* 1
-### *mode-line-pad-x* 
-### *mode-line-pad-y* 
-### *mode-line-background-color* 
-### *mode-line-foreground-color* 
-### *mode-line-border-color* 
+### *mode-line-pad-x*
+### *mode-line-pad-y*
+### *mode-line-background-color*
+### *mode-line-foreground-color*
+### *mode-line-border-color*
 ### *mode-line-timeout*
 
 @node Groups, Screens, Mode-line, Top
@@ -1750,7 +1793,7 @@ frame belongs.
 In addition, StumpWM listens for XRandR events and re-configures the
 heads to match the new monitor configuration. Occasionally StumpWM
 will miss an XRandR event, use @code{refresh-heads} to synchronize
-the head configuration.  
+the head configuration.
 
 !!! refresh-heads
 
@@ -1764,7 +1807,7 @@ the head configuration.
 @@@ current-window
 
 ### *screen-list*
-        
+
 @node Interacting With Unix, Interacting With X11, Screens, Top
 @chapter Interacting With Unix
 
@@ -1814,6 +1857,7 @@ section.
 @@@ run-commands
 
 %%% defcommand
+%%% define-interactive-keymap
 %%% define-stumpwm-type
 
 @@@ run-or-raise
@@ -1895,18 +1939,18 @@ the developers can fix it:
 Include a procedure for reproducing the bug/bad behavior. Ideally this
 will include numbered steps starting with instructions on how you
 start stumpwm. Also include what the expected behavior was.
-@item 
+@item
 Be as detailed as possible. Then add more detail!
-@item 
+@item
 Make sure its not something you introduced by using an empty @file{.xinitrc}
-containing only 'exec /path/to/stumpwm'. 
+containing only 'exec /path/to/stumpwm'.
 @item
 Make sure the bug is present even when @file{.stumwmrc} is empty.
 @item
 If you are using the git version, include the hash of the master
 branch, or better include the commit when you started to notice the
 bug.
-@item 
+@item
 If you have code that fixes the bug, then open a pull request at
 @url{https://github.com/stumpwm/stumpwm/compare/}.
 @item
@@ -1939,11 +1983,11 @@ Return T if TIMER is a timer structure.
 When specifying a color, it is possible to use its X11 Color Name
 (usually in the file @file{/etc/X11/rgb.txt}).  You can also use a
 six digit hex string prefixed by a '#' character in the same way that
-you can specify colors in HTML.  
+you can specify colors in HTML.
 
 All text printed by stumpwm is run through a coloring engine before
 being displayed. All color commands start with a @samp{^} (caret)
-character and apply to all text after it. 
+character and apply to all text after it.
 
 @table @code
 @item ^0-9
@@ -2099,7 +2143,7 @@ $$$ *post-command-hook*
 A module is a ASDF system that adds additional functionality to
 StumpWM.  StumpWM searches for modules in the
 @var{*data-dir*}@file{/modules} directory.  By default this is
-@file{~/.stumpwm.d/modules}. 
+@file{~/.stumpwm.d/modules}.
 
 Officially supported modules exist in a separate repository within the
 StumpWM organization on github.  You can install the latest copy by
@@ -2174,17 +2218,17 @@ This can be accomplished by running the following from a REPL:
 (stumpwm:add-to-load-path "~/.stumpwm.d/modules/new-module")
 @end example
 You can also run this interactively with @kbd{C-t ;}, which is bound
-to the @command{colon} command. 
+to the @command{colon} command.
 
 Because we've put our module in a sub-directory of the default
 @var{*module-dir*}, it will automatically get added to the
 @var{*load-path*} the next time StumpWM starts.  If you choose to
 develop your module somewhere else (e.g.
-@file{~/quicklisp/local-projects}), then you'll have add 
+@file{~/quicklisp/local-projects}), then you'll have add
 @example
 (add-to-load-path "~/quicklisp/local-projects/new-module")
 @end example
-to your @file{.stumpwmrc}.  
+to your @file{.stumpwmrc}.
 
 When you've finished writing your module, you can distribute it
 however you see fit.  If it becomes very popular, or you would like
@@ -2475,7 +2519,7 @@ While patches are still welcome on the mailing list, StumpWM's
 development has mostly migrated to github's issue tracker.  This means
 you can open a pull request to submit a patch to StumpWM.  The
 following guidelines apply to pull requests and patches sent to the
-mailing list. 
+mailing list.
 
 @itemize
 @item

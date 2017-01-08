@@ -17,7 +17,7 @@
   :version "0.9.9"
   :maintainer "David Bjergaard <dbjergaard@gmail.com>"
   ;; :license "GNU General Public License"
-  :description "A tiling, keyboard driven window manager" 
+  :description "A tiling, keyboard driven window manager"
   :serial t
   :depends-on (:cl-ppcre #-cmu :clx #+sbcl :sb-posix)
   :components ((:file "package")
@@ -49,6 +49,7 @@
                (:file "ioloop")
                (:file "stumpwm")
                (:file "user")
+               (:file "interactive-keymap")
                (:file "iresize")
                (:file "help")
                (:file "fdump")
