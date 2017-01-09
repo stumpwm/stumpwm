@@ -281,10 +281,10 @@ match with an element of the completions."
                          prompt
                          :translate #'translate-id
                          :size 16)
-      (loop for char across string
+      (loop with x = (+ *message-window-padding* prompt-width)
+            for char across string
             for i from 0 below (length string)
             for char-width = (text-line-width (screen-font screen) (string char) :translate #'translate-id)
-            with x = (+ *message-window-padding* prompt-width)
             if (= pos i)
               do (xlib:with-gcontext (gcontext :foreground (xlib:gcontext-background gcontext)
                                                :background (xlib:gcontext-foreground gcontext))
