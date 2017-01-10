@@ -1191,3 +1191,26 @@ direction. The following are valid directions:
     (if tree
         (balance-frames-internal (current-group) tree)
         (message "There's only one frame."))))
+
+(defcommand (float-this tile-group) () ()
+  "Transforms a tile-window into a float-window"
+  (let* ((w (current-window))
+         (g (current-group))
+         (f (tile-group-current-frame g)))
+    (change-class w 'stumpwm.floating-group::float-window)
+    (stumpwm.floating-group::float-window-align w)
+    (funcall-on-node (tile-group-frame-tree g)
+                     (lambda (frame) (setf (slot-value frame 'window) nil))
+                     (lambda (frame) (eq f frame)))))
+
+(defcommand (unfloat-this tile-group) () ()
+  "Transforms a float-window into a tile-window"
+  (let* ((g (current-group))
+         (frame (first (group-frames g)))
+         (w (current-window)))
+    (change-class w 'tile-window :frame frame)
+    (setf (window-frame w) frame
+          (frame-window frame) w
+          (tile-group-current-frame g) frame)
+    (update-decoration w)
+    (sync-frame-windows g frame)))
