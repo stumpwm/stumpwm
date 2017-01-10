@@ -130,15 +130,15 @@
 
 (defmethod group-startup ((group float-group)))
 
-(defmethod group-add-window ((group float-group) window &key &allow-other-keys)
-  (change-class window 'float-window)
-  (float-window-align window)
-  (focus-window window))
-
-(defmethod group-add-window (group (window float-window) &key &allow-other-keys)
-  (change-class window 'float-window)
-  (float-window-align window)
-  (focus-window window))
+(flet ((add-float-window (group window)
+         (declare (ignore group))
+         (change-class window 'float-window)
+         (float-window-align window)
+         (focus-window window)))
+  (defmethod group-add-window ((group float-group) window &key &allow-other-keys)
+    (add-float-window group window))
+  (defmethod group-add-window (group (window float-window) &key &allow-other-keys)
+    (add-float-window group window)))
 
 (defun &float-focus-next (group)
   (if (group-windows group)
