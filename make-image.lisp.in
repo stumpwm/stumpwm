@@ -8,7 +8,7 @@
   ;; We register StumpWM and its dependencies as immutable, to stop ASDF from
   ;; looking for their source code when loading modules.
   (uiop:symbol-call '#:asdf '#:register-immutable-system :stumpwm)
-  (dolist (system-name (asdf:system-depends-on (asdf:find-system :stumpwm)))
+  (dolist (system-name (uiop:symbol-call '#:asdf '#:system-depends-on (asdf:find-system :stumpwm)))
     (uiop:symbol-call '#:asdf '#:register-immutable-system system-name)))
 
 #+sbcl
