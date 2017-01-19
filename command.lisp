@@ -442,15 +442,14 @@ then describes the symbol."
 
 (define-stumpwm-type :frame (input prompt)
   (declare (ignore prompt))
-  (let ((arg (argument-pop input)))
-    (if arg
-        (or (find arg (group-frames (current-group))
-                  :key (lambda (f)
-                         (string (get-frame-number-translation f)))
-                  :test 'string=)
-            (throw 'error "Frame not found."))
-        (or (choose-frame-by-number (current-group))
-            (throw 'error :abort)))))
+  (if-let ((arg (argument-pop input)))
+    (or (find arg (group-frames (current-group))
+              :key (lambda (f)
+                     (string (get-frame-number-translation f)))
+              :test 'string=)
+        (throw 'error "Frame not found."))
+    (or (choose-frame-by-number (current-group))
+        (throw 'error :abort))))
 
 (define-stumpwm-type :shell (input prompt)
   (or (argument-pop-rest input)
