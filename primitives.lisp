@@ -989,11 +989,6 @@ raise/map denial messages will be seen.")
                 deny-list)
        t)))
 
-(defun flatten (list)
-  "Flatten LIST"
-  (labels ( (mklist (x) (if (listp x) x (list x))) )
-    (mapcan #'(lambda (x) (if (atom x) (mklist x) (flatten x))) list)))
-
 (defun list-splice-replace (item list &rest replacements)
   "splice REPLACEMENTS into LIST where ITEM is, removing
 ITEM. Return the new list."
