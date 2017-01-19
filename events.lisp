@@ -565,14 +565,16 @@ the window in it's frame."
         (update-all-mode-lines)))))
 
 (define-stump-event-handler :button-press (window code x y child time)
-  (let (screen ml win)
+  (let ((screen (find-screen window))
+        (mode-line (find-mode-line-by-window window))
+        (win (find-window-by-parent window (top-windows))))
     (cond
-      ((and (setf screen (find-screen window)) (not child))
+      ((and screen (not child))
        (group-button-press (screen-current-group screen) x y :root)
        (run-hook-with-args *root-click-hook* screen code x y))
-      ((setf ml (find-mode-line-by-window window))
-       (run-hook-with-args *mode-line-click-hook* ml code x y))
-      ((setf win (find-window-by-parent window (top-windows)))
+      (mode-line
+       (run-hook-with-args *mode-line-click-hook* mode-line code x y))
+      (win
        (group-button-press (window-group win) x y win))))
   ;; Pass click to client
   (xlib:allow-events *display* :replay-pointer time))
