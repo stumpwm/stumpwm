@@ -4,9 +4,6 @@ sudo: required
 env:
   matrix:
     - LISP=sbcl
-    - LISP=ccl
-    - LISP=clisp
-    # - LISP=ecl
 
 install:
   - sudo apt-get install info install-info
