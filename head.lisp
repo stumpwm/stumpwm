@@ -159,8 +159,7 @@
 
 (defun head-force-refresh (screen new-heads)
   (scale-screen screen new-heads)    
-  (mapc 'group-sync-all-heads (screen-groups screen))
-  (update-mode-lines screen))
+  (mapc 'group-sync-all-heads (screen-groups screen)))
 
 (defcommand refresh-heads (&optional (screen (current-screen))) ()
   "Refresh screens in case a monitor was connected, but a
