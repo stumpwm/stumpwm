@@ -34,10 +34,15 @@
 (defmacro define-stump-event-handler (event keys &body body)
   (let ((fn-name (gensym))
         (event-slots (gensym)))
-    `(labels ((,fn-name (&rest ,event-slots &key ,@keys &allow-other-keys)
-               (declare (ignore ,event-slots))
-               ,@body))
-      (setf (gethash ,event *event-fn-table*) #',fn-name))))
+    (multiple-value-bind (body declarations docstring)
+        (parse-body body :documentation t)
+        `(labels ((,fn-name (&rest ,event-slots &key ,@keys &allow-other-keys)
+                    (declare (ignore ,event-slots))
+                    ,@(when docstring
+                        (list docstring))
+                    ,@declarations
+                    ,@body))
+           (setf (gethash ,event *event-fn-table*) #',fn-name)))))
 
 ;;; Configure request
 
