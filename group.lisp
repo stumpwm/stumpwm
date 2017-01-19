@@ -288,6 +288,20 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
       (netwm-update-groups screen)
       (netwm-set-group-properties screen))))
 
+(defun %ensure-group (group-name group-type screen)
+  "If there is a group named with GROUP-NAME in SCREEN return it, otherwise create it."
+  (or (find-group screen group-name)
+      (let ((group (make-instance group-type
+                                  :screen screen
+                                  :number (if (char= (char group-name 0) #\.)
+                                                     (find-free-hidden-group-number screen)
+                                                     (find-free-group-number screen))
+                                  :name group-name)))
+        (setf (screen-groups screen) (append (screen-groups screen) (list group)))
+        (netwm-set-group-properties screen)
+        (netwm-update-groups screen)
+        group)))
+
 (defun add-group (screen name &key background (type *default-group-type*))
   "Create a new group in SCREEN with the supplied name. group names
     starting with a . are considered hidden groups. Hidden groups are
@@ -296,23 +310,11 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
     numbers."
   (check-type screen screen)
   (check-type name string)
-  (if (or (string= name "")
-          (string= name "."))
-      (error "Groups must have a name.")
-      (let ((ng (or (find-group screen name)
-                    (let ((ng (make-instance type
-                                             :screen screen
-                                             :number (if (char= (char name 0) #\.)
-                                                         (find-free-hidden-group-number screen)
-                                                         (find-free-group-number screen))
-                                             :name name)))
-                      (setf (screen-groups screen) (append (screen-groups screen) (list ng)))
-                      (netwm-set-group-properties screen)
-                      (netwm-update-groups screen)
-                      ng))))
-        (unless background
-          (switch-to-group ng))
-        ng)))
+  (assert (not (member name '("" ".") :test #'string=)) nil "Groups must have a name~%")
+  (let ((group (%ensure-group name type screen)))
+    (unless background
+      (switch-to-group group))
+    group))
 
 (defun find-group (screen name)
   "Return the group with the name, NAME. Or NIL if none exists."
