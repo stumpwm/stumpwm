@@ -53,21 +53,25 @@ aware that these commands won't require a prefix to run."
   (let* ((command (if (listp name) (car name) name))
          (exit-command (format nil "EXIT-~A" command))
          (keymap (gensym "m")))
-    `(let ((,keymap (make-sparse-keymap)))
-       ,@(loop for keyb in key-bindings
-            collect `(define-key ,keymap ,@keyb))
-       (define-key ,keymap (kbd "RET") ,exit-command)
-       (define-key ,keymap (kbd "C-g") ,exit-command)
-       (define-key ,keymap (kbd "ESC") ,exit-command)
+    (multiple-value-bind (key-bindings decls docstring)
+        (parse-body key-bindings :documentation t)
+      `(let ((,keymap (make-sparse-keymap)))
+         ,@(loop for keyb in key-bindings
+                 collect `(define-key ,keymap ,@keyb))
+         (define-key ,keymap (kbd "RET") ,exit-command)
+         (define-key ,keymap (kbd "C-g") ,exit-command)
+         (define-key ,keymap (kbd "ESC") ,exit-command)
 
-       (defcommand ,name () ()
-         ,(format nil "Starts interactive command \"~A\"" command) ;; TODO Add docstring support
-         ,@(when abort-if `((when (funcall ,abort-if)
-                              (return-from ,command))))
+         (defcommand ,name () ()
+           ,@decls
+           ,(or docstring
+                (format nil "Starts interactive command \"~A\"" command))
+           ,@(when abort-if `((when (funcall ,abort-if)
+                                (return-from ,command))))
 
-         ,@(when on-enter `((funcall ,on-enter)))
+           ,@(when on-enter `((funcall ,on-enter)))
            (enter-interactive-keymap ,keymap (quote ,command)))
 
-       (defcommand ,(intern exit-command) () ()
-         ,@(when on-exit `((funcall ,on-exit)))
-         (exit-interactive-keymap (quote ,command))))))
+         (defcommand ,(intern exit-command) () ()
+           ,@(when on-exit `((funcall ,on-exit)))
+           (exit-interactive-keymap (quote ,command)))))))
