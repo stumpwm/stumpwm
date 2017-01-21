@@ -10,7 +10,7 @@
   :version "1.0.0"
   :maintainer "David Bjergaard <dbjergaard@gmail.com>"
   ;; :license "GNU General Public License"
-  :description "A tiling, keyboard driven window manager" 
+  :description "A tiling, keyboard driven window manager"
   :serial t
   :depends-on (#:alexandria
                :cl-ppcre #-cmu :clx #+sbcl :sb-posix)
@@ -43,6 +43,7 @@
                (:file "ioloop")
                (:file "stumpwm")
                (:file "user")
+               (:file "interactive-keymap")
                (:file "iresize")
                (:file "help")
                (:file "fdump")
