@@ -278,7 +278,9 @@
                   (window-y window) (xlib:drawable-y (window-parent window)))))))))
 
 (defmethod group-button-press ((group float-group) x y where)
-  (declare (ignore x y where)))
+  (declare (ignore x y where))
+  (when (next-method-p)
+    (call-next-method)))
 
 ;;; Bindings
 
