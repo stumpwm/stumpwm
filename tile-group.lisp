@@ -149,7 +149,7 @@
   (when (typep where 'stumpwm.floating-group::float-window)
     (call-next-method))
   (when (eq *mouse-focus-policy* :click)
-    (group-focus-window group where)
+    (focus-all where)
     (update-all-mode-lines)))
 
 (defmethod group-root-exposure ((group tile-group))
