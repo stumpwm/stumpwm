@@ -683,10 +683,17 @@ and bottom_end_x."
              (let ((key (copy-structure key)))
                (setf (key-shift key) t)
                key))
+           (key-modifiers-exist-p (key)
+             (and
+              (or (not (key-meta key)) (modifiers-meta *modifiers*))
+              (or (not (key-alt key)) (modifiers-alt *modifiers*))
+              (or (not (key-hyper key)) (modifiers-hyper *modifiers*))
+              (or (not (key-super key)) (modifiers-super *modifiers*))))
            (grabit (w key)
-             (loop for code in (multiple-value-list (xlib:keysym->keycodes *display* (key-keysym key))) do
+             (loop for code in (multiple-value-list (xlib:keysym->keycodes *display* (key-keysym key)))
                ;; some keysyms aren't mapped to keycodes so just ignore them.
-               (when code
+                when (and code (key-modifiers-exist-p key))
+                  do
                  ;; Some keysyms, such as upper case letters, need the
                  ;; shift modifier to be set in order to grab properly.
                  (let ((key
@@ -706,7 +713,7 @@ and bottom_end_x."
                                     :modifiers (x11-mods key t nil) :owner-p t
                                     :sync-pointer-p nil :sync-keyboard-p nil)
                      (xlib:grab-key w code :modifiers (x11-mods key t t) :owner-p t
-                                    :sync-keyboard-p nil :sync-keyboard-p nil)))))))
+                                    :sync-keyboard-p nil :sync-keyboard-p nil))))))
     (dolist (map (dereference-kmaps (top-maps group)))
       (dolist (i (kmap-bindings map))
         (grabit win (binding-key i))))))

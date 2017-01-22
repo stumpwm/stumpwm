@@ -34,10 +34,15 @@
 (defmacro define-stump-event-handler (event keys &body body)
   (let ((fn-name (gensym))
         (event-slots (gensym)))
-    `(labels ((,fn-name (&rest ,event-slots &key ,@keys &allow-other-keys)
-               (declare (ignore ,event-slots))
-               ,@body))
-      (setf (gethash ,event *event-fn-table*) #',fn-name))))
+    (multiple-value-bind (body declarations docstring)
+        (parse-body body :documentation t)
+        `(labels ((,fn-name (&rest ,event-slots &key ,@keys &allow-other-keys)
+                    (declare (ignore ,event-slots))
+                    ,@(when docstring
+                        (list docstring))
+                    ,@declarations
+                    ,@body))
+           (setf (gethash ,event *event-fn-table*) #',fn-name)))))
 
 ;;; Configure request
 
@@ -103,7 +108,8 @@
           (t
            (dformat 1 "Updating Xinerama configuration for ~S.~%" screen)
            (if new-heads
-               (head-force-refresh screen new-heads)
+               (progn (head-force-refresh screen new-heads) 
+                      (update-mode-lines screen))
                (dformat 1 "Invalid configuration! ~S~%" new-heads))))))))
 
 (define-stump-event-handler :map-request (parent send-event-p window)
@@ -565,14 +571,16 @@ the window in it's frame."
         (update-all-mode-lines)))))
 
 (define-stump-event-handler :button-press (window code x y child time)
-  (let (screen ml win)
+  (let ((screen (find-screen window))
+        (mode-line (find-mode-line-by-window window))
+        (win (find-window-by-parent window (top-windows))))
     (cond
-      ((and (setf screen (find-screen window)) (not child))
+      ((and screen (not child))
        (group-button-press (screen-current-group screen) x y :root)
        (run-hook-with-args *root-click-hook* screen code x y))
-      ((setf ml (find-mode-line-by-window window))
-       (run-hook-with-args *mode-line-click-hook* ml code x y))
-      ((setf win (find-window-by-parent window (top-windows)))
+      (mode-line
+       (run-hook-with-args *mode-line-click-hook* mode-line code x y))
+      (win
        (group-button-press (window-group win) x y win))))
   ;; Pass click to client
   (xlib:allow-events *display* :replay-pointer time))

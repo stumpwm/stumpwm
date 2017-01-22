@@ -4,9 +4,6 @@ sudo: required
 env:
   matrix:
     - LISP=sbcl
-    - LISP=ccl
-    - LISP=clisp
-    # - LISP=ecl
 
 install:
   - sudo apt-get install info install-info
@@ -16,7 +13,7 @@ install:
     else
       curl https://raw.githubusercontent.com/luismbo/cl-travis/master/install.sh | sh;
     fi
-  - cl -l clx -l cl-ppcre -e '(ql-util:without-prompting (ql:add-to-init-file))'
+  - cl -l alexandria -l clx -l cl-ppcre -e '(ql-util:without-prompting (ql:add-to-init-file))'
 
 before_script:
   - ./autogen.sh

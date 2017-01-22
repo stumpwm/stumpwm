@@ -70,6 +70,7 @@ Then, in a repl:
 ```lisp
  (ql:quickload "clx")
  (ql:quickload "cl-ppcre")
+ (ql:quickload "alexandria")
 ```
 ## Building
 

@@ -205,9 +205,11 @@
   (only-tile-windows (group-windows group)))
 
 (defun tile-group-frame-head (group head)
+  (group-sync-all-heads group)
   (elt (tile-group-frame-tree group) (position head (group-heads group))))
 
 (defun (setf tile-group-frame-head) (frame group head)
+  (group-sync-all-heads group)
   (setf (elt (tile-group-frame-tree group) (position head (group-heads group))) frame))
 
 (defun populate-frames (group)

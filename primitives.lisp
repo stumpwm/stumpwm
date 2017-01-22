@@ -128,6 +128,7 @@
           define-frame-preference
           redirect-all-output
           remove-hook
+          remove-all-hooks
           run-hook
           run-hook-with-args
           command-mode-start-message
@@ -683,6 +684,10 @@ display a message whenever you switch frames:
 "Remove the specified function from the hook."
   `(setf ,hook (remove ,fn ,hook)))
 
+(defmacro remove-all-hooks (hook)
+"Remove all functions from a hook"
+  `(setf ,hook NIL))
+
 ;; Misc. utility functions
 
 (defun sort1 (list sort-fn &rest keys &key &allow-other-keys)
@@ -983,11 +988,6 @@ raise/map denial messages will be seen.")
                   (apply 'window-matches-properties-p window props))
                 deny-list)
        t)))
-
-(defun flatten (list)
-  "Flatten LIST"
-  (labels ( (mklist (x) (if (listp x) x (list x))) )
-    (mapcan #'(lambda (x) (if (atom x) (mklist x) (flatten x))) list)))
 
 (defun list-splice-replace (item list &rest replacements)
   "splice REPLACEMENTS into LIST where ITEM is, removing
