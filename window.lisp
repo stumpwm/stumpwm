@@ -249,8 +249,10 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
   (xlib:window-id (window-xwin window)))
 
 (defun window-in-current-group-p (window)
-  (eq (window-group window)
-      (screen-current-group (window-screen window))))
+  (or
+   (find window *always-show-windows*)
+   (eq (window-group window)
+       (screen-current-group (window-screen window)))))
 
 (defun window-screen (window)
   (group-screen (window-group window)))
@@ -968,6 +970,8 @@ selected."
   "Delete a window. By default delete the current window. This is a
 request sent to the window. The window's client may decide not to
 grant the request or may not be able to if it is unresponsive."
+  (when (find window *always-show-windows*)
+    (disable-always-show-window window (current-screen)))
   (when window
     (send-client-message window :WM_PROTOCOLS (xlib:intern-atom *display* :WM_DELETE_WINDOW))))
 
