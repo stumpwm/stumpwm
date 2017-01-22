@@ -277,6 +277,9 @@
             (setf (window-x window) (xlib:drawable-x (window-parent window))
                   (window-y window) (xlib:drawable-y (window-parent window)))))))))
 
+(defmethod group-button-press ((group float-group) x y where)
+  (declare (ignore x y where)))
+
 ;;; Bindings
 
 (pushnew '(float-group *float-group-top-map*) *group-top-maps*)
