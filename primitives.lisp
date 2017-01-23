@@ -124,7 +124,6 @@
           concat
           data-dir-file
           dformat
-          flatten
           define-frame-preference
           redirect-all-output
           remove-hook
