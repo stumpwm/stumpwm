@@ -54,7 +54,7 @@
    (x       :initarg :x       :accessor window-x)
    (y       :initarg :y       :accessor window-y)
    (gravity :initform nil     :accessor window-gravity)
-   (group   :initarg :group   :accessor window-group*)
+   (group   :initarg :group   :accessor window-group)
    (number  :initarg :number  :accessor window-number)
    (parent                    :accessor window-parent)
    (title   :initarg :title   :accessor window-title)
@@ -91,13 +91,11 @@ may need to sync itself. WHAT-CHANGED is a hint at what changed."))
 (defgeneric really-raise-window (window)
   (:documentation "Really bring the window to the top of the window stack in group"))
 
-(defun (setf window-group) (group window)
-  (setf (window-group* window) group))
 
-(defun window-group (window)
+(defmethod window-group :around ((window window))
   (if (find window *always-show-windows*)
       (current-group)
-      (window-group* window)))
+      (call-next-method)))
 
 ;; Urgency / demands attention
 

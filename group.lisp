@@ -39,7 +39,8 @@
 (defvar *default-group-type* 'tile-group
   "The type of group that should be created by default.")
 
-(defvar *always-show-windows* ())
+(defvar *always-show-windows* ()
+  "The list of windows shown in all groups")
 
 (defclass group ()
   ((screen :initarg :screen :accessor group-screen)
