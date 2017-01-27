@@ -118,40 +118,11 @@
 
 (defun getenv (var)
   "Return the value of the environment variable."
-  #+allegro (sys::getenv (string var))
-  #+clisp (ext:getenv (string var))
-  #+(or cmu scl)
-  (cdr (assoc (string var) ext:*environment-list* :test #'equalp
-              :key #'string))
-  #+gcl (si:getenv (string var))
-  #+lispworks (lw:environment-variable (string var))
-  #+lucid (lcl:environment-variable (string var))
-  #+mcl (ccl::getenv var)
-  #+sbcl (sb-posix:getenv (string var))
-  #+openmcl (ccl:getenv (string var))
-  #+ecl (ext:getenv (string var))
-  #-(or allegro clisp cmu gcl lispworks lucid mcl sbcl scl openmcl ecl)
-  (error 'not-implemented))
+  (sb-posix:getenv (string var)))
 
 (defun (setf getenv) (val var)
   "Set the value of the environment variable, @var{var} to @var{val}."
-  #+allegro (setf (sys::getenv (string var)) (string val))
-  #+clisp (setf (ext:getenv (string var)) (string val))
-  #+(or cmu scl)
-  (let ((cell (assoc (string var) ext:*environment-list* :test #'equalp
-                     :key #'string)))
-    (if cell
-        (setf (cdr cell) (string val))
-        (push (cons (intern (string var) "KEYWORD") (string val))
-              ext:*environment-list*)))
-  #+gcl (si:setenv (string var) (string val))
-  #+lispworks (setf (lw:environment-variable (string var)) (string val))
-  #+lucid (setf (lcl:environment-variable (string var)) (string val))
-  #+sbcl (sb-posix:putenv (format nil "~A=~A" (string var) (string val)))
-  #+openmcl (ccl:setenv (string var) (string val))
-  #+ecl (ext:setenv (string var) (string val))
-  #-(or allegro clisp cmu gcl lispworks lucid sbcl scl openmcl ecl)
-  (error 'not-implemented))
+  (sb-posix:putenv (format nil "~A=~A" (string var) (string val))))
 
 (defun pathname-is-executable-p (pathname)
   "Return T if the pathname describes an executable file."
