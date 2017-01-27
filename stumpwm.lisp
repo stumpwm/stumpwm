@@ -400,7 +400,7 @@ The action is to call FUNCTION with arguments ARGS."
               ;; the process because otherwise we get errors.
               ((eq ret :hup-process)
                (run-hook *restart-hook*)
-               (apply 'execv (first (argv)) (argv)))
+               (apply 'execv (first sb-ext:*posix-argv*) sb-ext:*posix-argv*))
               ((eq ret :restart)
                (run-hook *restart-hook*))
               (t

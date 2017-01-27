@@ -348,13 +348,6 @@ regarding files in sysfs. Data is read in chunks of BLOCKSIZE bytes."
        (if (< pos blocksize)
 	   (return (subseq string 0 string-filled))))))
 
-(defun argv ()
-  #+sbcl (copy-list sb-ext:*posix-argv*)
-  #+clisp (coerce (ext:argv) 'list)
-  #+lispworks (copy-list sys:*line-arguments-list*)
-  #-(or sbcl clisp lispworks)
-  (error "unimplemented"))
-
 (defun execv (program &rest arguments)
   (declare (ignorable program arguments))
   ;; FIXME: seems like there should be a way to do this in sbcl the way it's done in clisp. -sabetts
