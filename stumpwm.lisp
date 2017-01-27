@@ -107,7 +107,7 @@ The action is to call FUNCTION with arguments ARGS."
                 :args args)))
     (schedule-timer timer secs)
     (labels ((append-to-list ()
-               (with-lock-held (*timer-list-lock*)
+               (sb-thread:with-mutex (*timer-list-lock*)
                  (setf *timer-list* (merge 'list *timer-list* (list timer) #'< :key #'timer-time)))))
       ;; If CALL-IN-MAIN-THREAD is supported, the timer should be scheduled in the main thread.
       #+call-in-main-thread
@@ -119,7 +119,7 @@ The action is to call FUNCTION with arguments ARGS."
 (defun cancel-timer (timer)
   "Remove TIMER from the list of active timers."
   (check-type timer timer)
-  (with-lock-held (*timer-list-lock*)
+  (sb-thread:with-mutex (*timer-list-lock*)
     (setf *timer-list* (remove timer *timer-list*))))
 
 (defun schedule-timer (timer when)
@@ -151,7 +151,7 @@ The action is to call FUNCTION with arguments ARGS."
   (apply (timer-function timer) (timer-args timer)))
 
 (defun run-expired-timers ()
-  (let ((expired (with-lock-held (*timer-list-lock*)
+  (let ((expired (sb-thread:with-mutex (*timer-list-lock*)
                    (multiple-value-bind (pending remaining)
                        (sort-timers *timer-list*)
                      (update-timer-list remaining)
@@ -198,7 +198,7 @@ The action is to call FUNCTION with arguments ARGS."
   (declare (ignore io-loop))
   nil)
 (defmethod io-channel-events ((channel stumpwm-timer-channel))
-  (with-lock-held (*timer-list-lock*)
+  (sb-thread:with-mutex (*timer-list-lock*)
     (if *timer-list*
         `((:timeout ,(timer-time (car *timer-list*))))
         '(:loop))))
@@ -233,7 +233,7 @@ The action is to call FUNCTION with arguments ARGS."
     with in = (request-channel-in channel)
     do (read-byte in)
     while (listen in))
-  (let ((events (with-lock-held ((request-channel-lock channel))
+  (let ((events (sb-thread:with-mutex ((request-channel-lock channel))
                   (let ((queue-copy (request-channel-queue channel)))
                     (setf (request-channel-queue channel) nil)
                     queue-copy))))
@@ -250,7 +250,7 @@ The action is to call FUNCTION with arguments ARGS."
   (cond (*in-main-thread*
          (funcall fn))
         (t
-         (with-lock-held ((request-channel-lock *request-channel*))
+         (sb-thread:with-mutex ((request-channel-lock *request-channel*))
            (push fn (request-channel-queue *request-channel*)))
          (let ((out (request-channel-out *request-channel*)))
            ;; For now, just write a single byte since all we want is for the

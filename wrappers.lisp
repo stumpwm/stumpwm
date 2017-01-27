@@ -417,27 +417,5 @@ stream, and the second value is the output stream."
   #-(or sbcl ccl (and clisp mt) lispworks ecl allegro)
   nil)
 
-(defmacro with-lock-held ((lock) &body body)
-  #+sbcl
-  `(sb-thread:with-mutex (,lock)
-     ,@body)
-  #+ccl
-  `(ccl:with-lock-grabbed (,lock)
-     ,@body)
-  #+(and clisp mt)
-  `(mt:with-mutex-lock (,lock)
-     ,@body)
-  #+lispworks
-  `(mp:with-lock (,lock)
-     ,@body)
-  #+ecl
-  `(mp:with-lock (,lock)
-     ,@body)
-  #+allegro
-  `(mp:with-process-lock (,lock :norecursive t)
-     ,@body)
-  #-(or sbcl ccl (and clisp mt) lispworks ecl allegro)
-  `(progn
-     ,@body))
 
 ;;; EOF
