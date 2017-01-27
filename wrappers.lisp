@@ -401,21 +401,5 @@ stream, and the second value is the output stream."
   #-(or sbcl ccl)
   (error "Unsupported CL implementation"))
 
-(defun make-lock ()
-  #+sbcl
-  (sb-thread:make-mutex)
-  #+ccl
-  (ccl:make-lock "Anonymous lock")
-  #+(and clisp mt)
-  (mt:make-mutex)
-  #+lispworks
-  (mp:make-lock)
-  #+ecl
-  (mp:make-lock)
-  #+allegro
-  (mp:make-process-lock)
-  #-(or sbcl ccl (and clisp mt) lispworks ecl allegro)
-  nil)
-
 
 ;;; EOF

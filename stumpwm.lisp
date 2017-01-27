@@ -84,7 +84,7 @@ further up. "
 (defvar *timer-list* nil
   "List of active timers.")
 
-(defvar *timer-list-lock* (make-lock)
+(defvar *timer-list-lock* (sb-thread:make-mutex)
   "Lock that should be held whenever *TIMER-LIST* is modified.")
 
 (defvar *in-main-thread* nil
@@ -214,7 +214,7 @@ The action is to call FUNCTION with arguments ARGS."
           :reader request-channel-out)
    (queue :initform nil
           :accessor request-channel-queue)
-   (lock  :initform (make-lock)
+   (lock  :initform (sb-thread:make-mutex)
           :reader request-channel-lock)))
 
 (defvar *request-channel* nil)
