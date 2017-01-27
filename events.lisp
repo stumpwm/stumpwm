@@ -585,6 +585,12 @@ the window in it's frame."
   ;; Pass click to client
   (xlib:allow-events *display* :replay-pointer time))
 
+(defun make-xlib-window (xobject)
+  "For some reason the CLX xid cache screws up returns pixmaps when
+they should be windows. So use this function to make a window out of XOBJECT."
+   (xlib::make-window :id (xlib:window-id xobject)
+                      :display *display*))
+
 (defun handle-event (&rest event-slots &key display event-key &allow-other-keys)
   (declare (ignore display))
   (dformat 1 ">>> ~S~%" event-key)
