@@ -112,18 +112,16 @@ filename. @var{path} is by default the @env{PATH} evironment variable
 but can be specified. It should be a string containing each directory
 seperated by a colon."
   (sort
-   (loop
-      for p in path
-      for dir = (probe-path p)
-      when dir
-      nconc (loop
-               for file in (directory (merge-pathnames (make-pathname :name :wild :type :wild) dir)
-                                      :resolve-symlinks nil)
-               for namestring = (file-namestring file)
-               when (pathname-is-executable-p file)
-               collect (if full-path
-                           (namestring file)
-                           namestring)))
+   (loop for p in path
+         for dir = (probe-path p)
+         when dir
+           nconc (loop for file in (directory (merge-pathnames (make-pathname :name :wild :type :wild) dir)
+                                              :resolve-symlinks nil)
+                       for namestring = (file-namestring file)
+                       when (pathname-is-executable-p file)
+                         collect (if full-path
+                                     (namestring file)
+                                     namestring)))
    #'string<))
 
 (defstruct path-cache
