@@ -155,11 +155,6 @@
               :name nil :type nil :defaults pathname))))
     (file-error () nil)))
 
-(defun portable-file-write-date (pathname)
-  ;; clisp errors out if you run file-write-date on a directory.
-  #+clisp (posix:file-stat-mtime (posix:file-stat pathname))
-  #-clisp (file-write-date pathname))
-
 (defun print-backtrace (&optional (frames 100))
   "print a backtrace of FRAMES number of frames to standard-output"
   #+sbcl (sb-debug:print-backtrace :count frames :stream *standard-output*)
