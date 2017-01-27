@@ -39,66 +39,9 @@
 
 (defun run-prog (prog &rest opts &key args output (wait t) &allow-other-keys)
   "Common interface to shell. Does not return anything useful."
-  #+(or clisp ccl ecl gcl)
-    ;; Arg. We can't pass in an environment so just set the DISPLAY
-    ;; variable so it's inherited by the child process.
-    (when (current-screen)
-      (setf (getenv "DISPLAY") (screen-display-string (current-screen) nil)))
   (remf opts :args)
   (remf opts :output)
   (remf opts :wait)
-  #+allegro
-  (apply #'excl:run-shell-command (apply #'vector prog prog args)
-         :output output :wait wait :environment
-         (when (current-screen)
-           (list (cons "DISPLAY" (screen-display-string (current-screen)))))
-         opts)
-  #+ccl
-  (ccl:run-program prog (mapcar (lambda (s)
-                                  (if (simple-string-p s)
-                                      s
-                                      (coerce s 'simple-string)))
-                                args)
-                         :wait wait :output (if output output t) :error t)
-  #+clisp
-  (let ((stream (apply #'ext:run-program prog :arguments args :wait wait
-                       :output (if output :stream :terminal) opts)))
-    (when output
-      (loop for ch = (read-char stream nil stream)
-            until (eq ch stream)
-            do (write-char ch output))))
-  #+cmu
-  (let ((env ext:*environment-list*))
-    (when (current-screen)
-      (setf env (cons (cons "DISPLAY"
-                            (screen-display-string (current-screen) nil))
-                      env)))
-  (apply #'ext:run-program prog args :output (if output output t)
-         :env env :error t :wait wait opts))
-  #+ecl
-  (if output
-      (let ((stream (ext:run-program prog args :input nil)))
-        (loop for line = (read-line stream nil)
-           while line
-           do (format output "~A~%" line)))
-      (ext:system (format nil "~a~{ '~a'~}~@[ &~]" prog args (not wait))))
-  #+gcl
-  (let ((stream (apply #'si:run-process prog args)))
-    (when wait
-      (loop for ch = (read-char stream nil stream)
-            until (eq ch stream)
-            do (write-char ch output))))
-  #+liquid
-  (apply #'lcl:run-program prog :output output :wait wait :arguments args opts)
-  #+lispworks
-  (let ((cmdline (format nil "~@[~A ~]~A~{ '~A'~}"
-                         (and (current-screen)
-                              (screen-display-string (current-screen) t))
-                         prog args)))
-    (sys:call-system-showing-output cmdline
-                                    :show-cmd nil :prefix nil :wait wait
-                                    :output-stream output))
-  #+sbcl
   (let ((env (sb-ext:posix-environ)))
     (when (current-screen)
       (setf env (cons (screen-display-string (current-screen) t)
@@ -107,9 +50,7 @@
                                             :end2 (min 8 (length str))))
                                  env))))
     (apply #'sb-ext:run-program prog args :output (if output output t)
-           :error t :wait wait :environment env opts))
-  #-(or allegro ccl clisp cmu ecl gcl liquid lispworks sbcl)
-  (error 'not-implemented))
+           :error t :wait wait :environment env opts)))
 
 (defun run-prog-collect-output (prog &rest args)
   "run a command and read its output."
@@ -126,17 +67,10 @@
 
 (defun pathname-is-executable-p (pathname)
   "Return T if the pathname describes an executable file."
-  (declare (ignorable pathname))
-  #+sbcl
   (let ((filename (coerce (sb-ext:native-namestring pathname) 'string)))
     (and (or (pathname-name pathname)
              (pathname-type pathname))
-         (sb-unix:unix-access filename sb-unix:x_ok)))
-  ;; FIXME: this is not exactly perfect
-  #+clisp
-  (logand (posix:convert-mode (posix:file-stat-mode (posix:file-stat pathname)))
-          (posix:convert-mode '(:xusr :xgrp :xoth)))
-  #-(or sbcl clisp) t)
+         (sb-unix:unix-access filename sb-unix:x_ok))))
 
 (defun probe-path (path)
   "Return the truename of a supplied path, or nil if it does not exist."
@@ -157,17 +91,7 @@
 
 (defun print-backtrace (&optional (frames 100))
   "print a backtrace of FRAMES number of frames to standard-output"
-  #+sbcl (sb-debug:print-backtrace :count frames :stream *standard-output*)
-  #+clisp (ext:show-stack 1 frames (sys::the-frame))
-  #+ccl (ccl:print-call-history :count frames :stream *standard-output* :detailed-p nil)
-  ;; borrowed from 'trivial-backtrace'
-  #+lispworks (let ((dbg::*debugger-stack*
-                      (dbg::grab-stack nil :how-many frames))
-                    (*debug-io* *standard-output*)
-                    (dbg:*debug-print-level* nil)
-                    (dbg:*debug-print-length* nil))
-                (dbg:bug-backtrace nil))
-  #-(or sbcl clisp ccl lispworks) (write-line "Sorry, no backtrace for you."))
+  (sb-debug:print-backtrace :count frames :stream *standard-output*))
 
 (defun bytes-to-string (data)
   "Convert a list of bytes into a string."
