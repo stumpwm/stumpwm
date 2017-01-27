@@ -160,16 +160,6 @@ they should be windows. So use this function to make a window out of them."
   #-(or sbcl clisp ecl openmcl lispworks)
   (error 'not-implemented))
 
-(defun directory-no-deref (pathspec)
-  "Call directory without dereferencing symlinks in the results"
-  #+(or cmu scl) (directory pathspec :truenamep nil)
-  #+clisp (mapcar #'car (directory pathspec :full t))
-  #+lispworks (directory pathspec :link-transparency nil)
-  #+openmcl (directory pathspec :follow-links nil)
-  #+sbcl (directory pathspec :resolve-symlinks nil)
-  #-(or clisp cmu lispworks openmcl sbcl scl) (directory pathspec))
-
-
 ;;; On GNU/Linux some contribs use sysfs to figure out useful info for
 ;;; the user. SBCL upto at least 1.0.16 (but probably much later) has
 ;;; a problem handling files in sysfs caused by SBCL's slightly

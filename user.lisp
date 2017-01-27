@@ -117,13 +117,8 @@ seperated by a colon."
       for dir = (probe-path p)
       when dir
       nconc (loop
-               for file in (union
-                            ;; SBCL doesn't match files with types if type
-                            ;; is not wild and CLISP won't match files
-                            ;; without a type when type is wild. So cover all the bases
-                            (directory-no-deref (merge-pathnames (make-pathname :name :wild) dir))
-                            (directory-no-deref (merge-pathnames (make-pathname :name :wild :type :wild) dir))
-                            :test 'equal)
+               for file in (directory (merge-pathnames (make-pathname :name :wild :type :wild) dir)
+                                      :resolve-symlinks nil)
                for namestring = (file-namestring file)
                when (pathname-is-executable-p file)
                collect (if full-path
