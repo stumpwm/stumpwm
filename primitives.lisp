@@ -773,7 +773,7 @@ string which is split to obtain the individual regexps. "
 (defvar *debug-expose-events* nil
   "Set this variable for a visual indication of expose events on internal StumpWM windows.")
 
-(defvar *debug-stream* *error-output*
+(defvar *debug-stream* (make-synonym-stream '*error-output*)
   "This is the stream debugging output is sent to. It defaults to
 *error-output*. It may be more convenient for you to pipe debugging
 output directly to a file.")

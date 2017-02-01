@@ -112,23 +112,16 @@ filename. @var{path} is by default the @env{PATH} evironment variable
 but can be specified. It should be a string containing each directory
 seperated by a colon."
   (sort
-   (loop
-      for p in path
-      for dir = (probe-path p)
-      when dir
-      nconc (loop
-               for file in (union
-                            ;; SBCL doesn't match files with types if type
-                            ;; is not wild and CLISP won't match files
-                            ;; without a type when type is wild. So cover all the bases
-                            (directory-no-deref (merge-pathnames (make-pathname :name :wild) dir))
-                            (directory-no-deref (merge-pathnames (make-pathname :name :wild :type :wild) dir))
-                            :test 'equal)
-               for namestring = (file-namestring file)
-               when (pathname-is-executable-p file)
-               collect (if full-path
-                           (namestring file)
-                           namestring)))
+   (loop for p in path
+         for dir = (probe-path p)
+         when dir
+           nconc (loop for file in (directory (merge-pathnames (make-pathname :name :wild :type :wild) dir)
+                                              :resolve-symlinks nil)
+                       for namestring = (file-namestring file)
+                       when (pathname-is-executable-p file)
+                         collect (if full-path
+                                     (namestring file)
+                                     namestring)))
    #'string<))
 
 (defstruct path-cache
@@ -141,7 +134,7 @@ seperated by a colon."
   "Update the cache of programs in the path stored in @var{*programs-list*} when needed."
   (let ((dates (mapcar (lambda (p)
                          (when (probe-path p)
-                           (portable-file-write-date p)))
+                           (file-write-date p)))
                        paths)))
     (finish-output)
     (unless (and *path-cache*
