@@ -152,13 +152,27 @@
   #-(or ccl clisp sbcl lispworks)
   (map 'list #'char-code string))
 
-(defun make-xlib-window (xobject)
-  "For some reason the clx xid cache screws up returns pixmaps when
-they should be windows. So use this function to make a window out of them."
-  #+clisp (make-instance 'xlib:window :id (slot-value xobject 'xlib::id) :display *display*)
-  #+(or sbcl ecl openmcl lispworks) (xlib::make-window :id (slot-value xobject 'xlib::id) :display *display*)
-  #-(or sbcl clisp ecl openmcl lispworks)
-  (error 'not-implemented))
+(defun directory-no-deref (pathspec)
+  "Call directory without dereferencing symlinks in the results"
+  #+(or cmu scl) (directory pathspec :truenamep nil)
+  #+clisp (mapcar #'car (directory pathspec :full t))
+  #+lispworks (directory pathspec :link-transparency nil)
+  #+openmcl (directory pathspec :follow-links nil)
+  #+sbcl (directory pathspec :resolve-symlinks nil)
+  #-(or clisp cmu lispworks openmcl sbcl scl) (directory pathspec))
+
+;;; CLISP does not include features to distinguish different Unix
+;;; flavours (at least until version 2.46). Until this is fixed, use a
+;;; hack to determine them.
+
+#+ (and clisp (not (or linux freebsd)))
+(eval-when (eval load compile)
+  (let ((osname (posix:uname-sysname (posix:uname))))
+    (cond
+      ((string= osname "Linux") (pushnew :linux *features*))
+      ((string= osname "FreeBSD") (pushnew :freebsd *features*))
+      (t (warn "Your operating system is not recognized.")))))
+
 
 ;;; On GNU/Linux some contribs use sysfs to figure out useful info for
 ;;; the user. SBCL upto at least 1.0.16 (but probably much later) has
