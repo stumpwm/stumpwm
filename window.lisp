@@ -912,6 +912,7 @@ needed."
        (let ((hints (xlib:wm-hints xwin)))
          (when (or (null hints) (eq (xlib:wm-hints-input hints) :on))
            (screen-set-focus screen window)))
+       (setf (group-current-window group) window)
        (update-decoration window)
        (when cw
          (update-decoration cw))
@@ -925,6 +926,7 @@ needed."
        (run-hook-with-args *focus-window-hook* window cw))
       (t
        (screen-set-focus screen window)
+       (setf (group-current-window group) window)
        (update-decoration window)
        (when cw
          (update-decoration cw))
