@@ -1,8 +1,5 @@
 ;;; -*- Mode: Lisp -*-
-
-(defpackage :stumpwm-system
-  (:use :cl :asdf))
-(in-package :stumpwm-system)
+(in-package :asdf)
 
 (defsystem :stumpwm
   :name "StumpWM"
