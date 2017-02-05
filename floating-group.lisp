@@ -1,9 +1,6 @@
 ;;; implementation of a floating style window management group
-(defpackage #:stumpwm.floating-group
-  (:use :cl :stumpwm)
-  (:export #:float-group))
 
-(in-package :stumpwm.floating-group)
+(in-package #:stumpwm)
 
 ;;; floating window
 
@@ -289,11 +286,10 @@
 (defvar *float-group-root-map* (make-sparse-keymap))
 
 
-(in-package :stumpwm)
 (defcommand gnew-float (name) ((:rest "Group Name: "))
   "Create a floating window group with the specified name and switch to it."
-  (add-group (current-screen) name :type 'stumpwm.floating-group:float-group))
+  (add-group (current-screen) name :type 'float-group))
 
 (defcommand gnewbg-float (name) ((:rest "Group Name: "))
   "Create a floating window group with the specified name, but do not switch to it."
-  (add-group (current-screen) name :background t :type 'stumpwm.floating-group:float-group))
+  (add-group (current-screen) name :background t :type 'float-group))
