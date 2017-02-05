@@ -292,8 +292,7 @@ instance. @var{all-groups} overrides this default. Similarily for
                     (second other-matches)
                     (first matches))))
       (if win
-          (if (eq (type-of (window-group win))
-                  'stumpwm.floating-group:float-group)
+          (if (eq (type-of (window-group win)) 'float-group)
               (focus-all win)
               (goto-win win))
           (run-shell-command cmd)))))

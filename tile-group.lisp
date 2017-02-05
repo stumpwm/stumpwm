@@ -54,9 +54,9 @@
     (when (eq (frame-window f) window)
       (frame-raise-window group f (first (frame-windows group f)) nil))))
 
-(defmethod group-delete-window ((group tile-group) (window stumpwm.floating-group::float-window))
+(defmethod group-delete-window ((group tile-group) (window float-window))
   (let* ((windows (group-windows group))
-         (float-w (some (lambda (w) (when (typep w 'stumpwm.floating-group::float-window) w))
+         (float-w (some (lambda (w) (when (typep w 'float-window) w))
                         windows))
          (tile-w (some (lambda (w) (when (typep w 'tile-window) w))
                        windows)))
@@ -66,7 +66,7 @@
 
 (defmethod group-add-window ((group tile-group) window &key frame raise &allow-other-keys)
   ;; This is important to get the frame slot
-  (if (typep window 'stumpwm.floating-group::float-window)
+  (if (typep window 'float-window)
       (call-next-method)
       (progn
         (change-class window 'tile-window)
@@ -105,12 +105,12 @@
   (set-window-geometry window :width width :height height)
   (maximize-window window))
 
-(defmethod group-resize-request ((group tile-group) (window stumpwm.floating-group::float-window) width height)
-  (stumpwm.floating-group::float-window-move-resize window :width width :height height))
+(defmethod group-resize-request ((group tile-group) (window float-window) width height)
+  (float-window-move-resize window :width width :height height))
 
-(defmethod group-move-request ((group tile-group) (window stumpwm.floating-group::float-window) x y relative-to)
+(defmethod group-move-request ((group tile-group) (window float-window) x y relative-to)
   (declare (ignore relative-to))
-  (stumpwm.floating-group::float-window-move-resize window :x x :y y))
+  (float-window-move-resize window :x x :y y))
 
 (defmethod group-raise-request ((group tile-group) window stack-mode)
   (when (window-in-current-group-p window)
@@ -133,7 +133,7 @@
 (defmethod group-focus-window ((group tile-group) (win tile-window))
   (frame-raise-window group (window-frame win) win))
 
-(defmethod group-focus-window ((group tile-group) (window stumpwm.floating-group::float-window))
+(defmethod group-focus-window ((group tile-group) (window float-window))
   (focus-window window))
 
 (defmethod group-button-press ((group tile-group) x y (where (eql :root)))
@@ -146,7 +146,7 @@
 
 (defmethod group-button-press ((group tile-group) x y (where window))
   (declare (ignore x y))
-  (when (typep where 'stumpwm.floating-group::float-window)
+  (when (typep where 'float-window)
     (call-next-method))
   (when (eq *mouse-focus-policy* :click)
     (focus-all where)
@@ -1199,8 +1199,8 @@ direction. The following are valid directions:
   (let* ((w (current-window))
          (g (current-group))
          (f (tile-group-current-frame g)))
-    (change-class w 'stumpwm.floating-group::float-window)
-    (stumpwm.floating-group::float-window-align w)
+    (change-class w 'float-window)
+    (float-window-align w)
     (funcall-on-node (tile-group-frame-tree g)
                      (lambda (frame) (setf (slot-value frame 'window) nil))
                      (lambda (frame) (eq f frame)))))
