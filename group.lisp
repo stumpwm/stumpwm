@@ -44,7 +44,8 @@
    (windows :initform nil :accessor group-windows)
    (current-window :initform nil :accessor group-current-window)
    (number :initarg :number :accessor group-number)
-   (name :initarg :name :accessor group-name)))
+   (name :initarg :name :accessor group-name)
+   (on-top-windows :initform nil :accessor group-on-top-windows)))
 
 ;;; The group API
 (defgeneric group-startup (group)
