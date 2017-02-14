@@ -361,8 +361,15 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
     (unhide-window win)
     (update-configuration win))
   (when (window-in-current-group-p win)
-    (setf (xlib:window-priority (window-parent win)) :top-if)))
+    (setf (xlib:window-priority (window-parent win)) :top-if))
+  (raise-top-windows))
 ;; some handy wrappers
+
+(defun raise-top-windows ()
+  (mapc (lambda (w)
+          (when (window-in-current-group-p w)
+            (setf (xlib:window-priority (window-parent w)) :top-if)))
+        (group-on-top-windows (current-group))))
 
 (defun xwin-border-width (win)
   (xlib:drawable-border-width win))
@@ -920,6 +927,7 @@ needed."
        (let ((hints (xlib:wm-hints xwin)))
          (when (or (null hints) (eq (xlib:wm-hints-input hints) :on))
            (screen-set-focus screen window)))
+       (setf (group-current-window group) window)
        (update-decoration window)
        (when cw
          (update-decoration cw))
@@ -933,6 +941,7 @@ needed."
        (run-hook-with-args *focus-window-hook* window cw))
       (t
        (screen-set-focus screen window)
+       (setf (group-current-window group) window)
        (update-decoration window)
        (when cw
          (update-decoration cw))
@@ -1171,3 +1180,13 @@ be used to override the default window formatting."
     (set-window-geometry window
                          :width w
                          :height h)))
+
+(defcommand toggle-always-on-top () ()
+  "Toggle whether the current window always appears over other windows.
+The order windows are added to this list determines priority."
+  (let ((w (current-window))
+        (windows (group-on-top-windows (current-group))))
+    (when w
+      (if (find w windows)
+          (setf (group-on-top-windows (current-group)) (remove w windows))
+          (push (current-window) (group-on-top-windows (current-group)))))))

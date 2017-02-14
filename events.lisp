@@ -585,6 +585,12 @@ the window in it's frame."
   ;; Pass click to client
   (xlib:allow-events *display* :replay-pointer time))
 
+(defun make-xlib-window (xobject)
+  "For some reason the CLX xid cache screws up returns pixmaps when
+they should be windows. So use this function to make a window out of XOBJECT."
+   (xlib::make-window :id (xlib:window-id xobject)
+                      :display *display*))
+
 (defun handle-event (&rest event-slots &key display event-key &allow-other-keys)
   (declare (ignore display))
   (dformat 1 ">>> ~S~%" event-key)
@@ -592,17 +598,6 @@ the window in it's frame."
         (win (getf event-slots :window))
         (*current-event-time* (getf event-slots :time)))
     (when eventfn
-      ;; XXX: In both the clisp and sbcl clx libraries, sometimes what
-      ;; should be a window will be a pixmap instead. In this case, we
-      ;; need to manually translate it to a window to avoid breakage
-      ;; in stumpwm. So far the only slot that seems to be affected is
-      ;; the :window slot for configure-request and reparent-notify
-      ;; events. It appears as though the hash table of XIDs and clx
-      ;; structures gets out of sync with X or perhaps X assigns a
-      ;; duplicate ID for a pixmap and a window.
-      (when (and win (not (xlib:window-p win)))
-        (dformat 10 "Pixmap Workaround! ~s should be a window!~%" win)
-        (setf (getf event-slots :window) (make-xlib-window win)))
       (handler-case
           (progn
             ;; This is not the stumpwm top level, but if the restart

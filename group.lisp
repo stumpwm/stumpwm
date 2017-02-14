@@ -45,8 +45,10 @@
 (defclass group ()
   ((screen :initarg :screen :accessor group-screen)
    (windows :initform nil :accessor group-windows)
+   (current-window :initform nil :accessor group-current-window)
    (number :initarg :number :accessor group-number)
-   (name :initarg :name :accessor group-name)))
+   (name :initarg :name :accessor group-name)
+   (on-top-windows :initform nil :accessor group-on-top-windows)))
 
 ;;; The group API
 (defgeneric group-startup (group)
@@ -103,9 +105,6 @@ needs to redraw anything on it, this is where it should do it."))
 (defgeneric group-sync-head (group head)
   (:documentation "When a head or its usable area is resized, this is
 called. When the modeline size changes, this is called."))
-
-(defmethod group-current-window (group)
-  (screen-focus (group-screen group)))
 
 (defmethod group-current-head (group)
   (if (group-current-window group)
