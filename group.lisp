@@ -39,6 +39,9 @@
 (defvar *default-group-type* 'tile-group
   "The type of group that should be created by default.")
 
+(defvar *always-show-windows* ()
+  "The list of windows shown in all groups")
+
 (defclass group ()
   ((screen :initarg :screen :accessor group-screen)
    (windows :initform nil :accessor group-windows)
@@ -107,6 +110,11 @@ called. When the modeline size changes, this is called."))
   (if (group-current-window group)
       (window-head (group-current-window group))
       (first (screen-heads (group-screen group)))))
+
+(defmethod group-delete-window (group window)
+  (when (find window *always-show-windows*)
+    (disable-always-show-window window (current-screen)))
+  (call-next-method))
 
 (defun current-group (&optional (screen (current-screen)))
   "Return the current group for the current screen, unless
@@ -179,8 +187,47 @@ at 0. Return a netwm compliant group id."
       (xlib:change-property (screen-root screen) :_NET_CURRENT_DESKTOP
                             (list (netwm-group-id new-group))
                             :cardinal 32)
+      (mapc (lambda (w)
+              (xwin-unhide (window-xwin w) (window-parent w)))
+            *always-show-windows*)
       (update-all-mode-lines)
       (run-hook-with-args *focus-group-hook* new-group old-group))))
+
+(defun copy-window-to-group (group window)
+  (setf (window-number window) (find-free-window-number group))
+  (push window (group-windows group))
+  (group-add-window group window))
+
+(defun always-show-window (window screen)
+  (let ((groups-to-add-w-to (remove (current-group) (screen-groups screen))))
+    (mapc (lambda (group) (copy-window-to-group group window))
+          groups-to-add-w-to))
+  (xlib:change-property (window-xwin window) :_NET_WM_DESKTOP
+                        (list #xFFFFFFFF)
+                        :cardinal 32)
+  (push window *always-show-windows*))
+
+(defun disable-always-show-window (window screen)
+  (let* ((g (current-group))
+         (groups-to-remove-w-from (remove g (screen-groups screen))))
+    (mapc (lambda (group)
+            (setf (group-windows group)
+                  (remove window (group-windows group))))
+          groups-to-remove-w-from)
+    (setf (window-group window) g
+          (window-number window) (find-free-window-number g)
+          *always-show-windows* (remove window *always-show-windows*))
+    (xlib:change-property (window-xwin window) :_NET_WM_DESKTOP
+                          (list (netwm-group-id g))
+                          :cardinal 32)))
+
+(defcommand toggle-always-show () ()
+  (let ((w (current-window))
+        (screen (current-screen)))
+    (when w
+      (if (find w *always-show-windows*)
+          (disable-always-show-window w screen)
+          (always-show-window w screen)))))
 
 (defun move-window-to-group (window to-group)
   (labels ((really-move-window (window to-group)
@@ -321,6 +368,8 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
   (let ((group (%ensure-group name type screen)))
     (unless background
       (switch-to-group group))
+    (mapc (lambda (window) (copy-window-to-group group window))
+          *always-show-windows*)
     group))
 
 (defun find-group (screen name)
