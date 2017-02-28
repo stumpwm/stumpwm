@@ -1015,9 +1015,10 @@ space."
 
 (defun focus-last-frame (group)
   ;; make sure the last frame still exists in the frame tree
-  (when (and (tile-group-last-frame group)
-             (find (tile-group-last-frame group) (group-frames group)))
-    (focus-frame group (tile-group-last-frame group))))
+  (let ((last-frame (tile-group-last-frame group)))
+    (when (and last-frame
+               (find last-frame (group-frames group)))
+      (focus-frame group last-frame))))
 
 (defun focus-frame-after (group frames)
   "Given a list of frames focus the next one in the list after
