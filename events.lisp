@@ -597,7 +597,7 @@ they should be windows. So use this function to make a window out of XOBJECT."
   (let ((eventfn (gethash event-key *event-fn-table*))
         (win (getf event-slots :window))
         (*current-event-time* (getf event-slots :time)))
-    (when eventfn
+    (when (and eventfn (typep win 'xlib:window))
       (handler-case
           (progn
             ;; This is not the stumpwm top level, but if the restart
