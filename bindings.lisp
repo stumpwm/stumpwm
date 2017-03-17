@@ -227,8 +227,8 @@ from most specific groups to most general groups.")
              (kbd "f")     "exchange-direction right"
              (kbd "k")     "exchange-direction up"   
              (kbd "j")     "exchange-direction down" 
-             (kbd "l")     "exchange-direction left" 
-             (kbd "h")     "exchange-direction right")    
+             (kbd "h")     "exchange-direction left" 
+             (kbd "l")     "exchange-direction right")    
 (fill-keymap *help-map*
   (kbd "v") "describe-variable"
   (kbd "f") "describe-function"
