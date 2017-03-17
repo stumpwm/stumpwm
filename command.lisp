@@ -452,8 +452,10 @@ then describes the symbol."
         (throw 'error :abort))))
 
 (define-stumpwm-type :shell (input prompt)
-  (or (argument-pop-rest input)
-      (completing-read (current-screen) prompt 'complete-program)))
+  (declare (ignore prompt))
+  (let ((prompt (format nil "~A -c " *shell-program*)))
+    (or (argument-pop-rest input)
+        (completing-read (current-screen) prompt 'complete-program))))
 
 (define-stumpwm-type :rest (input prompt)
   (or (argument-pop-rest input)
