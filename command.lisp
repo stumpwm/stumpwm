@@ -451,9 +451,14 @@ then describes the symbol."
     (or (choose-frame-by-number (current-group))
         (throw 'error :abort))))
 
+(defvar *shell-to-use* nil)
+
 (define-stumpwm-type :shell (input prompt)
-  (or (argument-pop-rest input)
-      (completing-read (current-screen) prompt 'complete-program)))
+  (if (eq *shell-to-use* nil)
+      (or (argument-pop-rest input)
+          (completing-read (current-screen) prompt 'complete-program))
+      (or (argument-pop-rest input)
+          (completing-read (current-screen) *shell-to-use* 'complete-program))))
 
 (define-stumpwm-type :rest (input prompt)
   (or (argument-pop-rest input)
