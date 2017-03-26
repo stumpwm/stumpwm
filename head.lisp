@@ -30,7 +30,7 @@
   (find n (screen-heads screen) :key 'head-number))
 
 (defun parse-xinerama-head (line)
-  (ppcre:register-groups-bind (('parse-integer number width height x y))
+  (ppcre:register-groups-bind ((#'parse-integer number width height x y))
                               ("^ +head #([0-9]+): ([0-9]+)x([0-9]+) @ ([0-9]+),([0-9]+)" line :sharedp t)
                               (handler-case
                                   (make-head :number number
@@ -39,6 +39,18 @@
                                              :height height)
                                 (parse-error ()
                                   nil))))
+
+(defun parse-xrandr-head (line)
+  (let ((number 0))
+  (ppcre:register-groups-bind ((#'parse-integer width height x y))
+                              ("^[A-Z0-9]+ connected(?: primary)? ([0-9]+)x([0-9]+)[\+]([0-9]+)[\+]([0-9]+)" line :sharedp t)
+                              (handler-case
+                                  (make-head :number (1- (incf number))
+                                             :x x :y y
+                                             :width width
+                                             :height height)
+                                (parse-error ()
+                                  nil)))))
 
 (defun make-screen-heads (screen root)
   "or use xdpyinfo to query the xinerama extension, if it's enabled."
@@ -56,6 +68,16 @@
                  :test #'frames-overlap-p)
                 do (setf (head-number h) i)
                 collect h)))
+      (and (xlib:query-extension *display* "RANDR")
+           (with-current-screen screen
+             (let ((current-head-num -1))
+               (map 'list
+                    (lambda (head)
+                      (setf (head-number head) (incf current-head-num))
+                      head)
+                    (remove 'nil
+                            (map 'list #'stumpwm::parse-xrandr-head
+                                 (split-string (run-shell-command "xrandr -q" t))))))))
       (list (make-head :number 0
                        :x 0 :y 0
                        :width (xlib:drawable-width root)
