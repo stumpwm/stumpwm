@@ -373,6 +373,7 @@ timer.")
              :screen screen
              :mode :visible
              :position *mode-line-position*)))
+    (push ml *mode-lines*)
     (xlib:reparent-window xwin (screen-root screen) 0 0)
     (when (update-mode-line-position ml
                                      (xlib:drawable-x xwin)
