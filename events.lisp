@@ -606,15 +606,9 @@ they should be windows. So use this function to make a window out of DRAWABLE."
       ;; events. It appears as though the hash table of XIDs and clx
       ;; structures gets out of sync with X or perhaps X assigns a
       ;; duplicate ID for a pixmap and a window.
-      ;;
-      ;; If it's neither a window nor a drawable, just short-circuit.
-      (cond
-        ((xlib:drawable-p win)
-         (dformat 10 "Pixmap Workaround! ~s should be a window!~%" win)
-         (setf (getf event-slots :window) (make-xlib-window win)))
-        ((not (xlib:window-p win))
-         (dformat 10 "Event window ~s not a window!" win)
-         (return-from handle-event)))
+      (when (and win (not (xlib:window-p win)))
+        (dformat 10 "Pixmap Workaround! ~s should be a window!~%" win)
+        (setf (getf event-slots :window) (make-xlib-window win)))
       (handler-case
           (progn
             ;; This is not the stumpwm top level, but if the restart
