@@ -899,6 +899,7 @@ needed."
   "don't focus any window but still read keyboard events."
   (dformat 3 "no-focus~%")
   (let* ((screen (group-screen group)))
+    (setf (group-current-window group) nil)
     (when (eq group (screen-current-group screen))
       (xlib:set-input-focus *display* (screen-focus-window screen) :POINTER-ROOT)
       (setf (screen-focus screen) nil)
