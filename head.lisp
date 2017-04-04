@@ -40,22 +40,29 @@
                                 (parse-error ()
                                   nil))))
 
+(defun list-heads ()
+  "Return a list of HEAD structures without duplicates"
+  (delete-duplicates
+   (loop for line in (split-string (run-shell-command "xdpyinfo -ext XINERAMA" t))
+         for head = (parse-xinerama-head line)
+         when head
+           collect head)
+   :test #'frames-overlap-p))
+
+(defun number-heads (heads)
+  "Number each head according to its position in the list."
+  (let ((head-index -1))
+    (flet ((set-head-number (head)
+             (setf (head-number head)
+                   (incf head-index))))
+      (mapc #'set-head-number heads))))
+
 (defun make-screen-heads (screen root)
   "or use xdpyinfo to query the xinerama extension, if it's enabled."
   (or (and (xlib:query-extension *display* "XINERAMA")
            (with-current-screen screen
              ;; Ignore 'clone' heads.
-             (loop
-                for i = 0 then (1+ i)
-                for h in
-                (delete-duplicates
-                 (loop for i in (split-string (run-shell-command "xdpyinfo -ext XINERAMA" t))
-                    for head = (parse-xinerama-head i)
-                    when head
-                    collect head)
-                 :test #'frames-overlap-p)
-                do (setf (head-number h) i)
-                collect h)))
+             (number-heads (list-heads))))
       (list (make-head :number 0
                        :x 0 :y 0
                        :width (xlib:drawable-width root)
