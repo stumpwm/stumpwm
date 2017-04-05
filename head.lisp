@@ -51,11 +51,9 @@
 
 (defun number-heads (heads)
   "Number each head according to its position in the list."
-  (let ((head-index -1))
-    (flet ((set-head-number (head)
-             (setf (head-number head)
-                   (incf head-index))))
-      (mapc #'set-head-number heads))))
+  (loop for head in heads
+      for i upfrom 0
+      do (setf (head-number head) i)))
 
 (defun make-screen-heads (screen root)
   "or use xdpyinfo to query the xinerama extension, if it's enabled."
