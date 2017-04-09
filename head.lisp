@@ -52,8 +52,9 @@
 (defun number-heads (heads)
   "Number each head according to its position in the list."
   (loop for head in heads
-      for i upfrom 0
-      do (setf (head-number head) i)))
+        for i upfrom 0
+        do (setf (head-number head) i)
+        finally (return heads)))
 
 (defun make-screen-heads (screen root)
   "or use xdpyinfo to query the xinerama extension, if it's enabled."
