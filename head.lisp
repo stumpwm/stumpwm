@@ -29,44 +29,25 @@
 (defun head-by-number (screen n)
   (find n (screen-heads screen) :key 'head-number))
 
-(defun parse-xinerama-head (line)
-  (ppcre:register-groups-bind (('parse-integer number width height x y))
-                              ("^ +head #([0-9]+): ([0-9]+)x([0-9]+) @ ([0-9]+),([0-9]+)" line :sharedp t)
-                              (handler-case
-                                  (make-head :number number
-                                             :x x :y y
-                                             :width width
-                                             :height height)
-                                (parse-error ()
-                                  nil))))
-
-(defun list-heads ()
-  "Return a list of HEAD structures without duplicates"
-  (delete-duplicates
-   (loop for line in (split-string (run-shell-command "xdpyinfo -ext XINERAMA" t))
-         for head = (parse-xinerama-head line)
-         when head
-           collect head)
-   :test #'frames-overlap-p))
-
-(defun number-heads (heads)
-  "Number each head according to its position in the list."
-  (loop for head in heads
-        for i upfrom 0
-        do (setf (head-number head) i)
-        finally (return heads)))
+(defun screen-info-head (screen-info)
+  "Transform SCREEN-INFO structure from CLX to a HEAD structure from StumpWM."
+  (make-head :number (xlib/xinerama:screen-info-number screen-info)
+             :x (xlib/xinerama:screen-info-x screen-info)
+             :y (xlib/xinerama:screen-info-y screen-info)
+             :width (xlib/xinerama:screen-info-width screen-info)
+             :height (xlib/xinerama:screen-info-height screen-info)
+             :window nil))
 
 (defun make-screen-heads (screen root)
-  "or use xdpyinfo to query the xinerama extension, if it's enabled."
-  (or (and (xlib:query-extension *display* "XINERAMA")
-           (with-current-screen screen
-             ;; Ignore 'clone' heads.
-             (number-heads (list-heads))))
-      (list (make-head :number 0
-                       :x 0 :y 0
-                       :width (xlib:drawable-width root)
-                       :height (xlib:drawable-height root)
-                       :window nil))))
+  (declare (ignore screen))
+  (cond ((and (xlib:query-extension *display* "XINERAMA")
+              (xlib/xinerama:xinerama-is-active *display*))
+         (mapcar 'screen-info-head
+                 (xlib/xinerama:xinerama-query-screens *display*)))
+        (t (list (make-head :number 0 :x 0 :y 0
+                            :width (xlib:drawable-width root)
+                            :height (xlib:drawable-height root)
+                            :window nil)))))
 
 (defun copy-heads (screen)
   "Return a copy of screen's heads."
