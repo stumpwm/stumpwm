@@ -25,7 +25,7 @@
 
 (in-package #:stumpwm)
 
-#+sbcl (require :sb-introspect)
+(require :sb-introspect)
 
 ;; handy for figuring out which symbol is borking the documentation
 (defun dprint (sym)
@@ -45,11 +45,7 @@
                                     (*print-pretty* nil))
                                 (format s "@defun {~a} ~{~a~^ ~}~%~a~&@end defun~%~%"
                                         name
-                                        #+sbcl (sb-introspect:function-lambda-list fn)
-                                        #+clisp (ext:arglist fn)
-                                        #+ccl (ccl:arglist fn)
-                                        #+lispworks (lw:function-lambda-list fn)
-                                        #- (or sbcl clisp ccl lispworks) '("(Check the code for args list)")
+                                        (sb-introspect:function-lambda-list fn)
                                         (documentation fn 'function))
                                 t)))
 
@@ -60,21 +56,8 @@
                                      (*print-pretty* nil))
                                 (format s "@defmac {~a} ~{~a~^ ~}~%~a~&@end defmac~%~%"
                                         name
-                                        #+sbcl (sb-introspect:function-lambda-list (macro-function symbol))
-                                        #+clisp (ext:arglist symbol)
-                                        #+ccl (ccl:arglist symbol)
-                                        #+lispworks (lw:function-lambda-list symbol)
-                                        #- (or sbcl clisp ccl lispworks) '("(Check the code for args list)")
-                                        ;;; FIXME: when clisp compiles
-                                        ;;; a macro it discards the
-                                        ;;; documentation string! So
-                                        ;;; unless when generating the
-                                        ;;; manual for clisp, it is
-                                        ;;; loaded and not compiled
-                                        ;;; this will return NIL.
-                                        #+clisp (or (documentation symbol 'function)
-                                                    "Due to a bug in clisp, macro function documentation is not generated. Try building the manual using sbcl.")
-                                        #-clisp (documentation symbol 'function))
+                                        (sb-introspect:function-lambda-list (macro-function symbol))
+                                        (documentation symbol 'function))
                                 t)))
 
 (defun generate-variable-doc (s line)
@@ -99,11 +82,7 @@
                               (let ((cmd (symbol-function (find-symbol (string-upcase name) :stumpwm))))
                                 (format s "@deffn {Command} ~a ~{~a~^ ~}~%~a~&@end deffn~%~%"
                                         name
-                                        #+sbcl (sb-introspect:function-lambda-list cmd)
-                                        #+clisp (ext:arglist cmd)
-                                        #+ccl (ccl:arglist cmd)
-                                        #+lispworks (lw:function-lambda-list cmd)
-                                        #- (or sbcl clisp ccl lispworks) '("(Check the code for args list)")
+                                        (sb-introspect:function-lambda-list cmd)
                                         (documentation cmd 'function))
                                 t)))
 
