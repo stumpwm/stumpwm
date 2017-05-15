@@ -25,8 +25,6 @@
 
 (in-package #:stumpwm)
 
-(export '(getenv))
-
 (define-condition not-implemented (stumpwm-error)
   () (:documentation "A function has been called that is not implemented yet."))
 
