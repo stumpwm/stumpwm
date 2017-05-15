@@ -1,6 +1,6 @@
 (in-package #:cl-user)
 
-#-(or sbcl clisp ccl ecl lispworks6)
+#-sbcl
 (error "This lisp implementation is not supported.")
 
 (require 'asdf)
