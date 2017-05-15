@@ -104,14 +104,7 @@
 
 (defun string-to-bytes (string)
   "Convert a string to a vector of octets."
-  #+sbcl
-  (sb-ext:string-to-octets string)
-  #+clisp
-  (ext:convert-string-to-bytes string custom:*terminal-encoding*)
-  #+lispworks
-  (ef:encode-lisp-string string :ascii)
-  #-(or sbcl clisp lispworks)
-  (map 'list #'char-code string))
+  (sb-ext:string-to-octets string))
 
 (defun utf8-to-string (octets)
   "Convert the list of octets to a string."
