@@ -70,20 +70,9 @@ form."
 the directory named by the non-wild pathname designator DIRNAME."
   (when (wild-pathname-p dirname)
     (error "Can only make wildcard directories from non-wildcard directories."))
-  (make-pathname :name #-:cormanlisp :wild #+:cormanlisp "*"
-                 :type #-(or :clisp :cormanlisp) :wild
-                       #+:clisp nil
-                       #+:cormanlisp "*"
+  (make-pathname :name :wild
+                 :type :wild
                  :defaults (pathname-as-directory dirname)))
-#+:clisp
-(defun clisp-subdirectories-wildcard (wildcard)
-  "Creates a wild pathname specifically for CLISP such that
-sub-directories are returned by DIRECTORY."
-  (make-pathname :directory (append (pathname-directory wildcard)
-                                    (list :wild))
-                 :name nil
-                 :type nil
-                 :defaults wildcard))
 
 (defun list-directory (dirname)
   "Returns a fresh list of pathnames corresponding to the truenames of
@@ -91,24 +80,9 @@ all files within the directory named by the non-wild pathname
 designator DIRNAME.  The pathnames of sub-directories are returned in
 directory form - see PATHNAME-AS-DIRECTORY."
   (when (wild-pathname-p dirname)
-    (error "Can only list concrete directory names."))
-  #+:ecl 
-  (let ((dir (pathname-as-directory dirname)))
-    (concatenate 'list
-                 (directory (merge-pathnames (pathname "*/") dir))
-                 (directory (merge-pathnames (pathname "*.*") dir))))
-  #-:ecl 
+    (error "Can only list concrete directory names.")) 
   (let ((wildcard (directory-wildcard dirname)))
-    #+:abcl (system::list-directory dirname)
-    #+(or :sbcl :cmu :scl :lispworks) (directory wildcard)
-    #+(or :openmcl :digitool) (directory wildcard :directories t)
-    #+:allegro (directory wildcard :directories-are-files nil)
-    #+:clisp (nconc (directory wildcard :if-does-not-exist :keep)
-                    (directory (clisp-subdirectories-wildcard wildcard)))
-    #+:cormanlisp (nconc (directory wildcard)
-                         (cl::directory-subdirs dirname)))
-  #-(or :sbcl :cmu :scl :lispworks :openmcl :allegro :clisp :cormanlisp :ecl :abcl :digitool)
-  (error "LIST-DIRECTORY not implemented"))
+ (directory wildcard)))
 (defun list-directory-recursive (dirname &optional flatten-p)
   "Returns a list of pathnames corresponding to the truenames all
   files within the directory and in any subdirectories.  If
