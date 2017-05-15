@@ -125,19 +125,6 @@
   "Call directory without dereferencing symlinks in the results"
   (directory pathspec :resolve-symlinks nil))
 
-;;; CLISP does not include features to distinguish different Unix
-;;; flavours (at least until version 2.46). Until this is fixed, use a
-;;; hack to determine them.
-
-#+ (and clisp (not (or linux freebsd)))
-(eval-when (eval load compile)
-  (let ((osname (posix:uname-sysname (posix:uname))))
-    (cond
-      ((string= osname "Linux") (pushnew :linux *features*))
-      ((string= osname "FreeBSD") (pushnew :freebsd *features*))
-      (t (warn "Your operating system is not recognized.")))))
-
-
 ;;; On GNU/Linux some contribs use sysfs to figure out useful info for
 ;;; the user. SBCL upto at least 1.0.16 (but probably much later) has
 ;;; a problem handling files in sysfs caused by SBCL's slightly
