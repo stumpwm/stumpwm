@@ -102,10 +102,6 @@
     (sb-ext:octets-to-string
      (make-array (length data) :element-type '(unsigned-byte 8) :initial-contents data))))
 
-(defun string-to-bytes (string)
-  "Convert a string to a vector of octets."
-  (sb-ext:string-to-octets string))
-
 (defun utf8-to-string (octets)
   "Convert the list of octets to a string."
   (let ((octets (coerce octets '(vector (unsigned-byte 8)))))

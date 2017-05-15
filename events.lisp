@@ -289,7 +289,7 @@ chunks."
             (screen-last-msg-highlights screen) '())
       (eval-command cmd)
       (xlib:change-property win :stumpwm_command_result
-                            (string-to-bytes (format nil "~{~{~a~%~}~}" (nreverse (screen-last-msg screen))))
+                            (sb-ext:string-to-octets (format nil "~{~{~a~%~}~}" (nreverse (screen-last-msg screen))))
                             :string 8)
       (setf (screen-last-msg screen) msgs
             (screen-last-msg-highlights screen) hlts))
