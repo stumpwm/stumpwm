@@ -57,10 +57,6 @@
   (with-output-to-string (s)
     (run-prog prog :args args :output s :wait t)))
 
-(defun getenv (var)
-  "Return the value of the environment variable."
-  (sb-posix:getenv (string var)))
-
 (defun (setf getenv) (val var)
   "Set the value of the environment variable, @var{var} to @var{val}."
   (sb-posix:putenv (format nil "~A=~A" (string var) (string val))))
