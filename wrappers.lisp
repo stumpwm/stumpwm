@@ -117,15 +117,9 @@
 
 (defun string-to-utf8 (string)
   "Convert the string to a vector of octets."
-  #+ccl (ccl:encode-string-to-octets string :external-format :utf-8)
-  #+clisp (ext:convert-string-to-bytes string charset:utf-8)
-  #+sbcl (sb-ext:string-to-octets
-          string
-          :external-format :utf-8)
-  #+lispworks
-  (ef:encode-lisp-string string :utf-8)
-  #-(or ccl clisp sbcl lispworks)
-  (map 'list #'char-code string))
+  (sb-ext:string-to-octets
+   string
+   :external-format :utf-8))
 
 (defun directory-no-deref (pathspec)
   "Call directory without dereferencing symlinks in the results"
