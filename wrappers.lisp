@@ -180,7 +180,6 @@ regarding files in sysfs. Data is read in chunks of BLOCKSIZE bytes."
 (defun execv (program &rest arguments)
   (declare (ignorable program arguments))
   ;; FIXME: seems like there should be a way to do this in sbcl the way it's done in clisp. -sabetts
-  #+sbcl
   (sb-alien:with-alien ((prg sb-alien:c-string program)
                         (argv (array sb-alien:c-string 256)))
     (loop
@@ -189,21 +188,7 @@ regarding files in sysfs. Data is read in chunks of BLOCKSIZE bytes."
        do (setf (sb-alien:deref argv j) i))
     (setf (sb-alien:deref argv (length arguments)) nil)
     (sb-alien:alien-funcall (sb-alien:extern-alien "execv" (function sb-alien:int sb-alien:c-string (* sb-alien:c-string)))
-                            prg (sb-alien:cast argv (* sb-alien:c-string))))
-  ;; FIXME: Using unexported and undocumented functionality isn't nice
-  #+clisp
-  (funcall (ffi::find-foreign-function "execv"
-                                       (ffi:parse-c-type '(ffi:c-function
-                                                           (:arguments
-                                                            (prg ffi:c-string)
-                                                            (args (ffi:c-array-ptr ffi:c-string))
-                                                            )
-                                                           (:return-type ffi:int)))
-                                       nil nil nil nil)
-           program
-           (coerce arguments 'array))
-  #-(or sbcl clisp)
-  (error "Unimplemented"))
+                            prg (sb-alien:cast argv (* sb-alien:c-string)))))
 
 (defun open-pipe (&key (element-type '(unsigned-byte 8)))
   "Create a pipe and return two streams. The first value is the input
