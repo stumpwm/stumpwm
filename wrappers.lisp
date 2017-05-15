@@ -137,11 +137,6 @@
 (defun read-line-from-sysfs (stream &optional (blocksize 80))
   "READ-LINE, but with a workaround for a known SBCL/Linux bug
 regarding files in sysfs. Data is read in chunks of BLOCKSIZE bytes."
-  #- sbcl
-  (declare (ignore blocksize))
-  #- sbcl
-  (read-line stream)
-  #+ sbcl
   (let ((buf (make-array blocksize
 			 :element-type '(unsigned-byte 8)
 			 :initial-element 0))
