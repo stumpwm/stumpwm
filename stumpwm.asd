@@ -16,7 +16,6 @@
                :cl-ppcre #-cmu :clx #+sbcl :sb-posix)
   :components ((:file "package")
                (:file "primitives")
-               (:file "workarounds")
                (:file "wrappers")
                (:file "pathnames")
                (:file "font-rendering")
