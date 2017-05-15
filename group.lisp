@@ -328,7 +328,9 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
     (xlib:change-property root :_NET_DESKTOP_NAMES
                           (let ((names (mapcan
                                         (lambda (group)
-                                          (list (string-to-utf8 (group-name group))
+                                          (list (sb-ext:string-to-octets
+                                                 (group-name group)
+                                                 :external-format :utf-8)
                                                 '(0)))
                                         (sort-groups screen))))
                             (apply #'concatenate 'list names))

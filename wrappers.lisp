@@ -111,12 +111,6 @@
                                             (invoke-restart 'use-value "?"))))
       (sb-ext:octets-to-string octets :external-format :utf-8))))
 
-(defun string-to-utf8 (string)
-  "Convert the string to a vector of octets."
-  (sb-ext:string-to-octets
-   string
-   :external-format :utf-8))
-
 (defun directory-no-deref (pathspec)
   "Call directory without dereferencing symlinks in the results"
   (directory pathspec :resolve-symlinks nil))
