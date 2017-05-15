@@ -109,19 +109,11 @@
 (defun utf8-to-string (octets)
   "Convert the list of octets to a string."
   (let ((octets (coerce octets '(vector (unsigned-byte 8)))))
-    #+ccl (ccl:decode-string-from-octets octets :external-format :utf-8)
-    #+clisp (ext:convert-string-from-bytes octets charset:utf-8)
-    #+sbcl (handler-bind
-               ((sb-impl::octet-decoding-error #'(lambda (c)
-                                                   (declare (ignore c))
-                                                   (invoke-restart 'use-value "?"))))
-             (sb-ext:octets-to-string octets :external-format :utf-8))
-    #+lispworks
-    (ef:decode-external-string
-     (make-array (length octets) :element-type '(unsigned-byte 8) :initial-contents octets)
-     :utf-8)
-    #-(or ccl clisp sbcl lispworks)
-    (map 'string #'code-char octets)))
+    (handler-bind
+        ((sb-impl::octet-decoding-error #'(lambda (c)
+                                            (declare (ignore c))
+                                            (invoke-restart 'use-value "?"))))
+      (sb-ext:octets-to-string octets :external-format :utf-8))))
 
 (defun string-to-utf8 (string)
   "Convert the string to a vector of octets."
