@@ -46,7 +46,6 @@ hackable desktop experience, look no further.
 * quicklisp (for obtaining the following dependencies, not needed if you use your distribution's package manager.)
 * clx
 * cl-ppcre
-* cl-xembed
 * alexandria
 
 The recommended way to install the dependencies is using Quicklisp.
@@ -75,7 +74,6 @@ Then, in a repl:
 ```lisp
  (ql:quickload "clx")
  (ql:quickload "cl-ppcre")
- (ql:quickload "cl-xembed")
  (ql:quickload "alexandria")
 ```
 ## Building
