@@ -35,7 +35,7 @@
           add-to-load-path))
 
 (defvar *module-dir*
-  (pathname-as-directory (concat (sb-posix:getenv "HOME") "/.stumpwm.d/modules"))
+  (pathname-as-directory (concat (getenv "HOME") "/.stumpwm.d/modules"))
   "The location of the contrib modules on your system.")
 
 (defun build-load-path (path)

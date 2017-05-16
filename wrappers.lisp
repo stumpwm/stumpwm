@@ -25,6 +25,8 @@
 
 (in-package #:stumpwm)
 
+(export '(getenv))
+
 (define-condition not-implemented (stumpwm-error)
   () (:documentation "A function has been called that is not implemented yet."))
 
@@ -54,6 +56,10 @@
   "run a command and read its output."
   (with-output-to-string (s)
     (run-prog prog :args args :output s :wait t)))
+
+(defun getenv (var)
+  "Return the value of the environment variable."
+  (sb-posix:getenv (string var)))
 
 (defun (setf getenv) (val var)
   "Set the value of the environment variable, @var{var} to @var{val}."

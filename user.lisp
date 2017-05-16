@@ -105,7 +105,7 @@ your X server and CLX implementation support XTEST."
   (when (current-window)
     (send-fake-click (current-window) button)))
 
-(defun programs-in-path (&optional full-path (path (split-string (sb-posix:getenv "PATH") ":")))
+(defun programs-in-path (&optional full-path (path (split-string (getenv "PATH") ":")))
   "Return a list of programs in the path. if @var{full-path} is
 @var{t} then return the full path, otherwise just return the
 filename. @var{path} is by default the @env{PATH} evironment variable
@@ -130,7 +130,7 @@ seperated by a colon."
 (defvar *path-cache* nil
   "A cache containing the programs in the path, used for completion.")
 
-(defun rehash (&optional (paths (mapcar 'parse-namestring (split-string (sb-posix:getenv "PATH") ":"))))
+(defun rehash (&optional (paths (mapcar 'parse-namestring (split-string (getenv "PATH") ":"))))
   "Update the cache of programs in the path stored in @var{*programs-list*} when needed."
   (let ((dates (mapcar (lambda (p)
                          (when (probe-path p)

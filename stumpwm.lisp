@@ -38,7 +38,7 @@ rc files exist), the error if it didn't, and the rc file that was
 loaded. When CATCH-ERRORS is nil, errors are left to be handled
 further up. "
   (let* ((xdg-config-dir
-           (let ((dir (sb-posix:getenv "XDG_CONFIG_HOME")))
+           (let ((dir (getenv "XDG_CONFIG_HOME")))
              (if (or (not dir) (string= dir ""))
                  (merge-pathnames  #p".config/" (user-homedir-pathname))
                  dir)))
@@ -380,7 +380,7 @@ The action is to call FUNCTION with arguments ARGS."
   :quit)
 
 ;; Usage: (stumpwm)
-(defun stumpwm (&optional (display-str (or (sb-posix:getenv "DISPLAY") ":0")))
+(defun stumpwm (&optional (display-str (or (getenv "DISPLAY") ":0")))
   "Start the stump window manager."
   (let ((*in-main-thread* t))
     (setf *data-dir*
