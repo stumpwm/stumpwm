@@ -1595,6 +1595,8 @@ window pool, where windows and frames are not so tightly connected.
 !!! pull-window-by-number
 !!! hsplit
 !!! vsplit
+!!! hsplit-equally
+!!! vsplit-equally
 !!! remove-split
 !!! only
 !!! curframe
