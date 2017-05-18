@@ -931,7 +931,7 @@ windows used to draw the numbers in. The caller must destroy them."
   (split-frame-in-dir (current-group) :row (read-from-string ratio)))
 
 (defun split-frame-eql-parts* (group dir amt)
-  (when (not (eq amt 1))
+  (when (> amt 1)
     (when-let ((new-frame (split-frame group dir (/ (- amt 1) amt))))
       (cons new-frame (split-frame-eql-parts* group dir (- amt 1))))))
 
