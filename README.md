@@ -112,11 +112,6 @@ Hopefully that will put you in X running stumpwm! See [StartUp on the
 wiki](https://github.com/sabetts/stumpwm/wiki/StartUp) for more
 examples.
 
-## Requirements for multiple monitor setups
-
-For stumpwm to work as intended with multiple monitors setups the 
-`xdpyinfo` utility is needed.
-
 # Contributing
 
 Pull requests are always welcome! Here are some guidelines to ensure
