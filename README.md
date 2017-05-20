@@ -1,6 +1,7 @@
 ![](https://stumpwm.github.io/images/stumpwm-logo-stripe.png)
 # The Stump Window Manager
 ![](https://travis-ci.org/stumpwm/stumpwm.svg)
+
 Stumpwm is a window manager written entirely in Common Lisp. It
 attempts to be highly customizable while relying entirely on the
 keyboard for input. You will not find buttons, icons, title bars, tool
@@ -41,32 +42,35 @@ hackable desktop experience, look no further.
 
 ## Prerequisites
 
-* a common lisp distribution.  sbcl, clisp, ccl and ecl all work (ecl must have been built with clx support, must use version >= 13.5.1 [see here for discussion](https://github.com/sabetts/stumpwm/issues/55)).
+* sbcl
 * quicklisp (for obtaining the following dependencies, not needed if you use your distribution's package manager.)
 * clx
 * cl-ppcre
-* cl-xembed
+* alexandria
 
 The recommended way to install the dependencies is using Quicklisp.
 Follow the instructions at http://www.quicklisp.org/ to install it.
 In short: 
-```
-$ curl -O https://beta.quicklisp.org/quicklisp.lisp
-```
 
 ```
+$ curl -O https://beta.quicklisp.org/quicklisp.lisp
 $ sbcl --load quicklisp.lisp
 ```
-Or insert your favorite lisp distribution (clisp, ccl or ecl). 
+
 Then at the REPL:
+
 ```lisp
 (quicklisp-quickstart:install)
 ```
+
 Make sure you have added it to your lisp init file using:
+
 ```lisp
  (ql:add-to-init-file)
 ```
+
 Then, in a repl:
+
 ```lisp
  (ql:quickload "clx")
  (ql:quickload "cl-ppcre")
@@ -75,39 +79,38 @@ Then, in a repl:
 ## Building
 
 Building stumpwm from git requires that you build the configure script:
+
 ```
  autoconf
 ```
+
 If there's already a configure script then just run it.
+
 ```
  ./configure
 ```
-By default stumpwm selects sbcl.  If you have multiple lisps installed,
-you can explicitly select clisp, ccl, or ecl like so:
-```
- ./configure --with-lisp=clisp
-```
-If your lisps are in strange places you may need to tell the script
-where to find them:
-```
- ./configure --with-sbcl=/home/sabetts/opt/bin/sbcl
- ./configure --with-clisp=/usr/local/downstairs/to/the/left/clisp
-```
+
 Now build it:
+
 ```
  make
 ```
+
 If all goes well, you should have a stumpwm binary now.  You can run
 the binary from where it is or install it, along with the .info
 documentation, with:
+
 ```
  make install
 ```
+
 Now that you have a binary, call it from your ~/.xinitrc file:
+
 ```
  echo /path/to/stumpwm >> ~/.xinitrc
  startx
 ```
+
 Hopefully that will put you in X running stumpwm! See [StartUp on the
 wiki](https://github.com/sabetts/stumpwm/wiki/StartUp) for more
 examples.
@@ -180,14 +183,6 @@ StumpWM universe (in no particular order):
   * Implement widget icons to indicate system status (new mail, low
     battery, network etc)
   * Support raising windows when left-clicked, closing/killing when right-clicked  
-
-# CCL And Virtual Memory
-
-
-On 64bit platforms, CCL reserves a "very large" amount of virtual
-memory. If this bothers you for some reason, you can pass the -R or
---heap-reserve option to the binary in your ~/.xinitrc file. See
-http://ccl.clozure.com/manual/chapter15.1.html for an explanation.
 
 # Help
 
