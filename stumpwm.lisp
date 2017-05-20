@@ -109,11 +109,7 @@ The action is to call FUNCTION with arguments ARGS."
     (labels ((append-to-list ()
                (sb-thread:with-mutex (*timer-list-lock*)
                  (setf *timer-list* (merge 'list *timer-list* (list timer) #'< :key #'timer-time)))))
-      ;; If CALL-IN-MAIN-THREAD is supported, the timer should be scheduled in the main thread.
-      #+call-in-main-thread
       (call-in-main-thread #'append-to-list)
-      #-call-in-main-thread
-      (append-to-list)
       timer)))
 
 (defun cancel-timer (timer)
@@ -245,7 +241,6 @@ The action is to call FUNCTION with arguments ARGS."
   (declare (ignore io-loop))
   (ccl::stream-device channel :input))
 
-#+call-in-main-thread
 (defun call-in-main-thread (fn)
   (cond (*in-main-thread*
          (funcall fn))
@@ -259,12 +254,6 @@ The action is to call FUNCTION with arguments ARGS."
            ;; the message sent indicates the event type instead.
            (write-byte 0 out)
            (finish-output out)))))
-
-#-call-in-main-thread
-(defun call-in-main-thread (fn)
-  (if *in-main-thread*
-      (funcall fn)
-      (run-with-timer 0 nil fn)))
 
 (defclass display-channel ()
   ((display :initarg :display)))
@@ -299,7 +288,6 @@ The action is to call FUNCTION with arguments ARGS."
 
          ;; If we have no implementation for the current CL, then
          ;; don't register the channel.
-         #+call-in-main-thread
          (multiple-value-bind (in out)
              (open-pipe)
            (let ((channel (make-instance 'request-channel :in in :out out)))
