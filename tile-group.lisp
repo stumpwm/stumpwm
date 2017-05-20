@@ -945,14 +945,13 @@ windows used to draw the numbers in. The caller must destroy them."
           (when (frame-window f)
             (update-decoration (frame-window f)))
           (show-frame-indicator group))
-        (progn
-          (let ((head (frame-head group f)))
-            (setf (tile-group-frame-head group head)
-                  (reduce (lambda (tree num)
-                            (remove-frame tree
-                                          (frame-by-number group num)))
-                          new-frame-numbers
-                          :initial-value (tile-group-frame-head group head))))
+        (let ((head (frame-head group f)))
+          (setf (tile-group-frame-head group head)
+                (reduce (lambda (tree num)
+                          (remove-frame tree
+                                        (frame-by-number group num)))
+                        new-frame-numbers
+                        :initial-value (tile-group-frame-head group head)))
           (message "Cannot split. Maybe current frame is too small.")))))
 
 (defcommand (hsplit-equally tile-group) (amt)
