@@ -930,9 +930,45 @@ windows used to draw the numbers in. The caller must destroy them."
 "Split the current frame into 2 frames, one on top of the other."
   (split-frame-in-dir (current-group) :row (read-from-string ratio)))
 
-(defcommand (remove-split tile-group) (&optional (group (current-group)) (frame (tile-group-current-frame group))) ()
-"Remove the specified frame in the specified group (defaults to current
-group, current frame). Windows in the frame are migrated to the frame taking up its
+(defun split-frame-eql-parts* (group dir amt)
+  (when (> amt 1)
+    (when-let ((new-frame (split-frame group dir (/ (- amt 1) amt))))
+      (cons new-frame (split-frame-eql-parts* group dir (- amt 1))))))
+
+(defun split-frame-eql-parts (group dir amt)
+  "Splits frame in equal parts defined by amt."
+  (assert (> amt 1))
+  (let ((f (tile-group-current-frame group))
+        (new-frame-numbers (split-frame-eql-parts* group dir amt)))
+    (if (= (list-length new-frame-numbers) (- amt 1))
+        (progn
+          (when (frame-window f)
+            (update-decoration (frame-window f)))
+          (show-frame-indicator group))
+        (let ((head (frame-head group f)))
+          (setf (tile-group-frame-head group head)
+                (reduce (lambda (tree num)
+                          (remove-frame tree
+                                        (frame-by-number group num)))
+                        new-frame-numbers
+                        :initial-value (tile-group-frame-head group head)))
+          (message "Cannot split. Maybe current frame is too small.")))))
+
+(defcommand (hsplit-equally tile-group) (amt)
+    ((:number "Enter the number of frames: "))
+"Split current frame in n rows of equal size."
+  (split-frame-eql-parts (current-group) :row amt))
+
+(defcommand (vsplit-equally tile-group) (amt)
+    ((:number "Enter the number of frames: "))
+"Split current frame in n columns of equal size."
+  (split-frame-eql-parts (current-group) :column amt))
+
+(defcommand (remove-split tile-group)
+    (&optional (group (current-group))
+               (frame (tile-group-current-frame group))) ()
+"Remove the specified frame in the specified group (defaults to current group,
+current frame). Windows in the frame are migrated to the frame taking up its
 space."
   (let* ((head (frame-head group frame))
          (current (tile-group-current-frame group))
