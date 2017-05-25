@@ -2331,9 +2331,6 @@ figure out how to do it in the other distribution and write a
 statement like this:
 
 @example
-#+clisp
-(your-clisp-code)
-#+sbcl
 (your-sbcl-code)
 @end example
 

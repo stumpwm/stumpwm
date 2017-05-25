@@ -25,8 +25,6 @@
 
 (in-package :stumpwm)
 
-#+ecl (require "clx")
-
 (export '(*suppress-abort-messages*
           *suppress-frame-indicator*
           *suppress-window-placement-indicator*
@@ -171,13 +169,6 @@
           stumpwm-warning))
 
 
-
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  ;; Currently we only support pause-less CALL-IN-MAIN-THREAD for
-  ;; SBCL, since it requires the new io-loop.
-  #+sbcl
-  (pushnew :call-in-main-thread *features*))
-
 ;;; Message Timer
 (defvar *suppress-abort-messages* nil
   "Suppress abort message when non-nil.")

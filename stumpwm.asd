@@ -13,10 +13,11 @@
   :description "A tiling, keyboard driven window manager"
   :serial t
   :depends-on (#:alexandria
-               :cl-ppcre #-cmu :clx #+sbcl :sb-posix)
+               #:cl-ppcre
+               #:clx
+               #:sb-posix)
   :components ((:file "package")
                (:file "primitives")
-               (:file "workarounds")
                (:file "wrappers")
                (:file "pathnames")
                (:file "font-rendering")

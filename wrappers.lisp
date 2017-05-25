@@ -95,84 +95,25 @@
 
 (defun bytes-to-string (data)
   "Convert a list of bytes into a string."
-  #+sbcl (handler-bind
-             ((sb-impl::octet-decoding-error #'(lambda (c)
-                                                 (declare (ignore c))
-                                                 (invoke-restart 'use-value "?"))))
-          (sb-ext:octets-to-string
-           (make-array (length data) :element-type '(unsigned-byte 8) :initial-contents data)))
-  #+clisp
-  (ext:convert-string-from-bytes
-   (make-array (length data) :element-type '(unsigned-byte 8) :initial-contents data)
-   custom:*terminal-encoding*)
-  #+lispworks
-  (ef:decode-external-string
-   (make-array (length data) :element-type '(unsigned-byte 8) :initial-contents data)
-   :ascii)
-  #-(or sbcl clisp lispworks)
-  (map 'string #'code-char data))
-
-(defun string-to-bytes (string)
-  "Convert a string to a vector of octets."
-  #+sbcl
-  (sb-ext:string-to-octets string)
-  #+clisp
-  (ext:convert-string-to-bytes string custom:*terminal-encoding*)
-  #+lispworks
-  (ef:encode-lisp-string string :ascii)
-  #-(or sbcl clisp lispworks)
-  (map 'list #'char-code string))
+  (handler-bind
+      ((sb-impl::octet-decoding-error #'(lambda (c)
+                                          (declare (ignore c))
+                                          (invoke-restart 'use-value "?"))))
+    (sb-ext:octets-to-string
+     (make-array (length data) :element-type '(unsigned-byte 8) :initial-contents data))))
 
 (defun utf8-to-string (octets)
   "Convert the list of octets to a string."
   (let ((octets (coerce octets '(vector (unsigned-byte 8)))))
-    #+ccl (ccl:decode-string-from-octets octets :external-format :utf-8)
-    #+clisp (ext:convert-string-from-bytes octets charset:utf-8)
-    #+sbcl (handler-bind
-               ((sb-impl::octet-decoding-error #'(lambda (c)
-                                                   (declare (ignore c))
-                                                   (invoke-restart 'use-value "?"))))
-             (sb-ext:octets-to-string octets :external-format :utf-8))
-    #+lispworks
-    (ef:decode-external-string
-     (make-array (length octets) :element-type '(unsigned-byte 8) :initial-contents octets)
-     :utf-8)
-    #-(or ccl clisp sbcl lispworks)
-    (map 'string #'code-char octets)))
-
-(defun string-to-utf8 (string)
-  "Convert the string to a vector of octets."
-  #+ccl (ccl:encode-string-to-octets string :external-format :utf-8)
-  #+clisp (ext:convert-string-to-bytes string charset:utf-8)
-  #+sbcl (sb-ext:string-to-octets
-          string
-          :external-format :utf-8)
-  #+lispworks
-  (ef:encode-lisp-string string :utf-8)
-  #-(or ccl clisp sbcl lispworks)
-  (map 'list #'char-code string))
+    (handler-bind
+        ((sb-impl::octet-decoding-error #'(lambda (c)
+                                            (declare (ignore c))
+                                            (invoke-restart 'use-value "?"))))
+      (sb-ext:octets-to-string octets :external-format :utf-8))))
 
 (defun directory-no-deref (pathspec)
   "Call directory without dereferencing symlinks in the results"
-  #+(or cmu scl) (directory pathspec :truenamep nil)
-  #+clisp (mapcar #'car (directory pathspec :full t))
-  #+lispworks (directory pathspec :link-transparency nil)
-  #+openmcl (directory pathspec :follow-links nil)
-  #+sbcl (directory pathspec :resolve-symlinks nil)
-  #-(or clisp cmu lispworks openmcl sbcl scl) (directory pathspec))
-
-;;; CLISP does not include features to distinguish different Unix
-;;; flavours (at least until version 2.46). Until this is fixed, use a
-;;; hack to determine them.
-
-#+ (and clisp (not (or linux freebsd)))
-(eval-when (eval load compile)
-  (let ((osname (posix:uname-sysname (posix:uname))))
-    (cond
-      ((string= osname "Linux") (pushnew :linux *features*))
-      ((string= osname "FreeBSD") (pushnew :freebsd *features*))
-      (t (warn "Your operating system is not recognized.")))))
-
+  (directory pathspec :resolve-symlinks nil))
 
 ;;; On GNU/Linux some contribs use sysfs to figure out useful info for
 ;;; the user. SBCL upto at least 1.0.16 (but probably much later) has
@@ -186,11 +127,6 @@
 (defun read-line-from-sysfs (stream &optional (blocksize 80))
   "READ-LINE, but with a workaround for a known SBCL/Linux bug
 regarding files in sysfs. Data is read in chunks of BLOCKSIZE bytes."
-  #- sbcl
-  (declare (ignore blocksize))
-  #- sbcl
-  (read-line stream)
-  #+ sbcl
   (let ((buf (make-array blocksize
 			 :element-type '(unsigned-byte 8)
 			 :initial-element 0))
@@ -234,7 +170,6 @@ regarding files in sysfs. Data is read in chunks of BLOCKSIZE bytes."
 (defun execv (program &rest arguments)
   (declare (ignorable program arguments))
   ;; FIXME: seems like there should be a way to do this in sbcl the way it's done in clisp. -sabetts
-  #+sbcl
   (sb-alien:with-alien ((prg sb-alien:c-string program)
                         (argv (array sb-alien:c-string 256)))
     (loop
@@ -243,21 +178,7 @@ regarding files in sysfs. Data is read in chunks of BLOCKSIZE bytes."
        do (setf (sb-alien:deref argv j) i))
     (setf (sb-alien:deref argv (length arguments)) nil)
     (sb-alien:alien-funcall (sb-alien:extern-alien "execv" (function sb-alien:int sb-alien:c-string (* sb-alien:c-string)))
-                            prg (sb-alien:cast argv (* sb-alien:c-string))))
-  ;; FIXME: Using unexported and undocumented functionality isn't nice
-  #+clisp
-  (funcall (ffi::find-foreign-function "execv"
-                                       (ffi:parse-c-type '(ffi:c-function
-                                                           (:arguments
-                                                            (prg ffi:c-string)
-                                                            (args (ffi:c-array-ptr ffi:c-string))
-                                                            )
-                                                           (:return-type ffi:int)))
-                                       nil nil nil nil)
-           program
-           (coerce arguments 'array))
-  #-(or sbcl clisp)
-  (error "Unimplemented"))
+                            prg (sb-alien:cast argv (* sb-alien:c-string)))))
 
 (defun open-pipe (&key (element-type '(unsigned-byte 8)))
   "Create a pipe and return two streams. The first value is the input
