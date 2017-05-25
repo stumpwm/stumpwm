@@ -117,8 +117,7 @@ an asdf system, and if so add it to the central registry"
 
 (defcommand load-module (name) ((:module "Load Module: "))
   "Loads the contributed module with the given NAME."
-  (string-downcase name)
-  (let ((module (find-module name)))
-      (when module
-        (asdf:operate 'asdf:load-op module))))
+  (let ((module (find-module (string-downcase name))))
+    (when module
+      (asdf:operate 'asdf:load-op module))))
 ;; End of file
