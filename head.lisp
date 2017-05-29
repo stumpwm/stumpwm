@@ -31,19 +31,19 @@
 
 (defun screen-info-head (screen-info)
   "Transform SCREEN-INFO structure from CLX to a HEAD structure from StumpWM."
-  (make-head :number (xlib/xinerama:screen-info-number screen-info)
-             :x (xlib/xinerama:screen-info-x screen-info)
-             :y (xlib/xinerama:screen-info-y screen-info)
-             :width (xlib/xinerama:screen-info-width screen-info)
-             :height (xlib/xinerama:screen-info-height screen-info)
+  (make-head :number (xinerama:screen-info-number screen-info)
+             :x (xinerama:screen-info-x screen-info)
+             :y (xinerama:screen-info-y screen-info)
+             :width (xinerama:screen-info-width screen-info)
+             :height (xinerama:screen-info-height screen-info)
              :window nil))
 
 (defun make-screen-heads (screen root)
   (declare (ignore screen))
   (cond ((and (xlib:query-extension *display* "XINERAMA")
-              (xlib/xinerama:xinerama-is-active *display*))
+              (xinerama:xinerama-is-active *display*))
          (mapcar 'screen-info-head
-                 (xlib/xinerama:xinerama-query-screens *display*)))
+                 (xinerama:xinerama-query-screens *display*)))
         (t (list (make-head :number 0 :x 0 :y 0
                             :width (xlib:drawable-width root)
                             :height (xlib:drawable-height root)
