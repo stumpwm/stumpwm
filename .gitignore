@@ -24,3 +24,12 @@ stumpwm-*.tgz.sig
 .dotest
 patches
 stumpwm.texi
+stumpwm.aux
+stumpwm.dvi
+stumpwm.fn
+stumpwm.fns
+stumpwm.log
+stumpwm.pdf
+stumpwm.toc
+stumpwm.vr
+stumpwm.vrs
