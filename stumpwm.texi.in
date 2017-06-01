@@ -755,7 +755,7 @@ input history moved through.
 
 @item C-t :
 Opens the input box, but all things typed in here will be sent to the
-Common Lisp interpreter where they will be ran as Lisp programs; thus,
+Common Lisp interpreter where they will be run as Lisp programs; thus,
 input should be valid Common Lisp.
 
 @item C-t C-h
