@@ -683,9 +683,6 @@ Select a window from a list and focus the window.
 @item C-t C-g
 Abort the current command. This is useful if you accidentally hit @kbd{C-t}
 
-@item C-t w
-List all the windows
-
 @item C-t i
 Display information about the current window.
 
@@ -720,7 +717,7 @@ tab). This is similar to how GNU screen uses @kbd{C-a a}.
 
 @item C-t w
 @itemx C-t C-w
-Prints out a list of the windows, their number, and their name.
+Prints out a list of all the windows, their number, and their name.
 
 @item C-t b
 @itemx C-t C-b
