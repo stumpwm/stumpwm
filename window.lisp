@@ -1087,8 +1087,8 @@ is using the number, then the windows swap numbers. Defaults to current group."
 ;; but window-list was added latter and I didn't want to break other's code.
 (defcommand windowlist (&optional (fmt *window-format*)
                                   window-list) (:rest)
-  "Allow the user to select a window from the list of windows and focus the 
-selected window. For information of menu bindings @xref{Menus}. The optional
+  "Allow the user to select a window from the list of windows and focus the
+selected window. For information of menu bindings see @ref{Menus}. The optional
  argument @var{fmt} can be specified to override the default window formatting.
 The optional argument @var{window-list} can be provided to show a custom window
 list (see @command{windowlist-by-class}). The default window list is the list of
@@ -1108,7 +1108,7 @@ by number and if the @var{windows-list} is provided, it is shown unsorted (as-is
 
 (defcommand windowlist-by-class (&optional (fmt *window-format-by-class*)) (:rest)
   "Allow the user to select a window from the list of windows (sorted by class)
- and focus the selected window. For information of menu bindings @xref{Menus}. 
+ and focus the selected window. For information of menu bindings see @ref{Menus}.
 The optional argument @var{fmt} can be specified to override the default window
 formatting. This is a simple wrapper around the command @command{windowlist}."
   (windowlist fmt (sort-windows-by-class (group-windows (current-group)))))

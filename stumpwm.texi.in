@@ -1200,7 +1200,7 @@ A frame
 @item :shell
 A shell command
 @item :rest
-The rest of the input yes to be parsed.
+The rest of the input yet to be parsed.
 @item :module
 An existing stumpwm module
 @end table
@@ -1555,7 +1555,7 @@ Window Selection Expressions (WSE) were inspired by SQL. The intent is
 to allow writing consise code to select the windows you need and to
 act upon them (or just to get the list of selected windows). The
 implementation includes a set of (hopefully) consistent
-consisely-named wrappers for the StumpWM functionality useful for
+concisely-named wrappers for the StumpWM functionality useful for
 window set description and the act-on-matching-windows macro that
 encapsulates the logic of iterating over a window set.
 
@@ -1945,9 +1945,9 @@ start stumpwm. Also include what the expected behavior was.
 Be as detailed as possible. Then add more detail!
 @item
 Make sure its not something you introduced by using an empty @file{.xinitrc}
-containing only 'exec /path/to/stumpwm'.
+containing only @samp{exec /path/to/stumpwm}.
 @item
-Make sure the bug is present even when @file{.stumwmrc} is empty.
+Make sure the bug is present even when @file{.stumpwmrc} is empty.
 @item
 If you are using the git version, include the hash of the master
 branch, or better include the commit when you started to notice the
@@ -2142,7 +2142,7 @@ $$$ *post-command-hook*
 
 @node Modules, Hacking, Hooks, Top
 @chapter Modules
-A module is a ASDF system that adds additional functionality to
+A module is an ASDF system that adds additional functionality to
 StumpWM.  StumpWM searches for modules in the
 @var{*data-dir*}@file{/modules} directory.  By default this is
 @file{~/.stumpwm.d/modules}.

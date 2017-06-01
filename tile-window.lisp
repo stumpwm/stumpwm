@@ -372,7 +372,7 @@ when selecting another window."
 
 (defcommand (fullscreen tile-group) () ()
   "Toggle the fullscreen mode of the current widnow. Use this for clients
-with broken (non-NETWM) fullscreen implemenations, such as any program
+with broken (non-NETWM) fullscreen implementations, such as any program
 using SDL."
   (update-fullscreen (current-window) 2))
 
