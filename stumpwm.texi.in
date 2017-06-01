@@ -872,6 +872,7 @@ Describe the specified command.
 ### *exchange-window-map*
 
 !!! bind
+!!! send-escape
 
 @node Modifiers,  , Binding Keys, Key Bindings
 @section Modifiers
@@ -1447,6 +1448,8 @@ An input function takes 2 arguments: the input structure and the key pressed.
 !!! meta
 !!! select-window
 !!! select-window-by-number
+!!! select-window-by-name
+!!! repack-window-numbers
 !!! title
 !!! windowlist
 !!! windowlist-by-class
@@ -1454,6 +1457,11 @@ An input function takes 2 arguments: the input structure and the key pressed.
 !!! info
 !!! refresh
 !!! redisplay
+!!! float-this
+!!! unfloat-this
+!!! unmaximize
+!!! toggle-always-on-top
+!!! toggle-always-show
 
 ### *window-format*
 ### *window-info-format*
@@ -1569,21 +1577,21 @@ actions, for example getting all the windows titled XTerm into the
 current group:
 @code{(act-on-matching-windows (w) (titled-p w "XTerm") (pull-w w))}
 
-!!! move-windows-to-group
+@@@ move-windows-to-group
 %%% act-on-matching-windows
-!!! pull-w
-!!! titled-p
-!!! title-re-p
-!!! classed-p
-!!! class-re-p
-!!! typed-p
-!!! type-re-p
-!!! roled-p
-!!! role-re-p
-!!! resed-p
-!!! res-re-p
-!!! grouped-p
-!!! in-frame-p
+@@@ pull-w
+@@@ titled-p
+@@@ title-re-p
+@@@ classed-p
+@@@ class-re-p
+@@@ typed-p
+@@@ type-re-p
+@@@ roled-p
+@@@ role-re-p
+@@@ resed-p
+@@@ res-re-p
+@@@ grouped-p
+@@@ in-frame-p
 
 @node Frames, Mode-line, Windows, Top
 @chapter Frames
@@ -1605,6 +1613,7 @@ window pool, where windows and frames are not so tightly connected.
 !!! fother
 !!! fselect
 !!! resize
+!!! resize-direction
 !!! balance-frames
 !!! fclear
 !!! move-focus
@@ -1612,6 +1621,8 @@ window pool, where windows and frames are not so tightly connected.
 !!! next-in-frame
 !!! prev-in-frame
 !!! other-in-frame
+!!! next-urgent
+!!! frame-window-list
 !!! echo-frame-windows
 !!! exchange-direction
 
@@ -1752,6 +1763,8 @@ Groups in StumpWM are more commonly known as @dfn{virtual desktops} or
 !!! vgroups
 !!! gselect
 !!! gmove
+!!! gmove-and-follow
+!!! gmove-marked
 !!! gkill
 !!! grename
 !!! grouplist
@@ -1855,6 +1868,9 @@ section.
 !!! commands
 !!! lastmsg
 !!! list-window-properties
+!!! show-window-properties
+!!! version
+!!! which-key-mode
 
 @@@ run-commands
 
@@ -1977,6 +1993,7 @@ Return T if TIMER is a timer structure.
 !!! describe-key
 !!! describe-variable
 !!! describe-function
+!!! describe-command
 !!! where-is
 !!! modifiers
 
