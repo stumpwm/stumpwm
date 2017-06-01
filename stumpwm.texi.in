@@ -528,7 +528,7 @@ exactly.
 number.
 
 @item
-@command{windowlist} (``C-t "") display a menu of windows in the
+@command{windowlist} (@kbd{C-t "}) display a menu of windows in the
 currently-focused group, and allow the user to choose one.
 
 @end itemize
