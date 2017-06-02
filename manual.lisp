@@ -79,7 +79,9 @@
 (defun generate-command-doc (s line)
   (ppcre:register-groups-bind (name) ("^!!! (.*)" line)
                               (dprint name)
-                              (let ((cmd (symbol-function (find-symbol (string-upcase name) :stumpwm)))
+                              (let* ((symbol (or (find-symbol (string-upcase name) :stumpwm)
+                                                 (error "cannot find symbol ~a in :stumpwm" name)))
+                                    (cmd (symbol-function symbol))
                                     (*print-pretty* nil))
                                 (format s "@deffn {Command} ~a ~{~a~^ ~}~%~a~&@end deffn~%~%"
                                         name
