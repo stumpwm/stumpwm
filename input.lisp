@@ -193,8 +193,8 @@
 
 (defun completing-read (screen prompt completions &key (initial-input "") require-match)
   "Read a line of input through stumpwm and return it with TAB
-completion. completions can be a list, an fbound symbol, or a
-function. if its an fbound symbol or a function then that function is
+completion. Completions can be a list, an fbound symbol, or a
+function. If its an fbound symbol or a function then that function is
 passed the substring to complete on and is expected to return a list
 of matches. If require-match argument is non-nil then the input must
 match with an element of the completions."
@@ -206,7 +206,7 @@ match with an element of the completions."
       (when line (string-trim " " line)))))
 
 (defun read-one-line (screen prompt &key (initial-input "") require-match password)
-  "Read a line of input through stumpwm and return it. returns nil if the user aborted."
+  "Read a line of input through stumpwm and return it. Returns nil if the user aborted."
   (let ((*input-last-command* nil)
         (input (make-input-line :string (make-input-string initial-input)
                                 :position (length initial-input)
