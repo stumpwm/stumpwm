@@ -882,11 +882,11 @@ size. For instance, @samp{%20t} crops the window's title to 20
 characters.")
 
 (defvar *window-info-format* "%wx%h %n (%t)"
-  "The format used in the info command.
+  "The format used in the info command. See
   @var{*window-format*} for formatting details.")
 
 (defparameter *window-format-by-class* "%m%n %c %s%50t"
-  "The format used in the info winlist-by-class command.
+  "The format used in the info winlist-by-class command. See
  @var{*window-format*} for formatting details.")
 
 (defvar *group-formatters* '((#\n group-map-number)
