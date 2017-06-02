@@ -1620,7 +1620,7 @@ window pool, where windows and frames are not so tightly connected.
 !!! prev-in-frame
 !!! other-in-frame
 !!! next-urgent
-!!! frame-window-list
+!!! frame-windowlist
 !!! echo-frame-windows
 !!! exchange-direction
 
