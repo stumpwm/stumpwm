@@ -1208,8 +1208,9 @@ more complicated interactive declarations using "(interactive (list
 @dots{}))" forms will find that similar logic can be put into StumpWM
 type definitions. The macro is called like this:
 
-(define-stumpwm-type :type-name (input prompt)
-  body)
+@example
+(define-stumpwm-type :type-name (input prompt) body)
+@end example
 
 The keyword :type-name will then be available for use in
 @command{defcommand} macros. When commands are called, the bodies
