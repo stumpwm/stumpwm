@@ -862,7 +862,7 @@ with the following formatting options:
 
 @table @asis
 @item %n
-Substitutes the windows number translated via *window-number-map*, if there
+Substitutes the window's number translated via *window-number-map*, if there
 are more windows than *window-number-map* then will use the window-number.
 @item %s
 Substitute the window's status. * means current window, + means last
