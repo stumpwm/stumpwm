@@ -48,7 +48,7 @@ keymap will only be activated if calling ABORT-IF returns true.
 
 KEY-BINDINGS is a list of the following form: ((KEY COMMAND) (KEY COMMAND) ...)
 
-each element in KEY-BINDINGS declare a command inside the interactive keymap. Be
+Each element in KEY-BINDINGS declare a command inside the interactive keymap. Be
 aware that these commands won't require a prefix to run."
   (let* ((command (if (listp name) (car name) name))
          (exit-command (format nil "EXIT-~A" command))

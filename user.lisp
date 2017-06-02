@@ -106,7 +106,7 @@ your X server and CLX implementation support XTEST."
     (send-fake-click (current-window) button)))
 
 (defun programs-in-path (&optional full-path (path (split-string (getenv "PATH") ":")))
-  "Return a list of programs in the path. if @var{full-path} is
+  "Return a list of programs in the path. If @var{full-path} is
 @var{t} then return the full path, otherwise just return the
 filename. @var{path} is by default the @env{PATH} evironment variable
 but can be specified. It should be a string containing each directory
@@ -221,7 +221,7 @@ such a case, kill the shell command to resume StumpWM."
   (throw :top-level :quit))
 
 (defcommand restart-soft () ()
-  "Soft Restart StumpWM. The lisp process isn't restarted. Instead,
+  "Soft restart StumpWM. The lisp process isn't restarted. Instead,
 control jumps to the very beginning of the stumpwm program. This
 differs from RESTART, which restarts the unix process.
 
