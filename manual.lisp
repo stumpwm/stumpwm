@@ -78,14 +78,16 @@
 
 (defun generate-command-doc (s line)
   (ppcre:register-groups-bind (name) ("^!!! (.*)" line)
-                              (dprint name)
-                              (let ((cmd (symbol-function (find-symbol (string-upcase name) :stumpwm)))
-                                    (*print-pretty* nil))
-                                (format s "@deffn {Command} ~a ~{~a~^ ~}~%~a~&@end deffn~%~%"
-                                        name
-                                        (sb-introspect:function-lambda-list cmd)
-                                        (documentation cmd 'function))
-                                t)))
+    (dprint name)
+    (if-let (symbol (find-symbol (string-upcase name) :stumpwm))
+      (let ((cmd (symbol-function symbol))
+            (*print-pretty* nil))
+        (format s "@deffn {Command} ~a ~{~a~^ ~}~%~a~&@end deffn~%~%"
+                name
+                (sb-introspect:function-lambda-list cmd)
+                (documentation cmd 'function))
+        t)
+      (warn "Symbol ~A not found in package STUMPWM" name))))
 
 (defun generate-manual (&key (in #p"stumpwm.texi.in") (out #p"stumpwm.texi"))
   (let ((*print-case* :downcase))
