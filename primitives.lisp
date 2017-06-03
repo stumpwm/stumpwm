@@ -123,6 +123,7 @@
           data-dir-file
           dformat
           define-frame-preference
+          define-frame-preferences
           redirect-all-output
           remove-hook
           remove-all-hooks
@@ -1108,6 +1109,27 @@ The window's title must match @var{title}.
          (declare (ignore create restore class instance type role title))
          (push (list* ,target-group frame-number raise lock keys)
                *window-placement-rules*)))))
+
+(defmacro define-frame-preferences (&body groups)
+  "Redefine all window placement rules. This macro removes all defined
+placement rules and replaces them with the set of rules defined in
+GROUPS. The benefit to using this function instead of a set of calls
+to DEFINE-FRAME-PREFERENCE is that reloading the configuration will
+not result in duplicate entries in *WINDOW-PLACEMENT-RULES*.
+
+Each rule takes the following form:
+
+@example
+\(target-group frame-rule...)
+@end example
+
+Where each FRAME-RULE has the same form as for DEFINE-FRAME-PREFERENCE."
+  `(progn
+     (clear-window-placement-rules)
+     ,@(loop
+         for (target-group . rules) in groups
+         collect `(define-frame-preference ,target-group
+                    ,@rules))))
 
 (defun clear-window-placement-rules ()
   "Clear all window placement rules."
