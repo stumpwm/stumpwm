@@ -1663,7 +1663,7 @@ Shrink the frame horizontally.
 
 @item C-g
 @itemx ESC
-Abort the interactive resize. NOTE: This currently doesn't work.
+Abort the interactive resize.
 
 @item RET
 Select the highlighted option.
