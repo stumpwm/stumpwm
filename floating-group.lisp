@@ -128,7 +128,6 @@
 (defmethod group-startup ((group float-group)))
 
 (flet ((add-float-window (group window)
-         (declare (ignore group))
          (change-class window 'float-window)
          (float-window-align window)
          (group-focus-window group window)))
