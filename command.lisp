@@ -323,7 +323,7 @@ then describes the symbol."
 (define-stumpwm-type :function (input prompt)
   (multiple-value-bind (sym pkg var)
       (lookup-symbol (argument-pop-or-read input prompt))
-    (if (symbol-function sym)
+    (if (fboundp sym)
         (symbol-function sym)
         (throw 'error (format nil "the symbol ~a::~a has no function."
                               (package-name pkg) var)))))
