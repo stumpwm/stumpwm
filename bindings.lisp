@@ -237,7 +237,7 @@ from most specific groups to most general groups.")
   (kbd "w") "where-is")
 
 (defcommand command-mode () ()
-"Command mode allows you to type ratpoison commands without needing the
+"Command mode allows you to type StumpWM commands without needing the
 @key{C-t} prefix. Keys not bound in StumpWM will still get sent to the
 current window. To exit command mode, type @key{C-g}."
   (run-hook *command-mode-start-hook*)
