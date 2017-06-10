@@ -45,7 +45,7 @@
   "Specifies the number of padding pixels between the text and the side of the mode line. Integer value.")
 
 (defvar *mode-line-pad-y* 1
-  "The number of padding pixels between the modeline text and the top/bottom of the modeline? Integer value.")
+  "The number of padding pixels between the modeline text and the top/bottom of the modeline. Integer value.")
 
 (defvar *mode-line-background-color* "Gray20"
   "The mode line background color.")
