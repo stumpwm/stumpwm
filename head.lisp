@@ -53,22 +53,21 @@
   "Return a copy of screen's heads."
   (mapcar 'copy-frame (screen-heads screen)))
 
+(defun find-head-by-position (screen x y)
+  (dolist (head (screen-heads screen))
+    (when (and (>= x (head-x head))
+               (>= y (head-y head))
+               (<= x (+ (head-x head) (head-width head)))
+               (<= y (+ (head-y head) (head-height head))))
+      (return head))))
 
 ;; Determining a frame's head based on position probably won't
 ;; work with overlapping heads. Would it be better to walk
 ;; up the frame tree?
 (defun frame-head (group frame)
   (let ((center-x (+ (frame-x frame) (ash (frame-width frame) -1)))
-       (center-y (+ (frame-y frame) (ash (frame-height frame) -1))))
-    (dolist (head (screen-heads (group-screen group)))
-      (when (and
-            (>= center-x (frame-x head))
-            (>= center-y (frame-y head))
-            (<= center-x
-                (+ (frame-x head) (frame-width head)))
-            (<= center-y
-                (+ (frame-y head) (frame-height head))))
-       (return head)))))
+        (center-y (+ (frame-y frame) (ash (frame-height frame) -1))))
+    (find-head-by-position (group-screen group) center-x center-y)))
 
 (defun group-heads (group)
   (screen-heads (group-screen group)))

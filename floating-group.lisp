@@ -150,6 +150,13 @@
 
 (defmethod group-suspend ((group float-group)))
 
+(defmethod group-current-head ((group float-group))
+  (if-let ((current-window (group-current-window group)))
+    (window-head current-window)
+    (multiple-value-bind (x y)
+        (xlib:global-pointer-position *display*)
+      (find-head-by-position (group-screen group) x y))))
+
 (defun float-window-align (window)
   (with-accessors ((parent window-parent)
                    (xwin window-xwin)

@@ -106,11 +106,6 @@ needs to redraw anything on it, this is where it should do it."))
   (:documentation "When a head or its usable area is resized, this is
 called. When the modeline size changes, this is called."))
 
-(defmethod group-current-head (group)
-  (if (group-current-window group)
-      (window-head (group-current-window group))
-      (first (screen-heads (group-screen group)))))
-
 (defmethod group-delete-window (group window)
   (when (find window *always-show-windows*)
     (disable-always-show-window window (current-screen)))
