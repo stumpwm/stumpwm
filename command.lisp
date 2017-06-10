@@ -104,7 +104,7 @@ A frame
 @item :shell
 A shell command
 @item :rest
-The rest of the input yes to be parsed.
+The rest of the input yet to be parsed.
 @item :module
 An existing stumpwm module
 @end table
