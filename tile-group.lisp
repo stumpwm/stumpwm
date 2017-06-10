@@ -87,6 +87,11 @@
         (when (null (frame-window (window-frame window)))
           (really-raise-window window)))))
 
+(defmethod group-current-head ((group tile-group))
+  (if (group-current-window group)
+      (window-head (group-current-window group))
+      (frame-head group (tile-group-current-frame group))))
+
 (defmethod group-move-request ((group tile-group) (window tile-window) x y relative-to)
   (when *honor-window-moves*
     (dformat 3 "Window requested new position ~D,~D relative to ~S~%" x y relative-to)
