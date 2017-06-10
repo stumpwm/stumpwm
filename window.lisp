@@ -121,12 +121,8 @@ WINDOW"
   (let* ((hints (xlib:wm-hints (window-xwin window)))
          (flags (when hints (xlib:wm-hints-flags hints))))
     (when flags
-      (setf (xlib:wm-hints-flags hints)
-            ;; XXX: as of clisp 2.46 flags is a list, not a number.
-            (if (listp flags)
-                (remove :urgency flags)
-                (logand (lognot 256) flags)))
-      (setf (xlib:wm-hints (window-xwin window)) hints)))
+      (setf (xlib:wm-hints-flags hints) (logand (lognot 256) flags)
+            (xlib:wm-hints (window-xwin window)) hints)))
   (remove-wm-state (window-xwin window) :_NET_WM_STATE_DEMANDS_ATTENTION)
   (unregister-urgent-window window))
 
