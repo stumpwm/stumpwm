@@ -131,10 +131,7 @@ WINDOW"
 _NET_WM_STATE_DEMANDS_ATTENTION set"
   (let* ((hints (xlib:wm-hints (window-xwin window)))
          (flags (when hints (xlib:wm-hints-flags hints))))
-    ;; XXX: as of clisp 2.46 flags is a list, not a number.
-    (or (and flags (if (listp flags)
-                       (find :urgency flags)
-                       (logtest 256 flags)))
+    (or (and flags (logtest 256 flags))
         (find-wm-state (window-xwin window) :_NET_WM_STATE_DEMANDS_ATTENTION))))
 
 (defcommand next-urgent () ()
