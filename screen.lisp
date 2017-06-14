@@ -88,15 +88,6 @@ identity with a range check."
 (defun screen-windows (screen)
   (mapcan (lambda (g) (copy-list (group-windows g))) (screen-groups screen)))
 
-(defun screen-message-window (screen)
-  (ccontext-win (screen-message-cc screen)))
-
-(defun screen-message-pixmap (screen)
-  (ccontext-px (screen-message-cc screen)))
-
-(defun screen-message-gc (screen)
-  (ccontext-gc (screen-message-cc screen)))
-
 (defun screen-font (screen)
   (first (screen-fonts screen)))
 
@@ -161,9 +152,9 @@ identity with a range check."
     (xlib:set-input-focus *display* (window-xwin window) :POINTER-ROOT)
     (xlib:change-property (screen-root screen) :_NET_ACTIVE_WINDOW
                           (list (window-xwin window))
-                          :window 32
-                          :transform #'xlib:drawable-id
-                          :mode :replace)
+                                               :window 32
+                                               :transform #'xlib:drawable-id
+                                               :mode :replace)
     (setf (screen-focus screen) window)
     (move-screen-to-head screen)))
 
@@ -196,37 +187,44 @@ identity with a range check."
 
 (defun update-colors-for-screen (screen)
   (let ((fg (screen-fg-color screen))
-        (bg (screen-bg-color screen)))
-    (setf (xlib:gcontext-foreground (screen-message-gc screen)) fg
-          (xlib:gcontext-background (screen-message-gc screen)) bg
+        (bg (screen-bg-color screen))
+        (border (screen-border-color screen))
+        (win-bg (screen-win-bg-color screen)))
+    (setf (xlib:gcontext-foreground (screen-input-gc screen)) fg
+          (xlib:gcontext-background (screen-input-gc screen)) bg
           (xlib:gcontext-foreground (screen-frame-outline-gc screen)) fg
-          (xlib:gcontext-background (screen-frame-outline-gc screen)) bg
-          (ccontext-default-fg (screen-message-cc screen)) fg
-          (ccontext-default-bg (screen-message-cc screen)) bg))
-  (dolist (i (list (screen-message-window screen)
-                   (screen-input-window screen)
-                   (screen-frame-window screen)))
-    (setf (xlib:window-border i) (screen-border-color screen)
-          (xlib:window-background i) (screen-bg-color screen)))
-  ;; update the backgrounds of all the managed windows
-  (dolist (g (screen-groups screen))
-    (dolist (w (group-windows g))
-      (unless (eq w (group-current-window g))
-        (setf (xlib:window-background (window-parent w)) (screen-win-bg-color screen))
-        (xlib:clear-area (window-parent w)))))
-  (dolist (i (screen-withdrawn-windows screen))
-    (setf (xlib:window-background (window-parent i)) (screen-win-bg-color screen))
-    (xlib:clear-area (window-parent i)))
-  (update-screen-color-context screen))
+          (xlib:gcontext-background (screen-frame-outline-gc screen)) bg)
+    (let ((window (screen-input-window screen)))
+      (setf (xlib:window-border window) border
+            (xlib:window-background window) bg))
+    (dolist (window (list (screen-frame-indicator-window screen)
+                          (screen-message-window screen)))
+      (setf (stumpui:text-window-foreground-color window) fg
+            (stumpui:text-window-background-color window) bg
+            (stumpui:text-window-border-color window) border))
+    ;; update the backgrounds of all the managed windows
+    (dolist (g (screen-groups screen))
+      (dolist (w (group-windows g))
+        (unless (eq w (group-current-window g))
+          (setf (xlib:window-background (window-parent w)) win-bg)
+          (xlib:clear-area (window-parent w)))))
+    (dolist (i (screen-withdrawn-windows screen))
+      (setf (xlib:window-background (window-parent i)) win-bg)
+      (xlib:clear-area (window-parent i)))))
 
 (defun update-colors-all-screens ()
   "After setting the fg, bg, or border colors. call this to sync any existing windows."
   (mapc 'update-colors-for-screen *screen-list*))
 
 (defun update-border-for-screen (screen)
-  (setf (xlib:drawable-border-width (screen-input-window screen)) (screen-msg-border-width screen)
-        (xlib:drawable-border-width (screen-message-window screen)) (screen-msg-border-width screen)
-        (xlib:drawable-border-width (screen-frame-window screen)) (screen-msg-border-width screen)))
+  (let ((border-width (screen-msg-border-width screen)))
+    (setf (xlib:drawable-border-width (screen-input-window screen))
+          border-width
+          (xlib:drawable-border-width (screen-message-window screen))
+          border-width
+          (stumpui:text-window-border-width
+           (screen-frame-indicator-window screen))
+          border-width)))
 
 (defun update-border-all-screens ()
   "After setting the border width call this to sync any existing windows."
@@ -234,7 +232,8 @@ identity with a range check."
 
 (defun internal-window-p (screen win)
   "Return t if win is a window used by stumpwm"
-  (or (xlib:window-equal (screen-message-window screen) win)
+  (or (xlib:window-equal (stumpui:window-xwin (screen-message-window screen))
+                         win)
       (xlib:window-equal (screen-input-window screen) win)
       (xlib:window-equal (screen-focus-window screen) win)
       (xlib:window-equal (screen-key-window screen) win)))
@@ -242,7 +241,7 @@ identity with a range check."
 (defmacro set-any-color (val color)
   `(progn (dolist (s *screen-list*)
             (setf (,val s) (alloc-color s ,color)))
-    (update-colors-all-screens)))
+          (update-colors-all-screens)))
 
 ;; FIXME: I don't like any of this.  Isn't there a way to define
 ;; a setf method to call (update-colors-all-screens) when the user
@@ -321,7 +320,7 @@ there is more than one frame."
 (defmacro with-current-screen (screen &body body)
   "A macro to help us out with early set up."
   `(let ((*screen-list* (list ,screen)))
-    ,@body))
+     ,@body))
 
 (defun current-screen ()
   "Return the current screen."
@@ -339,29 +338,29 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
                                     (xlib:intern-atom *display* a))
                                   (append +netwm-supported+
                                           (mapcar #'car +netwm-window-types+)))
-                          :atom 32)
+                               :atom 32)
 
     ;; _NET_SUPPORTING_WM_CHECK
     (xlib:change-property root :_NET_SUPPORTING_WM_CHECK
                           (list focus-window) :window 32
-                          :transform #'xlib:drawable-id)
+                               :transform #'xlib:drawable-id)
     (xlib:change-property focus-window :_NET_SUPPORTING_WM_CHECK
                           (list focus-window) :window 32
-                          :transform #'xlib:drawable-id)
+                                       :transform #'xlib:drawable-id)
     (xlib:change-property focus-window :_NET_WM_NAME
                           "stumpwm"
-                          :string 8 :transform #'xlib:char->card8)
+                                       :string 8 :transform #'xlib:char->card8)
 
     ;; _NET_CLIENT_LIST
     (xlib:change-property root :_NET_CLIENT_LIST
                           () :window 32
-                          :transform #'xlib:drawable-id)
+                               :transform #'xlib:drawable-id)
 
     ;; _NET_DESKTOP_GEOMETRY
     (xlib:change-property root :_NET_DESKTOP_GEOMETRY
                           (list (xlib:screen-width screen-number)
                                 (xlib:screen-height screen-number))
-                          :cardinal 32)
+                               :cardinal 32)
 
     ;; _NET_DESKTOP_VIEWPORT
     (xlib:change-property root :_NET_DESKTOP_VIEWPORT
@@ -398,14 +397,6 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
                             (if (font-exists-p +default-font-name+)
                                 +default-font-name+
                                 "*")))
-           (message-window (xlib:create-window :parent screen-root
-                                               :x 0 :y 0 :width 1 :height 1
-                                               :colormap default-colormap
-                                               :background bg-color
-                                               :border border-color
-                                               :border-width 1
-                                               :bit-gravity :north-east
-                                               :event-mask '(:exposure)))
            (screen (make-instance 'screen
                                   :id id
                                   :host host
@@ -436,14 +427,6 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
                                                :parent screen-root
                                                :x 0 :y 0 :width 1 :height 1
                                                :event-mask '(:key-press :key-release))
-                                  :frame-window (xlib:create-window
-                                                 :parent screen-root
-                                                 :x 0 :y 0 :width 20 :height 20
-                                                 :colormap default-colormap
-                                                 :background bg-color
-                                                 :border border-color
-                                                 :border-width 1
-                                                 :event-mask '(:exposure))
                                   :frame-outline-gc (xlib:create-gcontext
                                                      :drawable screen-root
                                                      :font (when (typep font 'xlib:font) font)
@@ -451,24 +434,24 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
                                                      :background fg-color
                                                      :line-style :double-dash
                                                      :line-width +default-frame-outline-width+)
-                                  :message-cc (make-ccontext
-                                               :win message-window
-                                               :font font
-                                               :gc (xlib:create-gcontext
-                                                    :drawable message-window
-                                                    :font (when (typep font 'xlib:font) font)
-                                                    :foreground fg-color
-                                                    :background bg-color))))
+                                  :input-gc (xlib:create-gcontext
+                                             :drawable screen-root
+                                             :font (when (typep font 'xlib:font) font)
+                                             :foreground fg-color
+                                             :background bg-color)))
            (group (make-instance 'tile-group
                                  :screen screen
                                  :number 1
                                  :name *default-group-name*)))
       (setf (screen-groups screen) (list group)
             (screen-current-group screen) group
-            (ccontext-screen (screen-message-cc screen)) screen
             (screen-heads screen) (make-screen-heads screen screen-root)
             (tile-group-frame-tree group) (copy-heads screen)
-            (tile-group-current-frame group) (first (tile-group-frame-tree group)))
+            (tile-group-current-frame group) (first (tile-group-frame-tree group))
+            (screen-frame-indicator-window screen) (make-instance 'frame-indicator-window
+                                                                  :screen screen)
+            (screen-message-window screen) (make-instance 'message-window
+                                                          :screen screen))
       ;; The focus window is mapped at all times
       (xlib:map-window (screen-focus-window screen))
       (xlib:map-window (screen-key-window screen))
@@ -481,12 +464,12 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
 ;;; Screen commands
 
 (defcommand snext () ()
-"Go to the next screen."
+  "Go to the next screen."
   (switch-to-screen (next-screen))
   (group-wake-up (current-group)))
 
 (defcommand sprev () ()
-"Go to the previous screen."
+  "Go to the previous screen."
   (switch-to-screen (next-screen (reverse (sort-screens))))
   (group-wake-up (current-group)))
 

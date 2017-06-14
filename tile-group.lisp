@@ -887,25 +887,18 @@ desktop when starting."
 (defun draw-frame-numbers (group)
   "Draw the number of each frame in its corner. Return the list of
 windows used to draw the numbers in. The caller must destroy them."
-  (let ((screen (group-screen group)))
-    (mapcar (lambda (f)
-              (let ((w (xlib:create-window
-                        :parent (screen-root screen)
-                        :x (frame-x f) :y (frame-display-y group f) :width 1 :height 1
-                        :background (screen-fg-color screen)
-                        :border (screen-border-color screen)
-                        :border-width 1
-                        :event-mask '())))
-                (xlib:map-window w)
-                (setf (xlib:window-priority w) :above)
-                (echo-in-window w (screen-font screen)
-                                (screen-fg-color screen)
-                                (screen-bg-color screen)
-                                (string (get-frame-number-translation f)))
-                (xlib:display-finish-output *display*)
-                (dformat 3 "mapped ~S~%" (frame-number f))
-                w))
-            (group-frames group))))
+  (mapcar (lambda (frame)
+            (let ((window (make-instance 'stumpui:text-window
+                                         :screen (group-screen group)
+                                         :gravity :top-left
+                                         :padding 0))
+                  (text (uncolorify
+                         (string (get-frame-number-translation frame)))))
+              (prog1 window
+                (stumpui:window-show window
+                                     frame
+                                     :text text))))
+          (group-frames group)))
 
 (defmacro save-frame-excursion (&body body)
   "Execute body and then restore the current frame."
@@ -1098,7 +1091,7 @@ select one. Returns the selected frame or nil if aborted."
          (ch (read-one-char (group-screen group)))
          (num (read-from-string (string ch) nil nil)))
     (dformat 3 "read ~S ~S~%" ch num)
-    (mapc #'xlib:destroy-window wins)
+    (mapc #'stumpui:window-hide wins)
     (clear-frame-outlines group)
     (find ch (group-frames group)
           :test 'char=

@@ -26,117 +26,13 @@
 
 (export '(echo-string
           err
-          message
-          gravity-coords))
+          message))
 
-(defun max-width (font l)
-  "Return the width of the longest string in L using FONT."
-  (loop for i in l
-        maximize (text-line-width font i :translate #'translate-id)))
-
-(defgeneric gravity-coords (gravity width height minx miny maxx maxy)
-  (:documentation "Get the X and Y coordinates to place something of width WIDTH
-and height HEIGHT within an area defined by MINX MINY MAXX and MAXY, guided by
-GRAVITY."))
-
-(defmacro define-simple-gravity (name x y)
-  "Define a simple gravity calculation of name NAME, where X and Y are one of
-:MIN, :MAX or :CENTER."
-  `(defmethod gravity-coords ((gravity (eql ,name))
-                              (width number) (height number)
-                              (minx number) (miny number)
-                              (maxx number) (maxy number))
-     (declare (ignorable gravity width height minx miny maxx maxy))
-     (values ,(ecase x
-                (:min 'minx)
-                (:max '(- maxx width))
-                (:center '(+ minx (truncate (- maxx minx width) 2))))
-             ,(ecase y
-                (:min 'miny)
-                (:max '(- maxy height))
-                (:center '(+ miny (truncate (- maxy miny height) 2)))))))
-
-(define-simple-gravity :top-right :max :min)
-(define-simple-gravity :top-left :min :min)
-(define-simple-gravity :bottom-right :max :max)
-(define-simple-gravity :bottom-left :min :max)
-(define-simple-gravity :right :max :center)
-(define-simple-gravity :left :min :center)
-(define-simple-gravity :top :center :min)
-(define-simple-gravity :bottom :center :max)
-(define-simple-gravity :center :center :center)
-
-(defun setup-win-gravity (screen win gravity)
-  "Position the x, y of the window according to its gravity. This
-function expects to be wrapped in a with-state for win."
-  (xlib:with-state ((screen-root screen))
-    (let* ((w (+ (xlib:drawable-width win)
-                 (* (xlib:drawable-border-width win) 2)))
-           (h (+ (xlib:drawable-height win)
-                 (* (xlib:drawable-border-width win) 2)))
-           (head-x (head-x (current-head)))
-           (head-y (head-y (current-head)))
-           (head-maxx (+ head-x (head-width (current-head))))
-           (head-maxy (+ head-y (head-height (current-head)))))
-      (multiple-value-bind (x y)
-          (gravity-coords gravity w h head-x head-y head-maxx head-maxy)
-        (setf (xlib:drawable-y win) (max head-y y)
-              (xlib:drawable-x win) (max head-x x))))))
-
-(defun setup-message-window (screen width height)
-  (let ((win (screen-message-window screen)))
-    ;; Now that we know the dimensions, raise and resize it.
-    (xlib:with-state (win)
-      (setf (xlib:drawable-height win) height
-            (xlib:drawable-width win) (+ width (* *message-window-padding* 2))
-            (xlib:window-priority win) :above)
-      (setup-win-gravity screen win *message-window-gravity*))
-    (xlib:map-window win)
-    (incf (screen-ignore-msg-expose screen))
-    ;; Have to flush this or the window might get cleared
-    ;; after we've already started drawing it.
-    (xlib:display-finish-output *display*)))
-
-(defun unmap-message-window (screen)
-  "Unmap the screen's message window, if it is mapped."
-  (unless (eq (xlib:window-map-state (screen-message-window screen)) :unmapped)
-    (xlib:unmap-window (screen-message-window screen))))
-
-(defun unmap-all-message-windows ()
-  (mapc #'unmap-message-window *screen-list*)
-  (when (timer-p *message-window-timer*)
-    (cancel-timer *message-window-timer*)
-    (setf *message-window-timer* nil)))
-
-(defun unmap-frame-indicator-window (screen)
-  "Unmap the screen's message window, if it is mapped."
-;;  (unless (eq (xlib:window-map-state (screen-frame-window screen)) :unmapped)
-    (xlib:unmap-window (screen-frame-window screen)))
-
-(defun unmap-all-frame-indicator-windows ()
-  (mapc #'unmap-frame-indicator-window *screen-list*)
-  (when (timer-p *frame-indicator-timer*)
-    (cancel-timer *frame-indicator-timer*)
-    (setf *frame-indicator-timer* nil)))
-
-(defun reset-message-window-timer ()
-  "Set the message window timer to timeout in *timeout-wait* seconds."
-  (unless *ignore-echo-timeout*
-    (when (timer-p *message-window-timer*)
-      (cancel-timer *message-window-timer*))
-    (setf *message-window-timer* (run-with-timer *timeout-wait* nil
-                                                 'unmap-all-message-windows))))
-
-(defun reset-frame-indicator-timer ()
-  "Set the message window timer to timeout in *timeout-wait* seconds."
-  (when (timer-p *frame-indicator-timer*)
-    (cancel-timer *frame-indicator-timer*))
-  (setf *frame-indicator-timer* (run-with-timer *timeout-frame-indicator-wait* nil
-                                                'unmap-all-frame-indicator-windows)))
+;;; Frame indicators
 
 (defun show-frame-outline (group &optional (clear t))
   ;; Don't draw if this isn't a current group!
-  (when (find group (mapcar 'screen-current-group *screen-list*))
+  (when (find group *screen-list* :key #'screen-current-group)
     (dformat 5 "show-frame-outline!~%")
     ;; *resize-hides-windows* uses the frame outlines for display,
     ;; so try not to interfere.
@@ -150,47 +46,53 @@ function expects to be wrapped in a with-state for win."
           (unless (frame-window frame)
             (draw-frame-outline group frame t t)))))))
 
+(defclass frame-indicator-window (stumpui:text-window
+                                  stumpui:window-timeout-mixin)
+  ()
+  (:default-initargs :event-mask '(:exposure)
+                     :padding 0))
+
 (defun show-frame-indicator (group &optional force)
   (show-frame-outline group)
-  ;; FIXME: Arg, these tests are already done in show-frame-outline
-  (when (find group (mapcar 'screen-current-group *screen-list*))
+  ;; FIXME: Arg, this test is already done in show-frame-outline
+  (when (find group *screen-list* :key #'screen-current-group)
     (when (or force
-              (and (or (> (length (tile-group-frame-tree group)) 1)
-                       (not (atom (first (tile-group-frame-tree group)))))
-                   (not *suppress-frame-indicator*)))
-      (let ((frame (tile-group-current-frame group))
-            (w (screen-frame-window (current-screen)))
-            (string (if (stringp *frame-indicator-text*)
-                        *frame-indicator-text*
-                        (prin1-to-string *frame-indicator-text*)))
-            (font (screen-font (current-screen))))
-        ;; If it's already mapped it'll appear briefly in the wrong
-        ;; place, so unmap it first.
-        (xlib:unmap-window w)
-        (xlib:with-state (w)
-          (setf (xlib:drawable-x w) (+ (frame-x frame)
-                                       (truncate (- (frame-width frame) (text-line-width font string)) 2))
-                (xlib:drawable-y w) (+ (frame-display-y group frame)
-                                       (truncate (- (frame-height frame) (font-height font)) 2))
-                (xlib:window-priority w) :above))
-        (xlib:map-window w)
-        (echo-in-window w font (screen-fg-color (current-screen)) (screen-bg-color (current-screen)) string)
-        (reset-frame-indicator-timer)))))
+              (and (not *suppress-frame-indicator*)
+                   (or (> (length (tile-group-frame-tree group)) 1)
+                       (not (atom (first (tile-group-frame-tree group)))))))
+      (let ((window (screen-frame-indicator-window (current-screen)))
+            (text (if (stringp *frame-indicator-text*)
+                      *frame-indicator-text*
+                      (prin1-to-string *frame-indicator-text*))))
+        (stumpui:window-show window (tile-group-current-frame group)
+                             :timeout *timeout-frame-indicator-wait*
+                             :text text)))))
 
-(defun echo-in-window (win font fg bg string)
-  (let* ((height (font-height font))
-         (gcontext (xlib:create-gcontext :drawable win
-                                         :font (when (typep font 'xlib:font) font)
-                                         :foreground fg
-                                         :background bg))
-         (width (text-line-width font string)))
-    (xlib:with-state (win)
-      (setf (xlib:drawable-height win) height
-            (xlib:drawable-width win) width))
-    (xlib:clear-area win)
-    (xlib:display-finish-output *display*)
-    (draw-image-glyphs win gcontext font 0
-                       (font-ascent font) string :translate #'translate-id :size 16)))
+;;; Message window
+
+(defclass message-window (stumpui:text-window
+                          stumpui:window-timeout-mixin)
+  ()
+  (:default-initargs :event-mask '(:exposure)))
+
+(defmethod stumpui:window-gravity ((window message-window))
+  *message-window-gravity*)
+
+(defmethod (setf stumpui:window-gravity) (gravity (window message-window))
+  (setf *message-window-gravity* gravity))
+
+(defmethod stumpui:text-window-padding ((window message-window))
+  *message-window-padding*)
+
+(defmethod (setf stumpui:text-window-padding) (padding (window message-window))
+  (setf *message-window-padding* padding))
+
+(defun unmap-message-window (screen)
+  "Unmap the screen's message window, if it is mapped."
+  (stumpui:window-hide (screen-message-window screen)))
+
+(defun unmap-all-message-windows ()
+  (mapc #'unmap-message-window *screen-list*))
 
 (defun push-last-message (screen strings highlights)
   ;; only push unique messages
@@ -206,36 +108,29 @@ function expects to be wrapped in a with-state for win."
   (let ((*record-last-msg-override* t)
         (*ignore-echo-timeout* t))
     (dformat 5 "Redrawing message window!~%")
-    (apply 'echo-string-list screen (screen-current-msg screen) (screen-current-msg-highlights screen))))
+    (stumpui:window-redraw (screen-message-window screen))))
 
 (defun echo-nth-last-message (screen n)
   (let ((*record-last-msg-override* t))
-    (apply 'echo-string-list screen (nth n (screen-last-msg screen)) (nth n (screen-last-msg-highlights screen)))))
+    (apply 'echo-string-list
+           screen
+           (nth n (screen-last-msg screen))
+           (nth n (screen-last-msg-highlights screen)))))
 
 (defun echo-string-list (screen strings &rest highlights)
   "Draw each string in l in the screen's message window. HIGHLIGHT is
   the nth entry to highlight."
-  (when strings
-    (unless *executing-stumpwm-command*
-      (multiple-value-bind (width height)
-          (rendered-size strings (screen-message-cc screen))
-        (setup-message-window screen width height)
-        (render-strings (screen-message-cc screen) *message-window-padding* 0 strings highlights))
-      (setf (screen-current-msg screen)
-            strings
-            (screen-current-msg-highlights screen)
-            highlights)
-      ;; Set a timer to hide the message after a number of seconds
-      (if *suppress-echo-timeout*
-          ;; any left over timers need to be canceled.
-          (when (timer-p *message-window-timer*)
-            (cancel-timer *message-window-timer*)
-            (setf *message-window-timer* nil))
-          (reset-message-window-timer)))
-    (push-last-message screen strings highlights)
-    (xlib:display-finish-output *display*)
-    (dformat 5 "Outputting a message:~%~{        ~a~%~}" strings)
-    (apply 'run-hook-with-args *message-hook* strings)))
+  (unless *executing-stumpwm-command*
+    (stumpui:window-show (screen-message-window screen)
+                         (current-head)
+                         :text strings
+                         :highlights highlights
+                         :timeout (unless *suppress-echo-timeout*
+                                    *timeout-wait*)))
+  (push-last-message screen strings highlights)
+  (xlib:display-finish-output *display*)
+  (dformat 5 "Outputting a message:~%~{        ~a~%~}" strings)
+  (apply 'run-hook-with-args *message-hook* strings))
 
 (defun echo-string (screen msg)
   "Display @var{string} in the message bar on @var{screen}. You almost always want to use @command{message}."

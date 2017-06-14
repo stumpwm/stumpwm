@@ -21,6 +21,7 @@
                (:file "wrappers")
                (:file "pathnames")
                (:file "font-rendering")
+               (:file "gravity")
                (:file "keysyms")
                (:file "keytrans")
                (:file "kmap")
@@ -53,6 +54,11 @@
                (:file "mode-line-formatters")
                (:file "color")
                (:file "wse")
+               (:module "stumpui"
+                :components (;; NOTE: The package definition is in package.lisp
+                             ;; above.
+                             (:file "protocols")
+                             (:file "windows")))
                ;; keep this last so it always gets recompiled if
                ;; anything changes
                (:file "version")))
