@@ -1235,26 +1235,37 @@ direction. The following are valid directions:
     (if tree
         (balance-frames-internal (current-group) tree)
         (message "There's only one frame."))))
+(defun unfloat-window (window group)
+  ;; maybe find the frame geometrically closest to this float?
+  (let ((frame (first (group-frames group))))
+    (change-class window 'tile-window :frame frame)
+    (setf (window-frame window) frame
+          (frame-window frame) window
+          (tile-group-current-frame group) frame)
+    (update-decoration window)
+    (sync-frame-windows group frame)))
+
+(defun float-window (window group)
+  (let ((frame (tile-group-current-frame group)))
+    (change-class window 'float-window)
+    (float-window-align window)
+    (funcall-on-node (tile-group-frame-tree group)
+                     (lambda (f) (setf (slot-value f 'window) nil))
+                     (lambda (f) (eq frame f)))))
 
 (defcommand (float-this tile-group) () ()
   "Transforms a tile-window into a float-window"
-  (let* ((w (current-window))
-         (g (current-group))
-         (f (tile-group-current-frame g)))
-    (change-class w 'float-window)
-    (float-window-align w)
-    (funcall-on-node (tile-group-frame-tree g)
-                     (lambda (frame) (setf (slot-value frame 'window) nil))
-                     (lambda (frame) (eq f frame)))))
+  (float-window (current-window) (current-group)))
 
 (defcommand (unfloat-this tile-group) () ()
   "Transforms a float-window into a tile-window"
-  (let* ((g (current-group))
-         (frame (first (group-frames g)))
-         (w (current-window)))
-    (change-class w 'tile-window :frame frame)
-    (setf (window-frame w) frame
-          (frame-window frame) w
-          (tile-group-current-frame g) frame)
-    (update-decoration w)
-    (sync-frame-windows g frame)))
+  (unfloat-window (current-window) (current-group)))
+
+(defcommand flatten-floats () ()
+  "Transform all floating windows in this group to tiled windows.
+Puts all tiled windows in the first frame of the group. "
+  (let ((group (current-group)))
+    (mapc (lambda (w) 
+          (when (typep w 'float-window) 
+            (unfloat-window w group))) 
+          (head-windows group (current-head)))))
