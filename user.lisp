@@ -273,29 +273,17 @@ By default, the global @var{*run-or-raise-all-groups*} decides whether
 to search all groups or the current one for a running
 instance. @var{all-groups} overrides this default. Similarily for
 @var{*run-or-raise-all-screens*} and @var{all-screens}."
-  (labels
-      ;; Raise the window win and select its frame.  For now, it
-      ;; does not select the screen.
-      ((goto-win (win)
-         (let* ((group (window-group win))
-                (frame (window-frame win))
-                (old-frame (tile-group-current-frame group)))
-           (focus-all win)
-           (unless (eq frame old-frame)
-             (show-frame-indicator group)))))
-    (let* ((matches (find-matching-windows props all-groups all-screens))
-           ;; other-matches is list of matches "after" the current
-           ;; win, if current win matches. getting 2nd element means
-           ;; skipping over the current win, to cycle through matches
-           (other-matches (member (current-window) matches))
-           (win (if (> (length other-matches) 1)
-                    (second other-matches)
-                    (first matches))))
-      (if win
-          (if (eq (type-of (window-group win)) 'float-group)
-              (focus-all win)
-              (goto-win win))
-          (run-shell-command cmd)))))
+  (let* ((matches (find-matching-windows props all-groups all-screens))
+         ;; other-matches is list of matches "after" the current
+         ;; win, if current win matches. getting 2nd element means
+         ;; skipping over the current win, to cycle through matches
+         (other-matches (member (current-window) matches))
+         (win (if (> (length other-matches) 1)
+                  (second other-matches)
+                  (first matches))))
+    (if win
+        (focus-all win)
+        (run-shell-command cmd))))
 
 (defun run-or-pull (cmd props &optional (all-groups *run-or-raise-all-groups*)
                     (all-screens *run-or-raise-all-screens*))
