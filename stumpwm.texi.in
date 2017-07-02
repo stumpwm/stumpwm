@@ -2417,7 +2417,7 @@ $ git checkout experimental
 @end example
 
 Anyway, now that you have a new branch, create that new file with the
-long name, which I'll just call @file{danger.lisp} for brevity. Make whatever
+long name, which we'll just call @file{danger.lisp} for brevity. Make whatever
 changes you want to it, and when you're done, tell git about your new
 file.
 
