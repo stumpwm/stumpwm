@@ -2122,7 +2122,7 @@ Of course, you can change all the colors if you like.
 @chapter Hooks
 StumpWM exports a number of hooks you can use to add customizations;
 like hooks in Emacs, you add to a hook with the @code{add-hook}
-function. for example:
+function. For example:
 
 @example
 (stumpwm:add-hook 'stumpwm:*new-window-hook* 'my-new-window-custos)

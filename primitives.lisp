@@ -273,7 +273,7 @@ window group and frame")
 called with 2 arguments: the current frame and the last frame.")
 
 (defvar *new-frame-hook* '()
-  "A hook called when a new frame is created. the hook is called with
+  "A hook called when a new frame is created. The hook is called with
 the frame as an argument.")
 
 (defvar *split-frame-hook* '()
