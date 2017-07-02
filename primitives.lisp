@@ -659,7 +659,7 @@ chosen, resignal the error."
   (run-hook-with-args hook))
 
 (defmacro add-hook (hook fn)
-  "Add @var{function} to the hook @var{hook-variable}. For example, to
+  "Add @var{function} to the @var{hook-variable}. For example, to
 display a message whenever you switch frames:
 
 @example
