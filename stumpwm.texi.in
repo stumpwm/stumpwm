@@ -2349,7 +2349,7 @@ statement like this:
 (your-sbcl-code)
 @end example
 
-#to wrap the code for each lisp. Of course, the best option is to
+to wrap the code for each lisp. Of course, the best option is to
 find a way to use the same code for clisp and SBCL.
 @end enumerate
 
@@ -2357,7 +2357,7 @@ find a way to use the same code for clisp and SBCL.
 @section Hacking:  Using git with StumpWM
 
 For quite a while now, StumpWM has been using the git version control
-system for development. If you're one using one of the official
+system for development. If you're using one of the official
 releases, you can get the bleeding-edge source code from the official
 git repository with a single command:
 
@@ -2446,7 +2446,7 @@ $ ls
 Then look for your new file. It's not there! That's because you've
 done all of your work in another branch, which git is currently hiding
 from you so that you can ``check out'' the branch called ``master.'' All
-is as it should be--your master repository is still safe.
+is as it should be---your master repository is still safe.
 
 @example
 $ git checkout experimental
