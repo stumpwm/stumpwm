@@ -273,7 +273,7 @@ window group and frame")
 called with 2 arguments: the current frame and the last frame.")
 
 (defvar *new-frame-hook* '()
-  "A hook called when a new frame is created. the hook is called with
+  "A hook called when a new frame is created. The hook is called with
 the frame as an argument.")
 
 (defvar *split-frame-hook* '()
@@ -659,7 +659,7 @@ chosen, resignal the error."
   (run-hook-with-args hook))
 
 (defmacro add-hook (hook fn)
-  "Add @var{function} to the hook @var{hook-variable}. For example, to
+  "Add @var{function} to the @var{hook-variable}. For example, to
 display a message whenever you switch frames:
 
 @example
