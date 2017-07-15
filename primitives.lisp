@@ -58,6 +58,7 @@
           *mode-line-click-hook*
           *pre-command-hook*
           *post-command-hook*
+          *selection-notify-hook*
           *display*
           *shell-program*
           *maxsize-border-width*
@@ -322,6 +323,10 @@ the command as a symbol.")
 (defvar *post-command-hook* '()
   "Called after a command is called. It is called with 1 argument:
 the command as a symbol.")
+
+(defvar *selection-notify-hook* '()
+  "Called after a :selection-notify event is processed. It is called
+with 1 argument: the selection as a string.")
 
 ;; Data types and globals used by stumpwm
 
