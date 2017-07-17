@@ -32,7 +32,7 @@
   (push-top-map kmap))
 
 (defun exit-interactive-keymap (name)
-  "Exits imove-focus mode"
+  "Exits interactive mode"
   (message "~S finished" name)
   (pop-top-map))
 
@@ -43,13 +43,13 @@ interactive modes or command trees, such as @command{iresize}.
 The NAME argument follows the same convention as in @command{defcommand}.
 
 ON-ENTER and ON-EXIT are optional functions to run before and after the
-interactive keymap mode, respectivelly. If ABORT-IF is defined, the interactive
+interactive keymap mode, respectively. If ABORT-IF is defined, the interactive
 keymap will only be activated if calling ABORT-IF returns true.
 
 KEY-BINDINGS is a list of the following form: ((KEY COMMAND) (KEY COMMAND) ...)
 
-Each element in KEY-BINDINGS declare a command inside the interactive keymap. Be
-aware that these commands won't require a prefix to run."
+Each element in KEY-BINDINGS declares a command inside the interactive keymap.
+Be aware that these commands won't require a prefix to run."
   (let* ((command (if (listp name) (car name) name))
          (exit-command (format nil "EXIT-~A" command))
          (keymap (gensym "m")))
