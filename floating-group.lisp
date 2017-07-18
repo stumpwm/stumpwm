@@ -136,17 +136,17 @@
   (defmethod group-add-window (group (window float-window) &key &allow-other-keys)
     (add-float-window group window)))
 
-(defun &float-focus-next (group)
+(defun %float-focus-next (group)
   (if (group-windows group)
       (group-focus-window group (first (group-windows group)))
       (no-focus group nil)))
 
 (defmethod group-delete-window ((group float-group) (window float-window))
   (declare (ignore window))
-  (&float-focus-next group))
+  (%float-focus-next group))
 
 (defmethod group-wake-up ((group float-group))
-  (&float-focus-next group))
+  (%float-focus-next group))
 
 (defmethod group-suspend ((group float-group)))
 
@@ -183,7 +183,7 @@
   (group-focus-window group window))
 
 (defmethod group-lost-focus ((group float-group))
-  (&float-focus-next group))
+  (%float-focus-next group))
 
 (defmethod group-indicate-focus ((group float-group))
   )
