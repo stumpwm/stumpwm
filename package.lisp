@@ -20,9 +20,7 @@
 (defpackage :stumpwm
   (:use :cl
         #:alexandria)
-  (:shadow #:yes-or-no-p #:y-or-n-p)
-  (:export
-   #:call-in-main-thread))
+  (:shadow #:yes-or-no-p #:y-or-n-p))
 
 (defpackage :stumpwm-user
   (:use :cl :stumpwm))

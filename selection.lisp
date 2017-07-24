@@ -50,7 +50,14 @@
   (case target
     ;; they're requesting what targets are available
     (:targets
-     (xlib:change-property requestor property (list :targets :string :utf8_string) target 8 :mode :replace))
+     (xlib:change-property requestor
+                           property
+                           (mapcar (lambda (x)
+                                     (xlib:intern-atom *display* x))
+                                   '(:targets :string :utf8_string))
+                           :atom
+                           32
+                           :mode :replace))
     ;; send them a string
     (:string
      (xlib:change-property requestor property (getf *x-selection* selection)
