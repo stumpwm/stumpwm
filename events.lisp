@@ -387,14 +387,13 @@ converted to an atom is removed."
   (dformat 2 "selection-notify: ~s ~s ~s~%" window property selection)
   (when property
     (let* ((selection (or selection :primary))
-           (sel-value (xlib:get-property window
-                                         property
-                                         :type :utf8_string
-                                         :result-type 'vector
-                                         :delete-p t))
-           (sel-string (when sel-value
-                         (utf8-to-string sel-value))))
-      (when sel-string
+           (sel-string (utf8-to-string
+                        (xlib:get-property window
+                                           property
+                                           :type :utf8_string
+                                           :result-type 'vector
+                                           :delete-p t))))
+      (when (< 0 (length sel-string))
         (setf (getf *x-selection* selection) sel-string)
         (run-hook-with-args *selection-notify-hook* sel-string)))))
 
