@@ -383,6 +383,20 @@ converted to an atom is removed."
 (define-stump-event-handler :selection-clear (selection)
   (setf (getf *x-selection* selection) nil))
 
+(define-stump-event-handler :selection-notify (window property selection)
+  (dformat 2 "selection-notify: ~s ~s ~s~%" window property selection)
+  (when property
+    (let* ((selection (or selection :primary))
+           (sel-string (utf8-to-string
+                        (xlib:get-property window
+                                           property
+                                           :type :utf8_string
+                                           :result-type 'vector
+                                           :delete-p t))))
+      (when (< 0 (length sel-string))
+        (setf (getf *x-selection* selection) sel-string)
+        (run-hook-with-args *selection-notify-hook* sel-string)))))
+
 (defun find-message-window-screen (win)
   "Return the screen, if any, that message window WIN belongs."
   (dolist (screen *screen-list*)
