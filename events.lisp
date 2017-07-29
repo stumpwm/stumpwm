@@ -32,17 +32,16 @@
 (defvar *current-event-time* nil)
 
 (defmacro define-stump-event-handler (event keys &body body)
-  (let ((fn-name (gensym))
-        (event-slots (gensym)))
+  (let ((event-slots (gensym)))
     (multiple-value-bind (body declarations docstring)
         (parse-body body :documentation t)
-        `(labels ((,fn-name (&rest ,event-slots &key ,@keys &allow-other-keys)
-                    (declare (ignore ,event-slots))
-                    ,@(when docstring
-                        (list docstring))
-                    ,@declarations
-                    ,@body))
-           (setf (gethash ,event *event-fn-table*) #',fn-name)))))
+      `(setf (gethash ,event *event-fn-table*)
+             (lambda (&rest ,event-slots &key ,@keys &allow-other-keys)
+               (declare (ignore ,event-slots))
+               ,@(when docstring
+                   (list docstring))
+               ,@declarations
+               ,@body)))))
 
 ;;; Configure request
 
