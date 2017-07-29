@@ -37,10 +37,10 @@
         (parse-body body :documentation t)
       `(setf (gethash ,event *event-fn-table*)
              (lambda (&rest ,event-slots &key ,@keys &allow-other-keys)
-               (declare (ignore ,event-slots))
+               (declare (ignore ,event-slots)
+                        ,@(cdar declarations))
                ,@(when docstring
                    (list docstring))
-               ,@declarations
                ,@body)))))
 
 ;;; Configure request
