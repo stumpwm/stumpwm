@@ -348,28 +348,25 @@ then describes the symbol."
                                (read-from-keymap (top-maps) #'update)))))))))
 
 (define-stumpwm-type :window-number (input prompt)
-  (let ((n (or (argument-pop input)
+  (when-let ((n (or (argument-pop input)
                (completing-read (current-screen)
                                 prompt
                                 (mapcar 'window-map-number
                                         (group-windows (current-group)))))))
-    (when n
-      (let ((win (find n (group-windows (current-group))
-                       :test #'string=
-                       :key #'window-map-number)))
-        (if win
-            (window-number win)
-            (throw 'error "No Such Window."))))))
+    (if-let ((win (find n (group-windows (current-group))
+                     :test #'string=
+                     :key #'window-map-number)))
+      (window-number win)
+      (throw 'error "No Such Window."))))
 
 (define-stumpwm-type :number (input prompt)
-  (let ((n (or (argument-pop input)
-               (read-one-line (current-screen) prompt))))
-    (when n
-      (handler-case
-          (parse-integer n)
-        (parse-error (c)
-          (declare (ignore c))
-          (throw 'error "Number required."))))))
+  (when-let ((n (or (argument-pop input)
+                    (read-one-line (current-screen) prompt))))
+    (handler-case
+        (parse-integer n)
+      (parse-error (c)
+        (declare (ignore c))
+        (throw 'error "Number required.")))))
 
 
 (define-stumpwm-type :string (input prompt)
@@ -381,10 +378,9 @@ then describes the symbol."
       (read-one-line (current-screen) prompt :password t)))
 
 (define-stumpwm-type :key (input prompt)
-  (let ((s (or (argument-pop input)
+  (when-let ((s (or (argument-pop input)
                (read-one-line (current-screen) prompt))))
-    (when s
-      (kbd s))))
+    (kbd s)))
 
 (define-stumpwm-type :window-name (input prompt)
   (or (argument-pop input)
