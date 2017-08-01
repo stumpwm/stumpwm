@@ -23,7 +23,9 @@
 (in-package :stumpwm)
 
 (export '(cancel-timer
+          cancel-idle-timer
 	  run-with-timer
+          run-with-idle-timer
           *toplevel-io*
 	  stumpwm
 	  timer-p))
@@ -87,12 +89,21 @@ further up. "
 (defvar *timer-list-lock* (sb-thread:make-mutex)
   "Lock that should be held whenever *TIMER-LIST* is modified.")
 
+(defvar *idle-timer-list* nil
+  "List of active idle timers.")
+
+(defvar *idle-timer-list-lock* (sb-thread:make-mutex)
+  "Lock that should be held whenever *IDLE-TIMER-LIST* is modified.")
+
 (defvar *in-main-thread* nil
   "Dynamically bound to T during the execution of the main stumpwm function.")
 
 (defstruct timer
   time repeat function args)
-
+;; each event: last-event-time=current-time
+;; for each idle-timer:
+;;    when (current-time - last-event-time) > idle-timer-time
+;;         run this timer
 (defun run-with-timer (secs repeat function &rest args)
   "Perform an action after a delay of SECS seconds.
 Repeat the action every REPEAT seconds, if repeat is non-nil.
@@ -108,9 +119,36 @@ The action is to call FUNCTION with arguments ARGS."
     (schedule-timer timer secs)
     (labels ((append-to-list ()
                (sb-thread:with-mutex (*timer-list-lock*)
-                 (setf *timer-list* (merge 'list *timer-list* (list timer) #'< :key #'timer-time)))))
+                 (setf *timer-list* (merge 'list *timer-list* (list timer) 
+                                           #'< :key #'timer-time)))))
       (call-in-main-thread #'append-to-list)
       timer)))
+
+(defun run-with-idle-timer (secs repeat function &rest args)
+  "Perform an action after a delay of SECS seconds of idle time.
+   Repeat the action every REPEAT seconds, if repeat is non-nil. SECS
+   and REPEAT may be reals. The action is to call FUNCTION with
+   arguments ARGS. Idle time is defined as the time since the previous
+   call to `handle-event'."
+  (check-type secs (real 0 *))
+  (check-type repeat (or null (real 0 *)))
+  (check-type function (or function symbol))
+  (let ((timer (make-timer
+                :repeat repeat
+                :function function
+                :args args)))
+    (labels ((append-to-list ()
+               (sb-thread:with-mutex (*idle-timer-list-lock*)
+                 (setf *idle-timer-list* (merge 'list *idle-timer-list* 
+                                                (list timer) 
+                                                #'< :key #'timer-time)))))
+      (call-in-main-thread #'append-to-list) timer)))
+
+(defun cancel-idle-timer (timer)
+  "Remove TIMER from the list of active idle timers."
+  (check-type timer timer)
+  (sb-thread:with-mutex (*idle-timer-list-lock*)
+    (setf *idle-timer-list* (remove timer *idle-timer-list*))))
 
 (defun cancel-timer (timer)
   "Remove TIMER from the list of active timers."
