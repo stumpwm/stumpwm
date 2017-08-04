@@ -79,6 +79,9 @@ fi
 
 if test "x$LISP" = "xsbcl"; then
    LISP_PROGRAM=$SBCL
+   if test -z "$SBCL_HOME"; then
+      AC_MSG_WARN(SBCL_HOME must be defined to use asdf/quicklisp (it should be where your sbcl.core resides))
+   fi
 elif test "x$LISP" = "xclisp"; then
    LISP_PROGRAM=$CLISP
 elif test "x$LISP" = "xccl"; then
