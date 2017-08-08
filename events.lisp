@@ -477,9 +477,8 @@ converted to an atom is removed."
             (echo-string (window-screen window) (format nil "'~a' denied map request" (window-name window)))
             (echo-string (window-screen window) (format nil "'~a' denied map request in group ~a" (window-name window) (group-name (window-group window))))))
       (frame-raise-window (window-group window) (window-frame window) window
-                          (if (eq (window-frame window)
-                                  (tile-group-current-frame (window-group window)))
-                              t nil))))
+                          (eq (window-frame window)
+                              (tile-group-current-frame (window-group window))))))
 
 (defun maybe-raise-window (window)
   (if (deny-request-p window *deny-raise-request*)
