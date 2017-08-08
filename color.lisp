@@ -42,7 +42,7 @@
 ;;    - :fg and :bg take a color as an argument, which can either be a numeric
 ;;      index into the color map or a hexadecimal color in the form of "#fff"
 ;;      or "#ffffff".
-;;    - :reverse and :bright take either t or nil as an argument. T enables
+;;    - :reverse and :bright take either t or nil as an argument. A t enables
 ;;      the setting and nil disables it.
 ;;    - :push and :pop take no arguments. :push pushes the current settings onto
 ;;      the color stack, leaving the current settings intact. :pop pops color

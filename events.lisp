@@ -32,17 +32,16 @@
 (defvar *current-event-time* nil)
 
 (defmacro define-stump-event-handler (event keys &body body)
-  (let ((fn-name (gensym))
-        (event-slots (gensym)))
+  (let ((event-slots (gensym)))
     (multiple-value-bind (body declarations docstring)
         (parse-body body :documentation t)
-        `(labels ((,fn-name (&rest ,event-slots &key ,@keys &allow-other-keys)
-                    (declare (ignore ,event-slots))
-                    ,@(when docstring
-                        (list docstring))
-                    ,@declarations
-                    ,@body))
-           (setf (gethash ,event *event-fn-table*) #',fn-name)))))
+      `(setf (gethash ,event *event-fn-table*)
+             (lambda (&rest ,event-slots &key ,@keys &allow-other-keys)
+               (declare (ignore ,event-slots)
+                        ,@(cdar declarations))
+               ,@(when docstring
+                   (list docstring))
+               ,@body)))))
 
 ;;; Configure request
 
@@ -382,6 +381,20 @@ converted to an atom is removed."
 
 (define-stump-event-handler :selection-clear (selection)
   (setf (getf *x-selection* selection) nil))
+
+(define-stump-event-handler :selection-notify (window property selection)
+  (dformat 2 "selection-notify: ~s ~s ~s~%" window property selection)
+  (when property
+    (let* ((selection (or selection :primary))
+           (sel-string (utf8-to-string
+                        (xlib:get-property window
+                                           property
+                                           :type :utf8_string
+                                           :result-type 'vector
+                                           :delete-p t))))
+      (when (< 0 (length sel-string))
+        (setf (getf *x-selection* selection) sel-string)
+        (run-hook-with-args *selection-notify-hook* sel-string)))))
 
 (defun find-message-window-screen (win)
   "Return the screen, if any, that message window WIN belongs."
