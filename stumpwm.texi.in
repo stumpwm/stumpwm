@@ -1978,6 +1978,7 @@ If you don't have code to fix the bug, then open an issue at
 @section Timers
 StumpWM has a timer system similar to that of @dfn{Emacs}.
 
+@@@ idle-time
 @@@ run-with-timer
 @@@ cancel-timer
 
