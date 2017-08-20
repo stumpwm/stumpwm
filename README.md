@@ -19,10 +19,8 @@ WMs."
 
 * StumpWM is
   * Hackable
-  * A tileable window manager
-  * Includes support for floats
   * Written in Common Lisp
-  * Compatible with many lisp distributions
+  * A multi paradigm window manager
   * A Superior window managing experience 
 * StumpWM is *not*
   * Minimalist
