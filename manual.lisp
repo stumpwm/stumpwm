@@ -18,8 +18,7 @@
 
 ;; Commentary:
 ;;
-;; Generate the texinfo manual from docstrings in the source. Note,
-;; this only works in sbcl, clisp and lispworks
+;; Generate the texinfo manual from docstrings in the source.
 ;;
 ;; Code:
 

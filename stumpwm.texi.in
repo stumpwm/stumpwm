@@ -1794,14 +1794,12 @@ StumpWM handles multiple screens.
 
 @node External Monitors, Programming With Screens, Screens, Screens
 @section External Monitors
-StumpWM will attempt to detect external monitors (via @code{xdpyinfo})
-at startup. StumpWM refers to each monitor as a
-head. Heads are logically contained by screens. In a dual-monitor
-configuration, there will be one screen with two
-heads. Non-rectangular layouts are supported (frames will not be
-created in the 'dead zone'.) And message windows will be displayed on
-the current head--that is, the head to which the currently focused
-frame belongs.
+StumpWM refers to each monitor as a head. Heads are logically
+contained by screens. In a dual-monitor configuration, there will be
+one screen with two heads. Non-rectangular layouts are supported
+(frames will not be created in the 'dead zone'.) And message windows
+will be displayed on the current head--that is, the head to which the
+currently focused frame belongs.
 
 In addition, StumpWM listens for XRandR events and re-configures the
 heads to match the new monitor configuration. Occasionally StumpWM
