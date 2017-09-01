@@ -1,6 +1,7 @@
 LISP=@LISP_PROGRAM@
 
 sbcl_BUILDOPTS=--load ./make-image.lisp
+sbcl_INFOOPTS=--eval "(progn (load \"load-stumpwm.lisp\") (load \"manual.lisp\"))" --eval "(progn (stumpwm::generate-manual) (sb-ext:quit))"
 
 datarootdir = @datarootdir@
 prefix=@prefix@
@@ -24,21 +25,6 @@ stumpwm.texi: stumpwm.texi.in
 
 stumpwm: $(FILES)
 	$(LISP) $(@LISP@_BUILDOPTS)
-
-release:
-	git tag -a -m "version @PACKAGE_VERSION@" @PACKAGE_VERSION@
-	git archive --format=tar --prefix=stumpwm-@PACKAGE_VERSION@/ HEAD > stumpwm-@PACKAGE_VERSION@.tar
-	tar xf stumpwm-@PACKAGE_VERSION@.tar
-	cd stumpwm-@PACKAGE_VERSION@ && tar zxf @PPCRE_PATH@/../cl-ppcre.tar.gz && mv cl-ppcre-* cl-ppcre
-	git log > stumpwm-@PACKAGE_VERSION@/ChangeLog
-	cp configure stumpwm-@PACKAGE_VERSION@/
-	tar zcf stumpwm-@PACKAGE_VERSION@.tgz stumpwm-@PACKAGE_VERSION@
-	rm -fr stumpwm-@PACKAGE_VERSION@/ stumpwm-@PACKAGE_VERSION@.tar
-
-upload-release:
-	gpg -b stumpwm-@PACKAGE_VERSION@.tgz
-	scp stumpwm-@PACKAGE_VERSION@.tgz stumpwm-@PACKAGE_VERSION@.tgz.sig sabetts@dl.sv.nongnu.org:/releases/stumpwm/
-	( echo rm stumpwm-latest.tgz.sig && echo rm stumpwm-latest.tgz && echo ln stumpwm-@PACKAGE_VERSION@.tgz stumpwm-latest.tgz && echo ln stumpwm-@PACKAGE_VERSION@.tgz.sig stumpwm-latest.tgz.sig ) | sftp -b - sabetts@dl.sv.nongnu.org:/releases/stumpwm/
 
 clean:
 	rm -f *.fasl *.fas *.lib *.*fsl
