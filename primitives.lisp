@@ -333,6 +333,10 @@ with 1 argument: the selection as a string.")
   "Called after an item is selected in the windows menu. It is called
 with 1 argument: the menu.")
 
+(defvar *new-head-hook* '()
+  "A hook called whenever a head is added. It is called with 2 arguments: the
+ new head and the current screen.")
+
 ;; Data types and globals used by stumpwm
 
 (defvar *display* nil

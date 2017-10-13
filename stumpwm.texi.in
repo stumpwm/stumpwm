@@ -2153,6 +2153,7 @@ $$$ *event-processing-hook*
 $$$ *pre-command-hook*
 $$$ *post-command-hook*
 $$$ *menu-selection-hook*
+$$$ *new-head-hook*
 
 @node Modules, Hacking, Hooks, Top
 @chapter Modules
