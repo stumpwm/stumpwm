@@ -81,7 +81,7 @@ called each time StumpWM starts with the argument `*module-dir'"
   (first (remove-if-not
           (lambda (file)
             (search "asd" (file-namestring file)))
-          (list-directory path))))
+          (uiop:directory* path))))
 (defun list-modules ()
   "Return a list of the available modules."
   (flet ((list-module (dir)
