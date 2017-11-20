@@ -1464,7 +1464,7 @@ An input function takes 2 arguments: the input structure and the key pressed.
 ### *window-format*
 ### *window-info-format*
 ### *window-name-source*
-### *new-window-prefered-frame*
+### *new-window-preferred-frame*
 
 @menu
 * Window Marks::
