@@ -262,20 +262,24 @@ match with an element of the completions."
          (full-string-width (+ string-width space-width))
          (pos (input-line-position input))
          (width (+ prompt-width
-                   (max 100 (+ full-string-width space-width tail-width)))))
+                   (max 100 (+ full-string-width space-width tail-width))))
+         (text-y (+ (font-ascent (screen-font screen))
+                    *message-window-y-padding*)))
     (when errorp (rotatef (xlib:gcontext-background gcontext)
                           (xlib:gcontext-foreground gcontext)))
     (xlib:with-state (win)
       (xlib:with-gcontext (gcontext :foreground (xlib:gcontext-background gcontext))
         (xlib:draw-rectangle win gcontext 0 0
-                           (xlib:drawable-width win)
-                           (xlib:drawable-height win) t))
-      (setf (xlib:drawable-width win) (+ width (* *message-window-padding* 2)))
+                             (xlib:drawable-width win)
+                             (xlib:drawable-height win) t))
+      (setf (xlib:drawable-width win) (+ width (* *message-window-padding* 2))
+            (xlib:drawable-height win) (+ (font-height (screen-font screen))
+                                          (* *message-window-y-padding* 2)))
       (setup-win-gravity screen win *input-window-gravity*))
     (xlib:with-state (win)
       (draw-image-glyphs win gcontext (screen-font screen)
                          *message-window-padding*
-                         (font-ascent (screen-font screen))
+                         text-y
                          prompt
                          :translate #'translate-id
                          :size 16)
@@ -288,14 +292,14 @@ match with an element of the completions."
                                                :background (xlib:gcontext-foreground gcontext))
                    (draw-image-glyphs win gcontext (screen-font screen)
                                       x
-                                      (font-ascent (screen-font screen))
+                                      text-y
                                       (string char)
                                       :translate #'translate-id
                                       :size 16))
             else
               do (draw-image-glyphs win gcontext (screen-font screen)
                                     x
-                                    (font-ascent (screen-font screen))
+                                    text-y
                                     (string char)
                                     :translate #'translate-id
                                     :size 16)
@@ -306,16 +310,16 @@ match with an element of the completions."
                                                     :background (xlib:gcontext-foreground gcontext))
                         (draw-image-glyphs win gcontext (screen-font screen)
                                            x
-                                           (font-ascent (screen-font screen))
+                                           text-y
                                            " "
                                            :translate #'translate-id
                                            :size 16))))
-         (draw-image-glyphs win gcontext (screen-font screen)
-                            (+ *message-window-padding* prompt-width full-string-width space-width)
-                            (font-ascent (screen-font screen))
-                            tail
-                            :translate #'translate-id
-                            :size 16))
+      (draw-image-glyphs win gcontext (screen-font screen)
+                         (+ *message-window-padding* prompt-width full-string-width space-width)
+                         text-y
+                         tail
+                         :translate #'translate-id
+                         :size 16))
     (when errorp
       (sleep 0.05)
       (rotatef (xlib:gcontext-background gcontext)
