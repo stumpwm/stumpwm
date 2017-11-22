@@ -114,7 +114,8 @@
 
 (defun setup-input-window (screen prompt input)
   "Set the input window up to read input"
-  (let* ((height (font-height (screen-font screen)))
+  (let* ((height (+ (font-height (screen-font screen))
+                    (* *message-window-y-padding* 2)))
          (win (screen-input-window screen)))
     ;; Window dimensions
     (xlib:with-state (win)
@@ -125,7 +126,7 @@
     (draw-input-bucket screen prompt input)
     ;; Ready to recieve input
     
-))
+    ))
 
 (defun shutdown-input-window (screen)
   (xlib:ungrab-keyboard *display*)
@@ -272,9 +273,7 @@ match with an element of the completions."
         (xlib:draw-rectangle win gcontext 0 0
                              (xlib:drawable-width win)
                              (xlib:drawable-height win) t))
-      (setf (xlib:drawable-width win) (+ width (* *message-window-padding* 2))
-            (xlib:drawable-height win) (+ (font-height (screen-font screen))
-                                          (* *message-window-y-padding* 2)))
+      (setf (xlib:drawable-width win) (+ width (* *message-window-padding* 2)))
       (setup-win-gravity screen win *input-window-gravity*))
     (xlib:with-state (win)
       (draw-image-glyphs win gcontext (screen-font screen)
