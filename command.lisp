@@ -241,19 +241,21 @@ only return active commands."
              ;; START (if there is one) and the end position of the
              ;; string.
              (let ((start
-                     (loop for i from start to (length input)
+                     (loop for i from start below (length input)
                            for char = (char input i)
                            do (case char
                                 (#\space)             ;Skip spaces
                                 (#\" (return (1+ i))) ;Start position found
                                 (otherwise (return-from pop-string nil))))))
                (let ((str (make-string-output-stream)))
-                 (loop for i from start to (length input)
+                 (loop for i from start below (length input)
                        for char = (char input i)
                        do (case char
                             (#\\        ;Escape next char
                              (incf i)
-                             (write-char (char input i) str))
+                             (if (< i (length input))
+                                 (write-char (char input i) str)
+                                 (return nil)))
                             (#\"        ;End delimiter
                              (return (values (get-output-stream-string str)
                                              (1+ i))))
