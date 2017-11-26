@@ -226,17 +226,47 @@ only return active commands."
 (defun argument-pop (input)
   "Pop the next argument off."
   (unless (argument-line-end-p input)
-    (let* ((p1 (position-if-not (lambda (ch)
-                                  (char= ch #\Space))
-                                (argument-line-string input)
-                                :start (argument-line-start input)))
-           (p2 (or (and p1 (position #\Space (argument-line-string input) :start p1))
-                   (length (argument-line-string input)))))
-      (prog1
-          ;; we wanna return nil if they're the same
-          (unless (= p1 p2)
-            (subseq (argument-line-string input) p1 p2))
-        (setf (argument-line-start input) (1+ p2))))))
+    (flet ((pop-word (input start)
+             ;; Return the first word of INPUT starting from START and
+             ;; its end position.
+             (let* ((p1 (position #\space input :start start :test #'char/=))
+                    (p2 (or (and p1 (position #\Space input :start p1))
+                            (length input))))
+               ;; we wanna return nil if they're the same
+               (unless (= p1 p2)
+                 (values (subseq input p1 p2)
+                         (1+ p2)))))
+           (pop-string (input start)
+             ;; Return a delimited string from INPUT starting from
+             ;; START (if there is one) and the end position of the
+             ;; string.
+             (let ((start
+                     (loop for i from start to (length input)
+                           for char = (char input i)
+                           do (case char
+                                (#\space)             ;Skip spaces
+                                (#\" (return (1+ i))) ;Start position found
+                                (otherwise (return-from pop-string nil))))))
+               (let ((str (make-string-output-stream)))
+                 (loop for i from start to (length input)
+                       for char = (char input i)
+                       do (case char
+                            (#\\        ;Escape next char
+                             (incf i)
+                             (write-char (char input i) str))
+                            (#\"        ;End delimiter
+                             (return (values (get-output-stream-string str)
+                                             (1+ i))))
+                            (otherwise
+                             (write-char char str))))))))
+      (multiple-value-bind (arg end)
+          (nth-value-or 0
+            (pop-string (argument-line-string input)
+                        (argument-line-start input))
+            (pop-word (argument-line-string input)
+                      (argument-line-start input)))
+        (setf (argument-line-start input) end)
+        arg))))
 
 (defun argument-pop-or-read (input prompt &optional completions)
   (or (argument-pop input)
