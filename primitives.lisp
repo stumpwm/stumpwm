@@ -69,6 +69,7 @@
           *window-events*
           *window-parent-events*
           *message-window-padding*
+          *message-window-y-padding*
           *message-window-gravity*
           *editor-bindings*
           *input-window-gravity*
@@ -426,6 +427,9 @@ Include only those we are ready to support.")
 ;; Message window variables
 (defvar *message-window-padding* 5
   "The number of pixels that pad the text in the message window.")
+
+(defvar *message-window-y-padding* 0
+  "The number of pixels that pad the text in the message window vertically.")
 
 (defvar *message-window-gravity* :top-right
   "This variable controls where the message window appears. The follow
