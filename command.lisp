@@ -581,7 +581,12 @@ know lisp very well. One might put the following in one's rc file:
 
 (defcommand colon (&optional initial-input) (:rest)
   "Read a command from the user. @var{initial-text} is optional. When
-supplied, the text will appear in the prompt."
+supplied, the text will appear in the prompt.
+
+String arguments with spaces may be passed to the command by
+delimiting them with double quotes. A backslash can be used to escape
+double quotes or backslashes inside the string. This does not apply to
+commands taking :REST or :SHELL type arguments."
   (let ((cmd (completing-read (current-screen) ": " (all-commands) :initial-input (or initial-input ""))))
     (unless cmd
       (throw 'error :abort))
