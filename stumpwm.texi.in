@@ -1233,8 +1233,10 @@ of ``input'':
 
 @itemize
 @item
-@command{argument-pop} (input) pop the next space-delimited
-argument from the argument line.
+@command{argument-pop} (input) pop the next space-delimited word or a
+double quote delimited string argument from the argument
+line. Backslashes may be used to escape double quotes or backslashes
+inside double quoted strings.
 
 @item
 @command{argument-pop-rest} (input) return the remainder of the
