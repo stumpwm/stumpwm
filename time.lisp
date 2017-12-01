@@ -113,9 +113,13 @@
 ;;; Helper functions
 ;;; ------------------------------------------------------------------
 
+(defun get-decoded-system-time ()
+  (decode-universal-time (+ (encode-universal-time 0 0 0 1 1 1970 0)
+                            (sb-posix:time))))
+
 (defun time-plist (&optional time)
   (multiple-value-bind (sec min hour dom mon year dow dstp tz)
-      (or time (get-decoded-time))
+      (or time (get-decoded-system-time))
     (list :second sec :minute min :hour hour :dom dom :month mon
           :year year :dow dow :dlsavings-p dstp :tz tz)))
 
@@ -205,9 +209,7 @@
 			    (* 60 decimal-local) 0))))))
 
 (defun time-unix-era ()
-  (format nil "~D"
-	  (- (get-universal-time)
-	     (encode-universal-time 0 0 0 1 1 1970 0))))
+  (format nil "~D" (sb-posix:time)))
 
 (defun time-date-and-time ()
   (time-format "%a %h %d %H:%M:%S %Y"))
