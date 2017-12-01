@@ -92,8 +92,7 @@ further up. "
 (defmethod handle-top-level-condition ((c serious-condition))
   (when (and (find-restart :remove-channel)
              (not (typep *current-io-channel*
-                         '(or stumpwm-idle-timer-channel 
-                           stumpwm-timer-channel 
+                         '(or stumpwm-timer-channel
                            display-channel 
                            request-channel))))
     (message "Removed channel ~S due to uncaught error '~A'." *current-io-channel* c)
@@ -191,7 +190,6 @@ further up. "
      (with-simple-restart (:new-io-loop "Recreate I/O loop")
        (let ((io (make-instance *default-io-loop*)))
          (io-loop-add io (make-instance 'stumpwm-timer-channel))
-         (io-loop-add io (make-instance 'stumpwm-idle-timer-channel))
          (io-loop-add io (make-instance 'display-channel :display *display*))
 
          ;; If we have no implementation for the current CL, then
