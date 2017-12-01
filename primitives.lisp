@@ -789,7 +789,7 @@ output directly to a file.")
 
 (defun dformat (level fmt &rest args)
   (when (>= *debug-level* level)
-    (multiple-value-bind (sec m h) (decode-universal-time (get-universal-time))
+    (multiple-value-bind (sec m h) (get-decoded-system-time)
       (format *debug-stream* "~2,'0d:~2,'0d:~2,'0d " h m sec))
     ;; strip out non base-char chars quick-n-dirty like
     (write-string (map 'string (lambda (ch)
