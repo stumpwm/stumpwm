@@ -59,6 +59,7 @@
           *pre-command-hook*
           *post-command-hook*
           *selection-notify-hook*
+          *menu-selection-hook*
           *display*
           *shell-program*
           *maxsize-border-width*
@@ -68,6 +69,7 @@
           *window-events*
           *window-parent-events*
           *message-window-padding*
+          *message-window-y-padding*
           *message-window-gravity*
           *editor-bindings*
           *input-window-gravity*
@@ -328,6 +330,14 @@ the command as a symbol.")
   "Called after a :selection-notify event is processed. It is called
 with 1 argument: the selection as a string.")
 
+(defvar *menu-selection-hook* '()
+  "Called after an item is selected in the windows menu. It is called
+with 1 argument: the menu.")
+
+(defvar *new-head-hook* '()
+  "A hook called whenever a head is added. It is called with 2 arguments: the
+ new head and the current screen.")
+
 ;; Data types and globals used by stumpwm
 
 (defvar *display* nil
@@ -417,6 +427,9 @@ Include only those we are ready to support.")
 ;; Message window variables
 (defvar *message-window-padding* 5
   "The number of pixels that pad the text in the message window.")
+
+(defvar *message-window-y-padding* 0
+  "The number of pixels that pad the text in the message window vertically.")
 
 (defvar *message-window-gravity* :top-right
   "This variable controls where the message window appears. The follow

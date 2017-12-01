@@ -226,17 +226,49 @@ only return active commands."
 (defun argument-pop (input)
   "Pop the next argument off."
   (unless (argument-line-end-p input)
-    (let* ((p1 (position-if-not (lambda (ch)
-                                  (char= ch #\Space))
-                                (argument-line-string input)
-                                :start (argument-line-start input)))
-           (p2 (or (and p1 (position #\Space (argument-line-string input) :start p1))
-                   (length (argument-line-string input)))))
-      (prog1
-          ;; we wanna return nil if they're the same
-          (unless (= p1 p2)
-            (subseq (argument-line-string input) p1 p2))
-        (setf (argument-line-start input) (1+ p2))))))
+    (flet ((pop-word (input start)
+             ;; Return the first word of INPUT starting from START and
+             ;; its end position.
+             (let* ((p1 (position #\space input :start start :test #'char/=))
+                    (p2 (or (and p1 (position #\Space input :start p1))
+                            (length input))))
+               ;; we wanna return nil if they're the same
+               (unless (= p1 p2)
+                 (values (subseq input p1 p2)
+                         (1+ p2)))))
+           (pop-string (input start)
+             ;; Return a delimited string from INPUT starting from
+             ;; START (if there is one) and the end position of the
+             ;; string.
+             (let ((start
+                     (loop for i from start below (length input)
+                           for char = (char input i)
+                           do (case char
+                                (#\space)             ;Skip spaces
+                                (#\" (return (1+ i))) ;Start position found
+                                (otherwise (return-from pop-string nil))))))
+               (let ((str (make-string-output-stream)))
+                 (loop for i from start below (length input)
+                       for char = (char input i)
+                       do (case char
+                            (#\\        ;Escape next char
+                             (incf i)
+                             (if (< i (length input))
+                                 (write-char (char input i) str)
+                                 (return nil)))
+                            (#\"        ;End delimiter
+                             (return (values (get-output-stream-string str)
+                                             (1+ i))))
+                            (otherwise
+                             (write-char char str))))))))
+      (multiple-value-bind (arg end)
+          (nth-value-or 0
+            (pop-string (argument-line-string input)
+                        (argument-line-start input))
+            (pop-word (argument-line-string input)
+                      (argument-line-start input)))
+        (setf (argument-line-start input) end)
+        arg))))
 
 (defun argument-pop-or-read (input prompt &optional completions)
   (or (argument-pop input)
@@ -549,7 +581,12 @@ know lisp very well. One might put the following in one's rc file:
 
 (defcommand colon (&optional initial-input) (:rest)
   "Read a command from the user. @var{initial-text} is optional. When
-supplied, the text will appear in the prompt."
+supplied, the text will appear in the prompt.
+
+String arguments with spaces may be passed to the command by
+delimiting them with double quotes. A backslash can be used to escape
+double quotes or backslashes inside the string. This does not apply to
+commands taking :REST or :SHELL type arguments."
   (let ((cmd (completing-read (current-screen) ": " (all-commands) :initial-input (or initial-input ""))))
     (unless cmd
       (throw 'error :abort))

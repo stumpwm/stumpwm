@@ -8,6 +8,9 @@
   "Set this to T if you never want windows to resize based on incremental WM_HINTs,
 like xterm and emacs.")
 
+(defvar *in-visual-pull-p* nil
+  "Whether we are visually pulling a window or not. Used to keep track of state.")
+
 (defclass tile-window (window)
   ((frame   :initarg :frame   :accessor window-frame)
    (normal-size :initform nil :accessor window-normal-size)))
@@ -335,6 +338,47 @@ when selecting another window."
                         *window-format*)))
     (when pulled-window
       (pull-window pulled-window))))
+
+(defun pull-selected-window (menu)
+  (let ((selected-window (second
+                          (nth (menu-state-selected menu)
+                               (menu-state-table menu)))))
+    (unless (some (lambda (frame)
+                    (= (window-id (frame-window (if (listp frame) (first frame) frame)))
+                       (window-id selected-window)))
+                  (tile-group-frame-tree (current-group)))
+      (pull-window selected-window))))
+
+(defun restored-windows (pulled-window original-group-windows)
+  (let ((new-group-windows (group-windows (current-group))))
+    (if pulled-window
+        (append (list pulled-window)
+                (remove pulled-window
+                        (mapcar (lambda (window)
+                                  (find-if
+                                   (lambda (w)
+                                     (eq (window-id w) (window-id window)))
+                                   new-group-windows))
+                                original-group-windows)))
+        original-group-windows)))
+
+(add-hook *menu-selection-hook*
+          (lambda (menu)
+            (when *in-visual-pull-p*
+              (pull-selected-window menu))))
+
+(defcommand (visual-pull-from-windowlist tile-group) () ()
+  (setf *in-visual-pull-p* t)
+  (unwind-protect
+       (let ((original-window (current-window))
+             (original-group-windows (group-windows (current-group)))
+             (pulled-window (select-window-from-menu (group-windows (current-group)) *window-format*)))
+         (setf (group-windows (current-group))
+               (restored-windows pulled-window original-group-windows))
+         (when (and (not pulled-window)
+                    (not (= (window-id original-window) (window-id (current-window)))))
+           (pull-window original-window)))
+    (setf *in-visual-pull-p* nil)))
 
 (defun exchange-windows (win1 win2)
   "Exchange the windows in their respective frames."

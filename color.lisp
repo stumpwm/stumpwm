@@ -382,7 +382,7 @@ rendered width."
        for row from 0 to (length strings)
        for line-height = (max-font-height parts cc)
        if (find row highlights :test 'eql)
-       do (xlib:draw-rectangle px gc 0 y (xlib:drawable-width px) line-height t)
+       do (xlib:draw-rectangle px gc 0 (+ pady y) (xlib:drawable-width px) line-height t)
          (xlib:with-gcontext (gc :foreground (xlib:gcontext-background gc)
                                  :background (xlib:gcontext-foreground gc))
            ;; If we don't switch the default colors, a color operation

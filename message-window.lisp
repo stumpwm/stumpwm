@@ -87,7 +87,7 @@ function expects to be wrapped in a with-state for win."
   (let ((win (screen-message-window screen)))
     ;; Now that we know the dimensions, raise and resize it.
     (xlib:with-state (win)
-      (setf (xlib:drawable-height win) height
+      (setf (xlib:drawable-height win) (+ height (* *message-window-y-padding* 2))
             (xlib:drawable-width win) (+ width (* *message-window-padding* 2))
             (xlib:window-priority win) :above)
       (setup-win-gravity screen win *message-window-gravity*))
@@ -220,7 +220,11 @@ function expects to be wrapped in a with-state for win."
       (multiple-value-bind (width height)
           (rendered-size strings (screen-message-cc screen))
         (setup-message-window screen width height)
-        (render-strings (screen-message-cc screen) *message-window-padding* 0 strings highlights))
+        (render-strings (screen-message-cc screen)
+                        *message-window-padding*
+                        *message-window-y-padding*
+                        strings
+                        highlights))
       (setf (screen-current-msg screen)
             strings
             (screen-current-msg-highlights screen)

@@ -169,7 +169,6 @@ regarding files in sysfs. Data is read in chunks of BLOCKSIZE bytes."
 
 (defun execv (program &rest arguments)
   (declare (ignorable program arguments))
-  ;; FIXME: seems like there should be a way to do this in sbcl the way it's done in clisp. -sabetts
   (sb-alien:with-alien ((prg sb-alien:c-string program)
                         (argv (array sb-alien:c-string 256)))
     (loop

@@ -243,6 +243,7 @@ Returns the selected element in TABLE or nil if aborted. "
                     (when prompt-line
                       (push prompt-line strings)
                       (incf highlight))
+                    (run-hook-with-args *menu-selection-hook* menu)
                     (echo-string-list screen strings highlight))
                   (multiple-value-bind (action key-seq) (read-from-keymap keymap)
                     (if action

@@ -107,8 +107,10 @@
           (t
            (dformat 1 "Updating Xinerama configuration for ~S.~%" screen)
            (if new-heads
-               (progn (head-force-refresh screen new-heads) 
-                      (update-mode-lines screen))
+               (progn (head-force-refresh screen new-heads)
+                      (update-mode-lines screen)
+                      (loop for new-head in new-heads
+                         do (run-hook-with-args *new-head-hook* new-head screen)))
                (dformat 1 "Invalid configuration! ~S~%" new-heads))))))))
 
 (define-stump-event-handler :map-request (parent send-event-p window)
@@ -610,8 +612,8 @@ they should be windows. So use this function to make a window out of DRAWABLE."
         (win (getf event-slots :window))
         (*current-event-time* (getf event-slots :time)))
     (when eventfn
-      ;; XXX: In the sbcl clx library, sometimes we get a pixmap
-      ;; instead of a window. In this case, we need to manually
+      ;; XXX: In sbcl clx libraries, sometimes what should be a window
+      ;; will be a pixmap instead. In this case, we need to manually
       ;; translate it to a window to avoid breakage in stumpwm. So far
       ;; the only slot that seems to be affected is the :window slot
       ;; for configure-request and reparent-notify events. It appears

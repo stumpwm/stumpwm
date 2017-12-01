@@ -43,7 +43,7 @@ further up. "
            (let ((dir (getenv "XDG_CONFIG_HOME")))
              (if (or (not dir) (string= dir ""))
                  (merge-pathnames  #p".config/" (user-homedir-pathname))
-                 dir)))
+                 (concatenate 'string dir "/"))))
          (user-rc
            (probe-file (merge-pathnames #p".stumpwmrc" (user-homedir-pathname))))
          (dir-rc
