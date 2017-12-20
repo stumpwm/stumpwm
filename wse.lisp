@@ -30,10 +30,10 @@
   (let*
     ((group
        (if (stringp arggroup)
-	 (or
-	   (find-group (current-screen) arggroup)
-	   (add-group (current-screen) arggroup))
-	 (or arggroup (current-group)))))
+         (or
+           (find-group (current-screen) arggroup)
+           (add-group (current-screen) arggroup))
+         (or arggroup (current-group)))))
     (mapcar (lambda (w) (move-window-to-group w group)) windows)))
 
 (defgeneric
@@ -71,74 +71,86 @@
   `(let
      ((range ,range))
      (loop for ,var in
-	   (cond
-	     ((typep range 'screen) (screen-windows range))
-	     ((typep range 'group) (group-windows range))
-	     ((typep range 'frame) (frame-windows (current-group) range))
-	     ((typep range 'list) range)
-	     ((eq range :screen) (screen-windows (current-screen)))
-	     ((eq range :group)
-	      (group-windows (current-group)))
-	     ((eq range :frame)
-	      (frame-windows (current-group)
-			     (tile-group-current-frame
-			       (current-group))))
-	     (t (error "Unknown kind of window set")))
-	   when ,condition
-	   collect (progn ,@code))))
+     (cond
+       ((typep range 'screen) (screen-windows range))
+       ((typep range 'group) (group-windows range))
+       ((typep range 'frame) (frame-windows (current-group) range))
+       ((typep range 'list) range)
+       ((eq range :screen) (screen-windows (current-screen)))
+       ((eq range :group)
+        (group-windows (current-group)))
+       ((eq range :frame)
+        (frame-windows (current-group)
+          (tile-group-current-frame
+             (current-group))))
+       (t (error "Unknown kind of window set")))
+     when ,condition
+     collect (progn ,@code))))
 
 (defun pull-w (w &optional g)
   "Pull the window w: to the current group or to the specified group g."
   (move-windows-to-group (list w) (or g (current-group))))
+
 (defun titled-p (w title)
   "Check whether window title of the window w is equal to the string
   title."
   (equal (window-title w) title))
+
 (defun title-re-p (w tre)
   "Check whether the window title of the window w matches the regular
   expression tre."
   (cl-ppcre:scan tre (window-title w)))
+
 (defun classed-p (w class)
   "Check whether the window class of the window w is equal to the string
   class."
   (equal (window-class w) class))
+
 (defun class-re-p (w cre)
   "Check whether the window class of the window w matches the regular
   expression cre."
   (cl-ppcre:scan cre (window-class w)))
+
 (defun typed-p (w type)
   "Check whether the window type of the window w is equal to the string
   type."
   (equal (window-type w) type))
+
 (defun type-re-p (w tre)
   "Check whether the window type of the window w matches the regular
   expression tre."
   (cl-ppcre:scan tre (window-type w)))
+
 (defun roled-p (w role)
   "Check whether the window role of the window w is equal to the string
   role."
   (equal (window-role w) role))
+
 (defun role-re-p (w rre)
   "Check whether the window role of the window w matches the regular
   expression rre."
   (cl-ppcre:scan rre (window-role w)))
+
 (defun resed-p (w res)
   "Check whether the window resource of the window w is equal to the
   string res."
   (equal (window-res w) res))
+
 (defun res-re-p (w rre)
   "Check whether the window resource of the window w matches the regular
   expression rre."
   (cl-ppcre:scan rre (window-res w)))
+
 (defun grouped-p (w &optional name)
   "Check whether the window w belongs to the group name or the current
   group if name is not specified."
   (if name
     (equal name (group-name (window-group w)))
     (equal (window-group w) (current-group))))
+
 (defun in-frame-p (w &optional f)
   "Check whether the window w belongs to the frame f or to the current
   frame if the frame is not specified."
   (eq (window-frame w)
       (or f (tile-group-current-frame
-	      (current-group (current-screen))))))
+              (current-group (current-screen))))))

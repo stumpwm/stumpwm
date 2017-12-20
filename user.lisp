@@ -26,11 +26,11 @@
 
 (export '(defprogram-shortcut
           pathname-is-executable-p
-	  programs-in-path
-	  restarts-menu
-	  run-or-raise
+          programs-in-path
+          restarts-menu
+          run-or-raise
           run-or-pull
-	  run-shell-command
+          run-shell-command
           window-send-string))
 
 (defun restarts-menu (err)
@@ -149,7 +149,7 @@ seperated by a colon."
 with base. Automagically update the cache."
   (rehash)
   (remove-if-not #'(lambda (p)
-		     (when (<= (length base) (length p))
+                     (when (<= (length base) (length p))
                        (string= base p
                                 :end1 (length base)
                                 :end2 (length base)))) (path-cache-programs *path-cache*)))
@@ -235,7 +235,7 @@ made and you wish to replace the existing process with it.
 
 Any run-time customizations will be lost after the restart."
   (throw :top-level :hup-process))
-                
+
 (defun find-matching-windows (props all-groups all-screens)
   "Returns list of windows matching @var{props} (see run-or-raise
 documentation for details). @var{all-groups} will find windows on all

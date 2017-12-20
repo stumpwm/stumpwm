@@ -23,7 +23,7 @@
 (in-package :stumpwm)
 
 (export '(*toplevel-io*
-	  stumpwm
+          stumpwm
           call-in-main-thread
           in-main-thread-p
           push-event))
@@ -64,7 +64,7 @@ further up. "
 
 (defun error-handler (display error-key &rest key-vals &key asynchronous &allow-other-keys)
   "Handle X errors"
-  (cond 
+  (cond
     ;; ignore asynchronous window errors
     ((and asynchronous
           (find error-key '(xlib:window-error xlib:drawable-error xlib:match-error)))
@@ -93,7 +93,7 @@ further up. "
   (when (and (find-restart :remove-channel)
              (not (typep *current-io-channel*
                          '(or stumpwm-timer-channel
-                           display-channel 
+                           display-channel
                            request-channel))))
     (message "Removed channel ~S due to uncaught error '~A'." *current-io-channel* c)
     (invoke-restart :remove-channel))
@@ -210,18 +210,18 @@ further up. "
 (defun parse-display-string (display)
   "Parse an X11 DISPLAY string and return the host and display from it."
   (ppcre:register-groups-bind (protocol host ('parse-integer display screen))
-			      ("^(?:(.*?)/)?(.*?)?:(\\d+)(?:\\.(\\d+))?" display :sharedp t)
-    (values 
+                              ("^(?:(.*?)/)?(.*?)?:(\\d+)(?:\\.(\\d+))?" display :sharedp t)
+    (values
      ;; clx doesn't like (vector character *)
      (coerce (or host "")
-	     '(simple-array character (*)))
+             '(simple-array character (*)))
      display screen
      (cond (protocol
-	    (intern1 protocol :keyword))
-	   ((or (string= host "")
-		(string-equal host "unix"))
-	    :local)
-	   (t :internet)))))
+             (intern1 protocol :keyword))
+           ((or (string= host "")
+                (string-equal host "unix"))
+            :local)
+           (t :internet)))))
 
 (defun stumpwm-internal (display-str)
   (multiple-value-bind (host display screen protocol) (parse-display-string display-str)
@@ -287,7 +287,7 @@ further up. "
         (setf *last-unhandled-error* nil)
         (cond ((and (consp ret)
                     (typep (first ret) 'condition))
-               (format t "~&Caught '~a' at the top level. Please report this.~%~a" 
+               (format t "~&Caught '~a' at the top level. Please report this.~%~a"
                        (first ret) (second ret))
                (setf *last-unhandled-error* ret))
               ;; we need to jump out of the event loop in order to hup

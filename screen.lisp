@@ -27,11 +27,11 @@
 (export '(current-screen
           current-window
           screen-current-window
-	  screen-number
-	  screen-groups
-	  screen-windows
-	  screen-height
-	  screen-width
+          screen-number
+          screen-groups
+          screen-windows
+          screen-height
+          screen-width
           set-fg-color
           set-bg-color
           set-border-color

@@ -292,7 +292,7 @@ only return active commands."
       (throw 'error :abort)))
 
 (defmacro define-stumpwm-type (type (input prompt) &body body)
-  "Create a new type that can be used for command arguments. @var{type} can be any symbol. 
+  "Create a new type that can be used for command arguments. @var{type} can be any symbol.
 
 When @var{body} is evaluated @var{input} is bound to the
 argument-line. It is passed to @code{argument-pop},
@@ -301,25 +301,26 @@ be used when prompting the user for the argument.
 
 @example
 \(define-stumpwm-type :symbol (input prompt)
- (or (find-symbol (string-upcase
-		     (or (argument-pop input)
-                         ;; Whitespace messes up find-symbol.
-		         (string-trim \" \"
-		           (completing-read (current-screen)
-					  prompt
-					  ;; find all symbols in the
-					  ;;  stumpwm package.
-					  (let (acc)
-					    (do-symbols (s (find-package \"STUMPWM\"))
-					      (push (string-downcase (symbol-name s)) acc))
-					    acc)))
-                      (throw 'error \"Abort.\")))
-                  \"STUMPWM\")
+ (or (find-symbol
+       (string-upcase
+         (or (argument-pop input)
+             ;; Whitespace messes up find-symbol.
+             (string-trim \" \"
+                          (completing-read (current-screen)
+                                           prompt
+                                           ;; find all symbols in the
+                                           ;;  stumpwm package.
+                                           (let (acc)
+                                             (do-symbols (s (find-package \"STUMPWM\"))
+                                               (push (string-downcase (symbol-name s)) acc))
+                                             acc)))
+             (throw 'error \"Abort.\")))
+       \"STUMPWM\")
      (throw 'error \"Symbol not in STUMPWM package\")))
 
 \(defcommand \"symbol\" (sym) ((:symbol \"Pick a symbol: \"))
   (message \"~a\" (with-output-to-string (s)
-	          (describe sym s))))
+                    (describe sym s))))
 @end example
 
 This code creates a new type called @code{:symbol} which finds the
@@ -540,16 +541,16 @@ user aborted."
                                                   :start 0))
                     (cmd (argument-pop arg-line)))
                (let ((*interactivep* interactivep))
-		 (call-interactively cmd arg-line)))))
+                 (call-interactively cmd arg-line)))))
     (multiple-value-bind (result error-p)
         ;; this fancy footwork lets us grab the backtrace from where the
         ;; error actually happened.
         (restart-case
-            (handler-bind 
+            (handler-bind
                 ((error (lambda (c)
                           (invoke-restart 'eval-command-error
-                                          (format nil "^B^1*Error In Command '^b~a^B': ^n~A~a" 
-                                                  cmd c (if *show-command-backtrace* 
+                                          (format nil "^B^1*Error In Command '^b~a^B': ^n~A~a"
+                                                  cmd c (if *show-command-backtrace*
                                                             (backtrace-string) ""))))))
               (parse-and-run-command cmd))
           (eval-command-error (err-text)

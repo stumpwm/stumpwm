@@ -27,11 +27,11 @@
 (export '(*top-map*
           *root-map*
           define-key
-	  kbd
-	  lookup-command
-	  lookup-key
-	  make-sparse-keymap
-	  undefine-key))
+          kbd
+          lookup-command
+          lookup-key
+          make-sparse-keymap
+          undefine-key))
 
 (defvar *top-map* nil
   "The top level key map. This is where you'll find the binding for the

@@ -18,15 +18,15 @@
 ;; <http://www.gnu.org/licenses/>.
 
 ;; Commentary:
-;; 
+;;
 ;; Provides the code for timers.
 ;;
 ;; Code:
 (in-package :stumpwm)
 (export '(cancel-timer
-	  timer-p
+          timer-p
           idle-time
-	  run-with-timer))
+          run-with-timer))
 
 ;;; Timers
 
@@ -45,10 +45,10 @@
 (defun idle-time (screen)
   "Returns the time in seconds since idle according to the root window
 of the `screen'."
-  (/ (first (multiple-value-list 
-             (xlib:screen-saver-get-idle 
+  (/ (first (multiple-value-list
+             (xlib:screen-saver-get-idle
               *display* (screen-root screen))))
-     1000.0)) 
+     1000.0))
 
 (defun run-with-timer (secs repeat function &rest args)
   "Perform an action after a delay of SECS seconds.
@@ -65,7 +65,7 @@ The action is to call FUNCTION with arguments ARGS."
     (schedule-timer timer secs)
     (labels ((append-to-list ()
                (sb-thread:with-mutex (*timer-list-lock*)
-                 (setf *timer-list* (merge 'list *timer-list* (list timer) 
+                 (setf *timer-list* (merge 'list *timer-list* (list timer)
                                            #'< :key #'timer-time)))))
       (call-in-main-thread #'append-to-list)
       timer)))

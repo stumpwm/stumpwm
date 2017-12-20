@@ -26,16 +26,16 @@
 (export '(*input-history-ignore-duplicates*
           *input-map*
           *numpad-map*
-	  completing-read
-	  input-delete-region
-	  input-goto-char
-	  input-insert-char
-	  input-insert-string
-	  input-point
-	  input-substring
-	  input-validate-region
-	  read-one-char
-	  read-one-line))
+          completing-read
+          input-delete-region
+          input-goto-char
+          input-insert-char
+          input-insert-string
+          input-point
+          input-substring
+          input-validate-region
+          read-one-char
+          read-one-line))
 
 (defstruct input-line
   string position history history-bk password)
@@ -94,7 +94,7 @@
   "Do not add a command to the input history if it's already the first in the list.")
 (defvar *numpad-map* '((87 10 . 16) (88  11 . 16) (89 12 . 16) (106 61 . 16)
                        (83 13 . 16) (84  14 . 16) (85 15 . 16) (86  21 . 17)
-                       (79 16 . 16) (80  17 . 16) (81 18 . 16) (63  17 . 17) 
+                       (79 16 . 16) (80  17 . 16) (81 18 . 16) (63  17 . 17)
                        (82 20 . 16) (104 36 . 16) (91 60 . 16) (90  19 . 16))
   "A keycode to keycode map to re-wire numpads when the numlock key is active")
 
@@ -125,15 +125,14 @@
     ;; Draw the prompt
     (draw-input-bucket screen prompt input)
     ;; Ready to recieve input
-    
     ))
 
 (defun shutdown-input-window (screen)
   (xlib:ungrab-keyboard *display*)
   (xlib:unmap-window (screen-input-window screen)))
 ;; Hack to avoid clobbering input from numpads with numlock on.
-(defun input-handle-key-press-event (&rest event-slots 
-                                     &key event-key root code state 
+(defun input-handle-key-press-event (&rest event-slots
+                                     &key event-key root code state
                                        &allow-other-keys)
   (declare (ignore event-slots root))
   (let ((numlock-on-p (= 2 (logand 2 (nth-value 4 (xlib:keyboard-control *display*)))))
@@ -392,7 +391,7 @@ position. @var{input} must be of type @var{input-line}. Input
 functions are passed this structure as their first argument."
   (check-type string string)
   (loop for c across string
-	do (input-insert-char input c)))
+        do (input-insert-char input c)))
 
 (defun input-point (input)
   "Return the position of the cursor."

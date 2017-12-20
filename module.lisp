@@ -30,7 +30,7 @@
           *load-path*
           *module-dir*
           init-load-path
-	  set-module-dir
+          set-module-dir
           find-module
           add-to-load-path))
 
