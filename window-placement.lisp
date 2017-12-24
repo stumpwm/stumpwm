@@ -22,9 +22,8 @@
   "A cache for the ppcre scanners")
 
 (defun get-or-create-rule-scanner (regex)
-  (or (gethash regex *rule-scanners-cache*)
-      (setf (gethash regex *rule-scanners-cache*)
-	    (ppcre:create-scanner regex))))
+  (ensure-gethash regex *rule-scanners-cache*
+                  (ppcre:create-scanner regex)))
 
 (defun string-match (string pat)
   (ppcre:scan (get-or-create-rule-scanner pat) string))
