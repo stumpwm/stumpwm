@@ -273,16 +273,16 @@
   "Return a Y for frame that doesn't overlap the mode-line."
   (let* ((head (frame-head group frame))
          (ml (head-mode-line head))
-	 (head-y (frame-y head))
-	 (rel-frame-y (- (frame-y frame) head-y)))
+         (head-y (frame-y head))
+         (rel-frame-y (- (frame-y frame) head-y)))
     (if (and ml (not (eq (mode-line-mode ml) :hidden)))
         (case (mode-line-position ml)
           (:top
            (+ head-y
-	      (+ (mode-line-height ml) (round (* rel-frame-y (mode-line-factor ml))))))
+              (+ (mode-line-height ml) (round (* rel-frame-y (mode-line-factor ml))))))
           (:bottom
            (+ head-y
-	      (round (* rel-frame-y (mode-line-factor ml))))))
+              (round (* rel-frame-y (mode-line-factor ml))))))
         (frame-y frame))))
 
 (defun frame-display-height (group frame)
@@ -858,19 +858,19 @@ desktop when starting."
          (halfwidth (/ width 2)))
     (when (> width 0)
       (let ((x (frame-x f))
-	    (y (frame-display-y group f))
-	    (w (frame-width f))
-	    (h (frame-display-height group f)))
-	(when tl
-	  (xlib:draw-line win gc
-			  x (+ halfwidth y) w 0 t)
-	  (xlib:draw-line win gc
-			  (+ halfwidth x) y 0 h t))
-	(when br
-	  (xlib:draw-line win gc
-			  (+ x (- w halfwidth)) y 0 h t)
-	  (xlib:draw-line win gc
-			  x (+ y (- h halfwidth)) w 0 t))))))
+            (y (frame-display-y group f))
+            (w (frame-width f))
+            (h (frame-display-height group f)))
+        (when tl
+          (xlib:draw-line win gc
+                          x (+ halfwidth y) w 0 t)
+          (xlib:draw-line win gc
+                          (+ halfwidth x) y 0 h t))
+        (when br
+          (xlib:draw-line win gc
+                          (+ x (- w halfwidth)) y 0 h t)
+          (xlib:draw-line win gc
+                          x (+ y (- h halfwidth)) w 0 t))))))
 
 (defun draw-frame-outlines (group &optional head)
   "Draw an outline around all frames in GROUP."
@@ -1265,7 +1265,7 @@ direction. The following are valid directions:
   "Transform all floating windows in this group to tiled windows.
 Puts all tiled windows in the first frame of the group. "
   (let ((group (current-group)))
-    (mapc (lambda (w) 
-          (when (typep w 'float-window) 
-            (unfloat-window w group))) 
+    (mapc (lambda (w)
+          (when (typep w 'float-window)
+            (unfloat-window w group)))
           (head-windows group (current-head)))))

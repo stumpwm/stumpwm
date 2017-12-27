@@ -425,11 +425,11 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
 (defmethod sort-windows-by-class ((window-list list))
   "Return a copy of the provided window list sorted by class then by number."
   (sort1 window-list (lambda (w1 w2)
-		       (let ((class1 (window-class w1))
-			     (class2 (window-class w2)))
-			 (if (string= class1 class2)
-			     (< (window-number w1) (window-number w2))
-			     (string< class1 class2))))))
+                       (let ((class1 (window-class w1))
+                             (class2 (window-class w2)))
+                         (if (string= class1 class2)
+                           (< (window-number w1) (window-number w2))
+                           (string< class1 class2))))))
 
 (defmethod sort-windows-by-class (group)
   "Return a copy of the provided window list sorted by class then by number."
@@ -693,22 +693,22 @@ and bottom_end_x."
                key))
            (key-modifiers-exist-p (key)
              (and
-              (or (not (key-meta key)) (modifiers-meta *modifiers*))
-              (or (not (key-alt key)) (modifiers-alt *modifiers*))
-              (or (not (key-hyper key)) (modifiers-hyper *modifiers*))
-              (or (not (key-super key)) (modifiers-super *modifiers*))))
+               (or (not (key-meta key)) (modifiers-meta *modifiers*))
+               (or (not (key-alt key)) (modifiers-alt *modifiers*))
+               (or (not (key-hyper key)) (modifiers-hyper *modifiers*))
+               (or (not (key-super key)) (modifiers-super *modifiers*))))
            (grabit (w key)
              (loop for code in (multiple-value-list (xlib:keysym->keycodes *display* (key-keysym key)))
                ;; some keysyms aren't mapped to keycodes so just ignore them.
-                when (and code (key-modifiers-exist-p key))
-                  do
+               when (and code (key-modifiers-exist-p key))
+               do
                  ;; Some keysyms, such as upper case letters, need the
                  ;; shift modifier to be set in order to grab properly.
                  (let ((key
-                        (if (and (not (eql (key-keysym key) (xlib:keycode->keysym *display* code 0)))
-                                 (eql (key-keysym key) (xlib:keycode->keysym *display* code 1)))
-                            (add-shift-modifier key)
-                            key)))
+                         (if (and (not (eql (key-keysym key) (xlib:keycode->keysym *display* code 0)))
+                                  (eql (key-keysym key) (xlib:keycode->keysym *display* code 1)))
+                           (add-shift-modifier key)
+                           key)))
                    (xlib:grab-key w code
                                   :modifiers (x11-mods key) :owner-p t
                                   :sync-pointer-p nil :sync-keyboard-p nil)
@@ -967,8 +967,8 @@ needed."
 @var{fmt} argument specifies the window formatting used.  Returns the window
 selected."
   (second (select-from-menu (current-screen)
-			    (mapcar (lambda (w)
-				      (list (format-expand *window-formatters* fmt w) w))
+                            (mapcar (lambda (w)
+                                      (list (format-expand *window-formatters* fmt w) w))
                                     windows)
                             prompt
                             (or (position (current-window) windows) 0)  ; Initial selection
@@ -1067,16 +1067,16 @@ is using the number, then the windows swap numbers. Defaults to current group."
 (defcommand repack-window-numbers (&optional preserved) ()
   "Ensure that used window numbers do not have gaps; ignore PRESERVED window numbers."
   (let* ((group (current-group))
-	 (windows (sort-windows group)))
+         (windows (sort-windows group)))
     (loop for w in windows
-	  do (unless (find (window-number w) preserved)
-	       (setf
-		 (window-number w)
-		 (find-free-number
-		   (remove
-		     (window-number w)
-		     (mapcar 'window-number windows))
-		   0))))))
+          do (unless (find (window-number w) preserved)
+               (setf
+                 (window-number w)
+                 (find-free-number
+                   (remove
+                     (window-number w)
+                     (mapcar 'window-number windows))
+                   0))))))
 
 ;; It would make more sense that the window-list argument was before the fmt one
 ;; but window-list was added latter and I didn't want to break other's code.
@@ -1091,7 +1091,7 @@ all window in the current group. Also note that the default window list is sorte
 by number and if the @var{windows-list} is provided, it is shown unsorted (as-is)."
   ;; Shadowing the window-list argument.
   (let ((window-list (or window-list
-                         (sort-windows-by-number 
+                         (sort-windows-by-number
                           (group-windows (current-group))))))
     (if (null window-list)
         (message "No Managed Windows")

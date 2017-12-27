@@ -529,10 +529,10 @@ frame. Possible values are:
 frame and focus the selected window.  The optional argument @var{fmt} can be
 specified to override the default window formatting."
   (let* ((group (current-group))
-	 (frame (tile-group-current-frame group)))
+         (frame (tile-group-current-frame group)))
     (if (null (frame-windows group frame))
-	(message "No Managed Windows")
-	(let ((window (select-window-from-menu (frame-sort-windows group frame) fmt)))
-	  (if window
-	      (group-focus-window group window)
-	      (throw 'error :abort))))))
+        (message "No Managed Windows")
+        (let ((window (select-window-from-menu (frame-sort-windows group frame) fmt)))
+          (if window
+              (group-focus-window group window)
+              (throw 'error :abort))))))
