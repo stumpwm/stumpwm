@@ -1165,17 +1165,19 @@ be used to override the default window formatting."
 
 (defcommand refresh () ()
   "Refresh current window without changing its size."
-  (let* ((window (current-window))
-         (w (window-width window))
-         (h (window-height window)))
-    (set-window-geometry window
-                         :width (- w (window-width-inc window))
-                         :height (- h (window-height-inc window)))
-    ;; make sure the first one goes through before sending the second
-    (xlib:display-finish-output *display*)
-    (set-window-geometry window
-                         :width w
-                         :height h)))
+  (if (current-window)
+      (let* ((window (current-window))
+             (w (window-width window))
+             (h (window-height window)))
+        (set-window-geometry window
+                             :width (- w (window-width-inc window))
+                             :height (- h (window-height-inc window)))
+        ;; make sure the first one goes through before sending the second
+        (xlib:display-finish-output *display*)
+        (set-window-geometry window
+                             :width w
+                             :height h))
+      (message "No Current Window")))
 
 (defcommand toggle-always-on-top () ()
   "Toggle whether the current window always appears over other windows.
