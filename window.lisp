@@ -1165,9 +1165,9 @@ be used to override the default window formatting."
 
 (defcommand refresh () ()
   "Refresh current window without changing its size."
-  (let* ((window (current-window))
-         (w (window-width window))
-         (h (window-height window)))
+  (when-let* ((window (current-window))
+              (w (window-width window))
+              (h (window-height window)))
     (set-window-geometry window
                          :width (- w (window-width-inc window))
                          :height (- h (window-height-inc window)))
