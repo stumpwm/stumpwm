@@ -542,6 +542,19 @@ The windows will be moved to group \"^B^2*~a^n\"
             (message "Canceled"))
         (message "There's only one group left"))))
 
+(defcommand gkill-other () ()
+  "Kill other groups. All windows in other groups are migrated
+to the current group."
+  (let* ((current-group (current-group))
+         (groups (remove-if (lambda (g) (eq g current-group))
+                            (screen-groups (current-screen)))))
+    (if (> (length groups) 0)
+        (progn
+          (dolist (dead-group groups)
+            (kill-group dead-group current-group))
+          (message "Deleted")) 
+        (message "There's only one group left"))))
+
 (defcommand gmerge (from) ((:group "From Group: "))
 "Merge @var{from} into the current group. @var{from} is not deleted."
   (if (eq from (current-group))
