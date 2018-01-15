@@ -1090,16 +1090,13 @@ list (see @command{windowlist-by-class}). The default window list is the list of
 all window in the current group. Also note that the default window list is sorted
 by number and if the @var{windows-list} is provided, it is shown unsorted (as-is)."
   ;; Shadowing the window-list argument.
-  (let ((window-list (or window-list
-                         (sort-windows-by-number
-                          (group-windows (current-group))))))
-    (if (null window-list)
-        (message "No Managed Windows")
-        (let ((window (select-window-from-menu window-list fmt)))
-          (if window
-              (group-focus-window (current-group) window)
-              (throw 'error :abort))))))
-
+  (if-let ((window-list (or window-list
+                          (sort-windows-by-number
+                           (group-windows (current-group))))))
+    (if-let ((window (select-window-from-menu window-list fmt)))
+      (group-focus-window (current-group) window)
+      (throw 'error :abort))
+    (message "No Managed Windows")))
 
 (defcommand windowlist-by-class (&optional (fmt *window-format-by-class*)) (:rest)
   "Allow the user to select a window from the list of windows (sorted by class)
