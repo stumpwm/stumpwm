@@ -79,8 +79,8 @@
                       for cmd = (lookup-key-sequence map keys)
                       when cmd return cmd))
            (printed-key (mapcar 'print-key keys)))
-    (message "~{~a~^ ~} is bound to \"~a\"." printed-key cmd)
-    (message "~{~a~^ ~} is not bound." printed-key)))
+    (message "~{~A~^ ~} is bound to \"~A\"." printed-key cmd)
+    (message "~{~A~^ ~} is not bound." printed-key)))
 
 (defcommand describe-variable (var) ((:variable "Describe Variable: "))
 "Print the online help associated with the specified variable."
