@@ -995,6 +995,11 @@ window. Default to the current window. if
   (when window
     (xwin-kill (window-xwin window))))
 
+(defcommand kill-windows () ()
+  "Kill all windows in the current group."
+  (dolist (window (group-windows (current-group)))
+    (xwin-kill (window-xwin window))))
+
 (defcommand-alias kill kill-window)
 
 (defcommand title (title) ((:rest "Set window's title to: "))
