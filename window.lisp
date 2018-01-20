@@ -995,14 +995,18 @@ window. Default to the current window. if
   (when window
     (xwin-kill (window-xwin window))))
 
-(defun kill-windows (group)
-  "Kill all windows in the group @var{group}"
-  (dolist (window (group-windows group))
-    (xwin-kill (window-xwin window))))
+(defun kill-windows (windows)
+  "Kill all windows @var{windows}"
+  (dolist (window windows)
+    (xwin-kill (window-xwin window)))) 
+
+(defun kill-windows-in-group (group)
+   "Kill all windows in group @var{group}"
+  (kill-windows (group-windows group)))
 
 (defcommand kill-windows-current-group () ()
   "Kill all windows in the current group."
-  (kill-windows (current-group)))
+  (kill-windows-in-group (current-group)))
 
 (defcommand-alias kill kill-window)
 
