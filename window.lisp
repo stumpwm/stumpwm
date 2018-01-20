@@ -29,7 +29,10 @@
           set-normal-gravity
           set-maxsize-gravity
           set-transient-gravity
-          set-window-geometry))
+          set-window-geometry
+          find-wm-state
+          add-wm-state
+          remove-wm-state))
 
 (export
   '(window window-xwin window-width window-height window-x window-y
