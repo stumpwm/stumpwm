@@ -1011,6 +1011,12 @@ window. Default to the current window. if
   "Kill all windows in the current group."
   (kill-windows-in-group (current-group)))
 
+(defcommand kill-windows-other () ()
+  "Kill all windows in current group except the current-window"
+  (let ((target-windows (remove (current-window)
+                                (group-windows (current-group)))))
+    (kill-windows target-windows)))
+
 (defcommand-alias kill kill-window)
 
 (defcommand title (title) ((:rest "Set window's title to: "))
