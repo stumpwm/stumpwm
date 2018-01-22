@@ -551,6 +551,24 @@ to the current group."
     (dolist (dead-group groups)
       (kill-group dead-group current-group))))
 
+(defun kill-group-with-windows (group)
+"Kill the specified group @var{group} and all of its windows"
+  (let ((screen (group-screen group)))
+    (setf (screen-groups screen) (remove group (screen-groups screen)))
+    (netwm-update-groups screen)
+    (netwm-set-group-properties screen)))
+
+(defcommand gkill-with-windows () ()
+"Kill the current group and all of its windows."
+  (when-let* ((current-group (current-group))
+              (groups (screen-groups (current-screen)))
+              ;; If no "visible" group is found, try with all groups
+              (to-group
+                (or (next-group current-group (non-hidden-groups groups))
+                    (next-group current-group groups))))
+    (switch-to-group to-group)
+    (kill-group-with-windows current-group)))
+
 (defcommand gmerge (from) ((:group "From Group: "))
 "Merge @var{from} into the current group. @var{from} is not deleted."
   (if (eq from (current-group))
