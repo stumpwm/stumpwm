@@ -569,6 +569,13 @@ to the current group."
     (switch-to-group to-group)
     (kill-group-with-windows current-group)))
 
+(defcommand gkill-other-with-windows () ()
+"Kill other groups and all of its windows."
+  (let ((groups (remove (current-group)
+                        (screen-groups (current-screen)))))
+    (dolist (dead-group groups)
+      (kill-group-with-windows dead-group))))
+
 (defcommand gmerge (from) ((:group "From Group: "))
 "Merge @var{from} into the current group. @var{from} is not deleted."
   (if (eq from (current-group))
