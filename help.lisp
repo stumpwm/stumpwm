@@ -24,8 +24,6 @@
 
 (in-package #:stumpwm)
 
-(export '())
-
 (defun columnize (list columns &key col-aligns (pad 1) (char #\Space) (align :left))
   ;; only somewhat nasty
   (let* ((rows (ceiling (length list) columns))
