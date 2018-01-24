@@ -151,13 +151,11 @@
   (unless (and (not send-event-p)
                (not (xlib:window-equal event-window window)))
     (when-let ((window (find-window window)))
-      ;; if we can't find the window then there's nothing we need to
-      ;; do.
       (if (plusp (window-unmap-ignores window))
-          (progn
-            (dformat 3 "decrement ignores! ~d~%" (window-unmap-ignores window))
-            (decf (window-unmap-ignores window)))
-          (withdraw-window window)))))
+        (progn
+          (dformat 3 "decrement ignores! ~d~%" (window-unmap-ignores window))
+          (decf (window-unmap-ignores window)))
+        (withdraw-window window)))))
 
 (define-stump-event-handler :destroy-notify (send-event-p event-window window)
   (unless (or send-event-p
@@ -518,31 +516,31 @@ converted to an atom is removed."
      (when-let ((our-window (find-window window)))
        (delete-window our-window)))
     (:_NET_WM_STATE
-     (when-let ((our-window (find-window window)))
-       (let ((action (elt data 0))
-             (p1 (elt data 1))
-             (p2 (elt data 2)))
-         (dolist (p (list p1 p2))
-           ;; Sometimes the number cannot be converted to an atom, so skip them.
-           (unless (or (= p 0)
-                       (not (typep p '(unsigned-byte 29))))
-             (case (safe-atom-name p)
-               (:_NET_WM_STATE_DEMANDS_ATTENTION
-                (case action
-                  (1
-                   (add-wm-state window :_NET_WM_STATE_DEMANDS_ATTENTION))
-                  (2
-                   (unless (find-wm-state window :_NET_WM_STATE_DEMANDS_ATTENTION)
-                     (add-wm-state window :_NET_WM_STATE_DEMANDS_ATTENTION))))
-                (maybe-set-urgency our-window))
-               (:_NET_WM_STATE_FULLSCREEN
-                (update-fullscreen our-window action))))))))
+     (when-let ((our-window (find-window window))
+                (action (elt data 0))
+                (p1 (elt data 1))
+                (p2 (elt data 2)))
+       (dolist (p (list p1 p2))
+         ;; Sometimes the number cannot be converted to an atom, so skip them.
+         (unless (or (= p 0)
+                     (not (typep p '(unsigned-byte 29))))
+           (case (safe-atom-name p)
+             (:_NET_WM_STATE_DEMANDS_ATTENTION
+              (case action
+                (1
+                 (add-wm-state window :_NET_WM_STATE_DEMANDS_ATTENTION))
+                (2
+                 (unless (find-wm-state window :_NET_WM_STATE_DEMANDS_ATTENTION)
+                   (add-wm-state window :_NET_WM_STATE_DEMANDS_ATTENTION))))
+              (maybe-set-urgency our-window))
+             (:_NET_WM_STATE_FULLSCREEN
+              (update-fullscreen our-window action)))))))
   (:_NET_MOVERESIZE_WINDOW
-   (when-let ((our-window (find-window window)))
-     (let ((x (elt data 1))
-           (y (elt data 2)))
-       (dformat 3 "!!! Data: ~S~%" data)
-       (group-move-request (window-group our-window) our-window x y :root))))
+   (when-let ((our-window (find-window window))
+              (x (elt data 1))
+              (y (elt data 2)))
+     (dformat 3 "!!! Data: ~S~%" data)
+     (group-move-request (window-group our-window) our-window x y :root)))
   (t
    (dformat 2 "ignored message~%"))))
 
