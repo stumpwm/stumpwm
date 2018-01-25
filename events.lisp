@@ -150,12 +150,14 @@
   (dformat 2 "UNMAP: ~s ~s ~a~%" send-event-p (not (xlib:window-equal event-window window)) (find-window window))
   (unless (and (not send-event-p)
                (not (xlib:window-equal event-window window)))
+    ;; if we can't find the window then there's nothing we need to
+    ;; do.
     (when-let ((window (find-window window)))
       (if (plusp (window-unmap-ignores window))
-        (progn
-          (dformat 3 "decrement ignores! ~d~%" (window-unmap-ignores window))
-          (decf (window-unmap-ignores window)))
-        (withdraw-window window)))))
+          (progn
+            (dformat 3 "decrement ignores! ~d~%" (window-unmap-ignores window))
+            (decf (window-unmap-ignores window)))
+          (withdraw-window window)))))
 
 (define-stump-event-handler :destroy-notify (send-event-p event-window window)
   (unless (or send-event-p
