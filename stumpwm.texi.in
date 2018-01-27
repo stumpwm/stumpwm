@@ -1438,6 +1438,8 @@ An input function takes 2 arguments: the input structure and the key pressed.
 !!! prev
 !!! delete-window
 !!! kill-window
+!!! kill-windows-current-group
+!!! kill-windows-other
 !!! echo-windows
 !!! other-window
 !!! pull-hidden-next
@@ -1766,6 +1768,7 @@ Groups in StumpWM are more commonly known as @dfn{virtual desktops} or
 !!! gmove-and-follow
 !!! gmove-marked
 !!! gkill
+!!! gkill-other
 !!! grename
 !!! grouplist
 
