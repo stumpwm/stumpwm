@@ -45,7 +45,7 @@
   "A list of interactive stumpwm commands.")
 
 (defvar *max-command-alias-depth* 10
-  "")
+  "The maximum number of times an command alias is expanded before an Error is raised.")
 
 (define-condition command-docstring-warning (style-warning)
   ;; Don't define an accessor to prevent collision with the generic command
@@ -192,7 +192,7 @@ commands."
                      until (or (null c)
                                (command-p c))
                      when (> depth *max-command-alias-depth*)
-                     do (error "Maximum command alias depth exceded")
+                     do (error "Maximum command alias depth exceeded.")
                      finally (return c))))
   (when (and command
              (or (not only-active)
