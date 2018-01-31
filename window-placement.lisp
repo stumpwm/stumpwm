@@ -48,13 +48,13 @@
                                                               (current-group))))
                             ((stringp from-group) from-group)
                             (t (group-name (eval from-group))))))
-     (if (or lock
-             (equal group-name from-group))
-         (window-matches-properties-p w :class class
-                                      :instance instance
-                                      :type type
-                                      :role role
-                                      :title title)))))
+      (if (or lock
+              (equal group-name from-group))
+          (window-matches-properties-p w :class class
+                                         :instance instance
+                                         :type type
+                                         :role role
+                                         :title title)))))
 
 (defun rule-matching-window (window)
   (dolist (rule *window-placement-rules*)
