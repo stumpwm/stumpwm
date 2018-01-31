@@ -41,17 +41,20 @@
 (defun window-matches-rule-p (w rule)
   "Returns T if window matches rule"
   (destructuring-bind (group-name frame raise lock
-                       &key create restore class instance type role title) rule
+                       &key from-group create restore class instance type role title) rule
     (declare (ignore frame raise create restore))
-    (if (or lock
-            (equal group-name (group-name (or (when (slot-boundp w 'group)
-                                                (window-group w))
-                                              (current-group)))))
-        (window-matches-properties-p w :class class
-                                       :instance instance
-                                       :type type
-                                       :role role
-                                       :title title))))
+    (let ((from-group (cond ((not from-group) (group-name (or (when (slot-boundp w 'group)
+                                                                (window-group w))
+                                                              (current-group))))
+                            ((stringp from-group) from-group)
+                            (t (group-name (eval from-group))))))
+     (if (or lock
+             (equal group-name from-group))
+         (window-matches-properties-p w :class class
+                                      :instance instance
+                                      :type type
+                                      :role role
+                                      :title title)))))
 
 (defun rule-matching-window (window)
   (dolist (rule *window-placement-rules*)
@@ -63,8 +66,8 @@
   (let ((match (rule-matching-window window)))
     (if match
         (destructuring-bind (group-name frame raise lock
-                             &key create restore class instance type role title) match
-          (declare (ignore lock class instance type role title))
+                             &key from-group create restore class instance type role title) match
+          (declare (ignore from-group lock class instance type role title))
           (let ((group (find-group screen group-name)))
             (cond (group
                    (when (and restore (stringp restore))

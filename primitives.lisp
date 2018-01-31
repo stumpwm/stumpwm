@@ -1122,8 +1122,8 @@ The window's title must match @var{title}.
        ;; verify the correct structure
        (destructuring-bind (frame-number raise lock
                                          &rest keys
-                                         &key create restore class instance type role title) ,x
-         (declare (ignore create restore class instance type role title))
+                                         &key from-group create restore class instance type role title) ,x
+         (declare (ignore from-group create restore class instance type role title))
          (push (list* ,target-group frame-number raise lock keys)
                *window-placement-rules*)))))
 
