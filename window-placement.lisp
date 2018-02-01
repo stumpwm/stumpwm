@@ -100,13 +100,12 @@
   (multiple-value-bind (to-group frame raise)
       (with-current-screen screen
         (get-window-placement screen window))
-    (declare (ignore raise))
     (when to-group
       (unless (eq (window-group window) to-group)
         (move-window-to-group window to-group)))
     (when frame
       (unless (eq (window-frame window) frame)
-        (pull-window window frame)))))
+        (pull-window window frame raise)))))
 
 (defun sync-window-placement ()
   "Re-arrange existing windows according to placement rules"
