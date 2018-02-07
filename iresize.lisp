@@ -56,7 +56,8 @@
   (draw-frame-outlines (current-group) (current-head)))
 
 (defcommand resize-direction (d)
-  (:direction)
+  "Resize frame to direction @var{d}"
+  ((:direction "Direction: "))
   (let* ((formats '((:up . "0 -~D")
                     (:down . "0 ~D")
                     (:left . "-~D 0")
