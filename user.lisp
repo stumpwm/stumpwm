@@ -196,7 +196,7 @@ such a case, kill the shell command to resume StumpWM."
 (defcommand loadrc () ()
 "Reload the @file{~/.stumpwmrc} file."
   (handler-case 
-    (with-restarts-menu (load-rc-file nil))
+      (with-restarts-menu (load-rc-file nil))
     (error (c)
       (message "^1*^BError loading rc file: ^n~A" c))
     (:no-error (&rest args)
