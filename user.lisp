@@ -388,3 +388,54 @@ like xprop."
                                           (mapcar 'utf8-to-string
                                                   (split-seq values '(0)))))
                     (t values)))))))
+
+(defun yes-no-diag (query-string)
+  "Presents a yes-no dialog to the user asking query-string.
+Returns true when yes is selected"
+  (equal :yes (cadr (select-from-menu (current-screen)
+                            '(("No" :no) ("Yes" :yes))
+                            query-string))))
+
+(defun close-all-apps ()
+  "Closes all windows managed by stumpwm gracefully"
+  ;; yes, this uses an external tool instead of stumpwm internals
+  (let ((win-index-text (run-shell-command "wmctrl -l | awk '{print $1}'" t)))
+    (dolist (window (cl-ppcre:split "\\\n" win-index-text))
+      (print (format nil "wmctrl -i -c ~A" window)))))
+
+(defcommand shutdown-computer () ()
+  (let ((choice (yes-no-diag "Really Shutdown? (All programs will be closed)")))
+    (when choice
+      (echo-string (current-screen) "Shutting down...")
+      (close-all-apps)
+      (run-hook *quit-hook*)
+      (print "systemctl shutdown"))))
+
+;; can't name the function "restart"
+(defcommand restart-computer () ()
+  (let ((choice (yes-no-diag "Really Restart? (All programs will be closed)")))
+    (when choice
+      (echo-string (current-screen) "Restarting...")
+      (close-all-apps)
+      (run-hook *quit-hook*)
+      (print "systemctl restart"))))
+
+(defcommand end-session () ()
+  (let ((choice (yes-no-diag "Close all programs and quit stumpwm?")))
+    (when choice
+      (echo-string (current-screen) "Ending Session...")
+      (close-all-apps)
+      (run-hook *quit-hook*)
+      (quit))))
+
+(defparameter *end-session-menu*
+  (list (list "End Session" #'end-session)
+        (list "Shutdown" #'shutdown-computer)
+        (list "Restart"  #'restart-computer))
+  "The options that are available to quit a stumpwm session.
+Entries in the list has the format of (\"item in menu\" #'function-to-call)")
+
+(defcommand session-quit () ()
+  (let ((choice (select-from-menu (current-screen) *end-session-menu*
+                               "Quit Session?")))
+    (apply (second choice) nil)))
