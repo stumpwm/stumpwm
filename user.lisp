@@ -401,7 +401,7 @@ Returns true when yes is selected"
   ;; yes, this uses an external tool instead of stumpwm internals
   (let ((win-index-text (run-shell-command "wmctrl -l | awk '{print $1}'" t)))
     (dolist (window (cl-ppcre:split "\\\n" win-index-text))
-      (print (format nil "wmctrl -i -c ~A" window)))))
+      (run-shell-command (format nil "wmctrl -i -c ~A" window)))))
 
 (defcommand shutdown-computer () ()
   (let ((choice (yes-no-diag "Really Shutdown? (All programs will be closed)")))
@@ -409,7 +409,7 @@ Returns true when yes is selected"
       (echo-string (current-screen) "Shutting down...")
       (close-all-apps)
       (run-hook *quit-hook*)
-      (print "systemctl shutdown"))))
+      (run-shell-command "systemctl shutdown"))))
 
 ;; can't name the function "restart"
 (defcommand restart-computer () ()
@@ -418,7 +418,7 @@ Returns true when yes is selected"
       (echo-string (current-screen) "Restarting...")
       (close-all-apps)
       (run-hook *quit-hook*)
-      (print "systemctl restart"))))
+      (run-shell-command "systemctl restart"))))
 
 (defcommand end-session () ()
   (let ((choice (yes-no-diag "Close all programs and quit stumpwm?")))
