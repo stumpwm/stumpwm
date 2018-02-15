@@ -1088,12 +1088,19 @@ The frame number to send matching windows to
 When non-nil, raise and focus the window in its frame
 
 @item lock
-When this is nil, this rule will only match when the current group
-matches @var{target-group}. When non-nil, this rule matches regardless
+When this is nil, this rule will only match when @var{target-group}
+matches the group designated by @var{from-group}.
+When non-nil, this rule matches regardless
 of the group and the window is sent to @var{target-group}. If
 @var{lock} and @var{raise} are both non-nil, then stumpwm will jump to
 the specified group and focus the matched window.
 
+@item from-group
+When @var{lock} is NIL, and this is non-NIL, this rule will only match
+when @var{target-group} matches @var{from-group}. This should be set
+to either a group name(a string), or an expression that returns a group(e.g (current-group)).
+When this is NIL, the rule matches if @var{target-group} matches
+the group the window is in, or the current group if the window has no group.
 @item create
 When non-NIL the group is created and eventually restored when the value of
 create is a group dump filename in *DATA-DIR*. Defaults to NIL.
@@ -1122,8 +1129,8 @@ The window's title must match @var{title}.
        ;; verify the correct structure
        (destructuring-bind (frame-number raise lock
                                          &rest keys
-                                         &key create restore class instance type role title) ,x
-         (declare (ignore create restore class instance type role title))
+                                         &key from-group create restore class instance type role title) ,x
+         (declare (ignore from-group create restore class instance type role title))
          (push (list* ,target-group frame-number raise lock keys)
                *window-placement-rules*)))))
 
