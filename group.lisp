@@ -267,8 +267,7 @@ are found return @code{NIL}."
                          (car groups)
                          ;; Otherwise, use the next one in the list.
                          (cadr matches))))
-    (unless (eq next-group current)
-      next-group)))
+    (unless (eq next-group current) next-group)))
 
 (defun merge-groups (from-group to-group)
   "Merge all windows in FROM-GROUP into TO-GROUP."
