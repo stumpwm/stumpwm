@@ -79,14 +79,9 @@ called each time StumpWM starts with the argument `*module-dir'"
 
 (defun find-asd-file (path)
   "Returns the first file ending with asd in `PATH', nil else."
-  (flet ((is-asd-file-p (file)
-           (let* ((file-string (file-namestring file))
-                  (extension-start  (position #\. file-string :from-end t)))
-             (when extension-start
-               (string-equal ".asd"
-                             (subseq file-string extension-start))))))
-    (first (remove-if-not #'is-asd-file-p
-                          (list-directory path)))))
+  (first (remove-if-not (lambda (file)
+                          (uiop:string-suffix-p (file-namestring file) ".asd"))
+                        (list-directory path))))
 
 (defun list-modules ()
   "Return a list of the available modules."
