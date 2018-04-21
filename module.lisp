@@ -76,12 +76,13 @@ called each time StumpWM starts with the argument `*module-dir'"
 (define-stumpwm-type :module (input prompt)
   (or (argument-pop-rest input)
       (completing-read (current-screen) prompt (list-modules) :require-match t)))
+
 (defun find-asd-file (path)
   "Returns the first file ending with asd in `PATH', nil else."
-  (first (remove-if-not
-          (lambda (file)
-            (search "asd" (file-namestring file)))
-          (list-directory path))))
+  (first (remove-if-not (lambda (file)
+                          (uiop:string-suffix-p (file-namestring file) ".asd"))
+                        (list-directory path))))
+
 (defun list-modules ()
   "Return a list of the available modules."
   (flet ((list-module (dir)
