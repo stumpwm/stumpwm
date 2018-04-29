@@ -1627,10 +1627,13 @@ window pool, where windows and frames are not so tightly connected.
 !!! frame-windowlist
 !!! echo-frame-windows
 !!! exchange-direction
+!!! expose
 
 ### *min-frame-width*
 ### *min-frame-height*
 ### *new-frame-action*
+### *expose-auto-tile-fn*
+### *expose-n-max*
 
 @menu
 * Interactively Resizing Frames::
