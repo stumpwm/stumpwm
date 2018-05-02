@@ -830,7 +830,9 @@ desktop when starting."
                   (list f1 f2)
                   (funcall-on-node (tile-group-frame-head group head)
                                    (lambda (tree)     
-                                     (substitute (list f1 f2) frame tree))
+                                     (if (eq (tree-split-type tree) how)
+                                         (list-splice-replace frame tree f1 f2)
+                                         (substitute (list f1 f2) frame tree)))
                                    (lambda (tree)
                                      (unless (atom tree)
                                        (find frame tree))))))
@@ -1008,7 +1010,8 @@ space."
           (when (frame-window l)
             (update-decoration (frame-window l)))
           (when (eq frame current)
-            (show-frame-indicator group))))))
+            (show-frame-indicator group))
+          (balance-frames)))))
 
 (defcommand-alias remove remove-split)
 
