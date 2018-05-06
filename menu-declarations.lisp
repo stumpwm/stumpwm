@@ -49,6 +49,7 @@
              :accessor menu-view-end
              :initform 0)
    ;; whatever is supplied supplements *menu-map*, it does not replace it.
+   ;; probably not the best way to supply this argument:
    (keymap :initarg :additional-keymap
            :reader menu-keymap
            :initform nil
@@ -63,8 +64,10 @@
                      (list *menu-map*)))))
 
 (defclass single-menu (menu)
-  ((unfiltered-table :initarg unfiltered-table
-                     :accessor single-menu-unfiltered-table)
+  ((filtered-table :initarg filtered-table
+                   :accessor single-menu-filtered-table
+                   :documentation "Holds the values that have been filtered based on
+current-input and filter-pred")
    (filter-pred :initarg filter-pred
                 :accessor single-menu-filter-pred)
    (current-input :initarg current-input
@@ -80,18 +83,8 @@
       (setf unfiltered-table table))
     (setf keymap (append keymap *single-menu-map*))))
 
-;; should this really be a generic function?
-;; (defgeneric menu-scrolling-required (menu)
-;;   (:documentation "Checks if the selected value is at the start or end of the menu"))
-
 (defgeneric menu-height (menu)
   (:documentation "Returns the height of the  menu"))
-
-(defgeneric menu-prompt-visible (menu))
-
-;; should this really be a generic function?
-;; (defgeneric bound-check-menu (menu)
-;;   (:documentation "Check if cursor has gone out of bounds and fix it."))
 
 (defgeneric menu-up (menu)
   (:documentation "Move menu cursor up"))
@@ -119,9 +112,9 @@ Must signal :menu-quit with the result."))
   (:documentation "What to do when exiting the menu without results.
 Must signal :menu-quit with the result."))
 
-;; only here because menu-backspace might be defined in external code somewhere:
-;; (defgeneric menu-backspace (menu)
-;;   (:documentation "What happens when backspace is pressed in a menu"))
+;; only here because menu-backspace might be defined in old external code somewhere:
+(defgeneric menu-backspace (menu)
+  (:documentation "What happens when backspace is pressed in a menu"))
 
 (defgeneric menu-promt-line (menu)
   (:documentation "Returns the prompt-line that should be displayed. If no
@@ -132,11 +125,8 @@ line is to be displayed, then return nil"))
 appropriate menu-map."))
 
 (defgeneric get-menu-items (menu)
-  (:documentation "Returns the items in the menu that should be displayed as a list"))
-;; (defun menu-element-name (element)
-;;   (if (listp element)
-;;       (first element)
-;;       element))
+  (:documentation "Returns the items in the menu that should be displayed."))
+
 
 (defun menu-item-matches-regexp (item-string item-object user-input)
   "The default filter predicate for SELECT-FROM-MENU. When using this
