@@ -74,7 +74,7 @@ current-input and filter-pred")
                   :initform (make-array 10 :element-type 'character
                                         :adjustable t :fill-pointer 0)
                   :accessor single-menu-current-input))
-  (:documentation "State used when selecting a single item in a menu"))
+  (:documentation "Class used when selecting a single item in a menu. Allowss searching through the list."))
 
 (defmethod initialize-instance :after ((m single-menu) &rest initargs)
   (declare (ignore initargs))
@@ -82,9 +82,6 @@ current-input and filter-pred")
     (unless unfiltered-table
       (setf unfiltered-table table))
     (setf keymap (append keymap *single-menu-map*))))
-
-(defgeneric menu-height (menu)
-  (:documentation "Returns the height of the  menu"))
 
 (defgeneric menu-up (menu)
   (:documentation "Move menu cursor up"))
@@ -112,7 +109,7 @@ Must signal :menu-quit with the result."))
   (:documentation "What to do when exiting the menu without results.
 Must signal :menu-quit with the result."))
 
-;; only here because menu-backspace might be defined in old external code somewhere:
+;; here for single-menu
 (defgeneric menu-backspace (menu)
   (:documentation "What happens when backspace is pressed in a menu"))
 
