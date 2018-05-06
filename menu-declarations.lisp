@@ -39,6 +39,7 @@
           :accessor menu-table
           :documentation "The list that is displayed in the menu")
    (selected :initarg :selected
+             :initform 0
              :accessor menu-selected)
    (prompt :initarg :prompt
            :accessor menu-prompt)
@@ -56,7 +57,7 @@
            :documentation "Keymap used for navigating the menu." ))
   (:documentation "Base class for holding the state of a menu"))
 
-(defmethod initialize-instance :after ((m menu) &rest initargs)
+(defmethod initialize-instance :after ((m menu) &key initargs)
   (declare (ignore initargs))
   (with-slots (keymap) m
     (setf keymap (if keymap
@@ -64,11 +65,13 @@
                      (list *menu-map*)))))
 
 (defclass single-menu (menu)
-  ((filtered-table :initarg filtered-table
+  ((filtered-table :initarg :filtered-table
+                   :initform nil
                    :accessor single-menu-filtered-table
                    :documentation "Holds the values that have been filtered based on
 current-input and filter-pred")
-   (filter-pred :initarg filter-pred
+   (filter-pred :initarg :filter-pred
+                :initform (error "You must specify a filter predicate")
                 :accessor single-menu-filter-pred)
    (current-input :initarg current-input
                   :initform (make-array 10 :element-type 'character
@@ -76,12 +79,14 @@ current-input and filter-pred")
                   :accessor single-menu-current-input))
   (:documentation "Class used when selecting a single item in a menu. Allowss searching through the list."))
 
-(defmethod initialize-instance :after ((m single-menu) &rest initargs)
+(defmethod initialize-instance :after ((m single-menu) &key initargs)
   (declare (ignore initargs))
-  (with-slots (unfiltered-table table keymap) m
-    (unless unfiltered-table
-      (setf unfiltered-table table))
-    (setf keymap (append keymap *single-menu-map*))))
+  (with-slots (filtered-table table keymap) m
+    (unless filtered-table
+      (setf filtered-table table))
+    (setf keymap (if keymap
+                     (push *single-menu-map* keymap)
+                     (list keymap)))))
 
 (defgeneric menu-up (menu)
   (:documentation "Move menu cursor up"))

@@ -26,33 +26,6 @@
 
 (in-package #:stumpwm)
 
-
-(when (null *menu-map*)
-  (setf *menu-map*
-        (let ((m (make-sparse-keymap)))
-          (define-key m (kbd "C-p") 'menu-up)
-          (define-key m (kbd "Up") 'menu-up)
-          (define-key m (kbd "S-Up") 'menu-scroll-up)
-          (define-key m (kbd "SunPageUp") 'menu-page-up)
-
-          (define-key m (kbd "C-n") 'menu-down)
-          (define-key m (kbd "Down") 'menu-down)
-          (define-key m (kbd "S-Down") 'menu-scroll-down)
-          (define-key m (kbd "SunPageDown") 'menu-page-down)
-
-          ;;(define-key m (kbd "DEL") 'menu-backspace)
-
-          (define-key m (kbd "C-g") 'menu-abort)
-          (define-key m (kbd "ESC") 'menu-abort)
-          (define-key m (kbd "RET") 'menu-finish)
-          m)))
-
-(when (null *single-menu-map*)
-  (setf *single-menu-map*
-        (let ((m (make-sparse-keymap)))
-          (define-key m (kbd "DEL") 'single-menu-backspace)
-          m)))
-
 (defun menu-scrolling-required (menu)
   (and *menu-maximum-height*
        (> (length (menu-table menu))
@@ -61,10 +34,6 @@
 (defun menu-height (menu)
   (let ((len (length (menu-table menu))))
     (min (or *menu-maximum-height* len) len)))
-
-(defun menu-prompt-visible (menu)
-  (or (menu-prompt menu)
-      (> (length (single-menu-current-input menu)) 0)))
 
 (defun bound-check-menu (menu)
   "Adjust the menu view and selected item based
@@ -132,7 +101,7 @@ on current view and new selection."
 
 (defmethod menu-page-up :before ((menu single-menu))
   (when *menu-maximum-height* ;;No scrolling = no page up/down
-    (setf (fill-pointer (single-menu-current-input menu)) 0)
+    (setf (fill-pointer (single-menu-current-input menu)) 0)))
 
 (defmethod menu-page-down ((menu menu))
   (when *menu-maximum-height*
@@ -142,7 +111,7 @@ on current view and new selection."
 
 (defmethod menu-page-down :before ((menu single-menu))
   (when *menu-maximum-height*
-    (setf (fill-pointer (single-menu-current-input menu)) 0)
+    (setf (fill-pointer (single-menu-current-input menu)) 0)))
 
 (defmethod menu-finish ((menu menu))
   (throw :menu-quit (nth (menu-selected menu) (menu-table menu))))
@@ -160,26 +129,20 @@ backspace or F9), return it otherwise return nil"
         nil
         char)))
 
-(defun menu-element-name (element)
-  (if (listp element)
-      (first element)
-      element))
-
 (defmethod menu-backspace ((menu single-menu))
   (when (> (fill-pointer (single-menu-current-input menu)) 0)
     (vector-pop (single-menu-current-input menu))
-    (check-menu-complete menu nil)))
+    (typing-action menu nil)))
 
 (defmethod menu-prompt-line ((menu menu))
   "If there is a prompt, show it:"
   (with-slots (prompt) menu
-    (when prompt
-      ((format nil "~@[~A ~]~A"
-               prompt (menu-current-input menu))))))
+    prompt))
 
 (defun menu-prompt-visible (menu)
-  (or (menu-prompt menu)
-      (> (length (menu-current-input menu)) 0)))
+  (with-slots (prompt current-input) menu
+    (or prompt
+        (> (length current-input) 0))))
 
 (defmethod menu-prompt-line ((menu single-menu))
   "If there is prompt or a search string, show it."
@@ -187,6 +150,10 @@ backspace or F9), return it otherwise return nil"
     (with-slots (prompt current-input) menu
       (format nil "~@[~A ~]~A"
               prompt current-input))))
+
+(defmethod typing-action ((menu menu) key-seq)
+  "Default action is to do nothing"
+  (declare (ignore key-seq)))
 
 (defmethod typing-action ((menu single-menu) key-seq)
   "If the user entered a key not mapped in @var{*menu-map}, check if
@@ -251,7 +218,7 @@ more spaces; ARGUMENT-POP is used to split the string)."
                   (incf highlight))
                 (run-hook-with-args *menu-selection-hook* menu)
                 (echo-string-list screen strings highlight))
-              (multiple-value-bind (action key-seq) (read-from-keymap (menu-keymap keymap))
+              (multiple-value-bind (action key-seq) (read-from-keymap (menu-keymap menu))
                 (if action
                     (progn (funcall action menu)
                            (bound-check-menu menu))
@@ -282,12 +249,37 @@ Returns the selected element in TABLE or nil if aborted. "
 
   (when table
     (let ((menu (make-instance 'single-menu
-                               :keymap extra-keymap
-                               :unfiltered-table table
                                :table table
-                               :filter-pred filter-pred
+                               :selected initial-selection
                                :prompt prompt
                                :view-start 0
                                :view-end 0
-                               :selected initial-selection)))
+                               :additional-keymap extra-keymap
+                               :FILTER-PRED filter-pred)))
       (run-menu screen menu))))
+
+(when (null *menu-map*)
+  (setf *menu-map*
+        (let ((m (make-sparse-keymap)))
+          (define-key m (kbd "C-p") 'menu-up)
+          (define-key m (kbd "Up") 'menu-up)
+          (define-key m (kbd "S-Up") 'menu-scroll-up)
+          (define-key m (kbd "SunPageUp") 'menu-page-up)
+
+          (define-key m (kbd "C-n") 'menu-down)
+          (define-key m (kbd "Down") 'menu-down)
+          (define-key m (kbd "S-Down") 'menu-scroll-down)
+          (define-key m (kbd "SunPageDown") 'menu-page-down)
+
+          ;;(define-key m (kbd "DEL") 'menu-backspace)
+
+          (define-key m (kbd "C-g") 'menu-abort)
+          (define-key m (kbd "ESC") 'menu-abort)
+          (define-key m (kbd "RET") 'menu-finish)
+          m)))
+
+(when (null *single-menu-map*)
+  (setf *single-menu-map*
+        (let ((m (make-sparse-keymap)))
+          (define-key m (kbd "DEL") 'single-menu-backspace)
+          m)))
