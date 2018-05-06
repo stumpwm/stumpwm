@@ -164,15 +164,16 @@ backspace or F9), return it otherwise return nil"
     (when input-char
       (vector-push-extend input-char (single-menu-current-input menu)))
     (handler-case
-        (when (or input-char (not key-seq))
-          (labels ((match-p (table-item)
-                     (funcall (menu-filter-pred menu)
-                              (car table-item)
-                              (second table-item)
-                              (single-menu-current-input menu))))
-            (setf (menu-table menu) (remove-if-not #'match-p (menu-unfiltered-table menu))
-                  (menu-selected menu) 0)
-            (bound-check-menu menu)))
+        (with-slots (filter-pred current-input unfiltered-table table selected) menu
+          (when (or input-char (not key-seq))
+            (labels ((match-p (table-item)
+                       (funcall filter-pred
+                                (car table-item)
+                                (second table-item)
+                                current-input)))
+              (setf table (remove-if-not #'match-p unfiltered-table)
+                    selected 0)
+              (bound-check-menu menu))))
       (cl-ppcre:ppcre-syntax-error ()))))
 
 (defun menu-element-name (element)
@@ -180,10 +181,17 @@ backspace or F9), return it otherwise return nil"
       (first element)
       element))
 
-(defgeneric get-menu-items ((menu menu))
-  (mapcar #'menu-element-name
-          (subseq (menu-table menu)
-                  start end)))
+(defmethod get-menu-items ((menu menu))
+  (with-slots (table view-start view-end) menu
+    (mapcar #'menu-element-name
+            (subseq table
+                    view-start view-end))))
+
+(defmethod get-menu-items ((menu single-menu))
+  (with-slots (table view-start view-end) menu
+    (mapcar #'menu-element-name
+            (subseq table
+                    view-start view-end))))
 
 (defun menu-item-matches-regexp (item-string item-object user-input)
   "The default filter predicate for SELECT-FROM-MENU. When using this
@@ -226,7 +234,7 @@ more spaces; ARGUMENT-POP is used to split the string)."
       (unmap-all-message-windows))))
 
 
-(defun my-select-from-menu (screen table &optional (prompt "Search:")
+(defun select-from-menu (screen table &optional (prompt "Search:")
                                         (initial-selection 0)
                                         extra-keymap
                                         (filter-pred #'menu-item-matches-regexp))
@@ -281,5 +289,5 @@ Returns the selected element in TABLE or nil if aborted. "
 (when (null *single-menu-map*)
   (setf *single-menu-map*
         (let ((m (make-sparse-keymap)))
-          (define-key m (kbd "DEL") 'single-menu-backspace)
+          (define-key m (kbd "DEL") 'menu-backspace)
           m)))

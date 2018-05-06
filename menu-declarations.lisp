@@ -65,9 +65,9 @@
                      (list *menu-map*)))))
 
 (defclass single-menu (menu)
-  ((filtered-table :initarg :filtered-table
+  ((unfiltered-table :initarg :filtered-table
                    :initform nil
-                   :accessor single-menu-filtered-table
+                   :accessor single-menu-unfiltered-table
                    :documentation "Holds the values that have been filtered based on
 current-input and filter-pred")
    (filter-pred :initarg :filter-pred
@@ -81,9 +81,9 @@ current-input and filter-pred")
 
 (defmethod initialize-instance :after ((m single-menu) &key initargs)
   (declare (ignore initargs))
-  (with-slots (filtered-table table keymap) m
-    (unless filtered-table
-      (setf filtered-table table))
+  (with-slots (unfiltered-table table keymap) m
+    (unless unfiltered-table
+      (setf unfiltered-table table))
     (setf keymap (if keymap
                      (push *single-menu-map* keymap)
                      (list keymap)))))
