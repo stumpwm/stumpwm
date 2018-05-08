@@ -26,6 +26,23 @@
 
 (in-package #:stumpwm)
 
+(defmethod menu-entry-display ((entry menu-entry))
+  (concat (string (menu-entry-icon entry)) " " (menu-entry-label entry)))
+
+(defmethod menu-entry-apply ((entry menu-entry) function)
+  (if (slot-boundp entry 'data)
+      (values (apply function (menu-entry-data entry)) t)
+      (values nil nil)))
+
+
+(defmethod print-object ((obj menu-entry) out)
+  (print-unreadable-object (obj out :type t)
+    (format out ":LABEL ~s :ICON ~s :DATA ~a"
+            (menu-entry-label obj) (menu-entry-icon obj)
+            (when (slot-boundp obj 'data)
+              (menu-entry-data obj)))))
+
+
 (defun menu-scrolling-required (menu)
   (and *menu-maximum-height*
        (> (length (menu-table menu))

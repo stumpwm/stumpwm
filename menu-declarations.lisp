@@ -34,6 +34,25 @@
 (defvar *single-menu-map* nil
   "The keymap used by single selection menus in addtion to *menu-map*")
 
+
+(defclass menu-entry ()
+  ((label :initarg :label
+          :reader menu-entry-label)
+   (icon :initarg :icon
+         :initform #\Space
+         :reader menu-entry-icon
+         :documentation "An additional decorator for the entry")
+   (data :initarg :data
+         :reader menu-entry-data
+         :documentation "Any additional object that is associated with the menu-entry"))
+  (:documentation "Defines a menu entry"))
+
+(defgeneric menu-entry-display (menu-entry)
+  (:documentation "Generates a string suitable for displaying in a menu"))
+
+(defgeneric menu-entry-apply (menu-entry function)
+  (:documentation "Apply FUNCTION to the data portion of the menu entry."))
+
 (defclass menu ()
   ((table :initarg :table
           :accessor menu-table
@@ -50,8 +69,6 @@
    (view-end :initarg :view-end
              :accessor menu-view-end
              :initform 0)
-   ;; whatever is supplied supplements *menu-map*, it does not replace it.
-   ;; probably not the best way to supply this argument:
    (keymap :accessor menu-keymap
            :initform nil
            :documentation "Keymap used for navigating the menu." ))
@@ -119,7 +136,7 @@ Must signal :menu-quit with the result."))
 
 ;; here for single-menu
 (defgeneric menu-backspace (menu)
-  (:documentation "What happens when backspace is pressed in a menu"))
+  (:documentation "What occurs when backspace is pressed in a menu"))
 
 (defgeneric menu-promt-line (menu)
   (:documentation "Returns the prompt-line that should be displayed. If no
