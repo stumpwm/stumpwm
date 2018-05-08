@@ -136,20 +136,17 @@ backspace or F9), return it otherwise return nil"
 
 (defmethod menu-prompt-line ((menu menu))
   "If there is a prompt, show it:"
-  (with-slots (prompt) menu
-    prompt))
+  (menu-prompt menu))
 
 (defun menu-prompt-visible (menu)
-  (with-slots (prompt current-input) menu
-    (or prompt
-        (> (length current-input) 0))))
+    (or (menu-prompt menu)
+        (> (length (single-menu-current-input menu) 0))))
 
 (defmethod menu-prompt-line ((menu single-menu))
   "If there is prompt or a search string, show it."
   (when (menu-prompt-visible menu)
-    (with-slots (prompt current-input) menu
       (format nil "~@[~A ~]~A"
-              prompt current-input))))
+              (menu-prompt menu) (single-menu-current-input menu))))
 
 (defmethod typing-action ((menu menu) key-seq)
   "Default action is to do nothing"
@@ -164,16 +161,15 @@ backspace or F9), return it otherwise return nil"
     (when input-char
       (vector-push-extend input-char (single-menu-current-input menu)))
     (handler-case
-        (with-slots (filter-pred current-input unfiltered-table table selected) menu
-          (when (or input-char (not key-seq))
-            (labels ((match-p (table-item)
-                       (funcall filter-pred
-                                (car table-item)
-                                (second table-item)
-                                current-input)))
-              (setf table (remove-if-not #'match-p unfiltered-table)
-                    selected 0)
-              (bound-check-menu menu))))
+        (when (or input-char (not key-seq))
+          (labels ((match-p (table-item)
+                     (funcall (single-menu-filter-pred menu)
+                              (car table-item)
+                              (second table-item)
+                              (single-menu-current-input menu))))
+            (setf (menu-table menu) (remove-if-not #'match-p (single-menu-unfiltered-table menu))
+                  (menu-selected menu) 0)
+            (bound-check-menu menu)))
       (cl-ppcre:ppcre-syntax-error ()))))
 
 (defun menu-element-name (element)
@@ -182,10 +178,9 @@ backspace or F9), return it otherwise return nil"
       element))
 
 (defmethod get-menu-items ((menu menu))
-  (with-slots (table view-start view-end) menu
-    (mapcar #'menu-element-name
-            (subseq table
-                    view-start view-end))))
+  (mapcar #'menu-element-name
+          (subseq (menu-table menu)
+                  (menu-view-start menu) (menu-view-end menu))))
 
 (defmethod get-menu-items ((menu single-menu))
   (with-slots (table view-start view-end) menu

@@ -42,7 +42,8 @@
              :initform 0
              :accessor menu-selected)
    (prompt :initarg :prompt
-           :accessor menu-prompt)
+           :initform "Search?"
+           :reader menu-prompt)
    (view-start :initarg :view-start
                :accessor menu-view-start
                :initform 0)
@@ -51,17 +52,16 @@
              :initform 0)
    ;; whatever is supplied supplements *menu-map*, it does not replace it.
    ;; probably not the best way to supply this argument:
-   (keymap :initarg :additional-keymap
-           :reader menu-keymap
+   (keymap :accessor menu-keymap
            :initform nil
            :documentation "Keymap used for navigating the menu." ))
   (:documentation "Base class for holding the state of a menu"))
 
-(defmethod initialize-instance :after ((m menu) &key initargs)
-  (declare (ignore initargs))
-  (with-slots (keymap) m
-    (setf keymap (if keymap
-                     (list keymap *menu-map*)
+(defmethod initialize-instance :after ((m menu) &key additional-keymap)
+  (with-accessors ((keymap menu-keymap))
+      m
+    (setf keymap (if additional-keymap
+                     (list additional-keymap *menu-map*)
                      (list *menu-map*)))))
 
 (defclass single-menu (menu)
@@ -77,11 +77,14 @@ current-input and filter-pred")
                   :initform (make-array 10 :element-type 'character
                                         :adjustable t :fill-pointer 0)
                   :accessor single-menu-current-input))
-  (:documentation "Class used when selecting a single item in a menu. Allowss searching through the list."))
+  (:documentation "Class used when selecting a single item in a menu. Allows searching through the list."))
 
-(defmethod initialize-instance :after ((m single-menu) &key initargs)
+(defmethod initialize-instance :after ((menu single-menu) &key initargs)
   (declare (ignore initargs))
-  (with-slots (unfiltered-table table keymap) m
+  (with-accessors ((unfiltered-table single-menu-unfiltered-table)
+                   (table menu-table)
+                   (keymap menu-keymap))
+      menu
     (unless unfiltered-table
       (setf unfiltered-table table))
     (setf keymap (if keymap
