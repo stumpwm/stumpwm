@@ -26,6 +26,13 @@
 
 (in-package #:stumpwm)
 
+(defun entries-from-nested-list (lst)
+  (mapcar (lambda (x)
+            (make-instance 'menu-entry
+                           :label (car x)
+                           :data (cadr x)))
+          lst))
+
 (defmethod menu-entry-display ((entry menu-entry))
   (concat (string (menu-entry-icon entry)) " " (menu-entry-label entry)))
 
@@ -133,6 +140,22 @@ on current view and new selection."
 (defmethod menu-finish ((menu menu))
   (throw :menu-quit (nth (menu-selected menu) (menu-table menu))))
 
+(defmethod menu-finish ((menu batch-menu))
+  "Value returned with the signal is an alist, where the cdr of the value
+returned by assoc is a list items that were marked with that character.
+Example when entry1 and entry2 are marked with 'a', and entry3 is not marked:
+    ((a entry1 entry2) (NIL entry3))"
+  (with-slots (allowed-markers table) menu
+    (print table)
+    (let ((alist (list)))
+      (dolist (entry table)
+        (let ((mark (car entry))
+              (value (cdr entry)))
+          (if-let ((cell (assoc mark alist)))
+            (push value (cdr cell))
+            (setf alist (acons mark (list value) alist)))))
+      (throw :menu-quit alist))))
+
 (defmethod menu-abort (menu)
   (declare (ignore menu))
   (throw :menu-quit nil))
@@ -146,6 +169,25 @@ backspace or F9), return it otherwise return nil"
         nil
         char)))
 
+;; menu-backspace might be in someone's custom *menu-map*:
+;; leave this here just to be safe:
+(defmethod menu-backspace ((menu menu))
+  (declare (ignore menu))
+  "By default, do nothing")
+
+(defun batch-menu-unmark-selected (menu)
+  (with-accessors ((table menu-table)
+                   (selected menu-selected))
+      menu
+    (setf (car (nth selected table)) nil)))
+
+(defmethod menu-backspace ((menu batch-menu))
+  "If the cursor is not at the top, move cursor up. Regardless,
+unmark the entry at the selected point."
+  (when (> (menu-selected menu) 0)
+    (menu-up menu))
+  (batch-menu-unmark-selected menu))
+
 (defmethod menu-backspace ((menu single-menu))
   (when (> (fill-pointer (single-menu-current-input menu)) 0)
     (vector-pop (single-menu-current-input menu))
@@ -157,7 +199,7 @@ backspace or F9), return it otherwise return nil"
 
 (defun menu-prompt-visible (menu)
     (or (menu-prompt menu)
-        (> (length (single-menu-current-input menu) 0))))
+        (> (length (single-menu-current-input menu)) 0)))
 
 (defmethod menu-prompt-line ((menu single-menu))
   "If there is prompt or a search string, show it."
@@ -189,6 +231,15 @@ backspace or F9), return it otherwise return nil"
             (bound-check-menu menu)))
       (cl-ppcre:ppcre-syntax-error ()))))
 
+(defmethod typing-action ((menu batch-menu) key-seq)
+  "Mark the selected item with the character that was typed. If the character
+is not allowed, as specified by allowed-markers, item is not marked"
+  (let ((input-char (and key-seq (get-input-char key-seq))))
+    (with-slots (selected table allowed-markers) menu
+      (when (and input-char (or (not allowed-markers) (member input-char allowed-markers)))
+        (setf (car (nth selected table)) input-char)
+        (menu-down menu)))))
+
 (defun menu-element-name (element)
   (if (listp element)
       (first element)
@@ -199,9 +250,13 @@ backspace or F9), return it otherwise return nil"
           (subseq (menu-table menu)
                   (menu-view-start menu) (menu-view-end menu))))
 
-(defmethod get-menu-items ((menu single-menu))
+(defmethod get-menu-items ((menu batch-menu))
   (with-slots (table view-start view-end) menu
-    (mapcar #'menu-element-name
+    (mapcar (lambda (entry)
+              (if (car entry)
+                  ;; if there is a mark, show it, else show a space
+                  (concat (string (car entry)) (menu-entry-display (cdr entry)))
+                  (concat " " (menu-entry-display (cdr entry)))))
             (subseq table
                     view-start view-end))))
 
@@ -278,6 +333,34 @@ Returns the selected element in TABLE or nil if aborted. "
                                :FILTER-PRED filter-pred)))
       (run-menu screen menu))))
 
+(defun select-from-batch-menu (screen table &key (prompt "Select:")
+                                              allowed-markers
+                                              (initial-selection 0)
+                                              extra-keymap)
+  "Prompt the user with a menu that allows them to mark each item
+with a character. They can exit the menu by pressing enter, or
+whatever key is mapped to 'menu-finish' in *menu-map*. Value returned
+is an alist, where the cdr of the value returned by assoc is the
+items that were marked with that character.
+Example when \"foo\" and \"bar\" are marked with '#\d', and \"baz\" is not marked:
+    ((#\d \"foo\" \"bar\") (NIL \"baz\"))
+ALLOWED-MARKERS is a list of characters. If this value is specified, no
+    other markers are allowed.
+EXTRA-KEYMAP can be a keymap whose bindings will take precedence
+    over the default bindings."
+  (check-type screen screen)
+  (check-type table list)
+  (check-type prompt (or null string))
+  (check-type allowed-markers list)
+  (when table
+    (let ((menu (make-instance 'batch-menu
+                               :table table
+                               :prompt prompt
+                               :allowed-markers allowed-markers
+                               :selected initial-selection
+                               :additional-keymap extra-keymap)))
+      (run-menu screen menu))))
+
 (when (null *menu-map*)
   (setf *menu-map*
         (let ((m (make-sparse-keymap)))
@@ -291,7 +374,7 @@ Returns the selected element in TABLE or nil if aborted. "
           (define-key m (kbd "S-Down") 'menu-scroll-down)
           (define-key m (kbd "SunPageDown") 'menu-page-down)
 
-          ;;(define-key m (kbd "DEL") 'menu-backspace)
+          ;; (define-key m (kbd "DEL") 'menu-backspace)
 
           (define-key m (kbd "C-g") 'menu-abort)
           (define-key m (kbd "ESC") 'menu-abort)
@@ -302,4 +385,15 @@ Returns the selected element in TABLE or nil if aborted. "
   (setf *single-menu-map*
         (let ((m (make-sparse-keymap)))
           (define-key m (kbd "DEL") 'menu-backspace)
+          m)))
+
+(when (null *batch-menu-map*)
+  (setf *batch-menu-map*
+        (let ((m (make-sparse-keymap)))
+          (define-key m (kbd  "DEL") 'menu-backspace)
+          (define-key m (kbd "n") 'menu-down)
+          (define-key m (kbd  "p") 'menu-up)
+          (define-key m (kbd "space") 'menu-down)
+          (define-key m (kbd "u") 'batch-menu-unmark-selected)
+          (define-key m (kbd "x") 'menu-finish)
           m)))

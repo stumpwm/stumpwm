@@ -34,6 +34,8 @@
 (defvar *single-menu-map* nil
   "The keymap used by single selection menus in addtion to *menu-map*")
 
+(defvar *batch-menu-map* nil
+  "The keymap used by batch-menu menus in addition to *menu-map*")
 
 (defclass menu-entry ()
   ((label :initarg :label
@@ -104,9 +106,27 @@ current-input and filter-pred")
       menu
     (unless unfiltered-table
       (setf unfiltered-table table))
-    (setf keymap (if keymap
-                     (push *single-menu-map* keymap)
-                     (list keymap)))))
+    (push *single-menu-map* keymap)))
+
+(defclass batch-menu (menu)
+  ((allowed-markers :initarg :allowed-markers
+                    :reader batch-menu-allowed-markers
+                    :initform nil
+                    :documentation "The characters that a user is allowed to mark entries with.
+If nil, then all chars are allowed"))
+  (:documentation "Class used for marking items in a menu"))
+
+(defmethod initialize-instance :after ((m batch-menu) &key initargs)
+  (declare (ignore initargs))
+  (with-accessors ((table menu-table)
+                   (keymap menu-keymap))
+      m
+    ;; process the table to hold selection values:
+    ;; tables is a list of pairs, with the first val the mark, the second the entry
+    (labels ((process-entry (entry)
+               (cons nil entry)))
+      (setf table (mapcar #'process-entry table)))
+    (push *batch-menu-map* keymap)))
 
 (defgeneric menu-up (menu)
   (:documentation "Move menu cursor up"))
