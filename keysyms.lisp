@@ -1923,6 +1923,7 @@
 (define-keysym #x1008FF15 "XF86AudioStop")
 (define-keysym #x1008FF16 "XF86AudioPrev")
 (define-keysym #x1008FF17 "XF86AudioNext")
+(define-keysym #x1008FFB2 "XF86XK_AudioMicMute")
 (define-keysym #x1008FF18 "XF86HomePage")
 (define-keysym #x1008FF19 "XF86Mail")
 (define-keysym #x1008FF1A "XF86Start")
