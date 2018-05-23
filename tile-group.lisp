@@ -793,19 +793,19 @@ depending on the tree's split direction."
          (side (if (eq split-type :column)
                    :right
                    :bottom))
-         (total (funcall fn tree))
-         size rem)
-    (multiple-value-setq (size rem) (truncate total (length tree)))
-    (loop
-     for i in tree
-     for j = rem then (1- j)
-     for totalofs = 0 then (+ totalofs ofs)
-     for ofs = (+ (- size (funcall fn i)) (if (plusp j) 1 0))
-     do
-     (expand-tree i ofs side)
-     (offset-tree-dir i totalofs side)
-     (tree-iterate i (lambda (leaf)
-                       (sync-frame-windows group leaf))))))
+         (total (funcall fn tree)))
+    (multiple-value-bind (size rem)
+      (truncate total (length tree))
+      (loop
+        for i in tree
+        for j = rem then (1- j)
+        for totalofs = 0 then (+ totalofs ofs)
+        for ofs = (+ (- size (funcall fn i)) (if (plusp j) 1 0))
+        do
+           (expand-tree i ofs side)
+           (offset-tree-dir i totalofs side)
+           (tree-iterate i (lambda (leaf)
+                             (sync-frame-windows group leaf)))))))
 
 (defun split-frame (group how &optional (ratio 1/2))
   "Split the current frame into 2 frames. Return new frame number, if
@@ -1229,14 +1229,13 @@ direction. The following are valid directions:
 "Go to the last accessed window in the current frame."
   (other-window-in-frame (current-group)))
 
-(defcommand (balance-frames tile-group) () ()
+(defcommand (balance-frames tile-group) (&aux (group (current-group))) ()
   "Make frames the same height or width in the current frame's subtree."
-  (let* ((group (current-group))
-         (tree (tree-parent (tile-group-frame-head group (current-head))
-                            (tile-group-current-frame group))))
-    (if tree
-        (balance-frames-internal (current-group) tree)
-        (message "There's only one frame."))))
+  (if-let ((tree (tree-parent (tile-group-frame-head group (current-head))
+                              (tile-group-current-frame group))))
+    (balance-frames-internal group tree)
+    (message "There's only one frame.")))
+
 (defun unfloat-window (window group)
   ;; maybe find the frame geometrically closest to this float?
   (let ((frame (first (group-frames group))))
