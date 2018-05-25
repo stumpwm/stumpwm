@@ -43,8 +43,8 @@
   path which contain any files ending in .asd"
   (map 'list #'directory-namestring
        (remove-if-not (lambda (file)
-                        (search "asd"
-                                (file-namestring file)))
+                        (equal "asd"
+                               (nth-value 1 (uiop:split-name-type (file-namestring file)))))
                       (list-directory-recursive path t))))
 
 (defvar *load-path* nil
