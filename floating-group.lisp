@@ -255,13 +255,17 @@
       (when (find :button-1 (xlib:make-state-keys state-mask))
           (let* ((current-time (/ (get-internal-real-time)
                                   internal-time-units-per-second))
-                 (delta-t (- current-time *last-click-time*)))
+                 (delta-t (- current-time *last-click-time*))
+                 (win-focused-p (eq window (screen-focus screen))))
             (setf *last-click-time* current-time)
             (when (< delta-t 0.25)
               ;; Ideally this would maximized horizontally again when
               ;; it is already vertically maximized
-              (cond ((eq window (screen-focus screen)) 
+              (cond ((and (not (eq (window-height window) 
+                                   (window-display-height window))) 
+                          win-focused-p) 
                      (maximize-float window :vertical t))
+                    (win-focused-p (maximize-float window :vertical t :horizontal t))
                     (t (focus-window window t))))))  
         ;; When resizing warp pointer to left-right corner
         (when (find :button-3 (xlib:make-state-keys state-mask))
