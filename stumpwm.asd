@@ -7,7 +7,7 @@
 (defsystem :stumpwm
   :name "StumpWM"
   :author "Shawn Betts <sabetts@vcn.bc.ca>"
-  :version "1.0.0"
+  :version "1.0.1"
   :maintainer "David Bjergaard <dbjergaard@gmail.com>"
   ;; :license "GNU General Public License"
   :description "A tiling, keyboard driven window manager"
@@ -42,6 +42,7 @@
                (:file "selection")
                (:file "module")
                (:file "ioloop")
+               (:file "timers")
                (:file "stumpwm")
                (:file "user")
                (:file "interactive-keymap")
@@ -53,6 +54,7 @@
                (:file "mode-line-formatters")
                (:file "color")
                (:file "wse")
+               (:file "dynamic-window")
                ;; keep this last so it always gets recompiled if
                ;; anything changes
                (:file "version")))

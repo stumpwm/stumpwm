@@ -106,9 +106,9 @@ then call (update-color-map).")
                           color))))
 
 (defun alloc-color (screen color)
-  (let ((colormap (xlib:screen-default-colormap (screen-number screen))))
-    (cond ((typep color 'xlib:color) (xlib:alloc-color colormap color))
-          (t (xlib:alloc-color colormap (lookup-color screen color))))))
+  (xlib:alloc-color 
+   (xlib:screen-default-colormap (screen-number screen))
+   (lookup-color screen color)))
 
 ;; Normal colors are dimmed and bright colors are intensified in order
 ;; to more closely resemble the VGA pallet.
@@ -195,7 +195,7 @@ If COLOR isn't a colorcode a list containing COLOR is returned."
                     (screen-color-map-bright screen)
                     (screen-color-map-normal screen))
                 color))
-        (t (alloc-color screen color))))
+        (t (first (multiple-value-list (alloc-color screen color))))))
 
 (defun find-font (cc specified-font &aux (font (or specified-font 0)))
   (if (integerp font)
@@ -382,7 +382,7 @@ rendered width."
        for row from 0 to (length strings)
        for line-height = (max-font-height parts cc)
        if (find row highlights :test 'eql)
-       do (xlib:draw-rectangle px gc 0 y (xlib:drawable-width px) line-height t)
+       do (xlib:draw-rectangle px gc 0 (+ pady y) (xlib:drawable-width px) line-height t)
          (xlib:with-gcontext (gc :foreground (xlib:gcontext-background gc)
                                  :background (xlib:gcontext-foreground gc))
            ;; If we don't switch the default colors, a color operation

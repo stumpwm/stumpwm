@@ -37,10 +37,10 @@
 (in-package :stumpwm)
 
 (export '(*time-format-string-default*
-	  *time-modeline-string*
-	  time-format
-	  echo-date
-	  time))
+          *time-modeline-string*
+          time-format
+          echo-date
+          time))
 
 (defvar *time-format-string-default* "%a %b %e %Y %k:%M:%S"
   "The default value for `echo-date', (e.g, Thu Mar  3 2005 23:05:25).")
@@ -113,9 +113,13 @@
 ;;; Helper functions
 ;;; ------------------------------------------------------------------
 
+(defun get-decoded-system-time ()
+  (decode-universal-time (+ (encode-universal-time 0 0 0 1 1 1970 0)
+                            (sb-posix:time))))
+
 (defun time-plist (&optional time)
   (multiple-value-bind (sec min hour dom mon year dow dstp tz)
-      (or time (get-decoded-time))
+      (or time (get-decoded-system-time))
     (list :second sec :minute min :hour hour :dom dom :month mon
           :year year :dow dow :dlsavings-p dstp :tz tz)))
 
@@ -134,12 +138,12 @@
 (defun time-hour-12hr ()
   (let ((hour (rem (getf (time-plist) :hour) 12)))
     (format nil "~2,D"
-	    (if (zerop hour) 12 hour))))
+            (if (zerop hour) 12 hour))))
 
 (defun time-hour-12hr-zero ()
   (let ((hour (rem (getf (time-plist) :hour) 12)))
     (format nil "~2,'0D"
-	    (if (zerop hour) 12 hour))))
+            (if (zerop hour) 12 hour))))
 
 (defun time-day-of-month-zero ()
   (format nil "~2,'0D" (getf (time-plist) :dom)))
@@ -194,20 +198,18 @@
 
 (defun time-tz ()
   (let ((tz (getf (time-plist) :tz))
-	(dlsave (if (getf (time-plist) :dlsavings-p) 1 0)))
+        (dlsave (if (getf (time-plist) :dlsavings-p) 1 0)))
     (multiple-value-bind (hour-local decimal-local)
-	(truncate (+ (* (float tz) -1)
-		     (if dlsave 1 0)))
+      (truncate (+ (* (float tz) -1)
+                   (if dlsave 1 0)))
       (format nil "~A~2,'0D~2,'0D"
-	      (if (> hour-local 0) '+ '-)
-	      (abs hour-local)
-	      (truncate (if (/= decimal-local 0)
-			    (* 60 decimal-local) 0))))))
+              (if (> hour-local 0) '+ '-)
+              (abs hour-local)
+              (truncate (if (/= decimal-local 0)
+                            (* 60 decimal-local) 0))))))
 
 (defun time-unix-era ()
-  (format nil "~D"
-	  (- (get-universal-time)
-	     (encode-universal-time 0 0 0 1 1 1970 0))))
+  (format nil "~D" (sb-posix:time)))
 
 (defun time-date-and-time ()
   (time-format "%a %h %d %H:%M:%S %Y"))

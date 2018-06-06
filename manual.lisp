@@ -18,8 +18,7 @@
 
 ;; Commentary:
 ;;
-;; Generate the texinfo manual from docstrings in the source. Note,
-;; this only works in sbcl, clisp and lispworks
+;; Generate the texinfo manual from docstrings in the source.
 ;;
 ;; Code:
 
@@ -93,11 +92,11 @@
   (let ((*print-case* :downcase))
     (with-open-file (os out :direction :output :if-exists :supersede)
       (with-open-file (is in :direction :input)
-	(loop for line = (read-line is nil is)
-	   until (eq line is) do
-	     (or (generate-function-doc os line)
-		 (generate-macro-doc os line)
-		 (generate-hook-doc os line)
-		 (generate-variable-doc os line)
-		 (generate-command-doc os line)
-		 (write-line line os)))))))
+        (loop for line = (read-line is nil is)
+              until (eq line is) do
+              (or (generate-function-doc os line)
+                  (generate-macro-doc os line)
+                  (generate-hook-doc os line)
+                  (generate-variable-doc os line)
+                  (generate-command-doc os line)
+                  (write-line line os)))))))

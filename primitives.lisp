@@ -58,6 +58,8 @@
           *mode-line-click-hook*
           *pre-command-hook*
           *post-command-hook*
+          *selection-notify-hook*
+          *menu-selection-hook*
           *display*
           *shell-program*
           *maxsize-border-width*
@@ -67,6 +69,7 @@
           *window-events*
           *window-parent-events*
           *message-window-padding*
+          *message-window-y-padding*
           *message-window-gravity*
           *editor-bindings*
           *input-window-gravity*
@@ -323,6 +326,18 @@ the command as a symbol.")
   "Called after a command is called. It is called with 1 argument:
 the command as a symbol.")
 
+(defvar *selection-notify-hook* '()
+  "Called after a :selection-notify event is processed. It is called
+with 1 argument: the selection as a string.")
+
+(defvar *menu-selection-hook* '()
+  "Called after an item is selected in the windows menu. It is called
+with 1 argument: the menu.")
+
+(defvar *new-head-hook* '()
+  "A hook called whenever a head is added. It is called with 2 arguments: the
+ new head and the current screen.")
+
 ;; Data types and globals used by stumpwm
 
 (defvar *display* nil
@@ -412,6 +427,9 @@ Include only those we are ready to support.")
 ;; Message window variables
 (defvar *message-window-padding* 5
   "The number of pixels that pad the text in the message window.")
+
+(defvar *message-window-y-padding* 0
+  "The number of pixels that pad the text in the message window vertically.")
 
 (defvar *message-window-gravity* :top-right
   "This variable controls where the message window appears. The follow
@@ -771,7 +789,7 @@ output directly to a file.")
 
 (defun dformat (level fmt &rest args)
   (when (>= *debug-level* level)
-    (multiple-value-bind (sec m h) (decode-universal-time (get-universal-time))
+    (multiple-value-bind (sec m h) (get-decoded-system-time)
       (format *debug-stream* "~2,'0d:~2,'0d:~2,'0d " h m sec))
     ;; strip out non base-char chars quick-n-dirty like
     (write-string (map 'string (lambda (ch)
@@ -1070,12 +1088,19 @@ The frame number to send matching windows to
 When non-nil, raise and focus the window in its frame
 
 @item lock
-When this is nil, this rule will only match when the current group
-matches @var{target-group}. When non-nil, this rule matches regardless
+When this is nil, this rule will only match when @var{target-group}
+matches the group designated by @var{from-group}.
+When non-nil, this rule matches regardless
 of the group and the window is sent to @var{target-group}. If
 @var{lock} and @var{raise} are both non-nil, then stumpwm will jump to
 the specified group and focus the matched window.
 
+@item from-group
+When @var{lock} is NIL, and this is non-NIL, this rule will only match
+when @var{target-group} matches @var{from-group}. This should be set
+to either a group name(a string), or an expression that returns a group(e.g (current-group)).
+When this is NIL, the rule matches if @var{target-group} matches
+the group the window is in, or the current group if the window has no group.
 @item create
 When non-NIL the group is created and eventually restored when the value of
 create is a group dump filename in *DATA-DIR*. Defaults to NIL.
@@ -1104,8 +1129,8 @@ The window's title must match @var{title}.
        ;; verify the correct structure
        (destructuring-bind (frame-number raise lock
                                          &rest keys
-                                         &key create restore class instance type role title) ,x
-         (declare (ignore create restore class instance type role title))
+                                         &key from-group create restore class instance type role title) ,x
+         (declare (ignore from-group create restore class instance type role title))
          (push (list* ,target-group frame-number raise lock keys)
                *window-placement-rules*)))))
 

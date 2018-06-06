@@ -29,7 +29,10 @@
           set-normal-gravity
           set-maxsize-gravity
           set-transient-gravity
-          set-window-geometry))
+          set-window-geometry
+          find-wm-state
+          add-wm-state
+          remove-wm-state))
 
 (export
   '(window window-xwin window-width window-height window-x window-y
@@ -425,11 +428,11 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
 (defmethod sort-windows-by-class ((window-list list))
   "Return a copy of the provided window list sorted by class then by number."
   (sort1 window-list (lambda (w1 w2)
-		       (let ((class1 (window-class w1))
-			     (class2 (window-class w2)))
-			 (if (string= class1 class2)
-			     (< (window-number w1) (window-number w2))
-			     (string< class1 class2))))))
+                       (let ((class1 (window-class w1))
+                             (class2 (window-class w2)))
+                         (if (string= class1 class2)
+                           (< (window-number w1) (window-number w2))
+                           (string< class1 class2))))))
 
 (defmethod sort-windows-by-class (group)
   "Return a copy of the provided window list sorted by class then by number."
@@ -693,22 +696,22 @@ and bottom_end_x."
                key))
            (key-modifiers-exist-p (key)
              (and
-              (or (not (key-meta key)) (modifiers-meta *modifiers*))
-              (or (not (key-alt key)) (modifiers-alt *modifiers*))
-              (or (not (key-hyper key)) (modifiers-hyper *modifiers*))
-              (or (not (key-super key)) (modifiers-super *modifiers*))))
+               (or (not (key-meta key)) (modifiers-meta *modifiers*))
+               (or (not (key-alt key)) (modifiers-alt *modifiers*))
+               (or (not (key-hyper key)) (modifiers-hyper *modifiers*))
+               (or (not (key-super key)) (modifiers-super *modifiers*))))
            (grabit (w key)
              (loop for code in (multiple-value-list (xlib:keysym->keycodes *display* (key-keysym key)))
                ;; some keysyms aren't mapped to keycodes so just ignore them.
-                when (and code (key-modifiers-exist-p key))
-                  do
+               when (and code (key-modifiers-exist-p key))
+               do
                  ;; Some keysyms, such as upper case letters, need the
                  ;; shift modifier to be set in order to grab properly.
                  (let ((key
-                        (if (and (not (eql (key-keysym key) (xlib:keycode->keysym *display* code 0)))
-                                 (eql (key-keysym key) (xlib:keycode->keysym *display* code 1)))
-                            (add-shift-modifier key)
-                            key)))
+                         (if (and (not (eql (key-keysym key) (xlib:keycode->keysym *display* code 0)))
+                                  (eql (key-keysym key) (xlib:keycode->keysym *display* code 1)))
+                           (add-shift-modifier key)
+                           key)))
                    (xlib:grab-key w code
                                   :modifiers (x11-mods key) :owner-p t
                                   :sync-pointer-p nil :sync-keyboard-p nil)
@@ -932,6 +935,7 @@ needed."
                             ;; entirely clear that this is the correct
                             ;; value for time that we send here.
                             (or *current-event-time* 0))
+       (update-mode-lines (window-screen window))
        (run-hook-with-args *focus-window-hook* window cw))
       (t
        (screen-set-focus screen window)
@@ -941,6 +945,7 @@ needed."
          (update-decoration cw))
        ;; Move the window to the head of the mapped-windows list
        (move-window-to-head group window)
+       (update-mode-lines (window-screen window))
        (run-hook-with-args *focus-window-hook* window cw)))))
 
 (defun xwin-kill (window)
@@ -965,8 +970,8 @@ needed."
 @var{fmt} argument specifies the window formatting used.  Returns the window
 selected."
   (second (select-from-menu (current-screen)
-			    (mapcar (lambda (w)
-				      (list (format-expand *window-formatters* fmt w) w))
+                            (mapcar (lambda (w)
+                                      (list (format-expand *window-formatters* fmt w) w))
                                     windows)
                             prompt
                             (or (position (current-window) windows) 0)  ; Initial selection
@@ -992,6 +997,25 @@ window. Default to the current window. if
 @command{delete-window} didn't work, try this."
   (when window
     (xwin-kill (window-xwin window))))
+
+(defun kill-windows (windows)
+  "Kill all windows @var{windows}"
+  (dolist (window windows)
+    (xwin-kill (window-xwin window)))) 
+
+(defun kill-windows-in-group (group)
+   "Kill all windows in group @var{group}"
+  (kill-windows (group-windows group)))
+
+(defcommand kill-windows-current-group () ()
+  "Kill all windows in the current group."
+  (kill-windows-in-group (current-group)))
+
+(defcommand kill-windows-other () ()
+  "Kill all windows in current group except the current-window"
+  (let ((target-windows (remove (current-window)
+                                (group-windows (current-group)))))
+    (kill-windows target-windows)))
 
 (defcommand-alias kill kill-window)
 
@@ -1065,16 +1089,16 @@ is using the number, then the windows swap numbers. Defaults to current group."
 (defcommand repack-window-numbers (&optional preserved) ()
   "Ensure that used window numbers do not have gaps; ignore PRESERVED window numbers."
   (let* ((group (current-group))
-	 (windows (sort-windows group)))
+         (windows (sort-windows group)))
     (loop for w in windows
-	  do (unless (find (window-number w) preserved)
-	       (setf
-		 (window-number w)
-		 (find-free-number
-		   (remove
-		     (window-number w)
-		     (mapcar 'window-number windows))
-		   0))))))
+          do (unless (find (window-number w) preserved)
+               (setf
+                 (window-number w)
+                 (find-free-number
+                   (remove
+                     (window-number w)
+                     (mapcar 'window-number windows))
+                   0))))))
 
 ;; It would make more sense that the window-list argument was before the fmt one
 ;; but window-list was added latter and I didn't want to break other's code.
@@ -1088,16 +1112,13 @@ list (see @command{windowlist-by-class}). The default window list is the list of
 all window in the current group. Also note that the default window list is sorted
 by number and if the @var{windows-list} is provided, it is shown unsorted (as-is)."
   ;; Shadowing the window-list argument.
-  (let ((window-list (or window-list
-                         (sort-windows-by-number 
-                          (group-windows (current-group))))))
-    (if (null window-list)
-        (message "No Managed Windows")
-        (let ((window (select-window-from-menu window-list fmt)))
-          (if window
-              (group-focus-window (current-group) window)
-              (throw 'error :abort))))))
-
+  (if-let ((window-list (or window-list
+                          (sort-windows-by-number
+                           (group-windows (current-group))))))
+    (if-let ((window (select-window-from-menu window-list fmt)))
+      (group-focus-window (current-group) window)
+      (throw 'error :abort))
+    (message "No Managed Windows")))
 
 (defcommand windowlist-by-class (&optional (fmt *window-format-by-class*)) (:rest)
   "Allow the user to select a window from the list of windows (sorted by class)
@@ -1163,9 +1184,9 @@ be used to override the default window formatting."
 
 (defcommand refresh () ()
   "Refresh current window without changing its size."
-  (let* ((window (current-window))
-         (w (window-width window))
-         (h (window-height window)))
+  (when-let* ((window (current-window))
+              (w (window-width window))
+              (h (window-height window)))
     (set-window-geometry window
                          :width (- w (window-width-inc window))
                          :height (- h (window-height-inc window)))

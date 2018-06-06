@@ -231,7 +231,7 @@ than the root window's width and height."
         (focus-prev-window group)
         (other-window group))))
 
-(defun pull-window (win &optional (to-frame (tile-group-current-frame (window-group win))))
+(defun pull-window (win &optional (to-frame (tile-group-current-frame (window-group win))) (focus-p t))
   (let ((f (window-frame win))
         (group (window-group win)))
     (unless (eq (frame-window to-frame) win)
@@ -243,7 +243,7 @@ than the root window's width and height."
       ;; We have to restore the focus after hiding.
       (when (eq win (screen-focus (window-screen win)))
         (screen-set-focus (window-screen win) win))
-      (frame-raise-window group to-frame win)
+      (frame-raise-window group to-frame win focus-p)
       ;; if win was focused in its old frame then give the old
       ;; frame the frame's last focused window.
       (when (eq (frame-window f) win)
@@ -485,10 +485,10 @@ frame. Possible values are:
 frame and focus the selected window.  The optional argument @var{fmt} can be
 specified to override the default window formatting."
   (let* ((group (current-group))
-	 (frame (tile-group-current-frame group)))
+         (frame (tile-group-current-frame group)))
     (if (null (frame-windows group frame))
-	(message "No Managed Windows")
-	(let ((window (select-window-from-menu (frame-sort-windows group frame) fmt)))
-	  (if window
-	      (group-focus-window group window)
-	      (throw 'error :abort))))))
+        (message "No Managed Windows")
+        (let ((window (select-window-from-menu (frame-sort-windows group frame) fmt)))
+          (if window
+              (group-focus-window group window)
+              (throw 'error :abort))))))

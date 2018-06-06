@@ -22,9 +22,8 @@
   "A cache for the ppcre scanners")
 
 (defun get-or-create-rule-scanner (regex)
-  (or (gethash regex *rule-scanners-cache*)
-      (setf (gethash regex *rule-scanners-cache*)
-	    (ppcre:create-scanner regex))))
+  (ensure-gethash regex *rule-scanners-cache*
+                  (ppcre:create-scanner regex)))
 
 (defun string-match (string pat)
   (ppcre:scan (get-or-create-rule-scanner pat) string))
@@ -42,17 +41,20 @@
 (defun window-matches-rule-p (w rule)
   "Returns T if window matches rule"
   (destructuring-bind (group-name frame raise lock
-                       &key create restore class instance type role title) rule
+                       &key from-group create restore class instance type role title) rule
     (declare (ignore frame raise create restore))
-    (if (or lock
-            (equal group-name (group-name (or (when (slot-boundp w 'group)
-                                                (window-group w))
-                                              (current-group)))))
-        (window-matches-properties-p w :class class
-                                       :instance instance
-                                       :type type
-                                       :role role
-                                       :title title))))
+    (let ((from-group (cond ((not from-group) (group-name (or (when (slot-boundp w 'group)
+                                                                (window-group w))
+                                                              (current-group))))
+                            ((stringp from-group) from-group)
+                            (t (group-name (eval from-group))))))
+      (if (or lock
+              (equal group-name from-group))
+          (window-matches-properties-p w :class class
+                                         :instance instance
+                                         :type type
+                                         :role role
+                                         :title title)))))
 
 (defun rule-matching-window (window)
   (dolist (rule *window-placement-rules*)
@@ -64,8 +66,8 @@
   (let ((match (rule-matching-window window)))
     (if match
         (destructuring-bind (group-name frame raise lock
-                             &key create restore class instance type role title) match
-          (declare (ignore lock class instance type role title))
+                             &key from-group create restore class instance type role title) match
+          (declare (ignore from-group lock class instance type role title))
           (let ((group (find-group screen group-name)))
             (cond (group
                    (when (and restore (stringp restore))
@@ -93,20 +95,23 @@
                        (values)))))
         (values))))
 
+(defun sync-single-window-placement (screen window)
+  "Re-arrange the window according to placement rules"
+  (multiple-value-bind (to-group frame raise)
+      (with-current-screen screen
+        (get-window-placement screen window))
+    (when to-group
+      (unless (eq (window-group window) to-group)
+        (move-window-to-group window to-group)))
+    (when frame
+      (unless (eq (window-frame window) frame)
+        (pull-window window frame raise)))))
+
 (defun sync-window-placement ()
   "Re-arrange existing windows according to placement rules"
   (dolist (screen *screen-list*)
     (dolist (window (screen-windows screen))
-      (multiple-value-bind (to-group frame raise)
-          (with-current-screen screen
-            (get-window-placement screen window))
-        (declare (ignore raise))
-        (when to-group
-          (unless (eq (window-group window) to-group)
-            (move-window-to-group window to-group)))
-        (when frame
-          (unless (eq (window-frame window) frame)
-            (pull-window window frame)))))))
+      (sync-single-window-placement screen window))))
 
 (defun assign-window (window group &optional (where :tail))
   "Assign the window to the specified group and perform the necessary

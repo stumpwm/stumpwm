@@ -1174,7 +1174,7 @@ A lisp variable
 @item :function
 A lisp function
 @item :command
-A stumpwm command as a string.
+A StumpWM command as a string.
 @item :key-seq
 A key sequence starting from *TOP-MAP*
 @item :window-number
@@ -1200,7 +1200,7 @@ A shell command
 @item :rest
 The rest of the input yet to be parsed.
 @item :module
-An existing stumpwm module
+An existing StumpWM module
 @end table
 
 Additional types can be defined using the macro
@@ -1233,8 +1233,10 @@ of ``input'':
 
 @itemize
 @item
-@command{argument-pop} (input) pop the next space-delimited
-argument from the argument line.
+@command{argument-pop} (input) pop the next space-delimited word or a
+double quote delimited string argument from the argument
+line. Backslashes may be used to escape double quotes or backslashes
+inside double quoted strings.
 
 @item
 @command{argument-pop-rest} (input) return the remainder of the
@@ -1436,6 +1438,8 @@ An input function takes 2 arguments: the input structure and the key pressed.
 !!! prev
 !!! delete-window
 !!! kill-window
+!!! kill-windows-current-group
+!!! kill-windows-other
 !!! echo-windows
 !!! other-window
 !!! pull-hidden-next
@@ -1464,7 +1468,7 @@ An input function takes 2 arguments: the input structure and the key pressed.
 ### *window-format*
 ### *window-info-format*
 ### *window-name-source*
-### *new-window-prefered-frame*
+### *new-window-preferred-frame*
 
 @menu
 * Window Marks::
@@ -1623,10 +1627,13 @@ window pool, where windows and frames are not so tightly connected.
 !!! frame-windowlist
 !!! echo-frame-windows
 !!! exchange-direction
+!!! expose
 
 ### *min-frame-width*
 ### *min-frame-height*
 ### *new-frame-action*
+### *expose-auto-tile-fn*
+### *expose-n-max*
 
 @menu
 * Interactively Resizing Frames::
@@ -1764,6 +1771,7 @@ Groups in StumpWM are more commonly known as @dfn{virtual desktops} or
 !!! gmove-and-follow
 !!! gmove-marked
 !!! gkill
+!!! gkill-other
 !!! grename
 !!! grouplist
 
@@ -1794,14 +1802,12 @@ StumpWM handles multiple screens.
 
 @node External Monitors, Programming With Screens, Screens, Screens
 @section External Monitors
-StumpWM will attempt to detect external monitors (via @code{xdpyinfo})
-at startup. StumpWM refers to each monitor as a
-head. Heads are logically contained by screens. In a dual-monitor
-configuration, there will be one screen with two
-heads. Non-rectangular layouts are supported (frames will not be
-created in the 'dead zone'.) And message windows will be displayed on
-the current head--that is, the head to which the currently focused
-frame belongs.
+StumpWM refers to each monitor as a head. Heads are logically
+contained by screens. In a dual-monitor configuration, there will be
+one screen with two heads. Non-rectangular layouts are supported
+(frames will not be created in the 'dead zone'.) And message windows
+will be displayed on the current head--that is, the head to which the
+currently focused frame belongs.
 
 In addition, StumpWM listens for XRandR events and re-configures the
 heads to match the new monitor configuration. Occasionally StumpWM
@@ -1954,7 +1960,7 @@ the developers can fix it:
 @item
 Include a procedure for reproducing the bug/bad behavior. Ideally this
 will include numbered steps starting with instructions on how you
-start stumpwm. Also include what the expected behavior was.
+start StumpWM. Also include what the expected behavior was.
 @item
 Be as detailed as possible. Then add more detail!
 @item
@@ -1978,6 +1984,7 @@ If you don't have code to fix the bug, then open an issue at
 @section Timers
 StumpWM has a timer system similar to that of @dfn{Emacs}.
 
+@@@ idle-time
 @@@ run-with-timer
 @@@ cancel-timer
 
@@ -2002,7 +2009,7 @@ When specifying a color, it is possible to use its X11 Color Name
 six digit hex string prefixed by a '#' character in the same way that
 you can specify colors in HTML.
 
-All text printed by stumpwm is run through a coloring engine before
+All text printed by StumpWM is run through a coloring engine before
 being displayed. All color commands start with a @samp{^} (caret)
 character and apply to all text after it.
 
@@ -2154,6 +2161,8 @@ $$$ *urgent-window-hook*
 $$$ *event-processing-hook*
 $$$ *pre-command-hook*
 $$$ *post-command-hook*
+$$$ *menu-selection-hook*
+$$$ *new-head-hook*
 
 @node Modules, Hacking, Hooks, Top
 @chapter Modules
@@ -2191,7 +2200,7 @@ up a new module very easy.  After installing quicklisp (see the
 README.md for a link):
 
 We're going to put our new module in the @file{modules/} directory of
-@var{*data-dir*} so that it will be immediately loadable by stumpwm.
+@var{*data-dir*} so that it will be immediately loadable by StumpWM.
 
 First make the directory @file{new-module}, then from a REPL issue:
 @example
@@ -2338,19 +2347,6 @@ It may not immediately make it into the official git repository, but
 individual users might find it useful and apply it to their own setup,
 or might be willing to offer suggestions on how to improve the code.
 
-@item
-Remember:  StumpWM is designed to run on many lisp systems. If
-you must use code specific to one or the other, at the very least warn
-people that it only works with one lisp implementation. Better yet,
-figure out how to do it in the other distribution and write a
-statement like this:
-
-@example
-(your-sbcl-code)
-@end example
-
-to wrap the code for each lisp. Of course, the best option is to
-find a way to use the same code for clisp and SBCL.
 @end enumerate
 
 @node Using git with StumpWM, Sending Patches, General Advice, Hacking
@@ -2384,12 +2380,12 @@ changing the editor and pager you use when making commits and viewing
 logs.
 
 For the sake of argument, let's say you want to make some major
-changes to both @file{user.lisp} and @file{core.lisp}, add a file called
-@file{DANGEROUS_EXPERIMENT_DO_NOT_USE_OR_@-ELSE.lisp}, and remove the manual
-because you're too 1337 for such things. However, you don't want to
-break your entire StumpWM setup and start over. Thankfully, you don't
-have to. Before you get started, issue this command from the stumpwm
-directory:
+changes to both @file{user.lisp} and @file{core.lisp}, add a file
+called @file{DANGEROUS_EXPERIMENT_DO_NOT_USE_OR_@-ELSE.lisp}, and
+remove the manual because you're too 1337 for such things. However,
+you don't want to break your entire StumpWM setup and start over.
+Thankfully, you don't have to. Before you get started, issue this
+command from the StumpWM source directory:
 
 @example
 $ git checkout -b experimental

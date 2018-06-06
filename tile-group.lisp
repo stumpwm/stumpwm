@@ -273,16 +273,16 @@
   "Return a Y for frame that doesn't overlap the mode-line."
   (let* ((head (frame-head group frame))
          (ml (head-mode-line head))
-	 (head-y (frame-y head))
-	 (rel-frame-y (- (frame-y frame) head-y)))
+         (head-y (frame-y head))
+         (rel-frame-y (- (frame-y frame) head-y)))
     (if (and ml (not (eq (mode-line-mode ml) :hidden)))
         (case (mode-line-position ml)
           (:top
            (+ head-y
-	      (+ (mode-line-height ml) (round (* rel-frame-y (mode-line-factor ml))))))
+              (+ (mode-line-height ml) (round (* rel-frame-y (mode-line-factor ml))))))
           (:bottom
            (+ head-y
-	      (round (* rel-frame-y (mode-line-factor ml))))))
+              (round (* rel-frame-y (mode-line-factor ml))))))
         (frame-y frame))))
 
 (defun frame-display-height (group frame)
@@ -793,19 +793,19 @@ depending on the tree's split direction."
          (side (if (eq split-type :column)
                    :right
                    :bottom))
-         (total (funcall fn tree))
-         size rem)
-    (multiple-value-setq (size rem) (truncate total (length tree)))
-    (loop
-     for i in tree
-     for j = rem then (1- j)
-     for totalofs = 0 then (+ totalofs ofs)
-     for ofs = (+ (- size (funcall fn i)) (if (plusp j) 1 0))
-     do
-     (expand-tree i ofs side)
-     (offset-tree-dir i totalofs side)
-     (tree-iterate i (lambda (leaf)
-                       (sync-frame-windows group leaf))))))
+         (total (funcall fn tree)))
+    (multiple-value-bind (size rem)
+      (truncate total (length tree))
+      (loop
+        for i in tree
+        for j = rem then (1- j)
+        for totalofs = 0 then (+ totalofs ofs)
+        for ofs = (+ (- size (funcall fn i)) (if (plusp j) 1 0))
+        do
+           (expand-tree i ofs side)
+           (offset-tree-dir i totalofs side)
+           (tree-iterate i (lambda (leaf)
+                             (sync-frame-windows group leaf)))))))
 
 (defun split-frame (group how &optional (ratio 1/2))
   "Split the current frame into 2 frames. Return new frame number, if
@@ -829,7 +829,7 @@ desktop when starting."
               (if (atom (tile-group-frame-head group head))
                   (list f1 f2)
                   (funcall-on-node (tile-group-frame-head group head)
-                                   (lambda (tree)
+                                   (lambda (tree)     
                                      (if (eq (tree-split-type tree) how)
                                          (list-splice-replace frame tree f1 f2)
                                          (substitute (list f1 f2) frame tree)))
@@ -849,6 +849,8 @@ desktop when starting."
           (unhide-window (frame-window f2)))
         (frame-number f2)))))
 
+
+
 (defun draw-frame-outline (group f tl br)
   "Draw an outline around FRAME."
   (let* ((screen (group-screen group))
@@ -858,19 +860,19 @@ desktop when starting."
          (halfwidth (/ width 2)))
     (when (> width 0)
       (let ((x (frame-x f))
-	    (y (frame-display-y group f))
-	    (w (frame-width f))
-	    (h (frame-display-height group f)))
-	(when tl
-	  (xlib:draw-line win gc
-			  x (+ halfwidth y) w 0 t)
-	  (xlib:draw-line win gc
-			  (+ halfwidth x) y 0 h t))
-	(when br
-	  (xlib:draw-line win gc
-			  (+ x (- w halfwidth)) y 0 h t)
-	  (xlib:draw-line win gc
-			  x (+ y (- h halfwidth)) w 0 t))))))
+            (y (frame-display-y group f))
+            (w (frame-width f))
+            (h (frame-display-height group f)))
+        (when tl
+          (xlib:draw-line win gc
+                          x (+ halfwidth y) w 0 t)
+          (xlib:draw-line win gc
+                          (+ halfwidth x) y 0 h t))
+        (when br
+          (xlib:draw-line win gc
+                          (+ x (- w halfwidth)) y 0 h t)
+          (xlib:draw-line win gc
+                          x (+ y (- h halfwidth)) w 0 t))))))
 
 (defun draw-frame-outlines (group &optional head)
   "Draw an outline around all frames in GROUP."
@@ -1229,14 +1231,13 @@ direction. The following are valid directions:
 "Go to the last accessed window in the current frame."
   (other-window-in-frame (current-group)))
 
-(defcommand (balance-frames tile-group) () ()
+(defcommand (balance-frames tile-group) (&aux (group (current-group))) ()
   "Make frames the same height or width in the current frame's subtree."
-  (let* ((group (current-group))
-         (tree (tree-parent (tile-group-frame-head group (current-head))
-                            (tile-group-current-frame group))))
-    (if tree
-        (balance-frames-internal (current-group) tree)
-        (message "There's only one frame."))))
+  (if-let ((tree (tree-parent (tile-group-frame-head group (current-head))
+                              (tile-group-current-frame group))))
+    (balance-frames-internal group tree)
+    (message "There's only one frame.")))
+
 (defun unfloat-window (window group)
   ;; maybe find the frame geometrically closest to this float?
   (let ((frame (first (group-frames group))))
@@ -1267,7 +1268,7 @@ direction. The following are valid directions:
   "Transform all floating windows in this group to tiled windows.
 Puts all tiled windows in the first frame of the group. "
   (let ((group (current-group)))
-    (mapc (lambda (w) 
-          (when (typep w 'float-window) 
-            (unfloat-window w group))) 
+    (mapc (lambda (w)
+          (when (typep w 'float-window)
+            (unfloat-window w group)))
           (head-windows group (current-head)))))

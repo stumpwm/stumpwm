@@ -267,9 +267,8 @@ are found return @code{NIL}."
                          (car groups)
                          ;; Otherwise, use the next one in the list.
                          (cadr matches))))
-    (if (eq next-group current)
-        nil
-        next-group)))
+    (unless (eq next-group current)
+      next-group)))
 
 (defun merge-groups (from-group to-group)
   "Merge all windows in FROM-GROUP into TO-GROUP."
@@ -541,6 +540,15 @@ The windows will be moved to group \"^B^2*~a^n\"
               (message "Deleted"))
             (message "Canceled"))
         (message "There's only one group left"))))
+
+(defcommand gkill-other () ()
+"Kill other groups. All windows in other groups are migrated
+to the current group."
+  (let* ((current-group (current-group))
+         (groups (remove current-group
+                         (screen-groups (current-screen)))))
+    (dolist (dead-group groups)
+      (kill-group dead-group current-group))))
 
 (defcommand gmerge (from) ((:group "From Group: "))
 "Merge @var{from} into the current group. @var{from} is not deleted."
