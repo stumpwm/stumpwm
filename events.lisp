@@ -231,6 +231,8 @@ The Caller is responsible for setting up the input focus."
       when (typep group (first i))
       collect (second i))))
 
+(defvar *current-key-seq* nil)
+
 (define-stump-event-handler :key-press (code state #|window|#)
   (labels ((get-cmd (code state)
              (with-focus (screen-key-window (current-screen))
@@ -243,7 +245,9 @@ The Caller is responsible for setting up the input focus."
                ((eq cmd t))
                (cmd
                 (unmap-message-window (current-screen))
-                (eval-command cmd t) t)
+                (let ((*current-key-seq* key-seq))
+                  (eval-command cmd t))
+                t)
                (t (message "~{~a ~}not bound." (mapcar 'print-key (nreverse key-seq))))))))))
 
 (defun bytes-to-window (bytes)
