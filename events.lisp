@@ -231,7 +231,11 @@ The Caller is responsible for setting up the input focus."
       when (typep group (first i))
       collect (second i))))
 
-(defvar *current-key-seq* nil)
+(defvar *current-key-seq* nil
+  "The sequence of keys which were used to invoke a command, available
+  within a command definition as a dynamic var binding. Commands may
+  dispatch further based on the value in *current-key-seq*. See the
+  REMAP-KEYS contrib module for a working use case.")
 
 (define-stump-event-handler :key-press (code state #|window|#)
   (labels ((get-cmd (code state)
