@@ -136,6 +136,7 @@ Key Bindings
 * List of Default Keybindings::
 * Binding Keys::
 * Modifiers::
+* Remapped Keys::
 
 Commands
 
@@ -652,6 +653,7 @@ mimics GNU Screen's keyboard handling. StumpWM's default prefix key is
 * List of Default Keybindings::
 * Binding Keys::
 * Modifiers::
+* Remapped Keys::
 @end menu
 
 @node List of Default Keybindings, Binding Keys, Key Bindings, Key Bindings
@@ -871,7 +873,7 @@ Describe the specified command.
 !!! bind
 !!! send-escape
 
-@node Modifiers,  , Binding Keys, Key Bindings
+@node Modifiers, Remapped Keys, Binding Keys, Key Bindings
 @section Modifiers
 
 Many users have had some difficulty with setting up modifiers for
@@ -1006,6 +1008,42 @@ Since essentially no programs have Hyper bindings, you can safely bind
 commands to the @var{*top-map*}.
 
 @end itemize
+
+@node Remapped Keys, , Modifiers, Key Bindings
+@section Remapped Keys
+
+StumpWM may be configured to translate certain familiar top level keybindings to alternate key sequences that are understood by specific applications. For example, Emacs users are very familiar with @kbd{C-n} and @kbd{C-p} as keybindings for scrolling down and up one line at a time. However, most applications use these specific keybindings for other actions. The @code{stumpwm:define-remapped-keys} function may be used to define such application specific remapping of keybindings.
+
+@example
+(define-remapped-keys
+    '(("(Firefox|Chrome)"
+       ("C-n"   . "Down")
+       ("C-p"   . "Up")
+       ("C-f"   . "Right")
+       ("C-b"   . "Left")
+       ("C-v"   . "Next")
+       ("M-v"   . "Prior")
+       ("M-w"   . "C-c")
+       ("C-w"   . "C-x")
+       ("C-y"   . "C-v")
+       ("M-<"   . "Home")
+       ("M->"   . "End")
+       ("C-M-b" . "M-Left")
+       ("C-M-f" . "M-Right")
+       ("C-k"   . ("C-S-End" "C-x")))))
+@end example
+
+The above form adds Emacs like keybindings to windows whose @var{window-class} matches ``Firefox'' or ``Chrome''. Additional application specific bindings may be included by using the specific X @var{window-class} values.
+
+@subsection Circumventing Remapped Keys
+
+However, if the original key binding needs to be explictly applied the @command{send-raw-key} command may be used. It will prompt for a key which will be passed to the application as-is. For example, if the @command{send-raw-key} command were bound to @kbd{C-t C-q} as follows:
+
+@example
+(define-key *root-map* (kbd "C-q") "send-raw-key")
+@end example
+
+Then, pressing @kbd{C-t C-q}, while the Firefox window has focus, would prompt asking for ``Press a key to send''. Pressing @kbd{C-n} at the prompt will send the keystroke as-is to Firefox, causing it to open a new window.
 
 @node Commands, Message and Input Bar, Key Bindings, Top
 @chapter Commands
