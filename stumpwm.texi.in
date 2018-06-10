@@ -1012,7 +1012,7 @@ commands to the @var{*top-map*}.
 @node Remapped Keys, , Modifiers, Key Bindings
 @section Remapped Keys
 
-StumpWM may be configured to translate certain familiar top level keybindings to alternate key sequences that are understood by specific applications. For example, Emacs users are very familiar with @kbd{C-n} and @kbd{C-p} as keybindings for scrolling down and up one line at a time. However, most applications use these specific keybindings for other actions. The @code{stumpwm:define-remapped-keys} function may be used to define such application specific remapping of keybindings.
+StumpWM may be configured to translate certain familiar top level keybindings to alternative key sequences that are understood by specific applications. For example, Emacs users are very familiar with @kbd{C-n} and @kbd{C-p} as keybindings for scrolling down and up one line at a time. However, most applications use these specific keybindings for other actions. The @code{stumpwm:define-remapped-keys} function may be used to define such application specific remapping of keybindings.
 
 @example
 (define-remapped-keys
