@@ -38,9 +38,9 @@
 
 (defcommand send-remapped-key () ()
   "If the WINDOW-CLASS of the current window matches a previously
-defined REMAP-KEYS rule (see REMAP-KEYS:DEFINE-REMAPPED-KEYS), this
-command looks up the most recently triggered key sequence in that rule
-and forwards the new key-sequence to the target window."
+defined REMAP-KEYS rule (see DEFINE-REMAPPED-KEYS), this command looks
+up the most recently triggered key sequence in that rule and forwards
+the new key-sequence to the target window."
   (let* ((raw-key (first *current-key-seq*))
          (window (current-window))
          (window-class (window-class window))
@@ -77,7 +77,7 @@ argument needs to be of the following structure:
   (regexp . ((\"key-to-remap\" . <new-keycodes>) ...))
 
 EXAMPLE:
-  (remap-keys:define-remapped-keys
+  (define-remapped-keys
     '((\"Firefox\"
        (\"C-n\"   . \"Down\")
        (\"C-p\"   . \"Up\")
