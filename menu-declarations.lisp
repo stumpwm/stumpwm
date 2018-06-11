@@ -1,4 +1,4 @@
-;; Copyright (C) 2018 Shawn Betts
+;; Copyright (C) 2018 Stuart Dilts
 ;;
 ;;  This file is part of stumpwm.
 ;;

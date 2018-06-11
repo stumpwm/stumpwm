@@ -1,4 +1,4 @@
-;; Copyright (C) 2018 Shawn Betts
+;; Copyright (C) 2018 Stuart Dilts
 ;;
 ;;  This file is part of stumpwm.
 ;;
@@ -146,7 +146,6 @@ returned by assoc is a list items that were marked with that character.
 Example when entry1 and entry2 are marked with 'a', and entry3 is not marked:
     ((a entry1 entry2) (NIL entry3))"
   (with-slots (allowed-markers table) menu
-    (print table)
     (let ((alist (list)))
       (dolist (entry table)
         (let ((mark (car entry))
@@ -202,7 +201,7 @@ unmark the entry at the selected point."
         (> (length (single-menu-current-input menu)) 0)))
 
 (defmethod menu-prompt-line ((menu single-menu))
-  "If there is prompt or a search string, show it."
+  "When a prompt is shown, also show the search string."
   (when (menu-prompt-visible menu)
       (format nil "~@[~A ~]~A"
               (menu-prompt menu) (single-menu-current-input menu))))
@@ -361,6 +360,41 @@ EXTRA-KEYMAP can be a keymap whose bindings will take precedence
                                :additional-keymap extra-keymap)))
       (run-menu screen menu))))
 
+(defun selection-menu (screen items command-list)
+  "Use batch-menu to make selections and run commands specified in command-list.
+Only characters in command-list will be used as markers.
+Entries have the form (char-to-select command &options) &options may be nil.
+
+options:
+   :single   (Default) Each value is passed seperately to the supplied function.
+   :all      all values selected with this mark are passed to the function in a list.
+
+Example:
+   (selection-menu '(window1 window2) (#\m 'move-multiple-windows :all))"
+  (let ((results
+         (select-from-batch-menu screen items
+                                 ;; use the first value of every entry
+                                 ;; execpt when it is nill:
+                                 :allowed-markers (mapcan (lambda (x)
+                                                            (if (first x)
+				                                (list (first x))))
+                                                          command-list))))
+    (dolist (command-entry command-list)
+      (let ((selections (assoc (first command-entry) results))
+            (func (second command-entry))
+            ;; change this to cddr if we ever have more than one option?
+            (options (caddr command-entry)))
+        (when selections
+          (cond
+            ((eql :all options)
+             (funcall func (mapcar 'menu-entry-data (cdr selections))))
+            ;; default option: check if it is nil:
+            ((or (eql options :all) (eql options nil))
+             (dolist (data (cdr selections))
+               (funcall func (menu-entry-data data))))
+            (t (error (format nil "keyword ~s not a valid command option for selection-menu."
+                              options)))))))))
+
 (when (null *menu-map*)
   (setf *menu-map*
         (let ((m (make-sparse-keymap)))
@@ -394,6 +428,8 @@ EXTRA-KEYMAP can be a keymap whose bindings will take precedence
           (define-key m (kbd "n") 'menu-down)
           (define-key m (kbd  "p") 'menu-up)
           (define-key m (kbd "space") 'menu-down)
-          (define-key m (kbd "u") 'batch-menu-unmark-selected)
+          (define-key m (kbd "u") (lambda (menu)
+                                    (batch-menu-unmark-selected menu)
+                                    (menu-down menu)))
           (define-key m (kbd "x") 'menu-finish)
           m)))
