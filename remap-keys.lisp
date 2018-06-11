@@ -108,16 +108,18 @@ EXAMPLE:
          (screen (current-screen)))
     (unmap-message-window screen)
     (when (screen-current-window screen)
-      (let ((win (screen-current-window screen)))
-        (xlib:send-event (window-xwin win)
-                         :key-press (xlib:make-event-mask :key-press)
-                         :display *display*
-                         :root (screen-root
-                                (window-screen win))
-                         ;; Apparently we need these in here, though they
-                         ;; make no sense for a key event.
-                         :x 0 :y 0 :root-x 0 :root-y 0
-                         :window (window-xwin win)
-                         :event-window (window-xwin win)
-                         :code code
-                         :state state)))))
+      (let* ((win (screen-current-window screen))
+             (xwin (window-xwin win)))
+        (dolist (event '(:key-press :key-release))
+          (xlib:send-event xwin
+                           event
+                           (xlib:make-event-mask event)
+                           :display *display*
+                           :root (screen-root screen)
+                           ;; Apparently we need these in here, though they
+                           ;; make no sense for a key event.
+                           :x 0 :y 0 :root-x 0 :root-y 0
+                           :window xwin
+                           :event-window xwin
+                           :code code
+                           :state state))))))
