@@ -55,7 +55,7 @@ the new key-sequence to the target window."
     (if keys
         (dolist (key keys)
           (send-fake-key window key))
-        (send-meta-key (current-screen) raw-key))))
+        (send-fake-key window raw-key))))
 
 (defun make-remap-keys (kmap)
   (labels ((as-list (x) (if (consp x) x (list x)))
