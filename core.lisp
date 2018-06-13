@@ -42,16 +42,21 @@
 
 (defun send-fake-key (win key)
   "Send a fake key press event to win."
-  (multiple-value-bind (code state) (key-to-keycode+state key)
-    (xlib:send-event (window-xwin win) :key-press (xlib:make-event-mask :key-press)
-                     :display *display*
-                     :root (screen-root (window-screen win))
-                     ;; Apparently we need these in here, though they
-                     ;; make no sense for a key event.
-                     :x 0 :y 0 :root-x 0 :root-y 0
-                     :window (window-xwin win) :event-window (window-xwin win)
-                     :code code
-                     :state state)))
+  (let ((xwin (window-xwin win)))
+    (multiple-value-bind (code state) (key-to-keycode+state key)
+      (dolist (event '(:key-press :key-release))
+        (xlib:send-event xwin
+                         event
+                         (xlib:make-event-mask event)
+                         :display *display*
+                         :root (screen-root (window-screen win))
+                         ;; Apparently we need these in here, though they
+                         ;; make no sense for a key event.
+                         :x 0 :y 0 :root-x 0 :root-y 0
+                         :window xwin
+                         :event-window xwin
+                         :code code
+                         :state state)))))
 
 (defun send-fake-click (win button)
   "Send a fake click (button press + button release) to win."
