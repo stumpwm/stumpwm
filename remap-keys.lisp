@@ -99,6 +99,14 @@ EXAMPLE:
           (kbd k)
         "send-remapped-key"))))
 
+(defun unbind-remapped-keys ()
+  "Unbinds all previously remapped keybindings."
+  (let ((keys (mapcar 'car
+                      (mapcan 'cdr *remap-keys-window-class-list*))))
+    (dolist (k keys)
+      (undefine-key *top-map* (kbd k)))
+    (setq *remap-keys-window-class-list* nil)))
+
 (defcommand send-raw-key () ()
   "Prompts for a key and forwards it to the CURRENT-WINDOW."
   (message "Press a key to send")
