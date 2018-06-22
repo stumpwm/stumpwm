@@ -26,6 +26,11 @@
 
 (in-package #:stumpwm)
 
+(export 'entries-from-nested-list
+        'select-from-menu
+        'select-from-batch-menu
+        'command-menu)
+
 (defun entries-from-nested-list (lst)
   (mapcar (lambda (x)
             (make-instance 'menu-entry
@@ -361,25 +366,35 @@ EXTRA-KEYMAP can be a keymap whose bindings will take precedence
                                :additional-keymap extra-keymap)))
       (run-menu screen menu))))
 
-(defun selection-menu (screen items command-list)
+(defun command-menu (screen items command-list &key (prompt "Select:")
+                                                   (initial-selection 0)
+                                                   extra-keymap)
   "Use batch-menu to make selections and run commands specified in command-list.
-Only characters in command-list will be used as markers.
-Entries have the form (char-to-select command &options) &options may be nil.
 
-options:
-   :single   (Default) Each value is passed seperately to the supplied function.
-   :all      all values selected with this mark are passed to the function in a list.
+SCREEN: The screen to display the menu on.
 
-Example:
-   (selection-menu '(window1 window2) (#\m 'move-multiple-windows :all))"
+ITEMS: The items to be shown in the list. This is expected to be a list of @code{menu-item}s.
+
+COMMAND-LIST: A list of entries defining the commands associated with each mark. Only marks that are defined
+              are allowd in the menu. The format for these entries is (mark-character function calling-options).
+
+              Available calling-options:
+                 :single   (Default) Each value is passed seperately to the supplied function.
+                 :all      all values selected with this mark are passed to the function in a list.
+
+              Example:
+                 '( (#\d 'delete-window) (#\m 'move-multiple-windows :all))"
   (let ((results
          (select-from-batch-menu screen items
+                                 :prompt prompt
                                  ;; use the first value of every entry
                                  ;; execpt when it is nill:
                                  :allowed-markers (mapcan (lambda (x)
                                                             (if (first x)
 				                                (list (first x))))
-                                                          command-list))))
+                                                          command-list)
+                                 :initial-selection initial-selection
+                                 :extra-keymap extra-keymap)))
     (dolist (command-entry command-list)
       (let ((selections (assoc (first command-entry) results))
             (func (second command-entry))
