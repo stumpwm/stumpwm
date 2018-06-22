@@ -1910,9 +1910,15 @@ section.
 * Getting Help::
 @end menu
 
-@node Menus, StumpWM's Data Directory, Miscellaneous Commands, Miscellaneous Commands
+@node Menus, StumpWM's Data Directory, Miscellaneous Commands
 @section Menus
-Some commands present the options in a menu. The following are the menu key bindings:
+@section Menus
+There are two different types of menus in StumpWM; single selection menus and
+batch menus. Single-selection menus, as the name suggests, are used to
+pick a single item from a list. Batch menus are used for performing
+actions on multiple menu items. Both menus share the same navigational
+keybindings, which are found in the table below. These can be
+customized by modifying the @var{*menu-map*} variable.
 
 @table @kbd
 @item C-p
@@ -1925,12 +1931,67 @@ Highlight the previous menu option.
 @itemx j
 Highlight the next menu option.
 
+@item S-Down
+Scroll the entire page down one entry.
+
+@item S-Up
+Scroll the entire page up one entry.
+
+@item PageUp
+Scroll up one page.
+
+@item PageDown
+Scroll down one page.
+
 @item C-g
 @itemx ESC
 Abort the menu.
 
+@end table
+
+In addition, you can customize the number of items shown at a time (a page)
+with the @var{*menu-maximum-height*} variable. The default value,
+@code{nil}, means that there is no limit to the page size.
+
+@subsection Single Selection Menus
+Single selection menus can be searched; start typing when the menu is
+active, and the results are immediately filtered. Use @key{RET} to
+selected the highlighted option.
+
+@table @kbd
+
 @item RET
 Select the highlighted option.
+
+@end table
+
+@subsection Batch Menus
+Batch menus provide a menu that allows the user to mark items. Items
+are marked by highlighting an item, then pressing a corresponding
+key. The key pressed depends on the menu being shown, and the desired
+action. For example, in a menu allowing users to manage windows,
+windows to be closed/removed could be marked by @key{d}, and windows
+to be raised could be marked by @key{r}. All available actions and
+their keybindings are shown below. These can be customized with @var{*batch-menu-map*}.
+
+@table @kbd
+@item n
+@item Space
+Highlight the next item.
+
+@item p
+Highlight the previous item.
+
+@item u
+Unmark the selected item, then move the cursor down.
+
+@item DEL
+Unmark the selected item, then move the cursor up if it is not at the
+top of the menu.
+
+@item x
+@item RET
+Exit the menu and perform the actions associated with each mark.
 
 @end table
 
