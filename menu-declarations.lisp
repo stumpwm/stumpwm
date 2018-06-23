@@ -178,7 +178,8 @@ Must signal :menu-quit with the result."))
 (defgeneric menu-backspace (menu)
   (:documentation "What occurs when backspace is pressed in a menu"))
 
-(defgeneric menu-promt-line (menu)
+
+(defgeneric menu-prompt-line (menu)
   (:documentation "Returns the prompt-line that should be displayed. If no
 line is to be displayed, then return nil"))
 
