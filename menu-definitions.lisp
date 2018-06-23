@@ -27,10 +27,10 @@
 
 (in-package #:stumpwm)
 
-(export 'entries-from-nested-list
-        'select-from-menu
-        'select-from-batch-menu
-        'command-menu)
+(export '(entries-from-nested-list
+          select-from-menu
+          select-from-batch-menu
+          command-menu))
 
 (defun entries-from-nested-list (lst)
   (mapcar (lambda (x)

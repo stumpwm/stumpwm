@@ -27,7 +27,6 @@
                (:file "input")
                (:file "core")
                (:file "command")
-               ;;(:file "menu")
                (:file "menu-declarations")
                (:file "menu-definitions")
                (:file "screen")
