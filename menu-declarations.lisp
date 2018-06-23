@@ -80,7 +80,8 @@
           :documentation "The list that is displayed in the menu")
    (selected :initarg :selected
              :initform 0
-             :accessor menu-selected)
+             :accessor menu-selected
+             :documentation "The index of the selected item")
    (prompt :initarg :prompt
            :initform "Search?"
            :reader menu-prompt)

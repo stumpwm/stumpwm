@@ -18,7 +18,8 @@
 
 ;; Commentary:
 ;;
-;; Implementation of an interactive menu.
+;; Implementation of an interactive menu. This file contains the definitions of the menu
+;; class as defined in menu-declarations.lisp.
 ;;
 ;; Code:
 
@@ -244,6 +245,7 @@ is not allowed, as specified by allowed-markers, item is not marked"
         (setf (car (nth selected table)) input-char)
         (menu-down menu)))))
 
+;; used for the default menus: they don't use menu-entrys
 (defun menu-element-name (element)
   (if (listp element)
       (first element)
@@ -273,8 +275,9 @@ more spaces; ARGUMENT-POP is used to split the string)."
   (match-all-regexps user-input item-string))
 
 (defun run-menu (screen menu)
+  "Runs the menu. Implment all of the methods in the menu, then pass an instance to this function"
   (declare (type menu menu))
-                 ;(screen screen)))
+  ;; align the menu, make the pages
   (bound-check-menu menu)
   (catch :menu-quit
     (unwind-protect
@@ -314,10 +317,13 @@ more spaces; ARGUMENT-POP is used to split the string)."
 a list of values or an alist. If it's an alist, the CAR of each
 element is displayed in the menu. What is displayed as menu items
 must be strings.
+
 EXTRA-KEYMAP can be a keymap whose bindings will take precedence
 over the default bindings.
+
 FILTER-PRED should be a a function returning T when a certain menu
 item should be visible to the user.  It should accept arguments
+
 ITEM-STRING (the string shown to the user), ITEM-OBJECT (the object
 corresponding to the menu item), and USER-INPUT (the current user
 input). The default is MENU-ITEM-MATCHES-REGEXP.
