@@ -29,7 +29,7 @@
 (in-package #:stumpwm)
 
 ;; export all of the commands/variables that someone may want to change
-;; the keybindgings of, and those needed for constructing menus
+;; the key bindings of, and those needed for constructing menus
 (export '*menu-map*
         '*single-menu-map*
         '*batch-menu-map*
@@ -51,7 +51,7 @@
   "The keymap used by the interactive menu.")
 
 (defvar *single-menu-map* nil
-  "The keymap used by single selection menus in addtion to *menu-map*")
+  "The keymap used by single selection menus in addition to *menu-map*")
 
 (defvar *batch-menu-map* nil
   "The keymap used by batch-menu menus in addition to *menu-map*")

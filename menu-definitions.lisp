@@ -275,7 +275,7 @@ more spaces; ARGUMENT-POP is used to split the string)."
   (match-all-regexps user-input item-string))
 
 (defun run-menu (screen menu)
-  "Runs the menu. Implment all of the methods in the menu, then pass an instance to this function"
+  "Runs the menu. Implement all of the methods in the menu, then pass an instance to this function"
   (declare (type menu menu))
   ;; align the menu, make the pages
   (bound-check-menu menu)
@@ -351,11 +351,13 @@ Returns the selected element in TABLE or nil if aborted. "
   "Prompt the user with a menu that allows them to mark each item
 with a character. They can exit the menu by pressing enter, or
 whatever key is mapped to 'menu-finish' in *menu-map*. Value returned
-is an alist, where the cdr of the value returned by assoc is the
-items that were marked with that character.
+is an alist, where the cdr of each entry is a list of
+items that were marked with that character. Note that the lisp printer cannot
+distinguish between '(a . (b c d)) and '(a b c d).
+
 Example when \"foo\" and \"bar\" are marked with '#\d', and \"baz\" is not marked:
     ((#\d \"foo\" \"bar\") (NIL \"baz\"))
-ALLOWED-MARKERS is a list of characters. If this value is specified, no
+ALLOWED-MARKERS is a list of characters. If this parameter is specified, no
     other markers are allowed.
 EXTRA-KEYMAP can be a keymap whose bindings will take precedence
     over the default bindings."
@@ -381,20 +383,21 @@ SCREEN: The screen to display the menu on.
 
 ITEMS: The items to be shown in the list. This is expected to be a list of @code{menu-item}s.
 
-COMMAND-LIST: A list of entries defining the commands associated with each mark. Only marks that are defined
-              are allowd in the menu. The format for these entries is (mark-character function calling-options).
+COMMAND-LIST: A list of entries defining the commands associated with each mark.
+              Only marks that are defined are allowed in the menu. The format
+              for these entries is (mark-character function calling-options).
 
               Available calling-options:
-                 :single   (Default) Each value is passed seperately to the supplied function.
+                 :single   (Default) Each value is passed separately to the supplied function.
                  :all      all values selected with this mark are passed to the function in a list.
 
               Example:
-                 '( (#\d 'delete-window) (#\m 'move-multiple-windows :all))"
+                 '((#\d 'delete-window) (#\m 'move-multiple-windows :all))"
   (let ((results
          (select-from-batch-menu screen items
                                  :prompt prompt
                                  ;; use the first value of every entry
-                                 ;; execpt when it is nill:
+                                 ;; except when it is nill:
                                  :allowed-markers (mapcan (lambda (x)
                                                             (if (first x)
 				                                (list (first x))))
@@ -429,8 +432,6 @@ COMMAND-LIST: A list of entries defining the commands associated with each mark.
           (define-key m (kbd "Down") 'menu-down)
           (define-key m (kbd "S-Down") 'menu-scroll-down)
           (define-key m (kbd "SunPageDown") 'menu-page-down)
-
-          ;; (define-key m (kbd "DEL") 'menu-backspace)
 
           (define-key m (kbd "C-g") 'menu-abort)
           (define-key m (kbd "ESC") 'menu-abort)
