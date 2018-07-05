@@ -55,6 +55,7 @@
                (:file "color")
                (:file "wse")
                (:file "dynamic-window")
+               (:file "remap-keys")
                ;; keep this last so it always gets recompiled if
                ;; anything changes
                (:file "version")))
