@@ -93,7 +93,7 @@ EXAMPLE:
                     (cons pattern (make-remap-keys kmap))))
                 specs))
   (let ((keys (mapcar 'car
-                      (mapcan 'cdr *remap-keys-window-class-list*))))
+                      (alexandria:mappend 'cdr *remap-keys-window-class-list*))))
     (dolist (k keys)
       (define-key *top-map*
           (kbd k)
@@ -102,7 +102,7 @@ EXAMPLE:
 (defun unbind-remapped-keys ()
   "Unbinds all previously remapped keybindings."
   (let ((keys (mapcar 'car
-                      (mapcan 'cdr *remap-keys-window-class-list*))))
+                      (alexandria:mappend 'cdr *remap-keys-window-class-list*))))
     (dolist (k keys)
       (undefine-key *top-map* (kbd k)))
     (setq *remap-keys-window-class-list* nil)))
