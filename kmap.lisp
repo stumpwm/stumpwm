@@ -104,44 +104,48 @@ the time these just gets in the way."
     (apply 'xlib:make-state-mask mods)))
 
 (defun report-kbd-parse-error (c stream)
-  (format stream "Failed to parse key string: ~s" (slot-value c 'string)))
+  (format stream "Failed to parse key string: ~S." (slot-value c 'string)))
 
 (define-condition kbd-parse-error (stumpwm-error)
   ((string :initarg :string))
   (:report report-kbd-parse-error)
   (:documentation "Raised when a kbd string failed to parse."))
 
-(defun parse-mods (mods end)
-  "MODS is a sequence of <MOD CHAR> #\- pairs. Return a list suitable
-for passing as the last argument to (apply #'make-key ...)"
-  (unless (evenp end)
-    (signal 'kbd-parse-error :string mods))
-  (apply #'nconc (loop for i from 0 below end by 2
-                       if (char/= (char mods (1+ i)) #\-)
-                       do (signal 'kbd-parse)
-                       collect (case (char mods i)
-                                 (#\M (list :meta t))
-                                 (#\A (list :alt t))
-                                 (#\C (list :control t))
-                                 (#\H (list :hyper t))
-                                 (#\s (list :super t))
-                                 (#\S (list :shift t))
-                                 (t (signal 'kbd-parse-error :string mods))))))
+(defun chop-mod-string (string)
+  (let ((pivot (min 2 (length string))))
+    (values (subseq string 0 pivot)
+            (subseq string pivot))))
+
+(defun parse-mods (string args)
+  (let ((mod-map '(("M-" . :meta)
+                   ("C-" . :control)
+                   ("S-" . :shift)
+                   ("H-" . :hyper)
+                   ("A-" . :alt)
+                   ("s-" . :super))))
+    (multiple-value-bind (curr next)
+        (chop-mod-string string)
+      (if (string= "" string)
+           args
+           (if-let (mod (cdr (assoc curr mod-map :test #'string=)))
+             (parse-mods next (append (list mod t)
+                                      args))
+             (error 'kbd-parse-error :string string))))))
 
 (defun parse-key (string)
-  "Parse STRING and return a key structure. Raise an error of type
-kbd-parse if the key failed to parse."
-  (let* ((p (when (> (length string) 2)
-              (position #\- string :from-end t :end (- (length string) 1))))
-         (mods (parse-mods string (if p (1+ p) 0)))
-         (keysym (stumpwm-name->keysym (subseq string (if p (1+ p) 0)))))
-    (if keysym
-        (apply 'make-key :keysym keysym mods)
-        (signal 'kbd-parse-error :string string))))
+  "Parse STRING and return a key structure. Raise an error of type kbd-parse if
+the key failed to parse."
+  (let* ((mod-pivot (or (position #\- string :from-end t :test #'char=)
+                       -1))
+         (mods (subseq string 0 (1+ mod-pivot)))
+         (key-name (subseq string (1+ mod-pivot))))
+    (apply 'make-key
+           :keysym (stumpwm-name->keysym key-name)
+           (parse-mods mods nil))))
 
 (defun parse-key-seq (keys)
   "KEYS is a key sequence. Parse it and return the list of keys."
-  (mapcar 'parse-key (split-string keys)))
+  (mapcar 'parse-key (split-string keys " ")))
 
 (defun kbd (keys)
   "This compiles a key string into a key structure used by
