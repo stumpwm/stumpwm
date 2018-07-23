@@ -289,7 +289,10 @@
 
 (pushnew '(float-group *float-group-top-map*) *group-top-maps*)
 (defvar *float-group-top-map* (make-sparse-keymap))
-(defvar *float-group-root-map* (make-sparse-keymap))
+(defvar *float-group-root-map* (make-sparse-keymap)
+  "Commands specific to a floating group context hang from this keymap.
+It is available as part of the @dnf{prefix map} when the active group
+is a tile group.")
 
 
 (defcommand gnew-float (name) ((:rest "Group Name: "))
