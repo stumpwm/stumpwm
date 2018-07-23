@@ -784,28 +784,68 @@ either :width or :height"
                             (sync-frame-windows group leaf)))))))))
 
 (defun balance-frames-internal (group tree)
-  "Resize all the children of tree to be of equal width or height
-depending on the tree's split direction."
-  (let* ((split-type (tree-split-type tree))
-         (fn (if (eq split-type :column)
-                 'tree-width
-                 'tree-height))
-         (side (if (eq split-type :column)
-                   :right
-                   :bottom))
-         (total (funcall fn tree)))
-    (multiple-value-bind (size rem)
-      (truncate total (length tree))
-      (loop
-        for i in tree
-        for j = rem then (1- j)
-        for totalofs = 0 then (+ totalofs ofs)
-        for ofs = (+ (- size (funcall fn i)) (if (plusp j) 1 0))
-        do
-           (expand-tree i ofs side)
-           (offset-tree-dir i totalofs side)
-           (tree-iterate i (lambda (leaf)
-                             (sync-frame-windows group leaf)))))))
+  "Fully balance all the frames contained in tree."
+  (labels
+      ((balance (tree x y width height)
+         (etypecase tree
+           (frame (balance-frame tree x y width height))
+           (list (balance-tree tree x y width height))))
+       (balance-frame (frame x y width height)
+         (setf (frame-x frame) x
+               (frame-y frame) y
+               (frame-width frame) width
+               (frame-height frame) height)
+         (sync-frame-windows group frame))
+       (count-splits (tree split-type)
+         "Count the number of top-level splits of split-type in tree."
+         (cond ((frame-p tree) 1)
+               ((eql split-type (tree-split-type tree))
+                (+ (count-splits (first tree) split-type)
+                   (count-splits (second tree) split-type)))
+               (t 1)))
+       (divide-dimension (value first-splits second-splits)
+         "Divide a width or height between two sides of a binary tree.
+
+         Returns two values: the number of pixels to give to the first and
+         second child, respectively.
+
+         For example: (divide-dimension 500 3 2) will divide 500 pixels into 300
+         for the first 3 splits and 200 for the second 2 splits.
+
+         "
+         ;; First divide the two groups as evenly as possible.
+         (multiple-value-bind (base remainder)
+             (truncate value (+ first-splits second-splits))
+           ;; We may have up to TOTAL-1 pixels left.  Divide those evenly
+           ;; between the two sides.  If there's 1 odd pixel left just give it
+           ;; to the first side.
+           (multiple-value-bind (extra maybe-one-extra)
+               (truncate remainder 2)
+             (values (+ (* base first-splits) extra maybe-one-extra)
+                     (+ (* base second-splits) extra)))))
+       (balance-tree (tree x y width height)
+         "Balance the binary tree to fit the given dimensions."
+         (let* ((split-type (tree-split-type tree))
+                (first-splits (count-splits (first tree) split-type))
+                (second-splits (count-splits (second tree) split-type)))
+           (ecase split-type
+             (:row (multiple-value-bind (top-height bottom-height)
+                       (divide-dimension height first-splits second-splits)
+                     (balance (first tree)
+                              x y
+                              width top-height)
+                     (balance (second tree)
+                              x (+ y top-height)
+                              width bottom-height)))
+             (:column (multiple-value-bind (left-width right-width)
+                          (divide-dimension width first-splits second-splits)
+                        (balance (first tree)
+                                 x y
+                                 left-width height)
+                        (balance (second tree)
+                                 (+ x left-width) y
+                                 right-width height)))))))
+    (balance tree (tree-x tree) (tree-y tree) (tree-width tree) (tree-height tree))))
 
 (defun split-frame (group how &optional (ratio 1/2))
   "Split the current frame into 2 frames. Return new frame number, if
@@ -829,10 +869,8 @@ desktop when starting."
               (if (atom (tile-group-frame-head group head))
                   (list f1 f2)
                   (funcall-on-node (tile-group-frame-head group head)
-                                   (lambda (tree)     
-                                     (if (eq (tree-split-type tree) how)
-                                         (list-splice-replace frame tree f1 f2)
-                                         (substitute (list f1 f2) frame tree)))
+                                   (lambda (tree)
+                                     (substitute (list f1 f2) frame tree))
                                    (lambda (tree)
                                      (unless (atom tree)
                                        (find frame tree))))))
@@ -1231,10 +1269,10 @@ direction. The following are valid directions:
 
 (defcommand (balance-frames tile-group) (&aux (group (current-group))) ()
   "Make frames the same height or width in the current frame's subtree."
-  (if-let ((tree (tree-parent (tile-group-frame-head group (current-head))
-                              (tile-group-current-frame group))))
-    (balance-frames-internal group tree)
-    (message "There's only one frame.")))
+  (let ((tree (tile-group-frame-head group (current-head))))
+    (if (frame-p tree)
+        (message "There's only one frame.")
+        (balance-frames-internal group tree))))
 
 (defun unfloat-window (window group)
   ;; maybe find the frame geometrically closest to this float?
