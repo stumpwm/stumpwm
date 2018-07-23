@@ -38,7 +38,9 @@
 @dfn{prefix map}.")
 
 (defvar *root-map* nil
-  "This is the keymap by default bound to @kbd{C-t} (along with *group-root-map* and either *tile-group-root-map* or *float-group-root-map*). It is known as the @dfn{prefix map}.")
+  "This is the keymap by default bound to @kbd{C-t} (along with 
+ *group-root-map* and either *tile-group-root-map* or 
+ *float-group-root-map*). It is known as the @dfn{prefix map}.")
 
 (defstruct key
   keysym shift control meta alt hyper super)
