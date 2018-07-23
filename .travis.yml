@@ -21,3 +21,9 @@ before_script:
 
 script:
   - make travis
+
+notifications:
+  irc: "chat.freenode.net#stumpwm"
+  email:
+    on_success: never
+    on_failure: always
