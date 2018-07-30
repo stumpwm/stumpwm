@@ -2364,9 +2364,6 @@ a pull request to start the discussion.
 @node Hacking, Command and Function Index, Modules, Top
 @chapter Hacking
 
-For those of you who have worked on Free Software projects before,
-this part should probably be fairly intuitive.
-
 @menu
 * General Advice::
 * Using git with StumpWM::
@@ -2524,7 +2521,7 @@ Now, let's pretend you're done making changes. Tell git you're done
 for now:
 
 @example
-$ git commit -a
+$ git commit
 @end example
 
 This will open up a prompt in your editor of choice for you to
