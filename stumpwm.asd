@@ -59,4 +59,5 @@
                (:file "remap-keys")
                ;; keep this last so it always gets recompiled if
                ;; anything changes
-               (:file "version")))
+               (:file "version"))
+  :in-order-to ((test-op (test-op "stumpwm-tests"))))
