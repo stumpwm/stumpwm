@@ -156,6 +156,7 @@ is a tile group.")
   (kbd "C-p")     "pull-hidden-previous"
   (kbd "M-p")     "prev"
   (kbd "C-M-p")   "prev-in-frame"
+  (kbd "P")       "place-current-window"
   (kbd "W")       "place-existing-windows"
   *escape-key*     "pull-hidden-other"
   (kbd "M-t")     "other-in-frame"

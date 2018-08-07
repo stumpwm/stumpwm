@@ -1729,6 +1729,7 @@ the following commands.
 !!! dump-screen-to-file
 !!! restore-from-file
 !!! place-existing-windows
+!!! place-current-window
 
 @node Mode-line, Groups, Frames, Top
 @chapter The Mode Line
