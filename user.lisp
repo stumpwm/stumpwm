@@ -111,8 +111,7 @@ your X server and CLX implementation support XTEST."
 filename. @var{path} is by default the @env{PATH} evironment variable
 but can be specified. It should be a string containing each directory
 seperated by a colon."
-  (sort
-   (loop for p in path
+  (loop for p in path
          for dir = (probe-path p)
          when dir
            nconc (loop for file in (directory (merge-pathnames (make-pathname :name :wild :type :wild) dir)
@@ -121,8 +120,7 @@ seperated by a colon."
                        when (pathname-is-executable-p file)
                          collect (if full-path
                                      (namestring file)
-                                     namestring)))
-   #'string<))
+                                     namestring))))
 
 (defstruct path-cache
   programs modification-dates paths)
@@ -152,7 +150,8 @@ with base. Automagically update the cache."
                      (when (<= (length base) (length p))
                        (string= base p
                                 :end1 (length base)
-                                :end2 (length base)))) (path-cache-programs *path-cache*)))
+                                :end2 (length base)))) 
+                 (path-cache-programs *path-cache*)))
 
 (defcommand run-shell-command (cmd &optional collect-output-p) ((:shell "/bin/sh -c "))
   "Run the specified shell command. If @var{collect-output-p} is @code{T}

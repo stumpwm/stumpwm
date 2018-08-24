@@ -244,7 +244,6 @@
     (multiple-value-bind (relx rely same-screen-p child state-mask)
         (xlib:query-pointer (window-parent window))
       (declare (ignore same-screen-p child))
-      
       (when (or (< x (xlib:drawable-x xwin))
                 (> x (+ (xlib:drawable-width xwin)
                         (xlib:drawable-x xwin)))
@@ -259,8 +258,6 @@
                  (win-focused-p (eq window (screen-focus screen))))
             (setf *last-click-time* current-time)
             (when (< delta-t 0.25)
-              ;; Ideally this would maximized horizontally again when
-              ;; it is already vertically maximized
               (cond ((and (not (eq (window-height window) 
                                    (window-display-height window))) 
                           win-focused-p) 
@@ -286,6 +283,11 @@
                             ;; Either move or resize the window
                             (cond
                               ((find :button-1 (xlib:make-state-keys state-mask))
+                               ;; if button-1 on the sides (left,
+                               ;; right, bottom) then we resize that
+                               ;; direction
+                               
+                               ;; if button-1 on the top, then we move the window
                                (setf (xlib:drawable-x parent) (- (getf event-slots :x) relx)
                                      (xlib:drawable-y parent) (- (getf event-slots :y) rely)))
                               ((find :button-3 (xlib:make-state-keys state-mask))
@@ -319,7 +321,9 @@
             (setf (window-x window) (xlib:drawable-x (window-parent window))
                   (window-y window) (xlib:drawable-y (window-parent window))))))
       ;; restore the mouse to its original position
-      (xlib:warp-pointer (window-parent window) relx rely))))
+      (xlib:warp-pointer (window-parent window) relx rely)
+
+      )))
 
 (defmethod group-button-press ((group float-group) x y where)
   (declare (ignore x y where))
