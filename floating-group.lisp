@@ -185,14 +185,12 @@
 (defmethod group-lost-focus ((group float-group))
   (%float-focus-next group))
 
-(defmethod group-indicate-focus ((group float-group))
-  )
+(defmethod group-indicate-focus ((group float-group)))
 
 (defmethod group-focus-window ((group float-group) window)
   (focus-window window))
 
-(defmethod group-root-exposure ((group float-group))
-  )
+(defmethod group-root-exposure ((group float-group)))
 
 (defmethod group-add-head ((group float-group) head)
   (declare (ignore head)))
@@ -203,32 +201,69 @@
 (defmethod group-resize-head ((group float-group) oh nh)
   (declare (ignore oh nh)))
 
-(defmethod group-sync-all-heads ((group float-group))
-  )
+(defmethod group-sync-all-heads ((group float-group)))
 
 (defmethod group-sync-head ((group float-group) head)
-  (declare (ignore head))
-  )
+  (declare (ignore head)))
+
+(defvar *last-click-time* 0
+  "Time since the last click occurred")
+
+(defun window-display-height (window)
+  "Returns maximum displayable height of window accounting for the mode-line"
+  (let* ((head (window-head window))
+         (ml (head-mode-line head))
+         (ml-height (mode-line-height ml)))
+    (if (and ml (not (eq (mode-line-mode ml) :hidden)))
+        (- (head-height head) ml-height)
+        (window-height window))))
+  
+(defun maximize-float (window &key horizontal vertical)
+  (let* ((head (window-head window))
+         (ml (head-mode-line head))
+         (hx (head-x head))
+         (hy (mode-line-height ml))
+         (w (head-width head))
+         (h (window-display-height window))) 
+    (when horizontal
+      (float-window-move-resize window :width w)) 
+    (when vertical
+      (float-window-move-resize window :y hy :height h))
+    (when (and horizontal vertical)
+      (float-window-move-resize window :x hx :y hy))))
 
 (defmethod group-button-press (group x y (window float-window))
   (let ((screen (group-screen group))
         (initial-width (xlib:drawable-width (window-parent window)))
-        (initial-height (xlib:drawable-height (window-parent window))))
+        (initial-height (xlib:drawable-height (window-parent window)))
+        (xwin (window-xwin window)))
     (when (member *mouse-focus-policy* '(:click :sloppy))
       (group-focus-window group window))
-
+    
     ;; When in border
     (multiple-value-bind (relx rely same-screen-p child state-mask)
         (xlib:query-pointer (window-parent window))
-      (declare (ignore relx rely same-screen-p child))
-      (when (or (< x (xlib:drawable-x (window-xwin window)))
-                (> x (+ (xlib:drawable-width (window-xwin window))
-                        (xlib:drawable-x (window-xwin window))))
-                (< y (xlib:drawable-y (window-xwin window)))
-                (> y (+ (xlib:drawable-height (window-xwin window))
-                        (xlib:drawable-y (window-xwin window))))
+      (declare (ignore same-screen-p child))
+      (when (or (< x (xlib:drawable-x xwin))
+                (> x (+ (xlib:drawable-width xwin)
+                        (xlib:drawable-x xwin)))
+                (< y (xlib:drawable-y xwin))
+                (> y (+ (xlib:drawable-height xwin)
+                        (xlib:drawable-y xwin)))
                 (intersection (modifiers-super *modifiers*) (xlib:make-state-keys state-mask)))
-
+      (when (find :button-1 (xlib:make-state-keys state-mask))
+          (let* ((current-time (/ (get-internal-real-time)
+                                  internal-time-units-per-second))
+                 (delta-t (- current-time *last-click-time*))
+                 (win-focused-p (eq window (screen-focus screen))))
+            (setf *last-click-time* current-time)
+            (when (< delta-t 0.25)
+              (cond ((and (not (eq (window-height window) 
+                                   (window-display-height window))) 
+                          win-focused-p) 
+                     (maximize-float window :vertical t))
+                    (win-focused-p (maximize-float window :vertical t :horizontal t))
+                    (t (focus-window window t))))))  
         ;; When resizing warp pointer to left-right corner
         (when (find :button-3 (xlib:make-state-keys state-mask))
           (xlib:warp-pointer (window-parent window) initial-width initial-height))
@@ -236,6 +271,7 @@
         (multiple-value-bind (relx rely same-screen-p child state-mask)
             (xlib:query-pointer (window-parent window))
           (declare (ignore same-screen-p child))
+
           (labels ((move-window-event-handler
                        (&rest event-slots &key event-key &allow-other-keys)
                      (case event-key
@@ -247,6 +283,11 @@
                             ;; Either move or resize the window
                             (cond
                               ((find :button-1 (xlib:make-state-keys state-mask))
+                               ;; if button-1 on the sides (left,
+                               ;; right, bottom) then we resize that
+                               ;; direction
+                               
+                               ;; if button-1 on the top, then we move the window
                                (setf (xlib:drawable-x parent) (- (getf event-slots :x) relx)
                                      (xlib:drawable-y parent) (- (getf event-slots :y) rely)))
                               ((find :button-3 (xlib:make-state-keys state-mask))
@@ -278,7 +319,11 @@
             (update-configuration window)
             ;; don't forget to update the cache
             (setf (window-x window) (xlib:drawable-x (window-parent window))
-                  (window-y window) (xlib:drawable-y (window-parent window)))))))))
+                  (window-y window) (xlib:drawable-y (window-parent window))))))
+      ;; restore the mouse to its original position
+      (xlib:warp-pointer (window-parent window) relx rely)
+
+      )))
 
 (defmethod group-button-press ((group float-group) x y where)
   (declare (ignore x y where))
