@@ -125,6 +125,9 @@ seperated by a colon."
 (defstruct path-cache
   programs modification-dates paths)
 
+(defvar *path-cache-lock* (sb-thread:make-mutex)
+  "A lock for accessing the *path-cache* during calls to rehash.")
+
 (defvar *path-cache* nil
   "A cache containing the programs in the path, used for completion.")
 
@@ -135,12 +138,13 @@ seperated by a colon."
                            (file-write-date p)))
                        paths)))
     (finish-output)
-    (unless (and *path-cache*
-                 (equal (path-cache-paths *path-cache*) paths)
-                 (equal (path-cache-modification-dates *path-cache*) dates))
-      (setf *path-cache* (make-path-cache :programs (programs-in-path nil paths)
-                                          :modification-dates dates
-                                          :paths paths)))))
+    (sb-thread:with-mutex (*path-cache-lock*)
+      (unless (and *path-cache*
+                   (equal (path-cache-paths *path-cache*) paths)
+                   (equal (path-cache-modification-dates *path-cache*) dates))
+        (setf *path-cache* (make-path-cache :programs (programs-in-path nil paths)
+                                            :modification-dates dates
+                                            :paths paths))))))
 
 (defun complete-program (base)
   "return the list of programs in @var{*path-cache*} whose names begin
