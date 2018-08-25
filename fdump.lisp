@@ -223,3 +223,7 @@
 (defcommand place-existing-windows () ()
   "Re-arrange existing windows according to placement rules."
   (sync-window-placement))
+
+(defcommand place-current-window () ()
+  "Re-arrange current window according to placement rules."
+  (sync-single-window-placement (current-screen) (current-window) t))
