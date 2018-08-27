@@ -343,6 +343,7 @@ T (default) then also focus the frame."
     ;; record the last frame to be used in the fother command.
     (unless (eq f last)
       (setf (tile-group-last-frame group) last)
+      (mouse-handle-focus-frame f last)
       (run-hook-with-args *focus-frame-hook* f last)
       (setf show-indicator t))
     (if w
@@ -404,6 +405,7 @@ T (default) then also focus the frame."
                          :width (- (frame-width p) w)
                          :height h
                          :window nil)))
+    (mouse-handle-split-frame f1)
     (run-hook-with-args *split-frame-hook* p f1 f2)
     (run-hook-with-args *new-frame-hook* f2)
     (values f1 f2)))
@@ -425,6 +427,7 @@ T (default) then also focus the frame."
                          ;; gobble up the modulo
                          :height (- (frame-height p) h)
                          :window nil)))
+    (mouse-handle-split-frame f1)
     (run-hook-with-args *split-frame-hook* p f1 f2)
     (run-hook-with-args *new-frame-hook* f2)
     (values f1 f2)))
@@ -1051,6 +1054,7 @@ space."
             (update-decoration (frame-window l)))
           (when (eq frame current)
             (show-frame-indicator group))
+          (mouse-handle-remove-split l)
           (run-hook-with-args *remove-split-hook* l frame)))))
 
 (defcommand-alias remove remove-split)

@@ -39,6 +39,7 @@
                (:file "tile-window")
                (:file "tile-group")
                (:file "window-placement")
+               (:file "mouse")
                (:file "message-window")
                (:file "selection")
                (:file "module")

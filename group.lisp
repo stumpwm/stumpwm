@@ -186,6 +186,7 @@ at 0. Return a netwm compliant group id."
               (xwin-unhide (window-xwin w) (window-parent w)))
             *always-show-windows*)
       (update-all-mode-lines)
+      (mouse-handle-focus-group new-group)
       (run-hook-with-args *focus-group-hook* new-group old-group))))
 
 (defun copy-window-to-group (group window)

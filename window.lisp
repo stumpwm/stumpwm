@@ -936,6 +936,7 @@ needed."
                             ;; value for time that we send here.
                             (or *current-event-time* 0))
        (update-mode-lines (window-screen window))
+       (mouse-handle-focus-window window cw)
        (run-hook-with-args *focus-window-hook* window cw))
       (t
        (screen-set-focus screen window)
@@ -946,6 +947,7 @@ needed."
        ;; Move the window to the head of the mapped-windows list
        (move-window-to-head group window)
        (update-mode-lines (window-screen window))
+       (mouse-handle-focus-window window cw)
        (run-hook-with-args *focus-window-hook* window cw)))))
 
 (defun xwin-kill (window)

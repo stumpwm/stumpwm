@@ -114,6 +114,7 @@
           *default-package*
           *window-placement-rules*
           *mouse-focus-policy*
+          *mouse-follow-policy*
           *root-click-focuses-frame*
           *banish-pointer-to*
           *xwin-to-window*
@@ -1149,6 +1150,14 @@ focus. Possible values are :ignore, :sloppy, and :click. :ignore means
 stumpwm ignores the mouse. :sloppy means input focus follows the
 mouse; the window that the mouse is in gets the focus. :click means
 input focus is transfered to the window you click on.")
+
+(defvar *mouse-follow-policy* :ignore
+  "The mouse follow policy decides if the mouse jumps to the focused window.
+Options are :ignore and :follow.")
+
+(defvar *sloppy-mouse-focus-ignored* nil
+  "Set to true after a mouse move event in order to prevent the mouse from
+  jumping between two windows.")
 
 (defvar *root-click-focuses-frame* t
   "Set to NIL if you don't want clicking the root window to focus the frame
