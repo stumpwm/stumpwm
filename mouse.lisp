@@ -66,9 +66,9 @@
 (defmethod mouse-get-y ((window stumpwm::window))
   (mouse-get-y (window-parent window)))
 (defmethod mouse-get-width ((window stumpwm::window))
-  (window-width window))
+  (mouse-get-width (window-parent window)))
 (defmethod mouse-get-height ((window stumpwm::window))
-  (window-height window))
+  (mouse-get-height (window-parent window)))
 
 (defun mouse-inside-frame-p (frame)
   "Determine if mouse already inside frame."
@@ -98,18 +98,37 @@
     (temporarilly-disable-sloppy-focus)
     (ratwarp x y)))
 
-(defun mouse-inside-window-p (window)
-  "Determine if mouse already inside window."
+(defgeneric mouse-inside-window-p (window)
+  (:documentation "Determine if mouse already inside window."))
+
+(defmethod mouse-inside-window-p ((window stumpwm::float-window))
   (multiple-value-bind (mouse-x mouse-y)
       (xlib:global-pointer-position *display*)
-    (let* ((min-x (mouse-get-x window))
-           (min-y (mouse-get-y window))
-           (max-x (+ min-x (mouse-get-width window)))
-           (max-y (+ min-y (mouse-get-height window))))
+    (let* ((offset 2)
+           (x (mouse-get-x window))
+           (w (mouse-get-width window))
+           (min-x (- x *float-window-border* offset))
+           (max-x (+ x w *float-window-border* offset))
+           (y (mouse-get-y window))
+           (h (mouse-get-height window))
+           (min-y (- y *float-window-title-height* offset))
+           (max-y (+ y h *float-window-border* offset)))
       (and (<= min-x mouse-x max-x)
            (<= min-y mouse-y max-y)))))
 
-(defun mouse-banish-window (window)
+(defmethod mouse-inside-window-p ((window stumpwm::tile-window))
+  (let ((frame (window-frame window)))
+    (mouse-inside-frame-p frame)))
+
+(defgeneric mouse-banish-window (window)
+  (:documentation "Generic banish window"))
+
+(defmethod mouse-banish-window ((window stumpwm::tile-window))
+  (let ((frame (window-frame window)))
+    (unless (mouse-inside-frame-p frame)
+      (mouse-banish-frame frame))))
+
+(defmethod mouse-banish-window ((window stumpwm::float-window))
   "Banish mouse to corner of a window"
   (let* ((x-offset 15)
          (y-offset 15)
