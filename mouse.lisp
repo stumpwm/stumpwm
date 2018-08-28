@@ -125,8 +125,7 @@
 
 (defmethod mouse-banish-window ((window stumpwm::tile-window))
   (let ((frame (window-frame window)))
-    (unless (mouse-inside-frame-p frame)
-      (mouse-banish-frame frame))))
+    (mouse-banish-frame frame)))
 
 (defmethod mouse-banish-window ((window stumpwm::float-window))
   "Banish mouse to corner of a window"
