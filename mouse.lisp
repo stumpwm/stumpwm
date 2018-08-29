@@ -26,8 +26,10 @@
 
 (defun temporarilly-disable-sloppy-focus ()
   "Disable the sloppy pointer for a brief period of time."
-  (setf *sloppy-mouse-focus-ignored* t)
-  (run-with-timer 0.1 nil #'reenable-sloppy-focus))
+  (unless (or *sloppy-mouse-focus-ignored*
+              (not (eq *mouse-follow-policy* :follow)))
+    (setf *sloppy-mouse-focus-ignored* t)
+    (run-with-timer 0.1 nil #'reenable-sloppy-focus)))
 
 (defun reenable-sloppy-focus ()
   "Remove disable flag on sloppy focus policy."
@@ -83,6 +85,7 @@
       (mouse-inside-frame-p frame))))
 
 (defun mouse-banish-window (window)
+  "Move mouse pointer to edge of a window."
   (let* ((min-x (xlib:drawable-x (window-parent window)))
          (max-x (+ min-x (xlib:drawable-width (window-parent window))))
          (new-x (if (minusp *mouse-follow-banish-x-offset*)
@@ -128,7 +131,6 @@
   "Disable sloppy pointer when switching groups to prevent floating windows from
 getting stuck and banish to last window or frame."
   (when (eq *mouse-follow-policy* :follow)
-    (temporarilly-disable-sloppy-focus)
     (let ((window (current-window)))
       (if window
           (mouse-banish-window window)
