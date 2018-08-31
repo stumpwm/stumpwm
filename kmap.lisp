@@ -117,18 +117,18 @@ the time these just gets in the way."
   "MODS is a sequence of <MOD CHAR> #\- pairs. Return a list suitable
 for passing as the last argument to (apply #'make-key ...)"
   (unless (evenp end)
-    (signal 'kbd-parse-error :string mods))
-  (apply #'nconc (loop for i from 0 below end by 2
-                       if (char/= (char mods (1+ i)) #\-)
-                       do (signal 'kbd-parse)
-                       collect (case (char mods i)
-                                 (#\M (list :meta t))
-                                 (#\A (list :alt t))
-                                 (#\C (list :control t))
-                                 (#\H (list :hyper t))
-                                 (#\s (list :super t))
-                                 (#\S (list :shift t))
-                                 (t (signal 'kbd-parse-error :string mods))))))
+    (error 'kbd-parse-error :string mods))
+  (loop for i from 0 below end by 2
+        when (char/= (char mods (1+ i)) #\-)
+          do (error 'kbd-parse-error :string mods)
+        nconc (case (char mods i)
+                (#\M (list :meta t))
+                (#\A (list :alt t))
+                (#\C (list :control t))
+                (#\H (list :hyper t))
+                (#\s (list :super t))
+                (#\S (list :shift t))
+                (t (error 'kbd-parse-error :string mods)))))
 
 (defun parse-key (string)
   "Parse STRING and return a key structure. Raise an error of type
@@ -139,7 +139,7 @@ kbd-parse if the key failed to parse."
          (keysym (stumpwm-name->keysym (subseq string (if p (1+ p) 0)))))
     (if keysym
         (apply 'make-key :keysym keysym mods)
-        (signal 'kbd-parse-error :string string))))
+        (error 'kbd-parse-error :string string))))
 
 (defun parse-key-seq (keys)
   "KEYS is a key sequence. Parse it and return the list of keys."
