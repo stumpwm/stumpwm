@@ -27,7 +27,8 @@
 (export '(echo-string
           err
           message
-          gravity-coords))
+          gravity-coords
+          with-message-queuing))
 
 (defun max-width (font l)
   "Return the width of the longest string in L using FONT."
@@ -212,10 +213,49 @@ function expects to be wrapped in a with-state for win."
   (let ((*record-last-msg-override* t))
     (apply 'echo-string-list screen (nth n (screen-last-msg screen)) (nth n (screen-last-msg-highlights screen)))))
 
+(defvar *queue-messages-p* nil)
+
+(defmacro with-message-queuing (new-on-bottom-p &body body)
+  "Queue all messages sent by (MESSAGE ...), (ECHO-STRING ...), (ECHO-STRING-LIST ...)
+ forms within BODY without clobbering earlier messages.
+When NEW-ON-BOTTOM-P is non-nil, new messages are queued at the bottom."
+  `(progn
+     ;; clear current messages if not already queueing
+     (unless *queue-messages-p*
+       (setf (screen-current-msg (current-screen)) nil
+             (screen-current-msg-highlights (current-screen)) nil))
+     (let ((*queue-messages-p* ,(if new-on-bottom-p :new-on-bottom t)))
+       ,@body)))
+
+(defun combine-new-old-messages (new new-highlights
+                                 old old-highlights &key new-on-bottom-p)
+  "combine NEW and OLD messages and their highlights according to NEW-ON-TOP-P"
+  (let (top top-highlights bot bot-highlights)
+    (if new-on-bottom-p
+        ;; new messages added to the bottom, like a log file
+        (setf top old top-highlights old-highlights
+              bot new bot-highlights new-highlights)
+        ;; new messages at the top
+        (setf bot old bot-highlights old-highlights
+              top new top-highlights new-highlights))
+    (values (append top bot)
+            (append top-highlights
+                    (loop for idx in bot-highlights
+                       with offset = (length top)
+                       collect (+ idx offset))))))
+
 (defun echo-string-list (screen strings &rest highlights)
   "Draw each string in l in the screen's message window. HIGHLIGHT is
   the nth entry to highlight."
   (when strings
+    (when *queue-messages-p*
+      (multiple-value-bind (combined-strings combined-highlights)
+          (combine-new-old-messages
+           strings highlights
+           (screen-current-msg screen) (screen-current-msg-highlights screen)
+           :new-on-bottom-p (eq *queue-messages-p* :new-on-bottom))
+        (setf strings combined-strings
+              highlights combined-highlights)))
     (unless *executing-stumpwm-command*
       (multiple-value-bind (width height)
           (rendered-size strings (screen-message-cc screen))
