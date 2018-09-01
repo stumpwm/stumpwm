@@ -1165,10 +1165,6 @@ Options are :ignore and :follow.")
   "Set y offset for when *mouse-follow-policy* is set to :follow.  Negative
   values mean position from the bottom.")
 
-(defvar *sloppy-mouse-focus-ignored* nil
-  "Set to true after a mouse move event in order to prevent the mouse from
-  jumping between two windows.")
-
 (defvar *root-click-focuses-frame* t
   "Set to NIL if you don't want clicking the root window to focus the frame
   containing the pointer.")

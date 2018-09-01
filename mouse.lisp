@@ -24,17 +24,6 @@
 ;; Code:
 (in-package :stumpwm)
 
-(defun temporarilly-disable-sloppy-focus ()
-  "Disable the sloppy pointer for a brief period of time."
-  (unless (or *sloppy-mouse-focus-ignored*
-              (not (eq *mouse-follow-policy* :follow)))
-    (setf *sloppy-mouse-focus-ignored* t)
-    (run-with-timer 0.1 nil #'reenable-sloppy-focus)))
-
-(defun reenable-sloppy-focus ()
-  "Remove disable flag on sloppy focus policy."
-  (setf *sloppy-mouse-focus-ignored* nil))
-
 (defun mouse-inside-frame-p (frame)
   "Determine if mouse already inside frame."
   (multiple-value-bind (mouse-x mouse-y)
@@ -60,7 +49,6 @@
          (new-y (if (minusp *mouse-follow-banish-y-offset*)
                     (+ max-y *mouse-follow-banish-y-offset*)
                     (+ min-y *mouse-follow-banish-y-offset*))))
-    (temporarilly-disable-sloppy-focus)
     (ratwarp (clamp new-x min-x max-x)
              (clamp new-y min-y max-y))))
 
@@ -96,7 +84,6 @@
          (new-y (if (minusp *mouse-follow-banish-y-offset*)
                     (+ max-y *mouse-follow-banish-y-offset*)
                     (+ min-y *mouse-follow-banish-y-offset*))))
-    (temporarilly-disable-sloppy-focus)
     (ratwarp (clamp new-x min-x max-x)
              (clamp new-y min-y max-y))))
 
