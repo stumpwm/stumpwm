@@ -87,6 +87,7 @@ This document explains how to use The Stump Window Manager.
 * Mode-line::
 * Groups::
 * Screens::
+* Internals::
 * Interacting With Unix::
 * Interacting With X11::
 * Miscellaneous Commands::
@@ -164,6 +165,10 @@ Screens
 
 * External Monitors::
 * Programming With Screens::
+
+Internals
+
+* IO Loop::
 
 Miscellaneous Commands
 
@@ -1717,7 +1722,7 @@ Groups in StumpWM are more commonly known as @dfn{virtual desktops} or
 
 @@@ current-group
 
-@node Screens, Interacting With Unix, Groups, Top
+@node Screens, Internals, Groups, Top
 @chapter Screens
 StumpWM handles multiple screens.
 
@@ -1756,6 +1761,9 @@ head configuration.
 ### *screen-list*
 
 @node Interacting With Unix, Interacting With X11, Screens, Top
+@chapter Internals
+
+@node Interacting With Unix, Interacting With X11, Internals, Top
 @chapter Interacting With Unix
 
 !!! run-shell-command
