@@ -89,12 +89,16 @@
 
 (defun mouse-handle-focus-frame (current-frame last-frame)
   "Move mouse when moving frames."
-  (when (eq *mouse-follow-policy* :follow)
-    (unless (or (eq current-frame last-frame)
-                (mouse-inside-frame-p current-frame))
-      (if-let ((current-window (frame-window current-frame)))
-        (mouse-banish-window current-window)
-        (mouse-banish-frame current-frame)))))
+  (when (and (eq *mouse-follow-policy* :follow)
+             (not (equalp current-frame last-frame))
+             (not (mouse-inside-frame-p current-frame)))
+    (cond ((not (frame-window current-frame))
+           (mouse-banish-frame current-frame))
+          ;; When the focus policy is sloppy, additional events will be sent
+          ;; that cause an infinite loop of events, so don't banish here if that
+          ;; is so.
+          ((not (eq *mouse-focus-policy* :sloppy))
+           (mouse-banish-window (frame-window current-frame))))))
 
 (defun mouse-handle-split-frame (first-frame)
   "Reposition the mouse when a frame is created."
