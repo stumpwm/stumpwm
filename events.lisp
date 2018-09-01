@@ -577,9 +577,7 @@ the window in it's frame."
       (group-focus-window (window-group win) win))))
 
 (define-stump-event-handler :enter-notify (window mode)
-  (when (and window
-             (eq mode :normal)
-             (eq *mouse-focus-policy* :sloppy))
+  (when (and window (eq mode :normal) (eq *mouse-focus-policy* :sloppy))
     (let ((win (find-window window)))
       (when (and win (find win (top-windows)))
         (focus-all win)
