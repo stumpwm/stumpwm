@@ -92,10 +92,9 @@
   (when (eq *mouse-follow-policy* :follow)
     (unless (or (eq current-frame last-frame)
                 (mouse-inside-frame-p current-frame))
-      (let ((current-window (frame-window current-frame)))
-        (if current-window
-            (mouse-banish-window current-window)
-            (mouse-banish-frame current-frame))))))
+      (if-let ((current-window (frame-window current-frame)))
+        (mouse-banish-window current-window)
+        (mouse-banish-frame current-frame)))))
 
 (defun mouse-handle-split-frame (first-frame)
   "Reposition the mouse when a frame is created."
@@ -118,7 +117,6 @@
   "Disable sloppy pointer when switching groups to prevent floating windows from
 getting stuck and banish to last window or frame."
   (when (eq *mouse-follow-policy* :follow)
-    (let ((window (current-window)))
-      (if window
-          (mouse-banish-window window)
-          (mouse-banish-frame (tile-group-current-frame group))))))
+    (if-let ((window (current-window)))
+      (mouse-banish-window window)
+      (mouse-banish-frame (tile-group-current-frame group)))))
