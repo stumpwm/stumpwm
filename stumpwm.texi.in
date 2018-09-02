@@ -1451,6 +1451,7 @@ cycle through completions.
 @@@ echo-string
 @@@ message
 %%% with-message-queuing
+### *queue-messages-p*
 ### *input-history-ignore-duplicates*
 !!! copy-last-message
 

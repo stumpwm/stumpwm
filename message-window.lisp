@@ -28,7 +28,8 @@
           err
           message
           gravity-coords
-          with-message-queuing))
+          with-message-queuing
+          *queue-messages-p*))
 
 (defun max-width (font l)
   "Return the width of the longest string in L using FONT."
@@ -213,7 +214,10 @@ function expects to be wrapped in a with-state for win."
   (let ((*record-last-msg-override* t))
     (apply 'echo-string-list screen (nth n (screen-last-msg screen)) (nth n (screen-last-msg-highlights screen)))))
 
-(defvar *queue-messages-p* nil)
+(defvar *queue-messages-p* nil
+  "When non-nil, ECHO-STRING-LIST will retain old messages in addition to new ones.
+When the value is :new-on-bottom, new messages are added to the bottom as in a log file.
+See also WITH-MESSAGE-QUEUING.")
 
 (defmacro with-message-queuing (new-on-bottom-p &body body)
   "Queue all messages sent by (MESSAGE ...), (ECHO-STRING ...), (ECHO-STRING-LIST ...)
