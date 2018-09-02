@@ -114,6 +114,9 @@
           *default-package*
           *window-placement-rules*
           *mouse-focus-policy*
+          *mouse-follow-policy*
+          *mouse-follow-banish-x-offset*
+          *mouse-follow-banish-y-offset*
           *root-click-focuses-frame*
           *banish-pointer-to*
           *xwin-to-window*
@@ -1149,6 +1152,18 @@ focus. Possible values are :ignore, :sloppy, and :click. :ignore means
 stumpwm ignores the mouse. :sloppy means input focus follows the
 mouse; the window that the mouse is in gets the focus. :click means
 input focus is transfered to the window you click on.")
+
+(defvar *mouse-follow-policy* :ignore
+  "The mouse follow policy decides if the mouse jumps to the focused window.
+Options are :ignore and :follow.")
+
+(defvar *mouse-follow-banish-x-offset* -15
+  "Set x offset for when *mouse-follow-policy* is set to :follow.  Negative
+  values mean position from the right.")
+
+(defvar *mouse-follow-banish-y-offset* -15
+  "Set y offset for when *mouse-follow-policy* is set to :follow.  Negative
+  values mean position from the bottom.")
 
 (defvar *root-click-focuses-frame* t
   "Set to NIL if you don't want clicking the root window to focus the frame
