@@ -123,6 +123,7 @@ that your contribution gets merged in a timely manner:
     update them if your patch changes them in a significant way
   * Try to follow an "80 column rule." The current code base does not
     follow this all the time, so don't use it as an example
+  * If you export a symbol, you *must* add it to the manual.
   * [Use lisp idioms](http://people.ace.ed.ac.uk/staff/medward2/class/moz/cm/doc/contrib/lispstyle.html)
   * If you are working on a major change to the internals, keep us
     informed on stumpwm-devel! Also, it will probably help if the

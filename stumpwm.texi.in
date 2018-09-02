@@ -1870,9 +1870,11 @@ Groups in StumpWM are more commonly known as @dfn{virtual desktops} or
 !!! gkill-other
 !!! grename
 !!! grouplist
+
 ### *list-hidden-groups* 
 ### *group-top-maps* 
 ### *default-group-name* 
+
 @@@ add-group
 @@@ group-add-head
 @@@ group-add-window
