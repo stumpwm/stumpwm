@@ -400,10 +400,14 @@ current group. If @var{name} begins with a dot (``.'') the group new
 group will be created in the hidden state. Hidden groups have group
 numbers less than one and are invisible to from gprev, gnext, and, optionally,
 groups and vgroups commands."
+  (unless name 
+            (throw 'error :abort))  
   (add-group (current-screen) name))
 
 (defcommand gnewbg (name) ((:string "Group Name: "))
   "Create a new group but do not switch to it."
+  (unless name
+            (throw 'error :abort))
   (add-group (current-screen) name :background t))
 
 (defcommand gnext () ()

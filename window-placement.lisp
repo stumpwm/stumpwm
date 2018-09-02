@@ -95,7 +95,7 @@
                        (values)))))
         (values))))
 
-(defun sync-single-window-placement (screen window)
+(defun sync-single-window-placement (screen window &optional show)
   "Re-arrange the window according to placement rules"
   (multiple-value-bind (to-group frame raise)
       (with-current-screen screen
@@ -105,7 +105,10 @@
         (move-window-to-group window to-group)))
     (when frame
       (unless (eq (window-frame window) frame)
-        (pull-window window frame raise)))))
+        (pull-window window frame raise)))
+    (when show
+      (switch-to-group (window-group window))
+      (really-raise-window window))))
 
 (defun sync-window-placement ()
   "Re-arrange existing windows according to placement rules"

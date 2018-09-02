@@ -1047,7 +1047,8 @@ space."
           (when (frame-window l)
             (update-decoration (frame-window l)))
           (when (eq frame current)
-            (show-frame-indicator group))))))
+            (show-frame-indicator group))
+          (run-hook-with-args *remove-split-hook* l frame)))))
 
 (defcommand-alias remove remove-split)
 
