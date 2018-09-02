@@ -634,6 +634,8 @@ It is possible to split your initialization among multiple files,
 if you call the additional files from within an init file matching
 the names and locations listed above.
 
+### *processing-existing-windows*
+
 @node Contact the StumpWM developers,  , Init File, Introduction
 @section Contact the StumpWM developers
 The StumpWM home page is @url{http://stumpwm.nongnu.org/}.
@@ -1017,7 +1019,16 @@ commands to the @var{*top-map*}.
 @node Remapped Keys, , Modifiers, Key Bindings
 @section Remapped Keys
 
-StumpWM may be configured to translate certain familiar top level keybindings to alternative key sequences that are understood by specific applications. For example, Emacs users are very familiar with @kbd{C-n} and @kbd{C-p} as keybindings for scrolling down and up one line at a time. However, most applications use these specific keybindings for other actions. The @code{stumpwm:define-remapped-keys} function may be used to define such application specific remapping of keybindings.
+StumpWM may be configured to translate certain familiar top level
+keybindings to alternative key sequences that are understood by
+specific applications. For example, Emacs users are very familiar with
+@kbd{C-n} and @kbd{C-p} as keybindings for scrolling down and up one
+line at a time. However, most applications use these specific
+keybindings for other actions. The @code{stumpwm:define-remapped-keys}
+function may be used to define such application specific remapping of
+keybindings.
+
+@@@ define-remapped-keys
 
 @example
 (define-remapped-keys
@@ -1347,6 +1358,7 @@ return a ``nil'' value in those cases, and let the command handle that.
 @node Message and Input Bar, Windows, Commands, Top
 @chapter Message and Input Bar
 
+### *suppress-echo-timeout*
 !!! echo
 !!! colon
 
@@ -1370,7 +1382,9 @@ set these color variables.
 @@@ set-font
 
 ### *message-window-padding*
+### *message-window-y-padding*
 ### *message-window-gravity*
+### *message-window-timer*
 ### *timeout-wait*
 ### *input-window-gravity*
 
@@ -1512,6 +1526,7 @@ An input function takes 2 arguments: the input structure and the key pressed.
 ### *window-info-format*
 ### *window-name-source*
 ### *new-window-preferred-frame*
+### *hidden-window-color*
 
 @menu
 * Window Marks::
@@ -1591,6 +1606,8 @@ Some examples follow.
 
 @@@ window-send-string
 ### *default-window-name*
+### *window-events*
+### *window-parent-events*
 
 @node Rule Based Window Placement, Window Selection Expressions, Programming With Windows, Windows
 @section Rule Based Window Placement
@@ -1817,6 +1834,10 @@ Groups in StumpWM are more commonly known as @dfn{virtual desktops} or
 !!! gkill-other
 !!! grename
 !!! grouplist
+### *list-hidden-groups* 
+### *group-top-maps* 
+### *default-group-name* 
+
 
 @menu
 * Customizing Groups::
@@ -1943,6 +1964,7 @@ multiplexer to actually run it.
 
 @@@ programs-in-path
 @@@ pathname-is-executable-p
+@@@ pathname-as-directory
 
 ### *shell-program*
 
@@ -2023,12 +2045,16 @@ section.
 @node Menus, StumpWM's Data Directory, Miscellaneous Commands
 @section Menus
 @section Menus
-There are two different types of menus in StumpWM; single selection menus and
-batch menus. Single-selection menus, as the name suggests, are used to
-pick a single item from a list. Batch menus are used for performing
-actions on multiple menu items. Both menus share the same navigational
-keybindings, which are found in the table below. These can be
-customized by modifying the @var{*menu-map*} variable.
+There are three different types of menus in StumpWM; single selection
+menus; interactive menus; and batch menus. Single-selection menus, as
+the name suggests, are used to pick a single item from a list.
+Interactive menus are used for marking multiple selections. Batch
+menus are used for performing actions on multiple menu items. Both
+batch and interactive menus share the same navigational keybindings,
+which are found in the table below. These can be customized by
+modifying the @var{*menu-map*} variable. Commands specific to each
+menu type can be modified by @var{*single-menu-map*} and
+@var{*batch-menu-map*}.
 
 @table @kbd
 @item C-p
@@ -2059,9 +2085,23 @@ Abort the menu.
 
 @end table
 
-In addition, you can customize the number of items shown at a time (a page)
-with the @var{*menu-maximum-height*} variable. The default value,
-@code{nil}, means that there is no limit to the page size.
+In addition, you can customize the number of items shown at a time (a
+page) with the @var{*menu-maximum-height*} variable. The default
+value, @code{nil}, means that there is no limit to the page size.
+
+### *menu-map*
+@@@ menu-page-up
+@@@ menu-page-down
+@@@ menu-up
+@@@ menu-down
+@@@ menu-scroll-up
+@@@ menu-scroll-down
+@@@ menu-abort
+@@@ menu-backspace
+@@@ menu-entry-apply
+@@@ menu-entry-display
+@@@ menu-finish
+@@@ command-menu
 
 @subsection Single Selection Menus
 Single selection menus can be searched; start typing when the menu is
@@ -2074,6 +2114,9 @@ selected the highlighted option.
 Select the highlighted option.
 
 @end table
+
+### *single-menu-map*
+@@@ select-from-menu
 
 @subsection Batch Menus
 Batch menus provide a menu that allows the user to mark items. Items
@@ -2104,6 +2147,9 @@ top of the menu.
 Exit the menu and perform the actions associated with each mark.
 
 @end table
+### *batch-menu-map*
+@@@ select-from-batch-menu
+
 
 @node StumpWM's Data Directory, Debugging StumpWM, Menus, Miscellaneous Commands
 @section StumpWM's Data Directory
@@ -2120,6 +2166,7 @@ some functions to make doing this easier.
 
 ### *debug-level*
 ### *debug-stream*
+### *debug-expose-events*
 @@@ redirect-all-output
 
 @node Sending a Bug Report, Timers, Debugging StumpWM, Miscellaneous Commands
@@ -2311,6 +2358,7 @@ functions called when a new window appears.
 
 %%% add-hook
 %%% remove-hook
+%%% remove-all-hooks
 
 The following hooks are available:
 
