@@ -42,14 +42,6 @@
 (defvar *always-show-windows* ()
   "The list of windows shown in all groups")
 
-(defclass group ()
-  ((screen :initarg :screen :accessor group-screen)
-   (windows :initform nil :accessor group-windows)
-   (current-window :initform nil :accessor group-current-window)
-   (number :initarg :number :accessor group-number)
-   (name :initarg :name :accessor group-name)
-   (on-top-windows :initform nil :accessor group-on-top-windows)))
-
 ;;; The group API
 (defgeneric group-startup (group)
   (:documentation "Called on all groups while stumpwm is starting up."))
@@ -105,6 +97,14 @@ needs to redraw anything on it, this is where it should do it."))
 (defgeneric group-sync-head (group head)
   (:documentation "When a head or its usable area is resized, this is
 called. When the modeline size changes, this is called."))
+
+(defclass group ()
+  ((screen :initarg :screen :accessor group-screen)
+   (windows :initform nil :accessor group-windows)
+   (current-window :initform nil :accessor group-current-window)
+   (number :initarg :number :accessor group-number)
+   (name :initarg :name :accessor group-name)
+   (on-top-windows :initform nil :accessor group-on-top-windows)))
 
 (defmethod group-delete-window (group window)
   (when (find window *always-show-windows*)
