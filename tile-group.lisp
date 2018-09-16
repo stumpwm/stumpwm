@@ -82,7 +82,10 @@
         (when (and frame raise)
           (setf (tile-group-current-frame group) frame
                 (frame-window frame) nil))
-        (sync-frame-windows group (window-frame window)))))
+        (sync-frame-windows group (window-frame window))
+        (when (null (frame-window (window-frame window)))
+          (frame-raise-window (window-group window) (window-frame window)
+                              window nil)))))
 
 (defmethod group-current-head ((group tile-group))
   (if-let ((current-window (group-current-window group)))
