@@ -1123,6 +1123,10 @@ the current frame."
 "Cycle through the frame tree to the next frame."
   (focus-next-frame (current-group)))
 
+(defcommand (fprev tile-group) () ()
+  "Cycle through the frame tree to the previous frame."
+  (focus-prev-frame (current-group)))
+
 (defcommand (sibling tile-group) () ()
 "Jump to the frame's sibling. If a frame is split into two frames,
 these two frames are siblings."

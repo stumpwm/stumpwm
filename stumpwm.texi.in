@@ -1696,6 +1696,7 @@ window pool, where windows and frames are not so tightly connected.
 !!! only
 !!! curframe
 !!! fnext
+!!! fprev
 !!! sibling
 !!! fother
 !!! fselect
