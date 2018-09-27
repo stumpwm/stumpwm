@@ -34,8 +34,9 @@ Repeat until there is only one window left."
 there are no more hidden windows. Tiling is done by splitting in the
 direction that is widest, and choosing the frame that has the largest
 area."
+  (declare (ignore win))
   (let* ((windows (group-windows group))
-        (num-win (length windows)))
+         (num-win (length windows)))
     (only)
     (recursive-tile (min *expose-n-max* num-win) group)))
 
