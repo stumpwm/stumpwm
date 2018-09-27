@@ -148,6 +148,9 @@
       (xlib:get-property window property :type :string :result-type 'string :transform #'xlib:card8->char :delete-p t)
       ""))
 
+(defun input-handle-click-event (&key root-x root-y &allow-other-keys)
+  (list :button-press root-x root-y))
+
 (defun read-key-handle-event (&rest event-slots &key display event-key &allow-other-keys)
   (declare (ignore display))
   (case event-key
@@ -164,6 +167,14 @@
      (apply 'input-handle-selection-event event-slots))
     (t nil)))
 
+(defun read-key-or-click-handle-event (&rest event-slots &key event-key &allow-other-keys)
+  (case event-key
+    ((or :key-release :key-press)
+     (apply 'input-handle-key-press-event event-slots))
+    (:button-press
+     (apply 'input-handle-click-event event-slots))
+    (t nil)))
+
 (defun read-key ()
   "Return a dotted pair (code . state) key."
   (loop for ev = (xlib:process-event *display* :handler #'read-key-handle-event :timeout nil) do
@@ -171,11 +182,29 @@
                   (eq (first ev) :key-press))
            (return (rest ev)))))
 
+(defun read-key-or-click ()
+  (loop for ev = (xlib:process-event *display* :handler #'read-key-or-click-handle-event :timeout nil)
+     do
+       (when (consp ev)
+         (when (eq (first ev) :key-press)
+           (return (values nil (rest ev) nil nil)))
+         (when (eq (first ev) :button-press)
+           (return (values t nil (second ev) (third ev)))))))
+
 (defun read-key-no-modifiers ()
   "Like read-key but never returns a modifier key."
   (loop for k = (read-key)
        while (is-modifier (car k))
        finally (return k)))
+
+(defun read-key-no-modifiers-or-click ()
+  (loop
+     (multiple-value-bind (has-click k x y)
+         (read-key-or-click)
+       (if has-click
+           (return (values t nil x y))
+           (unless (is-modifier (car k))
+             (return (values nil k nil nil)))))))
 
 (defun read-key-or-selection ()
   (loop for ev = (xlib:process-event *display* :handler #'read-key-or-selection-handle-event :timeout nil) do
@@ -242,6 +271,15 @@ match with an element of the completions."
   (with-focus (screen-key-window screen)
     (let ((k (read-key-no-modifiers)))
       (keycode->character (car k) (xlib:make-state-keys (cdr k))))))
+
+(defun read-one-char-or-click (group)
+  "Read a single character from the user or a click."
+  (with-focus (screen-key-window (group-screen group))
+    (multiple-value-bind (has-click k x y)
+        (read-key-no-modifiers-or-click)
+      (if has-click
+          (values t nil x y)
+          (values nil (keycode->character (car k) (xlib:make-state-keys (cdr k))) nil nil)))))
 
 (defun prompt-text-y (index font y-padding)
   "Calculate the y position of text in a prompt."

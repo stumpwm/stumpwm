@@ -457,7 +457,7 @@ focus.
 
 @item
 @command{fselect} (@kbd{C-t f}) displays numbers on each visible frame: hit a
-number key to move to that frame.
+number key or click it to move to that frame.
 
 @item
 @command{move-focus} (@kbd{C-t <arrow key>}) focus the frame in the direction of
