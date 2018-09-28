@@ -131,18 +131,6 @@ timer.")
 (defvar *mode-lines* ()
   "All current mode lines.")
 
-(defstruct (mode-line (:constructor %make-mode-line))
-  screen
-  head
-  window
-  format
-  position
-  contents
-  cc
-  height
-  factor
-  (mode :stump))
-
 ;;; Utilities
 
 (defun screen-mode-lines (screen)

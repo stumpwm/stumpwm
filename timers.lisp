@@ -39,9 +39,6 @@
 (defvar *timer-list-lock* (sb-thread:make-mutex)
   "Lock that should be held whenever *TIMER-LIST* is modified.")
 
-(defstruct timer
-  time repeat function args)
-
 (defun idle-time (screen)
   "Returns the time in seconds since idle according to the root window
 of the `screen'."

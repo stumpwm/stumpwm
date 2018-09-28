@@ -1264,3 +1264,18 @@ of :error."
 
 (defun command-mode-end-message ()
   (message "Exited command-mode."))
+
+(defstruct (mode-line (:constructor %make-mode-line))
+  screen
+  head
+  window
+  format
+  position
+  contents
+  cc
+  height
+  factor
+  (mode :stump))
+
+(defstruct timer
+  time repeat function args)
