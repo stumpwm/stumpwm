@@ -132,9 +132,9 @@
   (xlib:unmap-window (screen-input-window screen)))
 ;; Hack to avoid clobbering input from numpads with numlock on.
 (defun input-handle-key-press-event (&rest event-slots
-                                     &key event-key root code state
+                                     &key event-key code state
                                        &allow-other-keys)
-  (declare (ignore event-slots root))
+  (declare (ignore event-slots))
   (let ((numlock-on-p (= 2 (logand 2 (nth-value 4 (xlib:keyboard-control *display*)))))
          (numpad-key (assoc code *numpad-map*)))
     (when (and numlock-on-p numpad-key)
@@ -151,15 +151,13 @@
 (defun input-handle-click-event (&key root-x root-y &allow-other-keys)
   (list :button-press root-x root-y))
 
-(defun read-key-handle-event (&rest event-slots &key display event-key &allow-other-keys)
-  (declare (ignore display))
+(defun read-key-handle-event (&rest event-slots &key event-key &allow-other-keys)
   (case event-key
     ((or :key-release :key-press)
      (apply 'input-handle-key-press-event event-slots))
     (t nil)))
 
-(defun read-key-or-selection-handle-event (&rest event-slots &key display event-key &allow-other-keys)
-  (declare (ignore display))
+(defun read-key-or-selection-handle-event (&rest event-slots &key event-key &allow-other-keys)
   (case event-key
     ((or :key-release :key-press)
      (apply 'input-handle-key-press-event event-slots))
