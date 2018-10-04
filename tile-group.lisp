@@ -1139,23 +1139,41 @@ these two frames are siblings."
 (defun choose-frame-by-number (group)
   "show a number in the corner of each frame and wait for the user to
 select one. Returns the selected frame or nil if aborted."
-  (let* ((wins (progn
-                 (draw-frame-outlines group)
-                 (draw-frame-numbers group)))
-         (ch (read-one-char (group-screen group)))
-         (num (read-from-string (string ch) nil nil)))
-    (dformat 3 "read ~S ~S~%" ch num)
-    (mapc #'xlib:destroy-window wins)
-    (clear-frame-outlines group)
-    (find ch (group-frames group)
-          :test 'char=
-          :key 'get-frame-number-translation)))
+  (let ((wins (progn
+                (draw-frame-outlines group)
+                (draw-frame-numbers group))))
+    (multiple-value-bind (has-click ch x y)
+        (read-one-char-or-click group)
+      (if has-click
+          (let ((winner))
+            (mapc #'xlib:destroy-window wins)
+            (clear-frame-outlines group)
+            ;; frame-width and frame-height are not updated in this
+            ;; context, so we need to loop through all of them until
+            ;; we find the most satisfying one.
+            (dolist (f (group-frames group))
+              (when (and (> x (frame-x f)) (> y (frame-y f)))
+                (if winner
+                    (when (or (> (frame-x f) (frame-x winner))
+                              (> (frame-y f) (frame-y winner)))
+                      (setf winner f))
+                    (setf winner f))))
+            (ungrab-pointer)
+            winner)
+          (when ch
+            (let ((num (read-from-string (string ch) nil nil)))
+              (dformat 3 "read ~S ~S~%" ch num)
+              (mapc #'xlib:destroy-window wins)
+              (clear-frame-outlines group)
+              (find ch (group-frames group)
+                    :test 'char=
+                    :key 'get-frame-number-translation)))))))
 
 
 (defcommand (fselect tile-group) (frame-number) ((:frame t))
 "Display a number in the corner of each frame and let the user to
-select a frame by number. If @var{frame-number} is specified, just
-jump to that frame."
+select a frame by number or click. If @var{frame-number} is specified,
+just jump to that frame."
   (let ((group (current-group)))
     (focus-frame group frame-number)))
 
