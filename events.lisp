@@ -255,13 +255,12 @@ The Caller is responsible for setting up the input focus."
                (t (message "~{~a ~}not bound." (mapcar 'print-key (nreverse key-seq))))))))))
 
 (defun bytes-to-window (bytes)
-  "A sick hack to assemble 4 bytes into a 32 bit number. This is
-because ratpoison sends the rp_command_request window in 8 byte
-chunks."
-  (+ (first bytes)
-     (ash (second bytes) 8)
-     (ash (third bytes) 16)
-     (ash (fourth bytes) 24)))
+  "Combine a list of 4 8-bit bytes into a 32-bit number. This is because
+ratpoison sends the rp_command_request window in 8 byte chunks."
+  (logior (first bytes)
+          (ash (second bytes) 8)
+          (ash (third bytes) 16)
+          (ash (fourth bytes) 24)))
 
 (defun handle-rp-commands (root)
   "Handle a ratpoison style command request."
