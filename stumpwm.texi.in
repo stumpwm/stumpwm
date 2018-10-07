@@ -1401,6 +1401,7 @@ set these color variables.
 ### *message-window-padding*
 ### *message-window-y-padding*
 ### *message-window-gravity*
+### *message-window-input-gravity*
 ### *message-window-timer*
 ### *timeout-wait*
 ### *input-window-gravity*
@@ -1488,6 +1489,7 @@ cycle through completions.
 @@@ message
 %%% with-message-queuing
 ### *queue-messages-p*
+### *input-cycle-completions*
 ### *input-history-ignore-duplicates*
 !!! copy-last-message
 

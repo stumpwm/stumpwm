@@ -23,7 +23,8 @@
 ;; Code:
 (in-package :stumpwm)
 
-(export '(*input-history-ignore-duplicates*
+(export '(*input-cycle-completions*
+          *input-history-ignore-duplicates*
           *input-map*
           *numpad-map*
           completing-read
@@ -36,6 +37,25 @@
           input-validate-region
           read-one-char
           read-one-line))
+
+;;; General Utilities
+
+(defun take (n list)
+  "Returns a list with the first n elements of the given list."
+  (loop repeat n
+        for x in list
+        collect x))
+
+;; This could use a much more efficient algorithm.
+;; But for our purposes with small sequence sizes it's likely ok.
+(defun longest-common-prefix (seqs &key (test #'eql))
+  "Returns the length of the longest common prefix of the sequences."
+  (flet ((longest-common-prefix-2 (seq1 seq2)
+           (if-let ((i (mismatch seq1 seq2 :test test)))
+             i
+             (length seq1))))
+    (apply #'min (map-product #'longest-common-prefix-2 seqs seqs))))
+
 
 (defstruct input-line
   string position history history-bk password)
@@ -89,6 +109,12 @@
 
 (defvar *input-current-completions-idx* nil
   "The current index in the current completions list.")
+
+(defvar *input-cycle-completions* t
+  "Cycle through completions when there are several possible completions.")
+
+(defvar +input-completion-display-limit+ 64
+  "Maximum number of possible completions to display.")
 
 (defvar *input-history-ignore-duplicates* nil
   "Do not add a command to the input history if it's already the first in the list.")
@@ -255,7 +281,9 @@ match with an element of the completions."
                            ((process-input screen prompt input (car key) (cdr key))
                             (if (or (not require-match)
                                     (match-input))
-                                (return (input-line-string input))
+                                (progn
+                                  (format t "lol")
+                                  (return (input-line-string input)))
                                 (draw-input-bucket screen prompt input "[No match]" t)))))))
       (setup-input-window screen prompt input)
       (catch :abort
@@ -497,8 +525,8 @@ functions are passed this structure as their first argument."
           *input-current-completions-idx* -1))
   (if *input-current-completions*
       (progn
-        ;; Insert the next completion
         (input-delete-region input 0 (input-point input))
+        ;; Insert the next completion
         (if (eq direction :forward)
             (progn
               (incf *input-current-completions-idx*)
@@ -508,9 +536,21 @@ functions are passed this structure as their first argument."
               (decf *input-current-completions-idx*)
               (when (< *input-current-completions-idx* 0)
                 (setf *input-current-completions-idx* (1- (length *input-current-completions*))))))
-        (let ((elt (nth *input-current-completions-idx* *input-current-completions*)))
-          (input-insert-string input (if (listp elt) (first elt) elt))
-          (input-insert-char input #\Space)))
+        (if (or *input-cycle-completions*
+                (and (listp *input-current-completions*)
+                     (null (rest *input-current-completions*))))
+            (let ((elt (nth *input-current-completions-idx* *input-current-completions*)))
+              (input-insert-string input (if (listp elt) (first elt) elt))
+              (input-insert-char input #\Space)
+              (unmap-message-window (current-screen)))
+	          (let* ((selected-completions (take +input-completion-display-limit+
+                                               *input-current-completions*))
+                   (n (longest-common-prefix
+                       (mapcar (lambda (elt)
+                                 (if (listp elt) (first elt) elt))
+                               selected-completions))))
+              (input-insert-string input (subseq (first selected-completions) 0 n))
+              (echo-string-list (current-screen) selected-completions))))
       :error))
 
 (defun input-complete-forward (input key)
