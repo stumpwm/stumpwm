@@ -67,7 +67,6 @@ StumpWM now has a floating window group mode.
 ** new module wifi.lisp
 
 ** new module battery-portable.lisp
->>>>>>> master:NEWS
 
 ** new command load-module
 
