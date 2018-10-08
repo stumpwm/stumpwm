@@ -239,9 +239,9 @@
            (fwx (+ fx (frame-width f)))
            (fhy (+ fy (frame-height f))))
       (when (and
-             (>= y fy) (<= y fhy)
-             (>= x fx) (<= x fwx)
-             (return f))))))
+             (<= fy y fhy)
+             (<= fx x fwx))
+        (return f)))))
 
 
 (defun frame-set-x (frame v)
