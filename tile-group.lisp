@@ -143,11 +143,10 @@
 
 (defmethod group-button-press ((group tile-group) x y (where (eql :root)))
   (when *root-click-focuses-frame*
-    (let* ((frame (find-frame group x y)))
-      (when frame
-        (focus-frame group frame)
-        (unless (eq *mouse-focus-policy* :click)
-          (update-all-mode-lines))))))
+    (when-let ((frame (find-frame group x y)))
+      (focus-frame group frame)
+      (unless (eq *mouse-focus-policy* :click)
+        (update-all-mode-lines)))))
 
 (defmethod group-button-press ((group tile-group) x y (where window))
   (declare (ignore x y))
