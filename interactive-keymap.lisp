@@ -75,3 +75,28 @@ Be aware that these commands won't require a prefix to run."
          (defcommand ,(intern exit-command) () ()
            ,@(when on-exit `((funcall ,on-exit)))
            (exit-interactive-keymap (quote ,command)))))))
+
+
+(defmacro define-interactive-keymap-no-return (name (&key on-enter on-exit abort-if) &body key-bindings)
+  "Same as DEFINE-INTERACTIVE-KEYMAP, except no keys are bound to exit-command"
+  (let* ((command (if (listp name) (car name) name))
+         (exit-command (format nil "EXIT-~A" command))
+         (keymap (gensym "m")))
+    (multiple-value-bind (key-bindings decls docstring)
+        (parse-body key-bindings :documentation t)
+      `(let ((,keymap (make-sparse-keymap)))
+         ,@(loop for keyb in key-bindings
+                 collect `(define-key ,keymap ,@keyb))
+         (defcommand ,name () ()
+           ,@decls
+           ,(or docstring
+                (format nil "Starts interactive command \"~A\"" command))
+           ,@(when abort-if `((when (funcall ,abort-if)
+                                (return-from ,command))))
+
+           ,@(when on-enter `((funcall ,on-enter)))
+           (enter-interactive-keymap ,keymap (quote ,command)))
+
+         (defcommand ,(intern exit-command) () ()
+           ,@(when on-exit `((funcall ,on-exit)))
+           (exit-interactive-keymap (quote ,command)))))))
