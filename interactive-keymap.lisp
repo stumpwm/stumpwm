@@ -37,9 +37,9 @@
   (pop-top-map))
 
 (defmacro define-interactive-keymap
-    (name (&key on-enter on-exit abort-if (exit-on (list (kbd "RET")
-                                                         (kbd "ESC")
-                                                         (kbd "C-g"))))
+    (name (&key on-enter on-exit abort-if (exit-on '((kbd "RET")
+                                                     (kbd "ESC")
+                                                     (kbd "C-g"))))
      &body key-bindings)
   "Declare an interactive keymap mode. This can be used for developing
 interactive modes or command trees, such as @command{iresize}.
