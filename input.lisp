@@ -113,7 +113,7 @@
 (defvar *input-cycle-completions* t
   "Cycle through completions when there are several possible completions.")
 
-(defvar +input-completion-display-limit+ 64
+(defvar *input-completion-display-limit* 64
   "Maximum number of possible completions to display.")
 
 (defvar *input-history-ignore-duplicates* nil
@@ -281,9 +281,7 @@ match with an element of the completions."
                            ((process-input screen prompt input (car key) (cdr key))
                             (if (or (not require-match)
                                     (match-input))
-                                (progn
-                                  (format t "lol")
-                                  (return (input-line-string input)))
+                                (return (input-line-string input))
                                 (draw-input-bucket screen prompt input "[No match]" t)))))))
       (setup-input-window screen prompt input)
       (catch :abort
@@ -543,7 +541,7 @@ functions are passed this structure as their first argument."
               (input-insert-string input (if (listp elt) (first elt) elt))
               (input-insert-char input #\Space)
               (unmap-message-window (current-screen)))
-	          (let* ((selected-completions (take +input-completion-display-limit+
+	          (let* ((selected-completions (take *input-completion-display-limit*
                                                *input-current-completions*))
                    (n (longest-common-prefix
                        (mapcar (lambda (elt)
