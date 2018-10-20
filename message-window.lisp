@@ -68,6 +68,15 @@ GRAVITY."))
 (define-simple-gravity :bottom :center :max)
 (define-simple-gravity :center :center :center)
 
+(defun message-window-real-gravity (screen)
+  "Returns the gravity that should be used when displaying the
+message window, taking into account *message-window-gravity*
+and *message-window-input-gravity*."
+  (if (eq (xlib:window-map-state (screen-input-window screen))
+          :unmapped)
+      *message-window-gravity*
+      *message-window-input-gravity*))
+
 (defun setup-win-gravity (screen win gravity)
   "Position the x, y of the window according to its gravity. This
 function expects to be wrapped in a with-state for win."
@@ -92,7 +101,7 @@ function expects to be wrapped in a with-state for win."
       (setf (xlib:drawable-height win) (+ height (* *message-window-y-padding* 2))
             (xlib:drawable-width win) (+ width (* *message-window-padding* 2))
             (xlib:window-priority win) :above)
-      (setup-win-gravity screen win *message-window-gravity*))
+      (setup-win-gravity screen win (message-window-real-gravity screen)))
     (xlib:map-window win)
     (incf (screen-ignore-msg-expose screen))
     ;; Have to flush this or the window might get cleared
