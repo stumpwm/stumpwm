@@ -1489,6 +1489,9 @@ cycle through completions.
 %%% with-message-queuing
 ### *queue-messages-p*
 ### *input-history-ignore-duplicates*
+### *input-completion-style*
+@@@ make-input-completion-style-cyclic
+@@@ make-input-completion-style-unambiguous
 !!! copy-last-message
 
 @node Programming the Input Bar,  , Programming The Message Bar, Message and Input Bar
