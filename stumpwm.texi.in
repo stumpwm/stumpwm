@@ -353,6 +353,13 @@ to overlap. Each window has a thicker border at the top. Left click in
 this border and drag to move the window, or right click and drag to
 resize it.
 
+A modifier key can be used to perform the move and resize operations
+by clicking in the window itself instead of on its top border. The
+default modifier is super, and can be configured with
+@var{*float-window-modifier*}.
+
+### *float-window-modifier*
+
 Most of the window-switching commands listed below do not function in
 a floating group. You're restricted to `other', the `select-window-*'
 commands, and `windowlist'.
