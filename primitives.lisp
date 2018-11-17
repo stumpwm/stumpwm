@@ -1078,7 +1078,7 @@ will have no effect.")
   "List of rules governing window placement. Use define-frame-preference to
 add rules")
 
-(defmacro define-frame-preference (target-group &rest frame-rules)
+(defmacro define-frame-preference (target-group &body frame-rules)
   "Create a rule that matches windows and automatically places them in
 a specified group and frame. Each frame rule is a lambda list:
 @example
