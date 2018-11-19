@@ -301,13 +301,11 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
 ;;      (xlib:clear-area (window-parent window)))))
 (defun escape-caret (str)
   "Escape carets by doubling them"
-  (let (buf)
-    (map nil #'(lambda (ch)
-                 (push ch buf)
-                 (when (char= ch #\^)
-                   (push #\^ buf)))
-         str)
-    (coerce (reverse buf) 'string)))
+  (coerce (loop :for char :across str
+                :collect char
+                :when (char= char #\^)
+                  :collect char)
+          'string))
 
 (defun get-normalized-normal-hints (xwin)
   (macrolet ((validate-hint (fn)
@@ -331,14 +329,12 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
 
 (defun xwin-net-wm-name (win)
   "Return the netwm wm name"
-  (let ((name (xlib:get-property win :_NET_WM_NAME)))
-    (when name
-      (utf8-to-string name))))
+  (when-let ((name (xlib:get-property win :_NET_WM_NAME)))
+    (utf8-to-string name)))
 
 (defun xwin-name (win)
-  (escape-caret (or
-                 (xwin-net-wm-name win)
-                 (xlib:wm-name win))))
+  (escape-caret (or (xwin-net-wm-name win)
+                    (xlib:wm-name win))))
 
 (defun update-configuration (win)
   ;; Send a synthetic configure-notify event so that the window
@@ -1001,7 +997,7 @@ window. Default to the current window. if
 (defun kill-windows (windows)
   "Kill all windows @var{windows}"
   (dolist (window windows)
-    (xwin-kill (window-xwin window)))) 
+    (xwin-kill (window-xwin window))))
 
 (defun kill-windows-in-group (group)
    "Kill all windows in group @var{group}"
