@@ -684,7 +684,7 @@ and bottom_end_x."
     (setf (window-state w) +normal-state+)
     (xwin-hide w)))
 
-(defun xwin-grab-keys (win group)
+(defun xwin-grab-key (w key)
   (labels ((add-shift-modifier (key)
              ;; don't butcher the caller's structure
              (let ((key (copy-structure key)))
@@ -692,38 +692,39 @@ and bottom_end_x."
                key))
            (key-modifiers-exist-p (key)
              (and
-               (or (not (key-meta key)) (modifiers-meta *modifiers*))
-               (or (not (key-alt key)) (modifiers-alt *modifiers*))
-               (or (not (key-hyper key)) (modifiers-hyper *modifiers*))
-               (or (not (key-super key)) (modifiers-super *modifiers*))))
-           (grabit (w key)
-             (loop for code in (multiple-value-list (xlib:keysym->keycodes *display* (key-keysym key)))
-               ;; some keysyms aren't mapped to keycodes so just ignore them.
-               when (and code (key-modifiers-exist-p key))
-               do
-                 ;; Some keysyms, such as upper case letters, need the
-                 ;; shift modifier to be set in order to grab properly.
-                 (let ((key
-                         (if (and (not (eql (key-keysym key) (xlib:keycode->keysym *display* code 0)))
-                                  (eql (key-keysym key) (xlib:keycode->keysym *display* code 1)))
-                           (add-shift-modifier key)
-                           key)))
-                   (xlib:grab-key w code
-                                  :modifiers (x11-mods key) :owner-p t
-                                  :sync-pointer-p nil :sync-keyboard-p nil)
-                   ;; Ignore capslock and numlock by also grabbing the
-                   ;; keycombos with them on.
-                   (xlib:grab-key w code :modifiers (x11-mods key nil t) :owner-p t
-                                  :sync-keyboard-p nil :sync-keyboard-p nil)
-                   (when (modifiers-numlock *modifiers*)
-                     (xlib:grab-key w code
-                                    :modifiers (x11-mods key t nil) :owner-p t
-                                    :sync-pointer-p nil :sync-keyboard-p nil)
-                     (xlib:grab-key w code :modifiers (x11-mods key t t) :owner-p t
-                                    :sync-keyboard-p nil :sync-keyboard-p nil))))))
-    (dolist (map (dereference-kmaps (top-maps group)))
-      (dolist (i (kmap-bindings map))
-        (grabit win (binding-key i))))))
+              (or (not (key-meta key)) (modifiers-meta *modifiers*))
+              (or (not (key-alt key)) (modifiers-alt *modifiers*))
+              (or (not (key-hyper key)) (modifiers-hyper *modifiers*))
+              (or (not (key-super key)) (modifiers-super *modifiers*)))))
+    (loop for code in (multiple-value-list (xlib:keysym->keycodes *display* (key-keysym key)))
+       ;; some keysyms aren't mapped to keycodes so just ignore them.
+       when (and code (key-modifiers-exist-p key))
+       do
+       ;; Some keysyms, such as upper case letters, need the
+       ;; shift modifier to be set in order to grab properly.
+         (let ((key
+                (if (and (not (eql (key-keysym key) (xlib:keycode->keysym *display* code 0)))
+                         (eql (key-keysym key) (xlib:keycode->keysym *display* code 1)))
+                    (add-shift-modifier key)
+                    key)))
+           (xlib:grab-key w code
+                          :modifiers (x11-mods key) :owner-p t
+                          :sync-pointer-p nil :sync-keyboard-p nil)
+           ;; Ignore capslock and numlock by also grabbing the
+           ;; keycombos with them on.
+           (xlib:grab-key w code :modifiers (x11-mods key nil t) :owner-p t
+                          :sync-keyboard-p nil :sync-keyboard-p nil)
+           (when (modifiers-numlock *modifiers*)
+             (xlib:grab-key w code
+                            :modifiers (x11-mods key t nil) :owner-p t
+                            :sync-pointer-p nil :sync-keyboard-p nil)
+             (xlib:grab-key w code :modifiers (x11-mods key t t) :owner-p t
+                            :sync-keyboard-p nil :sync-keyboard-p nil))))))
+
+(defun xwin-grab-keys (win group)
+  (dolist (map (dereference-kmaps (top-maps group)))
+    (dolist (i (kmap-bindings map))
+      (xwin-grab-key win (binding-key i)))))
 
 (defun grab-keys-on-window (win)
   (xwin-grab-keys (window-xwin win) (window-group win)))
