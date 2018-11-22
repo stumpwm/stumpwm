@@ -199,15 +199,14 @@ The Caller is responsible for setting up the input focus."
     (when update-fn
       (funcall update-fn key-seq))
     (cond ((kmap-or-kmap-symbol-p match)
-           (with-focus (screen-key-window (current-screen))
-             (when grab
-               (grab-pointer (current-screen)))
-             (let* ((code-state (read-key-no-modifiers))
-                    (code (car code-state))
-                    (state (cdr code-state)))
-               (unwind-protect
-                    (handle-keymap (remove-if-not 'kmap-or-kmap-symbol-p bindings) code state key-seq nil update-fn)
-                 (when grab (ungrab-pointer))))))
+           (when grab
+             (grab-pointer (current-screen)))
+           (let* ((code-state (read-key-no-modifiers))
+                  (code (car code-state))
+                  (state (cdr code-state)))
+             (unwind-protect
+                  (handle-keymap (remove-if-not 'kmap-or-kmap-symbol-p bindings) code state key-seq nil update-fn)
+               (when grab (ungrab-pointer)))))
           (match
            (values match key-seq))
           ((and (find key (list (kbd "?")
@@ -240,7 +239,8 @@ The Caller is responsible for setting up the input focus."
 
 (define-stump-event-handler :key-press (code state #|window|#)
   (labels ((get-cmd (code state)
-             (handle-keymap (top-maps) code state nil t nil)))
+             (with-focus (screen-key-window (current-screen))
+               (handle-keymap (top-maps) code state nil t nil))))
     (unwind-protect
          ;; modifiers can sneak in with a race condition. so avoid that.
          (unless (is-modifier code)
