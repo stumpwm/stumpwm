@@ -57,6 +57,7 @@
       (xwin-grab-key (window-xwin win) (kbd key)))))
 
 (defun remap-keys-focus-window-hook (new-focus cur-focus)
+  (declare (ignorable cur-focus))
   (remap-keys-grab-keys new-focus))
 
 (defun remap-keys-event-handler (code state)
