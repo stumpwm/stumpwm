@@ -27,13 +27,18 @@
 
 (export '(define-remapped-keys))
 
-(defvar *remap-keys-window-class-list* nil)
+(defvar *remap-keys-window-match-list* nil)
 
-(defun find-remap-keys-window-class (class)
+(defun find-remap-keys-by-window (window)
   (first
    (member-if (lambda (pattern)
-                (string-match class pattern))
-              *remap-keys-window-class-list*
+                (cond
+                  ((stringp pattern)
+                   (string-match (window-class window) pattern))
+
+                  ((or (symbolp pattern) (functionp pattern))
+                   (funcall pattern window))))
+              *remap-keys-window-match-list*
               :key 'car)))
 
 (defun make-remap-keys (kmap)
@@ -50,8 +55,7 @@
             kmap)))
 
 (defun remap-keys-grab-keys (win)
-  (let* ((window-class (window-class win))
-         (keymap (cdr (find-remap-keys-window-class window-class)))
+  (let* ((keymap (cdr (find-remap-keys-by-window win)))
          (src-keys (mapcar 'car keymap)))
     (dolist (key src-keys)
       (xwin-grab-key (window-xwin win) (kbd key)))))
@@ -64,8 +68,8 @@
 (defun remap-keys-event-handler (code state)
   (let* ((raw-key (code-state->key code state))
          (window (current-window))
-         (window-class (window-class window))
-         (keymap (cdr (find-remap-keys-window-class window-class)))
+         (keymap (when window
+                   (cdr (find-remap-keys-by-window window))))
          (keys (cdr (assoc (print-key raw-key) keymap :test 'equal))))
     (when keys
       (dolist (key keys)
@@ -88,16 +92,16 @@ EXAMPLE:
   The above form remaps Ctrl-n to Down arrow, and Ctrl-p to Up arrow
   keys.  The Ctrl-k key is remapped to the sequence of keys
   Ctrl-Shift-End followed by Ctrl-x."
-  (setq *remap-keys-window-class-list*
+  (setq *custom-key-event-handler* nil
+        *remap-keys-window-match-list*
         (mapcar (lambda (spec)
                   (let ((pattern (car spec))
                         (kmap (cdr spec)))
                     (cons pattern (make-remap-keys kmap))))
                 specs))
-  (when *remap-keys-window-class-list*
-    (add-hook *focus-window-hook* 'remap-keys-focus-window-hook))
-  (setq *custom-key-event-handler* (when *remap-keys-window-class-list*
-                                     'remap-keys-event-handler)))
+  (when *remap-keys-window-match-list*
+    (add-hook *focus-window-hook* 'remap-keys-focus-window-hook)
+    (setq *custom-key-event-handler* 'remap-keys-event-handler)))
 
 (defcommand send-raw-key () ()
   "Prompts for a key and forwards it to the CURRENT-WINDOW."
