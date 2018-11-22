@@ -58,7 +58,8 @@
 
 (defun remap-keys-focus-window-hook (new-focus cur-focus)
   (declare (ignorable cur-focus))
-  (remap-keys-grab-keys new-focus))
+  (when new-focus
+    (remap-keys-grab-keys new-focus)))
 
 (defun remap-keys-event-handler (code state)
   (let* ((raw-key (code-state->key code state))
