@@ -80,7 +80,7 @@
   "Define the keys to be remapped and their mappings. The SPECS
 argument needs to be of the following structure:
 
-  (regexp . ((\"key-to-remap\" . <new-keycodes>) ...))
+  (regexp-or-function . ((\"key-to-remap\" . <new-keycodes>) ...))
 
 EXAMPLE:
   (define-remapped-keys

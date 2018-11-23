@@ -1056,6 +1056,29 @@ keybindings.
 
 The above form adds Emacs like keybindings to windows whose @var{window-class} matches ``Firefox'' or ``Chrome''. Additional application specific bindings may be included by using the specific X @var{window-class} values.
 
+The window matching pattern can also be specified as a function which returns @code{T} if the focused window matches.
+
+@example
+;; Match any window with a window-class matching "Firefox"
+(define-remapped-keys
+    `((,(lambda (win)
+          (string-equal "Firefox" (window-class win)))
+       ("C-n"   . "Down")
+       ("C-p"   . "Up")
+       ("C-f"   . "Right")
+       ("C-b"   . "Left")
+       ("C-v"   . "Next")
+       ("M-v"   . "Prior")
+       ("M-w"   . "C-c")
+       ("C-w"   . "C-x")
+       ("C-y"   . "C-v")
+       ("M-<"   . "Home")
+       ("M->"   . "End")
+       ("C-M-b" . "M-Left")
+       ("C-M-f" . "M-Right")
+       ("C-k"   . ("C-S-End" "C-x")))))
+@end example
+
 @subsection Circumventing Remapped Keys
 
 However, if the original key binding needs to be explictly applied the
@@ -1073,7 +1096,6 @@ the prompt will send the keystroke as-is to Firefox, causing it to
 open a new window.
 
 !!! send-raw-key
-!!! send-remapped-key
 
 @node Commands, Message and Input Bar, Key Bindings, Top
 @chapter Commands
