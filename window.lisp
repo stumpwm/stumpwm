@@ -333,8 +333,10 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
     (utf8-to-string name)))
 
 (defun xwin-name (win)
-  (escape-caret (or (xwin-net-wm-name win)
-                    (xlib:wm-name win))))
+  (if-let ((name (or (xwin-net-wm-name win)
+                     (xlib:wm-name win))))
+    (escape-caret name)
+    ""))
 
 (defun update-configuration (win)
   ;; Send a synthetic configure-notify event so that the window
