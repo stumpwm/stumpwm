@@ -238,9 +238,9 @@ The Caller is responsible for setting up the input focus."
   REMAP-KEYS contrib module for a working use case.")
 
 (defvar *custom-key-event-handler* nil
-  "An custom key event handler can be installed in this variable,
-  which will take precedence over the keymap based handler defined
-  in the default :KEY-PRESS event handler.")
+  "A custom key event handler can be set in this variable,
+  which will take precedence over the keymap based handler defined in
+  the default :KEY-PRESS event handler.")
 
 (define-stump-event-handler :key-press (code state #|window|#)
   (labels ((get-cmd (code state)
