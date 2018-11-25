@@ -106,14 +106,15 @@ EXAMPLE:
 (defcommand send-raw-key () ()
   "Prompts for a key and forwards it to the CURRENT-WINDOW."
   (message "Press a key to send")
-  (let* ((k (read-key))
+  (let* ((screen (current-screen))
+         (win (screen-current-window screen))
+         (k (with-focus (screen-key-window screen)
+              (read-key)))
          (code (car k))
-         (state (cdr k))
-         (screen (current-screen)))
+         (state (cdr k)))
     (unmap-message-window screen)
-    (when (screen-current-window screen)
-      (let* ((win (screen-current-window screen))
-             (xwin (window-xwin win)))
+    (when win
+      (let ((xwin (window-xwin win)))
         (dolist (event '(:key-press :key-release))
           (xlib:send-event xwin
                            event
