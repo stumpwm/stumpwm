@@ -334,7 +334,8 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
 
 (defun xwin-name (win)
   (escape-caret (or (xwin-net-wm-name win)
-                    (xlib:wm-name win))))
+                    (xlib:wm-name win)
+                    "")))
 
 (defun update-configuration (win)
   ;; Send a synthetic configure-notify event so that the window
