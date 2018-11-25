@@ -199,15 +199,14 @@ The Caller is responsible for setting up the input focus."
     (when update-fn
       (funcall update-fn key-seq))
     (cond ((kmap-or-kmap-symbol-p match)
-           (with-focus (screen-key-window (current-screen))
-             (when grab
-               (grab-pointer (current-screen)))
-             (let* ((code-state (read-key-no-modifiers))
-                    (code (car code-state))
-                    (state (cdr code-state)))
-               (unwind-protect
-                    (handle-keymap (remove-if-not 'kmap-or-kmap-symbol-p bindings) code state key-seq nil update-fn)
-                 (when grab (ungrab-pointer))))))
+           (when grab
+             (grab-pointer (current-screen)))
+           (let* ((code-state (read-key-no-modifiers))
+                  (code (car code-state))
+                  (state (cdr code-state)))
+             (unwind-protect
+                  (handle-keymap (remove-if-not 'kmap-or-kmap-symbol-p bindings) code state key-seq nil update-fn)
+               (when grab (ungrab-pointer)))))
           (match
            (values match key-seq))
           ((and (find key (list (kbd "?")
@@ -238,21 +237,29 @@ The Caller is responsible for setting up the input focus."
   dispatch further based on the value in *current-key-seq*. See the
   REMAP-KEYS contrib module for a working use case.")
 
+(defvar *custom-key-event-handler* nil
+  "A custom key event handler can be set in this variable,
+  which will take precedence over the keymap based handler defined in
+  the default :KEY-PRESS event handler.")
+
 (define-stump-event-handler :key-press (code state #|window|#)
   (labels ((get-cmd (code state)
-             (handle-keymap (top-maps) code state nil t nil)))
+             (with-focus (screen-key-window (current-screen))
+               (handle-keymap (top-maps) code state nil t nil))))
     (unwind-protect
-         ;; modifiers can sneak in with a race condition. so avoid that.
-         (unless (is-modifier code)
-           (multiple-value-bind (cmd key-seq) (get-cmd code state)
-             (cond
-               ((eq cmd t))
-               (cmd
-                (unmap-message-window (current-screen))
-                (let ((*current-key-seq* key-seq))
-                  (eval-command cmd t))
-                t)
-               (t (message "~{~a ~}not bound." (mapcar 'print-key (nreverse key-seq))))))))))
+         (or (and *custom-key-event-handler*
+                  (funcall *custom-key-event-handler* code state))
+             ;; modifiers can sneak in with a race condition. so avoid that.
+             (unless (is-modifier code)
+               (multiple-value-bind (cmd key-seq) (get-cmd code state)
+                 (cond
+                   ((eq cmd t))
+                   (cmd
+                    (unmap-message-window (current-screen))
+                    (let ((*current-key-seq* key-seq))
+                      (eval-command cmd t))
+                    t)
+                   (t (message "~{~a ~}not bound." (mapcar 'print-key (nreverse key-seq)))))))))))
 
 (defun bytes-to-window (bytes)
   "Combine a list of 4 8-bit bytes into a 32-bit number. This is because
