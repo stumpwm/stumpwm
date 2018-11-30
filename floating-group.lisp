@@ -213,18 +213,21 @@
   "Returns maximum displayable height of window accounting for the mode-line"
   (let* ((head (window-head window))
          (ml (head-mode-line head))
-         (ml-height (mode-line-height ml)))
-    (if (and ml (not (eq (mode-line-mode ml) :hidden)))
-        (- (head-height head) ml-height)
-        (window-height window))))
+         (ml-height (if (null ml) 0 (mode-line-height ml))))
+    (- (head-height head) ml-height
+       *normal-border-width*
+       *float-window-border*
+       *float-window-title-height*)))
   
 (defun maximize-float (window &key horizontal vertical)
   (let* ((head (window-head window))
          (ml (head-mode-line head))
          (hx (head-x head))
-         (hy (mode-line-height ml))
-         (w (head-width head))
-         (h (window-display-height window))) 
+         (hy (if (null ml) 0 (mode-line-height ml)))
+         (w (- (head-width head)
+               (* 2 *normal-border-width*)
+               *float-window-border*))
+         (h (window-display-height window)))
     (when horizontal
       (float-window-move-resize window :width w)) 
     (when vertical
