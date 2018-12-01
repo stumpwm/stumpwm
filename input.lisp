@@ -87,8 +87,7 @@ and complete the input by mutating it."))
           (progn
             (let ((elt (nth idx completions)))
               (input-delete-region input 0 (input-point input))
-              (input-insert-string input (if (listp elt) (first elt) elt))
-              (input-insert-char input #\Space))
+              (input-insert-string input (if (listp elt) (first elt) elt)))
             ;; Prepare the next completion
             (setf idx (mod (+ idx (if (eq direction :forward) 1 -1)) completion-count))
           :error)))))
@@ -831,19 +830,20 @@ input (pressing Return), nil otherwise."
 ;; (defun cook-keycode (code state)
 ;;   (values (xlib:keycode->keysym *display* code 0) (x11mod->stumpmod state)))
 
-;; (defun y-or-n-p (message)
-;;   "ask a \"y or n\" question on the current screen and return T if the
-;; user presses 'y'"
-;;   (message "~a(y or n) " message)
-;;   (char= (read-one-char (current-screen))
-;;         #\y))
+(defun y-or-n-p (message)
+  "ask a \"y or n\" question on the current screen and return T if the
+user presses 'y'"
+  (message "~a(y or n) " message)
+  (char= (read-one-char (current-screen))
+        #\y))
 
-;; (defun yes-or-no-p (message)
-;;   "ask a \"yes or no\" question on the current screen and return T if the
-;; user presses 'yes'"
-;;   (loop for line = (read-one-line (current-screen)
-;;                                   (format nil "~a(yes or no) " message))
-;;         until (find line '("yes" "no") :test 'string-equal)
-;;         do (message "Please answer yes or no")
-;;            (sleep 1)
-;;         finally (return (string-equal line "yes"))))
+(defun yes-or-no-p (message)
+  "ask a \"yes or no\" question on the current screen and return T if the
+user presses 'yes'"
+  (loop for line = (read-one-line (current-screen)
+                                  (format nil "~a(yes or no) " message)
+                                  '("yes" "no"))
+        until (find line '("yes" "no") :test 'string-equal)
+        do (message "Please answer yes or no")
+           (sleep 1)
+        finally (return (string-equal line "yes"))))
