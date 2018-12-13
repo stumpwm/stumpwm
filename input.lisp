@@ -116,7 +116,7 @@ and complete the input by mutating it."))
               (echo-string-list (current-screen) completions))))))
 
 (defun make-input-completion-style-unambiguous (&key (display-limit 64))
-  (make-instance 'input-completion-style-
+  (make-instance 'input-completion-style-unambiguous
                  :display-limit display-limit))
 
 (defvar *input-map*
