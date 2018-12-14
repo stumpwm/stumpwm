@@ -307,10 +307,13 @@ passed the substring to complete on and is expected to return a list
 of matches. If require-match argument is non-nil then the input must
 match with an element of the completions."
   (check-type completions (or list function symbol))
-  (let ((line (read-one-line screen prompt completions :initial-input initial-input :require-match require-match)))
+  (let ((line (read-one-line screen prompt
+                             :completions completions
+                             :initial-input initial-input
+                             :require-match require-match)))
     (when line (string-trim " " line))))
 
-(defun read-one-line (screen prompt completions &key (initial-input "") require-match password)
+(defun read-one-line (screen prompt &key completions (initial-input "") require-match password)
   "Read a line of input through stumpwm and return it. Returns nil if the user aborted."
   (let ((*input-last-command* nil)
         (*input-completions* completions)
@@ -842,6 +845,7 @@ user presses 'y'"
 user presses 'yes'"
   (loop for line = (read-one-line (current-screen)
                                   (format nil "~a(yes or no) " message)
+                                  :completions
                                   '("yes" "no"))
         until (find line '("yes" "no") :test 'string-equal)
         do (message "Please answer yes or no")
