@@ -13,9 +13,16 @@
 (defvar *float-window-border* 1)
 (defvar *float-window-title-height* 10)
 (defvar *float-window-modifier* :super
-  "The keyboard modifier used to resize and move floating windows
-  without clicking on the top border. Valid values include (but are not
-  limited to): :super, :meta, :hyper.")
+  "The keyboard modifier to use for resize and move floating windows without
+  clicking on the top border. Valid values are :META :ALT :HYPER :SUPER, :ALTGR
+  and :NUMLOCK.")
+
+
+(defun float-window-modifier ()
+  "Convert the *FLOAT-WINDOW-MODIFIER* to its corresponding X11."
+  (when-let ((fn (find-symbol (concat "MODIFIERS-" (symbol-name *float-window-modifier*))
+                              (find-package "STUMPWM"))))
+    (funcall fn *modifiers*)))
 
 ;; some book keeping functions
 (defmethod (setf window-x) :before (val (window float-window))
@@ -257,8 +264,7 @@
                 (< y (xlib:drawable-y xwin))
                 (> y (+ (xlib:drawable-height xwin)
                         (xlib:drawable-y xwin)))
-                (intersection (slot-value *modifiers*
-                                          (find-symbol (symbol-name *float-window-modifier*)))
+                (intersection (float-window-modifier)
                               (xlib:make-state-keys state-mask)))
         (when (find :button-1 (xlib:make-state-keys state-mask))
           (let* ((current-time (/ (get-internal-real-time)
