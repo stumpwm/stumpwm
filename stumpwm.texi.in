@@ -2130,7 +2130,6 @@ section.
 %%% move-to-head
 @@@ no-focus
 ### *numpad-map*
-@@@ read-line-from-sysfs
 ### *record-last-msg-override*
 ### *resize-hides-windows*
 ### *root-click-focuses-frame*
