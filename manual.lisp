@@ -34,19 +34,19 @@
 
 (defun generate-function-doc (s line)
   (ppcre:register-groups-bind (name) ("^@@@ (.*)" line)
-                              (dprint 'func name)
-                              (let ((fn (if (find #\( name :test 'char=)
-                                            ;; handle (setf <symbol>) functions
-                                            (with-standard-io-syntax
-                                              (let ((*package* (find-package :stumpwm)))
-                                                (fdefinition (read-from-string name))))
-                                            (symbol-function (find-symbol (string-upcase name) :stumpwm))))
-                                    (*print-pretty* nil))
-                                (format s "@defun {~a} ~{~a~^ ~}~%~a~&@end defun~%~%"
-                                        name
-                                        (sb-introspect:function-lambda-list fn)
-                                        (documentation fn 'function))
-                                t)))
+    (dprint 'func name)
+    (let ((fn (if (find #\( name :test 'char=)
+                  ;; handle (setf <symbol>) functions
+                  (with-standard-io-syntax
+                    (let ((*package* (find-package :stumpwm)))
+                      (fdefinition (read-from-string name))))
+                  (symbol-function (find-symbol (string-upcase name) :stumpwm))))
+          (*print-pretty* nil))
+      (format s "@defun {~a} ~{~a~^ ~}~%~a~&@end defun~%~%"
+              name
+              (sb-introspect:function-lambda-list fn)
+              (documentation fn 'function))
+      t)))
 
 (defun generate-macro-doc (s line)
   (ppcre:register-groups-bind (name) ("^%%% (.*)" line)

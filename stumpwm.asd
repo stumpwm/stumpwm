@@ -61,3 +61,8 @@
                ;; anything changes
                (:file "version"))
   :in-order-to ((test-op (test-op "stumpwm-tests"))))
+
+(defsystem "stumpwm/manual"
+  :depends-on ("stumpwm"
+               "sb-introspect")
+  :components ((:file "nmanual.lisp")))
