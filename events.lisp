@@ -592,7 +592,8 @@ the window in it's frame."
 (define-stump-event-handler :button-press (window code x y child time)
   (let ((screen (find-screen window))
         (mode-line (find-mode-line-by-window window))
-        (win (find-window-by-parent window (top-windows))))
+        (win (or (find-window-by-parent window (top-windows))
+                 (find-window-by-parent window (group-windows (current-group))))))
     (cond
       ((and screen (not child))
        (group-button-press (screen-current-group screen) x y :root)
