@@ -37,11 +37,20 @@ like xterm and emacs.")
      (maximize-window window))))
 
 (defmethod window-visible-p ((window tile-window))
-  ;; In this case, visible means the window is the top window in the
-  ;; frame. This is not entirely true when it doesn't take up the
-  ;; entire frame and there's a window below it.
-  (eq window
-      (frame-window (window-frame window))))
+  ;; A TILE-WINDOW is visible is it is the top window in the frame or when the
+  ;; focused window is a FLOAT-WINDOW and the TILE-WINDOW can be seen below.
+  (let* ((frame (window-frame window))
+         (frame-windows (frame-windows (window-group window) frame)))
+    (flet ((full-frame-p (win)
+             (not (and (xlib:wm-size-hints-x (window-normal-hints win))
+                       (xlib:wm-size-hints-y (window-normal-hints win))))))
+      (or (eq window (or (frame-window frame)
+                         (first frame-windows)))
+          (when (> (length frame-windows) 1)
+            (loop :for current-window :in frame-windows
+                  :until (full-frame-p current-window)
+                  :when (eq window current-window)
+                    :do (return t)))))))
 
 (defmethod window-head ((window tile-window))
   (frame-head (window-group window) (window-frame window)))
