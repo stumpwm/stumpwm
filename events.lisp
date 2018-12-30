@@ -486,9 +486,11 @@ converted to an atom is removed."
         (if (eq (window-group window) (current-group))
             (echo-string (window-screen window) (format nil "'~a' denied map request" (window-name window)))
             (echo-string (window-screen window) (format nil "'~a' denied map request in group ~a" (window-name window) (group-name (window-group window))))))
-      (frame-raise-window (window-group window) (window-frame window) window
-                          (eq (window-frame window)
-                              (tile-group-current-frame (window-group window))))))
+      (if (typep window 'tile-window)
+          (frame-raise-window (window-group window) (window-frame window) window
+                              (eq (window-frame window)
+                                  (tile-group-current-frame (window-group window))))
+          (raise-window window))))
 
 (defun maybe-raise-window (window)
   (if (deny-request-p window *deny-raise-request*)
