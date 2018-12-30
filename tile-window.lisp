@@ -38,10 +38,22 @@ like xterm and emacs.")
 
 (defmethod window-visible-p ((window tile-window))
   ;; In this case, visible means the window is the top window in the
-  ;; frame. This is not entirely true when it doesn't take up the
-  ;; entire frame and there's a window below it.
-  (eq window
-      (frame-window (window-frame window))))
+  ;; frame. When it doesn't take up the entire frame, windows below it
+  ;; also visible.
+  (let* ((frame (window-frame window))
+         (wins (frame-windows (window-group window) frame)))
+    (flet ((full-frame-p (win)
+             ;; I will use this function if exported.
+             ;; xlib::wm-size-hints-program-specified-position-p
+             (not (and (xlib:wm-size-hints-x (window-normal-hints win))
+                       (xlib:wm-size-hints-y (window-normal-hints win))))))
+      (or (eq window (or (frame-window frame)
+                         (first wins)))
+          (when (> (length wins) 1)
+            (loop for cw = (pop wins)
+                  until (full-frame-p cw)
+                  when (eq window (first wins))
+                    do (return t)))))))
 
 (defmethod window-head ((window tile-window))
   (frame-head (window-group window) (window-frame window)))
