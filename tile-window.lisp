@@ -47,9 +47,9 @@ like xterm and emacs.")
       (or (eq window (or (frame-window frame)
                          (first frame-windows)))
           (when (> (length frame-windows) 1)
-            (loop :for current-window :in frame-windows
+            (loop :for (current-window next-window) :on frame-windows
                   :until (full-frame-p current-window)
-                  :when (eq window current-window)
+                  :when (eq window next-window)
                     :do (return t)))))))
 
 (defmethod window-head ((window tile-window))
