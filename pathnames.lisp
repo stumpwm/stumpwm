@@ -36,34 +36,16 @@
 (export '(list-directory
           pathname-as-directory))
 
-(defun component-present-p (value)
-  "Helper function for DIRECTORY-PATHNAME-P which checks whether VALUE
-is neither NIL nor the keyword :UNSPECIFIC."
-  (and value (not (eql value :unspecific))))
-
 (defun directory-pathname-p (pathspec)
   "Returns NIL if PATHSPEC \(a pathname designator) does not designate
 a directory, PATHSPEC otherwise.  It is irrelevant whether file or
 directory designated by PATHSPEC does actually exist."
-  (and 
-    (not (component-present-p (pathname-name pathspec)))
-    (not (component-present-p (pathname-type pathspec)))
-    pathspec))
+  (uiop:directory-pathname-p pathspec))
 
 (defun pathname-as-directory (pathspec)
   "Converts the non-wild pathname designator PATHSPEC to directory
 form."
-  (let ((pathname (pathname pathspec)))
-    (when (wild-pathname-p pathname)
-      (error "Can't reliably convert wild pathnames."))
-    (cond ((not (directory-pathname-p pathspec))
-           (make-pathname :directory (append (or (pathname-directory pathname)
-                                                 (list :relative))
-                                             (list (file-namestring pathname)))
-                          :name nil
-                          :type nil
-                          :defaults pathname))
-          (t pathname))))
+  (uiop:ensure-directory-pathname pathspec))
 
 (defun directory-wildcard (dirname)
   "Returns a wild pathname designator that designates all files within
@@ -82,7 +64,8 @@ directory form - see PATHNAME-AS-DIRECTORY."
   (when (wild-pathname-p dirname)
     (error "Can only list concrete directory names.")) 
   (let ((wildcard (directory-wildcard dirname)))
- (directory wildcard)))
+    (directory wildcard)))
+
 (defun list-directory-recursive (dirname &optional flatten-p)
   "Returns a list of pathnames corresponding to the truenames all
   files within the directory and in any subdirectories.  If
