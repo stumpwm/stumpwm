@@ -16,7 +16,7 @@ FILES=stumpwm.asd $(shell grep -o ":file \".*\"" stumpwm.asd | sed 's,:file ",,g
 
 all: stumpwm stumpwm.info
 
-travis: stumpwm
+travis: stumpwm test
 stumpwm.info: stumpwm.texi
 	makeinfo stumpwm.texi
 
