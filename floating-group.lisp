@@ -170,7 +170,7 @@
 
 (defun float-window-align (window)
   (with-accessors ((parent window-parent)
-                   (xwin window-xwin)
+                   (screen window-screen)
                    (width window-width)
                    (height window-height))
       window
@@ -180,7 +180,23 @@
             (xlib:drawable-height parent) (+ height *float-window-title-height* *float-window-border*)
             (xlib:window-background parent) (xlib:alloc-color (xlib:screen-default-colormap (screen-number (window-screen window)))
                                                               "Orange")))
-    (xlib:clear-area (window-parent window))))
+    (xlib:clear-area (window-parent window))
+    (let ((parent-x (xlib:drawable-x parent))
+          (parent-y (xlib:drawable-y parent))
+          (parent-width (xlib:drawable-width parent))
+          (parent-height (xlib:drawable-height parent))
+          (border (xlib:drawable-border-width parent))
+          (screen-width (screen-width screen))
+          (screen-height (screen-height screen)))
+      ;; Resize window when borders outside screen
+      (let ((diff-width (- (+ parent-x parent-width) (- screen-width (* 2 border))))
+            (diff-height (- (+ parent-y parent-height) (- screen-height (* 2 border)))))
+        (when (or (> parent-x 0) (> parent-y 0))
+          (float-window-move-resize window :x parent-x :y parent-y))
+        (when (> diff-width 0)
+          (float-window-move-resize window :width (- width diff-width)))
+        (when (> diff-height 0)
+          (float-window-move-resize window :height (- height diff-height)))))))
 
 (defmethod group-resize-request ((group float-group) window width height)
   (float-window-move-resize window :width width :height height))
