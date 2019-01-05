@@ -226,7 +226,7 @@
          (ml (head-mode-line head))
          (ml-height (if (null ml) 0 (mode-line-height ml))))
     (- (head-height head) ml-height
-       *normal-border-width*
+       (* 2 *normal-border-width*)
        *float-window-border*
        *float-window-title-height*)))
   
@@ -237,7 +237,7 @@
          (hy (if (null ml) 0 (mode-line-height ml)))
          (w (- (head-width head)
                (* 2 *normal-border-width*)
-               *float-window-border*))
+               (* 2 *float-window-border*)))
          (h (window-display-height window)))
     (when horizontal
       (float-window-move-resize window :width w)) 
