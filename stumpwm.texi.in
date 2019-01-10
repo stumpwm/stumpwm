@@ -1246,16 +1246,21 @@ The available configuration is @code{on-enter}, @code{on-exit} and
 (defun before-foo () (message "start foo"))
 (defun after-foo () (message "end foo"))
 (defun foo-p () (and *bar* *bhaz*))
+(defparameter *custom-exit-keys* '((kbd "RET") (kbd "SPC")
+                                   (kbd "C-g") (kbd "ESC")))
 
 (define-interactive-keymap foo (:on-enter #'before-foo
                                 :on-exit #'after-foo
-                                :abort-if #'foo-p))
+                                :abort-if #'foo-p
+                                :exit-on *custom-exit-keys*))
 @end example
 
 In the above example, the message ``start foo'' will appear before
 starting the interactive keymap, ``end foo'' will appear right after
-the command exits. Also, the command executes only if the variables
-@code{*bar*} and @code{*bhaz*} are true.
+the command exits; We've added SPC as an exit key with custom exit 
+keys. Also, the command executes only if the variables @code{*bar*}
+and @code{*bhaz*} are true.
+
 
 @node StumpWM Types,  , Writing Commands, Commands
 @section StumpWM Types
