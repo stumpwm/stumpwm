@@ -1245,7 +1245,7 @@ The available configuration is @code{on-enter}, @code{on-exit} and
 @example
 (defun before-foo () (message "start foo"))
 (defun after-foo () (message "end foo"))
-(defun foo-p () (and *bar* *bhaz*))
+(defun foo-p () (and *bar* *baz*))
 (defparameter *custom-exit-keys* '((kbd "RET") (kbd "SPC")
                                    (kbd "C-g") (kbd "ESC")))
 
@@ -1259,7 +1259,7 @@ In the above example, the message ``start foo'' will appear before
 starting the interactive keymap, ``end foo'' will appear right after
 the command exits; We've added SPC as an exit key with custom exit 
 keys. Also, the command executes only if the variables @code{*bar*}
-and @code{*bhaz*} are true.
+and @code{*baz*} are true.
 
 
 @node StumpWM Types,  , Writing Commands, Commands
