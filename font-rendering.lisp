@@ -49,13 +49,19 @@
   (declare (ignorable start end translate))
   (apply 'xlib:text-width font text keys))
 
-(defmethod draw-image-glyphs (drawable 
-                              gcontext
-                              (font xlib:font)
+(defmethod draw-image-glyphs :around (drawable gcontext (font xlib:font)
+                                      x y
+                                      sequence &rest keys &key (start 0) end translate width (size :default))
+  (declare (ignore keys start end translate width size))
+  (let ((prev-font (xlib:gcontext-font gcontext)))
+    (setf (xlib:gcontext-font gcontext) font)
+    (prog1 (call-next-method)
+      (setf (xlib:gcontext-font gcontext) prev-font))))
+
+(defmethod draw-image-glyphs (drawable gcontext (font xlib:font)
                               x y
-                              sequence &rest keys &key (start 0) end translate width size) 
+                              sequence &rest keys &key (start 0) end translate width (size :default))
   (declare (ignorable start end translate width size))
-  (setf (xlib:gcontext-font gcontext) font)
   (apply 'xlib:draw-image-glyphs drawable 
          gcontext
          x y
