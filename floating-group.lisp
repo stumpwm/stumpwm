@@ -170,7 +170,7 @@
 
 (defun float-window-align (window)
   (with-accessors ((parent window-parent)
-                   (xwin window-xwin)
+                   (screen window-screen)
                    (width window-width)
                    (height window-height))
       window
@@ -180,7 +180,23 @@
             (xlib:drawable-height parent) (+ height *float-window-title-height* *float-window-border*)
             (xlib:window-background parent) (xlib:alloc-color (xlib:screen-default-colormap (screen-number (window-screen window)))
                                                               "Orange")))
-    (xlib:clear-area (window-parent window))))
+    (xlib:clear-area (window-parent window))
+    (let ((parent-x (xlib:drawable-x parent))
+          (parent-y (xlib:drawable-y parent))
+          (parent-width (xlib:drawable-width parent))
+          (parent-height (xlib:drawable-height parent))
+          (border (xlib:drawable-border-width parent))
+          (screen-width (screen-width screen))
+          (screen-height (screen-height screen)))
+      ;; Resize window when borders outside screen
+      (let ((diff-width (- (+ parent-x parent-width) (- screen-width (* 2 border))))
+            (diff-height (- (+ parent-y parent-height) (- screen-height (* 2 border)))))
+        (when (or (> parent-x 0) (> parent-y 0))
+          (float-window-move-resize window :x parent-x :y parent-y))
+        (when (> diff-width 0)
+          (float-window-move-resize window :width (- width diff-width)))
+        (when (> diff-height 0)
+          (float-window-move-resize window :height (- height diff-height)))))))
 
 (defmethod group-resize-request ((group float-group) window width height)
   (float-window-move-resize window :width width :height height))
@@ -226,7 +242,7 @@
          (ml (head-mode-line head))
          (ml-height (if (null ml) 0 (mode-line-height ml))))
     (- (head-height head) ml-height
-       *normal-border-width*
+       (* 2 *normal-border-width*)
        *float-window-border*
        *float-window-title-height*)))
   
@@ -237,7 +253,7 @@
          (hy (if (null ml) 0 (mode-line-height ml)))
          (w (- (head-width head)
                (* 2 *normal-border-width*)
-               *float-window-border*))
+               (* 2 *float-window-border*)))
          (h (window-display-height window)))
     (when horizontal
       (float-window-move-resize window :width w)) 
