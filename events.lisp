@@ -103,7 +103,7 @@
         ((equalp old-heads new-heads)
          (dformat 3 "Bogus configure-notify on root window of ~S~%" screen) t)
         (t
-         (dformat 1 "Updating Xinerama configuration for ~S.~%" screen)
+         (dformat 1 "Updating Xrandr or Xinerama configuration for ~S.~%" screen)
          (if new-heads
              (progn (head-force-refresh screen new-heads)
                     (update-mode-lines screen)
