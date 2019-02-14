@@ -38,9 +38,54 @@
              :height (xinerama:screen-info-height screen-info)
              :window nil))
 
+(defun make-screen-randr-heads (root)
+  (multiple-value-bind
+        (timestamp config-timestamp crtcs outputs)
+      (xlib:rr-get-screen-resources root)
+    (declare (ignore timestamp config-timestamp crtcs))
+    (let ((heads))
+      (dolist (output outputs)
+        (multiple-value-bind (request-status
+                              config-timestamp
+                              crtc
+                              width
+                              height
+                              status)
+            (xlib:rr-get-output-info *display*
+                                     output
+                                     (get-universal-time))
+          (declare (ignore config-timestamp width height))
+          (when (and (eq request-status :success)
+                     (eq status :connected))
+            (multiple-value-bind (request-status
+                                  config-timestamp
+                                  x
+                                  y
+                                  width
+                                  height)
+                (xlib:rr-get-crtc-info *display*
+                                       crtc
+                                       (get-universal-time))
+              (declare (ignore config-timestamp))
+              (when (eq request-status :success)
+                (push
+                 (make-head :number (xlib:rr-get-output-property
+                                     *display*
+                                     output
+                                     :EDID)
+                            :x x
+                            :y y
+                            :width width
+                            :height height
+                            :window nil)
+                 heads))))))
+      heads)))
+
 (defun make-screen-heads (screen root)
   (declare (ignore screen))
-  (cond ((and (xlib:query-extension *display* "XINERAMA")
+  (cond ((xlib:query-extension *display* "RANDR")
+         (make-screen-randr-heads root))
+        ((and (xlib:query-extension *display* "XINERAMA")
               (xinerama:xinerama-is-active *display*))
          (mapcar 'screen-info-head
                  (xinerama:xinerama-query-screens *display*)))
@@ -144,7 +189,7 @@
         (scale-head screen oh nh)))))
 
 (defun head-force-refresh (screen new-heads)
-  (scale-screen screen new-heads)    
+  (scale-screen screen new-heads)
   (mapc 'group-sync-all-heads (screen-groups screen)))
 
 (defcommand refresh-heads (&optional (screen (current-screen))) ()
