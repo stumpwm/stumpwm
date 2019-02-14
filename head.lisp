@@ -190,7 +190,9 @@
 
 (defun head-force-refresh (screen new-heads)
   (scale-screen screen new-heads)
-  (mapc 'group-sync-all-heads (screen-groups screen)))
+  (mapc 'group-sync-all-heads (screen-groups screen))
+  (loop for new-head in new-heads
+     do (run-hook-with-args *new-head-hook* new-head screen)))
 
 (defcommand refresh-heads (&optional (screen (current-screen))) ()
   "Refresh screens in case a monitor was connected, but a

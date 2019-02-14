@@ -106,9 +106,7 @@
          (dformat 1 "Updating Xrandr or Xinerama configuration for ~S.~%" screen)
          (if new-heads
              (progn (head-force-refresh screen new-heads)
-                    (update-mode-lines screen)
-                    (loop for new-head in new-heads
-                       do (run-hook-with-args *new-head-hook* new-head screen)))
+                    (update-mode-lines screen))
              (dformat 1 "Invalid configuration! ~S~%" new-heads)))))))
 
 (define-stump-event-handler :map-request (parent send-event-p window)
