@@ -37,6 +37,7 @@
           *command-mode-end-hook*
           *urgent-window-hook*
           *new-window-hook*
+          *new-head-hook*
           *destroy-window-hook*
           *focus-window-hook*
           *place-window-hook*
