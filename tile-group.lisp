@@ -1055,9 +1055,8 @@ space."
 (defcommand (remove-sibling tile-group)
     (&optional (group (current-group))
 	       (frame (let ((window-type (type-of (current-window))))
-			           (if (eq window-type 'float-window)
-			               nil ;; (focus-all (current-window))
-			               (window-frame (current-window))))))
+			           (unless (eq window-type 'float-window)
+			             (window-frame (current-window))))))
     ()
   "removes the closest sibling frame to the specified frame, which defaults
 to the current frame. if the closes sibling is split, we call 
