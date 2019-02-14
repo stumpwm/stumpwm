@@ -314,9 +314,9 @@ more spaces; ARGUMENT-POP is used to split the string)."
                                         extra-keymap
                                         (filter-pred #'menu-item-matches-regexp))
   "Prompt the user to select from a menu on SCREEN. TABLE can be
-a list of values or an alist. If it's an alist, the CAR of each
-element is displayed in the menu. What is displayed as menu items
-must be strings.
+a list of values or a nested list. If it's a nested list, the first
+element in the sublist is displayed in the menu. What is displayed
+as menu items must be strings.
 
 EXTRA-KEYMAP can be a keymap whose bindings will take precedence
 over the default bindings.
