@@ -43,18 +43,27 @@
         (timestamp config-timestamp crtcs outputs)
       (xlib:rr-get-screen-resources root)
     (declare (ignore timestamp config-timestamp crtcs))
-    (let ((heads))
+    (let ((heads)
+          (counter 0))
       (dolist (output outputs)
         (multiple-value-bind (request-status
                               config-timestamp
                               crtc
                               width
                               height
-                              status)
+                              status
+                              sub-pixel-order
+                              num-crtcs
+                              unknown
+                              num-modes
+                              num-clones
+                              name)
             (xlib:rr-get-output-info *display*
                                      output
                                      (get-universal-time))
-          (declare (ignore config-timestamp width height))
+          (declare (ignore config-timestamp width height
+                           sub-pixel-order num-crtcs unknown
+                           num-modes num-clones))
           (when (and (eq request-status :success)
                      (eq status :connected))
             (multiple-value-bind (request-status
@@ -69,16 +78,15 @@
               (declare (ignore config-timestamp))
               (when (eq request-status :success)
                 (push
-                 (make-head :number (xlib:rr-get-output-property
-                                     *display*
-                                     output
-                                     :EDID)
+                 (make-head :number counter
                             :x x
                             :y y
                             :width width
                             :height height
-                            :window nil)
-                 heads))))))
+                            :window nil
+                            :name name)
+                 heads)
+                (incf counter))))))
       heads)))
 
 (defun make-screen-heads (screen root)

@@ -537,7 +537,8 @@ Use the window's resource name.
   height
   window)
 
-(defstruct (head (:include frame)))
+(defstruct (head (:include frame))
+  (name "" :type string))
 
 (defclass screen ()
   ((id :initarg :id :reader screen-id)
