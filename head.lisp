@@ -38,56 +38,33 @@
              :height (xinerama:screen-info-height screen-info)
              :window nil))
 
-(defun make-screen-randr-heads (root)
+(defun output->head (output count)
   (multiple-value-bind
-        (timestamp config-timestamp crtcs outputs)
-      (xlib:rr-get-screen-resources root)
-    (declare (ignore timestamp config-timestamp crtcs))
-    (let ((heads)
-          (counter 0))
-      (dolist (output outputs)
-        (multiple-value-bind (request-status
-                              config-timestamp
-                              crtc
-                              width
-                              height
-                              status
-                              sub-pixel-order
-                              num-crtcs
-                              unknown
-                              num-modes
-                              num-clones
-                              name)
-            (xlib:rr-get-output-info *display*
-                                     output
-                                     (get-universal-time))
-          (declare (ignore config-timestamp width height
-                           sub-pixel-order num-crtcs unknown
-                           num-modes num-clones))
-          (when (and (eq request-status :success)
-                     (eq status :connected))
-            (multiple-value-bind (request-status
-                                  config-timestamp
-                                  x
-                                  y
-                                  width
-                                  height)
-                (xlib:rr-get-crtc-info *display*
-                                       crtc
-                                       (get-universal-time))
-              (declare (ignore config-timestamp))
-              (when (eq request-status :success)
-                (push
-                 (make-head :number counter
-                            :x x
-                            :y y
-                            :width width
-                            :height height
-                            :window nil
-                            :name name)
-                 heads)
-                (incf counter))))))
-      heads)))
+        (request-status _0 crtc _1 _2 status _3 _4 _5 _6 _7 name)
+      (xlib:rr-get-output-info *display* output (get-universal-time))
+    (declare (ignore _0 _1 _2 _3 _4 _5 _6 _7))
+    (when (and (eq request-status :success)
+               (eq status :connected))
+      (multiple-value-bind
+            (request-status config-timestamp x y width height)
+          (xlib:rr-get-crtc-info *display* crtc (get-universal-time))
+        (declare (ignore config-timestamp))
+        (when (eq request-status :success)
+          (make-head :number count
+                     :x x
+                     :y y
+                     :width width
+                     :height height
+                     :window nil
+                     :name name))))))
+
+(defun make-screen-randr-heads (root)
+  (loop :with outputs := (nth-value 3 (xlib:rr-get-screen-resources root))
+        :for count :from 0
+        :for output :in outputs
+        :for head := (output->head output count)
+        :when head
+          :collect head))
 
 (defun make-screen-heads (screen root)
   (declare (ignore screen))
