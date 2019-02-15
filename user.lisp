@@ -37,7 +37,8 @@
   "Display a menu with the active restarts and let the user pick
 one. Error is the error being recovered from. If the user aborts the
 menu, the error is re-signalled."
-  (let ((restart (select-from-menu (current-screen)
+  (let* ((*hooks-enabled-p* nil) ;;disable hooks to avoid deadlocks involving errors in *message-hook*
+         (restart (select-from-menu (current-screen)
                                    (mapcar (lambda (r)
                                              (list (format nil "[~a] ~a"
                                                            (restart-name r)
