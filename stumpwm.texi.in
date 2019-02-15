@@ -1885,6 +1885,8 @@ color variables.
 ### *mode-line-foreground-color*
 ### *mode-line-border-color*
 ### *mode-line-timeout*
+### *mode-line-refresh-interval*
+### *mode-line-throttle-interval*
 
 @node Groups, Screens, Mode-line, Top
 @chapter Groups
