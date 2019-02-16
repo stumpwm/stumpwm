@@ -145,7 +145,8 @@
   (when *root-click-focuses-frame*
     (when-let ((frame (find-frame group x y)))
       (focus-frame group frame)
-      (unless (eq *mouse-focus-policy* :click)
+      (unless (or (eq *mouse-focus-policy* :click)
+                  (scroll-button-keyword-p button))
         (update-all-mode-lines)))))
 
 (defmethod group-button-press ((group tile-group) button x y (where window))
@@ -154,7 +155,8 @@
     (call-next-method))
   (when (eq *mouse-focus-policy* :click)
     (focus-all where)
-    (update-all-mode-lines)))
+    (unless (scroll-button-keyword-p button)
+      (update-all-mode-lines))))
 
 (defmethod group-root-exposure ((group tile-group))
   (show-frame-outline group nil))

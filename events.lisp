@@ -602,6 +602,11 @@ the window in it's frame."
     (8 :browser-back)
     (9 :browser-front)))
 
+(defun scroll-button-keyword-p (button)
+  "Checks if button keyword is generated from the scroll wheel."
+  (or (eq button :wheel-down) (eq button :wheel-up)
+      (eq button :wheel-left) (eq button :wheel-right)))
+
 (define-stump-event-handler :button-press (window code x y child time)
   (let ((button (decode-button-code code))
         (screen (find-screen window))
