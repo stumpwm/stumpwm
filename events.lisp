@@ -589,18 +589,32 @@ the window in it's frame."
         (focus-all win)
         (update-all-mode-lines)))))
 
+(defun decode-button-code (code)
+  "Translate the mouse button number into a more readable format"
+  (ecase code
+    (1 :left-button)
+    (2 :middle-button)
+    (3 :right-button)
+    (4 :wheel-up)
+    (5 :wheel-down)
+    (6 :wheel-left)
+    (7 :wheel-right)
+    (8 :browser-back)
+    (9 :browser-front)))
+
 (define-stump-event-handler :button-press (window code x y child time)
-  (let ((screen (find-screen window))
+  (let ((button (decode-button-code code))
+        (screen (find-screen window))
         (mode-line (find-mode-line-by-window window))
         (win (find-window-by-parent window (top-windows))))
     (cond
       ((and screen (not child))
-       (group-button-press (screen-current-group screen) x y :root)
+       (group-button-press (screen-current-group screen) button x y :root)
        (run-hook-with-args *root-click-hook* screen code x y))
       (mode-line
        (run-hook-with-args *mode-line-click-hook* mode-line code x y))
       (win
-       (group-button-press (window-group win) x y win))))
+       (group-button-press (window-group win) button x y win))))
   ;; Pass click to client
   (xlib:allow-events *display* :replay-pointer time))
 

@@ -262,7 +262,8 @@
     (when (and horizontal vertical)
       (float-window-move-resize window :x hx :y hy))))
 
-(defmethod group-button-press (group x y (window float-window))
+(defmethod group-button-press (group button x y (window float-window))
+  (declare (ignore button))
   (let ((screen (group-screen group))
         (initial-width (xlib:drawable-width (window-parent window)))
         (initial-height (xlib:drawable-height (window-parent window)))
@@ -356,8 +357,8 @@
 
       )))
 
-(defmethod group-button-press ((group float-group) x y where)
-  (declare (ignore x y where))
+(defmethod group-button-press ((group float-group) button x y where)
+  (declare (ignore button x y where))
   (when (next-method-p)
     (call-next-method)))
 

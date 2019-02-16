@@ -81,7 +81,7 @@ about it."))
   (:documentation "The group is asked to in some way show the user where the keyboard focus is."))
 (defgeneric group-focus-window (group win)
   (:documentation "The group is asked to focus the specified window wherever it is."))
-(defgeneric group-button-press (group x y child)
+(defgeneric group-button-press (group button x y child)
   (:documentation "The user clicked somewhere in the group."))
 (defgeneric group-root-exposure (group)
   (:documentation "The root window got an exposure event. If the group
