@@ -157,6 +157,9 @@ and complete the input by mutating it."))
 (defvar *input-history* nil
   "History for the input line.")
 
+(defvar *input-shell-history* nil
+  "History for shell lines.")
+
 (defvar *input-last-command* nil
   "The last input command.")
 

@@ -482,9 +482,12 @@ then describes the symbol."
 
 (define-stumpwm-type :shell (input prompt)
   (declare (ignore prompt))
-  (let ((prompt (format nil "~A -c " *shell-program*)))
-    (or (argument-pop-rest input)
-        (completing-read (current-screen) prompt 'complete-program))))
+  (let ((prompt (format nil "~A -c " *shell-program*))
+        (*input-history* *input-shell-history*))
+    (unwind-protect
+         (or (argument-pop-rest input)
+             (completing-read (current-screen) prompt 'complete-program))
+      (setf *input-shell-history* *input-history*))))
 
 (define-stumpwm-type :rest (input prompt)
   (or (argument-pop-rest input)
