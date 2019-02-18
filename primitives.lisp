@@ -33,6 +33,7 @@
           *frame-indicator-text*
           *frame-indicator-timer*
           *message-window-timer*
+          *hooks-enabled-p*
           *command-mode-start-hook*
           *command-mode-end-hook*
           *urgent-window-hook*
@@ -684,16 +685,19 @@ chosen, resignal the error."
        ,@body)))
 
 ;;; Hook functionality
+(defvar *hooks-enabled-p* t
+  "Controls whether hooks will actually run or not")
 
 (defun run-hook-with-args (hook &rest args)
   "Call each function in HOOK and pass args to it."
-  (handler-case
-      (with-simple-restart (abort-hooks "Abort running the remaining hooks.")
-        (with-restarts-menu
+  (when *hooks-enabled-p*
+    (handler-case
+        (with-simple-restart (abort-hooks "Abort running the remaining hooks.")
+          (with-restarts-menu
             (dolist (fn hook)
               (with-simple-restart (continue-hooks "Continue running the remaining hooks.")
                 (apply fn args)))))
-    (t (c) (message "^B^1*Error on hook ^b~S^B!~% ^n~A" hook c) (values nil c))))
+      (t (c) (message "^B^1*Error on hook ^b~S^B!~% ^n~A" hook c) (values nil c)))))
 
 (defun run-hook (hook)
   "Call each function in HOOK."
