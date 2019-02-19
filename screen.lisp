@@ -24,7 +24,8 @@
 
 (in-package #:stumpwm)
 
-(export '(current-screen
+(export '(*default-bg-color*
+          current-screen
           current-window
           screen-current-window
           screen-number
@@ -43,6 +44,9 @@
           set-msg-border-width
           set-frame-outline-width
           set-font))
+
+(defvar *default-bg-color* #x333333
+  "Default color for the desktop background.")
 
 ;; Screen helper functions
 
@@ -468,7 +472,8 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
             (ccontext-screen (screen-message-cc screen)) screen
             (screen-heads screen) (make-screen-heads screen screen-root)
             (tile-group-frame-tree group) (copy-heads screen)
-            (tile-group-current-frame group) (first (tile-group-frame-tree group)))
+            (tile-group-current-frame group) (first (tile-group-frame-tree group))
+            (xlib:window-background screen-root) *default-bg-color*)
       ;; The focus window is mapped at all times
       (xlib:map-window (screen-focus-window screen))
       (xlib:map-window (screen-key-window screen))
