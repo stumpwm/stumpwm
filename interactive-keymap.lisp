@@ -38,6 +38,9 @@
 
 (defcommand call-and-exit-kmap (function exit-map) ((:command "command to run: ")
                                                    (:command "keymap to exit: "))
+  "This command effectively calls two other commands in succession, via run-commands.
+it is designed for use in the define-interactive-keymap macro, to implement exiting
+the keymap on keypress. "
   (run-commands function exit-command))
 
 (defmacro define-interactive-keymap
