@@ -124,7 +124,7 @@ that your contribution gets merged in a timely manner:
   * Try to follow an "80 column rule." The current code base does not
     follow this all the time, so don't use it as an example
   * If you export a symbol, you *must* add it to the manual.
-  * [Use lisp idioms](http://people.ace.ed.ac.uk/staff/medward2/class/moz/cm/doc/contrib/lispstyle.html)
+  * [Use lisp idioms][lisp-idioms]
   * If you are working on a major change to the internals, keep us
     informed on stumpwm-devel! Also, it will probably help if the
     changes are made and then incrementally applied to the codebase in
@@ -194,3 +194,6 @@ There's a #stumpwm channel on irc.freenode.net, too.
 
 Finally, there's our mailing list (click to sign up)
 [stumpwm-devel@nongnu.org](https://lists.nongnu.org/mailman/listinfo/stumpwm-devel).
+
+
+[lisp-idioms]: (http://web.archive.org/web/20160101153032/http://people.ace.ed.ac.uk/staff/medward2/class/moz/cm/doc/contrib/lispstyle.html)
