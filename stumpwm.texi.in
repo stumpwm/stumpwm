@@ -1224,19 +1224,27 @@ The macro @command{define-interactive-keymap} is used to define an
 interactive keymap. The first argument is the same as
 @command{defcommand}. The second argument is a list of extra
 configurations that can be used for controlling the command and the
-rest are the key bindings for the new command.
+rest are the key bindings for the new command, optionally with a
+@code{t} appended; this tells @code{define-interactive-keymap} to
+exit the keymap upon use of that keybinding. 
 
 For instance, a simple interactive keymap:
 
 @example
 (define-interactive-keymap my-new-command nil
   ((kbd "a") "execute-a-command")
-  ((kbd "b") "execute-b-command"))
+  ((kbd "b") "execute-b-command" t))
 @end example
 
 This creates a command called @code{my-new-command} that, when called,
 will activate the interactive keymap mode. In this mode, the user can
 press ``a'' or ``b'' repeatedly, omitting any prefix. The default exit
+commands are @code{RET}, @code{C-g} and @code{ESC}.
+
+This creates a command called @code{my-new-command} that, when called,
+will activate the interactive keymap mode. In this mode, the user can
+press ``a'' or ``b'', omitting any prefix. The user can press ``a''
+repeatedly, however pressing ``b'' exits the keymap. The default exit
 commands are @code{RET}, @code{C-g} and @code{ESC}.
 
 The available configuration is @code{on-enter}, @code{on-exit} and
@@ -2154,6 +2162,7 @@ section.
 @@@ update-decoration
 
 @@@ run-commands
+!!! call-and-exit-kmap
 
 %%% defcommand
 %%% define-interactive-keymap
