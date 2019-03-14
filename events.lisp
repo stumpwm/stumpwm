@@ -612,6 +612,7 @@ the window in it's frame."
         (screen (find-screen window))
         (mode-line (find-mode-line-by-window window))
         (win (find-window-by-parent window (top-windows))))
+    (run-hook-with-args *click-hook* screen code x y)
     (cond
       ((and screen (not child))
        (group-button-press (screen-current-group screen) button x y :root)
