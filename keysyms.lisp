@@ -34,14 +34,14 @@
   (setf (gethash keysym *keysym-name-translations*) name
         (gethash name *name-keysym-translations*) keysym))
 
-(defun keysym-name->keysym (name)
+(define-foldable keysym-name->keysym (name)
   "Return the keysym corresponding to NAME."
   (multiple-value-bind (value present-p)
       (gethash name *name-keysym-translations*)
     (declare (ignore present-p))
     value))
 
-(defun keysym->keysym-name (keysym)
+(define-foldable keysym->keysym-name (keysym)
   "Return the name corresponding to KEYSYM."
   (multiple-value-bind (value present-p)
       (gethash keysym *keysym-name-translations*)

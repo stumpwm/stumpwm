@@ -1305,3 +1305,18 @@ of :error."
 
 (defstruct timer
   time repeat function args)
+
+(defmacro define-foldable (func-name (arg) &body body)
+  (multiple-value-bind (body decls docstring) (parse-body body :documentation t)
+    ;; use prog1 so it looks like we are just calling (defun ...)
+    `(prog1
+       (defun ,func-name (,arg)
+         ,docstring
+         ,@decls
+         ,@body)
+       (define-compiler-macro ,func-name (&whole original name)
+         (declare (notinline ,func-name))
+         (if-let ((result (and (constantp name)
+                               (,func-name name))))
+           result
+           original)))))
