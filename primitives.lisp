@@ -1308,10 +1308,10 @@ of :error."
 
 (defmacro define-foldable (func-name (arg) &body body)
   (multiple-value-bind (body decls docstring) (parse-body body :documentation t)
-    ;; use prog1 so it looks like we are just calling (defun ...)
-    `(prog1
+    `(progn
        (defun ,func-name (,arg)
-         ,docstring
+         ,@(when docstring
+             (list docstring))
          ,@decls
          ,@body)
        (define-compiler-macro ,func-name (&whole original name)
