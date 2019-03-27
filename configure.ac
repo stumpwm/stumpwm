@@ -7,6 +7,7 @@ AC_INIT(Stump Window Manager, esyscmd(grep :version stumpwm.asd | cut -d\" -f2 |
 AC_SUBST(MODULE_DIR)
 AC_SUBST(LISP_PROGRAM)
 AC_SUBST(LISP)
+AC_SUBST(COMPRESSION)
 AC_SUBST(STUMPWM_ASDF_DIR)
 
 # Checks for programs.
@@ -15,6 +16,11 @@ AC_ARG_WITH(lisp,    [  --with-lisp=IMPL        use the specified lisp], LISP=$w
 AC_ARG_WITH(module-dir,
                      [  --with-module-dir=PATH specify location of contrib modules],
                      MODULE_DIR=$withval, MODULE_DIR="${HOME}/.stumpwm.d/modules")
+
+AC_ARG_ENABLE(compression,
+              [  --enable-compression    use SBCL's core compression feature if available],
+              COMPRESSION="t",
+              COMPRESSION="nil")
 
 STUMPWM_ASDF_DIR="`pwd`"
 
