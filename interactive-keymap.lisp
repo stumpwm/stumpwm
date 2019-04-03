@@ -36,12 +36,12 @@
   (message "~S finished" name)
   (pop-top-map))
 
-(defcommand call-and-exit-kmap (function exit-map) ((:command "command to run: ")
-                                                   (:command "keymap to exit: "))
+(defcommand call-and-exit-kmap (command exit-command) ((:command "command to run: ")
+                                                       (:command "exit command: "))
   "This command effectively calls two other commands in succession, via run-commands.
 it is designed for use in the define-interactive-keymap macro, to implement exiting
 the keymap on keypress. "
-  (run-commands function exit-command))
+  (run-commands command exit-command))
 
 (defmacro define-interactive-keymap
     (name (&key on-enter on-exit abort-if (exit-on '((kbd "RET")
