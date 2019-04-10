@@ -263,6 +263,10 @@ timer.")
   (sync-mode-line ml)
   (maybe-cancel-mode-line-timer))
 
+(defun destroy-all-mode-lines ()
+  (dolist (ml *mode-lines*)
+    (destroy-mode-line ml)))
+
 ;;; Formatting
 
 (defvar *current-mode-line-formatters* nil
