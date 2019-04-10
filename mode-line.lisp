@@ -306,10 +306,6 @@ timer.")
   ;;Don't return until we know the thread has returned
   (sb-thread:join-thread (mode-line-thread ml) :default t))
 
-(defun destroy-all-mode-lines ()
-  (dolist (ml *mode-lines*)
-    (destroy-mode-line ml)))
-
 ;;; Formatting
 
 (defvar *current-mode-line-formatters* nil
