@@ -1297,11 +1297,7 @@ of :error."
   cc
   height
   factor
-  (mode :stump)
-
-  thread
-  lock
-  event)
+  (mode :stump))
 
 (defstruct timer
   time repeat function args)

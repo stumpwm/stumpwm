@@ -230,7 +230,6 @@ differs from RESTART, which restarts the unix process.
 
 Since the process isn't restarted, existing customizations remain
 after the restart."
-  (destroy-all-mode-lines)
   (throw :top-level :restart))
 
 (defcommand restart-hard () ()
@@ -238,7 +237,6 @@ after the restart."
 made and you wish to replace the existing process with it.
 
 Any run-time customizations will be lost after the restart."
-  (destroy-all-mode-lines)
   (throw :top-level :hup-process))
 
 (defun find-matching-windows (props all-groups all-screens)

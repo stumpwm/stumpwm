@@ -27,8 +27,6 @@
           *mode-line-pad-y*
           *mode-line-position*
           *mode-line-timeout*
-          *mode-line-refresh-interval*
-          *mode-line-throttle-interval*
           *screen-mode-line-format*
           *screen-mode-line-formatters*
           add-screen-mode-line-formatter
@@ -120,12 +118,6 @@ timer.")
 (defvar *mode-line-timer* nil
   "The timer that updates the modeline")
 
-(defvar *mode-line-refresh-interval* 0.3
-  "The interval at which the mode lines should be refreshed.")
-
-(defvar *mode-line-throttle-interval* 0.04
-  "The interval at which the mode lines should be throttled.")
-
 ;;; Formatters
 
 (defun add-screen-mode-line-formatter (character fmt-fun)
@@ -154,6 +146,13 @@ timer.")
 
 (defun mode-line-gc (ml)
   (ccontext-gc (mode-line-cc ml)))
+
+(defun turn-on-mode-line-timer ()
+  (when (timer-p *mode-line-timer*)
+    (cancel-timer *mode-line-timer*))
+  (setf *mode-line-timer* (run-with-timer *mode-line-timeout*
+                                          *mode-line-timeout*
+                                          'update-all-mode-lines)))
 
 (defun maybe-cancel-mode-line-timer ()
   (unless *mode-lines*
@@ -230,8 +229,8 @@ timer.")
                  :default-fg (xlib:gcontext-foreground gc)
                  :default-bg (xlib:gcontext-background gc)))
 
-(defun make-mode-line (screen head format &key xwin (mode :stump))
-  (let* ((window (or xwin (make-mode-line-window screen)))
+(defun make-mode-line (screen head format)
+  (let* ((window (make-mode-line-window screen))
          (gc (make-mode-line-gc window screen))
          (cc (make-mode-line-cc window screen gc))
          (mode-line (%make-mode-line :window window
@@ -239,52 +238,16 @@ timer.")
                                      :head head
                                      :format format
                                      :position *mode-line-position*
-                                     :cc cc
-                                     :mode mode
-
-                                     :lock (sb-thread:make-mutex)
-                                     :event (sb-thread:make-waitqueue))))
+                                     :cc cc)))
     (prog1 mode-line
       (push mode-line *mode-lines*)
       (update-mode-line-color-context mode-line)
       (resize-mode-line mode-line)
       (xlib:map-window window)
+      (redraw-mode-line mode-line)
       (dformat 3 "modeline: ~s~%" mode-line)
-      (setf (mode-line-thread mode-line)
-            (sb-thread:make-thread
-             #'mode-line-refresher
-             :name (format nil "Refresher of mode line ~a" mode-line)
-             :arguments (list mode-line)))
+      (turn-on-mode-line-timer)
       (run-hook-with-args *new-mode-line-hook* mode-line))))
-
-(defun get-time-of-day ()
-  (multiple-value-bind (secs μsecs)
-      (sb-ext:get-time-of-day)
-    (+ secs (/ μsecs 1000000))))
-
-(defun mode-line-refresher (mode-line)
-  (let ((last-redraw (get-time-of-day)))
-    (loop
-       (sb-thread:with-mutex ((mode-line-lock mode-line))
-         (let ((skipped t)
-               (now (get-time-of-day)))
-           (when (eq (mode-line-mode mode-line) :dead)
-             ;; We're being destroyed, return
-             (sb-thread:return-from-thread t))
-           (when (> (- now last-redraw)
-                    *mode-line-throttle-interval*)
-             (setf skipped nil)
-             (setf last-redraw now)
-             (%redraw-mode-line mode-line))
-
-           (sb-thread:condition-wait
-            (mode-line-event mode-line)
-            (mode-line-lock mode-line)
-            :timeout (if skipped
-                         (+ (- *mode-line-throttle-interval*
-                               (- now last-redraw))
-                            0.001)
-                         *mode-line-refresh-interval*)))))))
 
 ;;; Destruction
 
@@ -293,22 +256,12 @@ timer.")
     (group-sync-head group (mode-line-head ml))))
 
 (defun destroy-mode-line (ml)
-  (sb-thread:with-mutex ((mode-line-lock ml))
-    (run-hook-with-args *destroy-mode-line-hook* ml)
-    (xlib:unmap-window (mode-line-window ml))
-    (xlib:destroy-window (mode-line-window ml))
-    (xlib:free-gcontext (mode-line-gc ml))
-    (setf *mode-lines* (remove ml *mode-lines*))
-    (sync-mode-line ml)
-    (maybe-cancel-mode-line-timer)
-    (setf (mode-line-mode ml) :dead)
-    (sb-thread:condition-notify (mode-line-event ml)))
-  ;;Don't return until we know the thread has returned
-  (sb-thread:join-thread (mode-line-thread ml) :default t))
-
-(defun destroy-all-mode-lines ()
-  (dolist (ml *mode-lines*)
-    (destroy-mode-line ml)))
+  (run-hook-with-args *destroy-mode-line-hook* ml)
+  (xlib:destroy-window (mode-line-window ml))
+  (xlib:free-gcontext (mode-line-gc ml))
+  (setf *mode-lines* (remove ml *mode-lines*))
+  (sync-mode-line ml)
+  (maybe-cancel-mode-line-timer))
 
 ;;; Formatting
 
@@ -355,15 +308,11 @@ timer.")
   (mode-line-format-elt (mode-line-format ml)))
 
 (defun redraw-mode-line (ml &optional force)
-  (sb-thread:with-mutex ((mode-line-lock ml))
-    (sb-thread:condition-notify (mode-line-event ml))))
-
-(defun %redraw-mode-line (ml)
   (when (eq (mode-line-mode ml) :stump)
     (let* ((*current-mode-line-formatters* *screen-mode-line-formatters*)
            (*current-mode-line-formatter-args* (list ml))
            (string (mode-line-format-string ml)))
-      (when (not (string= (mode-line-contents ml) string))
+      (when (or force (not (string= (mode-line-contents ml) string)))
         (setf (mode-line-contents ml) string)
         (resize-mode-line ml)
         (render-strings (mode-line-cc ml) *mode-line-pad-x* *mode-line-pad-y*
@@ -407,12 +356,11 @@ timer.")
                   :bottom))))))
 
 (defun place-mode-line-window (screen xwin)
-  (let ((ml (make-mode-line
-             screen
-             (current-head)
-             *screen-mode-line-format*
-             :xwin xwin
-             :mode :visible)))
+  (let ((ml (%make-mode-line
+             :window xwin
+             :screen screen
+             :mode :visible
+             :position *mode-line-position*)))
     (push ml *mode-lines*)
     (xlib:reparent-window xwin (screen-root screen) 0 0)
     (when (update-mode-line-position ml
