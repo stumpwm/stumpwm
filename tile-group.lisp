@@ -153,7 +153,7 @@
   (declare (ignore x y))
   (when (typep where 'float-window)
     (call-next-method))
-  (when (eq *mouse-focus-policy* :click)
+  (when (member *mouse-focus-policy* '(:click :sloppy))
     (focus-all where)
     (unless (scroll-button-keyword-p button)
       (update-all-mode-lines))))
