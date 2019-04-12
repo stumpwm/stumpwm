@@ -79,7 +79,7 @@ Then, in a repl:
 Building stumpwm from git requires that you build the configure script:
 
 ```
- autoconf
+ autogen.sh
 ```
 
 If there's already a configure script then just run it.
