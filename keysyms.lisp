@@ -2068,6 +2068,7 @@
 (define-keysym #x1008FFB0 "XF86TouchpadOn")
 (define-keysym #x1008FFB1 "XF86TouchpadOff")
 (define-keysym #x1008FFB2 "XF86AudioMicMute")
+(define-keysym #x1008FFB5 "XF86RFKill")
 (define-keysym #x1008FE01 "XF86_Switch_VT_1")
 (define-keysym #x1008FE02 "XF86_Switch_VT_2")
 (define-keysym #x1008FE03 "XF86_Switch_VT_3")
