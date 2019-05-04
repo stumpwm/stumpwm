@@ -354,12 +354,13 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
     (unhide-window win)
     (update-configuration win))
   (when (window-in-current-group-p win)
-    (unless (null (group-raised-window (current-group)))
-      (setf (xlib:window-priority
-             (window-parent win)
-             (window-parent (group-raised-window (current-group))))
-            :above))
-    (setf (group-raised-window (current-group)) win))
+    (let ((group (window-group win)))
+      (unless (null (group-raised-window group))
+        (setf (xlib:window-priority
+               (window-parent win)
+               (window-parent (group-raised-window group)))
+              :above))
+     (setf (group-raised-window group) win)))
   (raise-top-windows))
 ;; some handy wrappers
 
