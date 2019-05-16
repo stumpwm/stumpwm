@@ -273,26 +273,20 @@
 (defun frame-display-y (group frame)
   "Return a Y for frame that doesn't overlap the mode-line."
   (let* ((head (frame-head group frame))
-         (ml (head-mode-line head))
          (head-y (frame-y head))
-         (rel-frame-y (- (frame-y frame) head-y)))
-    (if (and ml (not (eq (mode-line-mode ml) :hidden)))
-        (case (mode-line-position ml)
-          (:top
-           (+ head-y
-              (+ (mode-line-height ml) (round (* rel-frame-y (mode-line-factor ml))))))
-          (:bottom
-           (+ head-y
-              (round (* rel-frame-y (mode-line-factor ml))))))
-        (frame-y frame))))
+         (rel-frame-y (- (frame-y frame) head-y))
+         (factor (- 1 (/ 40
+                         (head-height head)))))
+
+    (+ head-y
+       (+ 40 (round (* rel-frame-y factor))))))
 
 (defun frame-display-height (group frame)
   "Return a HEIGHT for frame that doesn't overlap the mode-line."
   (let* ((head (frame-head group frame))
-         (ml (head-mode-line head)))
-    (if (and ml (not (eq (mode-line-mode ml) :hidden)))
-        (round (* (frame-height frame) (mode-line-factor ml)))
-        (frame-height frame))))
+         (factor (- 1 (/ 40
+                         (head-height head)))))
+    (round (* (frame-height frame) factor))))
 
 (defun frame-intersect (f1 f2)
   "Return a new frame representing (only) the intersection of F1 and F2. WIDTH and HEIGHT will be <= 0 if there is no overlap"
