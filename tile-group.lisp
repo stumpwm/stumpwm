@@ -275,16 +275,16 @@
   (let* ((head (frame-head group frame))
          (head-y (frame-y head))
          (rel-frame-y (- (frame-y frame) head-y))
-         (factor (- 1 (/ 40
+         (factor (- 1 (/ *global-pending-top*
                          (head-height head)))))
 
     (+ head-y
-       (+ 40 (round (* rel-frame-y factor))))))
+       (+ *global-pending-top* (round (* rel-frame-y factor))))))
 
 (defun frame-display-height (group frame)
   "Return a HEIGHT for frame that doesn't overlap the mode-line."
   (let* ((head (frame-head group frame))
-         (factor (- 1 (/ 40
+         (factor (- 1 (/ *global-pending-top*
                          (head-height head)))))
     (round (* (frame-height frame) factor))))
 
@@ -1062,7 +1062,7 @@ space."
         (progn
           (mapc (lambda (w)
                   ;; windows in other frames disappear
-                  (unless (eq (window-frame w) 
+                  (unless (eq (window-frame w)
                               (tile-group-current-frame group))
                     (hide-window w))
                   (setf (window-frame w) frame))

@@ -33,6 +33,7 @@
           *frame-indicator-text*
           *frame-indicator-timer*
           *message-window-timer*
+          *global-pending-top*
           *hooks-enabled-p*
           *command-mode-start-hook*
           *command-mode-end-hook*
@@ -202,6 +203,9 @@ be an integer.")
 
 (defvar *message-window-timer* nil
   "Keep track of the timer that hides the message window.")
+
+(defvar *global-pending-top* 0
+  "The number of top pending for all groups.")
 
 ;;; Grabbed pointer
 
