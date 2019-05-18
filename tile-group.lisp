@@ -273,20 +273,29 @@
 (defun frame-display-y (group frame)
   "Return a Y for frame that doesn't overlap the mode-line."
   (let* ((head (frame-head group frame))
+         (ml (head-mode-line head))
          (head-y (frame-y head))
          (rel-frame-y (- (frame-y frame) head-y))
-         (factor (- 1 (/ *global-pending-top*
-                         (head-height head)))))
-
-    (+ head-y
-       (+ *global-pending-top* (round (* rel-frame-y factor))))))
+         (factor (- 1 (/ *global-pending-top* (head-height head))))
+         (pending-y (+ *global-pending-top* (round (* rel-frame-y factor)))))
+    (if (and ml (not (eq (mode-line-mode ml) :hidden)))
+        (case (mode-line-position ml)
+          (:top
+           (+ head-y pending-y
+              (+ (mode-line-height ml) (round (* rel-frame-y (mode-line-factor ml))))))
+          (:bottom
+           (+ head-y pending-y
+              (round (* rel-frame-y (mode-line-factor ml))))))
+      pending-y)))
 
 (defun frame-display-height (group frame)
   "Return a HEIGHT for frame that doesn't overlap the mode-line."
   (let* ((head (frame-head group frame))
-         (factor (- 1 (/ *global-pending-top*
-                         (head-height head)))))
-    (round (* (frame-height frame) factor))))
+         (ml (head-mode-line head))
+         (factor (/ *global-pending-top* (head-height head))))
+    (if (and ml (not (eq (mode-line-mode ml) :hidden)))
+        (round (* (frame-height frame) (- (mode-line-factor ml) factor)))
+      (round (* (frame-height frame) (- 1 factor))))))
 
 (defun frame-intersect (f1 f2)
   "Return a new frame representing (only) the intersection of F1 and F2. WIDTH and HEIGHT will be <= 0 if there is no overlap"
