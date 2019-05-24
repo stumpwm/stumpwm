@@ -44,7 +44,8 @@
       (xlib:rr-get-output-info *display* output (get-universal-time))
     (declare (ignore _0 _1 _2 _3 _4 _5 _6 _7))
     (when (and (eq request-status :success)
-               (eq status :connected))
+               (eq status :connected)
+               (plusp crtc))
       (multiple-value-bind
             (request-status config-timestamp x y width height)
           (xlib:rr-get-crtc-info *display* crtc (get-universal-time))
