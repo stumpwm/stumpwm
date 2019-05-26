@@ -1203,3 +1203,9 @@ The order windows are added to this list determines priority."
       (if (find w windows)
           (setf (group-on-top-windows (current-group)) (remove w windows))
           (push (current-window) (group-on-top-windows (current-group)))))))
+
+(defcommand fullscreen () ()
+  "Toggle the fullscreen mode of the current widnow. Use this for clients
+with broken (non-NETWM) fullscreen implementations, such as any program
+using SDL."
+  (update-fullscreen (current-window) 2))

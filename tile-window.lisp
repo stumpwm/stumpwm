@@ -380,12 +380,6 @@ when selecting another window."
 
 (defcommand-alias frame-windows echo-frame-windows)
 
-(defcommand (fullscreen tile-group) () ()
-  "Toggle the fullscreen mode of the current widnow. Use this for clients
-with broken (non-NETWM) fullscreen implementations, such as any program
-using SDL."
-  (update-fullscreen (current-window) 2))
-
 (defcommand (gravity tile-group) (gravity) ((:gravity "Gravity: "))
   "Set a window's gravity within its frame. Gravity controls where the
 window will appear in a frame if it is smaller that the
