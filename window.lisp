@@ -1053,9 +1053,20 @@ window. Default to the current window. if
       (when win
         (group-focus-window group win)))))
 
-(defcommand other-window (&optional (group (current-group))) ()
-  "Switch to the window last focused."
-  (let* ((wins (only-tile-windows (group-windows group)))
+(defgeneric group-windows-for-cycling (group &key sorting)
+  (:documentation "Return a list of windows in the group that can be selected with
+ Next, Prev and Other command."))
+
+(defmethod group-windows-for-cycling (group &key (sorting nil))
+  (if sorting
+      (sort-windows group)
+      (group-windows group)))
+
+(defgeneric focus-other-window (group)
+  (:documentation "Focus the window in the group last focused"))
+
+(defmethod focus-other-window (group)
+  (let* ((wins (group-windows-for-cycling group))
          ;; the frame could be empty
          (win (if (group-current-window group)
                   (second wins)
@@ -1064,7 +1075,49 @@ window. Default to the current window. if
         (group-focus-window group win)
         (echo-string (group-screen group) "No other window."))))
 
+(defgeneric focus-next-window (group)
+  (:documentation "Focus the next window in the windows list of the group"))
+
+(defgeneric focus-prev-window (group)
+  (:documentation "Focus the previous window in the windows list of the group"))
+
+(defmethod focus-next-window (group)
+  (let* ((w (group-current-window group))
+         (wins (group-windows-for-cycling group :sorting t))
+         (nw (or (cadr (member w wins)) (first wins))))
+    (if (and nw
+             (not (eq w nw)))
+        (group-focus-window group nw)
+        (message "No other window."))))
+
+(defmethod focus-prev-window (group)
+  (let* ((w (group-current-window group))
+         (wins (reverse (group-windows-for-cycling group :sorting t)))
+         (nw (or (cadr (member w wins)) (first wins))))
+    (if (and nw
+             (not (eq w nw)))
+        (group-focus-window group nw)
+        (message "No other window."))))
+
+(defcommand other-window (&optional (group (current-group))) ()
+  "Switch to the window last focused."
+  (focus-other-window group))
+
 (defcommand-alias other other-window)
+
+(defcommand next () ()
+  "Go to the next window in the window list."
+  (let ((group (current-group)))
+    (if (group-current-window group)
+        (focus-next-window group)
+        (other-window group))))
+
+(defcommand prev () ()
+  "Go to the previous window in the window list."
+  (let ((group (current-group)))
+    (if (group-current-window group)
+        (focus-prev-window group)
+        (other-window group))))
 
 (defcommand renumber (nt &optional (group (current-group))) ((:number "Number: "))
   "Change the current window's number to the specified number. If another window
