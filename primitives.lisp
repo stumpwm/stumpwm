@@ -615,7 +615,7 @@ exist, in which case they go into the current group.")
 (defvar *group-number-map* "1234567890"
   "Set this to a string to remap the group numbers to something more convenient.")
 
-(defvar *frame-number-map* "0123456789abcdefghijklmnopqrstuvxwyz"
+(defvar *frame-number-map* "0123456789abcdefghijklmnopqrstuvwxyz"
   "Set this to a string to remap the frame numbers to more convenient keys.
 For instance,
 
