@@ -314,6 +314,12 @@ sequence it is a part of, and command value bound to the key.")
 window. Called with 4 arguments, the screen containing the root
 window, the button clicked, and the x and y of the pointer.")
 
+(defvar *click-hook* '()
+  "A hook called whenever there is a mouse click.
+Called with 4 arguments, the screen containing the
+window (or nil if there isn't one), the button clicked,
+and the x and y of the pointer.")
+
 (defvar *new-mode-line-hook* '()
   "Called whenever the mode-line is created. It is called with argument,
 the mode-line")
