@@ -210,6 +210,17 @@
 (defun group-tile-windows (group)
   (only-tile-windows (group-windows group)))
 
+(defmethod group-windows-for-cycling ((group tile-group) &key sorting)
+  (only-tile-windows (call-next-method)))
+
+(defmethod focus-next-window ((group tile-group))
+  (focus-forward group (group-windows-for-cycling group :sorting t)))
+
+(defmethod focus-prev-window ((group tile-group))
+  (focus-forward group
+                 (reverse
+                  (group-windows-for-cycling group :sorting t))))
+
 (defun tile-group-frame-head (group head)
   (group-sync-all-heads group)
   (elt (tile-group-frame-tree group) (position head (group-heads group))))

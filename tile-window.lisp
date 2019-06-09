@@ -219,28 +219,6 @@ than the root window's width and height."
   (remove-if-not (lambda (w) (typep w 'tile-window))
                  windows))
 
-(defun focus-next-window (group)
-  (focus-forward group (only-tile-windows (sort-windows group))))
-
-(defun focus-prev-window (group)
-  (focus-forward group
-                 (reverse
-                  (only-tile-windows (sort-windows group)))))
-
-(defcommand (next tile-group) () ()
-  "Go to the next window in the window list."
-  (let ((group (current-group)))
-    (if (group-current-window group)
-        (focus-next-window group)
-        (other-window group))))
-
-(defcommand (prev tile-group) () ()
-  "Go to the previous window in the window list."
-  (let ((group (current-group)))
-    (if (group-current-window group)
-        (focus-prev-window group)
-        (other-window group))))
-
 (defun pull-window (win &optional (to-frame (tile-group-current-frame (window-group win))) (focus-p t))
   (let ((f (window-frame win))
         (group (window-group win)))
@@ -379,12 +357,6 @@ when selecting another window."
                                                    (tile-group-current-frame (current-group)))))
 
 (defcommand-alias frame-windows echo-frame-windows)
-
-(defcommand (fullscreen tile-group) () ()
-  "Toggle the fullscreen mode of the current widnow. Use this for clients
-with broken (non-NETWM) fullscreen implementations, such as any program
-using SDL."
-  (update-fullscreen (current-window) 2))
 
 (defcommand (gravity tile-group) (gravity) ((:gravity "Gravity: "))
   "Set a window's gravity within its frame. Gravity controls where the

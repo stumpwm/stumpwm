@@ -117,6 +117,9 @@ is a tile group.")
 
 (fill-keymap *group-root-map*
   (kbd "C-u") "next-urgent"
+  (kbd "M-n")     "next"
+  (kbd "M-p")     "prev"
+  (kbd "o")       "other"
   (kbd "w")   "windows"
   (kbd "C-w") "windows"
   (kbd "DEL") "repack-window-numbers"
@@ -148,13 +151,11 @@ is a tile group.")
 (fill-keymap *tile-group-root-map*
   (kbd "n")       "pull-hidden-next"
   (kbd "C-n")     "pull-hidden-next"
-  (kbd "M-n")     "next"
   (kbd "C-M-n")   "next-in-frame"
   (kbd "SPC")     "pull-hidden-next"
   (kbd "C-SPC")   "pull-hidden-next"
   (kbd "p")       "pull-hidden-previous"
   (kbd "C-p")     "pull-hidden-previous"
-  (kbd "M-p")     "prev"
   (kbd "C-M-p")   "prev-in-frame"
   (kbd "P")       "place-current-window"
   (kbd "W")       "place-existing-windows"
@@ -174,7 +175,6 @@ is a tile group.")
   (kbd "s")       "vsplit"
   (kbd "S")       "hsplit"
   (kbd "r")       "iresize"
-  (kbd "o")       "fnext"
   (kbd "TAB")     "fnext"
   (kbd "M-TAB")   "fother"
   (kbd "f")       "fselect"
