@@ -46,6 +46,9 @@ hackable desktop experience, look no further.
 * cl-ppcre
 * alexandria
 
+Note that installations of SBCL available in package managers are often broken, and difficult to update to the latest versions of clx. This can results in build errors for stumpwm. It is recommened to install sbcl so from source, instructions can be found below.
+
+
 The recommended way to install the dependencies is using Quicklisp.
 Follow the instructions at http://www.quicklisp.org/ to install it.
 In short: 
@@ -112,6 +115,47 @@ Now that you have a binary, call it from your ~/.xinitrc file:
 Hopefully that will put you in X running stumpwm! See [StartUp on the
 wiki](https://github.com/sabetts/stumpwm/wiki/StartUp) for more
 examples.
+
+## Installing SBCL from source.
+
+This section contains notes for installing SBCL from source. First, ensure that the depenencies for SBCL are installed. An easy way to do this is to install your distribution version of SBCL through a package manager. For example, on Ubuntu:
+```
+sudo apt install sbcl
+```
+This will be removed after the installation.  Next, obtain the SBCL source code from github
+```
+cd ~/code
+git clone git@github.com:sbcl/sbcl.git
+```
+Inside the sbcl directory run the provided make script
+```
+sh make.sh --prefix=/usr/local --fancy
+````
+Note: that the --prefix flag is optional, you may choose to keep the default install path.
+
+Before following the installation instructions given by make, if you previously installed SBCL through your package manager, you should now remove it. On Ubuntu this is done with
+```
+sudo apt-get remove sbcl
+sudo apt-get purge sbcl
+```
+Note that some dependencies may now not be marked for autoremove. Now run the installation instructions, at the time of writing these are:
+```
+cd tests && sh ./run-tests.sh
+```
+Optionally build the documentation (to get info manuals). Note that you will need a tex installation (e.g. texlive-base) for this step.
+```
+cd doc/manual && make
+```
+And finally proceed installation of sbcl
+```
+sudo sh install.sh
+```
+SBCL is now installed from source. You will need to remove any lisp libraries installed by your package manager, to avoid older versions of libraries. This can be done on Ubuntu with
+```
+sudo apt autoremove
+```
+
+You may now proceed with installing stumpwm via quicklisp as above.
 
 # Contributing
 
