@@ -40,7 +40,7 @@ hackable desktop experience, look no further.
 
 ## Prerequisites
 
-* sbcl
+* [SBCL][sbcl]
 * quicklisp (for obtaining the following dependencies, not needed if you use your distribution's package manager.)
 * clx
 * cl-ppcre
@@ -74,6 +74,15 @@ Then, in a repl:
  (ql:quickload "cl-ppcre")
  (ql:quickload "alexandria")
 ```
+
+Note: The recommended way to install SBCL is by downloading one of their
+pre-built binaries available in their [web page][sbcl-platform-table] or build
+it from source. Please do _not_ install SBCL using your distributions package
+manager, especially Ubuntu. If you do so it is likely that you'll run into
+problems when building StumpWM due to using obsolete versions of the
+dependencies.
+
+
 ## Building
 
 Building stumpwm from git requires that you build the configure script:
@@ -197,3 +206,5 @@ Finally, there's our mailing list (click to sign up)
 
 
 [lisp-idioms]: (http://web.archive.org/web/20160101153032/http://people.ace.ed.ac.uk/staff/medward2/class/moz/cm/doc/contrib/lispstyle.html)
+[sbcl]: http://sbcl.org
+[sbcl-platform-table]: http://sbcl.org/platform-table.html
