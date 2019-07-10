@@ -28,7 +28,9 @@
 (export '(define-remapped-keys remap-keys-enable))
  
 (defvar *remap-keys-window-match-list* nil)
-(defvar *remap-keys-enable* t)
+
+(defvar *remap-keys-enable* t
+  "Toggle remap-keys on/off ")
 
 (defun find-remap-keys-by-window (window)
   (first
