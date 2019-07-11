@@ -25,12 +25,12 @@
 
 (in-package #:stumpwm)
 
-(export '(define-remapped-keys *remap-keys-enable*))
- 
+(export '(define-remapped-keys *remapped-keys-enabled-p*))
+
 (defvar *remap-keys-window-match-list* nil)
 
-(defvar *remap-keys-enable* t
-  "Toggle remap-keys on/off ")
+(defvar *remapped-keys-enabled-p* t
+  "Bool to toggle remapped-keys on/off ")
 
 (defun find-remap-keys-by-window (window)
   (first
@@ -76,9 +76,9 @@
          (keys (cdr (assoc (print-key raw-key) keymap :test 'equal))))
     (when keys
       (dolist (key keys)
-        (if (eq *remap-keys-enable* t)
-            (send-fake-key window key)
-            (send-fake-key window raw-key)))
+        (send-fake-key window (if *remapped-keys-enabled-p*
+                                  key
+                                  raw-key)))
       t)))
 
 (defun define-remapped-keys (specs)
