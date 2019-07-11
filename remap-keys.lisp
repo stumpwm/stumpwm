@@ -30,7 +30,7 @@
 (defvar *remap-keys-window-match-list* nil)
 
 (defvar *remapped-keys-enabled-p* t
-  "Bool to toggle remapped-keys on/off ")
+  "Bool to toggle remapped-keys on/off. Defaults to t ")
 
 (defun find-remap-keys-by-window (window)
   (first
