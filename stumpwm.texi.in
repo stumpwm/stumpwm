@@ -1102,6 +1102,8 @@ would prompt asking for ``Press a key to send''. Pressing @kbd{C-n} at
 the prompt will send the keystroke as-is to Firefox, causing it to
 open a new window.
 
+### *remapped-keys-enabled-p*
+
 !!! send-raw-key
 
 @node Commands, Message and Input Bar, Key Bindings, Top
