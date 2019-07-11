@@ -25,7 +25,7 @@
 
 (in-package #:stumpwm)
 
-(export '(define-remapped-keys remap-keys-enable))
+(export '(define-remapped-keys *remap-keys-enable*))
  
 (defvar *remap-keys-window-match-list* nil)
 
