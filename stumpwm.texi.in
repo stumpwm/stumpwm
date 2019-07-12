@@ -1102,7 +1102,13 @@ would prompt asking for ``Press a key to send''. Pressing @kbd{C-n} at
 the prompt will send the keystroke as-is to Firefox, causing it to
 open a new window.
 
+If more than a single key needs to be passed to the application as-is,
+the variable @var{*remapped-keys-enabled-p*} may be used.
+Set to nil it will disable all remapped keys.
+
 !!! send-raw-key
+
+### *remapped-keys-enabled-p*
 
 @node Commands, Message and Input Bar, Key Bindings, Top
 @chapter Commands
