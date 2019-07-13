@@ -380,12 +380,8 @@ match with an element of the completions."
          (font (screen-font screen))
          (prompt-lines (ppcre:split #\Newline prompt))
          (prompt-lines-length (length prompt-lines))
-         (prompt-width (apply #'max
-                              (mapcar (lambda (line)
-                                        (text-line-width font
-                                                         line
-                                                         :translate #'translate-id))
-                                      prompt-lines)))
+         (prompt-width (loop :for line :in prompt-lines
+                             :maximize (text-line-width font line :translate #'translate-id)))
          (prompt-offset (text-line-width font
                                          (first (last prompt-lines))
                                          :translate #'translate-id))
