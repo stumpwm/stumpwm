@@ -209,14 +209,11 @@ Available completion styles include
       (setf (xlib:window-priority win) :above
             (xlib:drawable-height win) height))
     (xlib:map-window win)
-    ;; Draw the prompt
-    (draw-input-bucket screen prompt input)
-    ;; Ready to recieve input
-    ))
+    (draw-input-bucket screen prompt input)))
 
 (defun shutdown-input-window (screen)
-  (xlib:ungrab-keyboard *display*)
   (xlib:unmap-window (screen-input-window screen)))
+
 ;; Hack to avoid clobbering input from numpads with numlock on.
 (defun input-handle-key-press-event (&rest event-slots
                                      &key event-key code state
