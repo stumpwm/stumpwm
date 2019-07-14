@@ -25,12 +25,12 @@
                                sequence &rest keys &key start end translate width size))
 
 ;;;; X11 fonts
-(defmethod font-exists-p ((font string))
+(defmethod font-exists-p ((font-name string))
   ;; if we can list the font then it exists
-  (plusp (length (xlib:list-font-names *display* font :max-fonts 1))))
+  (xlib:list-font-names *display* font-name :max-fonts 1))
 
-(defmethod open-font ((display xlib:display) (font string))
-  (xlib:open-font display (first (xlib:list-font-names display font :max-fonts 1))))
+(defmethod open-font ((display xlib:display) (font-name string))
+  (xlib:open-font display (first (xlib:list-font-names display font-name :max-fonts 1))))
 
 (defmethod close-font ((font xlib:font))
   (xlib:close-font font))
