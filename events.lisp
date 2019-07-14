@@ -45,12 +45,12 @@
 
 ;;; Configure request
 
-(flet ((has-x (mask) (= 1 (logand mask 1)))
-       (has-y (mask) (= 2 (logand mask 2)))
-       (has-w (mask) (= 4 (logand mask 4)))
-       (has-h (mask) (= 8 (logand mask 8)))
-       (has-bw (mask) (= 16 (logand mask 16)))
-       (has-stackmode (mask) (= 64 (logand mask 64))))
+(flet ((has-x (mask) (logbitp 0 mask))
+       (has-y (mask) (logbitp 1 mask))
+       (has-w (mask) (logbitp 2 mask))
+       (has-h (mask) (logbitp 3 mask))
+       (has-bw (mask) (logbitp 4 mask))
+       (has-stackmode (mask) (logbitp 6 mask)))
   (defun configure-managed-window (win x y width height stack-mode value-mask)
     ;; Grant the configure request but then maximize the window after the
     ;; granting.
