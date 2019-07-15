@@ -357,25 +357,24 @@ converted to an atom is removed."
           ;; FIXME: what about when properties are REMOVED?
           (update-fullscreen window 1)))))))
 
+(defgeneric handle-property-notify (window atom state))
+
 (define-stump-event-handler :property-notify (window atom state)
-  (dformat 2 "property notify ~s ~s ~s~%" window atom state)
-  (case atom
-    (:rp_command_request
-     ;; we will only find the screen if window is a root window, which
-     ;; is the only place we listen for ratpoison commands.
-     (let* ((screen (find-screen window)))
-       (when (and (eq state :new-value)
-                  screen)
-         (handle-rp-commands window))))
-    (:stumpwm_command
-     ;; RP commands are too weird and problematic, KISS.
-     (let* ((screen (find-screen window)))
-       (when (and (eq state :new-value)
-                  screen)
-         (handle-stumpwm-commands window))))
-    (t
-     (when-let ((window (find-window window)))
-       (update-window-properties window atom)))))
+  (handle-property-notify window atom state))
+
+(defmethod handle-property-notify (window atom state)
+  (when-let ((window (find-window window)))
+    (update-window-properties window atom)))
+
+(defmethod handle-property-notify (window (atom (eql :rp_command_request)) (state (eql :new-value)))
+  ;; we will only find the screen if window is a root window, which is the only
+  ;; place we listen for ratpoison commands.
+  (when-let ((screen (find-screen window)))
+    (handle-rp-commands window)))
+
+(defmethod handle-property-notify (window (atom (eql :stumpwm_command)) (state (eql :new-value)))
+  (when-let ((screen (find-screen window)))
+    (handle-stumpwm-commands window)))
 
 (define-stump-event-handler :mapping-notify (request start count)
   ;; We could be a bit more intelligent about when to update the
