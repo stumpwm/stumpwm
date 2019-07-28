@@ -1,5 +1,7 @@
 ![](https://stumpwm.github.io/images/stumpwm-logo-stripe.png)
+
 # The Stump Window Manager
+
 ![](https://travis-ci.org/stumpwm/stumpwm.svg)
 
 Stumpwm is a window manager written entirely in Common Lisp. It
@@ -8,11 +10,11 @@ keyboard for input. You will not find buttons, icons, title bars, tool
 bars, or any of the other conventional GUI widgets.
 
 These design decisions reflect the growing popularity of productive,
-customizable lisp based systems.
+customizable Lisp based systems.
 
-## Philosophy 
+## Philosophy
 
-Stumpwm is a "everything-and-the-kitchen-sink WM" or "the emacs of
+Stumpwm is a "everything-and-the-kitchen-sink WM" or "the Emacs of
 WMs."
 
 **StumpWM:Windows::Emacs:Text**
@@ -21,7 +23,7 @@ WMs."
   * Hackable
   * Written in Common Lisp
   * A multi paradigm window manager
-  * A Superior window managing experience 
+  * A Superior window managing experience
 * StumpWM is *not*
   * Minimalist
   * Narrow Scope
@@ -32,102 +34,123 @@ If you want a minimalist tiling window manager, then StumpWM is *not*
 what you're looking for.  The code base is ~15k sloc, the binaries
 produced are ~60mb.
 
-StumpWM manages windows the way emacs manages buffers, or the way
+StumpWM manages windows the way Emacs manages buffers, or the way
 screen manages terminals. If you want a flexible, customizable,
 hackable desktop experience, look no further.
 
-# Build & Start Stumpwm
+# Build & Start StumpWM
 
-## Prerequisites
+### Prerequisites
 
-* [SBCL][sbcl]
-* quicklisp (for obtaining the following dependencies, not needed if you use your distribution's package manager.)
-* clx
-* cl-ppcre
-* alexandria
+* [SBCL](http://www.sbcl.org/)
+* [Quicklisp](https://www.quicklisp.org)
+* [clx](https://cliki.net/clx)
+* [cl-ppcre](https://edicl.github.io/cl-ppcre)
+* [alexandria](https://common-lisp.net/project/alexandria)
+
+### SBCL
+
+The recommended way to install SBCL is by downloading one of their
+pre-built binaries available in http://www.sbcl.org/platform-table.html or build it
+it yourself from its source code.
+
+Please do _not_ install SBCL using your distributions package manager, especially Ubuntu.
+
+As most distro do not provide SBCL latest versions but its stable version, or even worse, outdated binaries.
+
+
+### Dependencies
 
 The recommended way to install the dependencies is using Quicklisp.
-Follow the instructions at http://www.quicklisp.org/ to install it.
-In short: 
 
-```
+Download it in your $HOME:
+``` sh
 $ curl -O https://beta.quicklisp.org/quicklisp.lisp
-$ sbcl --load quicklisp.lisp
 ```
 
-Then at the REPL:
+Bootstraping Quicklisp with SBCL:
+
+``` sh
+$ sbcl --load quicklisp.lisp --eval '(quicklisp-quickstart:install)'
+```
+
+Make sure you have added QuickLisp to your Lisp compiler init file:
 
 ```lisp
-(quicklisp-quickstart:install)
+(ql:add-to-init-file)
 ```
 
-Make sure you have added it to your lisp init file using:
+Installing dependencies:
 
 ```lisp
- (ql:add-to-init-file)
+(ql:quickload "clx")
+(ql:quickload "cl-ppcre")
+(ql:quickload "alexandria")
 ```
+### Building StumpWM
 
-Then, in a repl:
-
-```lisp
- (ql:quickload "clx")
- (ql:quickload "cl-ppcre")
- (ql:quickload "alexandria")
-```
-
-Note: The recommended way to install SBCL is by downloading one of their
-pre-built binaries available in their [web page][sbcl-platform-table] or build
-it from source. Please do _not_ install SBCL using your distributions package
-manager, especially Ubuntu. If you do so it is likely that you'll run into
-problems when building StumpWM due to using obsolete versions of the
-dependencies.
-
-
-## Building
-
-Building stumpwm from git requires that you build the configure script:
+Building StumpWM from source code requires that you build the configure script:
 
 ```
  autoconf
 ```
 
-If there's already a configure script then just run it.
+If the configure script exist, then just run it:
 
 ```
  ./configure
 ```
 
-Now build it:
+Now to build it:
 
 ```
  make
 ```
 
-If all goes well, you should have a stumpwm binary now.  You can run
-the binary from where it is or install it, along with the .info
-documentation, with:
+If everything goes correct, you should have a StumpWM binary at its top folder.
+
+You can just run the StumpWM binary, `exec stumpwm`, or install it in your system,
+along with the `.info` documentation:
 
 ```
  make install
 ```
 
-Now that you have a binary, call it from your ~/.xinitrc file:
+NOTE: Depending on your system policies, it will probably require for admin privilegies.
 
+### Starting StumpWM Up (Minimal Approach)
+
+You can just pick StumpWM in your Login Manager, if you use one.
+
+If you thinks its just to much to call a Window Manager you can use Xinit to boot StumpWM.
+
+You will need an file called `.xinitrc` to be present in your $HOME folder(~/.xinitrc).
+
+If there is no such a file, create it with:
+
+``` sh
+ echo "exec /path/to/stumpwm" >> ~/.xinitrc
 ```
- echo /path/to/stumpwm >> ~/.xinitrc
+
+Now we can call Xinit with:
+
+``` sh
  startx
 ```
 
-Hopefully that will put you in X running stumpwm! See [StartUp on the
-wiki](https://github.com/sabetts/stumpwm/wiki/StartUp) for more
+Hopefully, StumpWM will load using your graphical system, nowadays X.org and Wayland!
+
+See [StartUp on the wiki](https://github.com/sabetts/stumpwm/wiki/StartUp) for more
 examples.
 
 # Contributing
 
-Pull requests are always welcome! Here are some guidelines to ensure
-that your contribution gets merged in a timely manner: 
-* Do's 
-  * Add your name to the list of AUTHORS with your pull request.  
+Pull requests are always welcome!
+
+Here are some guidelines to ensure that your contribution gets merged in a timely manner:
+
+* **Do's**
+  * Add your name to the list of AUTHORS with your pull request.
   * Preserve comments or docstrings explaining what code does, and
     update them if your patch changes them in a significant way
   * Try to follow an "80 column rule." The current code base does not
@@ -138,26 +161,29 @@ that your contribution gets merged in a timely manner:
     informed on stumpwm-devel! Also, it will probably help if the
     changes are made and then incrementally applied to the codebase in
     order to avoid introducing show-stopping bugs.
-* Do not's
-  * Include emacs local variables 
-  * Change whitespace 
+
+* **Do not's**
+  * Include emacs local variables
+  * Change whitespace
   * Write lots of code without supporting comments/documentation
   * Delete comments or docstrings (yes this is a duplicate of above!)
   * Export symbols from packages that aren't widely useful (many times
     a little more thought will reveal how to implement your internal
     change without having to export/break encapsulation)
-  * Make stylistic changes that suit your coding style/way of thinking 
+  * Make stylistic changes that suit your coding style/way of thinking
 
-Our wiki has fallen into disarray/disrepair, but it is shaping up.  If
-you aren't a lisp hacker, you can contribute in the form of
-documenting and organizing the wiki. There's a lot of information
-floating around, if you find it where you didn't expect it, move or
-link to it in a more logical place.
+### StumpWM Wiki
 
-# Wishlist 
+If you are not a Lisp Hacker, you can contribute in the form of
+documenting and organizing the wiki:
 
-Fancy yourself a lisp hacker? Here's a wishlist of features for the
+https://github.com/stumpwm/stumpwm/wiki
+
+###  Wishlist
+
+Fancy yourself a Lisp hacker? Here's a wishlist of features for the
 StumpWM universe (in no particular order):
+
 * float-splits (ie allow floating windows over tiled ones)
 * Float windows within parent applications (specifically dialogs in
   gimp or firefox).
@@ -170,7 +196,7 @@ StumpWM universe (in no particular order):
   * Deleting/adding groups
   * Import data from stumpwm to emacs, use an emacs minor mode to
     implement the above features, then export the data back to stumpwm
-    and let stumpwm perform the appropriate actions 
+    and let stumpwm perform the appropriate actions
 * Emacs' completing-read-multiple function
 * Dynamic tiling
 * Lock Screen (with support for leaving notes, bonus points if emacs
@@ -179,31 +205,35 @@ StumpWM universe (in no particular order):
   timers, and other hacky features)
 * Shutdown, restart, suspend, and hibernate functions that don't
   require root access
-* Revamped, mouse-friendly mode-line. 
+* Revamped, mouse-friendly mode-line.
   * Support fixed number of chars for window titles
   * Dynamically trim window titles to fit them all on the mode-line
   * Split the mode-line into multiple cells for containing different information
   * Implement widget icons to indicate system status (new mail, low
     battery, network etc)
-  * Support raising windows when left-clicked, closing/killing when right-clicked  
+  * Support raising windows when left-clicked, closing/killing when right-clicked
 
-# Help
+# More Information:
 
-There's a texinfo manual, stumpwm.texi.  The build scripts generate an
-info file you can read in emacs or with the `info' program.  The
-manual for the latest git version (may be slightly out of date) is
-available to read online at: [The Manual](https://stumpwm.github.io/)
+There's a Texinfo Manual, stumpwm.texi.
 
-And, as in emacs, you can always do "C-t h v,f,k,c,w" for docstrings
-of Variable,Functions,Keys,Commands, and Where-is respectively.
+You can generate an info file to read inside Emacs
+or with aterminal using the `info` program: `$ make stumpwm.texi`.
 
-For other stuff (tips tricks and examples) visit the [stumpwm wiki](https://github.com/stumpwm/stumpwm/wiki)
+The manual for the latest git version is available to read online at:
+[StumpWM Manual](https://stumpwm.github.io/)
 
-There's a #stumpwm channel on irc.freenode.net, too.
+As in Emacs, you can always call for information on StumpWM features with:
+
+`C-t h v,f,k,c,w` for docstrings of Variable,Functions,Keys,Commands, and Where-is respectively.
+
+Our Wiki has a lot of good information to get you going up easily:
+[StumpWm Wiki](https://github.com/stumpwm/stumpwm/wiki)
+
+There's a #stumpwm channel on [Freenode](irc.freenode.net).
 
 Finally, there's our mailing list (click to sign up)
 [stumpwm-devel@nongnu.org](https://lists.nongnu.org/mailman/listinfo/stumpwm-devel).
-
 
 [lisp-idioms]: (http://web.archive.org/web/20160101153032/http://people.ace.ed.ac.uk/staff/medward2/class/moz/cm/doc/contrib/lispstyle.html)
 [sbcl]: http://sbcl.org
