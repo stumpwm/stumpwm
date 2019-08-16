@@ -399,9 +399,12 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
            (float-focus-color (ac +default-float-focus-color+))
            (float-unfocus-color (ac +default-float-unfocus-color+))
            (font (open-font *display*
-                            (if (font-exists-p +default-font-name+)
-                                +default-font-name+
-                                "*")))
+                            (cond ((font-exists-p +default-font-name+)
+                                   +default-font-name+)
+                                  ((font-exists-p "fixed")
+                                   "fixed")
+                                  (t
+                                   "*"))))
            (message-window (xlib:create-window :parent screen-root
                                                :x 0 :y 0 :width 1 :height 1
                                                :colormap default-colormap
