@@ -168,7 +168,7 @@ than the root window's width and height."
        (when (and (not *ignore-wm-inc-hints*) hints-inc-y (plusp hints-inc-y))
          (let ((h (or hints-height (window-height win))))
            (setf height (+ h (* hints-inc-y
-                                (+ (floor (- fheight h -1) hints-inc-y)))))))))
+                                (+ (floor (- fheight h) hints-inc-y)))))))))
     ;; adjust for gravity
     (multiple-value-bind (wx wy) (gravity-coords (gravity-for-window win)
                                                      width height
@@ -210,8 +210,9 @@ than the root window's width and height."
                                                                 (* 2 (xlib:drawable-border-width (window-parent win)))))))
       ;; update the "extents"
       (xlib:change-property (window-xwin win) :_NET_FRAME_EXTENTS
-                            (list wx wy
+                            (list wx
                                   (- (xlib:drawable-width (window-parent win)) width wx)
+                                  wy
                                   (- (xlib:drawable-height (window-parent win)) height wy))
                             :cardinal 32))
     (update-configuration win)))
