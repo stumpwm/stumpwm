@@ -1,4 +1,5 @@
 LISP=@LISP_PROGRAM@
+MAKEINFO?=makeinfo
 
 sbcl_BUILDOPTS=--load ./make-image.lisp
 sbcl_INFOOPTS=--eval "(progn (load \"load-stumpwm.lisp\") (load \"manual.lisp\"))" --eval "(progn (stumpwm::generate-manual) (sb-ext:quit))"
@@ -18,7 +19,7 @@ all: stumpwm stumpwm.info
 
 travis: stumpwm test
 stumpwm.info: stumpwm.texi
-	makeinfo stumpwm.texi
+	$(MAKEINFO) stumpwm.texi
 
 # FIXME: This rule is too hardcoded
 stumpwm.texi: stumpwm.texi.in
