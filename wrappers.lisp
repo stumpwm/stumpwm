@@ -99,7 +99,7 @@
     (handler-bind
         ((sb-impl::octet-decoding-error #'(lambda (c)
                                             (declare (ignore c))
-                                            (invoke-restart 'use-value "?"))))
+                                            (invoke-restart 'use-value (string #\replacement_character)))))
       (sb-ext:octets-to-string octets :external-format :utf-8))))
 
 (defun directory-no-deref (pathspec)
