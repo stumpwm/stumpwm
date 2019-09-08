@@ -332,6 +332,11 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
   (when-let ((name (xlib:get-property win :_NET_WM_NAME)))
     (utf8-to-string name)))
 
+(defun safely-decode-x11-string (string)
+  (handler-case
+      (map 'string 'xlib:card8->char string)
+    (type-error () nil)))
+
 (defun xwin-wm-name (win)
   (multiple-value-bind
         (name encoding)
@@ -341,10 +346,8 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
                       (:utf8_string :utf-8)
                       (t :latin1))))
       (if (eq encoding :x11-string)
-          (map 'string 'xlib:card8->char name)
-          (handler-case
-              (sb-ext:octets-to-string name :external-format encoding)
-            (sb-impl::octet-decoding-error () nil))))))
+          (safely-decode-x11-string name)
+          (sb-ext:octets-to-string string :external-format encoding)))))
 
 (defun xwin-name (win)
   (escape-caret (or (xwin-net-wm-name win)
