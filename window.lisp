@@ -783,6 +783,8 @@ and bottom_end_x."
         do (loop for j in (screen-mapped-windows i)
                  do (xwin-grab-keys j (window-group (find-window j))))
         do (xwin-grab-keys (screen-focus-window i) (screen-current-group i)))
+  (when (current-window)
+    (remap-keys-grab-keys (current-window)))
   (xlib:display-finish-output *display*))
 
 (defun netwm-remove-window (window)
