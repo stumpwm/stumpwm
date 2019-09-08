@@ -341,13 +341,10 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
   (multiple-value-bind
         (name encoding)
       (xlib:get-property win :WM_NAME :result-type '(vector (unsigned-byte 8)))
-    (let ((encoding (case encoding
-                      (:string :x11-string)
-                      (:utf8_string :utf-8)
-                      (t :latin1))))
-      (if (eq encoding :x11-string)
+    (when name
+      (if (eq encoding :string)
           (safely-decode-x11-string name)
-          (sb-ext:octets-to-string string :external-format encoding)))))
+          (utf8-to-string name)))))
 
 (defun xwin-name (win)
   (escape-caret (or (xwin-net-wm-name win)
