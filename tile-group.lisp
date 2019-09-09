@@ -338,7 +338,8 @@ T (default) then also focus the frame."
     (unless (and w (eq oldw w))
       (if w
           (raise-window w)
-          (mapc 'hide-window (frame-windows g f))))
+          (mapc 'hide-window
+                (reverse (frame-windows g f)))))
     ;; If raising a window in the current frame we must focus it or
     ;; the group and screen will get out of sync.
     (when (or focus
