@@ -288,8 +288,8 @@ ratpoison sends the rp_command_request window in 8 byte chunks."
   "Handle a StumpWM style command request."
   (let* ((win root)
          (screen (find-screen root))
-         (data (xlib:get-property win :stumpwm_command :delete-p t))
-         (cmd (bytes-to-string data)))
+         (data (xlib:get-property win :stumpwm_command :delete-p t :result-type '(vector (unsigned-byte 8))))
+         (cmd (utf8-to-string data)))
     (let ((msgs (screen-last-msg screen))
           (hlts (screen-last-msg-highlights screen))
           (*executing-stumpwm-command* t))

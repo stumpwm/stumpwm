@@ -93,22 +93,13 @@
   "print a backtrace of FRAMES number of frames to standard-output"
   (sb-debug:print-backtrace :count frames :stream *standard-output*))
 
-(defun bytes-to-string (data)
-  "Convert a list of bytes into a string."
-  (handler-bind
-      ((sb-impl::octet-decoding-error #'(lambda (c)
-                                          (declare (ignore c))
-                                          (invoke-restart 'use-value "?"))))
-    (sb-ext:octets-to-string
-     (make-array (length data) :element-type '(unsigned-byte 8) :initial-contents data))))
-
 (defun utf8-to-string (octets)
   "Convert the list of octets to a string."
   (let ((octets (coerce octets '(vector (unsigned-byte 8)))))
     (handler-bind
         ((sb-impl::octet-decoding-error #'(lambda (c)
                                             (declare (ignore c))
-                                            (invoke-restart 'use-value "?"))))
+                                            (invoke-restart 'use-value (string #\replacement_character)))))
       (sb-ext:octets-to-string octets :external-format :utf-8))))
 
 (defun directory-no-deref (pathspec)

@@ -388,7 +388,7 @@ like xprop."
                     (:atom (format nil "~{~a~^, ~}"
                                    (mapcar (lambda (v) (xlib:atom-name *display* v)) values)))
                     (:string (format nil "~{~s~^, ~}"
-                                     (mapcar (lambda (x) (coerce (mapcar 'xlib:card8->char x) 'string))
+                                     (mapcar (lambda (x) (map 'string 'xlib:card8->char x))
                                              (split-seq values '(0)))))
                     (:utf8_string (format nil "~{~s~^, ~}"
                                           (mapcar 'utf8-to-string
