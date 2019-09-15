@@ -175,6 +175,7 @@ is a tile group.")
   (kbd "s")       "vsplit"
   (kbd "S")       "hsplit"
   (kbd "r")       "iresize"
+  (kbd "o")       "fnext"
   (kbd "TAB")     "fnext"
   (kbd "M-TAB")   "fother"
   (kbd "f")       "fselect"
