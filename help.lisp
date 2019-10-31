@@ -106,14 +106,13 @@
                                (documentation (command-name struct) 'function))))))
 
 (defcommand where-is (cmd) ((:rest "Where is command: "))
-"Print the key sequences bound to the specified command."
-(let ((bindings (loop for map in (top-maps) append (search-kmap cmd map))))
-  (if bindings
-      (message-no-timeout "\"~a\" is on ~{~a~^, ~}"
-                      cmd
-                      (mapcar 'print-key-seq bindings))
-      (message-no-timeout "Command \"~a\" is not currently bound"
-                          cmd))))
+  "Print the key sequences bound to the specified command."
+  (if-let ((bindings (loop for map in (top-maps) append (search-kmap cmd map))))
+    (message-no-timeout "\"~a\" is on ~{~a~^, ~}"
+                        cmd
+                        (mapcar 'print-key-seq bindings))
+    (message-no-timeout "Command \"~a\" is not currently bound"
+                        cmd)))
 
 (defun get-kmaps-at-key (kmaps key)
   (dereference-kmaps
