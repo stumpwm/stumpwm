@@ -39,7 +39,7 @@
     (xlib:change-property root
                           :cut-buffer0
                           (sb-ext:string-to-octets
-                           (getf *x-selection* :clipboard)
+                           (getf *x-selection* selection)
                            :external-format :utf-8)
                           :utf8_string 8
                           :mode :replace)))
