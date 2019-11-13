@@ -36,9 +36,13 @@
       (error "Can't set selection owner"))
     ;; also set the cut buffer for completeness. Note that this always sets cut
     ;; buffer 0.
-    (xlib:change-property root :cut-buffer0 (getf *x-selection* selection)
-                               :string 8 :transform #'xlib:char->card8
-                               :mode :replace)))
+    (xlib:change-property root
+                          :cut-buffer0
+                          (sb-ext:string-to-octets
+                           (getf *x-selection* selection)
+                           :external-format :utf-8)
+                          :utf8_string 8
+                          :mode :replace)))
 
 (defun set-x-selection (text &optional (selection :primary))
   "Set the X11 selection string to @var{string}."
