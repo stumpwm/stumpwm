@@ -176,9 +176,13 @@
 
 ;; TODO: This method has not been updated for floating windows
 (defmethod group-remove-head ((group tile-group) head)
-  (let ((windows (head-windows group head)))
-    ;; Remove it from the frame tree.
-    (setf (tile-group-frame-tree group) (delete (tile-group-frame-head group head) (tile-group-frame-tree group)))
+  ;; first ensure the data is up to date
+  (group-sync-all-heads group)
+  (let ((windows (head-windows group head))
+        (frames-to-delete (tile-group-frame-head group head))
+        (group-frame-tree (tile-group-frame-tree group)))
+    ;; Remove this head's frames from the frame tree.
+    (setf (tile-group-frame-tree group) (delete frames-to-delete group-frame-tree))
     ;; Just set current frame to whatever.
     (let ((frame (first (group-frames group))))
       (setf (tile-group-current-frame group) frame
@@ -222,11 +226,9 @@
                   (group-windows-for-cycling group :sorting t))))
 
 (defun tile-group-frame-head (group head)
-  (group-sync-all-heads group)
   (elt (tile-group-frame-tree group) (position head (group-heads group))))
 
 (defun (setf tile-group-frame-head) (frame group head)
-  (group-sync-all-heads group)
   (setf (elt (tile-group-frame-tree group) (position head (group-heads group))) frame))
 
 (defun populate-frames (group)
