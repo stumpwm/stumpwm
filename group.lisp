@@ -174,6 +174,7 @@ at 0. Return a netwm compliant group id."
       (dolist (w (group-windows new-group))
         (when (eq (window-state w) +normal-state+)
           (xwin-unhide (window-xwin w) (window-parent w))))
+      ;; hide the old group's windows
       (dolist (w (reverse (group-windows old-group)))
         (when (eq (window-state w) +normal-state+)
           (xwin-hide w)))

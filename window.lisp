@@ -915,9 +915,13 @@ needed."
 
 (defun no-focus (group last-win)
   "don't focus any window but still read keyboard events."
-  (dformat 3 "no-focus~%")
+  (dformat 3 "NO-FOCUS called~%")
   (let* ((screen (group-screen group)))
     (setf (group-current-window group) nil)
+    ;; lame workaround to fix bug where non-focused window doesn't
+    ;; listen unless an event is caught by the listener. In this case
+    ;; a fake click is sent.
+    (xlib-fake-click (screen-root screen) (screen-focus-window screen) 1)
     (when (eq group (screen-current-group screen))
       (xlib:set-input-focus *display* (screen-focus-window screen) :POINTER-ROOT)
       (setf (screen-focus screen) nil)
