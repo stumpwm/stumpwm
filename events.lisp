@@ -63,7 +63,7 @@
       (when (window-urgent-p win)
         (window-clear-urgency win)))
     (when (or (has-x value-mask) (has-y value-mask))
-      (group-move-request (window-group win) win x y :parent))
+      (group-move-request (window-group win) win x y :root))
     (when (or (has-w value-mask) (has-h value-mask))
       (group-resize-request (window-group win) win width height))
     (when (has-stackmode value-mask)

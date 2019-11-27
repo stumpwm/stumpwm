@@ -95,11 +95,12 @@
 (defmethod group-move-request ((group tile-group) (window tile-window) x y relative-to)
   (when *honor-window-moves*
     (dformat 3 "Window requested new position ~D,~D relative to ~S~%" x y relative-to)
-    (let* ((pos  (if (eq relative-to :parent)
+    (let* ((pointer-pos (multiple-value-list (xlib:global-pointer-position *display*)))
+           (pos  (if (eq relative-to :parent)
                      (list
                       (+ (xlib:drawable-x (window-parent window)) x)
                       (+ (xlib:drawable-y (window-parent window)) y))
-                     (list x y)))
+                     (list (first pointer-pos) (second pointer-pos))))
            (frame (apply #'find-frame group pos)))
       (when frame
         (pull-window window frame)))))
