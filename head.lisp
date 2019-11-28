@@ -67,18 +67,12 @@
         :when head
           :collect head))
 
-;; fixme: would be nice to not need an explicit config for this
-(defvar *enable-randr-extension-for-screens-query* nil
-  "Set this to `t` to use the RANDR extension for querying the
-  screens/heads available to the current display. This config is being
-  introduced since the RANDR extension doesn't seem to work
-  consistently under all X11 setups.")
 
 (defun make-screen-heads (screen root)
   (declare (ignore screen))
-  (cond ((and (xlib:query-extension *display* "RANDR")
-              *enable-randr-extension-for-screens-query*)
-         (make-screen-randr-heads root))
+  ;; Query for whether the server supports RANDR, if so, call the
+  ;; randr version of make-screen-heads.
+  (cond ((xlib:query-extension *display* "RANDR") (make-screen-randr-heads root))
         ((and (xlib:query-extension *display* "XINERAMA")
               (xinerama:xinerama-is-active *display*))
          (mapcar 'screen-info-head
