@@ -1315,9 +1315,50 @@ direction. The following are valid directions:
         (message "There's only one frame.")
         (balance-frames-internal group tree))))
 
+(defun calculate-window-centerpoint (win)
+  "window x and y are calculated from the top of the screen. thus the x/y are the upper left hand 
+corner. to find the center x/y we do: xc = x + (w ÷ 2) and yc = y + (h ÷ 2)"
+  (let ((x (window-x win))
+        (y (window-y win))
+        (w (window-width win))
+        (h (window-height win)))
+    (let ((center-x (+ x (/ w 2)))
+          (center-y (+ y (/ h 2))))
+      (list center-x center-y))))
+
+(defun calculate-frame-centerpoint (frame)
+  "Calculates the centerpoint of a frame, not including borders. "
+  (let ((x (frame-x frame))
+        (y (frame-y frame))
+        (w (frame-width frame))
+        (h (frame-height frame)))
+    (let ((center-x (+ x (/ w 2)))
+          (center-y (+ y (/ h 2))))
+      (list center-x center-y))))
+
+(defun calculate-appropriate-frame-for-window (&optional (win (current-window))
+							  (group (current-group)))
+  "Takes a window and calculates the distance from its centerpoint to the centerpoint of every 
+frame, then returns the frame with the shortest distance. "
+  (flet ((square (n) (* n n)))
+    (let* ((window-centerpoint (calculate-window-centerpoint win))
+           (winx (car window-centerpoint))
+           (winy (cadr window-centerpoint))
+           (shortest nil))
+      (loop for frame in (group-frames group)
+         do (let* ((frame-alist (calculate-frame-centerpoint frame))
+                   (fx (car frame-alist))
+                   (fy (cadr frame-alist))
+                   (distance (sqrt (+ (square (- winx fx))
+                                      (square (- winy fy))))))
+              (cond ((not shortest)
+                     (setf shortest (cons distance frame)))
+                    ((> (car shortest) distance)
+                     (setf shortest (cons distance frame))))))
+      (cdr shortest))))
+
 (defun unfloat-window (window group)
-  ;; maybe find the frame geometrically closest to this float?
-  (let ((frame (first (group-frames group))))
+  (let ((frame (calculate-appropriate-frame-for-window window)))
     (change-class window 'tile-window :frame frame)
     (setf (window-frame window) frame
           (frame-window frame) window
