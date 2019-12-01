@@ -1358,7 +1358,7 @@ frame, then returns the frame with the shortest distance. "
       (cdr shortest))))
 
 (defun unfloat-window (window group)
-  (let ((frame (calculate-appropriate-frame-for-window window)))
+  (let ((frame (calculate-appropriate-frame-for-window window group)))
     (change-class window 'tile-window :frame frame)
     (setf (window-frame window) frame
           (frame-window frame) window
