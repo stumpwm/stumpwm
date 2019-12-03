@@ -1349,8 +1349,7 @@ frame, then returns the frame with the shortest distance. "
       (cdr shortest))))
 
 (defun unfloat-window (window group)
-  ;; maybe find the frame geometrically closest to this float?
-  (let ((frame (first (group-frames group))))
+  (let ((frame (closest-frame-to-window window group)))
     (change-class window 'tile-window :frame frame)
     (setf (window-frame window) frame
           (frame-window frame) window
