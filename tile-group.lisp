@@ -1315,6 +1315,39 @@ direction. The following are valid directions:
         (message "There's only one frame.")
         (balance-frames-internal group tree))))
 
+(defun window-centerpoint (win)
+  "window x and y are calculated from the top of the screen. thus the x/y are the upper left hand 
+corner. to find the center x/y we do: xc = x + (w ÷ 2) and yc = y + (h ÷ 2)"
+  (let ((x (window-x win))
+        (y (window-y win))
+        (w (window-width win))
+        (h (window-height win)))
+    (cons (+ x (/ w 2)) (+ y (/ h 2)))))
+
+(defun frame-centerpoint (frame)
+  "Returns the centerpoint of a frame, not including borders"
+  (let ((x (frame-x frame))
+        (y (frame-y frame))
+        (w (frame-width frame))
+        (h (frame-height frame)))
+    (cons (+ x (/ w 2)) (+ y (/ h 2)))))
+
+(defun closest-frame-to-window (win group)
+  "Takes a window and calculates the distance from its centerpoint to the centerpoint of every 
+frame, then returns the frame with the shortest distance. "
+  (flet ((square (n) (* n n)))
+    (let (shortest)
+      (destructuring-bind (winx . winy) (window-centerpoint win)
+	(loop :for frame :in (group-frames group)
+	   :for (frame-x . frame-y) := (frame-centerpoint frame)
+	   :for distance := (sqrt (+ (square (- winx frame-x))
+				     (square (- winy frame-y))))
+	   :unless shortest
+	   :do (setf shortest (cons distance frame))
+	   :when (> (car shortest) distance)
+	   :do (setf shortest (cons distance frame))))
+      (cdr shortest))))
+
 (defun unfloat-window (window group)
   ;; maybe find the frame geometrically closest to this float?
   (let ((frame (first (group-frames group))))
