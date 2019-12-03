@@ -1338,14 +1338,14 @@ frame, then returns the frame with the shortest distance. "
   (flet ((square (n) (* n n)))
     (let (shortest)
       (destructuring-bind (winx . winy) (window-centerpoint win)
-	(loop :for frame :in (group-frames group)
-	   :for (frame-x . frame-y) := (frame-centerpoint frame)
-	   :for distance := (sqrt (+ (square (- winx frame-x))
-				     (square (- winy frame-y))))
-	   :unless shortest
-	   :do (setf shortest (cons distance frame))
-	   :when (> (car shortest) distance)
-	   :do (setf shortest (cons distance frame))))
+        (loop :for frame :in (group-frames group)
+	      :for (frame-x . frame-y) := (frame-centerpoint frame)
+	      :for distance := (sqrt (+ (square (- winx frame-x))
+					(square (- winy frame-y))))
+	      :unless shortest
+	      :do (setf shortest (cons distance frame))
+	      :when (> (car shortest) distance)
+	      :do (setf shortest (cons distance frame))))
       (cdr shortest))))
 
 (defun unfloat-window (window group)
