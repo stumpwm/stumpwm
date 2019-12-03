@@ -1315,9 +1315,41 @@ direction. The following are valid directions:
         (message "There's only one frame.")
         (balance-frames-internal group tree))))
 
+(defun window-centroid (win)
+  "Return the centroid of WIN."
+  (let ((x (window-x win))
+        (y (window-y win))
+        (w (window-width win))
+        (h (window-height win)))
+    (cons (+ x (/ w 2))
+          (+ y (/ h 2)))))
+
+(defun frame-centroid (frame)
+  "Return the centroid of frame, excluding the borders."
+  (let ((x (frame-x frame))
+        (y (frame-y frame))
+        (w (frame-width frame))
+        (h (frame-height frame)))
+    (cons (+ x (/ w 2))
+          (+ y (/ h 2)))))
+
+(defun closest-frame (win group)
+  "Returns the frame closet to the window, WIN."
+  (flet ((square (n) (* n n)))
+    (let (shortest)
+      (destructuring-bind (win-x . win-y) (window-centroid win)
+        (loop :for frame :in (group-frames group)
+	      :for (frame-x . frame-y) := (frame-centroid frame)
+	      :for distance := (sqrt (+ (square (- win-x frame-x))
+					(square (- win-y frame-y))))
+	      :unless shortest
+                :do (setf shortest (cons distance frame))
+	      :when (> (car shortest) distance)
+                :do (setf shortest (cons distance frame))))
+      (cdr shortest))))
+
 (defun unfloat-window (window group)
-  ;; maybe find the frame geometrically closest to this float?
-  (let ((frame (first (group-frames group))))
+  (let ((frame (closest-frame window group)))
     (change-class window 'tile-window :frame frame)
     (setf (window-frame window) frame
           (frame-window frame) window
