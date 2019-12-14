@@ -18,7 +18,7 @@
 
 ;; Commentary:
 ;;
-;; Translate between stumpwm key names and keysym names.
+;; Alias Emacs names for X11 keysyms.
 ;;
 ;; Code:
 
@@ -28,6 +28,9 @@
   "Hashtable mapping from stumpwm key names to keysym names.")
 
 (defun define-keysym-name (stumpwm-name keysym-name)
+  "Define a key. Consider wrapping then using DEFALIASES instead."
+
+(defmacro defaliases (&body aliases)
   "Define a mapping from a STUMPWM-NAME to KEYSYM-NAME.
 This function is used to translate Emacs-like names to keysym
 names."
@@ -61,43 +64,44 @@ calling KEYSYM->KEYSYM-NAME."
     (or (keysym-name->stumpwm-name keysym-name)
         keysym-name)))
 
-(define-keysym-name "RET" "Return")
-(define-keysym-name "ESC" "Escape")
-(define-keysym-name "TAB" "Tab")
-(define-keysym-name "DEL" "BackSpace")
-(define-keysym-name "SPC" "space")
-(define-keysym-name "!" "exclam")
-(define-keysym-name "\"" "quotedbl")
-(define-keysym-name "$" "dollar")
-(define-keysym-name "%" "percent")
-(define-keysym-name "&" "ampersand")
-(define-keysym-name "'" "quoteright")   ;deprecated
-(define-keysym-name "'" "apostrophe")
-(define-keysym-name "`" "quoteleft")    ;deprecated
-(define-keysym-name "`" "grave")
-(define-keysym-name "&" "ampersand")
-(define-keysym-name "(" "parenleft")
-(define-keysym-name ")" "parenright")
-(define-keysym-name "*" "asterisk")
-(define-keysym-name "+" "plus")
-(define-keysym-name "," "comma")
-(define-keysym-name "-" "minus")
-(define-keysym-name "." "period")
-(define-keysym-name "/" "slash")
-(define-keysym-name ":" "colon")
-(define-keysym-name ";" "semicolon")
-(define-keysym-name "<" "less")
-(define-keysym-name "=" "equal")
-(define-keysym-name ">" "greater")
-(define-keysym-name "?" "question")
-(define-keysym-name "@" "at")
-(define-keysym-name "[" "bracketleft")
-(define-keysym-name "\\" "backslash")
-(define-keysym-name "]" "bracketright")
-(define-keysym-name "^" "asciicircum")
-(define-keysym-name "_" "underscore")
-(define-keysym-name "#" "numbersign")
-(define-keysym-name "{" "braceleft")
-(define-keysym-name "|" "bar")
-(define-keysym-name "}" "braceright")
-(define-keysym-name "~" "asciitilde")
+(defaliases
+  ("RET" "Return")
+  ("ESC" "Escape")
+  ("TAB" "Tab")
+  ("DEL" "BackSpace")
+  ("SPC" "space")
+  ("!" "exclam")
+  ("\"" "quotedbl")
+  ("$" "dollar")
+  ("%" "percent")
+  ("&" "ampersand")
+  ("'" "quoteright" t) ;deprecated
+  ("'" "apostrophe")
+  ("`" "quoteleft" t) ;deprecated
+  ("`" "grave")
+  ("&" "ampersand")
+  ("(" "parenleft")
+  (")" "parenright")
+  ("*" "asterisk")
+  ("+" "plus")
+  ("," "comma")
+  ("-" "minus")
+  ("." "period")
+  ("/" "slash")
+  (":" "colon")
+  (";" "semicolon")
+  ("<" "less")
+  ("=" "equal")
+  (">" "greater")
+  ("?" "question")
+  ("@" "at")
+  ("[" "bracketleft")
+  ("\\" "backslash")
+  ("]" "bracketright")
+  ("^" "asciicircum")
+  ("_" "underscore")
+  ("#" "numbersign")
+  ("{" "braceleft")
+  ("|" "bar")
+  ("}" "braceright")
+  ("~" "asciitilde"))
