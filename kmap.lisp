@@ -106,10 +106,16 @@ the time these just gets in the way."
     (apply 'xlib:make-state-mask mods)))
 
 (defun report-kbd-parse-error (c stream)
-  (format stream "Failed to parse key string: ~s" (slot-value c 'string)))
+  (with-slots (string suberror) c
+    (if suberror
+        (progn (format stream "Failed to parse key string: ~s with suberror: ~s"
+                       string suberror))
+        (format stream "Failed to parse key string: ~s"
+                string))))
 
 (define-condition kbd-parse-error (stumpwm-error)
-  ((string :initarg :string))
+  ((string :initarg :string)
+   (suberror :initarg :suberror))
   (:report report-kbd-parse-error)
   (:documentation "Raised when a kbd string failed to parse."))
 
@@ -136,7 +142,22 @@ kbd-parse if the key failed to parse."
   (let* ((p (when (> (length string) 2)
               (position #\- string :from-end t :end (- (length string) 1))))
          (mods (parse-mods string (if p (1+ p) 0)))
-         (keysym (stumpwm-name->keysym (subseq string (if p (1+ p) 0)))))
+         (keysym (handler-case
+                     (keysym-code
+                      (get-keysym (subseq string
+                                          (if p (1+ p) 0))))
+                   (no-key-error ()
+                     (error 'kbd-parse-error
+                            :string string
+                            :suberror 'no-key-error))
+                   (bogus-key-type ()
+                     (error 'kbd-parse-error
+                            :string string
+                            :suberror 'bogus-key-type))
+                   (type-error ()
+                     (error 'kbd-parse-error
+                            :string string
+                            :suberror 'type-error)))))
     (if keysym
         (apply 'make-key :keysym keysym mods)
         (error 'kbd-parse-error :string string))))

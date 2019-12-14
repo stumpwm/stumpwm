@@ -48,6 +48,25 @@
   (progn (loop for k in keysyms
                do (apply #'define-keysym k))))
 
+(defun report-bogus-key-type (finder stream)
+  (with-slots (finder) finder
+    (format stream "Attempted to find a keysym ~S of a bogus type ~S."
+            finder (type-of finder))))
+
+(define-condition bogus-key-type (stumpwm-error)
+  ((finder :initarg :finder))
+  (:report report-bogus-key-type)
+  (:documentation "Raised when a key is not of correct type."))
+
+(defun report-no-key-error (finder stream)
+  (with-slots (finder) finder
+    (format stream "Could not find the key: ~S" finder)))
+
+(define-condition no-key-error (stumpwm-error)
+  ((finder :initarg :finder))
+  (:report report-no-key-error)
+  (:documentation "Raised when a keysym was not found."))
+
 (defun get-keysym (finder)
   "Find the keysym from some identifier that is defined."
   (if-let ((result
