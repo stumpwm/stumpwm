@@ -1215,9 +1215,9 @@ formatting. This is a simple wrapper around the command @command{windowlist}."
                (let ((sym (cond ((<= 32 (char-code ch) 127)
                                  (char-code ch))
                                 ((char= ch #\Tab)
-                                 (stumpwm-name->keysym "TAB"))
+                                 (keysym-code (get-keysym "TAB")))
                                 ((char= ch #\Newline)
-                                 (stumpwm-name->keysym "RET"))
+                                 (keysym-code (get-keysym "RET")))
                                 (t (first (xlib:character->keysyms ch *display*))))))
                  (when sym
                    (send-fake-key window

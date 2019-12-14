@@ -757,7 +757,7 @@ input (pressing Return), nil otherwise."
 
 (defun get-modifier-map ()
   (labels ((find-mod (mod codes)
-             (let* ((keysym (keysym-name->keysym mod))
+             (let* ((keysym (keysym-code (get-keysym mod)))
                     (keycodes (multiple-value-list (xlib:keysym->keycodes *display* keysym))))
                (intersection keycodes codes))))
     (let ((modifiers (make-modifiers)))

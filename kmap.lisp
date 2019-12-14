@@ -174,7 +174,7 @@ others."
 (defun print-key (key)
   (format nil "~a~a"
           (print-mods key)
-          (keysym->stumpwm-name (key-keysym key))))
+          (keysym->stumpwm-name (get-keysym (key-keysym key)))))
 
 (defun print-key-seq (seq)
   (format nil "^5*~{~a~^ ~}^n" (mapcar 'print-key seq)))

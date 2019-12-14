@@ -24,45 +24,28 @@
 
 (in-package #:stumpwm)
 
-(defvar *stumpwm-name->keysym-name-translations* (make-hash-table :test #'equal)
-  "Hashtable mapping from stumpwm key names to keysym names.")
-
-(defun define-keysym-name (stumpwm-name keysym-name)
+(defun define-keysym-name (stumpwm-name keysym-name &optional deprecated)
   "Define a key. Consider wrapping then using DEFALIASES instead."
+  (declare (ignore deprecated));For now.
+  (setf (gethash stumpwm-name *name-keysym-translations*) (get-keysym keysym-name)
+        (gethash keysym-name *ugly-to-pretty*) stumpwm-name))
+
+(defvar *ugly-to-pretty* (make-hash-table :test 'equal)
+  "Mapping of Emacs to non-emacs names, for pretty printing of keys.")
 
 (defmacro defaliases (&body aliases)
   "Define a mapping from a STUMPWM-NAME to KEYSYM-NAME.
 This function is used to translate Emacs-like names to keysym
 names."
-  (setf (gethash stumpwm-name *stumpwm-name->keysym-name-translations*)
-        keysym-name))
+  `(progn
+     ,@(loop for a in aliases
+             collect `(define-keysym-name ,(car a) ,(cadr a)))))
 
-(defun stumpwm-name->keysym-name (stumpwm-name)
-  (multiple-value-bind (value present-p)
-      (gethash stumpwm-name *stumpwm-name->keysym-name-translations*)
-    (declare (ignore present-p))
-    value))
-
-(defun keysym-name->stumpwm-name (keysym-name)
-  (maphash (lambda (k v)
-             (when (equal v keysym-name)
-               (return-from keysym-name->stumpwm-name k)))
-           *stumpwm-name->keysym-name-translations*))
-
-(defun stumpwm-name->keysym (stumpwm-name)
-  "Return the keysym corresponding to STUMPWM-NAME.
-If no mapping for STUMPWM-NAME exists, then fallback by calling
-KEYSYM-NAME->KEYSYM."
-  (let ((keysym-name (stumpwm-name->keysym-name stumpwm-name)))
-    (keysym-name->keysym (or keysym-name stumpwm-name))))
-
-(defun keysym->stumpwm-name (keysym)
-  "Return the stumpwm key name corresponding to KEYSYM.
-If no mapping for the stumpwm key name exists, then fall back by
-calling KEYSYM->KEYSYM-NAME."
-  (let ((keysym-name (keysym->keysym-name keysym)))
-    (or (keysym-name->stumpwm-name keysym-name)
-        keysym-name)))
+(defun keysym->stumwpm-name (keysym)
+  "Show a pretty Emacs version of the KEYSYM if it has one.
+If not, show the ugly one."
+  (or (gethash (keysym-name keysym) *ugly-to-pretty*)
+      (keysym-name keysym)))
 
 (defaliases
   ("RET" "Return")

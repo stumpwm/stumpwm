@@ -25,31 +25,38 @@
 
 (in-package #:stumpwm)
 
-(defvar *keysym-name-translations* (make-hash-table))
-(defvar *name-keysym-translations* (make-hash-table :test #'equal))
+(defstruct (keysym (:constructor make-keysym
+                       (code name &optional doc deprecated)))
+  (code 0 :type integer)
+  (name "" :type string)
+  (doc nil :type (or string null))
+  (deprecated nil :type boolean))
 
-(defun define-keysym (keysym name)
+(defvar *name-keysym-translations* (make-hash-table :test #'equal)
+  "Find a keysym struct with the name element.")
+(defvar *keysym-translations* (make-hash-table)
+  "Find a keysym struct with the integer value.")
+
+(defun define-keysym (keysym name &optional doc deprecated)
   "Define a mapping from a keysym name to a keysym."
-  (setf (gethash keysym *keysym-name-translations*) name
-        (gethash name *name-keysym-translations*) keysym))
+  (let ((k (make-keysym keysym name doc deprecated)))
+    (setf (gethash (keysym-name k) *name-keysym-translations*) k
+          (gethash (keysym-code k) *keysym-translations*) k)))
 
-(defun keysym-name->keysym (name)
-  "Return the keysym corresponding to NAME."
-  (multiple-value-bind (value present-p)
-      (gethash name *name-keysym-translations*)
-    (declare (ignore present-p))
-    value))
 (defun define-keysyms (&rest keysyms)
   "Wrap define-keysym with any number of keysym sets."
   (progn (loop for k in keysyms
                do (apply #'define-keysym k))))
 
-(defun keysym->keysym-name (keysym)
-  "Return the name corresponding to KEYSYM."
-  (multiple-value-bind (value present-p)
-      (gethash keysym *keysym-name-translations*)
-    (declare (ignore present-p))
-    value))
+(defun get-keysym (finder)
+  "Find the keysym from some identifier that is defined."
+  (if-let ((result
+              (typecase finder
+                (integer (gethash finder *keysym-translations*))
+                (string (gethash finder *name-keysym-translations*))
+                (otherwise (error 'bogus-key-type :finder finder)))))
+    result
+    (error 'no-key-error :finder finder)))
 
 (define-keysyms
   '(#xffffff "VoidSymbol" "Void symbol")
@@ -1736,7 +1743,7 @@
   '(#x1002262 "notidentical" "U+2262 NOT IDENTICAL TO")
   '(#x1002263 "stricteq" "U+2263 STRICTLY EQUIVALENT TO")
 
-;; A bunch of extended keysyms
+  ;; A bunch of extended keysyms
 
   '(#x100000A8 "hpmute_acute")
   '(#x100000A9 "hpmute_grave")
