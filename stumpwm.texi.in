@@ -1281,6 +1281,8 @@ the command exits; We've added SPC as an exit key with custom exit
 keys. Also, the command executes only if the variables @code{*bar*}
 and @code{*baz*} are true.
 
+%%% define-interactive-keymap
+!!! call-and-exit-kmap
 
 @node StumpWM Types,  , Writing Commands, Commands
 @section StumpWM Types
@@ -2169,7 +2171,6 @@ section.
 ### *toplevel-io*
 @@@ update-decoration
 
-!!! call-and-exit-kmap
 
 ### *executing-stumpwm-command*
 
