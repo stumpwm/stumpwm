@@ -252,6 +252,8 @@ message pop up in the upper, right corner. At this point, you have
 successfully started StumpWM.
 @end enumerate
 
+@@@ stumpwm
+
 @node Basic Usage, Basic Concepts, Starting StumpWM, Introduction
 @section Basic Usage
 Once you have StumpWM up and running, the first thing you might want
@@ -1284,7 +1286,7 @@ and @code{*baz*} are true.
 %%% define-interactive-keymap
 !!! call-and-exit-kmap
 
-@node StumpWM Types,  , Writing Commands, Commands
+@node StumpWM Types, , Writing Commands, Commands
 @section StumpWM Types
 All command arguments must be of a defined ``StumpWM type''. The
 following types are pre-defined:
@@ -1626,6 +1628,7 @@ An input function takes 2 arguments: the input structure and the key pressed.
 @@@ window-head
 @@@ window-sync
 @@@ window-visible-p
+@@@ raise-window
 
 ### *xwin-to-window*
 ### *window-format*
@@ -1796,6 +1799,8 @@ window pool, where windows and frames are not so tightly connected.
 !!! echo-frame-windows
 !!! exchange-direction
 !!! expose
+
+@@@ run-or-pull
 
 ### *min-frame-width*
 ### *min-frame-height*
@@ -1982,6 +1987,8 @@ Groups in StumpWM are more commonly known as @dfn{virtual desktops} or
 @@@ group-sync-head
 @@@ group-wake-up
 
+@@@ really-raise-window
+### *run-or-raise-all-groups*
 
 @menu
 * Customizing Groups::
@@ -2002,6 +2009,9 @@ StumpWM handles multiple screens.
 !!! snext
 !!! sprev
 !!! sother
+
+
+### *run-or-raise-all-screens*
 
 @menu
 * External Monitors::
@@ -2038,9 +2048,10 @@ the head configuration.
 @chapter Internals
 @menu
 * IO Loop::
+* Internal Functions Documentation::
 @end menu
 
-@node IO Loop, , , Internals
+@node IO Loop, Internal Functions Documentation, , Internals
 @section IO Loop
 
 StumpWM's internal loop is implemented by a generic multiplexing I/O
@@ -2101,6 +2112,16 @@ multiplexer to actually run it.
 @@@ io-loop-update
 @@@ io-loop
 
+@node Internal Functions Documentation, , IO Loop, Internals
+@section Internal Functions Documentation
+
+### *executing-stumpwm-command*
+### *suppress-abort-messages*
+!!! refresh-time-zone
+!!! getsel
+!!! putsel
+!!! copy-unhandled-error
+
 @node Interacting With Unix, Interacting With X11, Screens, Top
 @chapter Interacting With Unix
 
@@ -2110,6 +2131,8 @@ multiplexer to actually run it.
 @@@ pathname-is-executable-p
 @@@ pathname-as-directory
 
+
+@@@ run-or-raise
 ### *shell-program*
 
 @@@ getenv
@@ -2127,12 +2150,8 @@ multiplexer to actually run it.
 The following is a list of commands that don't really fit in any other
 section.
 
-!!! refresh-time-zone
 !!! window-send-string
 !!! loadrc
-!!! getsel
-!!! putsel
-!!! copy-unhandled-error
 @@@ argument-line-end-p
 @@@ argument-pop
 @@@ argument-pop-rest
@@ -2164,7 +2183,6 @@ section.
 %%% save-frame-excursion
 @@@ set-module-dir
 @@@ split-string
-@@@ stumpwm
 ### *suppress-frame-indicator*
 ### *suppress-window-placement-indicator*
 ### *text-color*
@@ -2174,22 +2192,9 @@ section.
 @@@ update-decoration
 
 
-### *executing-stumpwm-command*
-
-@@@ run-or-raise
-@@@ raise-window
-@@@ really-raise-window
-
-@@@ run-or-pull
-
-### *run-or-raise-all-groups*
-### *run-or-raise-all-screens*
-
 @@@ restarts-menu
 
 %%% with-restarts-menu
-
-### *suppress-abort-messages*
 @menu
 * Menus::
 * StumpWM's Data Directory::
