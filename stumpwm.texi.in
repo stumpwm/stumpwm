@@ -102,6 +102,7 @@ This document explains how to use The Stump Window Manager.
 * Hooks::
 * Modules::
 * Hacking::
+* Advanced Configuration::
 * Command and Function Index::
 * Variable Index::
 
@@ -2170,7 +2171,6 @@ section.
 ### *toplevel-io*
 @@@ update-decoration
 
-@@@ run-commands
 !!! call-and-exit-kmap
 
 ### *executing-stumpwm-command*
@@ -2188,14 +2188,7 @@ section.
 
 %%% with-restarts-menu
 
-### *startup-message*
 ### *suppress-abort-messages*
-### *default-package*
-
-%%% defprogram-shortcut
-
-### *initializing*
-
 @menu
 * Menus::
 * StumpWM's Data Directory::
@@ -2654,7 +2647,7 @@ the StumpWM devs to maintain it (and they agree), you can have your
 module merged with the stumpwm-contrib repository on github, just open
 a pull request to start the discussion.
 
-@node Hacking, Command and Function Index, Modules, Top
+@node Hacking, Advanced Configuration, Modules, Top
 @chapter Hacking
 
 @menu
@@ -2947,9 +2940,16 @@ sending them as one.
 
 @end itemize
 
+@node Advanced Configuration, Command and Function Index, Hacking, Top
+@chapter Advanced Configuration
 
+@@@ run-commands
+### *startup-message*
+### *default-package*
+%%% defprogram-shortcut
+### *initializing*
 
-@node Command and Function Index, Variable Index, Hacking, Top
+@node Command and Function Index, Variable Index, Advanced Configuration, Top
 @unnumbered Command and Function Index
 @printindex fn
 
