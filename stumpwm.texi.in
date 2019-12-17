@@ -1425,6 +1425,8 @@ return a ``nil'' value in those cases, and let the command handle that.
 (define-key *root-map* (kbd "R") "smarty right")
 @end example
 
+%%% define-stumpwm-type
+
 @node Common Built-in Commands, , Writing Commands, Commands
 @section Common Built-in Commands
 
