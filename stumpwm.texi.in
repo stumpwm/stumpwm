@@ -2139,7 +2139,6 @@ section.
 ### *frame-indicator-timer*
 ### *frame-number-map*
 @@@ gravity-coords
-### *help-map*
 ### *honor-window-moves*
 ### *ignore-wm-inc-hints*
 @@@ input-delete-region
@@ -2147,7 +2146,6 @@ section.
 @@@ input-point
 @@@ input-substring
 @@@ input-validate-region
-### *last-command*
 @@@ list-directory
 @@@ lookup-command
 ### *max-last-message-size*
@@ -2375,6 +2373,8 @@ Return T if TIMER is a timer structure.
 !!! describe-command
 !!! where-is
 !!! modifiers
+!!! which-key-mode
+### *help-map*
 
 @node Colors, Hooks, Miscellaneous Commands, Top
 @chapter Colors
