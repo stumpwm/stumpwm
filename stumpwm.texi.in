@@ -1163,6 +1163,7 @@ StumpWM does not implement the Emacs concept of prefix arguments.
 @menu
 * Writing Commands::
 * StumpWM Types::
+* Common Built-in Commands::
 @end menu
 
 @node Writing Commands, StumpWM Types, Commands, Commands
@@ -1218,6 +1219,10 @@ which only functions in tile groups, is defined this way:
 @example
 (defcommand (next tile-group) @dots{})
 @end example
+
+%%% defcommand
+%%% defcommand-alias
+### *last-command*
 
 @section Interactive Keymaps
 
@@ -1417,6 +1422,26 @@ return a ``nil'' value in those cases, and let the command handle that.
 (define-key *root-map* (kbd "R") "smarty right")
 @end example
 
+@node Common Built-in Commands, , Writing Commands, Commands
+@section Common Built-in Commands
+
+!!! banish
+!!! ratwarp
+!!! ratrelwarp
+!!! ratclick
+!!! restart-hard
+!!! restart-soft
+!!! lastmsg
+!!! commands
+!!! keyboard-quit
+!!! reload
+!!! quit
+!!! echo-date
+!!! eval-line
+!!! command-mode
+!!! list-window-properties
+!!! show-window-properties
+!!! time
 @node Message and Input Bar, Windows, Commands, Top
 @chapter Message and Input Bar
 
@@ -2097,31 +2122,12 @@ multiplexer to actually run it.
 The following is a list of commands that don't really fit in any other
 section.
 
-!!! emacs
-!!! banish
-!!! ratwarp
-!!! ratrelwarp
-!!! ratclick
-!!! echo-date
 !!! refresh-time-zone
-!!! eval-line
 !!! window-send-string
-!!! reload
 !!! loadrc
-!!! keyboard-quit
-!!! quit
-!!! restart-hard
-!!! restart-soft
 !!! getsel
 !!! putsel
-!!! command-mode
 !!! copy-unhandled-error
-!!! commands
-!!! lastmsg
-!!! list-window-properties
-!!! show-window-properties
-!!! version
-!!! which-key-mode
 @@@ argument-line-end-p
 @@@ argument-pop
 @@@ argument-pop-rest
@@ -2159,7 +2165,6 @@ section.
 ### *suppress-frame-indicator*
 ### *suppress-window-placement-indicator*
 ### *text-color*
-!!! time
 ### *timeout-frame-indicator-wait*
 ### *top-level-error-action*
 ### *toplevel-io*
@@ -2168,11 +2173,6 @@ section.
 @@@ run-commands
 !!! call-and-exit-kmap
 
-%%% defcommand
-%%% define-interactive-keymap
-%%% define-stumpwm-type
-%%% defcommand-alias
-%%% define-stumpwm-command
 ### *executing-stumpwm-command*
 
 @@@ run-or-raise
