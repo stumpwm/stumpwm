@@ -1436,6 +1436,8 @@ return a ``nil'' value in those cases, and let the command handle that.
 @node Common Built-in Commands, , Writing Commands, Commands
 @section Common Built-in Commands
 
+!!! emacs
+!!! version
 !!! banish
 !!! ratwarp
 !!! ratrelwarp
@@ -1445,14 +1447,15 @@ return a ``nil'' value in those cases, and let the command handle that.
 !!! lastmsg
 !!! commands
 !!! keyboard-quit
-!!! reload
 !!! quit
+!!! reload
 !!! echo-date
 !!! eval-line
 !!! command-mode
 !!! list-window-properties
 !!! show-window-properties
 !!! time
+
 @node Message and Input Bar, Windows, Commands, Top
 @chapter Message and Input Bar
 
@@ -2137,6 +2140,7 @@ multiplexer to actually run it.
 !!! getsel
 !!! putsel
 !!! copy-unhandled-error
+@@@ define-stumpwm-command
 
 @node Interacting With Unix, Interacting With X11, Screens, Top
 @chapter Interacting With Unix
