@@ -10,7 +10,7 @@ bars, or any of the other conventional GUI widgets.
 These design decisions reflect the growing popularity of productive,
 customizable lisp based systems.
 
-## Philosophy 
+## Philosophy
 
 Stumpwm is a "everything-and-the-kitchen-sink WM" or "the emacs of
 WMs."
@@ -21,7 +21,7 @@ WMs."
   * Hackable
   * Written in Common Lisp
   * A multi paradigm window manager
-  * A Superior window managing experience 
+  * A Superior window managing experience
 * StumpWM is *not*
   * Minimalist
   * Narrow Scope
@@ -48,7 +48,7 @@ hackable desktop experience, look no further.
 
 The recommended way to install the dependencies is using Quicklisp.
 Follow the instructions at http://www.quicklisp.org/ to install it.
-In short: 
+In short:
 
 ```
 $ curl -O https://beta.quicklisp.org/quicklisp.lisp
@@ -125,9 +125,9 @@ examples.
 # Contributing
 
 Pull requests are always welcome! Here are some guidelines to ensure
-that your contribution gets merged in a timely manner: 
-* Do's 
-  * Add your name to the list of AUTHORS with your pull request.  
+that your contribution gets merged in a timely manner:
+* Do's
+  * Add your name to the list of AUTHORS with your pull request.
   * Preserve comments or docstrings explaining what code does, and
     update them if your patch changes them in a significant way
   * Try to follow an "80 column rule." The current code base does not
@@ -139,14 +139,14 @@ that your contribution gets merged in a timely manner:
     changes are made and then incrementally applied to the codebase in
     order to avoid introducing show-stopping bugs.
 * Do not's
-  * Include emacs local variables 
-  * Change whitespace 
+  * Include emacs local variables
+  * Change whitespace
   * Write lots of code without supporting comments/documentation
   * Delete comments or docstrings (yes this is a duplicate of above!)
   * Export symbols from packages that aren't widely useful (many times
     a little more thought will reveal how to implement your internal
     change without having to export/break encapsulation)
-  * Make stylistic changes that suit your coding style/way of thinking 
+  * Make stylistic changes that suit your coding style/way of thinking
 
 Our wiki has fallen into disarray/disrepair, but it is shaping up.  If
 you aren't a lisp hacker, you can contribute in the form of
@@ -154,7 +154,7 @@ documenting and organizing the wiki. There's a lot of information
 floating around, if you find it where you didn't expect it, move or
 link to it in a more logical place.
 
-# Wishlist 
+# Wishlist
 
 Fancy yourself a lisp hacker? Here's a wishlist of features for the
 StumpWM universe (in no particular order):
@@ -170,7 +170,7 @@ StumpWM universe (in no particular order):
   * Deleting/adding groups
   * Import data from stumpwm to emacs, use an emacs minor mode to
     implement the above features, then export the data back to stumpwm
-    and let stumpwm perform the appropriate actions 
+    and let stumpwm perform the appropriate actions
 * Emacs' completing-read-multiple function
 * Dynamic tiling
 * Lock Screen (with support for leaving notes, bonus points if emacs
@@ -179,13 +179,13 @@ StumpWM universe (in no particular order):
   timers, and other hacky features)
 * Shutdown, restart, suspend, and hibernate functions that don't
   require root access
-* Revamped, mouse-friendly mode-line. 
+* Revamped, mouse-friendly mode-line.
   * Support fixed number of chars for window titles
   * Dynamically trim window titles to fit them all on the mode-line
   * Split the mode-line into multiple cells for containing different information
   * Implement widget icons to indicate system status (new mail, low
     battery, network etc)
-  * Support raising windows when left-clicked, closing/killing when right-clicked  
+  * Support raising windows when left-clicked, closing/killing when right-clicked
 
 # Help
 

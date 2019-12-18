@@ -236,7 +236,7 @@ further up. "
                ;; Start hashing the user's PATH so completion is quick
                ;; the first time they try to run a command.
                (sb-thread:make-thread #'rehash)
-               
+
                ;; we need to do this first because init-screen grabs
                ;; keys
                (update-modifier-map)

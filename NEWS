@@ -54,7 +54,7 @@ StumpWM now has a floating window group mode.
 
 ** define-key acts like undefine-key when nil is passed as the command
 
-** new command, show-window-properties 
+** new command, show-window-properties
 
 ** select-from-menu lets you type regex to match an item
 
@@ -213,7 +213,7 @@ Makefile to choose you lisp.
 ** New command, title, bound to C-t A
 title sets the window's name.
 
-** errors while reloading stumpwm 
+** errors while reloading stumpwm
 A restarts menu now appears that allows you to select a restart, if
 you want.
 

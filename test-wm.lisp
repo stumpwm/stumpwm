@@ -102,7 +102,7 @@
              (let* ((dpy2 (xlib:open-default-display))
                     (window (make-win dpy2))
                     (pixmap (make-pixmap window)))
-               ;; make the pixmap the window's icon pixmap hint. 
+               ;; make the pixmap the window's icon pixmap hint.
                (setf (xlib:wm-hints window) (xlib:make-wm-hints :icon-pixmap pixmap))
                (format t "Window ID: ~s pixmap ID: ~s~%" (xlib:window-id window) (xlib:pixmap-id pixmap))
                (xlib:map-window window)

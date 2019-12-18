@@ -64,7 +64,7 @@
       (mapc (lambda (btn)
               (xlib:send-event xwin (first btn) (xlib:make-event-mask (first btn))
                                :display *display*
-                               :root root-win 
+                               :root root-win
                                :window xwin :event-window xwin
                                :code button
                                :state (second btn)

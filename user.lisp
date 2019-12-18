@@ -155,7 +155,7 @@ with base. Automagically update the cache."
                      (when (<= (length base) (length p))
                        (string= base p
                                 :end1 (length base)
-                                :end2 (length base)))) 
+                                :end2 (length base))))
                  (path-cache-programs *path-cache*)))
 
 (defcommand run-shell-command (cmd &optional collect-output-p) ((:shell "/bin/sh -c "))
@@ -199,7 +199,7 @@ such a case, kill the shell command to resume StumpWM."
 
 (defcommand loadrc () ()
 "Reload the @file{~/.stumpwmrc} file."
-  (handler-case 
+  (handler-case
       (with-restarts-menu (load-rc-file nil))
     (error (c)
       (message "^1*^BError loading rc file: ^n~A" c))

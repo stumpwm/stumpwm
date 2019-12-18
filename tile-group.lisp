@@ -1083,7 +1083,7 @@ space."
         (progn
           (mapc (lambda (w)
                   ;; windows in other frames disappear
-                  (unless (eq (window-frame w) 
+                  (unless (eq (window-frame w)
                               (tile-group-current-frame group))
                     (hide-window w))
                   (setf (window-frame w) frame))

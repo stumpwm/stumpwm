@@ -106,7 +106,7 @@ then call (update-color-map).")
                           color))))
 
 (defun alloc-color (screen color)
-  (xlib:alloc-color 
+  (xlib:alloc-color
    (xlib:screen-default-colormap (screen-number screen))
    (lookup-color screen color)))
 

@@ -224,18 +224,18 @@ is a tile group.")
   (kbd "9")     "gselect 9"
   (kbd "0")     "gselect 10")
 (fill-keymap *exchange-window-map*
-             (kbd "Up")    "exchange-direction up"   
-             (kbd "Down")  "exchange-direction down" 
-             (kbd "Left")  "exchange-direction left" 
+             (kbd "Up")    "exchange-direction up"
+             (kbd "Down")  "exchange-direction down"
+             (kbd "Left")  "exchange-direction left"
              (kbd "Right") "exchange-direction right"
-             (kbd "p")     "exchange-direction up"   
-             (kbd "n")     "exchange-direction down" 
-             (kbd "b")     "exchange-direction left" 
+             (kbd "p")     "exchange-direction up"
+             (kbd "n")     "exchange-direction down"
+             (kbd "b")     "exchange-direction left"
              (kbd "f")     "exchange-direction right"
-             (kbd "k")     "exchange-direction up"   
-             (kbd "j")     "exchange-direction down" 
-             (kbd "h")     "exchange-direction left" 
-             (kbd "l")     "exchange-direction right")    
+             (kbd "k")     "exchange-direction up"
+             (kbd "j")     "exchange-direction down"
+             (kbd "h")     "exchange-direction left"
+             (kbd "l")     "exchange-direction right")
 (fill-keymap *help-map*
   (kbd "v") "describe-variable"
   (kbd "f") "describe-function"

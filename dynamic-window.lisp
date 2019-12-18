@@ -1,6 +1,6 @@
 (in-package :stumpwm)
 
-(defvar *expose-n-max* 26 
+(defvar *expose-n-max* 26
   "Maximum number of windows to display in the expose")
 
 (defvar *expose-auto-tile-fn* 'expose-tile
@@ -46,7 +46,7 @@ area."
 that window the focus. Set the variable `*expose-auto-tile-fn*' to another
 tiling function if a different layout is desired. Set `*expose-n-max*' to the
 maximum number of windows to be displayed for choosing."
-  (funcall *expose-auto-tile-fn* nil 
+  (funcall *expose-auto-tile-fn* nil
            (current-group (current-screen)))
   ;; have the user select a window
   (run-commands "fselect")

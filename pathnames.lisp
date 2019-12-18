@@ -62,7 +62,7 @@ all files within the directory named by the non-wild pathname
 designator DIRNAME.  The pathnames of sub-directories are returned in
 directory form - see PATHNAME-AS-DIRECTORY."
   (when (wild-pathname-p dirname)
-    (error "Can only list concrete directory names.")) 
+    (error "Can only list concrete directory names."))
   (let ((wildcard (directory-wildcard dirname)))
     (directory wildcard)))
 

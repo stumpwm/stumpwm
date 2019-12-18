@@ -245,7 +245,7 @@
        (* 2 *normal-border-width*)
        *float-window-border*
        *float-window-title-height*)))
-  
+
 (defun maximize-float (window &key horizontal vertical)
   (let* ((head (window-head window))
          (ml (head-mode-line head))
@@ -256,7 +256,7 @@
                (* 2 *float-window-border*)))
          (h (window-display-height window)))
     (when horizontal
-      (float-window-move-resize window :width w)) 
+      (float-window-move-resize window :width w))
     (when vertical
       (float-window-move-resize window :y hy :height h))
     (when (and horizontal vertical)
@@ -270,7 +270,7 @@
         (xwin (window-xwin window)))
     (when (member *mouse-focus-policy* '(:click :sloppy))
       (group-focus-window group window))
-    
+
     ;; When in border
     (multiple-value-bind (relx rely same-screen-p child state-mask)
         (xlib:query-pointer (window-parent window))
@@ -290,12 +290,12 @@
                  (win-focused-p (eq window (screen-focus screen))))
             (setf *last-click-time* current-time)
             (when (< delta-t 0.25)
-              (cond ((and (not (eq (window-height window) 
-                                   (window-display-height window))) 
-                          win-focused-p) 
+              (cond ((and (not (eq (window-height window)
+                                   (window-display-height window)))
+                          win-focused-p)
                      (maximize-float window :vertical t))
                     (win-focused-p (maximize-float window :vertical t :horizontal t))
-                    (t (focus-window window t))))))  
+                    (t (focus-window window t))))))
         ;; When resizing warp pointer to left-right corner
         (when (find :button-3 (xlib:make-state-keys state-mask))
           (xlib:warp-pointer (window-parent window) initial-width initial-height))
@@ -318,7 +318,7 @@
                                ;; if button-1 on the sides (left,
                                ;; right, bottom) then we resize that
                                ;; direction
-                               
+
                                ;; if button-1 on the top, then we move the window
                                (setf (xlib:drawable-x parent) (- (getf event-slots :x) relx)
                                      (xlib:drawable-y parent) (- (getf event-slots :y) rely)))

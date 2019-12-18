@@ -59,7 +59,7 @@ keymap will only be activated if calling ABORT-IF returns true.
 
 KEY-BINDINGS is a list of the following form: ((KEY COMMAND) (KEY COMMAND) ...)
 If one appends t to the end of a binding like so: ((kbd \"n\") \"cmd\" t) then
-the keymap is immediately exited after running the command. 
+the keymap is immediately exited after running the command.
 
 Each element in KEY-BINDINGS declares a command inside the interactive keymap.
 Be aware that these commands won't require a prefix to run."
