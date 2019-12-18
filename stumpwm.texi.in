@@ -1478,6 +1478,7 @@ return a ``nil'' value in those cases, and let the command handle that.
 * Using The Input Bar::
 * Programming The Message Bar::
 * Programming the Input Bar::
+* Conditions and Restarts::
 @end menu
 
 @node Customizing The Bar, Using The Input Bar, Message and Input Bar, Message and Input Bar
@@ -1604,6 +1605,22 @@ An input function takes 2 arguments: the input structure and the key pressed.
 @@@ input-insert-char
 
 ### *input-map*
+
+@node Conditions and Restarts, , Programming the Input Bar, Message and Input Bar
+@section Conditions and Restarts
+Conditions and restarts are for exceptional situations. They can be
+used to abort processing (errors), prompt the user for input
+(restarts), warn, or do a non-local transfer of control. StumpWM
+provides some facilities for this.
+
+%%% with-restarts-menu
+@@@ restarts-menu
+&&& stumpwm-condition
+&&& stumpwm-error
+&&& stumpwm-warning
+&&& kbd-parse-error
+&&& not-implemented
+&&& command-docstring-warning
 
 @node Windows, Frames, Message and Input Bar, Top
 @chapter Windows

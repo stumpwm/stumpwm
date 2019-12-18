@@ -24,7 +24,9 @@
 
 (in-package #:stumpwm)
 
-(require :sb-introspect)
+(require :sb-introspect) ; Function lambda lists.
+;; FIXME: Why does SBCL not know how to REQUIRE sb-mop?
+;; (require :sb-mop); Class slots lists.
 
 (defvar *debug-doc* nil
   "When T, will print extra debugging information from the doc generator.")
@@ -49,7 +51,7 @@
   (:documentation "Generate a texi.in documentation line."))
 
 (defmacro defdoc ((specializer
-                   (out-stream-var line-var name-var)
+                   (out-stream-var line-var name-var symbol-var)
                    marker dprint-label)
                   &body body)
   "Define a document generating method."
@@ -58,53 +60,53 @@
      (defmethod generate ((,(gensym) (eql ,specializer)) ,out-stream-var ,line-var)
        (ppcre:register-groups-bind (,name-var)
            (,(format nil "~@{~A~}" "^" marker "\\W(.*)") ,line-var)
-         (dprint ',dprint-label ,name-var)
-         ,@body))))
+         (let ((,symbol-var (find-symbol (string-upcase ,name-var) :stumpwm)))
+           (dprint ',dprint-label ,name-var)
+           ,@body
+           t)))))
 
-(defdoc (:function (s line name) "@@@" func)
+(defdoc (:function (s line name fn) "@@@" func)
   (let ((fn (if (find #\( name :test 'char=)
                 ;; handle (setf <symbol>) functions
                 (with-standard-io-syntax
                   (let ((*package* (find-package :stumpwm)))
                     (fdefinition (read-from-string name))))
-                (symbol-function (find-symbol (string-upcase name) :stumpwm)))))
+                (symbol-function fn))))
     (let ((*print-pretty* nil))
       (doc-fmt s "defun" "{~a} ~{~a~^ ~}~%~a" name
         (sb-introspect:function-lambda-list fn)
-        (documentation fn 'function)))
-    t))
+        (documentation fn 'function)))))
 
-(defdoc (:macro (s line name) "%%%" macro)
-  (let* ((symbol (find-symbol (string-upcase name) :stumpwm)))
-    (let ((*print-pretty* nil))
-      (doc-fmt s "defmac" "{~a} ~{~a~^ ~}~%~a"
-        name
-        (sb-introspect:function-lambda-list (macro-function symbol))
-        (documentation symbol 'function)))
-    t))
+(defdoc (:macro (s line name macro) "%%%" macro)
+  (let ((*print-pretty* nil))
+    (doc-fmt s "defmac" "{~a} ~{~a~^ ~}~%~a"
+      name
+      (sb-introspect:function-lambda-list (macro-function macro))
+      (documentation macro 'function))))
 
-(defdoc (:variable (s line name) "###" var)
-  (let ((sym (find-symbol (string-upcase name) :stumpwm)))
-    (doc-fmt s "defvar" "~a~%~a"
-      name (documentation sym 'variable))
-    t))
+(defdoc (:variable (s line name var) "###" var)
+  (doc-fmt s "defvar" "~a~%~a"
+    name (documentation var 'variable)))
 
-(defdoc (:hook (s line name) "$$$" hook)
-  (let ((sym (find-symbol (string-upcase name) :stumpwm)))
-    (doc-fmt s "defvr" "{Hook} ~a~%~a"
-      name (documentation sym 'variable))
-    t))
+(defdoc (:hook (s line name hook) "$$$" hook)
+  (doc-fmt s "defvr" "{Hook} ~a~%~a"
+    name (documentation hook 'variable)))
 
-(defdoc (:command (s line name) "!!!" cmd)
-  (if-let (symbol (find-symbol (string-upcase name) :stumpwm))
-    (let ((cmd (symbol-function symbol))
-          (*print-pretty* nil))
-      (doc-fmt s "deffn" "{Command} ~a ~{~a~^ ~}~%~a"
-        name
-        (sb-introspect:function-lambda-list cmd)
-        (documentation cmd 'function))
-      t)
-    (warn "Symbol ~A not found in package STUMPWM" name)))
+(defdoc (:command (s line name cmd) "!!!" cmd)
+  (let ((cmd (symbol-function cmd))
+        (*print-pretty* nil))
+    (doc-fmt s "deffn" "{Command} ~a ~{~a~^ ~}~%~a"
+      name
+      (sb-introspect:function-lambda-list cmd)
+      (documentation cmd 'function))))
+
+(defdoc (:condition (s line name condition) "&&&" condition)
+  (doc-fmt s "deffn" "{Condition} ~a ~{~a~^ ~}~%~a"
+    ;; There is no ANSI standard way to do get condition documentation, but
+    ;; 'type works on SBCL.
+    name
+    (sb-mop:class-slots (class-of condition))
+    (documentation condition'type)))
 
 (defmethod generate ((specializer null) os line)
   (mapc (lambda (spec)
