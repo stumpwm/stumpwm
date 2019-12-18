@@ -735,6 +735,11 @@ tab). This is similar to how GNU screen uses @kbd{C-a a}.
 @itemx C-t C-w
 Prints out a list of all the windows, their number, and their name.
 
+@item C-t RET
+@itemx C-t C-RET
+Show all windows and let the user select one, make that window the
+focus.
+
 @item C-t b
 @itemx C-t C-b
 Banish the mouse point to the lower right corner of the screen.
