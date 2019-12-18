@@ -29,9 +29,13 @@
           *default-selections*))
 
 (defvar *default-selections* '(:primary)
-  #.(format nil "~@{~A~}"
-          "Either a list of keyword X selections (like :primary or :clipboard)"
-          ", or a single one."))
+  #.(format
+     nil "~@{~A~%~}"
+     "A keyword or list, one of:"
+     ":primary or '(:primary) uses only the \"primary\" selection"
+     ":clipboard or '(:clipboard) uses only the \"clipboard\" selection"
+     "Both can be specified in a list like '(:primary :clipboard). In this case,"
+     "set-x-selection will clobber both, and get-x-selection will default to the first item."))
 
 (defun export-selection (selection)
   (let* ((screen (current-screen))
@@ -102,24 +106,25 @@
 
 (defun get-x-selection (&optional timeout (selection *default-selections*))
   "Return the x selection no matter what client own it."
-  (labels ((wait-for-selection (&rest event-slots &key display event-key &allow-other-keys)
-             (declare (ignore display))
-             (when (eq event-key :selection-notify)
-               (destructuring-bind (&key window property &allow-other-keys) event-slots
-                 (if property
-                     (utf8-to-string (xlib:get-property window property :type :utf8_string :result-type 'vector :delete-p t))
-                     "")))))
-    (or (getf *x-selection* selection)
-        (progn
-          (xlib:convert-selection selection :utf8_string (screen-input-window (current-screen)) :stumpwm-selection)
-          ;; Note: this may spend longer than timeout in this loop but it will eventually return.
-          (let ((time (get-internal-real-time)))
-            (loop for ret = (xlib:process-event *display* :handler #'wait-for-selection :timeout timeout :discard-p nil)
-                  when (or ret
-                           (> (/ (- time (get-internal-real-time)) internal-time-units-per-second)
-                              timeout))
-                  ;; make sure we return a string
-                  return (or ret "")))))))
+  (let ((selection (if (listp selection) (car selection) selection)))
+    (labels ((wait-for-selection (&rest event-slots &key display event-key &allow-other-keys)
+               (declare (ignore display))
+               (when (eq event-key :selection-notify)
+                 (destructuring-bind (&key window property &allow-other-keys) event-slots
+                   (if property
+                       (utf8-to-string (xlib:get-property window property :type :utf8_string :result-type 'vector :delete-p t))
+                       "")))))
+      (or (getf *x-selection* selection)
+          (progn
+            (xlib:convert-selection selection :utf8_string (screen-input-window (current-screen)) :stumpwm-selection)
+            ;; Note: this may spend longer than timeout in this loop but it will eventually return.
+            (let ((time (get-internal-real-time)))
+              (loop for ret = (xlib:process-event *display* :handler #'wait-for-selection :timeout timeout :discard-p nil)
+                    when (or ret
+                             (> (/ (- time (get-internal-real-time)) internal-time-units-per-second)
+                                timeout))
+                      ;; make sure we return a string
+                      return (or ret ""))))))))
 
 ;;; Commands
 
