@@ -25,7 +25,13 @@
 (in-package #:stumpwm)
 
 (export '(get-x-selection
-          set-x-selection))
+          set-x-selection
+          *default-selections*))
+
+(defvar *default-selections* '(:primary)
+  #.(format nil "~@{~A~}"
+          "Either a list of keyword X selections (like :primary or :clipboard)"
+          ", or a single one."))
 
 (defun export-selection (selection)
   (let* ((screen (current-screen))
@@ -44,10 +50,20 @@
                           :utf8_string 8
                           :mode :replace)))
 
-(defun set-x-selection (text &optional (selection :primary))
+(defmacro multiselect (selection &body body)
+  "Put the x selection into multiple selection places."
+  `(call-with-multiselect ,selection (lambda (,selection) ,@body)))
+
+(defun call-with-multiselect (selection fn)
+  "Helper function for multiselect."
+  (let ((selection (if (listp selection) selection (list selection))))
+    (mapc fn selection)))
+
+(defun set-x-selection (text &optional (selection *default-selections*))
   "Set the X11 selection string to @var{string}."
-  (setf (getf *x-selection* selection) text)
-  (export-selection selection))
+  (multiselect selection
+               (setf (getf *x-selection* selection) text)
+               (export-selection selection)))
 
 (defun send-selection (requestor property selection target time)
   (dformat 1 "send-selection ~s ~s ~s ~s ~s~%" requestor property selection target time)
@@ -83,7 +99,8 @@
                    :time time)
   (xlib:display-finish-output *display*))
 
-(defun get-x-selection (&optional timeout (selection :primary))
+
+(defun get-x-selection (&optional timeout (selection *default-selections*))
   "Return the x selection no matter what client own it."
   (labels ((wait-for-selection (&rest event-slots &key display event-key &allow-other-keys)
              (declare (ignore display))
@@ -106,11 +123,11 @@
 
 ;;; Commands
 
-(defcommand putsel (string) ((:rest "Text: "))
-  "Stuff the string @var{string} into the X selection."
+;;; FIXME: These two commands are basically useless. See issue #673 for details.
+(defcommand putsel (string) ((:rest "text: "))
+  "Stuff the string @var{string} into the x selection."
   (set-x-selection string))
 
-;; FIXME: this function is basically useless atm.
 (defcommand getsel () ()
   "Echo the X selection."
   (message "~a" (get-x-selection)))

@@ -2090,6 +2090,7 @@ multiplexer to actually run it.
 
 @@@ set-x-selection
 @@@ get-x-selection
+### *default-selections*
 ### *x-selection*
 
 @node Miscellaneous Commands, Colors, Interacting With X11, Top
