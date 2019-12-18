@@ -28,17 +28,8 @@
 ;; FIXME: Why does SBCL not know how to REQUIRE sb-mop?
 ;; (require :sb-mop); Class slots lists.
 
-(defvar *debug-doc* nil
-  "When T, will print extra debugging information from the doc generator.")
-
 (defvar *valid-doctypes* nil
   "All the line-types that can be generated for the StumpWM documentation.")
-
-(defun dprint (type sym)
-  "Handy for figuring out which symbol is borking the documentation."
-  (declare (ignorable type sym))
-  (when *debug-doc*
-    (format t "~&Doing ~a ~a..." type sym)))
 
 (defmacro doc-fmt (stream new-name body-format &body args)
   "Fill in a texinfo template."
@@ -52,7 +43,7 @@
 
 (defmacro defdoc ((specializer
                    (out-stream-var line-var name-var symbol-var)
-                   marker dprint-label)
+                   marker)
                   &body body)
   "Define a document generating method."
   `(progn
@@ -61,7 +52,8 @@
        (ppcre:register-groups-bind (,name-var)
            (,(format nil "~@{~A~}" "^" marker "\\W(.*)") ,line-var)
          (let ((,symbol-var (find-symbol (string-upcase ,name-var) :stumpwm)))
-           (dprint ',dprint-label ,name-var)
+           (format *debug-io* "~&Formatting manual for the ~a ~a...~&"
+                   specializer ',name-var)
            ,@body
            t)))))
 
