@@ -885,6 +885,7 @@ Describe the specified command.
 ### *root-map*
 ### *top-map*
 ### *groups-map*
+### *group-top-maps*
 ### *exchange-window-map*
 
 !!! bind
@@ -2140,7 +2141,9 @@ multiplexer to actually run it.
 !!! getsel
 !!! putsel
 !!! copy-unhandled-error
+@@@ read-line-from-sysfs
 @@@ define-stumpwm-command
+!!! set-contrib-dir
 
 @node Interacting With Unix, Interacting With X11, Screens, Top
 @chapter Interacting With Unix
@@ -2533,6 +2536,8 @@ $$$ *new-frame-hook*
 $$$ *message-hook*
 $$$ *top-level-error-hook*
 $$$ *focus-group-hook*
+$$$ *hooks-enabled-p*
+$$$ *remove-split-hook*
 $$$ *key-press-hook*
 $$$ *root-click-hook*
 $$$ *click-hook*
@@ -2945,9 +2950,11 @@ sending them as one.
 @node Advanced Configuration, Command and Function Index, Hacking, Top
 @chapter Advanced Configuration
 
+### *default-package*
+### *default-bg-color*
 @@@ run-commands
 ### *startup-message*
-### *default-package*
+### *list-hidden-groups*
 %%% defprogram-shortcut
 ### *initializing*
 !!! loadrc
