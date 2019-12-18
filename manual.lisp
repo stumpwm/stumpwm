@@ -26,69 +26,79 @@
 
 (require :sb-introspect)
 
-;; handy for figuring out which symbol is borking the documentation
+(defvar *debug-doc* nil
+  "When T, will print extra debugging information from the doc generator.")
+
 (defun dprint (type sym)
+  "Handy for figuring out which symbol is borking the documentation."
   (declare (ignorable type sym))
-  ;(format t "~&Doing ~a ~a..." type sym)
-  )
+  (when *debug-doc*
+    (format t "~&Doing ~a ~a..." type sym)))
 
-(defun generate-function-doc (s line)
-  (ppcre:register-groups-bind (name) ("^@@@ (.*)" line)
-                              (dprint 'func name)
-                              (let ((fn (if (find #\( name :test 'char=)
-                                            ;; handle (setf <symbol>) functions
-                                            (with-standard-io-syntax
-                                              (let ((*package* (find-package :stumpwm)))
-                                                (fdefinition (read-from-string name))))
-                                            (symbol-function (find-symbol (string-upcase name) :stumpwm))))
-                                    (*print-pretty* nil))
-                                (format s "@defun {~a} ~{~a~^ ~}~%~a~&@end defun~%~%"
-                                        name
-                                        (sb-introspect:function-lambda-list fn)
-                                        (documentation fn 'function))
-                                t)))
+(defmacro doc-fmt (stream new-name body-format &body args)
+  "Fill in a texinfo template."
+  `(format ,stream
+           ,(concatenate 'string
+                         "@" new-name " " body-format "~&@end " new-name "~%~%")
+           ,@args))
 
-(defun generate-macro-doc (s line)
-  (ppcre:register-groups-bind (name) ("^%%% (.*)" line)
-                              (dprint 'macro name)
-                              (let* ((symbol (find-symbol (string-upcase name) :stumpwm))
-                                     (*print-pretty* nil))
-                                (format s "@defmac {~a} ~{~a~^ ~}~%~a~&@end defmac~%~%"
-                                        name
-                                        (sb-introspect:function-lambda-list (macro-function symbol))
-                                        (documentation symbol 'function))
-                                t)))
+(defmacro defdoc (name ((out-stream-var line-var name-var)
+                        marker dprint-label)
+                  &body body)
+  "Define a document generating function."
+  `(defun ,name (,out-stream-var ,line-var)
+     (ppcre:register-groups-bind (,name-var)
+         (,(format nil "~@{~A~}" "^" marker "\\W(.*)") ,line-var)
+       (dprint ',dprint-label ,name-var)
+       ,@body)))
 
-(defun generate-variable-doc (s line)
-  (ppcre:register-groups-bind (name) ("^### (.*)" line)
-                              (dprint 'var name)
-                              (let ((sym (find-symbol (string-upcase name) :stumpwm)))
-                                (format s "@defvar ~a~%~a~&@end defvar~%~%"
-                                        name (documentation sym 'variable))
-                                t)))
+(defdoc generate-function-doc ((s line name) "@@@" func)
+  (let ((fn (if (find #\( name :test 'char=)
+                ;; handle (setf <symbol>) functions
+                (with-standard-io-syntax
+                  (let ((*package* (find-package :stumpwm)))
+                    (fdefinition (read-from-string name))))
+                (symbol-function (find-symbol (string-upcase name) :stumpwm)))))
+    (let ((*print-pretty* nil))
+      (doc-fmt s "defun" "{~a} ~{~a~^ ~}~%~a" name
+        (sb-introspect:function-lambda-list fn)
+        (documentation fn 'function)))
+    t))
 
-(defun generate-hook-doc (s line)
-  (ppcre:register-groups-bind (name) ("^\\$\\$\\$ (.*)" line)
-                              (dprint 'hook name)
-                              (let ((sym (find-symbol (string-upcase name) :stumpwm)))
-                                (format s "@defvr {Hook} ~a~%~a~&@end defvr~%~%"
-                                        name (documentation sym 'variable))
-                                t)))
+(defdoc generate-macro-doc ((s line name) "%%%" macro)
+  (let* ((symbol (find-symbol (string-upcase name) :stumpwm)))
+    (let ((*print-pretty* nil))
+      (doc-fmt s "defmac" "{~a} ~{~a~^ ~}~%~a"
+        name
+        (sb-introspect:function-lambda-list (macro-function symbol))
+        (documentation symbol 'function)))
+    t))
 
-(defun generate-command-doc (s line)
-  (ppcre:register-groups-bind (name) ("^!!! (.*)" line)
-    (dprint 'cmd name)
-    (if-let (symbol (find-symbol (string-upcase name) :stumpwm))
-      (let ((cmd (symbol-function symbol))
-            (*print-pretty* nil))
-        (format s "@deffn {Command} ~a ~{~a~^ ~}~%~a~&@end deffn~%~%"
-                name
-                (sb-introspect:function-lambda-list cmd)
-                (documentation cmd 'function))
-        t)
-      (warn "Symbol ~A not found in package STUMPWM" name))))
+(defdoc generate-variable-doc ((s line name) "###" var)
+  (let ((sym (find-symbol (string-upcase name) :stumpwm)))
+    (doc-fmt s "defvar" "~a~%~a"
+      name (documentation sym 'variable))
+    t))
+
+(defdoc generate-hook-doc ((s line name) "$$$" hook)
+  (let ((sym (find-symbol (string-upcase name) :stumpwm)))
+    (doc-fmt s "defvr" "{Hook} ~a~%~a"
+      name (documentation sym 'variable))
+    t))
+
+(defdoc generate-command-doc ((s line name) "!!!" cmd)
+  (if-let (symbol (find-symbol (string-upcase name) :stumpwm))
+    (let ((cmd (symbol-function symbol))
+          (*print-pretty* nil))
+      (doc-fmt s "deffn" "{Command} ~a ~{~a~^ ~}~%~a"
+        name
+        (sb-introspect:function-lambda-list cmd)
+        (documentation cmd 'function))
+      t)
+    (warn "Symbol ~A not found in package STUMPWM" name)))
 
 (defun generate-manual (&key (in #p"stumpwm.texi.in") (out #p"stumpwm.texi"))
+  "Generate the texinfo manual from the template texi.in file."
   (let ((*print-case* :downcase))
     (with-open-file (os out :direction :output :if-exists :supersede)
       (with-open-file (is in :direction :input)
