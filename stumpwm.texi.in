@@ -2159,13 +2159,20 @@ multiplexer to actually run it.
 
 ### *executing-stumpwm-command*
 ### *suppress-abort-messages*
+
 !!! refresh-time-zone
 !!! getsel
 !!! putsel
 !!! copy-unhandled-error
+!!! set-contrib-dir
+
 @@@ read-line-from-sysfs
 @@@ define-stumpwm-command
-!!! set-contrib-dir
+
+%%% defdoc
+%%% doc-fmt
+### *valid-doctypes*
+
 
 @node Interacting With Unix, Interacting With X11, Screens, Top
 @chapter Interacting With Unix
