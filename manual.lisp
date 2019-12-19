@@ -81,7 +81,7 @@
   (doc-fmt s "defvar" "~a~%~a"
     name (documentation var 'variable)))
 
-(defdoc (:hook (s line name hook) "$$$")
+(defdoc (:hook (s line name hook) "\\$\\$\\$")
   (doc-fmt s "defvr" "{Hook} ~a~%~a"
     name (documentation hook 'variable)))
 
