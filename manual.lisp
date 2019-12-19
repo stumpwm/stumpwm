@@ -26,11 +26,9 @@
 
 (require :sb-introspect)
 
-;; handy for figuring out which symbol is borking the documentation
 (defun dprint (type sym)
-  (declare (ignorable type sym))
-  ;(format t "~&Doing ~a ~a..." type sym)
-  )
+  "Handy for figuring out which symbol is borking the documentation."
+  (format *debug-io* "~&Formatting manual for the ~a ~a...~&" type sym))
 
 (defun generate-function-doc (s line)
   (ppcre:register-groups-bind (name) ("^@@@ (.*)" line)
