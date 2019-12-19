@@ -33,7 +33,7 @@
   )
 
 (defun generate-function-doc (s line)
-  (ppcre:register-groups-bind (name) ("^@@@ (.*)" line)
+  (ppcre:register-groups-bind (name) ("^@@@\\W*(.*)" line)
                               (dprint 'func name)
                               (let ((fn (if (find #\( name :test 'char=)
                                             ;; handle (setf <symbol>) functions
@@ -49,7 +49,7 @@
                                 t)))
 
 (defun generate-macro-doc (s line)
-  (ppcre:register-groups-bind (name) ("^%%% (.*)" line)
+  (ppcre:register-groups-bind (name) ("^%%%\\W*(.*)" line)
                               (dprint 'macro name)
                               (let* ((symbol (find-symbol (string-upcase name) :stumpwm))
                                      (*print-pretty* nil))
@@ -60,7 +60,7 @@
                                 t)))
 
 (defun generate-variable-doc (s line)
-  (ppcre:register-groups-bind (name) ("^### (.*)" line)
+  (ppcre:register-groups-bind (name) ("^###\\W*(.*)" line)
                               (dprint 'var name)
                               (let ((sym (find-symbol (string-upcase name) :stumpwm)))
                                 (format s "@defvar ~a~%~a~&@end defvar~%~%"
@@ -68,7 +68,7 @@
                                 t)))
 
 (defun generate-hook-doc (s line)
-  (ppcre:register-groups-bind (name) ("^\\$\\$\\$ (.*)" line)
+  (ppcre:register-groups-bind (name) ("^\\$\\$\\$\\W*(.*)" line)
                               (dprint 'hook name)
                               (let ((sym (find-symbol (string-upcase name) :stumpwm)))
                                 (format s "@defvr {Hook} ~a~%~a~&@end defvr~%~%"
@@ -76,7 +76,7 @@
                                 t)))
 
 (defun generate-command-doc (s line)
-  (ppcre:register-groups-bind (name) ("^!!! (.*)" line)
+  (ppcre:register-groups-bind (name) ("^!!!\\W*(.*)" line)
     (dprint 'cmd name)
     (if-let (symbol (find-symbol (string-upcase name) :stumpwm))
       (let ((cmd (symbol-function symbol))
