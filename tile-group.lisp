@@ -1071,7 +1071,7 @@ space."
 
 (defcommand-alias remove remove-split)
 
-(defcommand (only tile-group) () ()
+(defcommand (only tile-group) (&key (warn-one t)) ()
   "Delete all the frames but the current one and grow it to take up the entire head."
   (let* ((screen (current-screen))
          (group (screen-current-group screen))
@@ -1079,7 +1079,7 @@ space."
          (head (current-head group))
          (frame (copy-frame head)))
     (if (atom (tile-group-frame-head group head))
-        (message "There's only one frame.")
+        (when warn-one (message "There's only one frame."))
         (progn
           (mapc (lambda (w)
                   ;; windows in other frames disappear

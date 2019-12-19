@@ -37,7 +37,7 @@ area."
   (declare (ignore win))
   (let* ((windows (group-windows group))
          (num-win (length windows)))
-    (only)
+    (only :warn-one nil)
     (recursive-tile (min *expose-n-max* num-win) group)))
 
 
