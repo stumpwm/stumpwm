@@ -46,18 +46,19 @@
                    marker)
                   &body body)
   "Define a document generating method."
-  `(progn
-     (pushnew ,specializer *valid-doctypes*)
-     (defmethod generate ((,(gensym) (eql ,specializer)) ,out-stream-var ,line-var)
-       (ppcre:register-groups-bind (,name-var)
-           (,(format nil "~@{~A~}" "^" marker "\\W(.*)") ,line-var)
-         (let ((,symbol-var (find-symbol (string-upcase ,name-var) :stumpwm)))
-           (format *debug-io* "~&Formatting manual for the ~a ~a...~&"
-                   specializer ',name-var)
-           ,@body
-           t)))))
+  (with-gensyms (gspecializer)
+       `(progn
+          (pushnew ,specializer *valid-doctypes*)
+          (defmethod generate ((,gspecializer (eql ,specializer)) ,out-stream-var ,line-var)
+            (ppcre:register-groups-bind (,name-var)
+                (,(format nil "~@{~A~}" "^" marker "\\W(.*)") ,line-var)
+              (let ((,symbol-var (find-symbol (string-upcase ,name-var) :stumpwm)))
+                (format *debug-io* "~&Formatting manual for the ~a ~a...~&"
+                        ,gspecializer ,name-var)
+                ,@body
+                t))))))
 
-(defdoc (:function (s line name fn) "@@@" func)
+(defdoc (:function (s line name fn) "@@@")
   (let ((fn (if (find #\( name :test 'char=)
                 ;; handle (setf <symbol>) functions
                 (with-standard-io-syntax
@@ -69,22 +70,22 @@
         (sb-introspect:function-lambda-list fn)
         (documentation fn 'function)))))
 
-(defdoc (:macro (s line name macro) "%%%" macro)
+(defdoc (:macro (s line name macro) "%%%")
   (let ((*print-pretty* nil))
     (doc-fmt s "defmac" "{~a} ~{~a~^ ~}~%~a"
       name
       (sb-introspect:function-lambda-list (macro-function macro))
       (documentation macro 'function))))
 
-(defdoc (:variable (s line name var) "###" var)
+(defdoc (:variable (s line name var) "###")
   (doc-fmt s "defvar" "~a~%~a"
     name (documentation var 'variable)))
 
-(defdoc (:hook (s line name hook) "$$$" hook)
+(defdoc (:hook (s line name hook) "$$$")
   (doc-fmt s "defvr" "{Hook} ~a~%~a"
     name (documentation hook 'variable)))
 
-(defdoc (:command (s line name cmd) "!!!" cmd)
+(defdoc (:command (s line name cmd) "!!!")
   (let ((cmd (symbol-function cmd))
         (*print-pretty* nil))
     (doc-fmt s "deffn" "{Command} ~a ~{~a~^ ~}~%~a"
@@ -92,7 +93,7 @@
       (sb-introspect:function-lambda-list cmd)
       (documentation cmd 'function))))
 
-(defdoc (:condition (s line name condition) "&&&" condition)
+(defdoc (:condition (s line name condition) "&&&")
   (doc-fmt s "deffn" "{Condition} ~a ~{~a~^ ~}~%~a"
     ;; There is no ANSI standard way to do get condition documentation, but
     ;; 'type works on SBCL.
