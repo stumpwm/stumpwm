@@ -70,6 +70,18 @@
     (message-no-timeout "~{~a~^~%~}"
                         (columnize data cols))))
 
+(defun final-key-p (keys class)
+  "Determine if the key is a memeber of a class"
+  (member (lastcar keys) (mapcar #'parse-key class) :test #'equalp))
+
+(defun help-key-p (keys)
+  "If the key is for the help command."
+  (final-key-p keys '("?" "C-h")))
+
+(defun cancel-key-p (keys)
+  "If a key is the cancelling key binding."
+  (final-key-p keys '("C-g")))
+
 (defcommand describe-key (keys) ((:key-seq "Describe Key: "))
   "Either interactively type the key sequence or supply it as text. This
   command prints the command bound to the specified key sequence."
@@ -77,8 +89,15 @@
                       for cmd = (lookup-key-sequence map keys)
                       when cmd return cmd))
            (printed-key (mapcar 'print-key keys)))
-    (message "~{~A~^ ~} is bound to \"~A\"." printed-key cmd)
-    (message "~{~A~^ ~} is not bound." printed-key)))
+    (progn (message "~{~A~^ ~} is bound to \"~A\".~%~A"
+                    printed-key cmd (describe-command-string cmd)))
+    (cond ((and (help-key-p keys)
+                (cdr printed-key))
+           (message "~{~A~^ ~} shows the bindings for the prefix map under ~{~A~^ ~}."
+                    printed-key (butlast printed-key)))
+          ((cancel-key-p keys)
+           (message "Any command ending in ~A is meant to cancel any command in progress \"ABORT\"." (lastcar printed-key)))
+          (t (message "~{~A~^ ~} is not bound." printed-key)))))
 
 (defcommand describe-variable (var) ((:variable "Describe Variable: "))
 "Print the online help associated with the specified variable."
