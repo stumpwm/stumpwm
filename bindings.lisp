@@ -120,6 +120,8 @@ is a tile group.")
   (kbd "M-n")     "next"
   (kbd "M-p")     "prev"
   (kbd "o")       "other"
+  (kbd "RET")     "expose"
+  (kbd "C-RET")   "expose"
   (kbd "w")   "windows"
   (kbd "C-w") "windows"
   (kbd "DEL") "repack-window-numbers"

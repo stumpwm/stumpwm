@@ -148,7 +148,7 @@ out, an element can just be the argument type."
                              :args ',interactive-args))))))
 
 (defmacro define-stumpwm-command (name (&rest args) &body body)
-  "Deprecated. use `defcommand' instead."
+  "Deprecated. Use `defcommand' instead."
   (check-type name string)
   (setf name (intern1 name))
   `(progn

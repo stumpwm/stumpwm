@@ -102,6 +102,7 @@ This document explains how to use The Stump Window Manager.
 * Hooks::
 * Modules::
 * Hacking::
+* Advanced Configuration::
 * Command and Function Index::
 * Variable Index::
 
@@ -250,6 +251,8 @@ fingers. You should see a @samp{Welcome To the Stump Window Manager}
 message pop up in the upper, right corner. At this point, you have
 successfully started StumpWM.
 @end enumerate
+
+@@@ stumpwm
 
 @node Basic Usage, Basic Concepts, Starting StumpWM, Introduction
 @section Basic Usage
@@ -735,6 +738,11 @@ tab). This is similar to how GNU screen uses @kbd{C-a a}.
 @itemx C-t C-w
 Prints out a list of all the windows, their number, and their name.
 
+@item C-t RET
+@itemx C-t C-RET
+Show all windows and let the user select one, make that window the
+focus.
+
 @item C-t b
 @itemx C-t C-b
 Banish the mouse point to the lower right corner of the screen.
@@ -882,6 +890,7 @@ Describe the specified command.
 ### *root-map*
 ### *top-map*
 ### *groups-map*
+### *group-top-maps*
 ### *exchange-window-map*
 
 !!! bind
@@ -889,6 +898,10 @@ Describe the specified command.
 @@@ grab-pointer
 @@@ ungrab-pointer
 ### *banish-pointer-to*
+
+### *editor-bindings*
+### *numpad-map*
+
 
 @node Modifiers, Remapped Keys, Binding Keys, Key Bindings
 @section Modifiers
@@ -1163,6 +1176,7 @@ StumpWM does not implement the Emacs concept of prefix arguments.
 @menu
 * Writing Commands::
 * StumpWM Types::
+* Common Built-in Commands::
 @end menu
 
 @node Writing Commands, StumpWM Types, Commands, Commands
@@ -1218,6 +1232,10 @@ which only functions in tile groups, is defined this way:
 @example
 (defcommand (next tile-group) @dots{})
 @end example
+
+%%% defcommand
+%%% defcommand-alias
+### *last-command*
 
 @section Interactive Keymaps
 
@@ -1275,8 +1293,10 @@ the command exits; We've added SPC as an exit key with custom exit
 keys. Also, the command executes only if the variables @code{*bar*}
 and @code{*baz*} are true.
 
+%%% define-interactive-keymap
+!!! call-and-exit-kmap
 
-@node StumpWM Types,  , Writing Commands, Commands
+@node StumpWM Types, , Writing Commands, Commands
 @section StumpWM Types
 All command arguments must be of a defined ``StumpWM type''. The
 following types are pre-defined:
@@ -1417,6 +1437,31 @@ return a ``nil'' value in those cases, and let the command handle that.
 (define-key *root-map* (kbd "R") "smarty right")
 @end example
 
+%%% define-stumpwm-type
+
+@node Common Built-in Commands, , Writing Commands, Commands
+@section Common Built-in Commands
+
+!!! emacs
+!!! version
+!!! banish
+!!! ratwarp
+!!! ratrelwarp
+!!! ratclick
+!!! restart-hard
+!!! restart-soft
+!!! lastmsg
+!!! commands
+!!! keyboard-quit
+!!! quit
+!!! reload
+!!! echo-date
+!!! eval-line
+!!! command-mode
+!!! list-window-properties
+!!! show-window-properties
+!!! time
+
 @node Message and Input Bar, Windows, Commands, Top
 @chapter Message and Input Bar
 
@@ -1425,7 +1470,8 @@ return a ``nil'' value in those cases, and let the command handle that.
 @@@ err
 !!! colon
 
-
+%%% with-restarts-menu
+@@@ restarts-menu
 
 @menu
 * Customizing The Bar::
@@ -1593,9 +1639,14 @@ An input function takes 2 arguments: the input structure and the key pressed.
 !!! unmaximize
 !!! toggle-always-on-top
 !!! toggle-always-show
+!!! window-send-string
+
 @@@ window-head
 @@@ window-sync
 @@@ window-visible-p
+@@@ raise-window
+@@@ focus-window
+
 
 ### *xwin-to-window*
 ### *window-format*
@@ -1604,6 +1655,7 @@ An input function takes 2 arguments: the input structure and the key pressed.
 ### *new-window-preferred-frame*
 ### *hidden-window-color*
 
+### *honor-window-moves*
 @menu
 * Window Marks::
 * Customizing Window Appearance::
@@ -1643,6 +1695,7 @@ variables.
 @@@ set-transient-gravity
 
 !!! gravity
+@@@ gravity-coords
 
 @node Controlling Raise And Map Requests, Programming With Windows, Customizing Window Appearance, Windows
 @section Controlling Raise And Map Requests
@@ -1767,11 +1820,18 @@ window pool, where windows and frames are not so tightly connected.
 !!! exchange-direction
 !!! expose
 
+%%% save-frame-excursion
+
+@@@ run-or-pull
+
 ### *min-frame-width*
 ### *min-frame-height*
 ### *new-frame-action*
 ### *expose-auto-tile-fn*
 ### *expose-n-max*
+### *frame-indicator-text*
+### *frame-indicator-timer*
+### *frame-number-map*
 
 @menu
 * Interactively Resizing Frames::
@@ -1952,6 +2012,8 @@ Groups in StumpWM are more commonly known as @dfn{virtual desktops} or
 @@@ group-sync-head
 @@@ group-wake-up
 
+@@@ really-raise-window
+### *run-or-raise-all-groups*
 
 @menu
 * Customizing Groups::
@@ -1972,6 +2034,9 @@ StumpWM handles multiple screens.
 !!! snext
 !!! sprev
 !!! sother
+
+
+### *run-or-raise-all-screens*
 
 @menu
 * External Monitors::
@@ -2008,9 +2073,10 @@ the head configuration.
 @chapter Internals
 @menu
 * IO Loop::
+* Internal Functions Documentation::
 @end menu
 
-@node IO Loop, , , Internals
+@node IO Loop, Internal Functions Documentation, , Internals
 @section IO Loop
 
 StumpWM's internal loop is implemented by a generic multiplexing I/O
@@ -2071,6 +2137,19 @@ multiplexer to actually run it.
 @@@ io-loop-update
 @@@ io-loop
 
+@node Internal Functions Documentation, , IO Loop, Internals
+@section Internal Functions Documentation
+
+### *executing-stumpwm-command*
+### *suppress-abort-messages*
+!!! refresh-time-zone
+!!! getsel
+!!! putsel
+!!! copy-unhandled-error
+@@@ read-line-from-sysfs
+@@@ define-stumpwm-command
+!!! set-contrib-dir
+
 @node Interacting With Unix, Interacting With X11, Screens, Top
 @chapter Interacting With Unix
 
@@ -2080,6 +2159,8 @@ multiplexer to actually run it.
 @@@ pathname-is-executable-p
 @@@ pathname-as-directory
 
+
+@@@ run-or-raise
 ### *shell-program*
 
 @@@ getenv
@@ -2096,106 +2177,33 @@ multiplexer to actually run it.
 @node Miscellaneous Commands, Colors, Interacting With X11, Top
 @chapter Miscellaneous Commands
 The following is a list of commands that don't really fit in any other
-section.
+@@@ split-string
 
-!!! emacs
-!!! banish
-!!! ratwarp
-!!! ratrelwarp
-!!! ratclick
-!!! echo-date
-!!! refresh-time-zone
-!!! eval-line
-!!! window-send-string
-!!! reload
-!!! loadrc
-!!! keyboard-quit
-!!! quit
-!!! restart-hard
-!!! restart-soft
-!!! getsel
-!!! putsel
-!!! command-mode
-!!! copy-unhandled-error
-!!! commands
-!!! lastmsg
-!!! list-window-properties
-!!! show-window-properties
-!!! version
-!!! which-key-mode
 @@@ argument-line-end-p
 @@@ argument-pop
 @@@ argument-pop-rest
 ### *display*
-### *editor-bindings*
-@@@ focus-window
-### *frame-indicator-text*
-### *frame-indicator-timer*
-### *frame-number-map*
-@@@ gravity-coords
-### *help-map*
-### *honor-window-moves*
-### *ignore-wm-inc-hints*
 @@@ input-delete-region
 @@@ input-goto-char
 @@@ input-point
 @@@ input-substring
 @@@ input-validate-region
-### *last-command*
 @@@ list-directory
-@@@ lookup-command
-### *max-last-message-size*
-### *module-dir*
-### *mouse-focus-policy*
 %%% move-to-head
 @@@ no-focus
-### *numpad-map*
 ### *record-last-msg-override*
-### *resize-hides-windows*
-### *root-click-focuses-frame*
-%%% save-frame-excursion
-@@@ set-module-dir
-@@@ split-string
-@@@ stumpwm
-### *suppress-frame-indicator*
-### *suppress-window-placement-indicator*
-### *text-color*
-!!! time
-### *timeout-frame-indicator-wait*
-### *top-level-error-action*
 ### *toplevel-io*
+
+@node Interacting With X11, Miscellaneous Commands, Interacting With Unix, Top
+@chapter Interacting With X11
+
+@@@ set-x-selection
+@@@ get-x-selection
+### *x-selection*
 @@@ update-decoration
 
-@@@ run-commands
-!!! call-and-exit-kmap
-
-%%% defcommand
-%%% define-interactive-keymap
-%%% define-stumpwm-type
-%%% defcommand-alias
-%%% define-stumpwm-command
-### *executing-stumpwm-command*
-
-@@@ run-or-raise
-@@@ raise-window
-@@@ really-raise-window
-
-@@@ run-or-pull
-
-### *run-or-raise-all-groups*
-### *run-or-raise-all-screens*
-
-@@@ restarts-menu
-
-%%% with-restarts-menu
-
-### *startup-message*
-### *suppress-abort-messages*
-### *default-package*
-
-%%% defprogram-shortcut
-
-### *initializing*
+@node Miscellaneous Commands, Colors, Interacting With X11, Top
+@chapter Miscellaneous Commands
 
 @menu
 * Menus::
@@ -2383,6 +2391,11 @@ Return T if TIMER is a timer structure.
 !!! describe-command
 !!! where-is
 !!! modifiers
+!!! which-key-mode
+
+@@@ lookup-command
+
+### *help-map*
 
 @node Colors, Hooks, Miscellaneous Commands, Top
 @chapter Colors
@@ -2539,6 +2552,8 @@ $$$ *new-frame-hook*
 $$$ *message-hook*
 $$$ *top-level-error-hook*
 $$$ *focus-group-hook*
+$$$ *hooks-enabled-p*
+$$$ *remove-split-hook*
 $$$ *key-press-hook*
 $$$ *root-click-hook*
 $$$ *click-hook*
@@ -2655,7 +2670,7 @@ the StumpWM devs to maintain it (and they agree), you can have your
 module merged with the stumpwm-contrib repository on github, just open
 a pull request to start the discussion.
 
-@node Hacking, Command and Function Index, Modules, Top
+@node Hacking, Advanced Configuration, Modules, Top
 @chapter Hacking
 
 @menu
@@ -2948,9 +2963,32 @@ sending them as one.
 
 @end itemize
 
+@node Advanced Configuration, Command and Function Index, Hacking, Top
+@chapter Advanced Configuration
+
+### *default-package*
+### *default-bg-color*
+@@@ run-commands
+### *startup-message*
+### *list-hidden-groups*
+%%% defprogram-shortcut
+### *initializing*
+!!! loadrc
+### *ignore-wm-inc-hints*
+### *max-last-message-size*
+### *module-dir*
+@@@ set-module-dir
+### *mouse-focus-policy*
+### *resize-hides-windows*
+### *root-click-focuses-frame*
+### *suppress-frame-indicator*
+### *suppress-window-placement-indicator*
+### *text-color*
+### *timeout-frame-indicator-wait*
+### *top-level-error-action*
 
 
-@node Command and Function Index, Variable Index, Hacking, Top
+@node Command and Function Index, Variable Index, Advanced Configuration, Top
 @unnumbered Command and Function Index
 @printindex fn
 

@@ -208,8 +208,7 @@ such a case, kill the shell command to resume StumpWM."
       (message "rc file loaded successfully."))))
 
 (defcommand keyboard-quit () ()
-    ""
-  ;; This way you can exit from command mode
+  "This way you can exit from command mode. Also aliased as abort."
   (let ((in-command-mode (eq *top-map* *root-map*)))
     (when (pop-top-map)
       (if in-command-mode
