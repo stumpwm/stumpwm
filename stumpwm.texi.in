@@ -2172,6 +2172,7 @@ multiplexer to actually run it.
 %%% defdoc
 %%% doc-fmt
 ### *valid-doctypes*
++++ generate
 
 
 @node Interacting With Unix, Interacting With X11, Screens, Top

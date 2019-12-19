@@ -70,6 +70,13 @@
         (sb-introspect:function-lambda-list fn)
         (documentation fn 'function)))))
 
+(defdoc (:generic-function (s line name fn) "\\+\\+\\+")
+  (let ((*print-pretty* nil))
+    (doc-fmt s "deffn" "{Generic Function} ~a ~{~a~^ ~}~%~a"
+      name
+      (sb-introspect:function-lambda-list fn)
+      (documentation fn 'function))))
+
 (defdoc (:macro (s line name macro) "%%%")
   (let ((*print-pretty* nil))
     (doc-fmt s "defmac" "{~a} ~{~a~^ ~}~%~a"
