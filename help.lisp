@@ -24,6 +24,9 @@
 
 (in-package #:stumpwm)
 
+(defvar *message-max-width* 80
+  "The maximum width of a message before it wraps.")
+
 (defun columnize (list columns &key col-aligns (pad 1) (char #\Space) (align :left))
   ;; only somewhat nasty
   (let* ((rows (ceiling (length list) columns))
@@ -70,6 +73,20 @@
     (message-no-timeout "~{~a~^~%~}"
                         (columnize data cols))))
 
+(defun wrap (words &optional (max-col *message-max-width*) stream)
+  "Word wrap at the MAX-COL."
+  ;; Format insanity edited from Gene Michael Stover's "Advanced Use of Lisp's
+  ;; FORMAT Function (2004)"
+
+  ;; Note that using format without a constant format string is not very
+  ;; efficient. Not doing so comes at the cost of *message-max-width* being
+  ;; available at compile time, so users would not be able to configure it at
+  ;; runtime.
+  (format stream (concatenate 'string "~{~<~%~1,"
+                              (with-output-to-string (s) (princ max-col s) s)
+                              ":;~A~> ~}")
+          (split-string words " ")))
+
 (defun final-key-p (keys class)
   "Determine if the key is a memeber of a class"
   (member (lastcar keys) (mapcar #'parse-key class) :test #'equalp))
@@ -89,14 +106,14 @@
                       for cmd = (lookup-key-sequence map keys)
                       when cmd return cmd))
            (printed-key (mapcar 'print-key keys)))
-    (progn (message "~{~A~^ ~} is bound to \"~A\".~%~A"
-                    printed-key cmd (describe-command-string cmd)))
+    (describe-command-to-stream cmd nil)
     (cond ((and (help-key-p keys)
                 (cdr printed-key))
-           (message "~{~A~^ ~} shows the bindings for the prefix map under ~{~A~^ ~}."
+           (message "~{~A~^ ~} shows the bindings for the prefix map under ~{~A~^ ~}.~%"
                     printed-key (butlast printed-key)))
           ((cancel-key-p keys)
-           (message "Any command ending in ~A is meant to cancel any command in progress \"ABORT\"." (lastcar printed-key)))
+           (message "Any command ending in ~A is meant to cancel any command in progress \"ABORT\".~%"
+                    (lastcar printed-key)))
           (t (message "~{~A~^ ~} is not bound." printed-key)))))
 
 (defcommand describe-variable (var) ((:variable "Describe Variable: "))
@@ -134,25 +151,24 @@
 
 (defcommand describe-command (com) ((:command "Describe Command: "))
   "Print the online help associated with the specified command."
-  (let* ((deref (dereference-command-symbol com))
-         (struct (get-command-structure com nil)))
-    (cond ((null struct)
-           (message "Error: Command \"~a\" not found." com))
-          ((eq deref struct)
-           (message-no-timeout "Command \"~a\":~%~a" (command-name struct)
-                               (documentation (command-name struct) 'function)))
-          (t
-           (message-no-timeout "\"~a\" is an alias for the command \"~a\":~%~a" (command-alias-from deref) (command-name struct)
-                               (documentation (command-name struct) 'function))))))
+  (let ((*suppress-echo-timeout* t))
+    (echo-string
+     (current-screen)
+     (if (null (get-command-structure com nil))
+         (format nil "Error: Command \"~a\" not found."
+                 (command-name com))
+         (describe-command-to-stream com nil)))))
+
+(defun where-is-to-stream (cmd stream)
+  (let ((cmd (string-downcase cmd)))
+    (if-let ((bindings (loop for map in (top-maps) append (search-kmap cmd map))))
+      (format stream "\"~a\" is on ~{~a~^, ~}" cmd
+              (mapcar 'print-key-seq bindings))
+      (format stream "Command \"~a\" is not currently bound" cmd))))
 
 (defcommand where-is (cmd) ((:rest "Where is command: "))
   "Print the key sequences bound to the specified command."
-  (if-let ((bindings (loop for map in (top-maps) append (search-kmap cmd map))))
-    (message-no-timeout "\"~a\" is on ~{~a~^, ~}"
-                        cmd
-                        (mapcar 'print-key-seq bindings))
-    (message-no-timeout "Command \"~a\" is not currently bound"
-                        cmd)))
+  (message-no-timeout "~A" (where-is-to-stream cmd nil)))
 
 (defun get-kmaps-at-key (kmaps key)
   (dereference-kmaps
