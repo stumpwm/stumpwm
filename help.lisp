@@ -111,6 +111,27 @@
                       (with-output-to-string (s)
                         (describe fn s))))
 
+(defun describe-command-to-stream (com stream)
+  "Write the help for the command to the stream."
+  (let* ((deref (dereference-command-symbol com))
+         (struct (get-command-structure com nil))
+         (name (command-name struct)))
+    (wrap (concat
+           (unless (eq deref struct)
+             (format nil "\"~a\" is an alias for the command \"~a\":~%"
+                     (command-alias-from deref)
+                     name))
+           (when-let ((message (where-is-to-stream name nil)))
+             (format nil "~&~A~&" message))
+           (when-let ((lambda-list (sb-introspect:function-lambda-list
+                                  (symbol-function name))))
+             (format nil "~%^5~a ^B~{~a~^ ~}^b^n~&~%"
+                     name
+                     lambda-list))
+           (format nil "~&~a"(documentation name 'function)))
+          *message-max-width*
+          stream)))
+
 (defcommand describe-command (com) ((:command "Describe Command: "))
   "Print the online help associated with the specified command."
   (let* ((deref (dereference-command-symbol com))
