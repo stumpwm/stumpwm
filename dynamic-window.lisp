@@ -37,7 +37,9 @@ area."
   (declare (ignore win))
   (let* ((windows (group-windows group))
          (num-win (length windows)))
-    (only)
+    ;; Only try to make this the only frame if it isn't already.
+    (unless (only-one-frame-p)
+      (only))
     (recursive-tile (min *expose-n-max* num-win) group)))
 
 
@@ -46,9 +48,10 @@ area."
 that window the focus. Set the variable `*expose-auto-tile-fn*' to another
 tiling function if a different layout is desired. Set `*expose-n-max*' to the
 maximum number of windows to be displayed for choosing."
-  (funcall *expose-auto-tile-fn* nil 
+  (funcall *expose-auto-tile-fn* nil
            (current-group (current-screen)))
   ;; have the user select a window
-  (run-commands "fselect")
+  (unless (only-one-frame-p)
+    (run-commands "fselect"))
   ;; maximize that window
   (only))
