@@ -197,6 +197,7 @@ Modules
 Hacking
 
 * General Advice::
+* Adding Documentation and Editing This Manual::
 * Using git with StumpWM::
 * Sending Patches::
 
@@ -2665,11 +2666,12 @@ a pull request to start the discussion.
 
 @menu
 * General Advice::
+* Adding Documentation and Editing This Manual::
 * Using git with StumpWM::
 * Sending Patches::
 @end menu
 
-@node General Advice, Using git with StumpWM, Hacking, Hacking
+@node General Advice, Adding Documentation and Editing This Manual, Hacking, Hacking
 @section Hacking:  General Advice
 
 @enumerate
@@ -2744,7 +2746,32 @@ or might be willing to offer suggestions on how to improve the code.
 
 @end enumerate
 
-@node Using git with StumpWM, Sending Patches, General Advice, Hacking
+@node Adding Documentation and Editing This Manual, Using git with StumpWM, General Advice, Hacking
+@section Hacking: Adding Documentation and Editing This Manual
+
+The manual is written in @command{texinfo}, so you may want to read
+that manual. The @file{stumpwm.texi.in} is processed by StumpWM with
+some additional markup in the form of three letter character entries
+@c need to double up the at-signs in the @code{@@@ function} to escape
+@c them.
+at the beginning of a line. @code{@@@@@@ function} defines functions,
+@code{%%% some-macro} expands to that macro and its docstring, etc.
+Contributors are strongly encouraged to add these items to this manual
+whenever something new is defined in a patch. You can test if your
+texinfo edits are valid by generating them with
+@command{make stumpwm.info}, and viewing the new @file{stumpwm.info} with
+@command{info -f /path/to/stumpwm.info}, or @command{make
+stumpwm.texi} for the raw stuff.
+
+@table @asis
+@item %%% macro
+@item @@@@@@ function
+@item ### variable
+@item $$$ hook
+@item !!! StumpWM command
+@end table
+
+@node Using git with StumpWM, Sending Patches, Adding Documentation and Editing This Manual, Hacking
 @section Hacking:  Using git with StumpWM
 
 For quite a while now, StumpWM has been using the git version control
