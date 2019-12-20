@@ -50,9 +50,13 @@ AC_MSG_NOTICE([Using $LISP at $LISP_PROGRAM])
 AC_CHECK_PROG(MAKEINFO,makeinfo,yes,no)
 
 if test "$MAKEINFO" = "no"; then
-   AC_MSG_WARN([Please install makeinfo for the manual.])
+   AC_MSG_WARN([You do not seem to have makeinfo, so you will not be able
+to build the manuals. Please install makeinfo for the manual.])
+   elif test "$MAKEINFO" = "yes"; then
+   MAKEINFO=makeinfo
 fi
 
+AC_SUBST([MAKEINFO])
 AC_OUTPUT(Makefile)
 AC_OUTPUT(make-image.lisp)
 AC_OUTPUT(load-stumpwm.lisp)

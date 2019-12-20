@@ -1,5 +1,5 @@
 LISP=@LISP_PROGRAM@
-MAKEINFO?=makeinfo
+MAKEINFO=@MAKEINFO@
 
 sbcl_BUILDOPTS=--load ./make-image.lisp
 sbcl_INFOOPTS=--eval "(progn (load \"load-stumpwm.lisp\") (load \"manual.lisp\"))" --eval "(progn (stumpwm::generate-manual) (sb-ext:quit))"
@@ -19,7 +19,7 @@ all: stumpwm stumpwm.info
 
 travis: stumpwm test
 stumpwm.info: stumpwm.texi
-	$(MAKEINFO) stumpwm.texi
+	test "$(MAKEINFO)" = "no" || $(MAKEINFO) stumpwm.texi
 
 # FIXME: This rule is too hardcoded
 stumpwm.texi: stumpwm.texi.in
@@ -39,8 +39,8 @@ install: stumpwm.info stumpwm
 	test -z "$(destdir)$(bindir)" || mkdir -p "$(destdir)$(bindir)"
 	install -m 755 stumpwm "$(destdir)$(bindir)"
 	test -z "$(destdir)$(infodir)" || mkdir -p "$(destdir)$(infodir)"
-	install -m 644 stumpwm.info "$(destdir)$(infodir)"
-	install-info --info-dir="$(destdir)$(infodir)" "$(destdir)$(infodir)/stumpwm.info"
+	test "$(MAKEINFO)" = "no" || install -m 644 stumpwm.info "$(destdir)$(infodir)"
+	test "$(MAKEINFO)" = "no" || install-info --info-dir="$(destdir)$(infodir)" "$(destdir)$(infodir)/stumpwm.info"
 install-modules:
 	git clone https://github.com/stumpwm/stumpwm-contrib.git ~/.stumpwm.d/modules
 uninstall:
