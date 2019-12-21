@@ -217,10 +217,11 @@ unmark the entry at the selected point."
   (declare (ignore key-seq)))
 
 (defmethod typing-action ((menu single-menu) key-seq)
-  "If the user entered a key not mapped in @var{*menu-map}, check if
-  he's trying to type an entry's name. Match is case insensitive. If
-  @var{key-seq} is nil, some other function has manipulated the
-  current-input and is requesting a re-computation of the match."
+  "If the user entered a key not mapped in @var{*menu-map}, check it.
+If he's trying to type an entry's name, either complete or not based
+on COMPLETE-PARTIAL. Match is case insensitive. If @var{key-seq} is nil,
+some other function has manipulated the current-input and is requesting
+a re-computation of the match."
   (let ((input-char (and key-seq (get-input-char key-seq))))
     (when input-char
       (vector-push-extend input-char (single-menu-current-input menu)))
@@ -245,8 +246,8 @@ is not allowed, as specified by allowed-markers, item is not marked"
         (setf (car (nth selected table)) input-char)
         (menu-down menu)))))
 
-;; used for the default menus: they don't use menu-entrys
 (defun menu-element-name (element)
+  "Used for the default menus: they don't use menu-entry."
   (if (listp element)
       (first element)
       element))

@@ -362,10 +362,10 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 
 (defun add-group (screen name &key background (type *default-group-type*))
   "Create a new group in SCREEN with the supplied name. group names
-    starting with a . are considered hidden groups. Hidden groups are
-    skipped by gprev and gnext and do not show up in the group
-    listings (unless *list-hidden-groups* is T). They also use negative
-    numbers."
+starting with a . are considered hidden groups. Hidden groups are
+skipped by gprev and gnext and do not show up in the group
+listings (unless *list-hidden-groups* is T). They also use negative
+numbers."
   (check-type screen screen)
   (check-type name string)
   (assert (not (member name '("" ".") :test #'string=)) (name) "Groups must have a name.")
@@ -504,8 +504,7 @@ the default group formatting and window formatting, respectively."
     (switch-to-group to-group)))
 
 (defcommand grouplist (&optional (fmt *group-format*)) (:rest)
-  "Allow the user to select a group from a list, like windowlist but
-  for groups"
+  "Allow the user to select a group from a list, like windowlist for groups."
   (when-let ((group (second (select-from-menu
                              (current-screen)
                              (mapcar (lambda (g)
