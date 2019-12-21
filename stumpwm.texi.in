@@ -1824,6 +1824,7 @@ window pool, where windows and frames are not so tightly connected.
 %%% save-frame-excursion
 
 @@@ run-or-pull
+@@@ only-one-frame-p
 
 ### *min-frame-width*
 ### *min-frame-height*

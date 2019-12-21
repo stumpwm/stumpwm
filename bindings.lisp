@@ -26,7 +26,6 @@
 
 (export '(*groups-map*
           *group-top-maps*
-          *movement-map*
           *help-map*
           set-prefix-key))
 

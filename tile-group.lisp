@@ -1071,6 +1071,13 @@ space."
 
 (defcommand-alias remove remove-split)
 
+(defun only-one-frame-p ()
+  "T if there is only one maximized frame in the current head.
+This can be used around a the \"only\" command to avoid the warning message."
+  (let* ((group (screen-current-group (current-screen)))
+         (head (current-head group)))
+    (atom (tile-group-frame-head group head))))
+
 (defcommand (only tile-group) () ()
   "Delete all the frames but the current one and grow it to take up the entire head."
   (let* ((screen (current-screen))
@@ -1078,7 +1085,7 @@ space."
          (win (group-current-window group))
          (head (current-head group))
          (frame (copy-frame head)))
-    (if (atom (tile-group-frame-head group head))
+    (if (only-one-frame-p)
         (message "There's only one frame.")
         (progn
           (mapc (lambda (w)
