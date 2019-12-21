@@ -496,12 +496,7 @@ the default group formatting and window formatting, respectively."
                (or gfmt *group-format*)
                t (or wfmt *window-format*)))
 
-(defcommand gselect (to-group) ((:group "Select Group: "))
-"Select the first group that starts with
-@var{substring}. @var{substring} can also be a number, in which case
-@command{gselect} selects the group with that number."
-  (when to-group
-    (switch-to-group to-group)))
+(defcommand-alias gselect grouplist)
 
 (defcommand grouplist (&optional (fmt *group-format*)) (:rest)
   "Allow the user to select a group from a list, like windowlist for groups."
