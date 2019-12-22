@@ -45,12 +45,12 @@
   ((command :initarg :command))
   (:report
    (lambda (condition stream)
-     (format stream "The command ~A doesn't have a docstring" (slot-value condition 'command))))
+     (format stream "The command ~A doesn't have a docstring." (slot-value condition 'command))))
   (:documentation "Prevent accidentally not using docstrings (bad style!)."))
 
 (defun report-kbd-parse-error (c stream)
   "The message for a failed attempt to parse a key."
-  (format stream "Failed to parse key string: ~s" (slot-value c 'string)))
+  (format stream "Failed to parse key string: ~s." (slot-value c 'string)))
 
 (define-condition kbd-parse-error (stumpwm-error)
   ((string :initarg :string))
