@@ -217,6 +217,8 @@ such a case, kill the shell command to resume StumpWM."
 
 (defcommand-alias abort keyboard-quit)
 
+(defcommand quit-confirm (&optional (confirm t)) ((:y-or-n "Really close StumpWM? "))
+  (when confirm (quit)))
 
 (defcommand quit () ()
 "Quit StumpWM."
