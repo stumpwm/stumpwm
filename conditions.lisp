@@ -29,7 +29,7 @@
   ((message :initarg :message :reader warning-message))
   (:documentation "Any stumpmwm specific condition should inherit from this.")
   (:report (lambda (condition stream)
-             (format stream "~A~%" (warning-message condition)))))
+             (format stream "~A" (warning-message condition)))))
 
 (define-condition stumpwm-error (stumpwm-condition error)
   ()
