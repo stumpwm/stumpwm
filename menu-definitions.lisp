@@ -329,13 +329,15 @@ corresponding to the menu item), and USER-INPUT (the current user
 input). The default is MENU-ITEM-MATCHES-REGEXP.
 Returns the selected element in TABLE or nil if aborted. "
   (check-type screen screen)
-  (check-type table list)
+  (check-type table (or (cons string) (cons cons)))
   (check-type prompt (or null string))
   (check-type initial-selection integer)
 
   (when table
     (let ((menu (make-instance 'single-menu
-                               :table table
+                               :table (if (every #'listp table)
+                                          table
+                                          (mapcar #'list table))
                                :selected initial-selection
                                :prompt prompt
                                :view-start 0
