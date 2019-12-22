@@ -106,7 +106,7 @@
                       for cmd = (lookup-key-sequence map keys)
                       when cmd return cmd))
            (printed-key (mapcar 'print-key keys)))
-    (describe-command-to-stream cmd nil)
+    (message-no-timeout (describe-command-to-stream cmd nil))
     (cond ((and (help-key-p keys)
                 (cdr printed-key))
            (message "~{~A~^ ~} shows the bindings for the prefix map under ~{~A~^ ~}.~%"
@@ -151,13 +151,10 @@
 
 (defcommand describe-command (com) ((:command "Describe Command: "))
   "Print the online help associated with the specified command."
-  (let ((*suppress-echo-timeout* t))
-    (echo-string
-     (current-screen)
-     (if (null (get-command-structure com nil))
-         (format nil "Error: Command \"~a\" not found."
-                 (command-name com))
-         (describe-command-to-stream com nil)))))
+  (if (null (get-command-structure com nil))
+      (message-no-timeout "Error: Command \"~a\" not found."
+                          (command-name com))
+      (message-no-timeout "~a" (describe-command-to-stream com nil))))
 
 (defun where-is-to-stream (cmd stream)
   (let ((cmd (string-downcase cmd)))
