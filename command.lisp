@@ -47,13 +47,6 @@
 (defvar *max-command-alias-depth* 10
   "The maximum number of times an command alias is expanded before an Error is raised.")
 
-(define-condition command-docstring-warning (style-warning)
-  ;; Don't define an accessor to prevent collision with the generic command
-  ((command :initarg :command))
-  (:report
-   (lambda (condition stream)
-     (format stream "The command ~A doesn't have a docstring" (slot-value condition 'command)))))
-
 (defmacro defcommand (name (&rest args) (&rest interactive-args) &body body)
   "Create a command function and store its interactive hints in
 *command-hash*. The local variable %interactivep% can be used to check

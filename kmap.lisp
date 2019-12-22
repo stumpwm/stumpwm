@@ -105,14 +105,6 @@ the time these just gets in the way."
     (when with-capslock (push :lock mods))
     (apply 'xlib:make-state-mask mods)))
 
-(defun report-kbd-parse-error (c stream)
-  (format stream "Failed to parse key string: ~s" (slot-value c 'string)))
-
-(define-condition kbd-parse-error (stumpwm-error)
-  ((string :initarg :string))
-  (:report report-kbd-parse-error)
-  (:documentation "Raised when a kbd string failed to parse."))
-
 (defun parse-mods (mods end)
   "MODS is a sequence of <MOD CHAR> #\- pairs. Return a list suitable
 for passing as the last argument to (apply #'make-key ...)"

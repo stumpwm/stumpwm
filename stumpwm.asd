@@ -17,6 +17,7 @@
                #:clx
                #:sb-posix)
   :components ((:file "package")
+               (:file "conditions")
                (:file "primitives")
                (:file "wrappers")
                (:file "pathnames")

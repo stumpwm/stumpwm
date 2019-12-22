@@ -27,9 +27,6 @@
 
 (export '(getenv))
 
-(define-condition not-implemented (stumpwm-error)
-  () (:documentation "A function has been called that is not implemented yet."))
-
 (defun screen-display-string (screen &optional (assign t))
   (format nil
           (if assign "DISPLAY=~a:~d.~d" "~a:~d.~d")
