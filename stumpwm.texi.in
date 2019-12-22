@@ -2769,6 +2769,7 @@ stumpwm.texi} for the raw stuff.
 @item ### variable
 @item $$$ hook
 @item !!! StumpWM command
+@item &&& condition
 @end table
 
 @node Using git with StumpWM, Sending Patches, Adding Documentation and Editing This Manual, Hacking

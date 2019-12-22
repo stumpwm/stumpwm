@@ -88,6 +88,16 @@
         t)
       (warn "Symbol ~A not found in package STUMPWM" name))))
 
+(defun generate-condition-doc (s line)
+  (ppcre:register-groups-bind (name) ("^&&& (.*)" line)
+    (dprint 'condition name)
+    (let ((condition (find-symbol (string-upcase name) :stumpwm)))
+      (format s "@deffn {Condition} ~a ~{~a~^ ~}~%~a~&@end deffn~%~%"
+              name
+              (sb-mop:class-slots (class-of condition))
+              (documentation condition 'type))
+      t)))
+
 (defun generate-manual (&key (in #p"stumpwm.texi.in") (out #p"stumpwm.texi"))
   (let ((*print-case* :downcase))
     (with-open-file (os out :direction :output :if-exists :supersede)
@@ -99,4 +109,5 @@
                   (generate-hook-doc os line)
                   (generate-variable-doc os line)
                   (generate-command-doc os line)
+                  (generate-condition-doc os line)
                   (write-line line os)))))))
