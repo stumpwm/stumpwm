@@ -32,61 +32,69 @@
   ;(format t "~&Doing ~a ~a..." type sym)
   )
 
-(defun generate-function-doc (s line)
-  (ppcre:register-groups-bind (name) ("^@@@ (.*)" line)
-                              (dprint 'func name)
-                              (let ((fn (if (find #\( name :test 'char=)
-                                            ;; handle (setf <symbol>) functions
-                                            (with-standard-io-syntax
-                                              (let ((*package* (find-package :stumpwm)))
-                                                (fdefinition (read-from-string name))))
-                                            (symbol-function (find-symbol (string-upcase name) :stumpwm))))
-                                    (*print-pretty* nil))
-                                (format s "@defun {~a} ~{~a~^ ~}~%~a~&@end defun~%~%"
-                                        name
-                                        (sb-introspect:function-lambda-list fn)
-                                        (documentation fn 'function))
-                                t)))
+(defvar *doc-hook* nil
+  "The sigil expanding functions.")
 
-(defun generate-macro-doc (s line)
-  (ppcre:register-groups-bind (name) ("^%%% (.*)" line)
-                              (dprint 'macro name)
-                              (let* ((symbol (find-symbol (string-upcase name) :stumpwm))
-                                     (*print-pretty* nil))
-                                (format s "@defmac {~a} ~{~a~^ ~}~%~a~&@end defmac~%~%"
-                                        name
-                                        (sb-introspect:function-lambda-list (macro-function symbol))
-                                        (documentation symbol 'function))
-                                t)))
+(add-hook *doc-hook*
+          (lambda (s line)
+            (ppcre:register-groups-bind (name) ("^@@@ (.*)" line)
+              (dprint 'func name)
+              (let ((fn (if (find #\( name :test 'char=)
+                            ;; handle (setf <symbol>) functions
+                            (with-standard-io-syntax
+                              (let ((*package* (find-package :stumpwm)))
+                                (fdefinition (read-from-string name))))
+                            (symbol-function (find-symbol (string-upcase name) :stumpwm))))
+                    (*print-pretty* nil))
+                (format s "@defun {~a} ~{~a~^ ~}~%~a~&@end defun~%~%"
+                        name
+                        (sb-introspect:function-lambda-list fn)
+                        (documentation fn 'function))
+                (throw 'found-sigil t)))))
 
-(defun generate-variable-doc (s line)
-  (ppcre:register-groups-bind (name) ("^### (.*)" line)
-                              (dprint 'var name)
-                              (let ((sym (find-symbol (string-upcase name) :stumpwm)))
-                                (format s "@defvar ~a~%~a~&@end defvar~%~%"
-                                        name (documentation sym 'variable))
-                                t)))
+(add-hook *doc-hook*
+          (lambda (s line)
+            (ppcre:register-groups-bind (name) ("^%%% (.*)" line)
+              (dprint 'macro name)
+              (let* ((symbol (find-symbol (string-upcase name) :stumpwm))
+                     (*print-pretty* nil))
+                (format s "@defmac {~a} ~{~a~^ ~}~%~a~&@end defmac~%~%"
+                        name
+                        (sb-introspect:function-lambda-list (macro-function symbol))
+                        (documentation symbol 'function))
+                (throw 'found-sigil t)))))
 
-(defun generate-hook-doc (s line)
-  (ppcre:register-groups-bind (name) ("^\\$\\$\\$ (.*)" line)
-                              (dprint 'hook name)
-                              (let ((sym (find-symbol (string-upcase name) :stumpwm)))
-                                (format s "@defvr {Hook} ~a~%~a~&@end defvr~%~%"
-                                        name (documentation sym 'variable))
-                                t)))
+(add-hook *doc-hook*
+          (lambda (s line)
+            (ppcre:register-groups-bind (name) ("^### (.*)" line)
+              (dprint 'var name)
+              (let ((sym (find-symbol (string-upcase name) :stumpwm)))
+                (format s "@defvar ~a~%~a~&@end defvar~%~%"
+                        name (documentation sym 'variable))
+                (throw 'found-sigil t)))))
 
-(defun generate-command-doc (s line)
-  (ppcre:register-groups-bind (name) ("^!!! (.*)" line)
-    (dprint 'cmd name)
-    (if-let (symbol (find-symbol (string-upcase name) :stumpwm))
-      (let ((cmd (symbol-function symbol))
-            (*print-pretty* nil))
-        (format s "@deffn {Command} ~a ~{~a~^ ~}~%~a~&@end deffn~%~%"
-                name
-                (sb-introspect:function-lambda-list cmd)
-                (documentation cmd 'function))
-        t)
-      (warn "Symbol ~A not found in package STUMPWM" name))))
+(add-hook *doc-hook*
+          (lambda (s line)
+            (ppcre:register-groups-bind (name) ("^\\$\\$\\$ (.*)" line)
+              (dprint 'hook name)
+              (let ((sym (find-symbol (string-upcase name) :stumpwm)))
+                (format s "@defvr {Hook} ~a~%~a~&@end defvr~%~%"
+                        name (documentation sym 'variable))
+                (throw 'found-sigil t)))))
+
+(add-hook *doc-hook*
+          (lambda (s line)
+            (ppcre:register-groups-bind (name) ("^!!! (.*)" line)
+              (dprint 'cmd name)
+              (if-let (symbol (find-symbol (string-upcase name) :stumpwm))
+                (let ((cmd (symbol-function symbol))
+                      (*print-pretty* nil))
+                  (format s "@deffn {Command} ~a ~{~a~^ ~}~%~a~&@end deffn~%~%"
+                          name
+                          (sb-introspect:function-lambda-list cmd)
+                          (documentation cmd 'function))
+                  (throw 'found-sigil t))
+                (warn "Symbol ~A not found in package STUMPWM" name)))))
 
 (defun generate-manual (&key (in #p"stumpwm.texi.in") (out #p"stumpwm.texi"))
   (let ((*print-case* :downcase))
@@ -94,9 +102,6 @@
       (with-open-file (is in :direction :input)
         (loop for line = (read-line is nil is)
               until (eq line is) do
-              (or (generate-function-doc os line)
-                  (generate-macro-doc os line)
-                  (generate-hook-doc os line)
-                  (generate-variable-doc os line)
-                  (generate-command-doc os line)
+                (when (not (catch 'found-sigil
+                             (run-hook-with-args *doc-hook* os line)))
                   (write-line line os)))))))
