@@ -591,8 +591,14 @@ String arguments with spaces may be passed to the command by
 delimiting them with double quotes. A backslash can be used to escape
 double quotes or backslashes inside the string. This does not apply to
 commands taking :REST or :SHELL type arguments."
-  (let ((cmd (completing-read (current-screen) ": " (all-commands) :initial-input (or initial-input ""))))
-    (unless cmd
-      (throw 'error :abort))
-    (when (plusp (length cmd))
-      (eval-command cmd t))))
+  (let* ((commands (all-commands))
+         (cmd (select-from-menu (current-screen)
+                                (mapcar #'list commands)
+                                ": "
+                                (or (position initial-input
+                                              commands
+                                              :test #'string-equal)
+                                    0))))
+    (if cmd
+        (eval-command (car cmd) t)
+        (throw 'error :abort))))
