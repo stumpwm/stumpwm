@@ -389,9 +389,10 @@ numbers."
 (defun group-forward (current list)
   "Switch to the next non-hidden-group in the list, if one
 exists. Returns the new group."
-  (when-let ((next (next-group current (non-hidden-groups list))))
-    (switch-to-group next)
-    next))
+  (if-let ((next (next-group current (non-hidden-groups list))))
+    (progn (switch-to-group next)
+           next)
+    (message "No other group.")))
 
 (defun group-forward-with-window (current list)
   "Switch to the next group in the list, if one exists, and moves the
@@ -442,8 +443,9 @@ window along."
 (defcommand gother () ()
   "Go back to the last group."
   (let ((groups (screen-groups (current-screen))))
-    (when (> (length groups) 1)
-      (switch-to-group (second groups)))))
+    (if (> (length groups) 1)
+        (switch-to-group (second groups))
+        (message "No other group."))))
 
 (defun %grename (name group)
   (let ((group-name (group-name group)))
