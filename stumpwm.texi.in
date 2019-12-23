@@ -2200,26 +2200,6 @@ The following is a list of commands that don't really fit in any other
 ### *record-last-msg-override*
 ### *toplevel-io*
 
-@node Interacting With X11, Miscellaneous Commands, Interacting With Unix, Top
-@chapter Interacting With X11
-
-@@@ set-x-selection
-@@@ get-x-selection
-### *x-selection*
-@@@ update-decoration
-
-@node Miscellaneous Commands, Colors, Interacting With X11, Top
-@chapter Miscellaneous Commands
-
-@menu
-* Menus::
-* StumpWM's Data Directory::
-* Debugging StumpWM::
-* Sending a Bug Report::
-* Timers::
-* Getting Help::
-@end menu
-
 @node Menus, StumpWM's Data Directory, Miscellaneous Commands
 @section Menus
 @section Menus
