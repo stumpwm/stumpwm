@@ -1192,7 +1192,7 @@ input focus is transfered to the window you click on.")
 (defvar *resize-map* nil
   "The keymap used for resizing a window")
 
-(defvar *default-group-name* "default"
+(defvar *default-group-name* "Default"
   "The name of the default group.")
 
 (defmacro with-focus (xwin &body body)
