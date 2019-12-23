@@ -496,7 +496,12 @@ the default group formatting and window formatting, respectively."
                (or gfmt *group-format*)
                t (or wfmt *window-format*)))
 
-(defcommand-alias gselect grouplist)
+(defcommand gselect (&optional to-group) (:rest)
+  "Accepts numbers to select a group, otherwise grouplist selects."
+  (if-let ((to-group (when to-group
+                       (select-group (current-screen) to-group))))
+    (switch-to-group to-group)
+    (grouplist)))
 
 (defcommand grouplist (&optional (fmt *group-format*)) (:rest)
   "Allow the user to select a group from a list, like windowlist for groups."

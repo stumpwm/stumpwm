@@ -363,10 +363,10 @@ then describes the symbol."
 
 (define-stumpwm-type :command (input prompt)
   (or (argument-pop input)
-      (select-from-menu (current-screen)
-                        (mapcar #'list (all-commands))
-                        prompt
-                        0)))
+      (car (select-from-menu (current-screen)
+                             (all-commands)
+                             prompt
+                             0))))
 
 (define-stumpwm-type :key-seq (input prompt)
   (labels ((update (seq)
