@@ -550,12 +550,12 @@ to the next group."
              (format nil "You are about to kill non-empty group \"^B^3*~a^n\"
 The windows will be moved to group \"^B^2*~a^n\"
 ^B^6*Confirm?^n " (group-name dead-group) (group-name to-group))))
-            (progn
+            (let ((dead-group-name (group-name dead-group)))
               (switch-to-group to-group)
               (kill-group dead-group to-group)
-              (message "Deleted"))
+              (message "Deleted ~a." dead-group-name))
             (message "Canceled"))
-        (message "There's only one group left"))))
+        (message "There's only one group left."))))
 
 (defcommand gkill-other () ()
 "Kill other groups. All windows in other groups are migrated
