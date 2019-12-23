@@ -230,34 +230,36 @@ at 0. Return a netwm compliant group id."
           (always-show-window w screen)))))
 
 (defun move-window-to-group (window to-group)
-  (labels ((really-move-window (window to-group)
-             (unless (eq (window-group window) to-group)
-               (hide-window window)
-               ;; house keeping
-               (setf (group-windows (window-group window))
-                     (remove window (group-windows (window-group window))))
-               (group-delete-window (window-group window) window)
-               (setf (window-group window) to-group
-                     (window-number window) (find-free-window-number to-group))
-               (push window (group-windows to-group))
-               (xlib:change-property (window-xwin window) :_NET_WM_DESKTOP
-                                     (list (netwm-group-id to-group))
-                                     :cardinal 32)
-               (group-add-window to-group window))))
-    ;; When a modal window is moved, all the windows it shadows must be moved
-    ;; as well. When a shadowed window is moved, the modal shadowing it must
-    ;; be moved.
-    (cond
-      ((window-modal-p window)
-       (mapc (lambda (w)
-               (really-move-window w to-group))
-             (append (list window) (shadows-of window))))
-      ((modals-of window)
-       (mapc (lambda (w)
-               (move-window-to-group w to-group))
-             (modals-of window)))
-      (t
-       (really-move-window window to-group)))))
+  (if (equalp to-group (window-group window))
+      (message "That window is already in the group ~a." (group-name to-group))
+      (labels ((really-move-window (window to-group)
+                 (unless (eq (window-group window) to-group)
+                   (hide-window window)
+                   ;; house keeping
+                   (setf (group-windows (window-group window))
+                         (remove window (group-windows (window-group window))))
+                   (group-delete-window (window-group window) window)
+                   (setf (window-group window) to-group
+                         (window-number window) (find-free-window-number to-group))
+                   (push window (group-windows to-group))
+                   (xlib:change-property (window-xwin window) :_NET_WM_DESKTOP
+                                         (list (netwm-group-id to-group))
+                                         :cardinal 32)
+                   (group-add-window to-group window))))
+        ;; When a modal window is moved, all the windows it shadows must be moved
+        ;; as well. When a shadowed window is moved, the modal shadowing it must
+        ;; be moved.
+        (cond
+          ((window-modal-p window)
+           (mapc (lambda (w)
+                   (really-move-window w to-group))
+                 (append (list window) (shadows-of window))))
+          ((modals-of window)
+           (mapc (lambda (w)
+                   (move-window-to-group w to-group))
+                 (modals-of window)))
+          (t
+           (really-move-window window to-group))))))
 
 (defun next-group (current &optional
                    (groups (non-hidden-groups (screen-groups
