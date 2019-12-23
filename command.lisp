@@ -357,7 +357,7 @@ then describes the symbol."
   (multiple-value-bind (sym pkg var)
       (lookup-symbol (argument-pop-or-read input prompt))
     (if (fboundp sym)
-        (symbol-function sym)
+        sym
         (throw 'error (format nil "The symbol ~A::~A is not bound to any function."
                               (package-name pkg) var)))))
 
