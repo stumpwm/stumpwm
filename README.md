@@ -2,7 +2,7 @@
 # The Stump Window Manager
 ![](https://travis-ci.org/stumpwm/stumpwm.svg)
 
-Stumpwm is a window manager written entirely in Common Lisp. It
+StumpWM is a window manager written entirely in Common Lisp. It
 attempts to be highly customizable while relying entirely on the
 keyboard for input. You will not find buttons, icons, title bars, tool
 bars, or any of the other conventional GUI widgets.
@@ -12,7 +12,7 @@ customizable lisp based systems.
 
 ## Philosophy 
 
-Stumpwm is a "everything-and-the-kitchen-sink WM" or "the emacs of
+StumpWM is a "everything-and-the-kitchen-sink WM" or "the Emacs of
 WMs."
 
 **StumpWM:Windows::Emacs:Text**
@@ -24,12 +24,12 @@ WMs."
   * A Superior window managing experience 
 * StumpWM is *not*
   * Minimalist
-  * Narrow Scope
+  * Narrow scope
   * Configured by editing the source directly
   * A full blown desktop environment
 
 If you want a minimalist tiling window manager, then StumpWM is *not*
-what you're looking for.  The code base is ~15k sloc, the binaries
+what you're looking for.  The code base is ~15k lines, the binaries
 produced are ~60mb.
 
 StumpWM manages windows the way emacs manages buffers, or the way
@@ -41,7 +41,7 @@ hackable desktop experience, look no further.
 ## Prerequisites
 
 * [SBCL][sbcl]
-* quicklisp (for obtaining the following dependencies, not needed if you use your distribution's package manager.)
+* quicklisp (for obtaining the following dependencies; not needed if you use your distribution's package manager.)
 * clx
 * cl-ppcre
 * alexandria
@@ -88,10 +88,10 @@ dependencies.
 Building stumpwm from git requires that you build the configure script:
 
 ```
- autoconf
+ ./autogen.sh
 ```
 
-If there's already a configure script then just run it.
+Then run it:
 
 ```
  ./configure
@@ -103,8 +103,8 @@ Now build it:
  make
 ```
 
-If all goes well, you should have a stumpwm binary now.  You can run
-the binary from where it is or install it, along with the .info
+If all goes well, you should have a stumpwm binary now. You can run the binary
+from where it is (starting it with X) or install it, along with the .info
 documentation, with:
 
 ```
@@ -114,6 +114,7 @@ documentation, with:
 Now that you have a binary, call it from your ~/.xinitrc file:
 
 ```
+ # The default path is /usr/local/bin/stumpwm
  echo /path/to/stumpwm >> ~/.xinitrc
  startx
 ```
@@ -139,7 +140,7 @@ that your contribution gets merged in a timely manner:
     changes are made and then incrementally applied to the codebase in
     order to avoid introducing show-stopping bugs.
 * Do not's
-  * Include emacs local variables 
+  * Include Emacs local variables
   * Change whitespace 
   * Write lots of code without supporting comments/documentation
   * Delete comments or docstrings (yes this is a duplicate of above!)
@@ -148,10 +149,9 @@ that your contribution gets merged in a timely manner:
     change without having to export/break encapsulation)
   * Make stylistic changes that suit your coding style/way of thinking 
 
-Our wiki has fallen into disarray/disrepair, but it is shaping up.  If
-you aren't a lisp hacker, you can contribute in the form of
+If you aren't a lisp hacker, you can contribute in the form of
 documenting and organizing the wiki. There's a lot of information
-floating around, if you find it where you didn't expect it, move or
+floating around; if you find it where you didn't expect it, move or
 link to it in a more logical place.
 
 # Wishlist 
@@ -194,12 +194,19 @@ info file you can read in emacs or with the `info' program.  The
 manual for the latest git version (may be slightly out of date) is
 available to read online at: [The Manual](https://stumpwm.github.io/)
 
-And, as in emacs, you can always do "C-t h v,f,k,c,w" for docstrings
-of Variable,Functions,Keys,Commands, and Where-is respectively.
+And, as in Emacs, you can always get documentation with:
+
+| Key                | Help                             |
+|--------------------|----------------------------------|
+| <kbd>C-t h v</kbd> | Variables                        |
+| <kbd>C-t h f</kbd> | Functions                        |
+| <kbd>C-t h k</kbd> | Key sequences                    |
+| <kbd>C-t h c</kbd> | Commands                         |
+| <kbd>C-t h w</kbd> | Find key sequences for a command |
 
 For other stuff (tips tricks and examples) visit the [stumpwm wiki](https://github.com/stumpwm/stumpwm/wiki)
 
-There's a #stumpwm channel on irc.freenode.net, too.
+There's a **#stumpwm** channel on [irc.freenode.net](https://irc.freenode.net), too.
 
 Finally, there's our mailing list (click to sign up)
 [stumpwm-devel@nongnu.org](https://lists.nongnu.org/mailman/listinfo/stumpwm-devel).
