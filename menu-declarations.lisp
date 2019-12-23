@@ -115,7 +115,8 @@ current-input and filter-pred")
    (current-input :initarg current-input
                   :initform (make-array 10 :element-type 'character
                                         :adjustable t :fill-pointer 0)
-                  :accessor single-menu-current-input))
+                  :accessor single-menu-current-input
+                  :documentation "The input field for the menu."))
   (:documentation "Class used when selecting a single item in a menu. Allows searching through the list."))
 
 (defmethod initialize-instance :after ((menu single-menu) &key initargs)

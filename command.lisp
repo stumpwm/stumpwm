@@ -390,7 +390,7 @@ then describes the symbol."
                      :test #'string=
                      :key #'window-map-number)))
       (window-number win)
-      (throw 'error "No Such Window."))))
+      (throw 'error "No such window."))))
 
 (define-stumpwm-type :number (input prompt)
   (when-let ((n (or (argument-pop input)
@@ -467,7 +467,7 @@ then describes the symbol."
                                                   (mapcar 'group-name
                                                           (screen-groups (current-screen))))))))
     (or match
-        (throw 'error "No Such Group."))))
+        (throw 'error "No such group."))))
 
 (define-stumpwm-type :frame (input prompt)
   (declare (ignore prompt))
