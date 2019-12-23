@@ -900,9 +900,11 @@ Describe the specified command.
 @@@ ungrab-pointer
 ### *banish-pointer-to*
 
+@@@ final-key-p
+@@@ help-key-p
+@@@ cancel-key-p
 ### *editor-bindings*
 ### *numpad-map*
-
 
 @node Modifiers, Remapped Keys, Binding Keys, Key Bindings
 @section Modifiers
@@ -1469,6 +1471,8 @@ return a ``nil'' value in those cases, and let the command handle that.
 ### *suppress-echo-timeout*
 !!! echo
 @@@ err
+@@@ wrap
+### *message-max-width*
 !!! colon
 
 %%% with-restarts-menu
