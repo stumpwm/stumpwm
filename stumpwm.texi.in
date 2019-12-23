@@ -2172,6 +2172,17 @@ multiplexer to actually run it.
 @@@ getenv
 @@@ (setf getenv)
 
+@node Interacting With X11, Miscellaneous Commands, Interacting With Unix, Top
+@chapter Interacting With X11
+
+@@@ set-x-selection
+@@@ get-x-selection
+### *default-selections*
+### *x-selection*
+
+@node Miscellaneous Commands, Colors, Interacting With X11, Top
+@chapter Miscellaneous Commands
+The following is a list of commands that don't really fit in any other
 @@@ split-string
 
 @@@ argument-line-end-p
