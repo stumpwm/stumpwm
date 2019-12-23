@@ -24,6 +24,7 @@
 
 (in-package #:stumpwm)
 
+(export '(*help-max-height* *message-max-width*))
 (defvar *message-max-width* 80
   "The maximum width of a message before it wraps.")
 (defvar *help-max-height* 10
