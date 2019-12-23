@@ -26,15 +26,8 @@
 
 (require :sb-introspect)
 
-;; handy for figuring out which symbol is borking the documentation
-(defun dprint (type sym)
-  (declare (ignorable type sym))
-  ;(format t "~&Doing ~a ~a..." type sym)
-  )
-
 (defun generate-function-doc (s line)
   (ppcre:register-groups-bind (name) ("^@@@ (.*)" line)
-                              (dprint 'func name)
                               (let ((fn (if (find #\( name :test 'char=)
                                             ;; handle (setf <symbol>) functions
                                             (with-standard-io-syntax
@@ -50,7 +43,6 @@
 
 (defun generate-macro-doc (s line)
   (ppcre:register-groups-bind (name) ("^%%% (.*)" line)
-                              (dprint 'macro name)
                               (let* ((symbol (find-symbol (string-upcase name) :stumpwm))
                                      (*print-pretty* nil))
                                 (format s "@defmac {~a} ~{~a~^ ~}~%~a~&@end defmac~%~%"
@@ -61,7 +53,6 @@
 
 (defun generate-variable-doc (s line)
   (ppcre:register-groups-bind (name) ("^### (.*)" line)
-                              (dprint 'var name)
                               (let ((sym (find-symbol (string-upcase name) :stumpwm)))
                                 (format s "@defvar ~a~%~a~&@end defvar~%~%"
                                         name (documentation sym 'variable))
@@ -69,7 +60,6 @@
 
 (defun generate-hook-doc (s line)
   (ppcre:register-groups-bind (name) ("^\\$\\$\\$ (.*)" line)
-                              (dprint 'hook name)
                               (let ((sym (find-symbol (string-upcase name) :stumpwm)))
                                 (format s "@defvr {Hook} ~a~%~a~&@end defvr~%~%"
                                         name (documentation sym 'variable))
@@ -77,7 +67,6 @@
 
 (defun generate-command-doc (s line)
   (ppcre:register-groups-bind (name) ("^!!! (.*)" line)
-    (dprint 'cmd name)
     (if-let (symbol (find-symbol (string-upcase name) :stumpwm))
       (let ((cmd (symbol-function symbol))
             (*print-pretty* nil))
