@@ -312,7 +312,7 @@ current frame instead of switching to the window."
   (message "Reloading StumpWM...")
   #+asdf (with-restarts-menu
              (asdf:operate 'asdf:load-op :stumpwm))
-  #-asdf (message "^B^1*Sorry, StumpWM can only be reloaded with asdf (for now.)")
+  #-asdf (message "^B^1*Sorry, StumpWM can only be reloaded with asdf (for now).")
   #+asdf (message "Reloading StumpWM...^B^2*Done^n."))
 
 (defcommand emacs () ()

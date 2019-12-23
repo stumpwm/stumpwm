@@ -417,8 +417,8 @@ frame. Possible values are:
     (if match
         (progn
           (setf *window-placement-rules* (delete match *window-placement-rules*))
-          (message "Rule forgotten"))
-        (message "No matching rule"))))
+          (message "Rule forgotten."))
+        (message "No matching rule."))))
 
 (defcommand (dump-window-placement-rules tile-group) (file) ((:rest "Filename: "))
   "Dump *window-placement-rules* to FILE."
@@ -473,7 +473,7 @@ specified to override the default window formatting."
   (let* ((group (current-group))
          (frame (tile-group-current-frame group)))
     (if (null (frame-windows group frame))
-        (message "No Managed Windows")
+        (message "No Managed Windows.")
         (let ((window (select-window-from-menu (frame-sort-windows group frame) fmt)))
           (if window
               (group-focus-window group window)
