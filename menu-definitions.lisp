@@ -291,17 +291,18 @@ more spaces; ARGUMENT-POP is used to split the string)."
                        (len (length (menu-table menu)))
                        (prompt-line (menu-prompt-line menu))
                        (strings (get-menu-items menu))
-                       (highlight (- sel start)))
+                       (highlight (- sel start))
+                       (columns (menu-columns menu)))
                   (unless (zerop start)
                     (setf strings (cons "..." strings))
                     (incf highlight))
                   (unless (= len end)
                     (setf strings (nconc strings '("..."))))
                   (when prompt-line
-                    (push prompt-line strings)
                     (incf highlight))
                   (run-hook-with-args *menu-selection-hook* menu)
-                  (echo-string-list screen strings highlight))
+                  (echo-string-list-columns screen prompt-line
+                                            strings columns highlight))
                 (multiple-value-bind (action key-seq) (read-from-keymap (menu-keymap menu))
                   (if action
                       (progn (funcall action menu)
@@ -313,7 +314,8 @@ more spaces; ARGUMENT-POP is used to split the string)."
 (defun select-from-menu (screen table &optional (prompt "Search:")
                                         (initial-selection 0)
                                         extra-keymap
-                                        (filter-pred #'menu-item-matches-regexp))
+                                        (filter-pred #'menu-item-matches-regexp)
+                                        (columns 1))
   "Prompt the user to select from a menu on SCREEN. TABLE can be
 a list of values or a nested list. If it's a nested list, the first
 element in the sublist is displayed in the menu. What is displayed
@@ -344,7 +346,8 @@ Returns the selected element in TABLE or nil if aborted. "
                                :view-start 0
                                :view-end 0
                                :additional-keymap extra-keymap
-                               :FILTER-PRED filter-pred)))
+                               :FILTER-PRED filter-pred
+                               :columns columns)))
       (run-menu screen menu))))
 
 (defun select-from-batch-menu (screen table &key (prompt "Select:")

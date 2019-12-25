@@ -64,14 +64,22 @@
                         (or (columnize data cols) '("(EMPTY MAP)")))))
 
 (defcommand commands () ()
-"List all available commands."
+  "List all available commands in multiple columns.
+Runs describe-command on the selected command."
   (let* ((screen (current-screen))
          (data (all-commands))
          (cols (ceiling (length data)
                         (truncate (- (head-height (current-head)) (* 2 (screen-msg-border-width screen)))
-                                  (font-height (screen-font screen))))))
-    (message-no-timeout "~{~a~^~%~}"
-                        (columnize data cols))))
+                                  (font-height (screen-font screen)))))
+         (selection (select-from-menu screen
+                                      data
+                                      "Describe Command:"
+                                      0
+                                      nil
+                                      #'stumpwm::menu-item-matches-regexp
+                                      3)))
+    (when selection
+      (describe-command (car selection)))))
 
 (defun wrap (words &optional (max-col *message-max-width*) stream)
   "Word wrap at the MAX-COL."
@@ -130,31 +138,33 @@
 
 (defun describe-command-to-stream (com stream)
   "Write the help for the command to the stream."
-  (let* ((deref (dereference-command-symbol com))
-         (struct (get-command-structure com nil))
-         (name (command-name struct)))
-    (wrap (concat
-           (unless (eq deref struct)
-             (format nil "\"~a\" is an alias for the command \"~a\":~%"
-                     (command-alias-from deref)
-                     name))
-           (when-let ((message (where-is-to-stream name nil)))
-             (format nil "~&~A~&" message))
-           (when-let ((lambda-list (sb-introspect:function-lambda-list
-                                  (symbol-function name))))
-             (format nil "~%^5~a ^B~{~a~^ ~}^b^n~&~%"
-                     name
-                     lambda-list))
-           (format nil "~&~a"(documentation name 'function)))
-          *message-max-width*
-          stream)))
+  (if (null com)
+      (message "Abort.")
+      (let* ((deref (dereference-command-symbol com))
+             (struct (get-command-structure com nil))
+             (name (command-name struct)))
+        (if (null struct)
+            (format stream "Error: Command \"~a\" not found."
+                    (command-name com))
+            (wrap (concat
+                   (unless (eq deref struct)
+                     (format nil "\"~a\" is an alias for the command \"~a\":~%"
+                             (command-alias-from deref)
+                             name))
+                   (when-let ((message (where-is-to-stream name nil)))
+                     (format nil "~&~A~&" message))
+                   (when-let ((lambda-list (sb-introspect:function-lambda-list
+                                            (symbol-function name))))
+                     (format nil "~%^5~a ^B~{~a~^ ~}^b^n~&~%"
+                             name
+                             lambda-list))
+                   (format nil "~&~a"(documentation name 'function)))
+                  *message-max-width*
+                  stream)))))
 
 (defcommand describe-command (com) ((:command "Describe Command: "))
   "Print the online help associated with the specified command."
-  (if (null (get-command-structure com nil))
-      (message-no-timeout "Error: Command \"~a\" not found."
-                          (command-name com))
-      (message-no-timeout "~a" (describe-command-to-stream com nil))))
+  (message-no-timeout "~a" (describe-command-to-stream com nil)))
 
 (defun where-is-to-stream (cmd stream)
   (let ((cmd (string-downcase cmd)))

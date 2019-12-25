@@ -93,7 +93,11 @@
              :initform 0)
    (keymap :accessor menu-keymap
            :initform nil
-           :documentation "Keymap used for navigating the menu." ))
+           :documentation "Keymap used for navigating the menu." )
+   (columns :accessor menu-columns
+            :initarg :columns
+            :initform 1
+            :documentation "How many columns to show in the output."))
   (:documentation "Base class for holding the state of a menu"))
 
 (defmethod initialize-instance :after ((m menu) &key additional-keymap)

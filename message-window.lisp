@@ -289,6 +289,20 @@ When NEW-ON-BOTTOM-P is non-nil, new messages are queued at the bottom."
     (dformat 5 "Outputting a message:~%~{        ~a~%~}" strings)
     (apply 'run-hook-with-args *message-hook* strings)))
 
+(defun echo-string-list-columns (screen prompt strings columns
+                                 &rest highlights)
+  "Echo a list of strings with a prompt.
+Use a NIL prompt for no prompt."
+  (let ((columized (columnize strings
+                    (if (< columns (length strings))
+                        columns
+                        1))))
+    (apply #'echo-string-list screen
+           (if prompt
+               (cons prompt columized)
+               columized)
+           highlights)))
+
 (defun echo-string (screen msg)
   "Display @var{string} in the message bar on @var{screen}. You almost always want to use @command{message}."
   (echo-string-list screen (split-string msg (string #\Newline))))
