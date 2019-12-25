@@ -63,16 +63,6 @@
                         (print-key-seq key-seq)
                         (or (columnize data cols) '("(EMPTY MAP)")))))
 
-(defcommand commands () ()
-"List all available commands."
-  (let* ((screen (current-screen))
-         (data (all-commands))
-         (cols (ceiling (length data)
-                        (truncate (- (head-height (current-head)) (* 2 (screen-msg-border-width screen)))
-                                  (font-height (screen-font screen))))))
-    (message-no-timeout "~{~a~^~%~}"
-                        (columnize data cols))))
-
 (defun wrap (words &optional (max-col *message-max-width*) stream)
   "Word wrap at the MAX-COL."
   ;; Format insanity edited from Gene Michael Stover's "Advanced Use of Lisp's

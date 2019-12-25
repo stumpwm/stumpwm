@@ -1454,7 +1454,6 @@ return a ``nil'' value in those cases, and let the command handle that.
 !!! restart-hard
 !!! restart-soft
 !!! lastmsg
-!!! commands
 !!! keyboard-quit
 !!! quit
 !!! reload
