@@ -32,6 +32,9 @@
           select-from-batch-menu
           command-menu))
 
+(defvar *message-max-width* 80
+  "The maximum width of a message before it wraps.")
+
 (defun entries-from-nested-list (lst)
   (mapcar (lambda (x)
             (make-instance 'menu-entry
@@ -275,10 +278,31 @@ more spaces; ARGUMENT-POP is used to split the string)."
   (declare (ignore item-object))
   (match-all-regexps user-input item-string))
 
+(defun pad (side chars string)
+  "Pad the STRING to be of length CHARS on the SIDE."
+  (let* ((rchars (- chars (length string)))
+         (rchars (if (>= 0 rchars) 1 rchars)))
+    (cond ((eql side :right)
+           (concat string (repeat rchars #\Space)))
+          ((eql side :left)
+           (concat (repeat rchars #\Space) string)))))
+
+(defun first-word (str)
+  "First word of the string."
+  (car (split-string str " ")))
+
+(defun first-item-regexp (item-str item-obj user-input)
+  "Like menu-item-matches-regexp, but only before the first whitespace.
+Useful for adding informational columns to menus."
+  (menu-item-matches-regexp
+   (first-word item-str)
+   item-obj user-input))
+
 (defun run-menu (screen menu)
-  "Runs the menu. Implement all of the methods in the menu, then pass an instance to this function"
+  "Runs the menu.
+Implement all of the methods in the menu, then pass an instance to this
+function. Align the menu, make the pages."
   (declare (type menu menu))
-  ;; align the menu, make the pages
   (bound-check-menu menu)
   (catch :menu-quit
     (unwind-protect

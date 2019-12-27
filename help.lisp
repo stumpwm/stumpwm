@@ -24,9 +24,6 @@
 
 (in-package #:stumpwm)
 
-(defvar *message-max-width* 80
-  "The maximum width of a message before it wraps.")
-
 (defun columnize (list columns &key col-aligns (pad 1) (char #\Space) (align :left))
   ;; only somewhat nasty
   (let* ((rows (ceiling (length list) columns))
@@ -50,6 +47,32 @@
                                   (:left (format nil "~a~a~a" (if (= c 0) "" padstr) s len))
                                   (:right (format nil "~a~a~a" (if (= c 0) "" padstr) len s)))))))
     (apply 'mapcar 'concat (or cols '(nil)))))
+
+(defun add-column (col fn &key elide)
+  "Add a column to a list of strings.
+Add it to the :left or :right, with PADDING spaces. If ELIDE is true, will limit
+it to *MESSAGE-MAX-WIDTH* and add '...' there. Does not pad like `columnize'
+does."
+  (labels ((remove-trailing-space (str)
+             "No trailing spaces in the string."
+             (let ((len (length str)))
+               (if (char= #\Space (aref str (1- len)))
+                   (remove-trailing-space (subseq str 0 (- len 2)))
+                   str)))
+           (elide (str &optional (max *message-max-width*) stream)
+             "Elide a string while maintaining color data."
+             (if (> max (length str))
+                 (format stream "~a" str)
+                 (format stream "~a^n^r^b..."
+                         (remove-trailing-space
+                          (subseq str 0 (position #\Space str
+                                                  :from-end t
+                                                  :test #'char=
+                                                  :end max)))))))
+    (loop for c in col
+         collect (let* ((f (funcall fn c))
+                        (cols (concat c " " f)))
+                   (if elide (elide cols) cols)))))
 
 (defun display-bindings-for-keymaps (key-seq &rest keymaps)
   (let* ((screen (current-screen))
@@ -149,12 +172,30 @@
           *message-max-width*
           stream)))
 
-(defcommand describe-command (com) ((:command "Describe Command: "))
+(defcommand describe-command (&optional com) ()
   "Print the online help associated with the specified command."
-  (if (null (get-command-structure com nil))
-      (message-no-timeout "Error: Command \"~a\" not found."
-                          (command-name com))
-      (message-no-timeout "~a" (describe-command-to-stream com nil))))
+  (let* ((commands (all-commands))
+         (com
+           (or com
+               (first-word
+                (car (select-from-menu
+                      (current-screen)
+                      (add-column
+                       commands
+                       (lambda (c)
+                         (car
+                          (mapcar #'print-key-seq
+                                  (loop for map in (top-maps)
+                                        append (search-kmap c map)))))
+                       :side :right :elide t)
+                      "Describe Command:"
+                      0
+                      nil
+                      #'first-item-regexp))))))
+    (if (null (get-command-structure com nil))
+        (message-no-timeout "Error: Command \"~a\" not found."
+                            (command-name com))
+        (message-no-timeout "~a" (describe-command-to-stream com nil)))))
 
 (defun where-is-to-stream (cmd stream)
   (let ((cmd (string-downcase cmd)))

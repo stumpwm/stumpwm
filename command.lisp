@@ -593,13 +593,28 @@ delimiting them with double quotes. A backslash can be used to escape
 double quotes or backslashes inside the string. This does not apply to
 commands taking :REST or :SHELL type arguments."
   (let* ((commands (all-commands))
-         (cmd (select-from-menu (current-screen)
-                                (mapcar #'list commands)
-                                ": "
-                                (or (position initial-input
-                                              commands
-                                              :test #'string-equal)
-                                    0))))
+         (cmd (select-from-menu
+              (current-screen)
+              (add-column
+               commands
+               (lambda (c)
+                 (let ((llist (sb-introspect:function-lambda-list
+                               (let ((fn (intern (string-upcase c))))
+                                 (if (fboundp fn)
+                                     (symbol-function fn)
+                                     ;; KLUDGE: get-universal time takes no arguments.
+                                     (symbol-function 'get-universal-time))))))
+                   (remove-if (lambda (c) (string= #\Newline c))
+                              (format nil "^5^B~:[~;~{~a~^ ~}~]^b^n"
+                                      llist llist))))
+               :side :right :elide t)
+              ": "
+              (or (position initial-input
+                            commands
+                            :test #'string-equal)
+                  0)
+              nil
+              #'first-item-regexp)))
     (if cmd
         (eval-command (car cmd) t)
         (throw 'error :abort))))
