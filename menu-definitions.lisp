@@ -353,6 +353,8 @@ Returns the selected element in TABLE or nil if aborted. "
                                :view-end 0
                                :additional-keymap extra-keymap
                                :FILTER-PRED filter-pred)))
+      ;; A stronger default sorting decision.
+      (vector-push-extend #\^ (single-menu-current-input menu))
       (run-menu screen menu))))
 
 (defun select-from-batch-menu (screen table &key (prompt "Select:")
