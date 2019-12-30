@@ -149,6 +149,9 @@ If nil, then all chars are allowed"))
       (setf table (mapcar #'process-entry table)))
     (push *batch-menu-map* keymap)))
 
+(defgeneric menu-clear (menu)
+  (:documentation "Empty the input line."))
+
 (defgeneric menu-up (menu)
   (:documentation "Move menu cursor up"))
 
@@ -176,6 +179,10 @@ Must signal :menu-quit with the result."))
 Must signal :menu-quit with the result."))
 
 ;; here for single-menu
+
+(defgeneric menu-complete (menu)
+  (:documentation "Action to complete the current input on the top item."))
+
 (defgeneric menu-backspace (menu)
   (:documentation "What occurs when backspace is pressed in a menu"))
 

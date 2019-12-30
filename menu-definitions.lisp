@@ -32,6 +32,9 @@
           select-from-batch-menu
           command-menu))
 
+(defun car-safe (lst)
+  (if (consp lst) (car lst) lst))
+
 (defun entries-from-nested-list (lst)
   (mapcar (lambda (x)
             (make-instance 'menu-entry
@@ -90,38 +93,53 @@ on current view and new selection."
                   (assert (<= menu-height end len) (end))
                   (values start end)))))))
 
-(defmethod menu-up ((menu menu))
-  (decf (menu-selected menu))
-  (bound-check-menu menu))
-
-;; before or after? probably doesn't matter
-(defmethod menu-up :before ((menu single-menu))
-  "clear the search string if the cursor is moved"
-  (setf (fill-pointer (single-menu-current-input menu)) 0))
+(defmethod menu-clear ((menu single-menu))
+  (setf (fill-pointer (single-menu-current-input menu)) 0)
+  (setf (menu-table menu)
+        (remove-if-not (lambda (item) (match-p item menu))
+                       (single-menu-unfiltered-table menu))))
 
 (defmethod menu-down ((menu menu))
   (incf (menu-selected menu))
   (bound-check-menu menu))
 
-(defmethod menu-down :before ((menu single-menu))
-  "clear the search string if the cursor is moved"
-  (setf (fill-pointer (single-menu-current-input menu)) 0))
+(defmethod menu-up ((menu menu))
+  (decf (menu-selected menu))
+  (bound-check-menu menu))
+
+(defmethod menu-up ((menu single-menu))
+  (when (not (zerop (menu-selected menu)))
+    (decf (menu-selected menu))))
+
+(defmethod menu-complete ((menu single-menu))
+  (when-let ((selected (car-safe (nth (menu-selected menu)
+                                      (menu-table menu)))))
+    (setf (single-menu-current-input menu)
+          (make-array (length selected)
+                      :initial-contents selected
+                      :element-type 'character
+                      :fill-pointer (length selected)
+                      :adjustable t))
+    (setf (menu-table menu)
+          (remove-if-not (lambda (item) (match-p item menu))
+                         (single-menu-unfiltered-table menu)))))
+
+(defmethod menu-down ((menu single-menu))
+  (bound-check-menu menu)
+  (when (not (= (menu-selected menu)
+                (1- (length (menu-table menu)))))
+    (incf (menu-selected menu))))
+
 
 (defmethod menu-scroll-up ((menu menu))
-  (decf (menu-selected menu) *menu-scrolling-step*)
-  (bound-check-menu menu))
-
-(defmethod menu-scroll-up :before ((menu single-menu))
-  "clear the search string if the cursor is moved"
-  (setf (fill-pointer (single-menu-current-input menu)) 0))
+  (loop repeat *menu-scrolling-step*
+        do (menu-up menu)))
 
 (defmethod menu-scroll-down ((menu menu))
-  (incf (menu-selected menu) *menu-scrolling-step*)
-  (bound-check-menu menu))
+  (loop repeat *menu-scrolling-step*
+        do (menu-down menu)))
 
-(defmethod menu-scroll-down :before ((menu single-menu))
-  "clear the search string if the cursor is moved"
-  (setf (fill-pointer (single-menu-current-input menu)) 0))
+
 
 (defmethod menu-page-up ((menu menu))
   (when *menu-maximum-height* ;;No scrolling = no page up/down
@@ -129,22 +147,14 @@ on current view and new selection."
     (let ((*menu-scrolling-step* *menu-maximum-height*))
       (bound-check-menu menu))))
 
-(defmethod menu-page-up :before ((menu single-menu))
-  (when *menu-maximum-height* ;;No scrolling = no page up/down
-    (setf (fill-pointer (single-menu-current-input menu)) 0)))
-
 (defmethod menu-page-down ((menu menu))
   (when *menu-maximum-height*
     (incf (menu-selected menu) *menu-maximum-height*)
     (let ((*menu-scrolling-step* *menu-maximum-height*))
       (bound-check-menu menu))))
 
-(defmethod menu-page-down :before ((menu single-menu))
-  (when *menu-maximum-height*
-    (setf (fill-pointer (single-menu-current-input menu)) 0)))
-
 (defmethod menu-finish ((menu menu))
-  (throw :menu-quit (nth (menu-selected menu) (menu-table menu))))
+  (throw :menu-quit (car-safe (nth (menu-selected menu) (menu-table menu)))))
 
 (defmethod menu-finish ((menu batch-menu))
   "Value returned with the signal is an alist, where the cdr of the value
@@ -216,6 +226,12 @@ unmark the entry at the selected point."
   "Default action is to do nothing"
   (declare (ignore key-seq)))
 
+(defun match-p (table-item menu)
+  (funcall (single-menu-filter-pred menu)
+           (car table-item)
+           (second table-item)
+           (single-menu-current-input menu)))
+
 (defmethod typing-action ((menu single-menu) key-seq)
   "If the user entered a key not mapped in @var{*menu-map}, check it.
 If he's trying to type an entry's name, either complete or not based
@@ -227,14 +243,9 @@ a re-computation of the match."
       (vector-push-extend input-char (single-menu-current-input menu)))
     (handler-case
         (when (or input-char (not key-seq))
-          (labels ((match-p (table-item)
-                     (funcall (single-menu-filter-pred menu)
-                              (car table-item)
-                              (second table-item)
-                              (single-menu-current-input menu))))
-            (setf (menu-table menu) (remove-if-not #'match-p (single-menu-unfiltered-table menu))
-                  (menu-selected menu) 0)
-            (bound-check-menu menu)))
+          (setf (menu-table menu) (remove-if-not (lambda (item) (match-p item menu)) (single-menu-unfiltered-table menu))
+                (menu-selected menu) 0)
+          (bound-check-menu menu))
       (cl-ppcre:ppcre-syntax-error ()))))
 
 (defmethod typing-action ((menu batch-menu) key-seq)
@@ -436,9 +447,12 @@ COMMAND-LIST: A list of entries defining the commands associated with each mark.
           (define-key m (kbd "S-Down") 'menu-scroll-down)
           (define-key m (kbd "SunPageDown") 'menu-page-down)
 
+          (define-key m (kbd "TAB") 'menu-complete)
+
           (define-key m (kbd "C-g") 'menu-abort)
           (define-key m (kbd "ESC") 'menu-abort)
           (define-key m (kbd "RET") 'menu-finish)
+          (define-key m (kbd "C-DEL") 'menu-clear)
           m)))
 
 (when (null *single-menu-map*)

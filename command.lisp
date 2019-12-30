@@ -363,10 +363,11 @@ then describes the symbol."
 
 (define-stumpwm-type :command (input prompt)
   (or (argument-pop input)
-      (car (select-from-menu (current-screen)
-                             (all-commands)
-                             prompt
-                             0))))
+      (car-safe (select-from-menu (current-screen)
+                                  (all-commands)
+                                  prompt
+                                  0))
+      (throw 'error :abort)))
 
 (define-stumpwm-type :key-seq (input prompt)
   (labels ((update (seq)
@@ -601,5 +602,5 @@ commands taking :REST or :SHELL type arguments."
                                               :test #'string-equal)
                                     0))))
     (if cmd
-        (eval-command (car cmd) t)
+        (eval-command cmd t)
         (throw 'error :abort))))
