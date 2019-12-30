@@ -1,1 +1,2 @@
 *.lisp diff=lisp
+*.lisp whitespace=tab-in-indent,trailing-space,space-before-tab
