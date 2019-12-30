@@ -32,6 +32,12 @@
           select-from-batch-menu
           command-menu))
 
+(defun menu-sort-dwim (tbl-items)
+  "Sort the table in order to Do What I Mean."
+  (sort tbl-items
+        (lambda (tbl1 tbl2)
+          (< (length (first tbl1)) (length (first tbl2))))))
+
 (defun entries-from-nested-list (lst)
   (mapcar (lambda (x)
             (make-instance 'menu-entry
@@ -232,7 +238,9 @@ a re-computation of the match."
                               (car table-item)
                               (second table-item)
                               (single-menu-current-input menu))))
-            (setf (menu-table menu) (remove-if-not #'match-p (single-menu-unfiltered-table menu))
+            (setf (menu-table menu)
+                  (menu-sort-dwim
+                   (remove-if-not #'match-p (single-menu-unfiltered-table menu)))
                   (menu-selected menu) 0)
             (bound-check-menu menu)))
       (cl-ppcre:ppcre-syntax-error ()))))
