@@ -812,7 +812,7 @@ needed."
         (if (getf placement-data :raise)
           (switch-to-group (window-group window))
           (unless *suppress-window-placement-indicator*
-            (message "Placing window ~a in group ~a" (window-name window) (group-name (window-group window)))))
+            (message "Placing window ~a in group ~a." (window-name window) (group-name (window-group window)))))
         (apply 'run-hook-with-args *place-window-hook* window (window-group window) placement-data)))
     ;; must call this after the group slot is set for the window.
     (grab-keys-on-window window)
@@ -1049,7 +1049,7 @@ window. Default to the current window. if
   "Override the current window's title."
   (if (current-window)
       (setf (window-user-title (current-window)) title)
-      (message "No Focused Window")))
+      (message "No Focused Window.")))
 
 (defcommand select-window (query) ((:window-name "Select: "))
   "Switch to the first window that starts with @var{query}."
@@ -1259,7 +1259,7 @@ be used to override the default window formatting."
   "Display information about the current window."
   (if (current-window)
       (message "~a" (format-expand *window-formatters* fmt (current-window)))
-      (message "No Current Window")))
+      (message "No Current Window.")))
 
 (defcommand refresh () ()
   "Refresh current window without changing its size."

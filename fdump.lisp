@@ -107,21 +107,21 @@
 (defcommand dump-group-to-file (file) ((:rest "Dump To File: "))
   "Dumps the frames of the current group of the current screen to the named file."
   (dump-to-file (dump-group (current-group)) file)
-  (message "Group dumped"))
+  (message "Group dumped."))
 
 (defcommand-alias dump-group dump-group-to-file)
 
 (defcommand dump-screen-to-file (file) ((:rest "Dump To File: "))
   "Dumps the frames of all groups of the current screen to the named file"
   (dump-to-file (dump-screen (current-screen)) file)
-  (message "Screen dumped"))
+  (message "Screen dumped."))
 
 (defcommand-alias dump-screen dump-screen-to-file)
 
 (defcommand dump-desktop-to-file (file) ((:rest "Dump To File: "))
   "Dumps the frames of all groups of all screens to the named file"
   (dump-to-file (dump-desktop) file)
-  (message "Desktop dumped"))
+  (message "Desktop dumped."))
 
 (defcommand-alias dump-desktop dump-desktop-to-file)
 
@@ -216,7 +216,7 @@
        (restore-desktop dump)
        (message "Desktop restored."))
       (t
-       (message "Don't know how to restore ~a" dump)))))
+       (message "Don't know how to restore ~a." dump)))))
 
 (defcommand-alias restore restore-from-file)
 

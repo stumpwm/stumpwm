@@ -370,7 +370,7 @@ then describes the symbol."
 
 (define-stumpwm-type :key-seq (input prompt)
   (labels ((update (seq)
-             (message "~a: ~{~a ~}"
+             (message "~a ~{~a ~}"
                       prompt
                       (mapcar 'print-key (reverse seq)))))
     (let ((rest (argument-pop-rest input)))
@@ -595,7 +595,7 @@ commands taking :REST or :SHELL type arguments."
   (let* ((commands (all-commands))
          (cmd (select-from-menu (current-screen)
                                 (mapcar #'list commands)
-                                ": "
+                                ":"
                                 (or (position initial-input
                                               commands
                                               :test #'string-equal)
