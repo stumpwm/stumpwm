@@ -464,10 +464,10 @@ window along."
 (defcommand grename (name) ((:string "New name for group: "))
   "Rename the current group."
   (cond ((find-group (current-screen) name)
-         (message "^1*^BError: Name already exists"))
+         (message "^1*^BError: Name already exists."))
         ((or (zerop (length name))
              (string= name "."))
-         (message "^1*^BError: Name cannot be empty name"))
+         (message "^1*^BError: Name cannot be empty name."))
         (t (%grename name (current-group)))))
 
 (defun echo-groups (screen fmt &optional verbose (wfmt *window-format*))
@@ -556,7 +556,7 @@ The windows will be moved to group \"^B^2*~a^n\"
               (switch-to-group to-group)
               (kill-group dead-group to-group)
               (message "Deleted ~a." dead-group-name))
-            (message "Canceled"))
+            (message "Canceled."))
         (message "There's only one group left."))))
 
 (defcommand gkill-other () ()

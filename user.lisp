@@ -217,8 +217,12 @@ such a case, kill the shell command to resume StumpWM."
 
 (defcommand-alias abort keyboard-quit)
 
-(defcommand quit-confirm (&optional (confirm t)) ((:y-or-n "Really close StumpWM? "))
-  (when confirm (quit)))
+(defcommand quit-confirm () ()
+  (when (y-or-n-p (format nil "~@{~a~^~%~}"
+                          "You are about to quit the window manager to TTY."
+                          "Really ^1^Bquit^b^n ^B^2StumpWM^n^b?"
+                          "^B^6Confirm?^n "))
+      (quit)))
 
 (defcommand quit () ()
 "Quit StumpWM."
@@ -312,7 +316,7 @@ current frame instead of switching to the window."
   (message "Reloading StumpWM...")
   #+asdf (with-restarts-menu
              (asdf:operate 'asdf:load-op :stumpwm))
-  #-asdf (message "^B^1*Sorry, StumpWM can only be reloaded with asdf (for now.)")
+  #-asdf (message "^B^1*Sorry, StumpWM can only be reloaded with asdf (for now).")
   #+asdf (message "Reloading StumpWM...^B^2*Done^n."))
 
 (defcommand emacs () ()

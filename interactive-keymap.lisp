@@ -28,12 +28,12 @@
 
 (defun enter-interactive-keymap (kmap name)
   "Enter interactive mode"
-  (message "~S started" name)
+  (message "~S started." name)
   (push-top-map kmap))
 
 (defun exit-interactive-keymap (name)
   "Exits interactive mode"
-  (message "~S finished" name)
+  (message "~S finished." name)
   (pop-top-map))
 
 (defcommand call-and-exit-kmap (command exit-command) ((:command "command to run: ")

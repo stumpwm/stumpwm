@@ -99,7 +99,7 @@
   "If a key is the cancelling key binding."
   (final-key-p keys '("C-g")))
 
-(defcommand describe-key (keys) ((:key-seq "Describe Key: "))
+(defcommand describe-key (keys) ((:key-seq "Describe Key:"))
   "Either interactively type the key sequence or supply it as text. This
   command prints the command bound to the specified key sequence."
   (if-let ((cmd (loop for map in (top-maps)
@@ -109,20 +109,20 @@
     (message-no-timeout (describe-command-to-stream cmd nil))
     (cond ((and (help-key-p keys)
                 (cdr printed-key))
-           (message "~{~A~^ ~} shows the bindings for the prefix map under ~{~A~^ ~}.~%"
+           (message "~{~A~^ ~} shows the bindings for the prefix map under ~{~A~^ ~}."
                     printed-key (butlast printed-key)))
           ((cancel-key-p keys)
            (message "Any command ending in ~A is meant to cancel any command in progress \"ABORT\".~%"
                     (lastcar printed-key)))
           (t (message "~{~A~^ ~} is not bound." printed-key)))))
 
-(defcommand describe-variable (var) ((:variable "Describe Variable: "))
+(defcommand describe-variable (var) ((:variable "Describe Variable:"))
 "Print the online help associated with the specified variable."
   (message-no-timeout "~a"
                       (with-output-to-string (s)
                         (describe var s))))
 
-(defcommand describe-function (fn) ((:function "Describe Function: "))
+(defcommand describe-function (fn) ((:function "Describe Function:"))
 "Print the online help associated with the specified function."
   (message-no-timeout "~a"
                       (with-output-to-string (s)
@@ -149,7 +149,7 @@
           *message-max-width*
           stream)))
 
-(defcommand describe-command (com) ((:command "Describe Command: "))
+(defcommand describe-command (com) ((:command "Describe Command:"))
   "Print the online help associated with the specified command."
   (if (null (get-command-structure com nil))
       (message-no-timeout "Error: Command \"~a\" not found."
@@ -159,9 +159,9 @@
 (defun where-is-to-stream (cmd stream)
   (let ((cmd (string-downcase cmd)))
     (if-let ((bindings (loop for map in (top-maps) append (search-kmap cmd map))))
-      (format stream "\"~a\" is on ~{~a~^, ~}" cmd
+      (format stream "\"~a\" is on ~{~a~^, ~}." cmd
               (mapcar 'print-key-seq bindings))
-      (format stream "Command \"~a\" is not currently bound" cmd))))
+      (format stream "Command \"~a\" is not currently bound." cmd))))
 
 (defcommand where-is (cmd) ((:rest "Where is command: "))
   "Print the key sequences bound to the specified command."

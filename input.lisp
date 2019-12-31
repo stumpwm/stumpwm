@@ -810,7 +810,7 @@ input (pressing Return), nil otherwise."
 ;;     mod))
 
 (defun mod->string (state)
-  "Convert a stump modifier list to a string"
+  "Convert a stump modifier list to a string."
   (let ((alist '((:alt . "A-") (:meta . "M-") (:hyper . "H-") (:super . "S-"))))
     (apply #'concatenate 'string (mapcar (lambda (x) (cdr (assoc x alist))) state))))
 
@@ -824,8 +824,8 @@ input (pressing Return), nil otherwise."
 ;;   (values (xlib:keycode->keysym *display* code 0) (x11mod->stumpmod state)))
 
 (defun y-or-n-p (message)
-  "ask a \"y or n\" question on the current screen and return T if the
-user presses 'y'"
+  "Ask a \"y or n\" question on the current screen and return T if the
+user presses 'y'."
   (message "~a(y or n) " message)
   (char= (read-one-char (current-screen))
         #\y))
@@ -840,6 +840,6 @@ user presses 'yes'"
                                    :completions
                                    '("yes" "no")))
         until (find line '("yes" "no") :test 'string-equal)
-        do (message "Please answer yes or no")
+        do (message "Please answer yes or no.")
            (sleep 1)
         finally (return (string-equal line "yes"))))
