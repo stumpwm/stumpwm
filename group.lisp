@@ -565,8 +565,11 @@ to the current group."
   (let* ((current-group (current-group))
          (groups (remove current-group
                          (screen-groups (current-screen)))))
-    (dolist (dead-group groups)
-      (kill-group dead-group current-group))))
+    (if (null groups)
+        (message "No other groups.")
+        (progn (dolist (dead-group groups)
+                 (kill-group dead-group current-group))
+               (message "Killed other groups.")))))
 
 (defcommand gmerge (from) ((:group "From Group: "))
 "Merge @var{from} into the current group. @var{from} is not deleted."
