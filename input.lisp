@@ -342,6 +342,7 @@ match with an element of the completions."
                                     (match-input))
                                 (return (input-line-string input))
                                 (draw-input-bucket screen prompt input "[No match]" t)))))))
+      (draw-input-bucket screen prompt input)
       (setup-input-window screen prompt input)
       (catch :abort
         (unwind-protect
@@ -377,8 +378,14 @@ match with an element of the completions."
          (font (screen-font screen))
          (prompt-lines (ppcre:split #\Newline prompt))
          (prompt-lines-length (length prompt-lines))
-         (prompt-width (loop :for line :in prompt-lines
-                             :maximize (text-line-width font line :translate #'translate-id)))
+         (input-line (input-line-string input))
+         (completions (remove-if (lambda (str)
+                                   (or (string= str "")
+                                       (< (length str) (length input-line))
+                                       (string/= input-line
+                                                 (subseq str 0 (length input-line)))))
+                                 *input-completions*))
+         (completions-length (length completions))
          (prompt-offset (text-line-width font
                                          (first (last prompt-lines))
                                          :translate #'translate-id))
@@ -394,7 +401,8 @@ match with an element of the completions."
          (tail-width   (text-line-width (screen-font screen) tail   :translate #'translate-id))
          (full-string-width (+ string-width space-width))
          (pos (input-line-position input))
-         (width (max prompt-width
+         (width (max (loop :for line :in (append prompt-lines completions)
+                           :maximize (text-line-width font line :translate #'translate-id))
                      (+ prompt-offset
                         (max 100 (+ full-string-width space-width tail-width))))))
     (when errorp (rotatef (xlib:gcontext-background gcontext)
@@ -406,16 +414,27 @@ match with an element of the completions."
                              (xlib:drawable-height win) t))
       (setf (xlib:drawable-width win) (+ width (* *message-window-padding* 2)))
       (setf (xlib:drawable-height win) (+ (* prompt-lines-length (font-height font))
-                                          (* *message-window-y-padding* 2)))
-      (setup-win-gravity screen win *input-window-gravity*))
-    (xlib:with-state (win)
-      (loop for i from 0 below prompt-lines-length
-         do (draw-image-glyphs win gcontext font
-                               *message-window-padding*
-                               (prompt-text-y i font *message-window-y-padding*)
-                               (nth i prompt-lines)
-                               :translate #'translate-id
-                               :size 16))
+                                          (* *message-window-y-padding* 2)
+                                          (* completions-length (font-height font))))
+      (setup-win-gravity screen win *input-window-gravity*)
+
+      ;; Display the input window text.
+      (loop for i from 0 below (+ prompt-lines-length completions-length)
+            if (< i prompt-lines-length)
+              do (draw-image-glyphs win gcontext font
+                                    *message-window-padding*
+                                    (prompt-text-y i font *message-window-y-padding*)
+                                    (nth i prompt-lines)
+                                    :translate #'translate-id
+                                    :size 16)
+            else
+              do (draw-image-glyphs win gcontext font
+                                    *message-window-padding*
+                                    (prompt-text-y i font *message-window-y-padding*)
+                                    (nth (- i prompt-lines-length) completions)
+                                    :translate #'translate-id
+                                    :size 16))
+      ;; Pad the input to the left.
       (loop with x = (+ *message-window-padding* prompt-offset)
             for char across string
             for i from 0 below (length string)
@@ -732,7 +751,8 @@ input (pressing Return), nil otherwise."
                (if command
                    (prog1
                        (funcall command input key)
-                     (setf *input-last-command* command))
+                     (setf *input-last-command* command)
+                     (draw-input-bucket screen prompt input))
                    :error))))
     (case (process-key code state)
       (:done
