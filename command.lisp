@@ -362,11 +362,11 @@ then describes the symbol."
                               (package-name pkg) var)))))
 
 (define-stumpwm-type :command (input prompt)
+
   (or (argument-pop input)
-      (car (select-from-menu (current-screen)
-                             (all-commands)
-                             prompt
-                             0))))
+      (completing-read (current-screen)
+                       prompt
+                       (all-commands))))
 
 (define-stumpwm-type :key-seq (input prompt)
   (labels ((update (seq)
@@ -592,14 +592,8 @@ String arguments with spaces may be passed to the command by
 delimiting them with double quotes. A backslash can be used to escape
 double quotes or backslashes inside the string. This does not apply to
 commands taking :REST or :SHELL type arguments."
-  (let* ((commands (all-commands))
-         (cmd (select-from-menu (current-screen)
-                                (mapcar #'list commands)
-                                ":"
-                                (or (position initial-input
-                                              commands
-                                              :test #'string-equal)
-                                    0))))
-    (if cmd
-        (eval-command (car cmd) t)
-        (throw 'error :abort))))
+  (let ((cmd (completing-read (current-screen) ": " (all-commands) :initial-input (or initial-input ""))))
+    (unless cmd
+      (throw 'error :abort))
+    (when (plusp (length cmd))
+      (eval-command cmd t))))
