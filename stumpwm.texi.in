@@ -1473,6 +1473,7 @@ return a ``nil'' value in those cases, and let the command handle that.
 @@@ err
 @@@ wrap
 ### *message-max-width*
+### *help-max-height*
 !!! colon
 
 %%% with-restarts-menu

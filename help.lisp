@@ -24,8 +24,11 @@
 
 (in-package #:stumpwm)
 
+(export '(*help-max-height* *message-max-width*))
 (defvar *message-max-width* 80
   "The maximum width of a message before it wraps.")
+(defvar *help-max-height* 10
+  "Maximum number of lines for help to display.")
 
 (defun columnize (list columns &key col-aligns (pad 1) (char #\Space) (align :left))
   ;; only somewhat nasty
@@ -116,17 +119,39 @@
                     (lastcar printed-key)))
           (t (message "~{~A~^ ~} is not bound." printed-key)))))
 
-(defcommand describe-variable (var) ((:variable "Describe Variable:"))
+(defun describe-variable-to-stream (var stream)
+  "Write the help for the variable to the stream."
+  (format stream "variable:^5 ~a^n~%~a~%Its value is:~%~a."
+          var
+          (documentation var 'variable)
+          (let* ((value (format nil "~a" (symbol-value var)))
+                 (split (split-string value (format nil "~%"))))
+            (if (> (1+ *help-max-height*)
+                   (length split))
+                value
+                (format nil "~a.."
+                        (wrap (format nil "~{~a~^~%~}"
+                                      (take *help-max-height* split))))))))
+
+(defcommand describe-variable (var) ((:variable "Describe Variable: "))
 "Print the online help associated with the specified variable."
   (message-no-timeout "~a"
                       (with-output-to-string (s)
-                        (describe var s))))
+                        (describe-variable-to-stream var s))))
+
+(defun describe-function-to-stream (fn stream)
+  "Write the help for the function to the stream."
+  (format stream "function:^5 ~a^n~%" (string-downcase (symbol-name fn)))
+  (when-let ((lambda-list (sb-introspect:function-lambda-list
+                           (symbol-function fn))))
+    (format stream "(^5~a ^B~{~a~^ ~}^b^n)~&~%" (string-downcase (symbol-name fn)) lambda-list))
+  (format stream "~&~a"(documentation fn 'function)))
 
 (defcommand describe-function (fn) ((:function "Describe Function:"))
 "Print the online help associated with the specified function."
   (message-no-timeout "~a"
                       (with-output-to-string (s)
-                        (describe fn s))))
+                        (describe-function-to-stream fn s))))
 
 (defun describe-command-to-stream (com stream)
   "Write the help for the command to the stream."
