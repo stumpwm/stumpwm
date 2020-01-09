@@ -1131,10 +1131,12 @@ This can be used around a the \"only\" command to avoid the warning message."
   "Given a list of frames focus the next one in the list after
 the current frame."
   (let ((rest (cdr (member (tile-group-current-frame group) frames :test 'eq))))
-    (focus-frame group
-                 (if (null rest)
-                     (car frames)
-                     (car rest)))))
+    (if (only-one-frame-p)
+        (message "No other frames.")
+        (focus-frame group
+                     (if (null rest)
+                         (car frames)
+                         (car rest))))))
 
 (defun focus-next-frame (group)
   (focus-frame-after group (group-frames group)))

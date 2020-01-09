@@ -230,34 +230,36 @@ at 0. Return a netwm compliant group id."
           (always-show-window w screen)))))
 
 (defun move-window-to-group (window to-group)
-  (labels ((really-move-window (window to-group)
-             (unless (eq (window-group window) to-group)
-               (hide-window window)
-               ;; house keeping
-               (setf (group-windows (window-group window))
-                     (remove window (group-windows (window-group window))))
-               (group-delete-window (window-group window) window)
-               (setf (window-group window) to-group
-                     (window-number window) (find-free-window-number to-group))
-               (push window (group-windows to-group))
-               (xlib:change-property (window-xwin window) :_NET_WM_DESKTOP
-                                     (list (netwm-group-id to-group))
-                                     :cardinal 32)
-               (group-add-window to-group window))))
-    ;; When a modal window is moved, all the windows it shadows must be moved
-    ;; as well. When a shadowed window is moved, the modal shadowing it must
-    ;; be moved.
-    (cond
-      ((window-modal-p window)
-       (mapc (lambda (w)
-               (really-move-window w to-group))
-             (append (list window) (shadows-of window))))
-      ((modals-of window)
-       (mapc (lambda (w)
-               (move-window-to-group w to-group))
-             (modals-of window)))
-      (t
-       (really-move-window window to-group)))))
+  (if (equalp to-group (window-group window))
+      (message "That window is already in the group ~a." (group-name to-group))
+      (labels ((really-move-window (window to-group)
+                 (unless (eq (window-group window) to-group)
+                   (hide-window window)
+                   ;; house keeping
+                   (setf (group-windows (window-group window))
+                         (remove window (group-windows (window-group window))))
+                   (group-delete-window (window-group window) window)
+                   (setf (window-group window) to-group
+                         (window-number window) (find-free-window-number to-group))
+                   (push window (group-windows to-group))
+                   (xlib:change-property (window-xwin window) :_NET_WM_DESKTOP
+                                         (list (netwm-group-id to-group))
+                                         :cardinal 32)
+                   (group-add-window to-group window))))
+        ;; When a modal window is moved, all the windows it shadows must be moved
+        ;; as well. When a shadowed window is moved, the modal shadowing it must
+        ;; be moved.
+        (cond
+          ((window-modal-p window)
+           (mapc (lambda (w)
+                   (really-move-window w to-group))
+                 (append (list window) (shadows-of window))))
+          ((modals-of window)
+           (mapc (lambda (w)
+                   (move-window-to-group w to-group))
+                 (modals-of window)))
+          (t
+           (really-move-window window to-group))))))
 
 (defun next-group (current &optional
                    (groups (non-hidden-groups (screen-groups
@@ -389,9 +391,10 @@ numbers."
 (defun group-forward (current list)
   "Switch to the next non-hidden-group in the list, if one
 exists. Returns the new group."
-  (when-let ((next (next-group current (non-hidden-groups list))))
-    (switch-to-group next)
-    next))
+  (if-let ((next (next-group current (non-hidden-groups list))))
+    (progn (switch-to-group next)
+           next)
+    (message "No other group.")))
 
 (defun group-forward-with-window (current list)
   "Switch to the next group in the list, if one exists, and moves the
@@ -442,8 +445,9 @@ window along."
 (defcommand gother () ()
   "Go back to the last group."
   (let ((groups (screen-groups (current-screen))))
-    (when (> (length groups) 1)
-      (switch-to-group (second groups)))))
+    (if (> (length groups) 1)
+        (switch-to-group (second groups))
+        (message "No other group."))))
 
 (defun %grename (name group)
   (let ((group-name (group-name group)))
@@ -548,10 +552,10 @@ to the next group."
              (format nil "You are about to kill non-empty group \"^B^3*~a^n\"
 The windows will be moved to group \"^B^2*~a^n\"
 ^B^6*Confirm?^n " (group-name dead-group) (group-name to-group))))
-            (progn
+            (let ((dead-group-name (group-name dead-group)))
               (switch-to-group to-group)
               (kill-group dead-group to-group)
-              (message "Deleted."))
+              (message "Deleted ~a." dead-group-name))
             (message "Canceled."))
         (message "There's only one group left."))))
 
@@ -561,8 +565,11 @@ to the current group."
   (let* ((current-group (current-group))
          (groups (remove current-group
                          (screen-groups (current-screen)))))
-    (dolist (dead-group groups)
-      (kill-group dead-group current-group))))
+    (if (null groups)
+        (message "No other groups.")
+        (progn (dolist (dead-group groups)
+                 (kill-group dead-group current-group))
+               (message "Killed other groups.")))))
 
 (defcommand gmerge (from) ((:group "From Group: "))
 "Merge @var{from} into the current group. @var{from} is not deleted."
