@@ -2210,7 +2210,7 @@ The following is a list of commands that don't really fit in any other
 * Getting Help::
 @end menu
 
-@node Menus, StumpWM's Data Directory, Miscellaneous Commands
+@node Menus, StumpWM's Data Directory, , Miscellaneous Commands
 @section Menus
 @section Menus
 There are three different types of menus in StumpWM; single selection
