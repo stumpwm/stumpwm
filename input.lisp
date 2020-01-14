@@ -321,7 +321,7 @@ match with an element of the completions."
         (*input-completions* (if (or (functionp completions)
                                      (and (symbolp completions)
                                           (fboundp completions)))
-                                 (funcall completions "")
+                                 (funcall completions initial-input)
                                  completions))
         (input (make-input-line :string (make-input-string initial-input)
                                 :position (length initial-input)
