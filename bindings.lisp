@@ -183,6 +183,7 @@ is a tile group.")
   (kbd "F")       "curframe"
   (kbd "-")       "fclear"
   (kbd "Q")       "only"
+  (kbd "X")       "remove-split"
   (kbd "q")       "quit-confirm"
   (kbd "Up")      "move-focus up"
   (kbd "Down")    "move-focus down"
