@@ -308,6 +308,7 @@ passed the substring to complete on and is expected to return a list
 of matches. If require-match argument is non-nil then the input must
 match with an element of the completions."
   (check-type completions (or list function symbol))
+  
   (let ((line (read-one-line screen prompt
                              :completions completions
                              :initial-input initial-input
@@ -317,7 +318,11 @@ match with an element of the completions."
 (defun read-one-line (screen prompt &key completions (initial-input "") require-match password)
   "Read a line of input through stumpwm and return it. Returns nil if the user aborted."
   (let ((*input-last-command* nil)
-        (*input-completions* completions)
+        (*input-completions* (if (or (functionp completions)
+                                     (and (symbolp completions)
+                                          (fboundp completions)))
+                                 (funcall completions initial-input)
+                                 completions))
         (input (make-input-line :string (make-input-string initial-input)
                                 :position (length initial-input)
                                 :history -1
@@ -331,17 +336,17 @@ match with an element of the completions."
                                       (car compls))))))
              (key-loop ()
                (loop for key = (read-key-or-selection) do
-                     (cond ((stringp key)
-                            ;; handle selection
-                            (input-insert-string input key)
-                            (draw-input-bucket screen prompt input))
-                           ;; skip modifiers
-                           ((is-modifier (car key)))
-                           ((process-input screen prompt input (car key) (cdr key))
-                            (if (or (not require-match)
-                                    (match-input))
-                                (return (input-line-string input))
-                                (draw-input-bucket screen prompt input "[No match]" t)))))))
+                    (cond ((stringp key)
+                           ;; handle selection
+                           (input-insert-string input key)
+                           (draw-input-bucket screen prompt input))
+                          ;; skip modifiers
+                          ((is-modifier (car key)))
+                          ((process-input screen prompt input (car key) (cdr key))
+                           (if (or (not require-match)
+                                   (match-input))
+                               (return (input-line-string input))
+                               (draw-input-bucket screen prompt input "[No match]" t)))))))
       (draw-input-bucket screen prompt input)
       (setup-input-window screen prompt input)
       (catch :abort
@@ -379,12 +384,12 @@ match with an element of the completions."
          (prompt-lines (ppcre:split #\Newline prompt))
          (prompt-lines-length (length prompt-lines))
          (input-line (input-line-string input))
-         (completions (remove-if (lambda (str)
-                                   (or (string= str "")
-                                       (< (length str) (length input-line))
-                                       (string/= input-line
-                                                 (subseq str 0 (length input-line)))))
-                                 *input-completions*))
+         (completions (take *maximum-completions* (remove-if (lambda (str)
+                                                               (or (string= str "")
+                                                                   (< (length str) (length input-line))
+                                                                   (string/= input-line
+                                                                             (subseq str 0 (length input-line)))))
+                                                             *input-completions*)))
          (completions-length (length completions))
          (prompt-offset (text-line-width font
                                          (first (last prompt-lines))
@@ -394,15 +399,15 @@ match with an element of the completions."
                      (make-string (length line-content) :initial-element #\*)
                      line-content))
          (string-width (loop for char across string
-                             summing (text-line-width (screen-font screen)
-                                                      (string char)
-                                                      :translate #'translate-id)))
+                          summing (text-line-width (screen-font screen)
+                                                   (string char)
+                                                   :translate #'translate-id)))
          (space-width  (text-line-width (screen-font screen) " "    :translate #'translate-id))
          (tail-width   (text-line-width (screen-font screen) tail   :translate #'translate-id))
          (full-string-width (+ string-width space-width))
          (pos (input-line-position input))
          (width (max (loop :for line :in (append prompt-lines completions)
-                           :maximize (text-line-width font line :translate #'translate-id))
+                        :maximize (text-line-width font line :translate #'translate-id))
                      (+ prompt-offset
                         (max 100 (+ full-string-width space-width tail-width))))))
     (when errorp (rotatef (xlib:gcontext-background gcontext)
@@ -420,58 +425,58 @@ match with an element of the completions."
 
       ;; Display the input window text.
       (loop for i from 0 below (+ prompt-lines-length completions-length)
-            if (< i prompt-lines-length)
-              do (draw-image-glyphs win gcontext font
-                                    *message-window-padding*
-                                    (prompt-text-y i font *message-window-y-padding*)
-                                    (nth i prompt-lines)
-                                    :translate #'translate-id
-                                    :size 16)
-            else
-              do (draw-image-glyphs win gcontext font
-                                    *message-window-padding*
-                                    (prompt-text-y i font *message-window-y-padding*)
-                                    (nth (- i prompt-lines-length) completions)
-                                    :translate #'translate-id
-                                    :size 16))
+         if (< i prompt-lines-length)
+         do (draw-image-glyphs win gcontext font
+                               *message-window-padding*
+                               (prompt-text-y i font *message-window-y-padding*)
+                               (nth i prompt-lines)
+                               :translate #'translate-id
+                               :size 16)
+         else
+         do (draw-image-glyphs win gcontext font
+                               *message-window-padding*
+                               (prompt-text-y i font *message-window-y-padding*)
+                               (nth (- i prompt-lines-length) completions)
+                               :translate #'translate-id
+                               :size 16))
       ;; Pad the input to the left.
       (loop with x = (+ *message-window-padding* prompt-offset)
-            for char across string
-            for i from 0 below (length string)
-            for char-width = (text-line-width (screen-font screen) (string char) :translate #'translate-id)
-            if (= pos i)
-              do (xlib:with-gcontext (gcontext :foreground (xlib:gcontext-background gcontext)
-                                               :background (xlib:gcontext-foreground gcontext))
-                   (draw-image-glyphs win gcontext (screen-font screen)
-                                      x
-                                      (prompt-text-y (1- prompt-lines-length)
-                                                     font
-                                                     *message-window-y-padding*)
-                                      (string char)
-                                      :translate #'translate-id
-                                      :size 16))
-            else
-              do (draw-image-glyphs win gcontext (screen-font screen)
-                                    x
-                                    (prompt-text-y (1- prompt-lines-length)
-                                                   font
-                                                   *message-window-y-padding*)
-                                    (string char)
-                                    :translate #'translate-id
-                                    :size 16)
-            end
-            do (incf x char-width)
-            finally (when (>= pos (length string))
-                      (xlib:with-gcontext (gcontext :foreground (xlib:gcontext-background gcontext)
-                                                    :background (xlib:gcontext-foreground gcontext))
-                        (draw-image-glyphs win gcontext (screen-font screen)
-                                           x
-                                           (prompt-text-y (1- prompt-lines-length)
-                                                          font
-                                                          *message-window-y-padding*)
-                                           " "
-                                           :translate #'translate-id
-                                           :size 16))))
+         for char across string
+         for i from 0 below (length string)
+         for char-width = (text-line-width (screen-font screen) (string char) :translate #'translate-id)
+         if (= pos i)
+         do (xlib:with-gcontext (gcontext :foreground (xlib:gcontext-background gcontext)
+                                          :background (xlib:gcontext-foreground gcontext))
+              (draw-image-glyphs win gcontext (screen-font screen)
+                                 x
+                                 (prompt-text-y (1- prompt-lines-length)
+                                                font
+                                                *message-window-y-padding*)
+                                 (string char)
+                                 :translate #'translate-id
+                                 :size 16))
+         else
+         do (draw-image-glyphs win gcontext (screen-font screen)
+                               x
+                               (prompt-text-y (1- prompt-lines-length)
+                                              font
+                                              *message-window-y-padding*)
+                               (string char)
+                               :translate #'translate-id
+                               :size 16)
+         end
+         do (incf x char-width)
+         finally (when (>= pos (length string))
+                   (xlib:with-gcontext (gcontext :foreground (xlib:gcontext-background gcontext)
+                                                 :background (xlib:gcontext-foreground gcontext))
+                     (draw-image-glyphs win gcontext (screen-font screen)
+                                        x
+                                        (prompt-text-y (1- prompt-lines-length)
+                                                       font
+                                                       *message-window-y-padding*)
+                                        " "
+                                        :translate #'translate-id
+                                        :size 16))))
       (draw-image-glyphs win gcontext (screen-font screen)
                          (+ *message-window-padding* prompt-offset full-string-width space-width)
                          (prompt-text-y (1- prompt-lines-length)

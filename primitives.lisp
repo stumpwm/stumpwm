@@ -173,9 +173,20 @@
           ;; Conditions
           stumpwm-condition
           stumpwm-error
-          stumpwm-warning))
+          stumpwm-warning
+
+          ;; Completion Options
+          *maximum-completions*
+
+          ))
 
 
+;;; Completions
+(defvar *maximum-completions* 100
+  "Maximum number of completions to show in interactive prompts. Setting
+  this too high can crash the completion process due to drawing too far
+  off screen.")
+
 ;;; Message Timer
 (defvar *suppress-abort-messages* nil
   "Suppress abort message when non-nil.")
