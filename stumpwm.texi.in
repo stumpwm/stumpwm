@@ -2153,7 +2153,6 @@ multiplexer to actually run it.
 !!! getsel
 !!! putsel
 !!! copy-unhandled-error
-@@@ read-line-from-sysfs
 @@@ define-stumpwm-command
 !!! set-contrib-dir
 
