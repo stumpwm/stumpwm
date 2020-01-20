@@ -335,7 +335,9 @@ match with an element of the completions."
                                       (caar compls)
                                       (car compls))))))
              (key-loop ()
-               (loop for key = (read-key-or-selection) do
+               (loop for key = (with-focus (screen-input-window screen)
+                                 (read-key-or-selection))
+                     do
                     (cond ((stringp key)
                            ;; handle selection
                            (input-insert-string input key)
@@ -350,9 +352,7 @@ match with an element of the completions."
       (draw-input-bucket screen prompt input)
       (setup-input-window screen prompt input)
       (catch :abort
-        (unwind-protect
-             (with-focus (screen-input-window screen)
-               (key-loop))
+        (unwind-protect (key-loop)
           (shutdown-input-window screen))))))
 
 (defun read-one-char (screen)
