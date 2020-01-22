@@ -526,7 +526,7 @@ the default group formatting and window formatting, respectively."
   "Move the current window to the specified group, and switch to it."
   (let ((window (current-window)))
     (gmove to-group)
-    (gselect to-group)
+    (switch-to-group to-group)
     (when window (really-raise-window window))))
 
 (defcommand gmove-marked (to-group) ((:group "To Group: "))
