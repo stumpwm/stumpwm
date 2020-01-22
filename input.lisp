@@ -384,12 +384,16 @@ match with an element of the completions."
          (prompt-lines (ppcre:split #\Newline prompt))
          (prompt-lines-length (length prompt-lines))
          (input-line (input-line-string input))
-         (completions (take *maximum-completions* (remove-if (lambda (str)
-                                                               (or (string= str "")
-                                                                   (< (length str) (length input-line))
-                                                                   (string/= input-line
-                                                                             (subseq str 0 (length input-line)))))
-                                                             *input-completions*)))
+         (completions (remove-duplicates
+                       (take *maximum-completions*
+                             (remove-if
+                              (lambda (str)
+                                (or (string= str "")
+                                    (< (length str) (length input-line))
+                                    (string/= input-line
+                                              (subseq str 0 (length input-line)))))
+                              *input-completions*))
+                       :test #'string=))
          (completions-length (length completions))
          (prompt-offset (text-line-width font
                                          (first (last prompt-lines))
