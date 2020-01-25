@@ -109,7 +109,11 @@
                       for cmd = (lookup-key-sequence map keys)
                       when cmd return cmd))
            (printed-key (mapcar 'print-key keys)))
-    (message-no-timeout (describe-command-to-stream cmd nil))
+    (let ((cmd-without-args (argument-pop
+                              (make-argument-line :string cmd :start 0))))
+      (message-no-timeout "~{~A~^ ~} is bound to \"~A\".~%~A"
+                          printed-key cmd
+                          (describe-command-to-stream cmd-without-args nil)))
     (cond ((and (help-key-p keys)
                 (cdr printed-key))
            (message "~{~A~^ ~} shows the bindings for the prefix map under ~{~A~^ ~}."
