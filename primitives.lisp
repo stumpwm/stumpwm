@@ -999,10 +999,10 @@ generally set when killing text in the input bar.")
 recommended this is assigned using LET.")
 
 (defvar *suppress-echo-timeout* nil
-  "Assign this T and messages will not time out. It is recommended this is assigned using LET.")
+  "Assign this T and messages will not time out. It is recommended to assign this using LET.")
 
 (defvar *ignore-echo-timeout* nil
-  "Assign this T and the message time out won't be touched. It is recommended this is assigned using LET.")
+  "Assign this T and the message time out won't be touched. It is recommended to assign this using LET.")
 
 (defvar *run-or-raise-all-groups* t
   "When this is @code{T} the @code{run-or-raise} function searches all groups for a
