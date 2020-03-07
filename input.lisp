@@ -629,6 +629,13 @@ functions are passed this structure as their first argument."
   "Return a the substring in INPUT bounded by START and END."
   (subseq (input-line-string input) start end))
 
+(defun input-insert-space (input key)
+  (declare (ignore key))
+  (let ((char (xlib:keysym->character *display* (key-keysym (kbd "SPC")))))
+    (if (or (not (characterp char)) (null char))
+	:error
+	(input-insert-char input char))))
+
 
 ;;; "interactive" input functions
 
