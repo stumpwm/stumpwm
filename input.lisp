@@ -404,15 +404,14 @@ with t, second with a, and third with o."
       (multiple-value-bind (completions more)
           (take *maximum-completions*
                 (remove-duplicates
-                  (remove-if
-                    (lambda (str)
-                      (or (string= str "")
-                          (< (length str) (length input-line))
-                          (string/= input-line
-                                    (subseq str 0 (length input-line)))))
-                    all-completions)
-                  :test #'string=))
-        (if more
+		 (remove-if
+		  (lambda (str)
+		    (or (string= str "")
+			(< (length str) (length input-line))
+			(not (potential-string-expansion input-line str))))
+		  all-completions)
+		 :test #'string=))
+	(if more
             (append (butlast completions)
                     (list (format nil "... and ~D more" (1+ (length more)))))
             completions))))
