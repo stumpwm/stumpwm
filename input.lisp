@@ -791,7 +791,7 @@ functions are passed this structure as their first argument."
 	(completion
 	  (emacs-style-command-complete
 	   (car (split-seq (input-line-string input) " ")))))
-    (if (and toggle (= 1 (length completion)))
+    (if (and (not toggle) (= 1 (length completion)))
 	(progn
 	  (input-replace-line input (car completion))
 	  (input-insert-char input #\space))
