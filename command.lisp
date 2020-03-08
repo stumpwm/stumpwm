@@ -592,8 +592,15 @@ String arguments with spaces may be passed to the command by
 delimiting them with double quotes. A backslash can be used to escape
 double quotes or backslashes inside the string. This does not apply to
 commands taking :REST or :SHELL type arguments."
-  (let ((cmd (completing-read (current-screen) ": " (all-commands) :initial-input (or initial-input ""))))
-    (unless cmd
-      (throw 'error :abort))
-    (when (plusp (length cmd))
-      (eval-command cmd t))))
+  (let ((*input-map* (copy-structure *input-map*)))
+    (define-key *input-map* (kbd "SPC") 'input-insert-hyphen-or-space)
+    (define-key *input-map* (kbd "M-SPC") 'input-insert-space)
+    (define-key *input-map* (kbd "RET") 'input-complete-and-submit)
+    (let ((cmd (completing-read (current-screen)
+				": "
+				#'emacs-style-command-complete
+				:initial-input (or initial-input ""))))
+      (unless cmd
+	(throw 'error :abort))
+      (when (plusp (length cmd))
+	(eval-command cmd t)))))
