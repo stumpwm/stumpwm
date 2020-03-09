@@ -33,8 +33,12 @@
           defcommand-alias
           define-stumpwm-type
           run-commands
+          *verbose-shell-completion*
           %interactivep%))
 
+(defvar *verbose-shell-completion* nil
+  "When T, show very verbose shell completion. Known bug: Can cause problems
+losing character events.")
 (defstruct command-alias
   from to)
 
@@ -487,7 +491,9 @@ then describes the symbol."
         (*input-history* *input-shell-history*))
     (unwind-protect
          (or (argument-pop-rest input)
-             (completing-read (current-screen) prompt 'complete-program))
+             (completing-read (current-screen) prompt (if *verbose-shell-completion*
+                                                          'complete-program
+                                                          *input-history*)))
       (setf *input-shell-history* *input-history*))))
 
 (define-stumpwm-type :rest (input prompt)

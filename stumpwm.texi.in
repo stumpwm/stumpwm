@@ -2987,6 +2987,7 @@ sending them as one.
 @node Advanced Configuration, Command and Function Index, Hacking, Top
 @chapter Advanced Configuration
 
+### *verbose-shell-completion*
 ### *default-package*
 ### *default-bg-color*
 @@@ run-commands
