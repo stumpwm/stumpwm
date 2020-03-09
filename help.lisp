@@ -127,7 +127,7 @@
   "Write the help for the variable to the stream."
   (format stream "variable:^5 ~a^n~%~a~%Its value is:~%~a."
           var
-          (documentation var 'variable)
+          (or (documentation var 'variable) "")
           (let* ((value (format nil "~a" (symbol-value var)))
                  (split (split-string value (format nil "~%"))))
             (if (> (1+ *help-max-height*)
@@ -149,7 +149,7 @@
   (when-let ((lambda-list (sb-introspect:function-lambda-list
                            (symbol-function fn))))
     (format stream "(^5~a ^B~{~a~^ ~}^b^n)~&~%" (string-downcase (symbol-name fn)) lambda-list))
-  (format stream "~&~a"(documentation fn 'function)))
+  (format stream "~&~a"(or (documentation fn 'function) "")))
 
 (defcommand describe-function (fn) ((:function "Describe Function:"))
 "Print the online help associated with the specified function."
@@ -174,7 +174,7 @@
              (format nil "~%^5~a ^B~{~a~^ ~}^b^n~&~%"
                      name
                      lambda-list))
-           (format nil "~&~a"(documentation name 'function)))
+           (format nil "~&~a" (or (documentation name 'function) "")))
           *message-max-width*
           stream)))
 
