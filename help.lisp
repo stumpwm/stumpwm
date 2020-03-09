@@ -151,7 +151,7 @@
     (format stream "(^5~a ^B~{~a~^ ~}^b^n)~&~%" (string-downcase (symbol-name fn)) lambda-list))
   (format stream "~&~a"(or (documentation fn 'function) "")))
 
-(defcommand describe-function (fn) ((:function "Describe Function:"))
+(defcommand describe-function (fn) ((:function "Describe Function: "))
 "Print the online help associated with the specified function."
   (message-no-timeout "~a"
                       (with-output-to-string (s)
@@ -178,7 +178,7 @@
           *message-max-width*
           stream)))
 
-(defcommand describe-command (com) ((:command "Describe Command:"))
+(defcommand describe-command (com) ((:command "Describe Command: "))
   "Print the online help associated with the specified command."
   (if (null (get-command-structure com nil))
       (message-no-timeout "Error: Command \"~a\" not found."
