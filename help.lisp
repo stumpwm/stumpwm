@@ -192,7 +192,7 @@
               (mapcar 'print-key-seq bindings))
       (format stream "Command \"~a\" is not currently bound." cmd))))
 
-(defcommand where-is (cmd) ((:rest "Where is command: "))
+(defcommand where-is (cmd) ((:command "Where is command: "))
   "Print the key sequences bound to the specified command."
   (message-no-timeout "~A" (where-is-to-stream cmd nil)))
 
