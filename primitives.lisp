@@ -771,7 +771,7 @@ positive direction."
             min))))
 
 (defun split-seq (seq separators &key test default-value)
-  "split a sequence into sub sequences given the list of seperators."
+  "Split a sequence into subsequences given the list of seperators."
   (let ((seps separators))
     (labels ((sep (c)
                (position c seps :test test)))
