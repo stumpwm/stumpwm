@@ -168,10 +168,7 @@ alias name for the command that is only accessible interactively."
 (defun dereference-command-symbol (command)
   "Given a string or symbol look it up in the command database and return
 whatever it finds: a command, an alias, or nil."
-  (maphash (lambda (k v)
-             (when (string-equal k command)
-               (return-from dereference-command-symbol v)))
-           *command-hash*))
+  (gethash (read-from-string command) *command-hash*))
 
 (defun command-active-p (command)
   (typep (current-group) (command-class command))
@@ -227,11 +224,12 @@ only return active commands."
   "Pop the next argument off."
   (unless (argument-line-end-p input)
     (flet ((pop-word (input start)
-             ;; Return the first word of INPUT starting from START and
+             ;; Return the first symbol of INPUT starting from START and
              ;; its end position.
              (let* ((p1 (position #\space input :start start :test #'char/=))
-                    (p2 (or (and p1 (position #\Space input :start p1))
-                            (length input))))
+                    (p2 (multiple-value-bind (text p2)
+                            (read-from-string input nil nil :start start)
+                          p2)))
                ;; we wanna return nil if they're the same
                (unless (= p1 p2)
                  (values (subseq input p1 p2)
@@ -543,6 +541,10 @@ user aborted."
   (labels ((parse-and-run-command (input)
              (let* ((arg-line (make-argument-line :string input
                                                   :start 0))
+                    ;; The first thing in arg-line is the symbol or string
+                    ;; representing the command. It's not sufficient for
+                    ;; `argument-pop` to simply split arg-line on spaces since
+                    ;; |some symbol| is a valid symbol (thus a valid command).
                     (cmd (argument-pop arg-line)))
                (let ((*interactivep* interactivep))
                  (call-interactively cmd arg-line)))))
