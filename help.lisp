@@ -207,7 +207,7 @@
                         (when (not (eql sym (sym v #'command-alias-to)))
                           (cons sym #1#)))))
        (when-let ((aliases (gethash (intern (string-upcase cmd)) reverse-hash)))
-         (format stream "~%\"~a\" is aliased on ~{\"~a\"~^, ~}."
+         (format stream "~%\"~a\" is aliased to ~{\"~a\"~^, ~}."
                  cmd (mapcar #'string-downcase aliases))
          (loop for a in aliases
                for k = #2=(keys (string-downcase (symbol-name a))) then #2#
