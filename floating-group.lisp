@@ -303,37 +303,36 @@
             (xlib:query-pointer (window-parent window))
           (declare (ignore same-screen-p child))
 
-          ;; When resizing warp pointer to closest corner
-          (when (find :button-3 (xlib:make-state-keys state-mask))
-            (let ((left-quadrant (< relx (floor initial-width 2)))
-                  (top-quadrant (< rely (floor initial-height 2))))
-              (dformat 4 "corner: left: ~a top: ~a~%" left-quadrant top-quadrant)
+          (let ((left-quadrant (< relx (floor initial-width 2)))
+                (top-quadrant (< rely (floor initial-height 2))))
+            (dformat 4 "corner: left: ~a top: ~a~%" left-quadrant top-quadrant)
+
+            ;; When resizing warp pointer to closest corner
+            (when (find :button-3 (xlib:make-state-keys state-mask))
               (xlib:warp-pointer (window-parent window)
                                  (if left-quadrant 0 initial-width)
-                                 (if top-quadrant 0 initial-height))))
+                                 (if top-quadrant 0 initial-height)))
 
-          (labels ((move-window-event-handler
-                       (&rest event-slots &key event-key &allow-other-keys)
-                     (case event-key
-                       (:button-release :done)
-                       (:motion-notify
-                        (with-accessors ((parent window-parent))
-                            window
-                          (xlib:with-state (parent)
-                            ;; Either move or resize the window
-                            (cond
-                              ((find :button-1 (xlib:make-state-keys state-mask))
-                               ;; if button-1 on the sides (left,
-                               ;; right, bottom) then we resize that
-                               ;; direction
-                               
-                               ;; if button-1 on the top, then we move the window
-                               (float-window-move-resize window
-                                                         :x (- (getf event-slots :x) relx)
-                                                         :y (- (getf event-slots :y) rely)))
-                              ((find :button-3 (xlib:make-state-keys state-mask))
-                               (let ((left-quadrant (< relx (floor initial-width 2)))
-                                     (top-quadrant (< rely (floor initial-height 2))))
+            (labels ((move-window-event-handler
+                         (&rest event-slots &key event-key &allow-other-keys)
+                       (case event-key
+                         (:button-release :done)
+                         (:motion-notify
+                          (with-accessors ((parent window-parent))
+                              window
+                            (xlib:with-state (parent)
+                              ;; Either move or resize the window
+                              (cond
+                                ((find :button-1 (xlib:make-state-keys state-mask))
+                                 ;; if button-1 on the sides (left,
+                                 ;; right, bottom) then we resize that
+                                 ;; direction
+
+                                 ;; if button-1 on the top, then we move the window
+                                 (float-window-move-resize window
+                                                           :x (- (getf event-slots :x) relx)
+                                                           :y (- (getf event-slots :y) rely)))
+                                ((find :button-3 (xlib:make-state-keys state-mask))
                                  (let ((w (if left-quadrant
                                               (- initial-width
                                                  (- (getf event-slots :x)
@@ -360,31 +359,29 @@
                                                              :x x
                                                              :y y
                                                              :width (max w *min-frame-width*)
-                                                             :height (max h *min-frame-height*))))))))
-                        t)
-                       ;; We need to eat these events or they'll ALL
-                       ;; come blasting in later. Also things start
-                       ;; lagging hard if we don't (on clisp anyway).
-                       (:configure-notify t)
-                       (:exposure t)
-                       (t nil))))
-            (xlib:grab-pointer (screen-root screen) '(:button-release :pointer-motion))
-            (unwind-protect
-                 ;; Wait until the mouse button is released
-                 (loop for ev = (xlib:process-event *display*
-                                                    :handler #'move-window-event-handler
-                                                    :timeout nil
-                                                    :discard-p t)
-                       until (eq ev :done))
-              (ungrab-pointer))
-            (update-configuration window)
-            ;; don't forget to update the cache
-            (setf (window-x window) (xlib:drawable-x (window-parent window))
-                  (window-y window) (xlib:drawable-y (window-parent window))))))
+                                                             :height (max h *min-frame-height*)))))))
+                          t)
+                         ;; We need to eat these events or they'll ALL
+                         ;; come blasting in later. Also things start
+                         ;; lagging hard if we don't (on clisp anyway).
+                         (:configure-notify t)
+                         (:exposure t)
+                         (t nil))))
+              (xlib:grab-pointer (screen-root screen) '(:button-release :pointer-motion))
+              (unwind-protect
+                   ;; Wait until the mouse button is released
+                   (loop for ev = (xlib:process-event *display*
+                                                      :handler #'move-window-event-handler
+                                                      :timeout nil
+                                                      :discard-p t)
+                      until (eq ev :done))
+                (ungrab-pointer))
+              (update-configuration window)
+              ;; don't forget to update the cache
+              (setf (window-x window) (xlib:drawable-x (window-parent window))
+                    (window-y window) (xlib:drawable-y (window-parent window)))))))
       ;; restore the mouse to its original position
-      (xlib:warp-pointer (window-parent window) relx rely)
-
-      )))
+      (xlib:warp-pointer (window-parent window) relx rely))))
 
 (defmethod group-button-press ((group float-group) button x y where)
   (declare (ignore button x y where))
