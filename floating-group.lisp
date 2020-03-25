@@ -267,6 +267,8 @@
   (let ((screen (group-screen group))
         (initial-width (xlib:drawable-width (window-parent window)))
         (initial-height (xlib:drawable-height (window-parent window)))
+        (initial-x (xlib:drawable-x (window-parent window)))
+        (initial-y (xlib:drawable-y (window-parent window)))
         (xwin (window-xwin window)))
     (when (member *mouse-focus-policy* '(:click :sloppy))
       (group-focus-window group window))
@@ -296,13 +298,19 @@
                      (maximize-float window :vertical t))
                     (win-focused-p (maximize-float window :vertical t :horizontal t))
                     (t (focus-window window t))))))  
-        ;; When resizing warp pointer to left-right corner
-        (when (find :button-3 (xlib:make-state-keys state-mask))
-          (xlib:warp-pointer (window-parent window) initial-width initial-height))
 
         (multiple-value-bind (relx rely same-screen-p child state-mask)
             (xlib:query-pointer (window-parent window))
           (declare (ignore same-screen-p child))
+
+          ;; When resizing warp pointer to closest corner
+          (when (find :button-3 (xlib:make-state-keys state-mask))
+            (let ((left-quadrant (< relx (floor initial-width 2)))
+                  (top-quadrant (< rely (floor initial-height 2))))
+              (dformat 4 "corner: left: ~a top: ~a~%" left-quadrant top-quadrant)
+              (xlib:warp-pointer (window-parent window)
+                                 (if left-quadrant 0 initial-width)
+                                 (if top-quadrant 0 initial-height))))
 
           (labels ((move-window-event-handler
                        (&rest event-slots &key event-key &allow-other-keys)
@@ -320,18 +328,39 @@
                                ;; direction
                                
                                ;; if button-1 on the top, then we move the window
-                               (setf (xlib:drawable-x parent) (- (getf event-slots :x) relx)
-                                     (xlib:drawable-y parent) (- (getf event-slots :y) rely)))
+                               (float-window-move-resize window
+                                                         :x (- (getf event-slots :x) relx)
+                                                         :y (- (getf event-slots :y) rely)))
                               ((find :button-3 (xlib:make-state-keys state-mask))
-                               (let ((w (- (getf event-slots :x)
-                                           (xlib:drawable-x parent)))
-                                     (h (- (getf event-slots :y)
-                                           (xlib:drawable-y parent)
-                                           *float-window-title-height*)))
-                                 ;; Don't let the window become too small
-                                 (float-window-move-resize window
-                                                           :width (max w *min-frame-width*)
-                                                           :height (max h *min-frame-height*)))))))
+                               (let ((left-quadrant (< relx (floor initial-width 2)))
+                                     (top-quadrant (< rely (floor initial-height 2))))
+                                 (let ((w (if left-quadrant
+                                              (- initial-width
+                                                 (- (getf event-slots :x)
+                                                    initial-x))
+                                              (- (getf event-slots :x)
+                                                 (xlib:drawable-x parent))))
+                                       (h (if top-quadrant
+                                              (- initial-height
+                                                 (- (getf event-slots :y)
+                                                    initial-y))
+                                              (- (getf event-slots :y)
+                                                 (xlib:drawable-y parent)
+                                                 *float-window-title-height*)))
+                                       ;; also move window when in top and/or left quadrant
+                                       (x (if left-quadrant
+                                              (getf event-slots :x)
+                                              initial-x))
+                                       (y (if top-quadrant
+                                              (getf event-slots :y)
+                                              initial-y)))
+
+                                   ;; Don't let the window become too small
+                                   (float-window-move-resize window
+                                                             :x x
+                                                             :y y
+                                                             :width (max w *min-frame-width*)
+                                                             :height (max h *min-frame-height*))))))))
                         t)
                        ;; We need to eat these events or they'll ALL
                        ;; come blasting in later. Also things start
