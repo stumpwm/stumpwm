@@ -186,15 +186,38 @@
       (message-no-timeout "~a" (describe-command-to-stream com nil))))
 
 (defun where-is-to-stream (cmd stream)
-  (let ((cmd (string-downcase cmd)))
-    (if-let ((bindings (loop for map in (top-maps) append (search-kmap cmd map))))
-      (format stream "\"~a\" is on ~{~a~^, ~}." cmd
-              (mapcar 'print-key-seq bindings))
-      (format stream "Command \"~a\" is not currently bound." cmd))))
+  (labels ((keys (cmd)
+             (loop for map in (top-maps) append (search-kmap cmd map)))
+           (sym (comm alias-accessor)
+             (typecase comm
+               (command-alias (sym (funcall alias-accessor comm) alias-accessor))
+               (command (command-name comm))
+               (string (intern (string-upcase comm)))
+               (symbol comm))))
+    (let ((cmd (string-downcase cmd)))
+     (if-let ((bindings (keys cmd)))
+       (format stream "\"~a\" is on ~{~a~^, ~}." cmd
+               (mapcar 'print-key-seq bindings))
+       (format stream "Command \"~a\" is not currently bound." cmd))
+     (let ((reverse-hash (make-hash-table :size (hash-table-size *command-hash*)
+                                          :test 'eq)))
+       (loop for k being each hash-key of *command-hash* using (hash-value v)
+             do (setf #1=(gethash (sym v #'command-alias-to) reverse-hash)
+                      (let ((sym (sym v #'command-alias-from)))
+                        (when (not (eql sym (sym v #'command-alias-to)))
+                          (cons sym #1#)))))
+       (when-let ((aliases (gethash (intern (string-upcase cmd)) reverse-hash)))
+         (format stream "~%\"~a\" is aliased to ~{\"~a\"~^, ~}."
+                 cmd (mapcar #'string-downcase aliases))
+         (loop for a in aliases
+               for k = #2=(keys (string-downcase (symbol-name a))) then #2#
+               when k do (format stream "~%\"~a\" is on ~{~a~^, ~}." (string-downcase a) (mapcar 'print-key-seq k))))))))
 
 (defcommand where-is (cmd) ((:command "Where is command: "))
   "Print the key sequences bound to the specified command."
-  (message-no-timeout "~A" (where-is-to-stream cmd nil)))
+  (let ((stream (make-string-output-stream)))
+    (where-is-to-stream cmd stream)
+    (message-no-timeout "~A" (get-output-stream-string stream))))
 
 (defun get-kmaps-at-key (kmaps key)
   (dereference-kmaps
