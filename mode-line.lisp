@@ -244,6 +244,7 @@ timer.")
       (update-mode-line-color-context mode-line)
       (resize-mode-line mode-line)
       (xlib:map-window window)
+      (setf (xlib:window-priority window) :below)
       (redraw-mode-line mode-line)
       (dformat 3 "modeline: ~s~%" mode-line)
       (turn-on-mode-line-timer)
@@ -390,7 +391,8 @@ timer.")
           (:hidden
            ;; Show it.
            (setf (mode-line-mode ml) :visible)
-           (xlib:map-window (mode-line-window ml)))
+           (xlib:map-window (mode-line-window ml))
+           (setf (xlib:window-priority (mode-line-window ml)) :below))
           (:stump
            ;; Delete it
            (destroy-mode-line ml)))
