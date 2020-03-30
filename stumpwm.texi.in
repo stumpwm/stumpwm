@@ -1900,6 +1900,13 @@ the following commands.
 !!! place-existing-windows
 !!! place-current-window
 
+The configuration files are stored in the
+@var{$XDG_CONFIG_HOME/stumpwm}. The file name specified is saved as a
+@code{.dump} file type. For example, @code{: dump-desktop-to-file
+example} may save a file in
+@code{~/.local/share/stumpwm/example.dump}. @code{restore-from-file}
+also adds the @code{.dump} extension by default.
+
 @node Mode-line, Groups, Frames, Top
 @chapter The Mode Line
 The mode line is a bar that runs across either the top or bottom of
