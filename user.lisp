@@ -218,11 +218,13 @@ such a case, kill the shell command to resume StumpWM."
 (defcommand-alias abort keyboard-quit)
 
 (defcommand quit-confirm () ()
-  (when (y-or-n-p (format nil "~@{~a~^~%~}"
+  "Prompt the user to confirm quitting StumpWM."
+  (if (y-or-n-p (format nil "~@{~a~^~%~}"
                           "You are about to quit the window manager to TTY."
                           "Really ^1^Bquit^b^n ^B^2StumpWM^n^b?"
                           "^B^6Confirm?^n "))
-      (quit)))
+      (quit)
+      (xlib:unmap-window (screen-message-window (current-screen)))))
 
 (defcommand quit () ()
 "Quit StumpWM."

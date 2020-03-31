@@ -127,7 +127,7 @@
   "Write the help for the variable to the stream."
   (format stream "variable:^5 ~a^n~%~a~%Its value is:~%~a."
           var
-          (documentation var 'variable)
+          (or (documentation var 'variable) "")
           (let* ((value (format nil "~a" (symbol-value var)))
                  (split (split-string value (format nil "~%"))))
             (if (> (1+ *help-max-height*)
@@ -149,9 +149,9 @@
   (when-let ((lambda-list (sb-introspect:function-lambda-list
                            (symbol-function fn))))
     (format stream "(^5~a ^B~{~a~^ ~}^b^n)~&~%" (string-downcase (symbol-name fn)) lambda-list))
-  (format stream "~&~a"(documentation fn 'function)))
+  (format stream "~&~a"(or (documentation fn 'function) "")))
 
-(defcommand describe-function (fn) ((:function "Describe Function:"))
+(defcommand describe-function (fn) ((:function "Describe Function: "))
 "Print the online help associated with the specified function."
   (message-no-timeout "~a"
                       (with-output-to-string (s)
@@ -174,11 +174,11 @@
              (format nil "~%^5~a ^B~{~a~^ ~}^b^n~&~%"
                      name
                      lambda-list))
-           (format nil "~&~a"(documentation name 'function)))
+           (format nil "~&~a" (or (documentation name 'function) "")))
           *message-max-width*
           stream)))
 
-(defcommand describe-command (com) ((:command "Describe Command:"))
+(defcommand describe-command (com) ((:command "Describe Command: "))
   "Print the online help associated with the specified command."
   (if (null (get-command-structure com nil))
       (message-no-timeout "Error: Command \"~a\" not found."
@@ -192,7 +192,7 @@
               (mapcar 'print-key-seq bindings))
       (format stream "Command \"~a\" is not currently bound." cmd))))
 
-(defcommand where-is (cmd) ((:rest "Where is command: "))
+(defcommand where-is (cmd) ((:command "Where is command: "))
   "Print the key sequences bound to the specified command."
   (message-no-timeout "~A" (where-is-to-stream cmd nil)))
 
