@@ -167,7 +167,13 @@ such a case, kill the shell command to resume StumpWM."
       (run-prog-collect-output *shell-program* "-c" cmd)
       (run-prog *shell-program* :args (list "-c" cmd) :wait nil)))
 
+(defcommand run-shell-command-and-show-output (cmd) ((:shell "/bin/sh -c "))
+  "Call run-shell-command, collect the output and show as message"
+  (message (run-shell-command cmd t)))
+
 (defcommand-alias exec run-shell-command)
+
+(defcommand-alias exec&show run-shell-command-and-show-output)
 
 (defcommand eval-line (cmd) ((:rest "Eval: "))
   "Evaluate the s-expression and display the result(s)."

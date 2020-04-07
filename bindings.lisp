@@ -89,6 +89,7 @@ is a tile group.")
   (kbd "a")   "time"
   (kbd "C-a") "time"
   (kbd "!")   "exec"
+  (kbd "M-!") "exec&show"
   (kbd "C-g") "abort"
   *escape-fake-key* "send-escape"
   (kbd ";")   "colon"
