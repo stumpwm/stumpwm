@@ -24,6 +24,11 @@ script:
 
 notifications:
   irc: "chat.freenode.net#stumpwm"
+  urls:
+          - https://webhooks.gitter.im/e/c1294f93beaf1b4f4f51
+    on_success: change
+    on_failure: always
+    on_start: never
   email:
     on_success: never
     on_failure: always
