@@ -279,7 +279,8 @@ frame."
 
 (defun other-hidden-window (group)
   "Return the last window that was accessed and that is hidden."
-  (let ((wins (remove-if (lambda (w) (eq (frame-window (window-frame w)) w))
+  (let ((wins (remove-if (lambda (w) (when-let ((frame (window-frame w))) ;; a window might not a frame when switching between monitors
+                                       (eq (frame-window (window-frame w)) w)))
                          (only-tile-windows (group-windows group)))))
     (first wins)))
 
