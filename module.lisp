@@ -32,7 +32,8 @@
           init-load-path
           set-module-dir
           find-module
-          add-to-load-path))
+          add-to-load-path
+          recursively-add-to-load-path))
 
 (defvar *module-dir*
   (pathname-as-directory (concat (getenv "HOME") "/.stumpwm.d/modules"))
@@ -114,6 +115,11 @@ an asdf system, and if so add it to the central registry"
            (push (ensure-pathname path) asdf:*central-registry*)
            (setf *load-path* (append (list (ensure-pathname path)) *load-path*)))
           (T *load-path*))))
+
+(defun recursively-add-to-load-path (path)
+  "like INIT-LOAD-PATH first recursively build a list of paths
+that contain modules, then add them to the load path"
+  (mapcar #'add-to-load-path (stumpwm::build-load-path path)))
 
 (defcommand load-module (name) ((:module "Load Module: "))
   "Loads the contributed module with the given NAME."
