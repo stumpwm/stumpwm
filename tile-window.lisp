@@ -37,10 +37,6 @@ like xterm and emacs.")
      (maximize-window window))))
 
 (defmethod window-visible-p ((window tile-window))
-  (unless (window-frame window)
-    (setf (window-frame window) (first (tile-group-frame-tree (window-group window))))
-    (dformat 4 "fixing window-frame in WINDOW-VISIBLE-P for window: ~s~%" (window-title window)))
-
   ;; A TILE-WINDOW is visible is it is the top window in the frame or when the
   ;; focused window is a FLOAT-WINDOW and the TILE-WINDOW can be seen below.
   (let* ((frame (window-frame window))
@@ -87,10 +83,6 @@ like xterm and emacs.")
   "Return hints for max width and height and increment hints. These
 hints have been modified to always be defined and never be greater
 than the root window's width and height."
-  (unless (window-frame win)
-    (setf (window-frame win) (first (tile-group-frame-tree (window-group win))))
-    (dformat 4 "fixing window-frame in GEOMETRY-HINTS for window: ~s~%" (window-title win)))
-
   (let* ((f (window-frame win))
          (x (frame-x f))
          (y (frame-display-y (window-group win) f))
