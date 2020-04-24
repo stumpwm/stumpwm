@@ -31,6 +31,12 @@
    (last-frame :initform nil :accessor tile-group-last-frame)
    (current-frame :accessor tile-group-current-frame)))
 
+(defmethod tile-group-current-frame :before ((group tile-group))
+  (declare (optimize (speed 0) (debug 3) (safety 3)))
+  (unless (slot-value group 'current-frame)
+    (setf (slot-value group 'current-frame) (first (tile-group-frame-tree group)))
+    (dformat 4 "fixing current-frame in :BEFORE method for group: ~s~%" (group-name group))))
+
 (defmethod initialize-instance :after ((group tile-group) &key &allow-other-keys)
   (let* ((heads (copy-heads (group-screen group))))
     (setf (tile-group-frame-tree group) heads
