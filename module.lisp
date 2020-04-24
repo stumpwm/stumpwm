@@ -117,7 +117,7 @@ an asdf system, and if so add it to the central registry"
            (setf *load-path* (append (list (ensure-pathname path)) *load-path*)))
           (T *load-path*))))
 
-(defun recursively-add-to-load-path (path)
+(defcommand recursively-add-to-load-path (path)
   "like INIT-LOAD-PATH first recursively build a list of paths
 that contain modules, then add them to the load path"
   (mapcar #'add-to-load-path (stumpwm::build-load-path path)))
