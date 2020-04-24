@@ -98,7 +98,11 @@ further up. "
        (write-line s)
        (print-backtrace)
        (message "^1*^B~a" s)))
-    (:break (invoke-debugger c))
+    (:break (restart-case
+                (invoke-debugger c)
+              (:abort-debugging ()
+                :report (lambda (stream) (format stream "abort debugging"))
+                (throw :top-level (list c (backtrace-string))))))
     (:abort
      (throw :top-level (list c (backtrace-string))))))
 
