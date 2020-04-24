@@ -128,7 +128,7 @@
 
 (defmethod group-lost-focus ((group tile-group))
   ;; If this window had the focus, try to avoid losing it.
-  (let ((frame (tile-group-current-frame group)))
+  (when-let ((frame (tile-group-current-frame group)))
     (setf (frame-window frame)
           (first (remove-if 'window-hidden-p (frame-windows group frame))))
     (focus-frame group frame)))
