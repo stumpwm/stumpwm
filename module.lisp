@@ -112,7 +112,7 @@ an asdf system, and if so add it to the central registry"
            (push pathspec asdf:*central-registry*))
           ((and is-asdf-path (not pathspec))
            (push (ensure-pathname path) asdf:*central-registry*)
-           (setf *load-path* (append (list (ensure-pathname path)) *load-path*)))
+           (push (ensure-pathname path) *load-path*))
           (T *load-path*))))
 
 (defcommand load-module (name) ((:module "Load Module: "))
