@@ -32,8 +32,7 @@
           init-load-path
           set-module-dir
           find-module
-          add-to-load-path
-          recursively-add-to-load-path))
+          add-to-load-path))
 
 (defvar *module-dir*
   (pathname-as-directory (concat (getenv "HOME") "/.stumpwm.d/modules"))
@@ -53,26 +52,6 @@
   populated by any asdf systems found in `*module-dir*' set from the
   configure script when StumpWM was built, or later by the user using
   `add-to-load-path'")
-
-(defun sync-asdf-central-registry (load-path)
-  "Sync `LOAD-PATH' with `ASDF:*CENTRAL-REGISTRY*'"
-  (setf asdf:*central-registry*
-        (union load-path asdf:*central-registry*)))
-
-(defun init-load-path (path)
-  "Recursively builds a list of paths that contain modules.  This is
-called each time StumpWM starts with the argument `*module-dir'"
-  (let ((load-path (build-load-path path)))
-    (setf *load-path* load-path)
-    ;(format t "~{~a ~%~}" *load-path*)
-    (sync-asdf-central-registry load-path)))
-
-(defun set-module-dir (dir)
-  "Sets the location of the for StumpWM to find modules"
-  (when (stringp dir)
-    (setf dir (pathname (concat dir "/"))))
-  (setf *module-dir* dir)
-  (init-load-path *module-dir*))
 
 (define-stumpwm-type :module (input prompt)
   (or (argument-pop-rest input)
@@ -116,10 +95,19 @@ an asdf system, and if so add it to the central registry"
            (push (ensure-pathname path) *load-path*))
           (T *load-path*))))
 
-(defcommand recursively-add-to-load-path (path)
-  "like INIT-LOAD-PATH first recursively build a list of paths
-that contain modules, then add them to the load path"
-  (mapcar #'add-to-load-path (stumpwm::build-load-path path)))
+(defcommand init-load-path (path) ((:string "Directory: "))
+  "Recursively builds a list of paths that contain modules, then
+add them to the load path. This is called each time StumpWM starts
+with the argument `*module-dir*'"
+  (mapcar #'add-to-load-path (build-load-path path))
+  *load-path*)
+
+(defun set-module-dir (dir)
+  "Sets the location of the for StumpWM to find modules"
+  (when (stringp dir)
+    (setf dir (pathname (concat dir "/"))))
+  (setf *module-dir* dir)
+  (init-load-path dir))
 
 (defcommand load-module (name) ((:module "Load Module: "))
   "Loads the contributed module with the given NAME."
