@@ -1121,7 +1121,7 @@ add rules")
   "Create a rule that matches windows and automatically places them in
 a specified group and frame. Each frame rule is a lambda list:
 @example
-\(frame-number raise lock &key create restore dump-name class instance type role title)
+\(frame-number raise lock &key from-group create restore dump-name class instance type role title)
 @end example
 
 @table @var
