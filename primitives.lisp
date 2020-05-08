@@ -244,6 +244,12 @@ be an integer.")
 (defvar *command-mode-end-hook* '(command-mode-end-message)
   "A hook called whenever command mode is ended")
 
+(defvar *auto-float-window-hook* '()
+  "A hook called whenever a window is added to a group. It is called with one 
+argument: the window being added. If any of the functions hung on this hook return
+true, it short circuits and the remaining hooks wont be called, and the window will
+be created as a floating window regardless of group type.")
+
 (defvar *urgent-window-hook* '()
   "A hook called whenever a window sets the property indicating that
   it demands the user's attention")
@@ -739,6 +745,12 @@ display a message whenever you switch frames:
 (defmacro remove-all-hooks (hook)
 "Remove all functions from a hook"
   `(setf ,hook NIL))
+
+(defun auto-float-window-p (window)
+  (when *hooks-enabled-p*
+    (loop for fn in *auto-float-window-hook*
+	  when (apply fn (list window))
+	    return t)))
 
 ;; Misc. utility functions
 
