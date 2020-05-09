@@ -68,7 +68,7 @@
   ;; This is important to get the frame slot
   (cond ((typep window 'float-window)
 	 (call-next-method))
-	((auto-float-window-p window)
+	((auto-float-window-p window) ; force a floating window in a tiling group
 	 (change-class window 'float-window)
 	 (float-window-align window)
 	 (group-focus-window group window))
