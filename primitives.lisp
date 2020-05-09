@@ -247,8 +247,8 @@ be an integer.")
 (defvar *auto-float-window-hook* '()
   "A hook called whenever a window is added to a group. It is called with one 
 argument: the window being added. If any of the functions hung on this hook return
-true, it short circuits and the remaining hooks wont be called, and the window will
-be created as a floating window regardless of group type.")
+true, it short circuits and the remaining functions won't be called, and the window 
+will be created as a floating window regardless of group type.")
 
 (defvar *urgent-window-hook* '()
   "A hook called whenever a window sets the property indicating that
