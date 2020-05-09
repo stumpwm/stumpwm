@@ -2573,6 +2573,7 @@ $$$ *quit-hook*
 $$$ *restart-hook*
 $$$ *selection-notify-hook*
 $$$ *split-frame-hook*
+$$$ *auto-float-window-hook*
 
 @node Modules, Hacking, Hooks, Top
 @chapter Modules
