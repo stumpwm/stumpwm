@@ -259,7 +259,7 @@ timer.")
 (defun destroy-mode-line (ml)
   (run-hook-with-args *destroy-mode-line-hook* ml)
   (xlib:destroy-window (mode-line-window ml))
-  (unless (mode-line-cc ml) ;; mode-lines of dock-type windows do not have a cc
+  (when (mode-line-cc ml) ;; mode-lines of dock-type windows do not have a cc
     (xlib:free-gcontext (mode-line-gc ml)))
   (setf *mode-lines* (remove ml *mode-lines*))
   (sync-mode-line ml)
