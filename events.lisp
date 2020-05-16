@@ -628,9 +628,8 @@ the window in it's frame."
 (defun make-xlib-window (drawable)
   "For some reason the CLX xid cache screws up returns pixmaps when
 they should be windows. So use this function to make a window out of DRAWABLE."
-  (make-instance 'xlib:window
-                 :id (xlib:drawable-id drawable)
-                 :display *display*))
+  (xlib::make-window :id (xlib:drawable-id drawable)
+                     :display *display*))
 
 (defun handle-event (&rest event-slots &key display event-key &allow-other-keys)
   (declare (ignore display))
