@@ -66,30 +66,29 @@
 
 (defmethod group-add-window ((group tile-group) window &key frame raise &allow-other-keys)
   ;; This is important to get the frame slot
-  (cond ((typep window 'float-window)
-         (call-next-method))
-        ((auto-float-window-p window) ; force a floating window in a tiling group
-         (change-class window 'float-window)
-	 (float-window-align window)
-	 (group-focus-window group window))
-	(t
-	 (change-class window 'tile-window)
-	 ;; Try to put the window in the appropriate frame for the group.
-	 (setf (window-frame window)
-	       (or frame
-		   (when *processing-existing-windows*
-		     (find-frame group (xlib:drawable-x (window-parent window))
-				 (xlib:drawable-y (window-parent window))))
-		   (pick-preferred-frame window)))
-	 (when *processing-existing-windows*
-	   (setf (frame-window (window-frame window)) window))
-	 (when (and frame raise)
-	   (setf (tile-group-current-frame group) frame
-		 (frame-window frame) nil))
-	 (sync-frame-windows group (window-frame window))
-	 (when (null (frame-window (window-frame window)))
-	   (frame-raise-window (window-group window) (window-frame window)
-			       window nil)))))
+  (if (typep window 'float-window)
+      (call-next-method)
+      (progn
+        (run-hook-with-args *new-window-preprocessing-hook* window group)
+        (unless (or (typep window 'float-window)
+                    (typep window 'tile-window))
+          (change-class window 'tile-window)
+          ;; Try to put the window in the appropriate frame for the group.
+          (setf (window-frame window)
+                (or frame
+                    (when *processing-existing-windows*
+                      (find-frame group (xlib:drawable-x (window-parent window))
+                                  (xlib:drawable-y (window-parent window))))
+                    (pick-preferred-frame window)))
+          (when *processing-existing-windows*
+            (setf (frame-window (window-frame window)) window))
+          (when (and frame raise)
+            (setf (tile-group-current-frame group) frame
+                  (frame-window frame) nil))
+          (sync-frame-windows group (window-frame window))
+          (when (null (frame-window (window-frame window)))
+            (frame-raise-window (window-group window) (window-frame window)
+                                window nil))))))
 
 (defmethod group-current-head ((group tile-group))
   (if-let ((current-window (group-current-window group)))
@@ -1369,13 +1368,21 @@ direction. The following are valid directions:
     (update-decoration window)
     (sync-frame-windows group frame)))
 
-(defun float-window (window group)
-  (let ((frame (tile-group-current-frame group)))
-    (change-class window 'float-window)
-    (float-window-align window)
-    (funcall-on-node (tile-group-frame-tree group)
-                     (lambda (f) (setf (slot-value f 'window) nil))
-                     (lambda (f) (eq frame f)))))
+(flet ((float-existing-window (win grp)
+         (let ((frame (tile-group-current-frame grp)))
+           (change-class win 'float-window)
+           (float-window-align win)
+           (funcall-on-node (tile-group-frame-tree grp)
+                            (lambda (f) (setf (slot-value f 'window) nil))
+                            (lambda (f) (eq frame f)))))
+       (add-floating-window (win grp)
+         (change-class win 'float-window)
+         (float-window-align win)
+         (group-focus-window grp win)))
+  (defun float-window (window group &key float-new-window)
+    (if float-new-window
+        (add-floating-window window group)
+        (float-existing-window window group))))
 
 (defcommand (float-this tile-group) () ()
   "Transforms a tile-window into a float-window"
