@@ -38,6 +38,7 @@
           *command-mode-end-hook*
           *urgent-window-hook*
           *new-window-hook*
+          *new-window-preprocessing-hook*
           *new-head-hook*
           *destroy-window-hook*
           *focus-window-hook*
@@ -245,11 +246,11 @@ be an integer.")
   "A hook called whenever command mode is ended")
 
 (defvar *new-window-preprocessing-hook* '()
-  "A hook called before a window is processed and added to a group. It takes as
-arguments the window to be processed and the group to process it in. If any 
-functions hung on this hook place the window or modify its type from `window` to
-`tile-window` or `float-window` then the default window processing will not take 
-place.")
+  "A hook called before a window is processed and added to a tiling group.
+It takes as arguments the window to be processed and the group to process it in. 
+If any functions hung on this hook place the window or modify its type from 
+`window` to `tile-window` or `float-window` then the default window processing will
+not take place.")
 
 (defvar *urgent-window-hook* '()
   "A hook called whenever a window sets the property indicating that
