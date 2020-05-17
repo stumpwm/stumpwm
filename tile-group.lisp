@@ -1380,6 +1380,9 @@ direction. The following are valid directions:
          (float-window-align win)
          (group-focus-window grp win)))
   (defun float-window (window group &key float-new-window)
+    "transforms a tile-window into a float-window or creates a new float-window, 
+depending on the value of float-new-window. float-new-window should only be true if
+float-window is called in the context of *new-window-preprocessing-hook*."
     (if float-new-window
         (add-floating-window window group)
         (float-existing-window window group))))
