@@ -223,9 +223,8 @@
   (dereference-kmaps
    (reduce
     (lambda (result map)
-      (let* ((binding (handler-case (find key (kmap-bindings map)
-                                          :key 'binding-key :test 'equalp)
-                        (type-error () nil)))
+      (let* ((binding (find key (kmap-bindings map)
+                            :key 'binding-key :test 'equalp))
              (command (when binding (binding-command binding))))
         (if command
             (setf result (cons command result))
@@ -247,8 +246,8 @@ KMAPS are enabled"
   (when (not (eq *top-map* *resize-map*))
     (let* ((oriented-key-seq (reverse key-seq))
            (maps (get-kmaps-at-key-seq (dereference-kmaps (top-maps)) oriented-key-seq)))
-      (when-let ((only-maps (remove-if-not 'kmap-p maps)))
-        (apply 'display-bindings-for-keymaps oriented-key-seq only-maps)))))
+      (when (remove-if-not 'kmap-p maps)
+        (apply 'display-bindings-for-keymaps oriented-key-seq maps)))))
 
 (defcommand which-key-mode () ()
   "Toggle which-key-mode"
