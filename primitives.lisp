@@ -1121,10 +1121,16 @@ add rules")
   "Create a rule that matches windows and automatically places them in
 a specified group and frame. Each frame rule is a lambda list:
 @example
-\(frame-number raise lock &key from-group create restore dump-name class instance type role title)
+\(frame-number raise lock &key from-group create restore dump-name class class-not
+instance instance-not type type-not role role-not title title-not 
+match-properties-and-function match-properties-or-function)
 @end example
 
 @table @var
+@item target-group
+when nil, rule applies in all groups. when non nil, @var{lock} determines 
+applicability of rule. 
+
 @item frame-number
 The frame number to send matching windows to
 
@@ -1154,27 +1160,58 @@ When non-NIL the group is restored even if it already exists. This arg should
 be set to the dump filename to use for forced restore. Defaults to NIL
 
 @item class
-The window's class must match @var{class}.
+The windows class must match @var{class}.
+
+@item class-not
+The windows class must not match @var{class-not}
 
 @item instance
-The window's instance/resource name must match @var{instance}.
+The windows instance/resource name must match @var{instance}.
+
+@item instance-not 
+The windows instance/resource name must not match @var{instance-not}
 
 @item type
-The window's type must match @var{type}.
+The windows type must match @var{type}.
+
+@item type-not
+The windows type must not match @var{type-not}.
 
 @item role
-The window's role must match @var{role}.
+The windows role must match @var{role}.
+
+@item role-not
+The windows role must not match @var{role-not}.
 
 @item title
 The window's title must match @var{title}.
+
+@item title-not
+The windows title must not match @var{title-not}.
+
+@item match-properties-and-function
+A function that, if provided, must return true alongside the provided properties
+in order for the rule to match. 
+
+@item match-properties-and-function
+A function that, if provided and returning true, will cause the rule to match 
+regardless of whether the window properties match. 
 @end table"
   (let ((x (gensym "X")))
     `(dolist (,x ',frame-rules)
        ;; verify the correct structure
        (destructuring-bind (frame-number raise lock
-                                         &rest keys
-                                         &key from-group create restore class instance type role title) ,x
-         (declare (ignore from-group create restore class instance type role title))
+			    &rest keys
+			    &key from-group create restore
+			      class class-not instance instance-not type type-not
+			      role role-not title title-not
+                              match-properties-and-function
+			      match-properties-or-function)
+	   ,x
+         (declare (ignore from-group create restore class class-not instance
+			  instance-not type type-not role role-not title title-not
+			  match-properties-and-function
+			  match-properties-or-function))
          (push (list* ,target-group frame-number raise lock keys)
                *window-placement-rules*)))))
 
