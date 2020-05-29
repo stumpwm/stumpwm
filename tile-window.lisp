@@ -318,13 +318,14 @@ current frame and raise it."
   (let ((group (current-group)))
     (pull-other-hidden-window group)))
 
-(defcommand (pull-from-windowlist tile-group) () ()
+(defcommand (pull-from-windowlist tile-group)
+    (&optional (fmt *window-format*)) (:rest)
   "Pulls a window selected from the list of windows.
 This allows a behavior similar to Emacs' switch-to-buffer
 when selecting another window."
   (let ((pulled-window (select-window-from-menu
                         (group-windows (current-group))
-                        *window-format*)))
+                        fmt)))
     (when pulled-window
       (pull-window pulled-window))))
 

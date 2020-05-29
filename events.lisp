@@ -591,7 +591,7 @@ the window in it's frame."
 
 (defun decode-button-code (code)
   "Translate the mouse button number into a more readable format"
-  (ecase code
+  (case code
     (1 :left-button)
     (2 :middle-button)
     (3 :right-button)
@@ -600,7 +600,8 @@ the window in it's frame."
     (6 :wheel-left)
     (7 :wheel-right)
     (8 :browser-back)
-    (9 :browser-front)))
+    (9 :browser-front)
+    (t code)))
 
 (defun scroll-button-keyword-p (button)
   "Checks if button keyword is generated from the scroll wheel."
@@ -627,9 +628,8 @@ the window in it's frame."
 (defun make-xlib-window (drawable)
   "For some reason the CLX xid cache screws up returns pixmaps when
 they should be windows. So use this function to make a window out of DRAWABLE."
-  (make-instance 'xlib:window
-                 :id (xlib:drawable-id drawable)
-                 :display *display*))
+  (xlib::make-window :id (xlib:drawable-id drawable)
+                     :display *display*))
 
 (defun handle-event (&rest event-slots &key display event-key &allow-other-keys)
   (declare (ignore display))
