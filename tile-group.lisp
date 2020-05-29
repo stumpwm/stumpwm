@@ -67,30 +67,30 @@
 (defmethod group-add-window ((group tile-group) window &key frame raise &allow-other-keys)
   ;; This is important to get the frame slot
   (cond ((typep window 'float-window)
-	 (call-next-method))
-	((eq frame :float)
-	 (change-class window 'float-window)
-	 (float-window-align window)
-	 (when raise 
-	   (group-focus-window group window)))
-	(t
-	 (change-class window 'tile-window)
-	 ;; Try to put the window in the appropriate frame for the group.
-	 (setf (window-frame window)
-	       (or frame
-		   (when *processing-existing-windows*
-		     (find-frame group (xlib:drawable-x (window-parent window))
-				 (xlib:drawable-y (window-parent window))))
-		   (pick-preferred-frame window)))
-	 (when *processing-existing-windows*
-	   (setf (frame-window (window-frame window)) window))
-	 (when (and frame raise)
-	   (setf (tile-group-current-frame group) frame
-		 (frame-window frame) nil))
-	 (sync-frame-windows group (window-frame window))
-	 (when (null (frame-window (window-frame window)))
-	   (frame-raise-window (window-group window) (window-frame window)
-			       window nil)))))
+         (call-next-method))
+        ((eq frame :float)
+         (change-class window 'float-window)
+         (float-window-align window)
+         (when raise 
+           (group-focus-window group window)))
+        (t
+         (change-class window 'tile-window)
+         ;; Try to put the window in the appropriate frame for the group.
+         (setf (window-frame window)
+               (or frame
+                   (when *processing-existing-windows*
+                     (find-frame group (xlib:drawable-x (window-parent window))
+                                 (xlib:drawable-y (window-parent window))))
+                   (pick-preferred-frame window)))
+         (when *processing-existing-windows*
+           (setf (frame-window (window-frame window)) window))
+         (when (and frame raise)
+           (setf (tile-group-current-frame group) frame
+                 (frame-window frame) nil))
+         (sync-frame-windows group (window-frame window))
+         (when (null (frame-window (window-frame window)))
+           (frame-raise-window (window-group window) (window-frame window)
+                               window nil)))))
 
 (defmethod group-current-head ((group tile-group))
   (if-let ((current-window (group-current-window group)))
@@ -1352,12 +1352,12 @@ direction. The following are valid directions:
     (let (shortest)
       (destructuring-bind (win-x . win-y) (window-centroid win)
         (loop :for frame :in (group-frames group)
-	      :for (frame-x . frame-y) := (frame-centroid frame)
-	      :for distance := (sqrt (+ (square (- win-x frame-x))
-					(square (- win-y frame-y))))
-	      :unless shortest
+              :for (frame-x . frame-y) := (frame-centroid frame)
+              :for distance := (sqrt (+ (square (- win-x frame-x))
+                                        (square (- win-y frame-y))))
+              :unless shortest
                 :do (setf shortest (cons distance frame))
-	      :when (> (car shortest) distance)
+              :when (> (car shortest) distance)
                 :do (setf shortest (cons distance frame))))
       (cdr shortest))))
 

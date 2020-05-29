@@ -396,9 +396,9 @@ frame. Possible values are:
   (let* ((group (window-group window))
          (group-name (group-name group))
          (frame-number-or-float
-	   (if (typep window 'float-window)
-	       :float
-	       (frame-number (window-frame window))))
+           (if (typep window 'float-window)
+               :float
+               (frame-number (window-frame window))))
          (role (window-role window)))
     (push (list group-name frame-number-or-float t lock
                 :class (window-class window)

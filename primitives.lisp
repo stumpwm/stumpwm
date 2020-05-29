@@ -1201,17 +1201,17 @@ regardless of whether the window properties match.
     `(dolist (,x ',frame-rules)
        ;; verify the correct structure
        (destructuring-bind (frame-number raise lock
-			    &rest keys
-			    &key from-group create restore
-			      class class-not instance instance-not type type-not
-			      role role-not title title-not
+                            &rest keys
+                            &key from-group create restore
+                              class class-not instance instance-not type type-not
+                              role role-not title title-not
                               match-properties-and-function
-			      match-properties-or-function)
-	   ,x
+                              match-properties-or-function)
+           ,x
          (declare (ignore from-group create restore class class-not instance
-			  instance-not type type-not role role-not title title-not
-			  match-properties-and-function
-			  match-properties-or-function))
+                          instance-not type type-not role role-not title title-not
+                          match-properties-and-function
+                          match-properties-or-function))
          (push (list* ,target-group frame-number raise lock keys)
                *window-placement-rules*)))))
 
