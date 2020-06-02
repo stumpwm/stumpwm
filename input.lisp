@@ -337,20 +337,20 @@ match with an element of the completions."
                                       (caar compls)
                                       (car compls))))))
              (key-loop ()
-               (loop for key = (with-focus (screen-input-window screen)
-                                 (read-key-or-selection))
-                     do
-                    (cond ((stringp key)
-                           ;; handle selection
-                           (input-insert-string input key)
-                           (draw-input-bucket screen prompt input))
-                          ;; skip modifiers
-                          ((is-modifier (car key)))
-                          ((process-input screen prompt input (car key) (cdr key))
-                           (if (or (not require-match)
-                                   (match-input))
-                               (return (input-line-string input))
-                               (draw-input-bucket screen prompt input "[No match]" t)))))))
+               (with-focus (screen-input-window screen)
+                 (loop for key = (read-key-or-selection)
+                    do
+                      (cond ((stringp key)
+                             ;; handle selection
+                             (input-insert-string input key)
+                             (draw-input-bucket screen prompt input))
+                            ;; skip modifiers
+                            ((is-modifier (car key)))
+                            ((process-input screen prompt input (car key) (cdr key))
+                             (if (or (not require-match)
+                                     (match-input))
+                                 (return (input-line-string input))
+                                 (draw-input-bucket screen prompt input "[No match]" t))))))))
       (draw-input-bucket screen prompt input)
       (setup-input-window screen prompt input)
       (catch :abort
