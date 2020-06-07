@@ -93,15 +93,8 @@
   (let ((match (rule-matching-window window)))
     (if match
         (destructuring-bind (group-name frame raise lock
-                             &key from-group create restore class class-not instance
-                               instance-not type type-not role role-not title title-not
-                               match-properties-and-function
-                               match-properties-or-function)
-            match
-          (declare (ignore from-group lock class class-not instance
-                           instance-not type type-not role role-not
-                           title title-not match-properties-and-function
-                           match-properties-or-function))
+                             &key create restore) match
+          (declare (ignore from-group lock))
           (let ((group (find-group screen group-name)))
             (cond (group
                    (when (and restore (stringp restore))
