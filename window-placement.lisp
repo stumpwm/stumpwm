@@ -28,9 +28,10 @@
 (defun string-match (string pat)
   (ppcre:scan (get-or-create-rule-scanner pat) string))
 
-(defun window-matches-properties-p (window &key class class-not type type-not 
-                                             instance instance-not role role-not
-                                             title title-not)
+
+(defun window-matches-properties-p (window
+                                    &key class class-not instance instance-not
+                                      type type-not role role-not title title-not)
   "Returns T if window matches all the given properties"
   (and
    (if class (string-match (window-class window) class) t)
@@ -63,24 +64,24 @@
                              (t (group-name (eval from-group)))))
            (properties-matched
              (if (or lock (equal group-name from-group))
-                 (window-matches-properties-p :class class
-                                              :class-not class-not
-                                              :instance instance
-                                              :instance-not instance-not
-                                              :type type
-                                              :type-not type-not
-                                              :role role
-                                              :role-not role-not
-                                              :title title
-                                              :title-not title-not))))
+                 (window-matches-properties-p w :class class
+                                                :class-not class-not
+                                                :instance instance
+                                                :instance-not instance-not
+                                                :type type
+                                                :type-not type-not
+                                                :role role
+                                                :role-not role-not
+                                                :title title
+                                                :title-not title-not))))
       (cond ((and match-properties-and-function match-properties-or-function)
-             (or (funcall match-properties-or-function w)
-                 (and properties-match
-                      (funcall match-properties-and-function w))))
+             (or (and properties-matched
+                      (funcall match-properties-and-function w))
+                 (funcall match-properties-or-function w)))
             (match-properties-or-function
              (or properties-matched (funcall match-properties-or-function w)))
             (match-properties-and-function
-             (and properties-matched (funcall match-properties-and-function w)))
+             (and properties-matched (funcall match-properties-or-function w)))
             (t properties-matched)))))
 
 (defun rule-matching-window (window)
@@ -93,14 +94,15 @@
   (let ((match (rule-matching-window window)))
     (if match
         (destructuring-bind (group-name frame raise lock
-                             &key from-group create restore class class-not
-                               instance instance-not type type-not role role-not
-                               title title-not match-properties-or-function
-                               match-properties-and-function)
+                             &key from-group create restore class class-not instance
+                               instance-not type type-not role role-not title title-not
+                               match-properties-and-function
+                               match-properties-or-function)
             match
-          (declare (ignore from-group lock class class-not type type-not role
-                           role-not instance instance-not title title-not
-                           match-properties-and-function match-properties-or-function))
+          (declare (ignore from-group lock class class-not instance
+                           instance-not type type-not role role-not
+                           title title-not match-properties-and-function
+                           match-properties-or-function))
           (let ((group (find-group screen group-name)))
             (cond (group
                    (when (and restore (stringp restore))
@@ -127,7 +129,7 @@
                          (when (stringp create)
                            (message "^B^1*Can't restore group \"^b~a^B\" with \"^b~a^B\"."
                                     group-name restore-file)))
-                     (values group
+                     (values new-group
                              (if (eq frame :float)
                                  frame
                                  (frame-by-number group frame))
@@ -136,7 +138,7 @@
                    (values (current-group)
                            (if (eq frame :float)
                                frame
-                               (frame-by-number group frame))
+                               (frame-by-number (current-group) frame))
                            raise))
                   (t (message "^B^1*Error placing window, group \"^b~a^B\" does not exist." group-name)
                      (values)))))
