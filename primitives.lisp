@@ -1200,15 +1200,7 @@ regardless of whether the window properties match. Takes one argument, the windo
   (let ((x (gensym "X")))
     `(dolist (,x ',frame-rules)
        ;; verify the correct structure
-       (destructuring-bind (frame-number raise lock &rest keys
-                            &key from-group create restore class class-not
-                              instance instance-not type type-not role role-not
-                              title title-not match-properties-and-function
-                              match-properties-or-function)
-           ,x
-         (declare (ignore from-group create restore class class-not instance
-                          instance-not type type-not role role-not title title-not
-                          match-properties-and-function match-properties-or-function))
+       (destructuring-bind (frame-number raise lock &rest keys) ,x
          (push (list* ,target-group frame-number raise lock keys)
                *window-placement-rules*)))))
 
