@@ -1352,12 +1352,12 @@ direction. The following are valid directions:
     (let (shortest)
       (destructuring-bind (win-x . win-y) (window-centroid win)
         (loop :for frame :in (group-frames group)
-              :for (frame-x . frame-y) := (frame-centroid frame)
-              :for distance := (sqrt (+ (square (- win-x frame-x))
-                                        (square (- win-y frame-y))))
-              :unless shortest
+	      :for (frame-x . frame-y) := (frame-centroid frame)
+	      :for distance := (sqrt (+ (square (- win-x frame-x))
+					(square (- win-y frame-y))))
+	      :unless shortest
                 :do (setf shortest (cons distance frame))
-              :when (> (car shortest) distance)
+	      :when (> (car shortest) distance)
                 :do (setf shortest (cons distance frame))))
       (cdr shortest))))
 
