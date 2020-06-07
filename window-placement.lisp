@@ -28,7 +28,6 @@
 (defun string-match (string pat)
   (ppcre:scan (get-or-create-rule-scanner pat) string))
 
-
 (defun window-matches-properties-p (window
                                     &key class class-not instance instance-not
                                       type type-not role role-not title title-not)
