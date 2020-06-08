@@ -23,17 +23,17 @@
 ;; Lock screen
 (define-key *root-map* (kbd "C-l") "exec xlock")
 
-;; Web jump (works for Google and Imdb)
+;; Web jump (works for DuckDuckGo and Imdb)
 (defmacro make-web-jump (name prefix)
   `(defcommand ,(intern name) (search) ((:rest ,(concatenate 'string name " search: ")))
     (nsubstitute #\+ #\Space search)
     (run-shell-command (concatenate 'string ,prefix search))))
 
-(make-web-jump "google" "firefox http://www.google.fr/search?q=")
+(make-web-jump "duckduckgo" "firefox https://duckduckgo.com/?q=")
 (make-web-jump "imdb" "firefox http://www.imdb.com/find?q=")
 
 ;; C-t M-s is a terrble binding, but you get the idea.
-(define-key *root-map* (kbd "M-s") "google")
+(define-key *root-map* (kbd "M-s") "duckduckgo")
 (define-key *root-map* (kbd "i") "imdb")
 
 ;; Message window font
