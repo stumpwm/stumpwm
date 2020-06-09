@@ -1074,6 +1074,8 @@ keybindings.
        ("M->"   . "End")
        ("C-M-b" . "M-Left")
        ("C-M-f" . "M-Right")
+       ("M-f"   . "C-Right")
+       ("M-b"   . "C-Left")
        ("C-k"   . ("C-S-End" "C-x")))))
 @end example
 
@@ -1099,6 +1101,8 @@ The window matching pattern can also be specified as a function which returns @c
        ("M->"   . "End")
        ("C-M-b" . "M-Left")
        ("C-M-f" . "M-Right")
+       ("M-f"   . "C-Right")
+       ("M-b"   . "C-Left")
        ("C-k"   . ("C-S-End" "C-x")))))
 @end example
 
