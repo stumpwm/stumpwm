@@ -64,32 +64,33 @@
           (tile-w (frame-raise-window group (window-frame tile-w) tile-w))
           (t (no-focus group nil)))))
 
-(defmethod group-add-window ((group tile-group) (window tile-window) &key frame raise &allow-other-keys)
+(defmethod group-add-window ((group tile-group) window &key frame raise &allow-other-keys)
   ;; This is important to get the frame slot
-  (if (eq frame :float)
-      (progn
-        (change-class window 'float-window)
-        (float-window-align window)
+  (cond ((typep window 'float-window)
+         (call-next-method))
+        ((eq frame :float)
+         (change-class window 'float-window)
+         (float-window-align window)
         (when raise
           (group-focus-window group window)))
-      (progn
-        (change-class window 'tile-window)
-        ;; Try to put the window in the appropriate frame for the group.
-        (setf (window-frame window)
-              (or frame
-                  (when *processing-existing-windows*
-                    (find-frame group (xlib:drawable-x (window-parent window))
-                                (xlib:drawable-y (window-parent window))))
-                  (pick-preferred-frame window)))
-        (when *processing-existing-windows*
-          (setf (frame-window (window-frame window)) window))
-        (when (and frame raise)
-          (setf (tile-group-current-frame group) frame
-                (frame-window frame) nil))
-        (sync-frame-windows group (window-frame window))
-        (when (null (frame-window (window-frame window)))
-          (frame-raise-window (window-group window) (window-frame window)
-                              window nil)))))
+        (t
+         (change-class window 'tile-window)
+         ;; Try to put the window in the appropriate frame for the group.
+         (setf (window-frame window)
+               (or frame
+                   (when *processing-existing-windows*
+                     (find-frame group (xlib:drawable-x (window-parent window))
+                                 (xlib:drawable-y (window-parent window))))
+                   (pick-preferred-frame window)))
+         (when *processing-existing-windows*
+           (setf (frame-window (window-frame window)) window))
+         (when (and frame raise)
+           (setf (tile-group-current-frame group) frame
+                 (frame-window frame) nil))
+         (sync-frame-windows group (window-frame window))
+         (when (null (frame-window (window-frame window)))
+           (frame-raise-window (window-group window) (window-frame window)
+                               window nil)))))
 
 (defmethod group-current-head ((group tile-group))
   (if-let ((current-window (group-current-window group)))
