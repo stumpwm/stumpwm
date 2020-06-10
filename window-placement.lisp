@@ -49,12 +49,12 @@
 (defun window-matches-rule-p (w rule)
   "Returns T if window matches rule"
   (destructuring-bind (group-name frame raise lock
-                       &key from-group create restore class class-not instance
-                         instance-not type type-not role role-not title title-not
+                       &key from-group class class-not instance instance-not
+                         type type-not role role-not title title-not
                          match-properties-and-function
-                         match-properties-or-function)
+                         match-properties-or-function &allow-other-keys)
       rule
-    (declare (ignore frame raise create restore))
+    (declare (ignore frame raise))
     (let* ((from-group (cond ((not from-group)
                               (group-name (or (when (slot-boundp w 'group)
                                                 (window-group w))
@@ -93,8 +93,9 @@
   (let ((match (rule-matching-window window)))
     (if match
         (destructuring-bind (group-name frame raise lock
-                             &key create restore) match
-          (declare (ignore from-group lock))
+                             &key create restore &allow-other-keys)
+            match
+          (declare (ignore lock))
           (let ((group (find-group screen group-name)))
             (cond (group
                    (when (and restore (stringp restore))

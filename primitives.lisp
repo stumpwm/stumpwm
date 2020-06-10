@@ -1122,13 +1122,13 @@ add rules")
 a specified group and frame. Each frame rule is a lambda list:
 @example
 \(frame-number raise lock &key from-group create restore dump-name class class-not
-instance instance-not type type-not role role-not title title-not 
+instance instance-not type type-not role role-not title title-not
 match-properties-and-function match-properties-or-function)
 @end example
 
 @table @var
 @item target-group
-When nil, rule applies in the current group. When non nil, @var{lock} determines 
+When nil, rule applies in the current group. When non nil, @var{lock} determines
 applicability of rule
 
 @item frame-number
@@ -1190,8 +1190,8 @@ The windows title must match @var{title}.
 The windows title must not match @var{title-not}.
 
 @item match-properties-and-function
-A function that, if provided, must return true alongside the provided properties 
-in order for the rule to match. This function takes one argument, the window. 
+A function that, if provided, must return true alongside the provided properties
+in order for the rule to match. This function takes one argument, the window.
 
 @item match-properties-or-function
 A function that, if provided and returning true, will cause the rule to match
