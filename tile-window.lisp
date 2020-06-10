@@ -396,9 +396,11 @@ frame. Possible values are:
   "Guess at a placement rule for WINDOW and add it to the current set."
   (let* ((group (window-group window))
          (group-name (group-name group))
-         (frame-number (frame-number (window-frame window)))
+         (frame-number-or-float (if (typep window 'float-window)
+                                    :float
+                                    (frame-number (window-frame window))))
          (role (window-role window)))
-    (push (list group-name frame-number t lock
+    (push (list group-name frame-number-or-float t lock
                 :class (window-class window)
                 :instance (window-res window)
                 :title (and title (window-name window))

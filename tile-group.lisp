@@ -64,10 +64,14 @@
           (tile-w (frame-raise-window group (window-frame tile-w) tile-w))
           (t (no-focus group nil)))))
 
-(defmethod group-add-window ((group tile-group) window &key frame raise &allow-other-keys)
+(defmethod group-add-window ((group tile-group) (window tile-window) &key frame raise &allow-other-keys)
   ;; This is important to get the frame slot
-  (if (typep window 'float-window)
-      (call-next-method)
+  (if (eq frame :float)
+      (progn
+        (change-class window 'float-window)
+        (float-window-align window)
+        (when raise
+          (group-focus-window group window)))
       (progn
         (change-class window 'tile-window)
         ;; Try to put the window in the appropriate frame for the group.
