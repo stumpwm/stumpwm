@@ -18,6 +18,9 @@
                #:sb-posix
                #:sb-introspect)
   :components ((:file "package")
+               (:module "support"
+                :components ((:file "xdg-base-dirs")
+                             (:file "debug")))
                (:file "primitives")
                (:file "wrappers")
                (:file "pathnames")

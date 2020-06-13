@@ -222,6 +222,12 @@ further up. "
             :local)
            (t :internet)))))
 
+(defun ensure-data-dir ()
+  (ensure-directories-exist (data-dir) :mode #o511))
+
+(defun data-dir ()
+  (merge-pathnames ".stumpwm.d/" (user-homedir-pathname)))
+
 (defun stumpwm-internal (display-str)
   (multiple-value-bind (host display screen protocol) (parse-display-string display-str)
     (declare (ignore screen))
@@ -232,6 +238,8 @@ further up. "
       (unwind-protect
            (progn
              (let ((*initializing* t))
+               (ensure-data-dir)
+               (open-log)
                ;; Start hashing the user's PATH so completion is quick
                ;; the first time they try to run a command.
                (sb-thread:make-thread #'rehash)
@@ -273,7 +281,9 @@ further up. "
              (let ((*package* (find-package *default-package*)))
                (run-hook *start-hook*)
                (stumpwm-internal-loop)))
-        (xlib:close-display *display*))))
+        (progn
+          (xlib:close-display *display*)
+          (close-log)))))
   ;; what should the top level loop do?
   :quit)
 
