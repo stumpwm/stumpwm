@@ -221,6 +221,7 @@
   (only-tile-windows (group-windows group)))
 
 (defmethod group-windows-for-cycling ((group tile-group) &key sorting)
+  (declare (ignore sorting))
   (only-tile-windows (call-next-method)))
 
 (defmethod focus-next-window ((group tile-group))
