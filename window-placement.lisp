@@ -30,7 +30,7 @@
 
 (defun window-matches-properties-p (window
                                     &key class class-not instance instance-not
-                                      type type-not role role-not title title-not)
+                                      type type-not role role-not title title-not user-title user-title-not)
   "Returns T if window matches all the given properties"
   (and
    (if class (string-match (window-class window) class) t)
@@ -43,6 +43,8 @@
    (if role-not (not (string-match (window-role window) role-not)) t)
    (if title (string-match (window-title window) title) t)
    (if title-not (not (string-match (window-title window) title-not)) t)
+   (if user-title (string-match (window-title window) user-title) t)
+   (if user-title-not (not (string-match (window-title window) user-title-not)) t)
    t))
 
 
