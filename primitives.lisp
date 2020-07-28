@@ -75,6 +75,7 @@
           *message-window-y-padding*
           *message-window-gravity*
           *message-window-real-gravity*
+          *message-window-input-gravity*
           *editor-bindings*
           *input-window-gravity*
           *normal-gravity*
