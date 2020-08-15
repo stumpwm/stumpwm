@@ -427,8 +427,8 @@ then describes the symbol."
                    ("down" :down)
                    ("left" :left)
                    ("right" :right)))
-         (dir (second (assoc (argument-pop-or-read input prompt values)
-                             values :test 'string-equal))))
+         (string (argument-pop-or-read input prompt (mapcar 'first values)))
+         (dir (second (assoc string values :test 'string-equal))))
     (or dir
         (throw 'error "No matching direction."))))
 
@@ -443,7 +443,8 @@ then describes the symbol."
                    ("top-left" :top-left)
                    ("bottom-right" :bottom-right)
                    ("bottom-left" :bottom-left)))
-         (gravity (second (assoc (argument-pop-or-read input prompt values) values :test 'string-equal))))
+         (string (argument-pop-or-read input prompt (mapcar 'first values)))
+         (gravity (second (assoc string values :test 'string-equal))))
     (or gravity
         (throw 'error "No matching gravity."))))
 
