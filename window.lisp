@@ -762,7 +762,7 @@ and bottom_end_x."
   ;; FIXME: Why doesn't grabbing button :any work? We have to
   ;; grab them one by one instead.
   (xwin-ungrab-buttons win)
-  (loop for i from 1 to 7
+  (loop for i from 1 to 32
         do (xlib:grab-button win i '(:button-press)
                              :modifiers :any
                              :owner-p nil
