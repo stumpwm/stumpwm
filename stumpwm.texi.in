@@ -895,6 +895,7 @@ Describe the specified command.
 ### *exchange-window-map*
 
 !!! bind
+!!! unbind
 !!! send-escape
 @@@ grab-pointer
 @@@ ungrab-pointer
