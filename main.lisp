@@ -27,4 +27,7 @@
 (export '(main))
 
 (defun main ()
-  (stumpwm))
+  (let ((argv (uiop:command-line-arguments)))
+    (if (find "--generate-manual" argv :test #'string-equal)
+        (generate-manual)
+        (stumpwm))))
