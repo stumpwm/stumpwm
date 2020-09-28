@@ -13,7 +13,7 @@ infodir=@infodir@
 
 # You shouldn't have to edit past this
 
-FILES=stumpwm.asd $(shell sbcl --non-interactive --load list-sources.lisp | grep '.*\.lisp$$')
+FILES=stumpwm.asd $(shell ./list-sources.sh)
 
 all: stumpwm stumpwm.info
 
