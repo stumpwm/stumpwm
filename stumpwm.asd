@@ -18,8 +18,7 @@
                #:sb-posix
                #:sb-introspect)
   :components ((:file "package")
-               (:module "support"
-                :components ((:file "debug")))
+               (:file "debug")
                (:file "primitives")
                (:file "wrappers")
                (:file "pathnames")
