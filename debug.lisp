@@ -87,4 +87,4 @@ do:
 (defun close-log ()
   (when (boundp '*debug-stream*)
     (close *debug-stream*)
-    (makunbound *debug-stream*)))
+    (makunbound '*debug-stream*)))
