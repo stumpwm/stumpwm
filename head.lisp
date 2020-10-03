@@ -72,15 +72,16 @@
   (declare (ignore screen))
   ;; Query for whether the server supports RANDR, if so, call the
   ;; randr version of make-screen-heads.
-  (cond ((xlib:query-extension *display* "RANDR") (make-screen-randr-heads root))
-        ((and (xlib:query-extension *display* "XINERAMA")
-              (xinerama:xinerama-is-active *display*))
-         (mapcar 'screen-info-head
-                 (xinerama:xinerama-query-screens *display*)))
-        (t (list (make-head :number 0 :x 0 :y 0
-                            :width (xlib:drawable-width root)
-                            :height (xlib:drawable-height root)
-                            :window nil)))))
+  (or
+   (and (xlib:query-extension *display* "RANDR") (make-screen-randr-heads root))
+   (and (xlib:query-extension *display* "XINERAMA")
+        (xinerama:xinerama-is-active *display*)
+        (mapcar 'screen-info-head
+                (xinerama:xinerama-query-screens *display*)))
+   (list (make-head :number 0 :x 0 :y 0
+                    :width (xlib:drawable-width root)
+                    :height (xlib:drawable-height root)
+                    :window nil))))
 
 (defun copy-heads (screen)
   "Return a copy of screen's heads."
