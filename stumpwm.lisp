@@ -223,7 +223,7 @@ further up. "
            (t :internet)))))
 
 (defun ensure-data-dir ()
-  (ensure-directories-exist (data-dir) :mode #o611))
+  (ensure-directories-exist (data-dir) :mode #o700))
 
 (defun data-dir ()
   (merge-pathnames ".stumpwm.d/" (user-homedir-pathname)))
