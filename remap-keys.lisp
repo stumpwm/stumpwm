@@ -114,7 +114,7 @@ EXAMPLE:
   (let* ((screen (current-screen))
          (win (screen-current-window screen))
          (k (with-focus (screen-key-window screen)
-              (read-key)))
+              (read-key-no-modifiers)))
          (code (car k))
          (state (cdr k)))
     (unmap-message-window screen)
