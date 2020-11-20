@@ -14,9 +14,14 @@
   :serial t
   :depends-on (#:alexandria
                #:cl-ppcre
+               #:bt-semaphore
                #:clx
                #:sb-posix
-               #:sb-introspect)
+               #:sb-introspect
+               #:sb-cltl2
+               #:clim
+               #:clim-lisp
+               #:mcclim)
   :components ((:file "package")
                (:file "debug")
                (:file "primitives")
