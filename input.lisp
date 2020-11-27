@@ -378,25 +378,6 @@ match with an element of the completions."
      (* (font-height font) index)
      (font-ascent font)))
 
-(defun potential-string-expansion (string expansion)
-  "This takes a string and a possible expansion and checks to see if it could be, 
-treating hyphens as delimiters between words. This attempts to emulate emacs. 
-For example the string \"t-a-o\" would match any string whose first word begins
-with t, second with a, and third with o."
-  (let ((word-list-one (cl-ppcre:split "-" string))
-	(word-list-two (cl-ppcre:split "-" expansion)))
-    (when (<= (length word-list-one) (length word-list-two))
-      (not (member :impossible (mapcar (lambda (w1 w2)
-					 (if (uiop:string-prefix-p w1 w2)
-					     :possible
-					     :impossible))
-				       word-list-one
-				       word-list-two))))))
-
-(defun emacs-style-command-complete (string)
-  (loop for completion in (all-commands)
-	when (potential-string-expansion string completion)
-	  collect completion))
 
 (defun get-completion-preview-list (input-line all-completions)
   (if (string= "" input-line)
@@ -404,14 +385,15 @@ with t, second with a, and third with o."
       (multiple-value-bind (completions more)
           (take *maximum-completions*
                 (remove-duplicates
-		 (remove-if
-		  (lambda (str)
-		    (or (string= str "")
-			(< (length str) (length input-line))
-			(not (potential-string-expansion input-line str))))
-		  all-completions)
-		 :test #'string=))
-	(if more
+                  (remove-if
+                    (lambda (str)
+                      (or (string= str "")
+                          (< (length str) (length input-line))
+                          (string/= input-line
+                                    (subseq str 0 (length input-line)))))
+                    all-completions)
+                  :test #'string=))
+        (if more
             (append (butlast completions)
                     (list (format nil "... and ~D more" (1+ (length more)))))
             completions))))
@@ -552,17 +534,6 @@ with t, second with a, and third with o."
   (declare (ignore input key))
   :done)
 
-(defun input-complete-and-submit (input key)
-  (declare (ignore key))
-  (let* ((split (split-seq (input-line-string input) " "))
-	 (c (emacs-style-command-complete (car split))))
-    (when (and (= 1 (length split))
-	         (= 1 (length c)))
-      (input-replace-line input (car c)))
-    (define-key *input-map* (kbd "SPC") 'input-self-insert)
-    (define-key *input-map* (kbd "RET") 'input-submit)
-    :done))
-
 (defun input-abort (input key)
   (declare (ignore input key))
   (throw :abort nil))
@@ -579,13 +550,6 @@ functions are passed this structure as their first argument."
   (check-type string string)
   (loop for c across string
         do (input-insert-char input c)))
-
-(defun input-replace-line (input new)
-  (let ((replace-with (if (listp new) (coerce new 'string) new)))
-    (setf (input-line-position input) 0) ; set position to kill from
-    (input-kill-line input nil)
-    (loop for c across replace-with
-	  do (input-insert-char input c))))
 
 (defun input-point (input)
   "Return the position of the cursor."
@@ -628,13 +592,6 @@ functions are passed this structure as their first argument."
 (defun input-substring (input start end)
   "Return a the substring in INPUT bounded by START and END."
   (subseq (input-line-string input) start end))
-
-(defun input-insert-space (input key)
-  (declare (ignore key))
-  (let ((char (xlib:keysym->character *display* (key-keysym (kbd "SPC")))))
-    (if (or (not (characterp char)) (null char))
-	:error
-	(input-insert-char input char))))
 
 
 ;;; "interactive" input functions
@@ -783,22 +740,6 @@ functions are passed this structure as their first argument."
             (not (characterp char)))
         :error
         (input-insert-char input char))))
-
-(defun input-insert-hyphen-or-space (input key)
-  (declare (ignore key))
-  (let ((toggle (member #\space (coerce (input-line-string input) 'list)))
-	;; toggle relies on the fact that there can be no spaces in a command
-	(completion
-	  (emacs-style-command-complete
-	   (car (split-seq (input-line-string input) " ")))))
-    (if (and (not toggle) (= 1 (length completion)))
-	(progn
-	  (input-replace-line input (car completion))
-	  (input-insert-char input #\space))
-	(let ((char (if toggle #\space #\-)))
-	  (if (or (not (characterp char)) (null char))
-	      :error
-	      (input-insert-char input char))))))
 
 (defun input-yank-selection (input key)
   (declare (ignore key))
