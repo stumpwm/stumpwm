@@ -3,7 +3,7 @@ MAKEINFO=@MAKEINFO@
 
 sbcl_BUILDOPTS=--load ./make-image.lisp
 sbcl_INFOOPTS=--eval "(progn (load \"load-stumpwm.lisp\") (load \"manual.lisp\"))" --eval "(progn (stumpwm::generate-manual) (sb-ext:quit))"
-sbcl_TESTOPTS=--eval "(progn (load \"load-stumpwm.lisp\") (asdf:load-system :stumpwm-tests))" --eval "(in-package :stumpwm-tests)" --eval "(if (run-package-tests) (uiop:quit 0) (uiop:quit 1))"
+sbcl_TESTOPTS=--eval "(progn (load \"load-stumpwm.lisp\") (asdf:load-system :stumpwm-tests))" --eval "(if (fiasco:all-tests) (uiop:quit 0) (uiop:quit 1))"
 
 datarootdir = @datarootdir@
 prefix=@prefix@

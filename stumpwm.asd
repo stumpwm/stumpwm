@@ -18,6 +18,7 @@
                #:sb-posix
                #:sb-introspect)
   :components ((:file "package")
+               (:file "config-system")
                (:file "debug")
                (:file "primitives")
                (:file "wrappers")

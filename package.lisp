@@ -17,6 +17,29 @@
 ;; along with this software; see the file COPYING.  If not, see
 ;; <http://www.gnu.org/licenses/>.
 
+(defpackage #:config-system
+  (:use :cl #:alexandria)
+  (:export config-info
+           config-info-name
+           config-info-validator
+           config-info-default
+           config-info-doc
+           config-info-value
+           describe-all-config-info
+           describe-config-info
+           config-error
+           config-not-found-error
+           invalid-datum-error
+           define-config-enum
+           define-config-parameter
+           define-config-var
+           list-all-configurations
+           get-configuration-info
+           set-configuration
+           set-configuration-atomic
+           reset-configuration
+           with-atomic-update))
+
 (defpackage :stumpwm
   (:use :cl
         #:alexandria)
