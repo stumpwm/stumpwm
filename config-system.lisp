@@ -94,7 +94,8 @@
   (check-type name symbol)
   (with-gensyms (default-value is-valid func)
     `(progn
-       (,declare-type ,name ,default ,documentation)
+       (,declare-type ,name ,default ,@(when documentation
+                                         (list documentation)))
        (let* ((,default-value ,name)
               (,func ,validator)
               (,is-valid (funcall ,func ,default-value)))
@@ -104,21 +105,17 @@
                                      :validator ,func :doc ,documentation))
              (error 'invalid-datum-error :place (quote ,name) :value ,default-value))))))
 
-(defmacro define-config-parameter (name default validator documentation)
+(defmacro defconfig (name default validator &key documentation reinitialize)
   "Create and register a configurable variable with the given default value,
-validator function, and documentation using DEFPARAMETER"
-  (%generate-config-var-code 'defparameter name default validator documentation))
+validator function, and documentation"
+  (%generate-config-var-code (if reinitialize `defparameter 'defvar)
+                             name default validator documentation))
 
-(defmacro define-config-var (name default validator documentation)
-  "Create and register a configurable variable with the given default value,
-validator function, and documentation using DEFVAR"
-  (%generate-config-var-code 'defvar name default validator documentation))
-
-(defmacro define-config-enum (name default values documentation &key (test-fn #'equal))
-  "Same as DEFINE-CONFIG-PARAMETER, except the validation function
-is built by creating a function that checks if the set  value is in the VALUES list."
-  `(define-config-parameter ,name ,default (lambda (x) (member x ,values :test ,test-fn))
-                            ,documentation))
+(defmacro define-config-enum (name default values &key (test-fn #'equal) documentation reinitialize)
+  "Same as DEFCONFIG, except the validation function
+is built by creating a function that checks if the set value is in the VALUES list."
+  `(defconfig ,name ,default (lambda (x) (member x ,values :test ,test-fn))
+              :documentation ,documentation :reinitialize reinitialize))
 
 (defun all-config-info (&key (name-matches ".*") (package-matches ".*"))
   "List all of the available customizable settings matching the given criteria."
