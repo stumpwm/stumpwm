@@ -26,7 +26,8 @@
           stumpwm
           call-in-main-thread
           in-main-thread-p
-          push-event))
+          push-event
+          close-resources))
 
 (defvar *in-main-thread* nil
   "Dynamically bound to T during the execution of the main stumpwm function.")
@@ -228,6 +229,10 @@ further up. "
 (defun data-dir ()
   (merge-pathnames ".stumpwm.d/" (user-homedir-pathname)))
 
+(defun close-resources ()
+  (xlib:close-display *display*)
+  (close-log))
+
 (defun stumpwm-internal (display-str)
   (multiple-value-bind (host display screen protocol) (parse-display-string display-str)
     (declare (ignore screen))
@@ -285,9 +290,7 @@ further up. "
              (let ((*package* (find-package *default-package*)))
                (run-hook *start-hook*)
                (stumpwm-internal-loop)))
-        (progn
-          (xlib:close-display *display*)
-          (close-log)))))
+        (close-resources))))
   ;; what should the top level loop do?
   :quit)
 
