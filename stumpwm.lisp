@@ -240,9 +240,6 @@ further up. "
              (let ((*initializing* t))
                (ensure-data-dir)
                (open-log)
-               ;; Start hashing the user's PATH so completion is quick
-               ;; the first time they try to run a command.
-               (sb-thread:make-thread #'rehash)
                
                ;; we need to do this first because init-screen grabs
                ;; keys
@@ -277,6 +274,13 @@ further up. "
                    (when (and netwm-id (< netwm-id (length (screen-groups s))))
                      (switch-to-group (elt (sort-groups s) netwm-id))))
                  (redraw-current-message (current-screen))))
+
+             (run-hook *pre-thread-hook*)
+
+             ;; Start hashing the user's PATH so completion is quick
+             ;; the first time they try to run a command.
+             (sb-thread:make-thread #'rehash)
+
              ;; Let's manage.
              (let ((*package* (find-package *default-package*)))
                (run-hook *start-hook*)
