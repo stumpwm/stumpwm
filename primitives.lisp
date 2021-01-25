@@ -42,6 +42,7 @@
           *destroy-window-hook*
           *focus-window-hook*
           *place-window-hook*
+          *pre-thread-hook*
           *start-hook*
           *restart-hook*
           *quit-hook*
@@ -270,6 +271,9 @@ arguments: the current window and the last window (could be nil).")
 (defvar *place-window-hook* '()
   "A hook called whenever a window is placed by rule. Arguments are
 window group and frame")
+
+(defvar *pre-thread-hook* '()
+  "A hook called before any threads are started. Useful if you need to fork.")
 
 (defvar *start-hook* '()
   "A hook called when stumpwm starts.")
