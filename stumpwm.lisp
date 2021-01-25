@@ -294,9 +294,25 @@ further up. "
   ;; what should the top level loop do?
   :quit)
 
+(defun force-stumpwm-restart (&key (close-display t))
+  (when close-display
+    (xlib:close-display *display*))
+  (apply 'execv (first sb-ext:*posix-argv*) sb-ext:*posix-argv*))
+
+(defmacro set-signal-handler (signo &body body) ;; from Andrew Lyon at https://stackoverflow.com/a/10442062
+  (let ((handler (gensym "HANDLER")))
+    `(progn
+       (cffi:defcallback ,handler :void ((signo :int))
+         (declare (ignore signo))
+         ,@body)
+       (cffi:foreign-funcall "signal" :int ,signo :pointer (cffi:callback ,handler)))))
+
 ;; Usage: (stumpwm)
 (defun stumpwm (&optional (display-str (or (getenv "DISPLAY") ":0")))
   "Start the stump window manager."
+  (set-signal-handler sb-posix:sighup
+    (dformat 0 "SIGHUP received: forcing immediate restart of stumpwm~%") ;; debug level 0 to "force" logging
+    (force-stumpwm-restart))
   (let ((*in-main-thread* t))
     (setf *data-dir*
           (make-pathname :directory (append (pathname-directory (user-homedir-pathname))
@@ -315,7 +331,7 @@ further up. "
               ;; the process because otherwise we get errors.
               ((eq ret :hup-process)
                (run-hook *restart-hook*)
-               (apply 'execv (first sb-ext:*posix-argv*) sb-ext:*posix-argv*))
+               (force-stumpwm-restart :close-display nil))
               ((eq ret :restart)
                (run-hook *restart-hook*))
               (t

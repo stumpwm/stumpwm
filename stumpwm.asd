@@ -16,7 +16,8 @@
                #:cl-ppcre
                #:clx
                #:sb-posix
-               #:sb-introspect)
+               #:sb-introspect
+               #:cffi)
   :components ((:file "package")
                (:file "debug")
                (:file "primitives")
