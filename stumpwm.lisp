@@ -282,13 +282,18 @@ further up. "
     (xlib:close-display *display*))
   (apply 'execv (first sb-ext:*posix-argv*) sb-ext:*posix-argv*))
 
-(defmacro set-signal-handler (signo &body body) ;; from Andrew Lyon at https://stackoverflow.com/a/10442062
-  (let ((handler (gensym "HANDLER")))
-    `(progn
-       (cffi:defcallback ,handler :void ((signo :int))
-         (declare (ignore signo))
-         ,@body)
-       (cffi:foreign-funcall "signal" :int ,signo :pointer (cffi:callback ,handler)))))
+;; based on cffi version of set-signal-handler from Andrew Lyon at https://stackoverflow.com/a/10442062
+;; rewritten to use SBCL's Foreign Function Interface directly by Max-Gerd Retzlaff
+(defmacro set-signal-handler (signo &body body)
+  `(sb-alien:alien-funcall
+    (sb-alien:extern-alien "signal" (function sb-alien:void
+                                              sb-alien:int sb-alien:system-area-pointer))
+    ,signo
+    ;; callback function
+    (sb-alien:alien-sap
+     (sb-alien::alien-lambda sb-alien:void ((signum sb-alien:int))
+       (declare (ignore signum))
+       ,@body))))
 
 ;; Usage: (stumpwm)
 (defun stumpwm (&optional (display-str (or (getenv "DISPLAY") ":0")))

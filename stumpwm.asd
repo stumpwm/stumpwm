@@ -16,8 +16,7 @@
                #:cl-ppcre
                #:clx
                #:sb-posix
-               #:sb-introspect
-               #:cffi)
+               #:sb-introspect)
   :components ((:file "package")
                (:file "primitives")
                (:file "wrappers")
