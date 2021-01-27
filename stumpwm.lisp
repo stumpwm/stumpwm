@@ -45,7 +45,7 @@ further up. "
          (dir-rc
            (probe-file (merge-pathnames #p".stumpwm.d/init.lisp" (user-homedir-pathname))))
          (conf-rc
-           (probe-file (uiop:xdg-config-home #p"stumpwm/config/")))
+           (probe-file (uiop:xdg-config-home #p"stumpwm/init.lisp")))
          (etc-rc (probe-file #p"/etc/stumpwmrc"))
          (rc (or user-rc dir-rc conf-rc etc-rc)))
     (if rc
