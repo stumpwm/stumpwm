@@ -394,7 +394,7 @@
 (defvar *float-group-root-map* nil
   "Commands specific to a floating group context hang from this keymap.
 It is available as part of the @dnf{prefix map} when the active group
-is a tile group.")
+is a float group.")
 
 (fill-keymap *float-group-top-map*
   *escape-key* '*float-group-root-map*)
