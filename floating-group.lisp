@@ -390,13 +390,20 @@
 
 ;;; Bindings
 
-(pushnew '(float-group *float-group-top-map*) *group-top-maps*)
-(defvar *float-group-top-map* (make-sparse-keymap))
-(defvar *float-group-root-map* (make-sparse-keymap)
+(defvar *float-group-top-map* nil)
+(defvar *float-group-root-map* nil
   "Commands specific to a floating group context hang from this keymap.
 It is available as part of the @dnf{prefix map} when the active group
 is a tile group.")
 
+(fill-keymap *float-group-top-map*
+  *escape-key* '*float-group-root-map*)
+
+(fill-keymap *float-group-root-map*
+  (kbd "n")  "next"
+  (kbd "p")  "prev")
+
+(pushnew '(float-group *float-group-top-map*) *group-top-maps*)
 
 (defcommand gnew-float (name) ((:rest "Group Name: "))
   "Create a floating window group with the specified name and switch to it."
