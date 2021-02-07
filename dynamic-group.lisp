@@ -88,6 +88,11 @@ desktop when starting."
            when (> (length (frame-windows group frame)) 1)
              collect (remove (frame-window frame) (frame-windows group frame))))))
 
+(defun find-empty-frames (&optional (group (current-group)))
+  (loop for frame in (group-frames group)
+        when (null (frame-windows group frame))
+          collect frame))
+
 (defmethod group-add-window ((group dynamic-group) window &key frame raise &allow-other-keys)
   (cond ((typep window 'float-window)
          (call-next-method)
@@ -250,8 +255,8 @@ desktop when starting."
 (defun dyn-cycle-windows (direction &optional (group (current-group)))
   (check-type group dynamic-group)
   (check-type direction (member :up :down))
-  (let* ((sorted (sort (group-windows group)
-                       (if (eq direction :up) '< '>)
+  (let* ((sorted (sort (copy-seq (group-windows group))
+                       (if (eq direction :down) '< '>)
                        :key 'window-number))
          (cycle-to (cadr (member (dynamic-group-master-window group) sorted))))
     (when sorted
@@ -343,6 +348,9 @@ desktop when starting."
       (message "Focused window is already master window")
       (swap-window-with-master (current-group) (current-window))))
 
+(defcommand dyn-focus-master-window () ()
+  (focus-frame (current-group) (frame-by-number (current-group) 0)))
+
 
 ;;; Dynamic group keybindings
 
@@ -361,7 +369,7 @@ is a dynamic group.")
   (kbd "W")   "dyn-switch"  
   (kbd "w")   "dyn-switch-prompt-for-window"
   (kbd "RET") "dyn-focus-current-window"
-  (kbd "f")   "dyn-switch-prompt-for-frame")
+  (kbd "f")   "dyn-focus-master-window")
 
 (pushnew '(dynamic-group *dynamic-group-top-map*) *group-top-maps*)
 
