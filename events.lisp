@@ -226,7 +226,7 @@ The Caller is responsible for setting up the input focus."
    ;; lastly, group maps. Last because minor modes should be able to
    ;; shadow a group's default bindings.
    (case (type-of group)
-     (dynamic-group
+     (dynamic-group ; dynamic group cannot inherit tile groups maps. 
       (loop for i in *group-top-maps*
             when (and (not (eql (first i) 'tile-group))
                       (typep group (first i)))

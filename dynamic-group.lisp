@@ -109,10 +109,8 @@ desktop when starting."
          (setf (window-frame window) (frame-by-number group 0))
          (case (length (group-windows group))
            (1
-            ;; (message "moving from 0 to 1 window")
             (setf (dynamic-group-master-window group) window))
            (2
-            ;; (message "moving from 1 to 2 windows")
             (let ((frame (frame-by-number group 0)))
               (dyn-hsplit-frame frame *dynamic-group-master-split-ratio*))
             (let* ((prev-win (dynamic-group-master-window group))
@@ -125,7 +123,6 @@ desktop when starting."
                     (frame-window (frame-by-number group 0)) window
                     (dynamic-group-master-window group) window)))
            (otherwise
-            ;; (message "We already have the stack set up, so put windows there!")
             (let* ((master-frame (frame-by-number group 0))
                    (old-master (dynamic-group-master-window group))
                    (frames-no-master (remove master-frame (group-frames group)))
@@ -234,6 +231,10 @@ desktop when starting."
 
 (defgeneric swap-window-with-master (group window-or-number)
   (:documentation "Swap a window with the master window."))
+
+(defmethod swap-window-with-master (group window-or-number)
+  (declare (ignore group window-or-number))
+  (message "No master window in non-dynamic groups"))
 
 (defmethod swap-window-with-master ((group dynamic-group) window-or-number)
   (let* ((stack (dynamic-group-window-stack group))
