@@ -279,20 +279,13 @@ as we cycle."
 
 (defun dyn-cycle-windows (direction &key (group (current-group)) (focus :master))
   (check-type focus (member :remain :follow :master))
-  (let ((focus-fn (case focus
-                    (:master
-                     (lambda ()
-                       (focus-window (dynamic-group-master-window group) t)))
-                    (:follow
-                     (let ((w (group-current-window group)))
-                       (lambda ()
-                         (focus-window w t))))
-                    (:remain
-                     (let ((f (window-frame (group-current-window group))))
-                       (lambda ()
-                         (focus-frame group f)))))))
-    (dyn-test-cycling-windows direction group)
-    (funcall focus-fn)))
+  (let* ((w (group-current-window group))
+         (f (and w (window-frame w))))
+    (when f
+      (dyn-test-cycling-windows direction group)
+      (case focus (:master (focus-window (dynamic-group-master-window group) t))
+                  (:follow (focus-window w t))
+                  (:remain (focus-frame group f))))))
 
 (define-stumpwm-type :up/down (input prompt)
   (let* ((values '(("up" :up)
