@@ -12,9 +12,11 @@
 
 (defclass dynamic-window (tile-window) ())
 
-(defparameter *maximum-dynamic-group-windows* 7
-  "the maximum number of windows that can be placed in a dynamic-group before we 
-attempt to place them in the next dynamic-group (or generate a new one)")
+(defvar *dynamic-group-overflow-remove-window-policy* :least-important
+  "Controls which window gets sent to the overflow group when a dynamic group 
+overflows. Default value is :least-important. The other possible value is
+:most-important. :least-important will take the window at the end of the stack, 
+:most-important from the beginning.")
 
 (defparameter *dynamic-group-master-split-ratio* "2/3"
   "The ratio with which to split when adding a second window to a dynamic group.")
@@ -59,15 +61,12 @@ desktop when starting."
         (frame-number f2)))))
 
 (defun dyn-split-frame-in-dir-with-frame (group frame dir &optional (ratio 1/2))
-  (if (> (length (group-frames group)) *maximum-dynamic-group-windows*)
-      (progn (message "Too many windows in group")
-             (error 'dynamic-group-too-many-windows))
-      (if (or (dyn-split-frame group frame dir ratio))
-          (progn
-            (when (frame-window frame)
-              (update-decoration (frame-window frame)))
-            (show-frame-indicator group))
-          (error 'dynamic-group-too-many-windows))))
+  (if (or (dyn-split-frame group frame dir ratio))
+      (progn
+        (when (frame-window frame)
+          (update-decoration (frame-window frame)))
+        (show-frame-indicator group))
+      (error 'dynamic-group-too-many-windows)))
 
 (defun dyn-hsplit-frame (frame &optional (ratio "1/2"))
   (dyn-split-frame-in-dir-with-frame (current-group) frame :column (read-from-string ratio)))
@@ -141,10 +140,29 @@ desktop when starting."
                     (focus-frame group (frame-by-number group 0))
                     (dyn-balance-stack-tree group))
                 (dynamic-group-too-many-windows ()
-                  (setf (moving-superfluous-window group) window)
                   (let ((new-group (or (find-group (current-screen) ".Overflow")
-                                       (gnewbg ".Overflow"))))
-                    (move-window-to-group window new-group)))))))
+                                       (gnewbg ".Overflow")))
+                        (w (case *dynamic-group-overflow-remove-window-policy*
+                             (:least-important
+                              (lastcar (dynamic-group-window-stack group)))
+                             (:most-important
+                              (car (dynamic-group-window-stack group))))))
+                    (message
+                     "Group ~S is full, moving window ~S to group \".Overflow.\""
+                     (group-name group) (window-name w))
+                    (setf (dynamic-group-window-stack group)
+                          (cons (dynamic-group-master-window group)
+                                (remove w (dynamic-group-window-stack group)))
+                          (dynamic-group-master-window group) window
+                          (window-frame window) (frame-by-number group 0)
+                          (frame-window (window-frame w)) nil
+                          (window-frame w) nil
+                          (window-frame old-master)
+                          (or (car (find-empty-frames group))
+                              (error "No Empty Frames in group ~S! Something has gone terribly wrong!" group))
+                          (frame-window (window-frame old-master)) old-master
+                          (moving-superfluous-window group) w)
+                    (move-window-to-group w new-group)))))))
          (loop for frame in (group-frames group)
                do (sync-frame-windows group frame))
          (when (null (frame-window (window-frame window)))
