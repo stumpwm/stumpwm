@@ -1,6 +1,7 @@
 (in-package :stumpwm)
 
-(define-condition dynamic-group-too-many-windows (error) ())
+(define-condition dynamic-group-too-many-windows (error) ()
+  (:documentation "This condition is used to control overflowing windows."))
 
 (defclass dynamic-group (tile-group)
   ((master-window :initarg :master-window :initform nil
@@ -14,19 +15,17 @@
 
 (defvar *dynamic-group-overflow-remove-window-policy* :least-important
   "Controls which window gets sent to the overflow group when a dynamic group 
-overflows. Default value is :least-important. The other possible value is
-:most-important. :least-important will take the window at the end of the stack, 
-:most-important from the beginning.")
+overflows. Default value is :LEAST-IMPORTANT. The other possible value is
+:MOST-IMPORTANT. :LEAST-IMPORTANT will take the window at the end of the stack, 
+:MOST-IMPORTANT from the beginning.")
 
 (defparameter *dynamic-group-master-split-ratio* "2/3"
-  "The ratio with which to split when adding a second window to a dynamic group.")
+  "The ratio with which to split when adding a second window to a dynamic group.
+Defaults to \"2/3\".")
 
 (defun dyn-split-frame (group frame how &optional (ratio 1/2))
-  "Split the specified frame into 2 frames. Return new frame number, if
-it succeeded. NIL otherwise. RATIO is a fraction of the screen to
-allocate to the new split window. If ratio is an integer then the
-number of pixels will be used. This can be handy to setup the
-desktop when starting."
+  "Split FRAME in 2 and return the new frame number if successful. Otherwise, 
+return NIL. RATIO is a fraction to split by."
   (check-type how (member :row :column))
   (let ((head (frame-head group frame)))
     ;; don't create frames smaller than the minimum size
@@ -61,6 +60,7 @@ desktop when starting."
         (frame-number f2)))))
 
 (defun dyn-split-frame-in-dir-with-frame (group frame dir &optional (ratio 1/2))
+  "Splits FRAME by RATIO, or signals an error."
   (if (or (dyn-split-frame group frame dir ratio))
       (progn
         (when (frame-window frame)
@@ -81,6 +81,7 @@ desktop when starting."
       (balance-frames-internal group (cadr tree)))))
 
 (defun dyn-find-superfluous-windows (group)
+  "Returns a list of all windows in GROUP that dont have a dedicated frame."
   (let ((frames (group-frames group)))
     (flatten
      (loop for frame in frames
@@ -88,6 +89,7 @@ desktop when starting."
              collect (remove (frame-window frame) (frame-windows group frame))))))
 
 (defun find-empty-frames (&optional (group (current-group)))
+  "Returns a list of all frames in GROUP with no window."
   (loop for frame in (group-frames group)
         when (null (frame-windows group frame))
           collect frame))
@@ -238,16 +240,20 @@ desktop when starting."
 ;;; Dynamic group commands
 
 (defcommand gnew-dynamic (name) ((:rest "Group Name: "))
+  "Create a new dynamic group named NAME."
   (unless name 
     (throw 'error :abort))
   (add-group (current-screen) name :type 'dynamic-group))
 
 (defcommand gnewbg-dynamic (name) ((:rest "Group Name: "))
+  "Create a new dynamic group named NAME in the background."
   (unless name
     (throw 'error :abort))
   (add-group (current-screen) name :type 'dynamic-group :background t))
 
 (defun swap-window-with-master (group window-or-number)
+  "Swap WINDOW-OR-NUMBER with the master window of GROUP. Only applicable to 
+dynamic groups."
   (check-type group dynamic-group)
   (check-type window-or-number (or window number))
   (let* ((stack (dynamic-group-window-stack group))
@@ -267,8 +273,7 @@ desktop when starting."
         (message "Window not a member of the stack"))))
 
 (defun dyn-rotate-windows (direction &optional (group (current-group)))
-  "Cycle through the windows in GROUP, moving the windows up/down in the stack  
-as we cycle."
+  "Rotate windows in GROUP clockwise or counterclockwise."
   (check-type group dynamic-group)
   (check-type direction (member :up :down))
   (let* ((master-w (dynamic-group-master-window group))
@@ -296,6 +301,8 @@ as we cycle."
           (t (message "Only one window in group")))))
 
 (defun dyn-cycle-windows (direction &key (group (current-group)) (focus :master))
+  "Rotate windows in GROUP, with FOCUS either following the current window, always
+focusing the master window, or remaining where it is."
   (check-type focus (member :remain :follow :master))
   (let* ((w (group-current-window group))
          (f (and w (window-frame w))))
@@ -336,6 +343,8 @@ as we cycle."
             (message "No window of number ~S" number))))))
 
 (defun window-number-as-char (window)
+  "return the window number of window as a character"
+  (check-type window window)
   (char (prin1-to-string (window-number window)) 0))
 
 (defun draw-window-numbers (group)
@@ -363,6 +372,8 @@ as we cycle."
             (group-frames group))))
 
 (defun choose-window-by-number (group)
+  "Select a window by drawing its number and reading a click or keypress from the 
+user"
   (let ((wins (progn (draw-frame-outlines group)
                      (draw-window-numbers group)))
         winner num)
