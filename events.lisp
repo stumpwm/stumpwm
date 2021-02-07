@@ -225,9 +225,16 @@ The Caller is responsible for setting up the input focus."
    ;; TODO: Minor Mode maps go here
    ;; lastly, group maps. Last because minor modes should be able to
    ;; shadow a group's default bindings.
-   (loop for i in *group-top-maps*
-      when (typep group (first i))
-      collect (second i))))
+   (case (type-of group)
+     (dynamic-group
+      (loop for i in *group-top-maps*
+            when (and (not (eql (first i) 'tile-group))
+                      (typep group (first i)))
+              collect (second i)))
+     (otherwise 
+      (loop for i in *group-top-maps*
+            when (typep group (first i))
+              collect (second i))))))
 
 (defvar *current-key-seq* nil
   "The sequence of keys which were used to invoke a command, available
