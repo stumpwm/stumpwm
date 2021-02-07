@@ -229,14 +229,9 @@ desktop when starting."
     (throw 'error :abort))
   (add-group (current-screen) name :type 'dynamic-group :background t))
 
-(defgeneric swap-window-with-master (group window-or-number)
-  (:documentation "Swap a window with the master window."))
-
-(defmethod swap-window-with-master (group window-or-number)
-  (declare (ignore group window-or-number))
-  (message "No master window in non-dynamic groups"))
-
-(defmethod swap-window-with-master ((group dynamic-group) window-or-number)
+(defun swap-window-with-master (group window-or-number)
+  (check-type group dynamic-group)
+  (check-type window-or-number (or window number))
   (let* ((stack (dynamic-group-window-stack group))
          (win (if (numberp window-or-number)
                   (member window-or-number stack :key 'window-number)
@@ -253,17 +248,51 @@ desktop when starting."
           (focus-all (car win)))
         (message "Window not a member of the stack"))))
 
-(defun dyn-cycle-windows (direction &optional (group (current-group)))
+(defun dyn-rotate-windows (direction &optional (group (current-group)))
+  "Cycle through the windows in GROUP, moving the windows up/down in the stack  
+as we cycle."
   (check-type group dynamic-group)
   (check-type direction (member :up :down))
-  (let* ((sorted (sort (copy-seq (group-windows group))
-                       (if (eq direction :down) '< '>)
-                       :key 'window-number))
-         (cycle-to (cadr (member (dynamic-group-master-window group) sorted))))
-    (when sorted
-      (swap-window-with-master group (window-number (if cycle-to
-                                                        cycle-to
-                                                        (car sorted)))))))
+  (let* ((master-w (dynamic-group-master-window group))
+         (master-f (frame-by-number group 0))
+         (frames (funcall (if (eq direction :up) 'reverse 'identity)
+                          (remove master-f (group-frames group))))
+         (windows (loop for f in frames collect (frame-window f))))
+    (cond ((and (> (length windows) 1)
+                (> (length frames) 1))
+           (loop for (w1 w2) on windows
+                 for (f1 f2) on frames
+                 if (and w1 w2 f1 f2)
+                   do (pull-window w1 f2)
+                 else
+                   do (pull-window w1 master-f)
+                      (setf (dynamic-group-master-window group) w1
+                            (dynamic-group-window-stack group)
+                            (cons master-w
+                                  (remove w1 (dynamic-group-window-stack group))))
+                      (pull-window master-w (car frames))))
+          ((and (= (length windows) 1)
+                (= (length frames) 1))
+           (swap-window-with-master group
+                                    (car (remove master-w (group-windows group)))))
+          (t (message "Only one window in group")))))
+
+(defun dyn-cycle-windows (direction &key (group (current-group)) (focus :master))
+  (check-type focus (member :remain :follow :master))
+  (let ((focus-fn (case focus
+                    (:master
+                     (lambda ()
+                       (focus-window (dynamic-group-master-window group) t)))
+                    (:follow
+                     (let ((w (group-current-window group)))
+                       (lambda ()
+                         (focus-window w t))))
+                    (:remain
+                     (let ((f (window-frame (group-current-window group))))
+                       (lambda ()
+                         (focus-frame group f)))))))
+    (dyn-test-cycling-windows direction group)
+    (funcall focus-fn)))
 
 (define-stumpwm-type :up/down (input prompt)
   (let* ((values '(("up" :up)
@@ -273,10 +302,20 @@ desktop when starting."
     (or dir
         (throw 'error "No matching direction."))))
 
-(defcommand dyn-cycle (direction) ((:up/down "Enter up or down: "))
-  (dyn-cycle-windows direction))
+(define-stumpwm-type :dynamic-cycle-focus (input prompt)
+  (let* ((values '(("remain" :remain)
+                   ("master" :master)
+                   ("follow" :follow)))
+         (string (argument-pop-or-read input prompt (mapcar 'first values)))
+         (dir (second (assoc string values :test 'string-equal))))
+    (or dir
+        (throw 'error "No matching direction."))))
 
-(defcommand dyn-switch (number) ((:number "Window Number: "))
+(defcommand (dyn-cycle dynamic-group) (dir &optional (focus :remain))
+    ((:up/down "Direction: ") (:dynamic-cycle-focus))
+  (dyn-cycle-windows dir :focus focus))
+
+(defcommand (dyn-switch dynamic-group) (number) ((:number "Window Number: "))
   (when number
     (labels ((match (win)
                (= (window-number win) number)))
@@ -336,20 +375,20 @@ desktop when starting."
       (mapc #'xlib:destroy-window wins)
       (clear-frame-outlines group))))
 
-(defcommand dyn-switch-prompt-for-window () ()
+(defcommand (dyn-switch-prompt-for-window dynamic-group) () ()
   (when-let ((window (choose-window-by-number (current-group))))
     (swap-window-with-master (current-group) window)))
 
-(defcommand dyn-switch-prompt-for-frame () ()
+(defcommand (dyn-switch-prompt-for-frame dynamic-group) () ()
   (when-let ((frame (choose-frame-by-number (current-group))))
     (swap-window-with-master (current-group) (frame-window frame))))
 
-(defcommand dyn-focus-current-window () ()
+(defcommand (dyn-focus-current-window dynamic-group) () ()
   (if (equal (current-window) (dynamic-group-master-window (current-group)))
       (message "Focused window is already master window")
       (swap-window-with-master (current-group) (current-window))))
 
-(defcommand dyn-focus-master-window () ()
+(defcommand (dyn-focus-master-window dynamic-group) () ()
   (focus-frame (current-group) (frame-by-number (current-group) 0)))
 
 
@@ -365,13 +404,21 @@ is a dynamic group.")
   *escape-key* '*dynamic-group-root-map*)
 
 (fill-keymap *dynamic-group-root-map*
-  (kbd "n")   "dyn-cycle down"
-  (kbd "p")   "dyn-cycle up"
+  (kbd "n")   "dyn-cycle down remain"
+  (kbd "N")   "dyn-cycle down follow"
+  (kbd "M-n") "dyn-cycle down master"
+  
+  (kbd "p")   "dyn-cycle up remain"
+  (kbd "P")   "dyn-cycle up follow"
+  (kbd "M-p") "dyn-cycle up master"
+  
   (kbd "W")   "dyn-switch"  
   (kbd "w")   "dyn-switch-prompt-for-window"
   (kbd "SPC") "dyn-focus-master-window"
   (kbd "RET") "dyn-focus-current-window"
-  (kbd "f")   "dyn-focus-master-window")
+  (kbd "f")   "dyn-focus-master-window"
+  (kbd "o")   "fnext" ; maybe remove this? unsure... 
+  )
 
 (pushnew '(dynamic-group *dynamic-group-top-map*) *group-top-maps*)
 
