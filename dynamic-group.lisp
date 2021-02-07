@@ -368,6 +368,7 @@ is a dynamic group.")
   (kbd "p")   "dyn-cycle up"
   (kbd "W")   "dyn-switch"  
   (kbd "w")   "dyn-switch-prompt-for-window"
+  (kbd "SPC") "dyn-focus-master-window"
   (kbd "RET") "dyn-focus-current-window"
   (kbd "f")   "dyn-focus-master-window")
 
