@@ -436,11 +436,9 @@ is a dynamic group.")
   
   (kbd "W")   "dyn-switch"  
   (kbd "w")   "dyn-switch-prompt-for-window"
-  (kbd "SPC") "dyn-focus-master-window"
   (kbd "RET") "dyn-focus-current-window"
   (kbd "f")   "dyn-focus-master-window"
-  (kbd "o")   "fnext" ; maybe remove this? unsure... 
-  )
+  (kbd "o")   "fnext")
 
 (pushnew '(dynamic-group *dynamic-group-top-map*) *group-top-maps*)
 
