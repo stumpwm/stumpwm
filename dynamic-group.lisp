@@ -126,8 +126,9 @@ return NIL. RATIO is a fraction to split by."
            (otherwise
             (let* ((master-frame (frame-by-number group 0))
                    (old-master (dynamic-group-master-window group))
-                   (frames-no-master (remove master-frame (group-frames group)))
-                   (frame-to-split (car frames-no-master)))
+                   ;; (frames-no-master (remove master-frame (group-frames group)))
+                   (frame-to-split
+                     (window-frame (car (dynamic-group-window-stack group)))))
               (handler-case
                   (progn
                     (dyn-vsplit-frame frame-to-split)
@@ -270,13 +271,23 @@ dynamic groups."
           (focus-all (car win)))
         (message "Window not a member of the stack"))))
 
+(defun dyn-rotate-stack (group old-master direction)
+  "Used by dyn-rotate-windows to handle the stack rotation."
+  (case direction
+    (:ccl
+     (setf (dynamic-group-window-stack group)
+           (cons old-master (butlast (dynamic-group-window-stack group)))))
+    (:cl
+     (setf (dynamic-group-window-stack group)
+           (append (cdr (dynamic-group-window-stack group)) (list old-master))))))
+
 (defun dyn-rotate-windows (direction &optional (group (current-group)))
   "Rotate windows in GROUP clockwise or counterclockwise."
   (check-type group dynamic-group)
-  (check-type direction (member :up :down))
+  (check-type direction (member :cl :ccl))
   (let* ((master-w (dynamic-group-master-window group))
          (master-f (frame-by-number group 0))
-         (frames (funcall (if (eq direction :up) 'reverse 'identity)
+         (frames (funcall (if (eq direction :ccl) 'reverse 'identity)
                           (remove master-f (group-frames group))))
          (windows (loop for f in frames collect (frame-window f))))
     (cond ((and (> (length windows) 1)
@@ -287,10 +298,8 @@ dynamic groups."
                    do (pull-window w1 f2)
                  else
                    do (pull-window w1 master-f)
-                      (setf (dynamic-group-master-window group) w1
-                            (dynamic-group-window-stack group)
-                            (cons master-w
-                                  (remove w1 (dynamic-group-window-stack group))))
+                      (setf (dynamic-group-master-window group) w1)
+                      (dyn-rotate-stack group master-w direction)
                       (pull-window master-w (car frames))))
           ((and (= (length windows) 1)
                 (= (length frames) 1))
@@ -305,14 +314,16 @@ focusing the master window, or remaining where it is."
   (let* ((w (group-current-window group))
          (f (and w (window-frame w))))
     (when f
-      (dyn-test-cycling-windows direction group)
+      (dyn-rotate-windows direction group)
       (case focus (:master (focus-window (dynamic-group-master-window group) t))
                   (:follow (focus-window w t))
                   (:remain (focus-frame group f))))))
 
-(define-stumpwm-type :up/down (input prompt)
-  (let* ((values '(("up" :up)
-                   ("down" :down)))
+(define-stumpwm-type :rotation (input prompt)
+  (let* ((values '(("cl" :cl)
+                   ("ccl" :ccl)
+                   ("clockwise" :cl)
+                   ("counterclockwise" :ccl)))
          (string (argument-pop-or-read input prompt (mapcar 'first values)))
          (dir (second (assoc string values :test 'string-equal))))
     (or dir
@@ -328,7 +339,7 @@ focusing the master window, or remaining where it is."
         (throw 'error "No matching direction."))))
 
 (defcommand (dyn-cycle dynamic-group) (dir &optional (focus :remain))
-    ((:up/down "Direction: ") (:dynamic-cycle-focus))
+    ((:rotation "Direction: ") (:dynamic-cycle-focus))
   (dyn-cycle-windows dir :focus focus))
 
 (defcommand (dyn-switch dynamic-group) (number) ((:number "Window Number: "))
@@ -424,13 +435,13 @@ is a dynamic group.")
   *escape-key* '*dynamic-group-root-map*)
 
 (fill-keymap *dynamic-group-root-map*
-  (kbd "n")   "dyn-cycle down remain"
-  (kbd "N")   "dyn-cycle down follow"
-  (kbd "M-n") "dyn-cycle down master"
+  (kbd "n")   "dyn-cycle cl remain"
+  (kbd "N")   "dyn-cycle cl follow"
+  (kbd "M-n") "dyn-cycle cl master"
   
-  (kbd "p")   "dyn-cycle up remain"
-  (kbd "P")   "dyn-cycle up follow"
-  (kbd "M-p") "dyn-cycle up master"
+  (kbd "p")   "dyn-cycle ccl remain"
+  (kbd "P")   "dyn-cycle ccl follow"
+  (kbd "M-p") "dyn-cycle ccl master"
   
   (kbd "W")   "dyn-switch"  
   (kbd "w")   "dyn-switch-prompt-for-window"
