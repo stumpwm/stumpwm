@@ -175,7 +175,6 @@ return NIL. RATIO is a fraction to split by."
   (cond ((equal window (moving-superfluous-window group))
          (setf (moving-superfluous-window group) nil))
         ((equal window (dynamic-group-master-window group))
-         ;; (message "group-windows: ~S" (group-windows group))
          (let* ((new-master (pop (dynamic-group-window-stack group))))
            (if new-master
                (let* ((new-masters-old-frame (window-frame new-master))
@@ -183,7 +182,7 @@ return NIL. RATIO is a fraction to split by."
                       (head (current-head group))
                       (tree (tile-group-frame-head group head)))
                  (cond 
-                   ((not (dynamic-group-window-stack group)) ; we got 1 window left
+                   ((not (dynamic-group-window-stack group)) 
                     (setf (window-frame new-master) master-frame
                           (frame-window master-frame) new-master
                           (dynamic-group-master-window group) new-master)
@@ -196,7 +195,7 @@ return NIL. RATIO is a fraction to split by."
                     (update-decoration (frame-window master-frame))
                     (loop for frame in (group-frames group)
                           do (sync-frame-windows group frame)))
-                   (t ; we have a stack left and a new master window
+                   (t 
                     (setf (tile-group-frame-head group head)
                           (remove-frame tree new-masters-old-frame)
                           (window-frame new-master) master-frame
@@ -206,8 +205,7 @@ return NIL. RATIO is a fraction to split by."
                     (loop for frame in (group-frames group)
                           do (sync-frame-windows group frame))
                     (focus-frame group master-frame))))
-               (let ((f (window-frame window))) ; taken from tile-group/window
-                 ;; maybe pick a new window for the old frame
+               (let ((f (window-frame window))) 
                  (when (eq (frame-window f) window)
                    (frame-raise-window group f
                                        (first (frame-windows group f)) nil))))))
