@@ -265,9 +265,7 @@ dynamic groups."
         (progn
           (exchange-windows (dynamic-group-master-window group) (car win))
           (setf (dynamic-group-master-window group) (car win))
-          (setf (dynamic-group-window-stack group)
-                (remove (car win) (dynamic-group-window-stack group)))
-          (push old-master (dynamic-group-window-stack group))
+          (setf (car win) old-master)
           (focus-all (car win)))
         (message "Window not a member of the stack"))))
 
