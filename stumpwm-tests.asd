@@ -8,4 +8,4 @@
                (:file "kmap")
                (:file "pathnames"))
   :perform (test-op (o c)
-             (uiop/package:symbol-call "FIASCO" "RUN-TESTS" 'stumpwm-tests)))
+             (uiop/package:symbol-call "FIASCO" "ALL-TESTS" 'stumpwm-tests)))
