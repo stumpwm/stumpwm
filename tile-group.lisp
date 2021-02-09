@@ -1363,6 +1363,11 @@ direction. The following are valid directions:
       (cdr shortest))))
 
 (defun unfloat-window (window group)
+  (typecase group
+    (dynamic-group (dynamic-group-unfloat-window window group))
+    (tile-group  (tile-group-unfloat-window window group))))
+
+(defun tile-group-unfloat-window (window group)
   (let ((frame (closest-frame window group)))
     (change-class window 'tile-window :frame frame)
     (setf (window-frame window) frame
@@ -1372,6 +1377,11 @@ direction. The following are valid directions:
     (sync-frame-windows group frame)))
 
 (defun float-window (window group)
+  (typecase group
+    (dynamic-group (dynamic-group-float-window window group))
+    (tile-group (tile-group-float-window window group))))
+
+(defun tile-group-float-window (window group)
   (let ((frame (tile-group-current-frame group)))
     (change-class window 'float-window)
     (float-window-align window)
