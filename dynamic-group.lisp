@@ -250,12 +250,14 @@ return NIL. RATIO is a fraction to split by."
   (change-class window 'float-window)
   (float-window-align window)
   (loop for frame in (group-frames group)
-        do (sync-frame-windows group frame)))
+        do (sync-frame-windows group frame))
+  (focus-all window))
 
 (defun dynamic-group-unfloat-window (window group)
   (dynamic-group-add-window group window)
   (loop for frame in (group-frames group)
         do (sync-frame-windows group frame))
+  (update-decoration window)
   (frame-raise-window group
                       (frame-by-number group 0)
                       (car (frame-windows group (frame-by-number group 0))))
