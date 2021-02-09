@@ -94,6 +94,79 @@ return NIL. RATIO is a fraction to split by."
         when (null (frame-windows group frame))
           collect frame))
 
+(defun dynamic-group-place-window (group window)
+  (case (length (group-windows group))
+    (1
+     (setf (dynamic-group-master-window group) window))
+    (2
+     (let ((frame (frame-by-number group 0)))
+       (dyn-hsplit-frame frame *dynamic-group-master-split-ratio*))
+     (let* ((prev-win (dynamic-group-master-window group))
+            (prev-win-new-frame (car (remove (frame-by-number group 0)
+                                             (group-frames group)))))
+       (push prev-win (dynamic-group-window-stack group))
+       (setf (window-frame prev-win) prev-win-new-frame
+             (frame-window prev-win-new-frame) prev-win
+             (window-frame window) (frame-by-number group 0)
+             (frame-window (frame-by-number group 0)) window
+             (dynamic-group-master-window group) window)))
+    (otherwise
+     (let* ((master-frame (frame-by-number group 0))
+            (old-master (dynamic-group-master-window group))
+            (frame-to-split
+              (window-frame (car (dynamic-group-window-stack group)))))
+       (handler-case
+           (progn
+             (dyn-vsplit-frame frame-to-split)
+             (push (dynamic-group-master-window group)
+                   (dynamic-group-window-stack group))
+             (setf (dynamic-group-master-window group) window)
+             (setf (window-frame window) master-frame
+                   (window-frame old-master)
+                   (or (car (find-empty-frames group))
+                       (error "No Empty Frames in group ~S! Something has gone terribly wrong!" group))
+                   (frame-window (window-frame old-master)) old-master)
+             (focus-frame group master-frame)
+             (dyn-balance-stack-tree group))
+         (dynamic-group-too-many-windows ()
+           (let ((new-group (or (find-group (current-screen) ".Overflow")
+                                (gnewbg ".Overflow")))
+                 (w (case *dynamic-group-overflow-remove-window-policy*
+                      (:least-important
+                       (lastcar (dynamic-group-window-stack group)))
+                      (:most-important
+                       (car (dynamic-group-window-stack group))))))
+             (message
+              "Group ~S is full, moving window ~S to group \".Overflow.\""
+              (group-name group) (window-name w))
+             (setf (dynamic-group-window-stack group)
+                   (cons (dynamic-group-master-window group)
+                         (remove w (dynamic-group-window-stack group)))
+                   (dynamic-group-master-window group) window
+                   (window-frame window) master-frame
+                   (frame-window (window-frame w)) nil
+                   (window-frame w) nil
+                   (window-frame old-master)
+                   (or (car (find-empty-frames group))
+                       (error "No Empty Frames in group ~S! Something has gone terribly wrong!" group))
+                   (frame-window (window-frame old-master)) old-master
+                   (moving-superfluous-window group) w)
+             (move-window-to-group w new-group))))))))
+
+(defun dynamic-group-add-window (group window)
+  ;; this is undefined behavior i think, but its done in the other
+  ;; group-add-window method so i think its ok, at least on sbcl. 
+  (change-class window 'dynamic-window)
+  (setf (window-frame window) (frame-by-number group 0))
+  ;; (setf (frame-window (frame-by-number group 0)) window)
+  ;; this causes crashes....
+  (dynamic-group-place-window group window)
+  (loop for frame in (group-frames group)
+        do (sync-frame-windows group frame))
+  (when (null (frame-window (window-frame window)))
+    (frame-raise-window (window-group window) (window-frame window)
+                        window nil)))
+
 (defmethod group-add-window ((group dynamic-group) window &key frame raise &allow-other-keys)
   (cond ((typep window 'float-window)
          (call-next-method)
@@ -104,137 +177,91 @@ return NIL. RATIO is a fraction to split by."
          (when raise (group-focus-window group window))
          (message "Floating windows in dynamic-groups is currently not supported"))
         (t
-         ;; this is undefined behavior i think, but its done in the other
-         ;; group-add-window method so i think its ok, at least on sbcl. 
-         (change-class window 'dynamic-window)
-         (setf (window-frame window) (frame-by-number group 0))
-         (case (length (group-windows group))
-           (1
-            (setf (dynamic-group-master-window group) window))
-           (2
-            (let ((frame (frame-by-number group 0)))
-              (dyn-hsplit-frame frame *dynamic-group-master-split-ratio*))
-            (let* ((prev-win (dynamic-group-master-window group))
-                   (prev-win-new-frame (car (remove (frame-by-number group 0)
-                                                    (group-frames group)))))
-              (push prev-win (dynamic-group-window-stack group))
-              (setf (window-frame prev-win) prev-win-new-frame
-                    (frame-window prev-win-new-frame) prev-win
-                    (window-frame window) (frame-by-number group 0)
-                    (frame-window (frame-by-number group 0)) window
-                    (dynamic-group-master-window group) window)))
-           (otherwise
-            (let* ((master-frame (frame-by-number group 0))
-                   (old-master (dynamic-group-master-window group))
-                   ;; (frames-no-master (remove master-frame (group-frames group)))
-                   (frame-to-split
-                     (window-frame (car (dynamic-group-window-stack group)))))
-              (handler-case
-                  (progn
-                    (dyn-vsplit-frame frame-to-split)
-                    (push (dynamic-group-master-window group)
-                          (dynamic-group-window-stack group))
-                    (setf (dynamic-group-master-window group) window)
-                    (setf (window-frame window) (frame-by-number group 0)
-                          (window-frame old-master)
-                          (or (car (find-empty-frames group))
-                              (error "No Empty Frames in group ~S! Something has gone terribly wrong!" group))
-                          (frame-window (window-frame old-master)) old-master)
-                    (focus-frame group (frame-by-number group 0))
-                    (dyn-balance-stack-tree group))
-                (dynamic-group-too-many-windows ()
-                  (let ((new-group (or (find-group (current-screen) ".Overflow")
-                                       (gnewbg ".Overflow")))
-                        (w (case *dynamic-group-overflow-remove-window-policy*
-                             (:least-important
-                              (lastcar (dynamic-group-window-stack group)))
-                             (:most-important
-                              (car (dynamic-group-window-stack group))))))
-                    (message
-                     "Group ~S is full, moving window ~S to group \".Overflow.\""
-                     (group-name group) (window-name w))
-                    (setf (dynamic-group-window-stack group)
-                          (cons (dynamic-group-master-window group)
-                                (remove w (dynamic-group-window-stack group)))
-                          (dynamic-group-master-window group) window
-                          (window-frame window) (frame-by-number group 0)
-                          (frame-window (window-frame w)) nil
-                          (window-frame w) nil
-                          (window-frame old-master)
-                          (or (car (find-empty-frames group))
-                              (error "No Empty Frames in group ~S! Something has gone terribly wrong!" group))
-                          (frame-window (window-frame old-master)) old-master
-                          (moving-superfluous-window group) w)
-                    (move-window-to-group w new-group)))))))
-         (loop for frame in (group-frames group)
-               do (sync-frame-windows group frame))
-         (when (null (frame-window (window-frame window)))
-           (frame-raise-window (window-group window) (window-frame window)
-                               window nil)))))
+         (dynamic-group-add-window group window))))
+
+(defun dynamic-group-delete-master-window (group window)
+  (let* ((new-master (pop (dynamic-group-window-stack group))))
+    (if new-master
+        (let* ((new-masters-old-frame (window-frame new-master))
+               (master-frame (frame-by-number group 0))
+               (head (current-head group))
+               (tree (tile-group-frame-head group head)))
+          (cond 
+            ((not (dynamic-group-window-stack group)) 
+             (setf (window-frame new-master) master-frame
+                   (frame-window master-frame) new-master
+                   (dynamic-group-master-window group) new-master)
+             (loop for remframe in (remove (frame-by-number group 0)
+                                           (group-frames group))
+                   do (setf (tile-group-frame-head group head)
+                            (remove-frame tree remframe)))
+             (setf (tile-group-current-frame group) master-frame)
+             (focus-frame group master-frame)
+             (update-decoration (frame-window master-frame)))
+            (t 
+             (setf (tile-group-frame-head group head)
+                   (remove-frame tree new-masters-old-frame)
+                   (window-frame new-master) master-frame
+                   (frame-window master-frame) new-master
+                   (dynamic-group-master-window group) new-master)
+             (dyn-balance-stack-tree group))))
+        (let ((f (window-frame window))) 
+          (when (eq (frame-window f) window)
+            (frame-raise-window group f
+                                (first (frame-windows group f)) nil))))))
+
+(defun dynamic-group-delete-stack-window (group window)
+  (let* ((new-stack (remove window (dynamic-group-window-stack group)))
+         (frame-to-remove (window-frame window))
+         (head (frame-head group frame-to-remove))
+         (tree (tile-group-frame-head group head)))
+    (setf (dynamic-group-window-stack group) new-stack)
+    (cond (new-stack
+           (setf (tile-group-frame-head group head)
+                 (remove-frame tree frame-to-remove))
+           (tree-iterate tree (lambda (leaf)
+                                (sync-frame-windows group leaf)))
+           (focus-frame group (frame-by-number group 0))
+           (dyn-balance-stack-tree group))
+          (t
+           (setf (tile-group-frame-head group head)
+                 (remove-frame tree frame-to-remove))
+           (focus-frame group (frame-by-number group 0))))))
 
 (defmethod group-delete-window ((group dynamic-group) (window dynamic-window))
   (cond ((equal window (moving-superfluous-window group))
          (setf (moving-superfluous-window group) nil))
         ((equal window (dynamic-group-master-window group))
-         (let* ((new-master (pop (dynamic-group-window-stack group))))
-           (if new-master
-               (let* ((new-masters-old-frame (window-frame new-master))
-                      (master-frame (frame-by-number group 0))
-                      (head (current-head group))
-                      (tree (tile-group-frame-head group head)))
-                 (cond 
-                   ((not (dynamic-group-window-stack group)) 
-                    (setf (window-frame new-master) master-frame
-                          (frame-window master-frame) new-master
-                          (dynamic-group-master-window group) new-master)
-                    (loop for remframe in (remove (frame-by-number group 0)
-                                                  (group-frames group))
-                          do (setf (tile-group-frame-head group head)
-                                   (remove-frame tree remframe)))
-                    (setf (tile-group-current-frame group) master-frame)
-                    (focus-frame group master-frame)
-                    (update-decoration (frame-window master-frame))
-                    (loop for frame in (group-frames group)
-                          do (sync-frame-windows group frame)))
-                   (t 
-                    (setf (tile-group-frame-head group head)
-                          (remove-frame tree new-masters-old-frame)
-                          (window-frame new-master) master-frame
-                          (frame-window master-frame) new-master
-                          (dynamic-group-master-window group) new-master)
-                    (dyn-balance-stack-tree group)
-                    (loop for frame in (group-frames group)
-                          do (sync-frame-windows group frame))
-                    (focus-frame group master-frame))))
-               (let ((f (window-frame window))) 
-                 (when (eq (frame-window f) window)
-                   (frame-raise-window group f
-                                       (first (frame-windows group f)) nil))))))
+         (dynamic-group-delete-master-window group window)
+         (focus-frame group (frame-by-number group 0)))
         ((member window (dynamic-group-window-stack group))
-         (let* ((new-stack (remove window (dynamic-group-window-stack group)))
-                (frame-to-remove (window-frame window))
-                (head (frame-head group frame-to-remove))
-                (tree (tile-group-frame-head group head)))
-           (setf (dynamic-group-window-stack group) new-stack)
-           (cond (new-stack
-                  (setf (tile-group-frame-head group head)
-                        (remove-frame tree frame-to-remove))
-                  (tree-iterate tree (lambda (leaf)
-                                       (sync-frame-windows group leaf)))
-                  (focus-frame group (frame-by-number group 0))
-                  (dyn-balance-stack-tree group)
-                  (loop for frame in (group-frames group)
-                        do (sync-frame-windows group frame)))
-                 (t
-                  (setf (tile-group-frame-head group head)
-                        (remove-frame tree frame-to-remove))
-                  (focus-frame group (frame-by-number group 0))
-                  (loop for frame in (group-frames group)
-                        do (sync-frame-windows group frame)))))))
+         (dynamic-group-delete-stack-window group window)))
   (loop for frame in (group-frames group)
         do (sync-frame-windows group frame)))
 
+;; deal with floating windows
 
+(defun dynamic-group-float-window (window group)
+  (cond ((equal window (dynamic-group-master-window group))
+         (dynamic-group-delete-master-window group window))
+        ((member window (dynamic-group-window-stack group))
+         (dynamic-group-delete-stack-window group window))
+        (t (message "This window doesnt appear to be tracked by this group.")))
+  (change-class window 'float-window)
+  (float-window-align window)
+  (loop for frame in (group-frames group)
+        do (sync-frame-windows group frame)))
+
+(defun dynamic-group-unfloat-window (window group)
+  (dynamic-group-add-window group window)
+  (loop for frame in (group-frames group)
+        do (sync-frame-windows group frame))
+  (frame-raise-window group
+                      (frame-by-number group 0)
+                      (car (frame-windows group (frame-by-number group 0))))
+  ;; (focus-frame group (frame-by-number group 0))
+  ;; (focus-all (frame-window (frame-by-number group 0)))
+  )
 
 ;;; Dynamic group commands
 
@@ -314,8 +341,8 @@ focusing the master window, or remaining where it is."
     (when f
       (dyn-rotate-windows direction group)
       (case focus (:master (focus-window (dynamic-group-master-window group) t))
-                  (:follow (focus-window w t))
-                  (:remain (focus-frame group f))))))
+            (:follow (focus-window w t))
+            (:remain (focus-frame group f))))))
 
 (define-stumpwm-type :rotation (input prompt)
   (let* ((values '(("cl" :cl)
