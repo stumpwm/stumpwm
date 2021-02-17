@@ -54,11 +54,44 @@
                                   (:right (format nil "~a~a~a" (if (= c 0) "" padstr) len s)))))))
     (apply 'mapcar 'concat (or cols '(nil)))))
 
+(defun sort-flattened-bindings (keymaps sort-pred)
+  "Returns all bindings in KEYMAPS in a flattened list, globally sorted with SORT-PRED."
+  (let ((all-bindings (flatten (mapcar #'kmap-bindings keymaps))))
+    (sort all-bindings sort-pred)))
+
+(defun sort-by-alphabetical-command-p (b1 b2)
+  "Sort predicate that sorts bindings alphabetically by command name."
+  (not (null (string-lessp (binding-command b1) (binding-command b2)))))
+
+(defun sort-by-alphabetical-key-p (b1 b2)
+  "Sort predicate that sorts bindings alphabetically by key."
+  (not (null (string-lessp (print-key (binding-key b1)) (print-key (binding-key b2))))))
+
+(defun format-binding (binding)
+  (format nil "^5*~5a^n ~a" (print-key (binding-key binding)) (binding-command binding)))
+
+(defun unsorted-bindings-formatter (keymaps)
+  "Returns all bindings in KEYMAPS in a flattened, unsorted list."
+  (let ((bindings (flatten (mapcar #'kmap-bindings keymaps))))
+    (mapcar #'format-binding bindings)))
+
+(defun alphabetical-command-bindings-formatter (keymaps)
+  "Returns all bindings in KEYMAPS in a flattened list, globally sorted by command name."
+  (let ((bindings (sort-flattened-bindings keymaps #'sort-by-alphabetical-command-p)))
+    (mapcar #'format-binding bindings)))
+
+(defun alphabetical-key-bindings-formatter (keymaps)
+  "Returns all bindings in KEYMAPS in a flattened list, globally sorted by keys."
+  (let ((bindings (sort-flattened-bindings keymaps #'sort-by-alphabetical-key-p)))
+    (mapcar #'format-binding bindings)))
+
+(defvar *display-bindings-formatter* #'unsorted-bindings-formatter
+  "A function taking a list of keymaps and returning a list of strings suitable for
+presentation as columnized data in the keybindings help menu.")
+
 (defun display-bindings-for-keymaps (key-seq &rest keymaps)
   (let* ((screen (current-screen))
-         (data (mapcan (lambda (map)
-                         (mapcar (lambda (b) (format nil "^5*~5a^n ~a" (print-key (binding-key b)) (binding-command b))) (kmap-bindings map)))
-                       keymaps))
+         (data (funcall *display-bindings-formatter* keymaps))
          (cols (ceiling (1+ (length data))
                         (truncate (- (head-height (current-head)) (* 2 (screen-msg-border-width screen)))
                                   (font-height (screen-font screen))))))
@@ -241,20 +274,61 @@ KMAPS are enabled"
       (get-kmaps-at-key-seq (get-kmaps-at-key kmaps (first key-seq))
                             (rest key-seq))))
 
-(defun which-key-mode-key-press-hook (key key-seq cmd)
-  "*key-press-hook* for which-key-mode"
-  (declare (ignore key cmd))
+(defvar *which-key-idle-delay* 0.5
+  "The delay in seconds between a keypress and when the which-key help window
+will be shown. If additional keys are pressed before the delay, the delay will
+be extended.")
+
+(defvar *which-key-secondary-idle-delay* 0.0
+  "The delay in seconds between a keypress and when the which-key help window
+will be shown, applied when the which-key window is *already* being shown. This
+parameter controls the which-key idle delay for nested keymaps. For example, a
+value of 0.0 means that, if which-key is already shown and a key is pressed to enter
+another keymap, the which-key help window for that keymap will be shown immediately.")
+
+(defvar *which-key-bindings-formatter* #'unsorted-bindings-formatter
+  "A function with the same type as *display-bindings-formatter*, used to format
+the which-key help window.")
+
+(defvar *which-key-timer* nil)
+(defvar *which-key-current-prefix* nil)
+
+(defun which-key--start-timer (prev-timer-scheduled prev-prefix current-prefix maps)
+  (setf *which-key-timer*
+        (trivial-timers:make-timer
+         (lambda ()
+           (when (eq *which-key-current-prefix* current-prefix)
+             (let ((*display-bindings-formatter* *which-key-bindings-formatter*))
+               (apply 'display-bindings-for-keymaps current-prefix maps))))
+         :thread t))
+  (if (and prev-prefix
+           (not prev-timer-scheduled))
+      (trivial-timers:schedule-timer *which-key-timer* *which-key-secondary-idle-delay*)
+      (trivial-timers:schedule-timer *which-key-timer* *which-key-idle-delay*)))
+
+(defun which-key--key-press-hook (key key-seq cmd)
   (when (not (eq *top-map* *resize-map*))
     (let* ((oriented-key-seq (reverse key-seq))
-           (maps (get-kmaps-at-key-seq (dereference-kmaps (top-maps)) oriented-key-seq)))
-      (when-let ((only-maps (remove-if-not 'kmap-p maps)))
-        (apply 'display-bindings-for-keymaps oriented-key-seq only-maps)))))
+           (maps (get-kmaps-at-key-seq (dereference-kmaps (top-maps)) oriented-key-seq))
+           (prev-prefix *which-key-current-prefix*)
+           (prev-timer-scheduled (and *which-key-timer*
+                                      (trivial-timers:timer-scheduled-p *which-key-timer*))))
+      (setf *which-key-current-prefix* oriented-key-seq)
+      (when (not (member (and (kmap-symbol-p cmd)
+                              (symbol-value cmd))
+                         maps))
+        (setf *which-key-current-prefix* nil))
+
+      (when prev-timer-scheduled
+        (trivial-timers:unschedule-timer *which-key-timer*))
+      (when (remove-if-not 'kmap-p maps)
+        (which-key--start-timer prev-timer-scheduled prev-prefix oriented-key-seq maps)))))
 
 (defcommand which-key-mode () ()
   "Toggle which-key-mode"
-  (if (find 'which-key-mode-key-press-hook *key-press-hook*)
-      (remove-hook *key-press-hook* 'which-key-mode-key-press-hook)
-      (add-hook *key-press-hook* 'which-key-mode-key-press-hook)))
+  (if (find 'which-key--key-press-hook *key-press-hook*)
+      (remove-hook *key-press-hook* 'which-key--key-press-hook)
+      (add-hook *key-press-hook* 'which-key--key-press-hook)))
 
 (defcommand modifiers () ()
   "List the modifiers stumpwm recognizes and what MOD-X it thinks they're on."

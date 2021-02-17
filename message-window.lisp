@@ -252,42 +252,45 @@ When NEW-ON-BOTTOM-P is non-nil, new messages are queued at the bottom."
                        with offset = (length top)
                        collect (+ idx offset))))))
 
+(defvar *message-lock* (bordeaux-threads:make-lock))
+
 (defun echo-string-list (screen strings &rest highlights)
   "Draw each string in l in the screen's message window. HIGHLIGHT is
   the nth entry to highlight."
-  (when strings
-    (when *queue-messages-p*
-      (multiple-value-bind (combined-strings combined-highlights)
-          (combine-new-old-messages
-           strings highlights
-           (screen-current-msg screen) (screen-current-msg-highlights screen)
-           :new-on-bottom-p (eq *queue-messages-p* :new-on-bottom))
-        (setf strings combined-strings
-              highlights combined-highlights)))
-    (unless *executing-stumpwm-command*
-      (multiple-value-bind (width height)
-          (rendered-size strings (screen-message-cc screen))
-        (setup-message-window screen width height)
-        (render-strings (screen-message-cc screen)
-                        *message-window-padding*
-                        *message-window-y-padding*
-                        strings
-                        highlights))
-      (setf (screen-current-msg screen)
-            strings
-            (screen-current-msg-highlights screen)
-            highlights)
-      ;; Set a timer to hide the message after a number of seconds
-      (if *suppress-echo-timeout*
-          ;; any left over timers need to be canceled.
-          (when (timer-p *message-window-timer*)
-            (cancel-timer *message-window-timer*)
-            (setf *message-window-timer* nil))
-          (reset-message-window-timer)))
-    (push-last-message screen strings highlights)
-    (xlib:display-finish-output *display*)
-    (dformat 5 "Outputting a message:~%~{        ~a~%~}" strings)
-    (apply 'run-hook-with-args *message-hook* strings)))
+  (bordeaux-threads:with-lock-held (*message-lock*)
+    (when strings
+      (when *queue-messages-p*
+        (multiple-value-bind (combined-strings combined-highlights)
+            (combine-new-old-messages
+             strings highlights
+             (screen-current-msg screen) (screen-current-msg-highlights screen)
+             :new-on-bottom-p (eq *queue-messages-p* :new-on-bottom))
+          (setf strings combined-strings
+                highlights combined-highlights)))
+      (unless *executing-stumpwm-command*
+        (multiple-value-bind (width height)
+            (rendered-size strings (screen-message-cc screen))
+          (setup-message-window screen width height)
+          (render-strings (screen-message-cc screen)
+                          *message-window-padding*
+                          *message-window-y-padding*
+                          strings
+                          highlights))
+        (setf (screen-current-msg screen)
+              strings
+              (screen-current-msg-highlights screen)
+              highlights)
+        ;; Set a timer to hide the message after a number of seconds
+        (if *suppress-echo-timeout*
+            ;; any left over timers need to be canceled.
+            (when (timer-p *message-window-timer*)
+              (cancel-timer *message-window-timer*)
+              (setf *message-window-timer* nil))
+            (reset-message-window-timer)))
+      (push-last-message screen strings highlights)
+      (xlib:display-finish-output *display*)
+      (dformat 5 "Outputting a message:~%~{        ~a~%~}" strings)
+      (apply 'run-hook-with-args *message-hook* strings))))
 
 (defun echo-string (screen msg)
   "Display @var{string} in the message bar on @var{screen}. You almost always want to use @command{message}."

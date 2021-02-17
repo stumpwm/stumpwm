@@ -16,7 +16,9 @@
                #:cl-ppcre
                #:clx
                #:sb-posix
-               #:sb-introspect)
+               #:sb-introspect
+               #:trivial-timers
+               #:bordeaux-threads)
   :components ((:file "package")
                (:file "debug")
                (:file "primitives")
