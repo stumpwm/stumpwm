@@ -279,12 +279,13 @@ return NIL. RATIO is a fraction to split by."
     (throw 'error :abort))
   (add-group (current-screen) name :type 'dynamic-group :background t))
 
-(defun swap-window-with-master (group window-or-number)
+(defun swap-window-with-master (group window-or-number &optional preserve-location)
   "Swap WINDOW-OR-NUMBER with the master window of GROUP. Only applicable to 
 dynamic groups."
   (check-type group dynamic-group)
   (check-type window-or-number (or window number))
-  (let* ((stack (dynamic-group-window-stack group))
+  (let* ((location (tile-group-current-frame group))
+         (stack (dynamic-group-window-stack group))
          (win (if (numberp window-or-number)
                   (member window-or-number stack :key 'window-number)
                   (member (window-number window-or-number) stack
@@ -294,8 +295,8 @@ dynamic groups."
       (exchange-windows (dynamic-group-master-window group) (car win))
       (setf (dynamic-group-master-window group) (car win))
       (setf (car win) old-master)
-      ;; (focus-all (car win))
-      )))
+      (when preserve-location
+        (focus-frame group location)))))
 
 (defun dyn-rotate-stack (group old-master direction)
   "Used by dyn-rotate-windows to handle the stack rotation."
@@ -330,7 +331,8 @@ dynamic groups."
           ((and (= (length windows) 1)
                 (= (length frames) 1))
            (swap-window-with-master group
-                                    (car (remove master-w (group-windows group)))))
+                                    (car (remove master-w
+                                                 (group-windows group)))))
           (t (message "Only one window in group")))))
 
 (defun dyn-cycle-windows (direction &key (group (current-group)) (focus :master))
@@ -408,7 +410,7 @@ focusing the master window, or remaining where it is."
                (= (window-number win) number)))
       (let ((win (find-if #'match (group-windows (current-group)))))
         (if win
-            (swap-window-with-master (current-group) win)
+            (swap-window-with-master (current-group) win t)
             (message "No window of number ~S" number))))))
 
 (defun window-number-as-char (window)
@@ -469,14 +471,12 @@ user"
 (defcommand (dyn-switch-prompt-for-window dynamic-group) () ()
   (when-let ((window (choose-window-by-number (current-group)))
              (current-position (window-frame (current-window))))
-    (swap-window-with-master (current-group) window)
-    (focus-frame (current-group) current-position)))
+    (swap-window-with-master (current-group) window t)))
 
 (defcommand (dyn-switch-prompt-for-frame dynamic-group) () ()
   (when-let ((frame (choose-frame-by-number (current-group)))
              (current-position (window-frame (current-window))))
-    (swap-window-with-master (current-group) (frame-window frame))
-    (focus-frame (current-group) current-position)))
+    (swap-window-with-master (current-group) (frame-window frame) t)))
 
 (defcommand (dyn-focus-current-window dynamic-group) () ()
   (if (equal (current-window) (dynamic-group-master-window (current-group)))
