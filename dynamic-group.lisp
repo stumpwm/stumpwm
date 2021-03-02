@@ -80,6 +80,12 @@ return NIL. RATIO is a fraction to split by."
     (when (listp tree)
       (balance-frames-internal group (cadr tree)))))
 
+(defmethod group-repack-frame-numbers ((group dynamic-group))
+  (setf (frame-number (window-frame (dynamic-group-master-window group))) 0)
+  (loop for i from 1
+        for window in (dynamic-group-window-stack group)
+        do (setf (frame-number (window-frame window)) i)))
+
 (defun dyn-find-superfluous-windows (group)
   "Returns a list of all windows in GROUP that dont have a dedicated frame."
   (let ((frames (group-frames group)))
@@ -177,7 +183,8 @@ return NIL. RATIO is a fraction to split by."
          (when raise (group-focus-window group window))
          (message "Floating windows in dynamic-groups is currently not supported"))
         (t
-         (dynamic-group-add-window group window))))
+         (dynamic-group-add-window group window)
+         (group-repack-frame-numbers group))))
 
 (defun dynamic-group-delete-master-window (group window)
   (let* ((new-master (pop (dynamic-group-window-stack group))))
@@ -233,9 +240,11 @@ return NIL. RATIO is a fraction to split by."
          (setf (moving-superfluous-window group) nil))
         ((equal window (dynamic-group-master-window group))
          (dynamic-group-delete-master-window group window)
+         (group-repack-frame-numbers group)
          (focus-frame group (frame-by-number group 0)))
         ((member window (dynamic-group-window-stack group))
-         (dynamic-group-delete-stack-window group window)))
+         (dynamic-group-delete-stack-window group window)
+         (group-repack-frame-numbers group)))
   (loop for frame in (group-frames group)
         do (sync-frame-windows group frame)))
 

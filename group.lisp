@@ -99,6 +99,9 @@ needs to redraw anything on it, this is where it should do it."))
 (defgeneric group-sync-head (group head)
   (:documentation "When a head or its usable area is resized, this is
 called. When the modeline size changes, this is called."))
+(defgeneric group-repack-frame-numbers (group)
+  (:documentation "Repack frame numbers to range from zero to the number of 
+frames such that there are no numerical gaps."))
 
 (defclass group ()
   ((screen :initarg :screen :accessor group-screen)

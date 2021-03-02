@@ -224,6 +224,12 @@
   (declare (ignore sorting))
   (only-tile-windows (call-next-method)))
 
+(defmethod group-repack-frame-numbers ((group tile-group))
+  (let ((frames (group-frames group)))
+    (loop for i from 0
+          for frame in frames
+          do (setf (frame-number frame) i))))
+
 (defmethod focus-next-window ((group tile-group))
   (focus-forward group (group-windows-for-cycling group :sorting t)))
 
