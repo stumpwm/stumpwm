@@ -290,13 +290,12 @@ dynamic groups."
                   (member (window-number window-or-number) stack
                           :key 'window-number)))
          (old-master (dynamic-group-master-window group)))
-    (if win
-        (progn
-          (exchange-windows (dynamic-group-master-window group) (car win))
-          (setf (dynamic-group-master-window group) (car win))
-          (setf (car win) old-master)
-          (focus-all (car win)))
-        (message "Window not a member of the stack"))))
+    (when win
+      (exchange-windows (dynamic-group-master-window group) (car win))
+      (setf (dynamic-group-master-window group) (car win))
+      (setf (car win) old-master)
+      ;; (focus-all (car win))
+      )))
 
 (defun dyn-rotate-stack (group old-master direction)
   "Used by dyn-rotate-windows to handle the stack rotation."
@@ -369,6 +368,40 @@ focusing the master window, or remaining where it is."
     ((:rotation "Direction: ") (:dynamic-cycle-focus))
   (dyn-cycle-windows dir :focus focus))
 
+(defun stack-window-p (window &optional (group (current-group)))
+  (check-type group dynamic-group)
+  (member window (dynamic-group-window-stack group)))
+
+(defun master-window-p (window &optional (group (current-group)))
+  (check-type group dynamic-group)
+  (eql window (dynamic-group-master-window group)))
+
+(defun swap-stack-windows (group w1 w2)
+  "swaps two stack windows within dynamic groups"
+  (check-type group dynamic-group)
+  (let ((f1 (window-frame w1))
+        (f2 (window-frame w2)))
+    (pull-window w1 f2 nil)
+    (pull-window w2 f1 nil)
+    (rotatef (car (member w1 (dynamic-group-window-stack group)))
+             (car (member w2 (dynamic-group-window-stack group))))))
+
+(defun exchange-dynamic-windows (w1 w2)
+  "Similar to exchange-window, but tracks state for dynamic groups"
+  (assert (eql (window-group w1) (window-group w2)))
+  (let ((group (window-group w1)))
+    (check-type group dynamic-group)
+    (cond ((and (stack-window-p w1 group)
+                (stack-window-p w2 group))
+           (swap-stack-windows group w1 w2))
+          ((and (stack-window-p w1 group)
+                (master-window-p w2 group))
+           (swap-window-with-master group w1))
+          ((and (master-window-p w1 group)
+                (stack-window-p w2 group))
+           (swap-window-with-master group w2)))
+    (focus-all w1)))
+
 (defcommand (dyn-switch dynamic-group) (number) ((:number "Window Number: "))
   (when number
     (labels ((match (win)
@@ -434,12 +467,16 @@ user"
       (clear-frame-outlines group))))
 
 (defcommand (dyn-switch-prompt-for-window dynamic-group) () ()
-  (when-let ((window (choose-window-by-number (current-group))))
-    (swap-window-with-master (current-group) window)))
+  (when-let ((window (choose-window-by-number (current-group)))
+             (current-position (window-frame (current-window))))
+    (swap-window-with-master (current-group) window)
+    (focus-frame (current-group) current-position)))
 
 (defcommand (dyn-switch-prompt-for-frame dynamic-group) () ()
-  (when-let ((frame (choose-frame-by-number (current-group))))
-    (swap-window-with-master (current-group) (frame-window frame))))
+  (when-let ((frame (choose-frame-by-number (current-group)))
+             (current-position (window-frame (current-window))))
+    (swap-window-with-master (current-group) (frame-window frame))
+    (focus-frame (current-group) current-position)))
 
 (defcommand (dyn-focus-current-window dynamic-group) () ()
   (if (equal (current-window) (dynamic-group-master-window (current-group)))
