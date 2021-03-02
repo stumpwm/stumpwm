@@ -101,6 +101,7 @@ return NIL. RATIO is a fraction to split by."
           collect frame))
 
 (defun dynamic-group-place-window (group window)
+  "The logic to place a window in a dynamic group."
   (case (length (group-windows group))
     (1
      (setf (dynamic-group-master-window group) window))
@@ -164,8 +165,6 @@ return NIL. RATIO is a fraction to split by."
   ;; group-add-window method so i think its ok, at least on sbcl. 
   (change-class window 'dynamic-window)
   (setf (window-frame window) (frame-by-number group 0))
-  ;; (setf (frame-window (frame-by-number group 0)) window)
-  ;; this causes crashes....
   (dynamic-group-place-window group window)
   (loop for frame in (group-frames group)
         do (sync-frame-windows group frame))
@@ -187,6 +186,7 @@ return NIL. RATIO is a fraction to split by."
          (group-repack-frame-numbers group))))
 
 (defun dynamic-group-delete-master-window (group window)
+  "The logic to handle deletion of the master window of a dynamic group"
   (let* ((new-master (pop (dynamic-group-window-stack group))))
     (if new-master
         (let* ((new-masters-old-frame (window-frame new-master))
@@ -218,6 +218,7 @@ return NIL. RATIO is a fraction to split by."
                                 (first (frame-windows group f)) nil))))))
 
 (defun dynamic-group-delete-stack-window (group window)
+  "Logic to handle deletion of a stack window from a dynamic group"
   (let* ((new-stack (remove window (dynamic-group-window-stack group)))
          (frame-to-remove (window-frame window))
          (head (frame-head group frame-to-remove))
@@ -243,14 +244,21 @@ return NIL. RATIO is a fraction to split by."
          (group-repack-frame-numbers group)
          (focus-frame group (frame-by-number group 0)))
         ((member window (dynamic-group-window-stack group))
-         (dynamic-group-delete-stack-window group window)
-         (group-repack-frame-numbers group)))
+         (let ((location (frame-number (window-frame window))))
+           (dynamic-group-delete-stack-window group window )
+           (group-repack-frame-numbers group)
+           (if-let ((frame (frame-by-number group location)))
+             (focus-frame group frame)
+             (if-let ((stack (dynamic-group-window-stack group)))
+               (focus-frame group (window-frame (car (last stack))))
+               (focus-frame group (frame-by-number group 0)))))))
   (loop for frame in (group-frames group)
         do (sync-frame-windows group frame)))
 
 ;; deal with floating windows
 
 (defun dynamic-group-float-window (window group)
+  "float windows in a dynamic group"
   (cond ((equal window (dynamic-group-master-window group))
          (dynamic-group-delete-master-window group window))
         ((member window (dynamic-group-window-stack group))
@@ -263,16 +271,14 @@ return NIL. RATIO is a fraction to split by."
   (focus-all window))
 
 (defun dynamic-group-unfloat-window (window group)
+  "Unfloat windows in a dynamic group"
   (dynamic-group-add-window group window)
   (loop for frame in (group-frames group)
         do (sync-frame-windows group frame))
   (update-decoration window)
   (frame-raise-window group
                       (frame-by-number group 0)
-                      (car (frame-windows group (frame-by-number group 0))))
-  ;; (focus-frame group (frame-by-number group 0))
-  ;; (focus-all (frame-window (frame-by-number group 0)))
-  )
+                      (car (frame-windows group (frame-by-number group 0)))))
 
 ;;; Dynamic group commands
 
@@ -380,10 +386,12 @@ focusing the master window, or remaining where it is."
   (dyn-cycle-windows dir :focus focus))
 
 (defun stack-window-p (window &optional (group (current-group)))
+  "Check if WINDOW is a member of GROUPs stack"
   (check-type group dynamic-group)
   (member window (dynamic-group-window-stack group)))
 
 (defun master-window-p (window &optional (group (current-group)))
+  "check if WINDOW is GROUPs master window"
   (check-type group dynamic-group)
   (eql window (dynamic-group-master-window group)))
 
@@ -478,21 +486,25 @@ user"
       (clear-frame-outlines group))))
 
 (defcommand (dyn-switch-prompt-for-window dynamic-group) () ()
+  "choose a window number by its number and swap it with master window"
   (when-let ((window (choose-window-by-number (current-group)))
              (current-position (window-frame (current-window))))
     (swap-window-with-master (current-group) window t)))
 
 (defcommand (dyn-switch-prompt-for-frame dynamic-group) () ()
+  "choose a window number by its frame number and swap it with master window"
   (when-let ((frame (choose-frame-by-number (current-group)))
              (current-position (window-frame (current-window))))
     (swap-window-with-master (current-group) (frame-window frame) t)))
 
 (defcommand (dyn-focus-current-window dynamic-group) () ()
+  "Swap the current window with the master window"
   (if (equal (current-window) (dynamic-group-master-window (current-group)))
       (message "Focused window is already master window")
       (swap-window-with-master (current-group) (current-window))))
 
 (defcommand (dyn-focus-master-window dynamic-group) () ()
+  "focus the master window"
   (focus-frame (current-group) (frame-by-number (current-group) 0)))
 
 
