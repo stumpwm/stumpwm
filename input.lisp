@@ -122,6 +122,23 @@ and complete the input by mutating it."))
   (make-instance 'input-completion-style-unambiguous
                  :display-limit display-limit))
 
+(defun input-refine-prefix (str candidates)
+  (remove-if-not (lambda (elt)
+                   (when (listp elt)
+                     (setf elt (car elt)))
+                   (and (<= (length str) (length elt))
+                        (string= str elt
+                                 :end1 (length str)
+                                 :end2 (length str))))
+                 candidates))
+
+(defun input-refine-regexp (str candidates)
+  (remove-if-not (lambda (elt)
+                   (when (listp elt)
+                     (setf elt (car elt)))
+                   (match-all-regexps str elt))
+                 candidates))
+
 (defvar *input-map*
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "DEL") 'input-delete-backward-char)
@@ -168,6 +185,11 @@ and complete the input by mutating it."))
 
 (defvar *input-completions* nil
   "The list of completions")
+
+(defvar *input-refine-candidates-fn* #'input-refine-prefix
+  "A function used to filter completions based on input. The function receives
+two arguments: the input string and a list of completions. The function should
+return a list of completions, possibly filtered and/or sorted.")
 
 (defvar *input-completion-style* (make-input-completion-style-cyclic)
   "The completion style to use.
@@ -383,16 +405,7 @@ match with an element of the completions."
   (if (string= "" input-line)
       '()
       (multiple-value-bind (completions more)
-          (take *maximum-completions*
-                (remove-duplicates
-                  (remove-if
-                    (lambda (str)
-                      (or (string= str "")
-                          (< (length str) (length input-line))
-                          (string/= input-line
-                                    (subseq str 0 (length input-line)))))
-                    all-completions)
-                  :test #'string=))
+          (take *maximum-completions* (input-find-completions input-line all-completions))
         (if more
             (append (butlast completions)
                     (list (format nil "... and ~D more" (1+ (length more)))))
@@ -597,18 +610,14 @@ functions are passed this structure as their first argument."
 ;;; "interactive" input functions
 
 (defun input-find-completions (str completions)
-  (if (or (functionp completions)
-          (and (symbolp completions)
-               (fboundp completions)))
-      (funcall completions str)
-      (remove-if-not (lambda (elt)
-                       (when (listp elt)
-                         (setf elt (car elt)))
-                       (and (<= (length str) (length elt))
-                            (string= str elt
-                                     :end1 (length str)
-                                     :end2 (length str))))
-                     completions)))
+  (let ((candidates (if (or (functionp completions)
+                            (and (symbolp completions)
+                                 (fboundp completions)))
+                        (funcall completions str)
+                        completions)))
+    (remove-duplicates
+     (funcall *input-refine-candidates-fn* str candidates)
+     :test #'equal)))
 
 (defun input-complete (input direction)
   (unless (find *input-last-command* '(input-complete-forward
