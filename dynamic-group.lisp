@@ -23,6 +23,8 @@ overflows. Default value is :LEAST-IMPORTANT. The other possible value is
   "The ratio with which to split when adding a second window to a dynamic group.
 Defaults to \"2/3\".")
 
+(defparameter *dynamic-group-overflow-group* ".Overflow")
+
 (defun dyn-split-frame (group frame how &optional (ratio 1/2))
   "Split FRAME in 2 and return the new frame number if successful. Otherwise, 
 return NIL. RATIO is a fraction to split by."
@@ -101,13 +103,13 @@ return NIL. RATIO is a fraction to split by."
           collect frame))
 
 (defun dynamic-group-place-window (group window)
-  "The logic to place a window in a dynamic group."
+  "The logic to place a window in a dynamic group. If unable to split the stack 
+further, send the least important window (bottom of the stack) to a overflow group"
   (case (length (group-windows group))
-    (1
-     (setf (dynamic-group-master-window group) window))
+    (1 (setf (dynamic-group-master-window group) window))
     (2
-     (let ((frame (frame-by-number group 0)))
-       (dyn-hsplit-frame frame *dynamic-group-master-split-ratio*))
+     (dyn-hsplit-frame (frame-by-number group 0)
+                       *dynamic-group-master-split-ratio*)
      (let* ((prev-win (dynamic-group-master-window group))
             (prev-win-new-frame (car (remove (frame-by-number group 0)
                                              (group-frames group)))))
@@ -136,16 +138,16 @@ return NIL. RATIO is a fraction to split by."
              (focus-frame group master-frame)
              (dyn-balance-stack-tree group))
          (dynamic-group-too-many-windows ()
-           (let ((new-group (or (find-group (current-screen) ".Overflow")
-                                (gnewbg ".Overflow")))
+           (let ((new-group (or (find-group (current-screen) *dynamic-group-overflow-group*)
+                                (gnewbg *dynamic-group-overflow-group*)))
                  (w (case *dynamic-group-overflow-remove-window-policy*
                       (:least-important
                        (lastcar (dynamic-group-window-stack group)))
                       (:most-important
                        (car (dynamic-group-window-stack group))))))
              (message
-              "Group ~S is full, moving window ~S to group \".Overflow.\""
-              (group-name group) (window-name w))
+              "Group ~S is full, moving window ~S to group ~S."
+              (group-name group) (window-name w) *dynamic-group-overflow-group*)
              (setf (dynamic-group-window-stack group)
                    (cons (dynamic-group-master-window group)
                          (remove w (dynamic-group-window-stack group)))
@@ -161,8 +163,7 @@ return NIL. RATIO is a fraction to split by."
              (move-window-to-group w new-group))))))))
 
 (defun dynamic-group-add-window (group window)
-  ;; this is undefined behavior i think, but its done in the other
-  ;; group-add-window method so i think its ok, at least on sbcl. 
+  "Add WINDOW to GROUP, making WINDOW the master of group."
   (change-class window 'dynamic-window)
   (setf (window-frame window) (frame-by-number group 0))
   (dynamic-group-place-window group window)
@@ -212,7 +213,7 @@ return NIL. RATIO is a fraction to split by."
                    (frame-window master-frame) new-master
                    (dynamic-group-master-window group) new-master)
              (dyn-balance-stack-tree group))))
-        (let ((f (window-frame window))) 
+        (let ((f (window-frame window)))
           (when (eq (frame-window f) window)
             (frame-raise-window group f
                                 (first (frame-windows group f)) nil))))))
