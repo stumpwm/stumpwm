@@ -16,9 +16,9 @@
 (defvar *dynamic-group-overflow-policy* :least-important
   "Controls which window gets sent to the overflow group when a dynamic group 
 overflows. Default value is :LEAST-IMPORTANT. The other possible values are 
-:MOST-IMPORTANT and :MASTER. :LEAST-IMPORTANT will take the window at the end
-of the stack, :MOST-IMPORTANT from the beginning, and :MASTER takes the master 
-window.")
+:MOST-IMPORTANT, :MASTER, and :NEW-WINDOW. :LEAST-IMPORTANT will take the window 
+at the end of the stack, :MOST-IMPORTANT from the beginning, :MASTER takes the 
+master window, and :NEW-WINDOW moves the window being introduced to the group.")
 
 (defvar *dynamic-group-master-split-ratio* "2/3"
   "The ratio with which to split when adding a second window to a dynamic group.
@@ -95,14 +95,6 @@ return NIL. RATIO is a fraction to split by."
         for window in (dynamic-group-window-stack group)
         do (setf (frame-number (window-frame window)) i)))
 
-(defun dyn-find-superfluous-windows (group)
-  "Returns a list of all windows in GROUP that dont have a dedicated frame."
-  (let ((frames (group-frames group)))
-    (flatten
-     (loop for frame in frames
-           when (> (length (frame-windows group frame)) 1)
-             collect (remove (frame-window frame) (frame-windows group frame))))))
-
 (defun find-empty-frames (&optional (group (current-group)))
   "Returns a list of all frames in GROUP with no window."
   (loop for frame in (group-frames group)
@@ -110,16 +102,22 @@ return NIL. RATIO is a fraction to split by."
           collect frame))
 
 (defun dyn-handle-overflow (group window)
-  (move-window-to-group (case *dynamic-group-overflow-policy*
-                          (:least-important
-                           (lastcar (dynamic-group-window-stack group)))
-                          (:most-important
-                           (car (dynamic-group-window-stack group)))
-                          (:master
-                           (dynamic-group-master-window group)))
-                        (or (find-group (current-screen) *dynamic-overflow-group*)
-                            (gnewbg *dynamic-overflow-group*)))
-  (dynamic-group-place-window group window))
+  (let ((to-group (or (find-group (current-screen) *dynamic-overflow-group*)
+                      (gnewbg *dynamic-overflow-group*))))
+    (move-window-to-group (case *dynamic-group-overflow-policy*
+                            (:least-important
+                             (lastcar (dynamic-group-window-stack group)))
+                            (:most-important
+                             (car (dynamic-group-window-stack group)))
+                            (:master
+                             (dynamic-group-master-window group))
+                            (:new-window
+                             (setf (moving-superfluous-window group) window)
+                             window))
+                          to-group)
+    (if (eql *dynamic-group-overflow-policy* :new-window)
+        (focus-all window)
+        (dynamic-group-place-window group window))))
 
 (defun dynamic-group-place-window (group window)
   "The logic to place a window in a dynamic group. If unable to split the stack 
