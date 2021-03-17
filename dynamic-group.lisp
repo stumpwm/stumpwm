@@ -13,17 +13,24 @@
 
 (defclass dynamic-window (tile-window) ())
 
-(defvar *dynamic-group-overflow-remove-window-policy* :least-important
+(defvar *dynamic-group-overflow-policy* :least-important
   "Controls which window gets sent to the overflow group when a dynamic group 
-overflows. Default value is :LEAST-IMPORTANT. The other possible value is
-:MOST-IMPORTANT. :LEAST-IMPORTANT will take the window at the end of the stack, 
-:MOST-IMPORTANT from the beginning.")
+overflows. Default value is :LEAST-IMPORTANT. The other possible values are 
+:MOST-IMPORTANT and :MASTER. :LEAST-IMPORTANT will take the window at the end
+of the stack, :MOST-IMPORTANT from the beginning, and :MASTER takes the master 
+window.")
 
-(defparameter *dynamic-group-master-split-ratio* "2/3"
+(defvar *dynamic-group-master-split-ratio* "2/3"
   "The ratio with which to split when adding a second window to a dynamic group.
 Defaults to \"2/3\".")
 
-(defparameter *dynamic-group-overflow-group* ".Overflow")
+(defvar *dynamic-overflow-group* ".Overflow"
+  "The group to which windows will be sent when a dynamic group can no longer 
+split the window stack.")
+
+(defun dynamic-merge-overflow-group (group to-group)
+  (let ((*dynamic-overflow-group* (concat *dynamic-overflow-group* " °2")))
+    (merge-groups group to-group)))
 
 (defun dyn-split-frame (group frame how &optional (ratio 1/2))
   "Split FRAME in 2 and return the new frame number if successful. Otherwise, 
@@ -102,6 +109,18 @@ return NIL. RATIO is a fraction to split by."
         when (null (frame-windows group frame))
           collect frame))
 
+(defun dyn-handle-overflow (group window)
+  (move-window-to-group (case *dynamic-group-overflow-policy*
+                          (:least-important
+                           (lastcar (dynamic-group-window-stack group)))
+                          (:most-important
+                           (car (dynamic-group-window-stack group)))
+                          (:master
+                           (dynamic-group-master-window group)))
+                        (or (find-group (current-screen) *dynamic-overflow-group*)
+                            (gnewbg *dynamic-overflow-group*)))
+  (dynamic-group-place-window group window))
+
 (defun dynamic-group-place-window (group window)
   "The logic to place a window in a dynamic group. If unable to split the stack 
 further, send the least important window (bottom of the stack) to a overflow group"
@@ -138,29 +157,7 @@ further, send the least important window (bottom of the stack) to a overflow gro
              (focus-frame group master-frame)
              (dyn-balance-stack-tree group))
          (dynamic-group-too-many-windows ()
-           (let ((new-group (or (find-group (current-screen) *dynamic-group-overflow-group*)
-                                (gnewbg *dynamic-group-overflow-group*)))
-                 (w (case *dynamic-group-overflow-remove-window-policy*
-                      (:least-important
-                       (lastcar (dynamic-group-window-stack group)))
-                      (:most-important
-                       (car (dynamic-group-window-stack group))))))
-             (message
-              "Group ~S is full, moving window ~S to group ~S."
-              (group-name group) (window-name w) *dynamic-group-overflow-group*)
-             (setf (dynamic-group-window-stack group)
-                   (cons (dynamic-group-master-window group)
-                         (remove w (dynamic-group-window-stack group)))
-                   (dynamic-group-master-window group) window
-                   (window-frame window) master-frame
-                   (frame-window (window-frame w)) nil
-                   (window-frame w) nil
-                   (window-frame old-master)
-                   (or (car (find-empty-frames group))
-                       (error "No Empty Frames in group ~S! Something has gone terribly wrong!" group))
-                   (frame-window (window-frame old-master)) old-master
-                   (moving-superfluous-window group) w)
-             (move-window-to-group w new-group))))))))
+           (dyn-handle-overflow group window)))))))
 
 (defun dynamic-group-add-window (group window)
   "Add WINDOW to GROUP, making WINDOW the master of group."
