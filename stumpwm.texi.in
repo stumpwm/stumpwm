@@ -380,10 +380,12 @@ window gets pushed onto the window stack, and the newest window takes its place.
 This causes the frames holding the stack windows to get progressively smaller
 the more windows are added to the group. When a window stack frame becomes to
 small to split, the window at the bottom of the stack gets sent to an overflow
-group called “.Overflow”. This behavior can be configured with
+group. This behavior can be configured with
 @var{*dynamic-group-overflow-policy*}. 
 
 ### *dynamic-group-overflow-policy*
+
+### *dynamic-overflow-group*
 
 ### *dynamic-group-master-split-ratio*
 
@@ -418,6 +420,10 @@ the master window.
 @item
 @command{dyn-focus-master-window} (@kbd{C-t f}) Move focus to the master window.
 @end itemize
+
+When defining commands, anything restricted to tiling groups will also be
+active in dynamic groups. To fully restrict it to tiling groups, call the
+function dyn-blacklist-command on the command in question.
 
 
 @node Frame Basics, Window Basics, Floating Group Basics, Basic Concepts
