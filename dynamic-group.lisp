@@ -313,7 +313,6 @@ class hierarchy.")
       "only"
       "pull-window-by-number"
       "pull"
-      "exchange-direction"
       "pull-marked"))
 
 (defcommand gnew-dynamic (name) ((:rest "Group Name: "))
@@ -344,8 +343,9 @@ dynamic groups."
       (exchange-windows (dynamic-group-master-window group) (car win))
       (setf (dynamic-group-master-window group) (car win))
       (setf (car win) old-master)
-      (when preserve-location
-        (focus-frame group location)))))
+      (if preserve-location
+          (focus-frame group location)
+          (focus-frame group (frame-by-number group 0))))))
 
 (defun dyn-rotate-stack (group old-master direction)
   "Used by dyn-rotate-windows to handle the stack rotation."
@@ -531,11 +531,12 @@ user"
              (current-position (window-frame (current-window))))
     (swap-window-with-master (current-group) (frame-window frame) t)))
 
-(defcommand (dyn-focus-current-window dynamic-group) () ()
+(defcommand (dyn-focus-current-window dynamic-group) (&optional preserve-focus)
+    ((:rest))
   "Swap the current window with the master window"
   (if (equal (current-window) (dynamic-group-master-window (current-group)))
       (message "Focused window is already master window")
-      (swap-window-with-master (current-group) (current-window))))
+      (swap-window-with-master (current-group) (current-window) preserve-focus)))
 
 (defcommand (dyn-focus-master-window dynamic-group) () ()
   "focus the master window"
@@ -554,19 +555,20 @@ is a dynamic group.")
   *escape-key* '*dynamic-group-root-map*)
 
 (fill-keymap *dynamic-group-root-map*
-  (kbd "n")   "dyn-cycle cl remain"
-  (kbd "N")   "dyn-cycle cl follow"
-  (kbd "M-n") "dyn-cycle cl master"
+  (kbd "n")     "dyn-cycle cl remain"
+  (kbd "N")     "dyn-cycle cl follow"
+  (kbd "M-n")   "dyn-cycle cl master"
   
-  (kbd "p")   "dyn-cycle ccl remain"
-  (kbd "P")   "dyn-cycle ccl follow"
-  (kbd "M-p") "dyn-cycle ccl master"
+  (kbd "p")     "dyn-cycle ccl remain"
+  (kbd "P")     "dyn-cycle ccl follow"
+  (kbd "M-p")   "dyn-cycle ccl master"
   
-  (kbd "W")   "dyn-switch"  
-  (kbd "w")   "dyn-switch-prompt-for-window"
-  (kbd "RET") "dyn-focus-current-window"
-  (kbd "f")   "dyn-focus-master-window"
-  (kbd "o")   "fnext")
+  (kbd "W")     "dyn-switch"  
+  (kbd "w")     "dyn-switch-prompt-for-window"
+  (kbd "RET")   "dyn-focus-current-window"
+  (kbd "C-RET") "dyn-focus-current-window t"
+  (kbd "f")     "dyn-focus-master-window"
+  (kbd "o")     "fnext")
 
 (pushnew '(dynamic-group *dynamic-group-top-map*) *group-top-maps*)
 
