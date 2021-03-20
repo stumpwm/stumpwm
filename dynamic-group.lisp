@@ -137,7 +137,9 @@ further, send the least important window (bottom of the stack) to a overflow gro
              (frame-window prev-win-new-frame) prev-win
              (window-frame window) (frame-by-number group 0)
              (frame-window (frame-by-number group 0)) window
-             (dynamic-group-master-window group) window)))
+             (dynamic-group-master-window group) window
+             (group-current-window group) window)
+       (mapcar 'update-decoration (group-windows group))))
     (otherwise
      (let* ((master-frame (frame-by-number group 0))
             (old-master (dynamic-group-master-window group))
@@ -155,6 +157,8 @@ further, send the least important window (bottom of the stack) to a overflow gro
                        (error "No Empty Frames in group ~S! Something has gone terribly wrong!" group))
                    (frame-window (window-frame old-master)) old-master)
              (focus-frame group master-frame)
+             (group-focus-window group window)
+             (mapcar 'update-decoration (group-windows group))
              (dyn-balance-stack-tree group))
          (dynamic-group-too-many-windows ()
            (dyn-handle-overflow group window)))))))
