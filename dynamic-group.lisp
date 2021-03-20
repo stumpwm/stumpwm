@@ -57,9 +57,9 @@ return NIL. RATIO is a fraction to split by."
                                        (find frame tree))))))
         (migrate-frame-windows group frame f1)
         (choose-new-frame-window f2 group)
-        (if (eq (tile-group-current-frame group)
-                frame)
-            (setf (tile-group-current-frame group) f1))
+        (when (eq (tile-group-current-frame group)
+                  frame)
+          (setf (tile-group-current-frame group) f1))
         (setf (tile-group-last-frame group) f2)
         (sync-frame-windows group f1)
         (sync-frame-windows group f2)
@@ -70,18 +70,20 @@ return NIL. RATIO is a fraction to split by."
 
 (defun dyn-split-frame-in-dir-with-frame (group frame dir &optional (ratio 1/2))
   "Splits FRAME by RATIO, or signals an error."
-  (if (or (dyn-split-frame group frame dir ratio))
-      (progn
-        (when (frame-window frame)
-          (update-decoration (frame-window frame)))
-        (show-frame-indicator group))
-      (error 'dynamic-group-too-many-windows)))
+  (let ((fnum (dyn-split-frame group frame dir ratio)))
+    (if fnum
+        (progn
+          (when (frame-window frame)
+            (update-decoration (frame-window frame)))
+          (show-frame-indicator group)
+          fnum)
+        (error 'dynamic-group-too-many-windows))))
 
-(defun dyn-hsplit-frame (frame &optional (ratio "1/2"))
-  (dyn-split-frame-in-dir-with-frame (current-group) frame :column (read-from-string ratio)))
+(defun dyn-hsplit-frame (group frame &optional (ratio "1/2"))
+  (dyn-split-frame-in-dir-with-frame group frame :column (read-from-string ratio)))
 
-(defun dyn-vsplit-frame (frame &optional (ratio "1/2"))
-  (dyn-split-frame-in-dir-with-frame (current-group) frame :row (read-from-string ratio)))
+(defun dyn-vsplit-frame (group frame &optional (ratio "1/2"))
+  (dyn-split-frame-in-dir-with-frame group frame :row (read-from-string ratio)))
 
 (defun dyn-balance-stack-tree (&optional (group (current-group)))
   "Balance only frames in the stack tree, ensuring they are the same size."
@@ -125,7 +127,7 @@ further, send the least important window (bottom of the stack) to a overflow gro
   (case (length (group-windows group))
     (1 (setf (dynamic-group-master-window group) window))
     (2
-     (dyn-hsplit-frame (frame-by-number group 0)
+     (dyn-hsplit-frame group (frame-by-number group 0)
                        *dynamic-group-master-split-ratio*)
      (let* ((prev-win (dynamic-group-master-window group))
             (prev-win-new-frame (car (remove (frame-by-number group 0)
@@ -143,7 +145,7 @@ further, send the least important window (bottom of the stack) to a overflow gro
               (window-frame (car (dynamic-group-window-stack group)))))
        (handler-case
            (progn
-             (dyn-vsplit-frame frame-to-split)
+             (dyn-vsplit-frame group frame-to-split)
              (push (dynamic-group-master-window group)
                    (dynamic-group-window-stack group))
              (setf (dynamic-group-master-window group) window)
