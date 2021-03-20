@@ -284,6 +284,38 @@ further, send the least important window (bottom of the stack) to a overflow gro
 
 ;;; Dynamic group commands
 
+(defvar *dynamic-group-blacklisted-commands* nil
+  "A blacklist of commands for dynamic groups specifically. Needed due to group 
+class hierarchy.")
+
+(defun dyn-blacklist-command (cmd &aux (command (get-command-structure cmd nil)))
+  "Add CMD to the command blacklist for dynamic groups"
+  (unless (member command *dynamic-group-blacklisted-commands*)
+    (push command *dynamic-group-blacklisted-commands*)))
+
+(defun dyn-unblacklist-command (cmd &aux (command (get-command-structure cmd nil)))
+  "Remove CMD to the command blacklist for dynamic groups"
+  (setf *dynamic-group-blacklisted-commands*
+        (remove command *dynamic-group-blacklisted-commands*)))
+
+(flet ((bl (&rest cmds)
+         (loop for cmd in cmds
+               do (dyn-blacklist-command cmd))))
+  ;; Due to the group class hierarchy the following tile-group commands must be
+  ;; explicitly disabled for dynamic groups. 
+  (bl "expose"
+      "hsplit"
+      "vsplit"
+      "hsplit-equally"
+      "vsplit-equally"
+      "remove-split"
+      "remove"
+      "only"
+      "pull-window-by-number"
+      "pull"
+      "exchange-direction"
+      "pull-marked"))
+
 (defcommand gnew-dynamic (name) ((:rest "Group Name: "))
   "Create a new dynamic group named NAME."
   (unless name 

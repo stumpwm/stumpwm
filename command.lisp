@@ -176,7 +176,11 @@ whatever it finds: a command, an alias, or nil."
            *command-hash*))
 
 (defun command-active-p (command)
-  (typep (current-group) (command-class command))
+  (let ((active (typep (current-group) (command-class command))))
+    (if (typep (current-group) 'dynamic-group)
+        (unless (member command *dynamic-group-blacklisted-commands*)
+          active)
+        active))
   ;; TODO: minor modes
   )
 
