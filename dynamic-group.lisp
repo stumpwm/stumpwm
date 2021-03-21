@@ -87,7 +87,7 @@ return NIL. RATIO is a fraction to split by."
 
 (defun dyn-balance-stack-tree (&optional (group (current-group)))
   "Balance only frames in the stack tree, ensuring they are the same size."
-  (let ((tree (tile-group-frame-head group (current-head))))
+  (let ((tree (tile-group-frame-head group (current-head group))))
     (when (listp tree)
       (balance-frames-internal group (cadr tree)))))
 
