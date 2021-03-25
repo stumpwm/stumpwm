@@ -24,6 +24,7 @@
 (in-package :stumpwm)
 
 (export '(*input-history-ignore-duplicates*
+          *input-candidate-selected-hook*
           *input-completion-style*
           *input-map*
           *numpad-map*
@@ -33,6 +34,8 @@
           input-insert-char
           input-insert-string
           input-point
+          input-refine-prefix
+          input-refine-regexp
           input-substring
           input-validate-region
           read-one-char
@@ -342,6 +345,7 @@ match with an element of the completions."
                              :require-match require-match)))
     (when line (string-trim " " line))))
 
+(defvar *input-candidate-selected-hook* nil)
 (defun read-one-line (screen prompt &key completions (initial-input "") require-match password)
   "Read a line of input through stumpwm and return it. Returns nil if the user aborted."
   (let ((*input-last-command* nil)
@@ -379,7 +383,10 @@ match with an element of the completions."
       (draw-input-bucket screen prompt input)
       (setup-input-window screen prompt input)
       (catch :abort
-        (unwind-protect (key-loop)
+        (unwind-protect
+             (let ((input (key-loop)))
+               (run-hook-with-args *input-candidate-selected-hook* input)
+               input)
           (shutdown-input-window screen))))))
 
 (defun read-one-char (screen)
