@@ -201,6 +201,9 @@ Available completion styles include
 @item make-input-completion-style-unambiguous
 @end table")
 
+(defvar *input-completion-show-empty* nil
+  "If t, show completion candidates even if the input is empty.")
+
 (defvar *input-history-ignore-duplicates* nil
   "Do not add a command to the input history if it's already the first in the list.")
 (defvar *numpad-map* '((87 10 . 16) (88  11 . 16) (89 12 . 16) (106 61 . 16)
@@ -402,7 +405,7 @@ match with an element of the completions."
 
 
 (defun get-completion-preview-list (input-line all-completions)
-  (if (string= "" input-line)
+  (if (and (string= "" input-line) (not *input-completion-show-empty*))
       '()
       (multiple-value-bind (completions more)
           (take *maximum-completions* (input-find-completions input-line all-completions))
