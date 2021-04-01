@@ -682,6 +682,29 @@ user"
   "focus the master window"
   (focus-frame (current-group) (dynamic-group-master-frame (current-group))))
 
+(define-stumpwm-type :master-window-gravity (input prompt)
+  "Set the current window's gravity."
+  (let* ((values '(("top" :top)
+                   ("right" :right)
+                   ("bottom" :bottom)
+                   ("left" :left)
+                   ("revert" :revert)))
+         (string (argument-pop-or-read input prompt (mapcar 'first values)))
+         (gravity (second (assoc string values :test 'string-equal))))
+    (or gravity
+        (throw 'error "No matching gravity."))))
+
+(defcommand (change-layout dynamic-group) (where &optional (extent :current))
+    ((:master-window-gravity "Location: ") (:rest))
+  "change the orientation of a dynamic group. "
+  (let ((ext (if (stringp extent)
+                 (let ((ext (read-from-string extent)))
+                   (if (keywordp ext)
+                       ext
+                       (intern (symbol-name ext) (find-package :keyword))))
+                 extent)))
+    (dynamic-group-master-location-dwim where ext)))
+
 
 ;;; Dynamic group keybindings
 
