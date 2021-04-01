@@ -1,10 +1,17 @@
 (in-package :stumpwm)
 
 (define-condition dynamic-group-too-many-windows (error) ()
-  (:documentation "This condition is used to control overflowing windows."))
+  (:documentation "This condition is used to control overflowing windows in dynamic groups."))
 
 (defclass dynamic-group (tile-group)
-  ((master-window :initarg :master-window :initform nil
+  ((master-location :accessor dynamic-group-master-location
+                    :initform :left
+                    :allocation :class)
+   (master-location-override :accessor dynamic-group-master-location-override
+                             :initform nil)
+   (master-frame :accessor dynamic-group-master-frame
+                 :initform nil)
+   (master-window :initarg :master-window :initform nil
                   :accessor dynamic-group-master-window)
    (window-stack :initarg :window-stack :initform nil
                  :accessor dynamic-group-window-stack)
@@ -20,9 +27,87 @@ overflows. Default value is :LEAST-IMPORTANT. The other possible values are
 at the end of the stack, :MOST-IMPORTANT from the beginning, :MASTER takes the 
 master window, and :NEW-WINDOW moves the window being introduced to the group.")
 
-(defvar *dynamic-group-master-split-ratio* "2/3"
+(defun dynamic-group-master-location-dwim (set &optional (extent :all))
+  "change the location of the master window for (a) dynamic group(s). When SET is 
+nil, the current location is returned based on EXTENT. EXTENT is either a list of 
+groups or one of the keywords :ALL or :CURRENT. EXTENT controls which groups SET 
+applies to. 
+
+When SET is one of :LEFT :RIGHT :TOP or :BOTTOM, EXTENT groups have their location 
+overrides set to SET, unless EXTENT is :ALL, in which case the default location is
+set to SET. 
+
+When SET is :REVERT, EXTENT groups have their location overrides removed. 
+
+When SET is null, the location for EXTENT groups is returned. If EXTENT is :ALL, 
+the default location is returned, while if EXTENT is a list, a list is returned of
+the groups locations."
+  (declare (type (member :left :right :top :bottom :revert nil) set)
+           (type (or cons (member :all :current)) extent))
+  (case set
+    ((:left :right :top :bottom)
+     (case extent
+       (:all
+        (mapc (let ((trig t))
+                (lambda (g)
+                  (when (typep g 'dynamic-group)
+                    (when trig
+                      (setf (dynamic-group-master-location g) set
+                            trig nil))
+                    (retile g))))
+              (screen-groups (current-screen))))
+       (:current
+        (let ((group (current-group)))
+          (when (typep group 'dynamic-group)
+            (setf (dynamic-group-master-location-override group) set)
+            (retile group))))
+       (otherwise
+        (mapc (lambda (group)
+                (when (typep group 'dynamic-group)
+                  (setf (dynamic-group-master-location-override group) set)
+                  (retile group)))
+              extent))))
+    (:revert
+     (case extent
+       (:all
+        (mapc (lambda (group)
+                (when (typep group 'dynamic-group)
+                  (setf (dynamic-group-master-location-override group) nil)
+                  (retile group)))
+              (screen-groups (current-screen))))
+       (:current
+        (let ((group (current-group)))
+          (when (typep group 'dynamic-group)
+            (setf (dynamic-group-master-location-override group) nil))))
+       (otherwise
+        (mapc (lambda (group)
+                (when (typep group 'dynamic-group)
+                  (setf (dynamic-group-master-location-override group) nil)
+                  (retile group)))
+              extent))))
+    (otherwise
+     (case extent
+       (:all
+        (loop for group in (screen-groups (current-screen))
+              when (typep group 'dynamic-group)
+                return (dynamic-group-master-location group)))
+       (:current
+        (let ((group (current-group)))
+          (when (typep group 'dynamic-group)
+            (or (dynamic-group-master-location-override group)
+                (dynamic-group-master-location group)))))
+       (otherwise
+        (if (= (length extent) 1)
+            (or (dynamic-group-master-location-override (car extent))
+                (dynamic-group-master-location (car extent)))
+            (mapcar (lambda (group)
+                      (or (dynamic-group-master-location-override group)
+                          (dynamic-group-master-location group)))
+                    extent)))))))
+
+(defvar *dynamic-group-master-split-ratio* 2/3
   "The ratio with which to split when adding a second window to a dynamic group.
-Defaults to \"2/3\".")
+Defaults to 2/3. Must be less than 1.")
 
 (defvar *dynamic-overflow-group* ".Overflow"
   "The group to which windows will be sent when a dynamic group can no longer 
@@ -80,16 +165,26 @@ return NIL. RATIO is a fraction to split by."
         (error 'dynamic-group-too-many-windows))))
 
 (defun dyn-hsplit-frame (group frame &optional (ratio "1/2"))
-  (dyn-split-frame-in-dir-with-frame group frame :column (read-from-string ratio)))
+  (dyn-split-frame-in-dir-with-frame group frame :column
+                                     (if (stringp ratio)
+                                         (read-from-string ratio)
+                                         ratio)))
 
 (defun dyn-vsplit-frame (group frame &optional (ratio "1/2"))
-  (dyn-split-frame-in-dir-with-frame group frame :row (read-from-string ratio)))
+  (dyn-split-frame-in-dir-with-frame group frame :row
+                                     (if (stringp ratio)
+                                         (read-from-string ratio)
+                                         ratio)))
 
 (defun dyn-balance-stack-tree (&optional (group (current-group)))
   "Balance only frames in the stack tree, ensuring they are the same size."
-  (let ((tree (tile-group-frame-head group (current-head group))))
+  (let ((tree (tile-group-frame-head group (current-head group)))
+        (how (dynamic-group-master-location-dwim nil (list group))))
     (when (listp tree)
-      (balance-frames-internal group (cadr tree)))))
+      (balance-frames-internal group
+                               (case how
+                                 ((:left :top) (cadr tree))
+                                 ((:right :bottom) (car tree)))))))
 
 (defmethod group-repack-frame-numbers ((group dynamic-group))
   (setf (frame-number (window-frame (dynamic-group-master-window group))) 0)
@@ -104,6 +199,7 @@ return NIL. RATIO is a fraction to split by."
           collect frame))
 
 (defun dyn-handle-overflow (group window)
+  "Move WINDOW from GROUP to the dynamic overflow group."
   (let ((to-group (or (find-group (current-screen) *dynamic-overflow-group*)
                       (gnewbg *dynamic-overflow-group*))))
     (move-window-to-group (case *dynamic-group-overflow-policy*
@@ -121,33 +217,57 @@ return NIL. RATIO is a fraction to split by."
         (focus-all window)
         (dynamic-group-place-window group window))))
 
-(defun dynamic-group-place-window (group window)
+(defun dynamic-group-place-window (group window &optional retiling)
   "The logic to place a window in a dynamic group. If unable to split the stack 
 further, send the least important window (bottom of the stack) to a overflow group"
-  (case (length (group-windows group))
+  (case (or retiling (length (group-windows group)))
     (1 (setf (dynamic-group-master-window group) window))
     (2
-     (dyn-hsplit-frame group (frame-by-number group 0)
-                       *dynamic-group-master-split-ratio*)
+     (case (dynamic-group-master-location-dwim nil (list group))
+       (:left
+        (dyn-hsplit-frame group
+                          (frame-by-number group 0)
+                          *dynamic-group-master-split-ratio*)
+        (setf (dynamic-group-master-frame group) (frame-by-number group 0)))
+       (:right
+        (let ((fnum (dyn-hsplit-frame group
+                                      (frame-by-number group 0)
+                                      (- 1 *dynamic-group-master-split-ratio*))))
+          (setf (dynamic-group-master-frame group) (frame-by-number group fnum))))
+       (:top
+        (dyn-vsplit-frame group
+                          (frame-by-number group 0)
+                          *dynamic-group-master-split-ratio*)
+        (setf (dynamic-group-master-frame group) (frame-by-number group 0)))
+       (:bottom
+        (let ((fnum (dyn-vsplit-frame group
+                                      (frame-by-number group 0)
+                                      (- 1 *dynamic-group-master-split-ratio*))))
+          (setf (dynamic-group-master-frame group) (frame-by-number group fnum)))))
      (let* ((prev-win (dynamic-group-master-window group))
-            (prev-win-new-frame (car (remove (frame-by-number group 0)
+            (prev-win-new-frame (car (remove (dynamic-group-master-frame group)
                                              (group-frames group)))))
        (push prev-win (dynamic-group-window-stack group))
        (setf (window-frame prev-win) prev-win-new-frame
              (frame-window prev-win-new-frame) prev-win
-             (window-frame window) (frame-by-number group 0)
-             (frame-window (frame-by-number group 0)) window
+             (window-frame window) (dynamic-group-master-frame group)
+             (frame-window (dynamic-group-master-frame group)) window
              (dynamic-group-master-window group) window
              (group-current-window group) window)
-       (mapcar 'update-decoration (group-windows group))))
+       (mapcar 'update-decoration (group-windows group))
+       (focus-frame group (dynamic-group-master-frame group))))
     (otherwise
-     (let* ((master-frame (frame-by-number group 0))
+     (let* ((master-frame (dynamic-group-master-frame group))
             (old-master (dynamic-group-master-window group))
             (frame-to-split
               (window-frame (car (dynamic-group-window-stack group)))))
        (handler-case
            (progn
-             (dyn-vsplit-frame group frame-to-split)
+             (funcall (case (dynamic-group-master-location-dwim nil (list group))
+                        ((:top :bottom) 'dyn-hsplit-frame)
+                        ((:right :left) 'dyn-vsplit-frame))
+                      group
+                      frame-to-split)
              (push (dynamic-group-master-window group)
                    (dynamic-group-window-stack group))
              (setf (dynamic-group-master-window group) window)
@@ -158,7 +278,7 @@ further, send the least important window (bottom of the stack) to a overflow gro
                    (frame-window (window-frame old-master)) old-master)
              (focus-frame group master-frame)
              (group-focus-window group window)
-             (mapcar 'update-decoration (group-windows group))
+             (mapc 'update-decoration (group-windows group))
              (dyn-balance-stack-tree group))
          (dynamic-group-too-many-windows ()
            (dyn-handle-overflow group window)))))))
@@ -192,7 +312,7 @@ further, send the least important window (bottom of the stack) to a overflow gro
   (let* ((new-master (pop (dynamic-group-window-stack group))))
     (if new-master
         (let* ((new-masters-old-frame (window-frame new-master))
-               (master-frame (frame-by-number group 0))
+               (master-frame (dynamic-group-master-frame group))
                (head (current-head group))
                (tree (tile-group-frame-head group head)))
           (cond 
@@ -200,7 +320,7 @@ further, send the least important window (bottom of the stack) to a overflow gro
              (setf (window-frame new-master) master-frame
                    (frame-window master-frame) new-master
                    (dynamic-group-master-window group) new-master)
-             (loop for remframe in (remove (frame-by-number group 0)
+             (loop for remframe in (remove (dynamic-group-master-frame group)
                                            (group-frames group))
                    do (setf (tile-group-frame-head group head)
                             (remove-frame tree remframe)))
@@ -231,12 +351,12 @@ further, send the least important window (bottom of the stack) to a overflow gro
                  (remove-frame tree frame-to-remove))
            (tree-iterate tree (lambda (leaf)
                                 (sync-frame-windows group leaf)))
-           (focus-frame group (frame-by-number group 0))
+           (focus-frame group (dynamic-group-master-frame group))
            (dyn-balance-stack-tree group))
           (t
            (setf (tile-group-frame-head group head)
                  (remove-frame tree frame-to-remove))
-           (focus-frame group (frame-by-number group 0))))))
+           (focus-frame group (dynamic-group-master-frame group))))))
 
 (defmethod group-delete-window ((group dynamic-group) (window dynamic-window))
   (cond ((equal window (moving-superfluous-window group))
@@ -244,7 +364,7 @@ further, send the least important window (bottom of the stack) to a overflow gro
         ((equal window (dynamic-group-master-window group))
          (dynamic-group-delete-master-window group window)
          (group-repack-frame-numbers group)
-         (focus-frame group (frame-by-number group 0)))
+         (focus-frame group (dynamic-group-master-frame group)))
         ((member window (dynamic-group-window-stack group))
          (let ((location (frame-number (window-frame window))))
            (dynamic-group-delete-stack-window group window )
@@ -253,11 +373,31 @@ further, send the least important window (bottom of the stack) to a overflow gro
              (focus-frame group frame)
              (if-let ((stack (dynamic-group-window-stack group)))
                (focus-frame group (window-frame (car (last stack))))
-               (focus-frame group (frame-by-number group 0)))))))
+               (focus-frame group (dynamic-group-master-frame group)))))))
   (loop for frame in (group-frames group)
         do (sync-frame-windows group frame)))
 
-;; deal with floating windows
+(defun retile (group)
+  "Retile GROUP, preserving focus and window positions."
+  (declare (type dynamic-group group))
+  (let ((master (dynamic-group-master-window group))
+        (stack (dynamic-group-window-stack group))
+        (win (group-current-window group))
+        (new-frame (copy-frame (current-head group))))
+    (when master
+      (setf (tile-group-frame-head group (current-head group)) new-frame
+            (tile-group-current-frame group) new-frame
+            (dynamic-group-master-window group) nil
+            (dynamic-group-window-stack group) nil)
+      (focus-frame group new-frame)
+      (loop for window in (append (reverse stack) (list master))
+            for x from 1
+            do (dynamic-group-place-window group window x))
+      (loop for frame in (group-frames group)
+            do (sync-frame-windows group frame))
+      (focus-window win)
+      (focus-frame group (window-frame win))
+      (mapc 'update-decoration (group-windows group)))))
 
 (defun dynamic-group-float-window (window group)
   "float windows in a dynamic group"
@@ -279,8 +419,8 @@ further, send the least important window (bottom of the stack) to a overflow gro
         do (sync-frame-windows group frame))
   (update-decoration window)
   (frame-raise-window group
-                      (frame-by-number group 0)
-                      (car (frame-windows group (frame-by-number group 0)))))
+                      (dynamic-group-master-frame group)
+                      (car (frame-windows group (dynamic-group-master-frame group)))))
 
 ;;; Dynamic group commands
 
@@ -345,7 +485,7 @@ dynamic groups."
       (setf (car win) old-master)
       (if preserve-location
           (focus-frame group location)
-          (focus-frame group (frame-by-number group 0))))))
+          (focus-frame group (dynamic-group-master-frame group))))))
 
 (defun dyn-rotate-stack (group old-master direction)
   "Used by dyn-rotate-windows to handle the stack rotation."
@@ -362,7 +502,7 @@ dynamic groups."
   (check-type group dynamic-group)
   (check-type direction (member :cl :ccl))
   (let* ((master-w (dynamic-group-master-window group))
-         (master-f (frame-by-number group 0))
+         (master-f (dynamic-group-master-frame group))
          (frames (funcall (if (eq direction :ccl) 'reverse 'identity)
                           (remove master-f (group-frames group))))
          (windows (loop for f in frames collect (frame-window f))))
@@ -430,7 +570,7 @@ focusing the master window, or remaining where it is."
   (eql window (dynamic-group-master-window group)))
 
 (defun swap-stack-windows (group w1 w2)
-  "swaps two stack windows within dynamic groups"
+  "swaps two stack windows within a dynamic group"
   (check-type group dynamic-group)
   (let ((f1 (window-frame w1))
         (f2 (window-frame w2)))
@@ -540,7 +680,7 @@ user"
 
 (defcommand (dyn-focus-master-window dynamic-group) () ()
   "focus the master window"
-  (focus-frame (current-group) (frame-by-number (current-group) 0)))
+  (focus-frame (current-group) (dynamic-group-master-frame (current-group))))
 
 
 ;;; Dynamic group keybindings
