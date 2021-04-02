@@ -124,6 +124,7 @@ Basic Concepts
 * Screens and Heads::
 * Group Basics::
 * Floating Group Basics::
+* Dynamic Group Basics::
 * Frame Basics::
 * Window Basics::
 * System Trays and the Mode Line::
@@ -306,6 +307,7 @@ An introduction to some of the basic concepts used by StumpWM.
 * Screens and Heads::
 * Group Basics::
 * Floating Group Basics::
+* Dynamic Group Basics::
 * Frame Basics::
 * Window Basics::
 * System Trays and the Mode Line::
@@ -348,7 +350,7 @@ groups, all monitors switch to that group.
 
 Each group contains an ordered list of frames.
 
-@node Floating Group Basics, Frame Basics, Group Basics, Basic Concepts
+@node Floating Group Basics, Dynamic Group Basics, Group Basics, Basic Concepts
 @subsection Floating Group Basics
 Within a floating group, windows behave more like they do in traditional
 window managers: rather than being arranged into frames, they each have
@@ -367,6 +369,62 @@ default modifier is super, and can be configured with
 Most of the window-switching commands listed below do not function in
 a floating group. You're restricted to `other', the `select-window-*'
 commands, and `windowlist'.
+
+@node Dynamic Group Basics, Frame Basics, Floating Group Basics, Basic Concepts
+@subsection Dynamic Group Basics
+Within a dynamic group, windows are automatically tiled. Windows get divided
+into a @dfn{master window} and a @dfn{window stack}. Together these form a
+@dfn{window wheel} which can be rotated. Each window is a top-level window, and
+has a frame to itself. As windows are added to the group, the current master
+window gets pushed onto the window stack, and the newest window takes its place.
+This causes the frames holding the stack windows to get progressively smaller
+the more windows are added to the group. When a window stack frame becomes to
+small to split, the window at the bottom of the stack gets sent to an overflow
+group. This behavior can be configured with
+@var{*dynamic-group-overflow-policy*}. 
+
+### *dynamic-group-overflow-policy*
+
+### *dynamic-overflow-group*
+
+### *dynamic-group-master-split-ratio*
+
+Normal tiling group window and frame commands dont work within a dynamic group,
+being supplanted by the following group specific selection, rotation,
+and swapping commands.
+
+@itemize
+@item
+@command{dyn-cycle} (@kbd{C-t n} or @kbd{C-t p}) Rotate the
+window wheel clockwise or counterclockwise. Takes an optional argument to
+control where focus lays after rotating, one of :master, :remain, or :follow.
+
+@item
+@command{dyn-switch} (@kbd{C-t W}) Prompt for a window number to swap with the
+master window
+
+@item
+@command{dyn-switch-prompt-for-window} (@kbd{C-t w}) Displays window numbers on
+each frame: hit a number key or click on a window to swap it with the master
+window.
+
+@item
+@command{dyn-switch-prompt-for-frame} (unbound by default) The same as
+@command{dyn-switch-prompt-for-window}, but draws frame numbers. 
+
+
+@item
+@command{dyn-focus-current-window} (@kbd{C-t RET}) Swap the current window with
+the master window.
+
+@item
+@command{dyn-focus-master-window} (@kbd{C-t f}) Move focus to the master window.
+@end itemize
+
+When defining commands, anything restricted to tiling groups will also be
+active in dynamic groups. To fully restrict it to tiling groups, call the
+function dyn-blacklist-command on the command in question.
+
 
 @node Frame Basics, Window Basics, Floating Group Basics, Basic Concepts
 @subsection Frame Basics
@@ -1230,10 +1288,10 @@ above, but if it isn't, the user will not be prompted, and the argument
 will be bound to nil.
 
 It is possible to limit the scope under which the command will
-be usable: a command can be defined to work only in tile groups, or only
-in floating groups (the only two types of groups that currently exist).
-This is done by replacing the name of the command with a two-element
-list: the name of the command as a symbol, and either the symbol
+be usable: a command can be defined to work only a specific group type;
+the three currently implemented are tile groups,f loating groups, and
+dynamic groups. This is done by replacing the name of the command with a
+two-element list: the name of the command as a symbol, and either the symbol
 tile-group or floating-group. For instance, the @command{next} command,
 which only functions in tile groups, is defined this way:
 
@@ -1986,8 +2044,10 @@ Groups in StumpWM are more commonly known as @dfn{virtual desktops} or
 
 !!! gnew
 !!! gnew-float
-!!! gnewbg-float
+!!! gnew-dynamic
 !!! gnewbg
+!!! gnewbg-float
+!!! gnewbg-dynamic
 !!! gnext
 !!! gprev
 !!! gnext-with-window

@@ -63,7 +63,7 @@ called from a keybinding or from the colon command.
 The NAME argument can be a string, or a list of two symbols. If the
 latter, the first symbol names the command, and the second indicates
 the type of group under which this command will be usable. Currently,
-tile-group and floating-group are the two possible values.
+tile-group, floating-group and dynamic-group are the possible values.
 
 INTERACTIVE-ARGS is a list of the following form: ((TYPE PROMPT) (TYPE PROMPT) ...)
 
@@ -107,6 +107,8 @@ A shell command
 The rest of the input yet to be parsed.
 @item :module
 An existing stumpwm module
+@item :rotation
+A rotation symbol. One of :CL, :CLOCKWISE, :CCL, OR :COUNTERCLOCKWISE
 @end table
 
 Note that new argument types can be created with DEFINE-STUMPWM-TYPE.
@@ -174,7 +176,12 @@ whatever it finds: a command, an alias, or nil."
            *command-hash*))
 
 (defun command-active-p (command)
-  (typep (current-group) (command-class command))
+  (declare (special *dynamic-group-blacklisted-commands*))
+  (let ((active (typep (current-group) (command-class command))))
+    (if (typep (current-group) 'dynamic-group)
+        (unless (member command *dynamic-group-blacklisted-commands*)
+          active)
+        active))
   ;; TODO: minor modes
   )
 

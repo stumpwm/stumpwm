@@ -99,6 +99,9 @@ needs to redraw anything on it, this is where it should do it."))
 (defgeneric group-sync-head (group head)
   (:documentation "When a head or its usable area is resized, this is
 called. When the modeline size changes, this is called."))
+(defgeneric group-repack-frame-numbers (group)
+  (:documentation "Repack frame numbers to range from zero to the number of 
+frames such that there are no numerical gaps."))
 
 (defclass group ()
   ((screen :initarg :screen :accessor group-screen)
@@ -341,9 +344,13 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
                           :UTF8_STRING 8)))
 
 (defun kill-group (group to-group)
+  (declare (special *dynamic-overflow-group*))
   (unless (eq group to-group)
     (let ((screen (group-screen group)))
-      (merge-groups group to-group)
+      (if (and (string= (group-name group) *dynamic-overflow-group*)
+               (typep to-group 'dynamic-group))
+          (dynamic-merge-overflow-group group to-group)
+          (merge-groups group to-group))
       (setf (screen-groups screen) (remove group (screen-groups screen)))
       (netwm-update-groups screen)
       (netwm-set-group-properties screen))))
