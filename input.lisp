@@ -24,6 +24,7 @@
 (in-package :stumpwm)
 
 (export '(*input-history-ignore-duplicates*
+          *input-candidate-selected-hook*
           *input-completion-style*
           *input-map*
           *numpad-map*
@@ -33,6 +34,8 @@
           input-insert-char
           input-insert-string
           input-point
+          input-refine-prefix
+          input-refine-regexp
           input-substring
           input-validate-region
           read-one-char
@@ -201,6 +204,9 @@ Available completion styles include
 @item make-input-completion-style-unambiguous
 @end table")
 
+(defvar *input-completion-show-empty* nil
+  "If t, show completion candidates even if the input is empty.")
+
 (defvar *input-history-ignore-duplicates* nil
   "Do not add a command to the input history if it's already the first in the list.")
 (defvar *numpad-map* '((87 10 . 16) (88  11 . 16) (89 12 . 16) (106 61 . 16)
@@ -339,6 +345,7 @@ match with an element of the completions."
                              :require-match require-match)))
     (when line (string-trim " " line))))
 
+(defvar *input-candidate-selected-hook* nil)
 (defun read-one-line (screen prompt &key completions (initial-input "") require-match password)
   "Read a line of input through stumpwm and return it. Returns nil if the user aborted."
   (let ((*input-last-command* nil)
@@ -376,7 +383,10 @@ match with an element of the completions."
       (draw-input-bucket screen prompt input)
       (setup-input-window screen prompt input)
       (catch :abort
-        (unwind-protect (key-loop)
+        (unwind-protect
+             (let ((input (key-loop)))
+               (run-hook-with-args *input-candidate-selected-hook* input)
+               input)
           (shutdown-input-window screen))))))
 
 (defun read-one-char (screen)
@@ -402,7 +412,7 @@ match with an element of the completions."
 
 
 (defun get-completion-preview-list (input-line all-completions)
-  (if (string= "" input-line)
+  (if (and (string= "" input-line) (not *input-completion-show-empty*))
       '()
       (multiple-value-bind (completions more)
           (take *maximum-completions* (input-find-completions input-line all-completions))
