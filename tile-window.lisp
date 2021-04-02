@@ -120,9 +120,10 @@ than the root window's width and height."
                y (frame-y head)
                width (frame-width head)
                height (frame-height head)
-               (xlib:window-priority (window-parent win)
-                                     (window-parent (group-raised-window win-group))) :above
-               (group-raised-window (window-group win)) win))
+               (group-raised-window (window-group win)) win)
+         (when (group-raised-window win-group)
+           (setf (xlib:window-priority (window-parent win)
+                                       (window-parent (group-raised-window win-group))) :above)))
        (return-from geometry-hints (values x y 0 0 width height 0 t)))
       ;; Adjust the defaults if the window is a transient_for window.
       ((find (window-type win) '(:transient :dialog))
