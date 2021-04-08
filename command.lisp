@@ -385,8 +385,7 @@ then describes the symbol."
           ;; read a key sequence from the user
           (with-focus (screen-key-window (current-screen))
             (message "~a" prompt)
-            (nreverse (second (multiple-value-list
-                               (read-from-keymap (top-maps) #'update)))))))))
+            (nreverse (nth-value 1 (read-from-keymap (top-maps) #'update))))))))
 
 (define-stumpwm-type :window-number (input prompt)
   (when-let ((n (or (argument-pop input)
