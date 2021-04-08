@@ -42,9 +42,8 @@
 (defun idle-time (screen)
   "Returns the time in seconds since idle according to the root window
 of the `screen'."
-  (/ (first (multiple-value-list
-             (xlib:screen-saver-get-idle
-              *display* (screen-root screen))))
+  (/ (xlib:screen-saver-get-idle
+      *display* (screen-root screen))
      1000.0))
 
 (defun run-with-timer (secs repeat function &rest args)
