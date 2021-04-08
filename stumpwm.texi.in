@@ -436,13 +436,12 @@ These frames can be further split, creating nested boxes.
 
 Technically speaking, frames live within a ``frame tree''. When you
 split a frame, the command actually creates @emph{two} new frames
-side-by-side within the original parent frame. This makes no practical
-difference, unless you use the `sibling' command, which will move to
-the other child frame within the parent frame.
+side-by-side within the original parent frame. This can make a difference when
+you use the `resize' or `sibling' commands.
 
 Within this frame tree model, all frames either contain other frames,
-or windows. The command `fclear' will hide all a frame's windows and
-show the background.
+or contain windows, or are empty. The command `fclear' will hide all of a
+frame's windows and show the background.
 
 @node Window Basics, System Trays and the Mode Line, Frame Basics, Basic Concepts
 @subsection Window Basics
@@ -694,7 +693,7 @@ order:
 standardized environment.
 @end itemize
 
-StumpWM includes a basic `sample-stumpwm.lisp' in its source
+StumpWM includes a basic `sample-stumpwmrc.lisp' in its source
 directory. You can use this as a template when you're starting out:
 copy it to the above name and location you prefer and edit it to
 suit your preferences.

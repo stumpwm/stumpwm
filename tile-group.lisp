@@ -1029,12 +1029,12 @@ windows used to draw the numbers in. The caller must destroy them."
 
 (defcommand (hsplit-equally tile-group) (amt)
     ((:number "Enter the number of frames: "))
-"Split current frame in n rows of equal size."
+"Split current frame in n rows of equal size. Note that this is analogous to `vsplit', not `hsplit'."
   (split-frame-eql-parts (current-group) :row amt))
 
 (defcommand (vsplit-equally tile-group) (amt)
     ((:number "Enter the number of frames: "))
-"Split current frame in n columns of equal size."
+"Split current frame in n columns of equal size. Note that this is analogous to `hsplit', not `vsplit'."
   (split-frame-eql-parts (current-group) :column amt))
 
 (defcommand (remove-split tile-group)
