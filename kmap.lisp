@@ -182,7 +182,7 @@ others."
 (defun define-key (map key command)
   "Add a keybinding mapping for the key, @var{key}, to the command,
 @var{command}, in the specified keymap. If @var{command} is nil, remove an
-exising binding.  For example,
+existing binding.  For example,
 
 @example
 \(stumpwm:define-key stumpwm:*root-map* (stumpwm:kbd \"C-z\") \"echo Zzzzz...\")
