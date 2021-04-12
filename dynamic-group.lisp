@@ -448,6 +448,8 @@ class hierarchy.")
       "vsplit"
       "hsplit-equally"
       "vsplit-equally"
+      "hsplit-uniformly"
+      "vsplit-uniformly"
       "remove-split"
       "remove"
       "only"

@@ -1029,10 +1029,20 @@ windows used to draw the numbers in. The caller must destroy them."
 
 (defcommand (hsplit-equally tile-group) (amt)
     ((:number "Enter the number of frames: "))
+"Deprecated. Use `vsplit-uniformly' instead."
+  (split-frame-eql-parts (current-group) :row amt))
+
+(defcommand (vsplit-uniformly tile-group) (amt)
+    ((:number "Enter the number of frames: "))
 "Split current frame in n rows of equal size."
   (split-frame-eql-parts (current-group) :row amt))
 
 (defcommand (vsplit-equally tile-group) (amt)
+    ((:number "Enter the number of frames: "))
+"Deprecated. Use `hsplit-uniformly' instead."
+  (split-frame-eql-parts (current-group) :column amt))
+
+(defcommand (hsplit-uniformly tile-group) (amt)
     ((:number "Enter the number of frames: "))
 "Split current frame in n columns of equal size."
   (split-frame-eql-parts (current-group) :column amt))
