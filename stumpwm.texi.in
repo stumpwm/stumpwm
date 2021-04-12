@@ -436,8 +436,8 @@ These frames can be further split, creating nested boxes.
 
 Technically speaking, frames live within a ``frame tree''. When you
 split a frame, the command actually creates @emph{two} new frames
-side-by-side within the original parent frame. This can make a difference when
-you use the `resize' or `sibling' commands.
+side-by-side within the original parent frame. This has implications for
+the behaviour of many commands that interact with frames.
 
 Within this frame tree model, all frames either contain other frames,
 or contain windows, or are empty. The command `fclear' will hide all of a
