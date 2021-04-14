@@ -16,8 +16,7 @@ like xterm and emacs.")
   ;; give it a colored border but only if there are more than 1 frames.
   (let* ((group (window-group window))
          (screen (group-screen group)))
-    (let ((c (if (and (> (length (group-frames group)) 1)
-                      (eq (group-current-window group) window))
+    (let ((c (if (eq (group-current-window group) window)
                  (screen-focus-color screen)
                  (screen-unfocus-color screen))))
       (setf (xlib:window-border (window-parent window)) c
@@ -105,9 +104,11 @@ than the root window's width and height."
          (hints-inc-y (and hints (xlib:wm-size-hints-height-inc hints)))
          (hints-min-aspect (and hints (xlib:wm-size-hints-min-aspect hints)))
          (hints-max-aspect (and hints (xlib:wm-size-hints-max-aspect hints)))
-         (border (case *window-border-style*
-                   (:none 0)
-                   (t (default-border-width-for-type win))))
+         (is-only-win (and (= (length (group-frames (window-group win))) 1)
+                           (eq (group-current-window (window-group win)) win)))
+         (border (if (or (eq *window-border-style* :none) is-only-win)
+                     0
+                   (default-border-width-for-type win)))
          center)
     ;;    (dformat 4 "hints: ~s~%" hints)
     ;; determine what the width and height should be
