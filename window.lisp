@@ -354,12 +354,15 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
 (defun update-configuration (win)
   ;; Send a synthetic configure-notify event so that the window
   ;; knows where it is onscreen.
-  (xwin-send-configuration-notify (window-xwin win)
-                                  (+ (xlib:drawable-x (window-parent win))
-                                     (xlib:drawable-x (window-xwin win)))
-                                  (+ (xlib:drawable-y (window-parent win))
-                                     (xlib:drawable-y (window-xwin win)))
-                                  (window-width win) (window-height win) 0))
+  (handler-case
+      (xwin-send-configuration-notify (window-xwin win)
+                                      (+ (xlib:drawable-x (window-parent win))
+                                         (xlib:drawable-x (window-xwin win)))
+                                      (+ (xlib:drawable-y (window-parent win))
+                                         (xlib:drawable-y (window-xwin win)))
+                                      (window-width win) (window-height win) 0)
+    (xlib:drawable-error (c)
+      (dformat 4 "ignore ~S in ~S on ~S" c 'update-configuration win))))
 
 ;; FIXME: should we raise the window or its parent?
 (defmethod raise-window (win)
