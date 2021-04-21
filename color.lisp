@@ -195,7 +195,7 @@ If COLOR isn't a colorcode a list containing COLOR is returned."
                     (screen-color-map-bright screen)
                     (screen-color-map-normal screen))
                 color))
-        (t (first (multiple-value-list (alloc-color screen color))))))
+        (t (nth-value 0 (alloc-color screen color)))))
 
 (defun find-font (cc specified-font &aux (font (or specified-font 0)))
   (if (integerp font)
