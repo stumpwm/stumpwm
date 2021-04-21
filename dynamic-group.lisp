@@ -221,7 +221,8 @@ return NIL. RATIO is a fraction to split by."
   "The logic to place a window in a dynamic group. If unable to split the stack 
 further, send the least important window (bottom of the stack) to a overflow group"
   (case (or retiling (length (group-windows group)))
-    (1 (setf (dynamic-group-master-window group) window))
+    (1 (setf (dynamic-group-master-window group) window
+             (dynamic-group-master-frame group) (window-frame window)))
     (2
      (case (dynamic-group-master-location-dwim nil (list group))
        (:left
@@ -309,7 +310,7 @@ further, send the least important window (bottom of the stack) to a overflow gro
 
 (defun dynamic-group-delete-master-window (group window)
   "The logic to handle deletion of the master window of a dynamic group"
-  (let* ((new-master (pop (dynamic-group-window-stack group))))
+  (let ((new-master (pop (dynamic-group-window-stack group))))
     (if new-master
         (let* ((new-masters-old-frame (window-frame new-master))
                (master-frame (dynamic-group-master-frame group))
