@@ -477,7 +477,7 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
                         32))
 
 (defun xwin-state (xwin)
-  "Get the state (iconic, normal, withdraw of a window."
+  "Get the state (iconic, normal, withdrawn) of a window."
   (first (xlib:get-property xwin :WM_STATE)))
 
 (defun window-hidden-p (window)

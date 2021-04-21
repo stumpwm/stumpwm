@@ -105,7 +105,7 @@
 
 
 (defun get-x-selection (&optional timeout (selection *default-selections*))
-  "Return the x selection no matter what client own it."
+  "Return the x selection no matter which client owns it."
   (let ((selection (if (listp selection) (car selection) selection)))
     (labels ((wait-for-selection (&rest event-slots &key display event-key &allow-other-keys)
                (declare (ignore display))
