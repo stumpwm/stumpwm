@@ -224,7 +224,7 @@ identity with a range check."
   (update-screen-color-context screen))
 
 (defun update-colors-all-screens ()
-  "After setting the fg, bg, or border colors. call this to sync any existing windows."
+  "After setting the fg, bg, or border colors, call this to sync any existing windows."
   (mapc 'update-colors-for-screen *screen-list*))
 
 (defun update-border-for-screen (screen)
