@@ -1,4 +1,4 @@
-;; package.lisp -- 
+;; package.lisp --
 ;; Copyright (C) 2003-2008 Shawn Betts
 ;;
 ;;  This file is part of stumpwm.
@@ -24,3 +24,7 @@
 
 (defpackage :stumpwm-user
   (:use :cl :stumpwm))
+
+(defpackage stumpwm-dfg
+  (:use #:cl #:stumpwm #:stumpwm-user))
+

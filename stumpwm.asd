@@ -59,6 +59,7 @@
                (:file "wse")
                (:file "dynamic-window")
                (:file "dynamic-group")
+               (:file "dynamic-floating-group")
                (:file "remap-keys")
                ;; keep this last so it always gets recompiled if
                ;; anything changes
