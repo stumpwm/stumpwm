@@ -1173,7 +1173,10 @@ regardless of whether the window properties match. Takes one argument, the windo
 focus. Possible values are :ignore, :sloppy, and :click. :ignore means
 stumpwm ignores the mouse. :sloppy means input focus follows the
 mouse; the window that the mouse is in gets the focus. :click means
-input focus is transfered to the window you click on.")
+input focus is transfered to the window you click on.
+
+If *MOUSE-FOCUS-POLICY* holds any value other than those listed above,
+mouse focus will behave as though it contains :IGNORE")
 
 (defvar *root-click-focuses-frame* t
   "Set to NIL if you don't want clicking the root window to focus the frame
