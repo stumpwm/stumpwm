@@ -29,6 +29,7 @@
           *suppress-frame-indicator*
           *suppress-window-placement-indicator*
           *timeout-wait*
+          *timeout-wait-multiline*
           *timeout-frame-indicator-wait*
           *frame-indicator-text*
           *frame-indicator-timer*
@@ -196,6 +197,10 @@
 (defvar *timeout-wait* 5
   "Specifies, in seconds, how long a message will appear for. This must
 be an integer.")
+
+(defvar *timeout-wait-multiline* nil
+  "Specifies, in seconds, how long a message will more than one line will
+appear for. This must be an integer. If falsy, default to *timeout-wait*.")
 
 (defvar *timeout-frame-indicator-wait* 1
   "The amount of time a frame indicator timeout takes.")

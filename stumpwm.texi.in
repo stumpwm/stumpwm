@@ -1566,6 +1566,7 @@ set these color variables.
 ### *message-window-input-gravity*
 ### *message-window-timer*
 ### *timeout-wait*
+### *timeout-wait-multiline*
 ### *input-window-gravity*
 
 @node Using The Input Bar, Programming The Message Bar, Customizing The Bar, Message and Input Bar
