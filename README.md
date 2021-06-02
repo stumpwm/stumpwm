@@ -207,7 +207,7 @@ And, as in Emacs, you can always get documentation with:
 
 For other stuff (tips tricks and examples) visit the [stumpwm wiki](https://github.com/stumpwm/stumpwm/wiki)
 
-There's a **#stumpwm** channel on [irc.freenode.net](https://irc.freenode.net), too.
+There's a **#stumpwm** channel on [irc.libera.chat](https://libera.chat), too.
 
 Finally, there's our mailing list (click to sign up)
 [stumpwm-devel@nongnu.org](https://lists.nongnu.org/mailman/listinfo/stumpwm-devel).

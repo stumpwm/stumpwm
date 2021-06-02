@@ -23,7 +23,7 @@ script:
   - make travis
 
 notifications:
-  irc: "chat.freenode.net#stumpwm"
+  irc: "irc.libera.chat#stumpwm"
   urls:
           - https://webhooks.gitter.im/e/c1294f93beaf1b4f4f51
     on_success: change

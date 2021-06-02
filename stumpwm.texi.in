@@ -716,7 +716,7 @@ a bug report or patch, please open an issue or pull request at
 @url{https://github.com/stumpwm/stumpwm/issues}.
 
 The StumpWM IRC channel can be found on Freenode at
-@uref{irc://irc.freenode.net/#stumpwm, @code{#stumpwm}}.
+@uref{irc://irc.libera.chat/#stumpwm, @code{#stumpwm}}.
 
 @node Key Bindings, Commands, Introduction, Top
 @chapter Key Bindings
