@@ -18,7 +18,10 @@
 
 (in-package :stumpwm-dfg)
 
-(defparameter *default-layout* 'left-vertical)
+(defparameter *default-layout* 'left-vertical
+  "Currently supported layouts are: 'left-vertical 'horizontal
+  'fullscreen.")
+
 (defparameter *default-master-ratio* (/ 2 (+ 1 (sqrt 5))))
 
 (defstruct window+
