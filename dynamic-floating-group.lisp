@@ -94,9 +94,9 @@ information will be used when the group re-tiles it."
   (call-next-method))
 
 (defun sync-dyn-order (&optional (group (stumpwm:current-group)))
-  (if (not (dyn-float-group-p group))
-      (error "GROUP must be of type DYN-FLOAT-GROUP.")
-      (symbol-macrolet ((dyn-order (dyn-float-group-dyn-order group)))
+  (assert (dyn-float-group-p group) ()
+          "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
+  (symbol-macrolet ((dyn-order (dyn-float-group-dyn-order group)))
         ;; If window W does not have a corresponding W+ in the
         ;; dyn-order, make one for it.
         (loop for w in (stumpwm::group-windows group)
@@ -118,83 +118,83 @@ information will be used when the group re-tiles it."
         ;; Let the (group-windows group) respect the order of
         ;; dyn-order
         (setf (stumpwm::group-windows group)
-              (mapcar #'window+-window dyn-order)))))
+              (mapcar #'window+-window dyn-order))))
 
 (defun current-window+ (&optional (group (stumpwm:current-group)))
-  (if (not (dyn-float-group-p group))
-      (error "GROUP must be of type DYN-FLOAT-GROUP.")
-      (let ((gcw (stumpwm::group-current-window group)))
+  (assert (dyn-float-group-p group) ()
+          "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
+  (let ((gcw (stumpwm::group-current-window group)))
         (find-if (lambda (x)
                    (equal gcw (window+-window x)))
-                 (dyn-float-group-dyn-order group)))))
+                 (dyn-float-group-dyn-order group))))
 
 (defun next-window+ (&optional (N 1)
                        (group (stumpwm:current-group))
                        (window (current-window+ group)))
-  (if (not (dyn-float-group-p group))
-      (error "GROUP must be of type DYN-FLOAT-GROUP.")
-      (let ((dyno (dyn-float-group-dyn-order group)))
+  (assert (dyn-float-group-p group) ()
+          "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
+  (let ((dyno (dyn-float-group-dyn-order group)))
         (nth (mod (+ N (position window dyno))
                   (length dyno))
-             dyno))))
+             dyno)))
 
 (defcommand focus-next-window (&optional (N 1) (group (stumpwm:current-group))) ()
-  (if (not (dyn-float-group-p group))
-      (error "GROUP must be of type DYN-FLOAT-GROUP.")
-      (stumpwm::group-focus-window group
-                                   (window+-window (next-window+ N group)))))
+  (assert (dyn-float-group-p group) ()
+          "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
+  (stumpwm::group-focus-window group
+                                   (window+-window (next-window+ N group))))
 
 (defcommand focus-last-window (&optional (group (stumpwm:current-group))) ()
-  (if (not (dyn-float-group-p group))
-      (error "GROUP must be of type DYN-FLOAT-GROUP.")
-      (focus-next-window -1 group)))
+  (assert (dyn-float-group-p group) ()
+          "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
+  (focus-next-window -1 group))
 
 (defun current-window-position (&optional (group (stumpwm:current-group)))
-  (if (not (dyn-float-group-p group))
-      (error "GROUP must be of type DYN-FLOAT-GROUP.")
-      (position (current-window+ group)
+  (assert (dyn-float-group-p group) ()
+          "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
+  (position (current-window+ group)
                 (dyn-float-group-dyn-order group)
-                :test #'equal)))
+                :test #'equal))
 
 (defun free-all (&optional (group (stumpwm:current-group)))
-  (if (not (dyn-float-group-p group))
-      (error "GROUP must be of type DYN-FLOAT-GROUP.")
-      ;; alias: un-tile-all
+  (assert (dyn-float-group-p group) ()
+          "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
+  ;; alias: un-tile-all
       (progn (loop for w+ in (dyn-float-group-dyn-order group)
                    do (setf (window+-free w+) t))
-             (re-tile group))))
+             (re-tile group)))
 
 ;; This will effectively force re-tile all windows in this group.
 (defcommand unfree-all
     (&optional (group (stumpwm:current-group)))
     ()
-  (if (not (dyn-float-group-p group))
-      (error "GROUP must be of type DYN-FLOAT-GROUP.")
-      (progn
+  (assert (dyn-float-group-p group) ()
+          "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
+  (progn
         ;; alias: tile-all
         (loop for w+ in (dyn-float-group-dyn-order group)
               do (setf (window+-free w+) nil))
-        (re-tile group))))
+        (re-tile group)))
 
 (defun free-window (&optional
                       (window (stumpwm:current-window))
                       (group (stumpwm:current-group)))
-  (if (not (dyn-float-group-p group))
-      (error "GROUP must be of type DYN-FLOAT-GROUP.")
-      (progn
+  (assert (dyn-float-group-p group) ()
+          "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
+  (progn
         (loop for w+ in (dyn-float-group-dyn-order group)
               if (equal window (window+-window w+))
                 do (setf (window+-free w+) t))
-        (re-tile group))))
+        (re-tile group)))
 
 (defcommand unfree-window
     (&optional
      (window (stumpwm:current-window))
      (group (stumpwm:current-group)))
     ()
-  (if (not (dyn-float-group-p group))
-      (error "GROUP must be of type DYN-FLOAT-GROUP.")
-      (progn
+  (assert (dyn-float-group-p group) ()
+          "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
+  (progn
         (symbol-macrolet ((dyno (dyn-float-group-dyn-order group)))
           (loop for w+ in dyno
                 do (when (equal window (window+-window w+))
@@ -204,33 +204,33 @@ information will be used when the group re-tiles it."
                        (if (null dyno)
                            (setf dyno (list w+))
                            (push w+ (cdr (last dyno))))))))
-        (re-tile group))))
+        (re-tile group)))
 
 (defun toggle-freeness-current-window
     (&optional
        (window (stumpwm:current-window))
        (group (stumpwm:current-group)))
-  (if (not (dyn-float-group-p group))
-      (error "GROUP must be of type DYN-FLOAT-GROUP.")
-      (progn
+  (assert (dyn-float-group-p group) ()
+          "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
+  (progn
         (if (eq (window+-free (current-window+ group)) t)
             (unfree-window window group)
             (free-window window group))
-        (re-tile group))))
+        (re-tile group)))
 
 (defun unfloating-windows+ (&optional (group (stumpwm:current-group)))
   "Return the list of window+s whose :FREE slot is nil."
-  (if (not (dyn-float-group-p group))
-      (error "GROUP must be of type DYN-FLOAT-GROUP.")
-      (remove-if-not
+  (assert (dyn-float-group-p group) ()
+          "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
+  (remove-if-not
        (lambda (w+)
          (eq (window+-free w+) nil))
-       (dyn-float-group-dyn-order group))))
+       (dyn-float-group-dyn-order group)))
 
 (defun re-tile (&optional (group (stumpwm:current-group)))
-  (if (not (dyn-float-group-p group))
-      (error "GROUP must be of type DYN-FLOAT-GROUP.")
-      (progn
+  (assert (dyn-float-group-p group) ()
+          "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
+  (progn
         (sync-dyn-order group)
         (let* ((cs (slot-value (stumpwm:current-screen) 'number))
                (sw (xlib:screen-width cs))
@@ -283,23 +283,23 @@ information will be used when the group re-tiles it."
                           :x 0 :y 0 :width sw :height sh)))
                ;; ('right-vertical "TODO")
                ;; ('fibonacci "TODO")
-               (otherwise (error "Layout isn't supported.")))))))))
+               (otherwise (error "Layout isn't supported."))))))))
 
 (defcommand rotate-window-list
     (&optional
      (group (stumpwm:current-group))
      opposite)
     ()
-  (if (not (dyn-float-group-p group))
-      (error "GROUP must be of type DYN-FLOAT-GROUP.")
-      (flet ((rotate-list (xs &optional opposite)
+  (assert (dyn-float-group-p group) ()
+          "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
+  (flet ((rotate-list (xs &optional opposite)
                "An adhoc pure function that rotates the list."
                (if opposite
                    (append (cdr xs) (list (car xs)))
                    (append (last xs) (butlast xs)))))
         (symbol-macrolet ((dyno (dyn-float-group-dyn-order group)))
           (setf dyno (rotate-list dyno opposite))
-          (re-tile group)))))
+          (re-tile group))))
 
 (defcommand permute-window-list
     (&optional
@@ -307,9 +307,9 @@ information will be used when the group re-tiles it."
      (group (stumpwm:current-group))
      (n (current-window-position group)))
     ()
-  (if (not (dyn-float-group-p group))
-      (error "GROUP must be of type DYN-FLOAT-GROUP.")
-      (flet ((permute-at (ring n)
+  (assert (dyn-float-group-p group) ()
+          "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
+  (flet ((permute-at (ring n)
                "A pure function that permutes the nth and
 the (n+1)th element of RING."
                ;; ((0 1 2 3 4 5) 3) => (0 1 2 4 3 5)
@@ -331,7 +331,7 @@ the (n+1)th element of RING."
             (symbol-macrolet
                 ((dyno (dyn-float-group-dyn-order group)))
               (setf dyno (permute-at dyno n)))
-             (re-tile group)))))
+             (re-tile group))))
 
 (defcommand gnew-dyn-float
     (name) ((:rest "Group Name: "))
