@@ -63,8 +63,8 @@ information will be used when the group re-tiles it."
        window
        &key &allow-other-keys)
     (add-float-window group window)
-    (nconc (dyn-float-group-dyn-order group)
-           (list (make-window+ :window window :free nil)))
+    (alexandria:appendf (dyn-float-group-dyn-order group)
+                        (list (make-window+ :window window :free nil)))
     (re-tile group)))
 
 (defmethod stumpwm:group-delete-window
