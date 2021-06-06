@@ -1,4 +1,4 @@
-;; Copyright (C) Jin-Cheng Guu
+;; Copyright (C) 2021 Jin-Cheng Guu
 ;;
 ;;  This file is part of stumpwm.
 ;;
