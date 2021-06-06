@@ -222,10 +222,8 @@ information will be used when the group re-tiles it."
   "Return the list of window+s whose :FREE slot is nil."
   (assert (dyn-float-group-p group) ()
           "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
-  (remove-if-not
-   (lambda (w+)
-     (eq (window+-free w+) nil))
-   (dyn-float-group-dyn-order group)))
+  (remove-if 'window+-free (dyn-float-group-dyn-order group)))
+
 
 (defun re-tile (&optional (group (stumpwm:current-group)))
   (assert (dyn-float-group-p group) ()
