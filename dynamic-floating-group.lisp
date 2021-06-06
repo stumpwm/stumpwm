@@ -103,13 +103,13 @@ information will be used when the group re-tiles it."
     ;; If window W does not have a corresponding W+ in the
     ;; dyn-order, make one for it.
     (loop for w in (stumpwm::group-windows group)
-          do (unless (member w (mapcar #'window+-window dyn-order))
-               (push (make-window+ :window w :free nil) dyn-order)))
+          unless (member w (mapcar #'window+-window dyn-order))
+          do (push (make-window+ :window w :free nil) dyn-order))
     ;; If window W+ does not correspond to a window of GROUP,
     ;; delete W+ from the dyn-order.
     (loop for w+ in dyn-order
-          do (unless (member (window+-window w+) (stumpwm::group-windows group))
-               (alexandria:deletef dyn-order w+)))
+          unless (member (window+-window w+) (stumpwm::group-windows group))
+          do (alexandria:deletef dyn-order w+))
     ;; Make the free windows on top of the stack.
     (setf dyn-order
           (append (remove-if (lambda (dyno)
