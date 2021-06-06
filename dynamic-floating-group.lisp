@@ -109,14 +109,12 @@ information will be used when the group re-tiles it."
                    (alexandria:deletef dyn-order w+)))
         ;; Make the free windows on top of the stack.
         (setf dyn-order
-              (concatenate
-               'list
-               (remove-if (lambda (dyno)
-                            (equal nil (window+-free dyno)))
-                          dyn-order)
-               (remove-if (lambda (dyno)
-                            (equal t (window+-free dyno)))
-                          dyn-order)))
+              (append (remove-if (lambda (dyno)
+                                   (equal nil (window+-free dyno)))
+                                 dyn-order)
+                      (remove-if (lambda (dyno)
+                                   (equal t (window+-free dyno)))
+                                 dyn-order)))
         ;; Let the (group-windows group) respect the order of
         ;; dyn-order
         (setf (stumpwm::group-windows group)
@@ -297,8 +295,8 @@ information will be used when the group re-tiles it."
       (flet ((rotate-list (xs &optional opposite)
                "An adhoc pure function that rotates the list."
                (if opposite
-                   (concatenate 'list (cdr xs) (list (car xs)))
-                   (concatenate 'list (last xs) (butlast xs)))))
+                   (append (cdr xs) (list (car xs)))
+                   (append (last xs) (butlast xs)))))
         (symbol-macrolet ((dyno (dyn-float-group-dyn-order group)))
           (setf dyno (rotate-list dyno opposite))
           (re-tile group)))))
@@ -321,15 +319,13 @@ the (n+1)th element of RING."
                         (n (mod n l)))
                    (when (>= l 2)
                      (if (= n (- l 1))
-                         (concatenate 'list
-                                      (last ring)
-                                      (butlast (cdr ring))
-                                      (list (car ring)))
-                         (concatenate 'list
-                                      (subseq ring 0 n)
-                                      (list (nth (mod (+ n 1) l) ring))
-                                      (list (nth (mod (+ n 0) l) ring))
-                                      (subseq ring (+ n 2)))))))))
+                         (append (last ring)
+                                 (butlast (cdr ring))
+                                 (list (car ring)))
+                         (append (subseq ring 0 n)
+                                 (list (nth (mod (+ n 1) l) ring))
+                                 (list (nth (mod (+ n 0) l) ring))
+                                 (subseq ring (+ n 2)))))))))
         (progn
             (when opposite (setf n (- n 1)))
             (symbol-macrolet
