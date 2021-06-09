@@ -7,7 +7,7 @@ RUN apt-get update \
     && curl -O https://beta.quicklisp.org/quicklisp.lisp \
     && sbcl --load quicklisp.lisp --eval "(quicklisp-quickstart:install)" \
     && sbcl --load "/root/quicklisp/setup.lisp"  --eval "(progn (setf ql-util::*do-not-prompt* t)(ql:add-to-init-file))" \
-    && sbcl --eval "(progn (ql:quickload \"clx\")(ql:quickload \"cl-ppcre\")(ql:quickload \"alexandria\")(ql:quickload \"fiasco\"))"
+    && sbcl --eval "(progn (ql:quickload '(clx cl-ppcre alexandria fiasco)))"
 
 COPY . .
 
