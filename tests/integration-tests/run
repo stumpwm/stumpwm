@@ -1,6 +1,0 @@
-#!/bin/bash
-set -e
-
-number_of_processors=`grep -cE '^$' /proc/cpuinfo`
-let number_of_jobs=$number_of_processors*4
-make -j $number_of_jobs -l $number_of_processors
