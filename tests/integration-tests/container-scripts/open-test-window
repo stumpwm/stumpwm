@@ -1,0 +1,5 @@
+#!/bin/bash
+set -e
+
+xterm -e bash -c 'sleep 3600' &
+sleep .5

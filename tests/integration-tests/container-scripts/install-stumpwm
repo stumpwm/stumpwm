@@ -1,0 +1,8 @@
+#!/bin/bash
+set -e
+
+cd stumpwm-src
+./autogen.sh
+./configure
+make
+make install

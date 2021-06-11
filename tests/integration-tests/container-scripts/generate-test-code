@@ -1,0 +1,306 @@
+#!/usr/bin/env -S sbcl --script
+
+(defvar *list-of-generators* '())
+(defvar *line-count* 0)
+(defvar *screenshot-index* 0)
+(defvar *state* nil)
+
+(setq *random-state* (make-random-state t))
+
+(defmacro define-generator (test-form &rest generator)
+  `(push (cons (lambda () ,test-form)
+               (lambda () ,@generator))
+         *list-of-generators*))
+(defun set-state (&rest args)
+  (when args
+    (setf (get '*state* (car args)) (cadr args))
+    (apply #'set-state (cddr args))))
+(defun filter (fun list) (mapcan (lambda (x) (when (funcall fun x) (list x))) list))
+(defun random-from-list (list) (nth (random (list-length list)) list))
+(defun random-boolean () (random-from-list '(t nil)))
+(defun random-color () (format nil "#~6,'0x" (random #x1000000)))
+(defun random-int-between (low high) (let ((l (ceiling low)) (h (floor high))) (+ l (random (+ (- h l) 1)))))
+(defun generate ()
+  (let* ((can-stop (state :can-stop))
+         ;; Stop 1/3 of the time we have the chance, or if the script is already quite long
+         (want-to-stop (or (< (random 3) 1) (< 100 *line-count*)))
+         (valid-generators
+          (filter (lambda (x) (funcall (car x))) *list-of-generators*))
+         (can-continue valid-generators))
+    (when (not (state :start))
+      (line))
+    (when (not (or can-stop can-continue))
+      (error "Dead end: We can neither continue nor stop."))
+    (when (if want-to-stop (not can-stop) can-continue)
+      (let ((generator (cdr (random-from-list valid-generators))))
+        (funcall generator)))))
+(defun state (key) (get '*state* key))
+(defun next (&rest args)
+  (apply #'set-state args)
+  (generate))
+(defun line (&rest args)
+  (mapcar (lambda (x)
+            (write-string
+             (if (stringp x)
+                 x (format nil "~a" x))))
+          args)
+  (write-char #\linefeed)
+  (setq *line-count* (+ *line-count* 1)))
+(defun screenshot ()
+  (setq *screenshot-index* (+ *screenshot-index* 1))
+  (line "screenshot " *screenshot-index*)
+  *screenshot-index*)
+(defun screenshots-match (a b)
+  (line "screenshots-match " a " " b))
+(defun screenshots-differ (a b)
+  (line "screenshots-differ " a " " b))
+(defun str-contains (str char)
+  (loop for x across str
+        when (eq x char) return t))
+(defun stumpwm-eval (form)
+  (let ((form-str (format nil "~s" form)))
+    (if (or (str-contains form-str #\\)
+            (str-contains form-str #\')
+            (str-contains form-str #\formfeed))
+        (progn
+          (line "stumpwm-load <<EOF")
+          (format t "~s" form)
+          (line "")
+          (line "EOF"))
+      (line "stumpwm-cmd eval '" (format nil "~s" form) "'"))))
+
+;;; Fragments to go from :start to :init-phase
+
+;; Script header
+(define-generator (state :start)
+  (line "#!/bin/bash")
+  (line "set -ex")
+  (next
+   :start nil
+   :init-phase t))
+
+;;; Fragments to go from :init-phase to :config-phase
+
+;; Start Xvfb and stumpwm, then set a random screen resolution
+(define-generator (state :init-phase)
+  (let ((rx (+ 640 (random 150)))
+        (ry (+ 480 (random 150))))
+    (line "start-xvfb-with-max-resolution 2000 2000")
+    (line "start-stumpwm")
+    (line "set-resolution " rx " " ry)
+    (next
+     :init-phase nil
+     :config-phase t
+     :resolution-x rx
+     :resolution-y ry
+     :max-resolution-x 2000
+     :max-resolution-y 2000)))
+
+;;; Fragments to go from :config-phase to :normal-phase
+
+;; Default initial config
+(define-generator (state :config-phase)
+  (line "#Default initial config")
+  (next
+   :config-phase nil
+   :frame-indicator t
+   :normal-phase t
+   :default-config t))
+
+;; Random initial config
+(define-generator (state :config-phase)
+  (let* ((fi (random-boolean))
+         (tfiw (random-from-list '(1 60))))
+    (line "#Random initial config")
+    (stumpwm-eval
+     `(setf *maxsize-border-width* ,(random 15)
+            *message-window-padding* ,(random 15)
+            *message-window-y-padding* ,(random 15)
+            *mode-line-background-color* ,(random-color)
+            *mode-line-border-color* ,(random-color)
+            *mode-line-border-width* ,(random 15)
+            *mode-line-foreground-color* ,(random-color)
+            *mode-line-pad-x* ,(random 15)
+            *mode-line-pad-y* ,(random 15)
+            *mode-line-position* ,(random-from-list '(:top :bottom))
+            *normal-border-width* ,(random 15)
+            *suppress-frame-indicator* ,(not fi)
+            *text-color* ,(random-color)
+            *timeout-frame-indicator-wait* ,tfiw
+            *transient-border-width* ,(random 15)
+            *window-border-style* ,(random-from-list '(:thick :thin :tight :none))))
+    (next
+     :config-phase nil
+     :normal-phase t
+     :frame-indicator fi
+     :timeout-frame-indicator-wait tfiw)))
+
+;;; Fragments used in :normal-phase to change configuration
+
+(defun normal-stable ()
+  (and (state :normal-phase)
+       (or (not (state :frame-indicator))
+           (and (state :timeout-frame-indicator-wait)
+                (<= 30 (state :timeout-frame-indicator-wait))))))
+
+;; Random color change
+(define-generator (state :normal-phase)
+  (line "#Random re-config")
+  (stumpwm-eval
+   `(,(random-from-list '(set-win-bg-color
+                          set-focus-color
+                          set-unfocus-color
+                          set-float-focus-color
+                          set-float-unfocus-color))
+     ,(random-color)))
+  (next :can-stop nil))
+
+;; Random gravity change
+(define-generator (state :normal-phase)
+  (line "#Random gravity change")
+  (stumpwm-eval
+   `(,(random-from-list '(set-normal-gravity
+                          set-maxsize-gravity
+                          set-transient-gravity))
+     ,(random-from-list '(:center :top :left :right :bottom :top-left :top-right :bottom-left :bottom-right))))
+  (next :can-stop nil))
+
+;; Random resolution change
+(define-generator (and (state :normal-phase)
+                       (<= (* (state :resolution-x) 2) (state :max-resolution-x))
+                       (<= (* (state :resolution-y) 2) (state :max-resolution-y)))
+  (let ((new-x (random-int-between 640 (* (state :max-resolution-x) .55)))
+        (new-y (random-int-between 640 (* (state :max-resolution-y) .55)))
+        (s1 nil) (s2 nil) (s3 nil))
+    (line "#Random resolution change")
+    (line "set-resolution " new-x " " new-y)
+    (next
+     :resolution-x new-x
+     :resolution-y new-y
+     :can-stop nil)))
+
+;;; Fragments used in :normal-phase to operate on windows and frames
+
+;; Add the first window and test that it makes a difference
+(define-generator (and (state :normal-phase)
+                       (eq (state :number-of-windows) 0))
+  (let ((s1 nil) (s2 nil))
+    (line "#Add the first window")
+    (setq s1 (screenshot))
+    (line "open-test-window")
+    (setq s2 (screenshot))
+    (screenshots-differ s1 s2)
+    (next
+     :can-stop t
+     :number-of-windows (+ (state :number-of-windows) 1))))
+
+;; Add a window with random font size
+(define-generator (state :normal-phase)
+  (line "#Add a window with random font size")
+  (line "open-test-window-with-font-size " (+ 1 (random 20)))
+  (next
+   :can-stop nil
+   :number-of-windows (+ (state :number-of-windows) 1)))
+
+;; One frame only
+(defun one-frame () (eq (state :number-of-frames) 1))
+(define-generator (and (state :normal-phase) (not (one-frame)))
+  (line "#One frame only")
+  (line "stumpwm-cmd only")
+  (next
+   :can-stop nil
+   :number-of-frames 1))
+
+;; Split frame
+(defun can-split ()
+  (and (state :normal-phase)
+       (<= (state :number-of-frames) 5)))
+(define-generator (can-split)
+  (line "#Split frame")
+  (line "stumpwm-cmd " (random-from-list '("hsplit" "vsplit")))
+  (next
+   :can-stop nil
+   :number-of-frames (+ (state :number-of-frames) 1)))
+
+;;; Fragments used in :normal-phase to perform no-op tests. These are operations that, under the stated circumstances, should have no effect.
+
+;; No-op test: Move focus when only 1 frame
+(define-generator (and (normal-stable) (one-frame))
+  (let ((s1 nil) (s2 nil))
+    (line "#No-op test: Move focus when only 1 frame")
+    (setq s1 (screenshot))
+    (line "stumpwm-cmd move-focus " (random-from-list '("down" "left" "right" "up")))
+    (setq s2 (screenshot))
+    (screenshots-match s1 s2)
+    (next
+     :can-stop t)))
+
+;; No-op test: Move focus somewhere and back
+(define-generator (can-split)
+  (let ((s1 nil) (s2 nil) (s3 nil))
+    (line "#No-op test: Move focus somewhere and back")
+    (line "stumpwm-cmd hsplit")
+    (setq s1 (screenshot))
+    (line "stumpwm-cmd move-focus right")
+    (setq s2 (screenshot))
+    (screenshots-differ s1 s2)
+    (line "stumpwm-cmd move-focus left")
+    (setq s3 (screenshot))
+    (screenshots-match s1 s3)
+    (next
+     :can-stop t)))
+
+;; No-op test: vsplit then undo
+(define-generator (normal-stable)
+  (let ((s1 nil) (s2 nil) (s3 nil))
+    (line "#No-op test: vsplit then undo")
+    (setq s1 (screenshot))
+    (line "stumpwm-cmd vsplit")
+    (line "stumpwm-cmd move-focus down")
+    (setq s2 (screenshot))
+    (screenshots-differ s1 s2)
+    (line "stumpwm-cmd remove")
+    (setq s3 (screenshot))
+    (screenshots-match s1 s3)
+    (next
+     :can-stop t)))
+
+;; No-op test: hsplit then undo
+(define-generator (normal-stable)
+  (let ((s1 nil) (s2 nil) (s3 nil))
+    (line "#No-op test: hsplit then undo")
+    (setq s1 (screenshot))
+    (line "stumpwm-cmd hsplit")
+    (line "stumpwm-cmd move-focus right")
+    (setq s2 (screenshot))
+    (screenshots-differ s1 s2)
+    (line "stumpwm-cmd remove")
+    (setq s3 (screenshot))
+    (screenshots-match s1 s3)
+    (next :can-stop t)))
+
+;; No-op test: double and half the resolution
+(define-generator (and (normal-stable)
+                       (<= (* (state :resolution-x) 2) (state :max-resolution-x))
+                       (<= (* (state :resolution-y) 2) (state :max-resolution-y)))
+  (let ((x (state :resolution-x))
+        (y (state :resolution-y))
+        (s1 nil) (s2 nil) (s3 nil))
+    (line "#No-op test: double and half the resolution")
+    (setq s1 (screenshot))
+    (line "set-resolution " (* x 2) " " (* y 2))
+    (setq s2 (screenshot))
+    (screenshots-differ s1 s2)
+    (line "set-resolution " x " " y)
+    (setq s3 (screenshot))
+    (screenshots-match s1 s3)
+    (next
+     :can-stop t)))
+
+;;; Generate one test script to stdout
+
+(set-state
+ :start t
+ :number-of-frames 1
+ :number-of-windows 0)
+(generate)

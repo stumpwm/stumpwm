@@ -1,0 +1,18 @@
+#!/bin/bash
+set -e
+
+install-packages make autoconf
+
+curl -O https://beta.quicklisp.org/quicklisp.lisp
+
+cat > install-stumpwm-dependencies.lisp <<EOF
+(load "quicklisp.lisp")
+(quicklisp-quickstart:install)
+(ql:quickload "clx")
+(ql:quickload "cl-ppcre")
+(ql:quickload "alexandria")
+EOF
+
+sbcl --load install-stumpwm-dependencies.lisp --quit
+
+echo "(load \"$(pwd)/quicklisp/setup.lisp\")" >> ~/.sbclrc

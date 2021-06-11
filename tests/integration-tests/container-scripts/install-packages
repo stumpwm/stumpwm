@@ -1,0 +1,6 @@
+#!/bin/bash
+set -e
+
+env DEBIAN_FRONTEND=noninteractive apt-get -qy update
+env DEBIAN_FRONTEND=noninteractive apt-get -qy install "$@"
+rm -rf /var/lib/apt/lists/*

@@ -1,0 +1,13 @@
+#!/bin/bash
+set -e
+
+w="$1";shift
+h="$1";shift
+mode="${w}x${h}"
+if xrandr 2>/dev/null | grep -qE "^   $mode +0\.00"; then
+    true # Do nothing since mode already exists
+else
+    xrandr --newmode "$mode" 0 "$w" 0 0 0 "$h" 0 0 0 2>/dev/null
+fi
+xrandr --addmode screen "$mode" 2>/dev/null
+xrandr --output screen --mode "$mode" "$@" 2>/dev/null

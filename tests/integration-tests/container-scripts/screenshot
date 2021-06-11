@@ -1,0 +1,13 @@
+#!/bin/bash
+set -e
+
+[ -n "$1" ]
+xwdfile=`tempfile -s .xwd`
+pnmfile=`tempfile -s .pnm`
+pngfile="screenshot-${1}.png"
+[ '!' -e "$pngfile" ]
+xwd -root > "$xwdfile"
+xwdtopnm "$xwdfile" > "$pnmfile"
+pnmtopng "$pnmfile" > "$pngfile"
+rm "$xwdfile" "$pnmfile"
+echo "$pngfile"

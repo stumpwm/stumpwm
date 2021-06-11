@@ -1,0 +1,7 @@
+#!/bin/bash
+set -e
+
+file=`tempfile -s .lisp`
+cat > "$file"
+stumpwm-cmd "eval (load \"$file\")"
+rm "$file"

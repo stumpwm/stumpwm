@@ -1,0 +1,5 @@
+#!/bin/bash
+set -e
+
+xterm -fa Monospace -fs "$1" -T "Fontsize $1 xterm window" -e bash -c 'sleep 3600' &
+sleep .5
