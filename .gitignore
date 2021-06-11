@@ -35,3 +35,4 @@ stumpwm.vr
 stumpwm.vrs
 /tests/integration-tests/test-runner.iid
 /tests/integration-tests/testcases/*.results/
+/tests/integration-tests/testcases/generated-*.sh
