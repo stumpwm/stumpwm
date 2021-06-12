@@ -48,7 +48,7 @@ generate-tests() {
 internal-generate-tests() {
     count="$1"
     [ 1 -le "$count" ] || die COUNT must be a positive integer.
-    docker-wrapper "Generating $count tests" run -v "`pwd`/testcases":/home/user/testcases --init `cat test-runner.iid` generate-tests "$count"
+    docker-wrapper "Generating $count tests" run --rm -v "`pwd`/testcases":/home/user/testcases --init `cat test-runner.iid` generate-tests "$count"
 }
 
 generate-tests-locally() {
@@ -60,8 +60,8 @@ generate-tests-locally() {
 
 run-tests() {
     number_of_processors=`grep -cE '^$' /proc/cpuinfo`
-    let number_of_jobs=$number_of_processors*4
-    make -j $number_of_jobs -l $number_of_processors run-tests
+    let acceptable_load=$number_of_processors*2
+    make -j -k -l $acceptable_load -s run-tests
 }
 
 run-one-test() {
@@ -75,11 +75,15 @@ internal-run-one-test() {
     testname="$1"
     [ -n "$testname" ] || die NAME must be given.
     [ -e "testcases/$testname.sh" ] || die testcases/$testname.sh does not exist.
-    docker-wrapper "Test $testname" run -v "`pwd`/testcases":/home/user/testcases --init `cat test-runner.iid` run-test "$testname"
+    docker-wrapper "Test $testname" run --rm -v "`pwd`/testcases":/home/user/testcases --init `cat test-runner.iid` run-test "$testname"
 }
 
 clean-results() {
     rm -rf test-runner.iid testcases/*.results
+}
+
+remove-generated-testcases() {
+    rm -rf testcases/generated-*
 }
 
 show-help() {
@@ -93,6 +97,8 @@ Usage:
 
   ./script clean-results                # Clean up test results.
                                         # Generated test cases will remain.
+
+  ./script remove-generated-testcases   # Delete all generated test cases.
 
   ./script generate-tests COUNT         # Generate new test cases.
                                         # COUNT can for example be "100".

@@ -1,4 +1,12 @@
 #!/usr/bin/env -S sbcl --script
+;; -*- mode: lisp -*-
+
+(defvar *min-x-resolution* 640)
+(defvar *min-y-resolution* 480)
+(defvar *max-x-resolution* 2000)
+(defvar *max-y-resolution* 2000)
+(defvar *min-frame-width* 50)
+(defvar *min-frame-height* 50)
 
 (defvar *list-of-generators* '())
 (defvar *line-count* 0)
@@ -19,7 +27,11 @@
 (defun random-from-list (list) (nth (random (list-length list)) list))
 (defun random-boolean () (random-from-list '(t nil)))
 (defun random-color () (format nil "#~6,'0x" (random #x1000000)))
-(defun random-int-between (low high) (let ((l (ceiling low)) (h (floor high))) (+ l (random (+ (- h l) 1)))))
+(defun random-int-between (low high)
+  (let ((l (ceiling low)) (h (floor high)))
+    (unless (<= l h) (error "Out of range"))
+    (+ l (random (+ (- h l) 1)))))
+(defun random-sort (list) (sort (apply #'list list) (lambda (a b) (random-boolean)) :key nil))
 (defun generate ()
   (let* ((can-stop (state :can-stop))
          ;; Stop 1/3 of the time we have the chance, or if the script is already quite long
@@ -60,14 +72,18 @@
 (defun stumpwm-eval (form)
   (let ((form-str (format nil "~s" form)))
     (if (or (str-contains form-str #\\)
-            (str-contains form-str #\')
-            (str-contains form-str #\formfeed))
+            (str-contains form-str #\'))
         (progn
           (line "stumpwm-load <<EOF")
           (format t "~s" form)
           (line "")
           (line "EOF"))
-      (line "stumpwm-cmd eval '" (format nil "~s" form) "'"))))
+      (if (str-contains form-str #\newline)
+          (progn
+            (line "stumpwm-cmd eval '")
+            (line (format nil "~s" form))
+            (line "'"))
+        (line "stumpwm-cmd eval '" (format nil "~s" form) "'")))))
 
 ;;; Fragments to go from :start to :init-phase
 
@@ -83,27 +99,26 @@
 
 ;; Start Xvfb and stumpwm, then set a random screen resolution
 (define-generator (state :init-phase)
-  (let ((rx (+ 640 (random 150)))
-        (ry (+ 480 (random 150))))
-    (line "start-xvfb-with-max-resolution 2000 2000")
+  (let ((rx (random-int-between *min-x-resolution* (/ *max-x-resolution* 2)))
+        (ry (random-int-between *min-y-resolution* (/ *max-y-resolution* 2))))
+    (line "start-xvfb-with-max-resolution " *max-x-resolution* " " *max-y-resolution*)
     (line "start-stumpwm")
     (line "set-resolution " rx " " ry)
     (next
      :init-phase nil
      :config-phase t
-     :resolution-x rx
-     :resolution-y ry
-     :max-resolution-x 2000
-     :max-resolution-y 2000)))
+     :frame-indicator t
+     :prefix-key "C-t"
+     :x-resolution rx
+     :y-resolution ry)))
 
 ;;; Fragments to go from :config-phase to :normal-phase
 
 ;; Default initial config
 (define-generator (state :config-phase)
-  (line "#Default initial config")
+  (line "# Default initial config")
   (next
    :config-phase nil
-   :frame-indicator t
    :normal-phase t
    :default-config t))
 
@@ -111,7 +126,7 @@
 (define-generator (state :config-phase)
   (let* ((fi (random-boolean))
          (tfiw (random-from-list '(1 60))))
-    (line "#Random initial config")
+    (line "# Random initial config")
     (stumpwm-eval
      `(setf *maxsize-border-width* ,(random 15)
             *message-window-padding* ,(random 15)
@@ -137,15 +152,9 @@
 
 ;;; Fragments used in :normal-phase to change configuration
 
-(defun normal-stable ()
-  (and (state :normal-phase)
-       (or (not (state :frame-indicator))
-           (and (state :timeout-frame-indicator-wait)
-                (<= 30 (state :timeout-frame-indicator-wait))))))
-
 ;; Random color change
 (define-generator (state :normal-phase)
-  (line "#Random re-config")
+  (line "# Random color change")
   (stumpwm-eval
    `(,(random-from-list '(set-win-bg-color
                           set-focus-color
@@ -157,7 +166,7 @@
 
 ;; Random gravity change
 (define-generator (state :normal-phase)
-  (line "#Random gravity change")
+  (line "# Random gravity change")
   (stumpwm-eval
    `(,(random-from-list '(set-normal-gravity
                           set-maxsize-gravity
@@ -167,16 +176,55 @@
 
 ;; Random resolution change
 (define-generator (and (state :normal-phase)
-                       (<= (* (state :resolution-x) 2) (state :max-resolution-x))
-                       (<= (* (state :resolution-y) 2) (state :max-resolution-y)))
-  (let ((new-x (random-int-between 640 (* (state :max-resolution-x) .55)))
-        (new-y (random-int-between 640 (* (state :max-resolution-y) .55)))
+                       (<= (* (state :x-resolution) 2) *max-x-resolution*)
+                       (<= (* (state :y-resolution) 2) *max-y-resolution*))
+  (let ((new-x (random-int-between *min-x-resolution* (* *max-x-resolution* .55)))
+        (new-y (random-int-between *min-y-resolution* (* *max-y-resolution* .55)))
         (s1 nil) (s2 nil) (s3 nil))
-    (line "#Random resolution change")
+    (line "# Random resolution change")
     (line "set-resolution " new-x " " new-y)
     (next
-     :resolution-x new-x
-     :resolution-y new-y
+     :x-resolution new-x
+     :y-resolution new-y
+     :can-stop nil)))
+
+;; Random prefix key change
+(define-generator (and (state :normal-phase) (state :modifiers-remapped))
+  (let* ((modifiers
+          (random-from-list
+           (if (state :modifiers-remapped)
+               '("A-"   "C-"   "H-"  "M-"   "s-"
+                 "A-s-" "C-s-" "H-s-" "M-s-"
+                 "A-M-" "C-M-" "H-M-"
+                 "A-H-" "C-H-"
+                 "A-C-")
+             '("C-"))))
+         (key (random-from-list '("t" "a" "T" "A")))
+         (new-prefix-key (format nil "~a~a" modifiers key)))
+    (line "# Random prefix key change")
+    (stumpwm-eval `(set-prefix-key (kbd ,new-prefix-key)))
+    (next
+     :prefix-key new-prefix-key
+     :can-stop nil)))
+
+;; Random X11 modifier remapping
+(define-generator (state :normal-phase)
+  (line "# Random X11 modifier remapping")
+  (apply #'line "x-remap-modifiers"
+         (apply #'append
+                (mapcar #'list
+                        (random-sort '(" 1" " 2" " 3" " 4" " 5"))
+                        (random-sort '(" \"\"" " Alt" " Hyper" " Meta" " Super")))))
+  (next
+   :modifiers-remapped t
+   :can-stop nil))
+
+;; Random X11 key swap
+(define-generator (state :normal-phase)
+  (let ((keys (random-sort '("a A" "q Q" "s S" "t T"))))
+    (line "# Random X11 key swap")
+    (line "x-swap-keys " (first keys) " " (second keys))
+    (next
      :can-stop nil)))
 
 ;;; Fragments used in :normal-phase to operate on windows and frames
@@ -185,7 +233,7 @@
 (define-generator (and (state :normal-phase)
                        (eq (state :number-of-windows) 0))
   (let ((s1 nil) (s2 nil))
-    (line "#Add the first window")
+    (line "# Add the first window")
     (setq s1 (screenshot))
     (line "open-test-window")
     (setq s2 (screenshot))
@@ -196,99 +244,129 @@
 
 ;; Add a window with random font size
 (define-generator (state :normal-phase)
-  (line "#Add a window with random font size")
+  (line "# Add a window with random font size")
   (line "open-test-window-with-font-size " (+ 1 (random 20)))
   (next
    :can-stop nil
    :number-of-windows (+ (state :number-of-windows) 1)))
 
 ;; One frame only
-(defun one-frame () (eq (state :number-of-frames) 1))
+(defun one-frame ()
+  (and (eq (state :number-of-hsplits) 0)
+       (eq (state :number-of-vsplits) 0)))
+(defun cmd-or-key (cmd key)
+  (if (random-boolean)
+      (apply #'line "stumpwm-cmd " (if (consp cmd) cmd (list cmd)))
+    (apply #'line "send-keys " (state :prefix-key) " " (if (consp key) key (list key)))))
 (define-generator (and (state :normal-phase) (not (one-frame)))
-  (line "#One frame only")
-  (line "stumpwm-cmd only")
+  (line "# One frame only")
+  (cmd-or-key "only" "Q")
   (next
    :can-stop nil
-   :number-of-frames 1))
+   :number-of-hsplits 0
+   :number-of-vsplits 0))
 
 ;; Split frame
-(defun can-split ()
+(defun can-hsplit ()
   (and (state :normal-phase)
-       (<= (state :number-of-frames) 5)))
-(define-generator (can-split)
-  (line "#Split frame")
-  (line "stumpwm-cmd " (random-from-list '("hsplit" "vsplit")))
-  (next
-   :can-stop nil
-   :number-of-frames (+ (state :number-of-frames) 1)))
+       (<= (* *min-frame-width* (expt 2 (state :number-of-hsplits)) 2)
+           (state :x-resolution))))
+(defun can-vsplit ()
+  (and (state :normal-phase)
+       (<= (* *min-frame-height* (expt 2 (state :number-of-vsplits)) 2)
+           (state :y-resolution))))
+(define-generator (or (can-hsplit) (can-vsplit))
+  (let* ((horizontal (if (and (can-hsplit) (can-vsplit))
+                         (random-boolean)
+                       (can-hsplit)))
+         (state-keyword (if horizontal :number-of-hsplits :number-of-vsplits)))
+    (line "# Split frame")
+    (if horizontal
+        (cmd-or-key "hsplit" "S")
+      (cmd-or-key "vsplit" "s"))
+    (next
+     :can-stop nil
+     state-keyword (+ (state state-keyword) 1))))
 
 ;;; Fragments used in :normal-phase to perform no-op tests. These are operations that, under the stated circumstances, should have no effect.
 
 ;; No-op test: Move focus when only 1 frame
+(defun normal-stable ()
+  (and (state :normal-phase)
+       (or (not (state :frame-indicator))
+           (and (state :timeout-frame-indicator-wait)
+                (<= 30 (state :timeout-frame-indicator-wait))))))
+(defun move-focus (direction)
+  (cmd-or-key (format nil "move-focus ~a" direction) direction))
 (define-generator (and (normal-stable) (one-frame))
   (let ((s1 nil) (s2 nil))
-    (line "#No-op test: Move focus when only 1 frame")
+    (line "# No-op test: Move focus when only 1 frame")
     (setq s1 (screenshot))
-    (line "stumpwm-cmd move-focus " (random-from-list '("down" "left" "right" "up")))
+    (move-focus (random-from-list '("Down" "Left" "Right" "Up")))
     (setq s2 (screenshot))
     (screenshots-match s1 s2)
     (next
      :can-stop t)))
 
 ;; No-op test: Move focus somewhere and back
-(define-generator (can-split)
-  (let ((s1 nil) (s2 nil) (s3 nil))
-    (line "#No-op test: Move focus somewhere and back")
-    (line "stumpwm-cmd hsplit")
+(define-generator (or (can-hsplit) (can-vsplit))
+  (let* ((horizontal (if (and (can-hsplit) (can-vsplit))
+                         (random-boolean)
+                       (can-hsplit)))
+         (state-keyword (if horizontal :number-of-hsplits :number-of-vsplits))
+         (s1 nil) (s2 nil) (s3 nil))
+    (line "# No-op test: Move focus somewhere and back")
+    (cmd-or-key (if horizontal "hsplit" "vsplit") (if horizontal "S" "s"))
     (setq s1 (screenshot))
-    (line "stumpwm-cmd move-focus right")
+    (move-focus (if horizontal "Right" "Down"))
     (setq s2 (screenshot))
     (screenshots-differ s1 s2)
-    (line "stumpwm-cmd move-focus left")
+    (move-focus (if horizontal "Left" "Up"))
     (setq s3 (screenshot))
     (screenshots-match s1 s3)
     (next
+     state-keyword (+ (state state-keyword) 1)
      :can-stop t)))
 
-;; No-op test: vsplit then undo
+;; No-op test: Split then undo
 (define-generator (normal-stable)
-  (let ((s1 nil) (s2 nil) (s3 nil))
-    (line "#No-op test: vsplit then undo")
-    (setq s1 (screenshot))
-    (line "stumpwm-cmd vsplit")
-    (line "stumpwm-cmd move-focus down")
-    (setq s2 (screenshot))
-    (screenshots-differ s1 s2)
-    (line "stumpwm-cmd remove")
-    (setq s3 (screenshot))
-    (screenshots-match s1 s3)
-    (next
-     :can-stop t)))
-
-;; No-op test: hsplit then undo
-(define-generator (normal-stable)
-  (let ((s1 nil) (s2 nil) (s3 nil))
-    (line "#No-op test: hsplit then undo")
-    (setq s1 (screenshot))
-    (line "stumpwm-cmd hsplit")
-    (line "stumpwm-cmd move-focus right")
-    (setq s2 (screenshot))
-    (screenshots-differ s1 s2)
-    (line "stumpwm-cmd remove")
-    (setq s3 (screenshot))
-    (screenshots-match s1 s3)
-    (next :can-stop t)))
-
-;; No-op test: double and half the resolution
-(define-generator (and (normal-stable)
-                       (<= (* (state :resolution-x) 2) (state :max-resolution-x))
-                       (<= (* (state :resolution-y) 2) (state :max-resolution-y)))
-  (let ((x (state :resolution-x))
-        (y (state :resolution-y))
+  (let ((horizontal (random-boolean))
         (s1 nil) (s2 nil) (s3 nil))
-    (line "#No-op test: double and half the resolution")
+    (line "# No-op test: Split then undo")
     (setq s1 (screenshot))
-    (line "set-resolution " (* x 2) " " (* y 2))
+    (line "stumpwm-cmd " (if horizontal "hsplit" "vsplit"))
+    (move-focus (if horizontal "Right" "Down"))
+    (setq s2 (screenshot))
+    (screenshots-differ s1 s2)
+    (line "stumpwm-cmd remove")
+    (setq s3 (screenshot))
+    (screenshots-match s1 s3)
+    (next
+     :can-stop t)))
+
+;; No-op test: Change resolution then restore
+(defun can-double-resolution ()
+  (and (<= (* (state :x-resolution) 2) *max-x-resolution*)
+       (<= (* (state :y-resolution) 2) *max-y-resolution*)))
+(defun can-half-resolution ()
+  (and (<= (* *min-x-resolution* 2) (state :x-resolution))
+       (<= (* *min-y-resolution* 2) (state :y-resolution))
+       (= 0 (mod (state :x-resolution) 2))
+       (= 0 (mod (state :y-resolution) 2))))
+(define-generator (and (normal-stable)
+                       (or (can-double-resolution)
+                           (can-half-resolution)))
+  (let* ((x (state :x-resolution))
+         (y (state :y-resolution))
+         (do-double (if (and (can-double-resolution) (can-half-resolution))
+                        (random-boolean)
+                      (can-double-resolution)))
+         (new-x (if do-double (* x 2) (/ x 2)))
+         (new-y (if do-double (* y 2) (/ y 2)))
+         (s1 nil) (s2 nil) (s3 nil))
+    (line "# No-op test: Change resolution then restore")
+    (setq s1 (screenshot))
+    (line "set-resolution " new-x " " new-y)
     (setq s2 (screenshot))
     (screenshots-differ s1 s2)
     (line "set-resolution " x " " y)
@@ -301,6 +379,7 @@
 
 (set-state
  :start t
- :number-of-frames 1
+ :number-of-hsplits 0
+ :number-of-vsplits 0
  :number-of-windows 0)
 (generate)

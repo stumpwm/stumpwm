@@ -9,8 +9,7 @@ cd "$results"
 if "../${testname}.sh" > stdout.txt 2> stderr.txt; then
     touch success
 else
-    msg="Exited with error code $?"
+    msg="Test $testname exited with error code $?"
     echo "$msg" > fail
-    echo -e "\\e[31m=== Test $testname: $msg\\e[0m"
     exit 1
 fi
