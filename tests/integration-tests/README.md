@@ -21,7 +21,7 @@ For usage help, run:
 
 When you run tests, the test results will be in `testcases/*.results/`.
 Successful tests will have a `success` file while failed tests will have a `fail` file containing a message.
-Usually, the `stdout` file together with the screenshots will show the necessary details.
+Usually, the `stdout.txt` and `screenshot-*.png` files will show the necessary details.
 
 If you generate tests, they will be named `testcases/generated-*.sh`.
 If you want to commit a generated test to the repository, rename it first.
