@@ -215,8 +215,7 @@ than the root window's width and height."
                                   wy
                                   (- (xlib:drawable-height (window-parent win)) height wy))
                             :cardinal 32))
-    (update-decoration win)
-    (update-configuration win)))
+    (update-decoration win)))
 
 ;;;
 
