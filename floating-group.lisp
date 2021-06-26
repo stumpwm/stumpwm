@@ -139,10 +139,13 @@
 (defmethod group-startup ((group float-group)))
 
 (flet ((add-float-window (group window raise)
-         (change-class window 'float-window)
-         (float-window-align window)
-         (when raise
-           (group-focus-window group window))))
+         (let ((fullscreen-p (window-fullscreen window)))
+           (change-class window 'float-window)
+           (float-window-align window)
+           (when fullscreen-p
+             (activate-fullscreen window))
+           (when raise
+             (group-focus-window group window)))))
   (defmethod group-add-window ((group float-group) window &key raise &allow-other-keys)
     (add-float-window group window raise))
   (defmethod group-add-window (group (window float-window) &key raise &allow-other-keys)
