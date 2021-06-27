@@ -148,9 +148,10 @@
     (add-float-window group window)))
 
 (defun %float-focus-next (group)
-  (if (group-windows group)
-      (group-focus-window group (first (group-windows group)))
-      (no-focus group nil)))
+  (let ((windows (remove-if 'window-hidden-p (group-windows group))))
+    (if windows
+        (group-focus-window group (first windows))
+        (no-focus group nil))))
 
 (defmethod group-delete-window ((group float-group) (window float-window))
   (declare (ignore window))
