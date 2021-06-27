@@ -839,7 +839,7 @@ input should be valid Common Lisp.
 
 @item C-t C-h
 @itemx C-t ?
-The help. These are set using the @var{*help-keys*} variable.
+The help. These can be customized using the @var{*help-keys*} variable.
 
 @item C-t -
 Hide all frames and show the root window.
