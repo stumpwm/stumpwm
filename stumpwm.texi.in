@@ -839,7 +839,7 @@ input should be valid Common Lisp.
 
 @item C-t C-h
 @itemx C-t ?
-The help.
+The help. These can be customized using the @var{*help-keys*} variable.
 
 @item C-t -
 Hide all frames and show the root window.
@@ -2465,6 +2465,7 @@ Return T if TIMER is a timer structure.
 @@@ lookup-command
 
 ### *help-map*
+### *help-keys*
 
 @node Colors, Hooks, Miscellaneous Commands, Top
 @chapter Colors
