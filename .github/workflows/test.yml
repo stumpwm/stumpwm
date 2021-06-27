@@ -1,0 +1,13 @@
+name: Build and Test
+
+on: [push, pull_request]
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Build
+        run: docker build . --file Dockerfile -t stumpwm
+      - name: Test
+        run: docker run stumpwm make test

@@ -106,7 +106,7 @@
 
 (defun help-key-p (keys)
   "If the key is for the help command."
-  (final-key-p keys '("?" "C-h")))
+  (final-key-p keys *help-keys*))
 
 (defun cancel-key-p (keys)
   "If a key is the cancelling key binding."

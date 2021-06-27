@@ -338,9 +338,10 @@ then describes the symbol."
       ,@body)))
 
 (define-stumpwm-type :y-or-n (input prompt)
-  (let ((s (or (argument-pop input)
-               (read-one-line (current-screen) (concat prompt "(y/n): ")))))
-    (equal s "y")))
+  (let* ((positive-responses '("y" t))
+         (s (or (argument-pop input)
+                (read-one-line (current-screen) (concat prompt "(y/n): ")))))
+    (member s positive-responses :test #'equalp)))
 
 (defun lookup-symbol (string)
   ;; FIXME: should we really use string-upcase?
