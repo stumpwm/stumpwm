@@ -54,19 +54,14 @@ information will be used when the group re-tiles it.")
 (defun dyn-float-group-p (group)
   (eq (type-of group) 'dyn-float-group))
 
-(flet ((add-float-window (group window)
-         ;; not sure if needed
-         (change-class window 'stumpwm::float-window)
-         (stumpwm::float-window-align window)
-         (stumpwm::group-focus-window group window)))
-  (defmethod stumpwm:group-add-window
-      ((group dyn-float-group)
-       window
-       &key &allow-other-keys)
-    (add-float-window group window)
-    (alexandria:appendf (dyn-float-group-dyn-order group)
-                        (list (make-window+ :window window :free nil)))
-    (re-tile group)))
+(defmethod stumpwm:group-add-window
+    ((group dyn-float-group)
+     window
+     &key &allow-other-keys)
+  (stumpwm:add-float-window group window)
+  (alexandria:appendf (dyn-float-group-dyn-order group)
+                      (list (make-window+ :window window :free nil)))
+  (re-tile group))
 
 (defmethod stumpwm:group-delete-window
     ((group dyn-float-group)
