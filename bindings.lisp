@@ -27,12 +27,16 @@
 (export '(*groups-map*
           *group-top-maps*
           *help-map*
+          *help-keys*
           set-prefix-key))
 
 (defvar *escape-key* (kbd "C-t")
   "The escape key. Any keymap that wants to hang off the escape key
 should use this specific key struct instead of creating their own
 C-t.")
+
+(defvar *help-keys* '("?" "C-h")
+  "The list of keys used to invoke the help command.")
 
 (defvar *escape-fake-key* (kbd "t")
   "The binding that sends the fake escape key to the current window.")

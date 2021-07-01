@@ -125,16 +125,16 @@ function expects to be wrapped in a with-state for win."
     (cancel-timer *frame-indicator-timer*)
     (setf *frame-indicator-timer* nil)))
 
-(defun reset-message-window-timer ()
-  "Set the message window timer to timeout in *timeout-wait* seconds."
+(defun reset-message-window-timer (timeout-wait)
+  "Set the message window timer to timeout in timeout-wait seconds."
   (unless *ignore-echo-timeout*
     (when (timer-p *message-window-timer*)
       (cancel-timer *message-window-timer*))
-    (setf *message-window-timer* (run-with-timer *timeout-wait* nil
+    (setf *message-window-timer* (run-with-timer timeout-wait nil
                                                  'unmap-all-message-windows))))
 
 (defun reset-frame-indicator-timer ()
-  "Set the message window timer to timeout in *timeout-wait* seconds."
+  "Set the message window timer to timeout in *timeout-frame-indicator-wait* seconds."
   (when (timer-p *frame-indicator-timer*)
     (cancel-timer *frame-indicator-timer*))
   (setf *frame-indicator-timer* (run-with-timer *timeout-frame-indicator-wait* nil
@@ -283,7 +283,10 @@ When NEW-ON-BOTTOM-P is non-nil, new messages are queued at the bottom."
           (when (timer-p *message-window-timer*)
             (cancel-timer *message-window-timer*)
             (setf *message-window-timer* nil))
-          (reset-message-window-timer)))
+          (reset-message-window-timer
+            (if (> (length strings) 1)
+                (or *timeout-wait-multiline* *timeout-wait*)
+                *timeout-wait*))))
     (push-last-message screen strings highlights)
     (xlib:display-finish-output *display*)
     (dformat 5 "Outputting a message:~%~{        ~a~%~}" strings)
