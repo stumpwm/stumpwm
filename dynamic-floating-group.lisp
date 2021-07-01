@@ -24,12 +24,13 @@
 
 (defparameter *default-master-ratio* (/ 2 (+ 1 (sqrt 5))))
 
-(defstruct window+
+(defclass window+ (window)
+  ((free :initarg :free
+         :reader window+-free))
+  :documentation
   "An augmented window (window+) is a window with some other
 information. Usually, in a dynamic floating group, the
-information will be used when the group re-tiles it."
-  ;; access example: (window+-free (make-window+ :window 1 :free t))
-  window free)
+information will be used when the group re-tiles it.")
 
 ;; A dyn-order, or a dynamic order, is a list of window+.
 (defclass dyn-float-group (stumpwm::float-group)
