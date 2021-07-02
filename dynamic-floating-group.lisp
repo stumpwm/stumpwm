@@ -20,10 +20,10 @@
 
 ;;; Parameters
 
+(defparameter *default-master-ratio* (/ 2 (+ 1 (sqrt 5))))
 (defparameter *default-layout* 'left-vertical
   "Currently supported layouts are: 'left-vertical 'horizontal
-  'fullscreen.")
-(defparameter *default-master-ratio* (/ 2 (+ 1 (sqrt 5))))
+  'fullscreen. See the body of #'RE-TILE for their details.")
 
 ;;; Classes
 
@@ -376,14 +376,18 @@ background."
                (group-windows (stumpwm:current-group))))))
 
 (defcommand increase-master-ratio () ()
+  "Increase the master ratio of the current dyn-float-group."
   (symbol-macrolet ((master-ratio (dyn-float-group-master-ratio (current-group))))
     (setf master-ratio (* 1.05 master-ratio))
     (re-tile)))
 (defcommand decrease-master-ratio () ()
+  "Decrease the master ratio of the current dyn-float-group."
   (symbol-macrolet ((master-ratio (dyn-float-group-master-ratio (current-group))))
     (setf master-ratio (* (/ 1 1.05) master-ratio))
     (re-tile)))
-(defcommand default-master-ratio () ()
+(defcommand set-default-master-ratio () ()
+  "Set the master ratio of the current dyn-float-group to the
+default value *DEFAULT-MASTER-RATIO*."
   (symbol-macrolet ((master-ratio (dyn-float-group-master-ratio (current-group))))
     (setf master-ratio *default-master-ratio*)
     (re-tile)))
@@ -391,6 +395,7 @@ background."
 ;; TODO Learn how to use stumpwm's menu and implement this.
 ;; (defcommand select-layout () ())
 
+;; TODO Use macro to abstract the following commands.
 (defcommand toggle-left-vertical-layout () ()
   (symbol-macrolet ((layout-hist (dyn-float-group-layout-hist (current-group))))
     (if (eq (car layout-hist) 'left-vertical)
