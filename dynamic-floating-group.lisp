@@ -233,6 +233,9 @@ this code to ensure correct type."
 
 
 (defun re-tile (&optional (group (stumpwm:current-group)))
+  "The core function that does the retiling. It operates on the
+list WL of unfloating windows, and tile the members according to
+the parameter MASTER-RATIO and CURRENT-LAYOUT."
   (assert (dyn-float-group-p group) ()
           "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
   (progn
@@ -248,7 +251,7 @@ this code to ensure correct type."
 
       ;; Waiting for the fix for a related issue for general floating group.
       ;; https://github.com/stumpwm/stumpwm/issues/864
-      (setf sw (- sw 2))  ; Adhoc hack to respect boarder width FIXME.
+      (setf sw (- sw 2)) ; Adhoc hack to respect boarder width FIXME.
       (setf sh (- sh 18)) ; Adhoc hack to respect modeline FIXME.
 
       (case N
@@ -257,6 +260,11 @@ this code to ensure correct type."
             (car wl)
             :x 0 :y 0 :width sw :height sh))
         (t (case current-layout
+             ('fullscreen
+              (loop for k from 0 to (- N 1)
+                    do (stumpwm::float-window-move-resize
+                        (nth k wl)
+                        :x 0 :y 0 :width sw :height sh)))
              ('left-vertical
               (progn
                 (stumpwm::float-window-move-resize
@@ -269,6 +277,7 @@ this code to ensure correct type."
                           :y (* (round (/ sh (- N 1))) (- k 1))
                           :width (round (* sw (- 1 master-ratio)))
                           :height (round (/ sh (- N 1)))))))
+           ; ('right-vertical "TODO")
              ('horizontal
               (progn
                 (stumpwm::float-window-move-resize
@@ -281,14 +290,8 @@ this code to ensure correct type."
                           :y (round (* sh master-ratio))
                           :width (round (/ sw (- N 1)))
                           :height (round (* sh (- 1 master-ratio)))))))
-             ('fullscreen
-              (loop for k from 0 to (- N 1)
-                    do (stumpwm::float-window-move-resize
-                        (nth k wl)
-                        :x 0 :y 0 :width sw :height sh)))
-             ;; ('right-vertical "TODO")
-             ;; ('fibonacci "TODO")
-             (otherwise (error "Layout isn't supported."))))))))
+           ; ('fibonacci "TODO")
+             (otherwise (error "Layout is not supported."))))))))
 
 (defcommand rotate-window-list
     (&optional
