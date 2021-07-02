@@ -18,11 +18,14 @@
 
 (in-package :stumpwm-dfg)
 
+;;; Parameters
+
 (defparameter *default-layout* 'left-vertical
   "Currently supported layouts are: 'left-vertical 'horizontal
   'fullscreen.")
-
 (defparameter *default-master-ratio* (/ 2 (+ 1 (sqrt 5))))
+
+;;; Classes
 
 (defclass window+ (window)
   ((free :initarg :free
@@ -53,6 +56,8 @@ information will be used when the group re-tiles it.")
 
 (defun dyn-float-group-p (group)
   (eq (type-of group) 'dyn-float-group))
+
+;;;
 
 (defmethod stumpwm:group-add-window
     ((group dyn-float-group)
@@ -91,6 +96,8 @@ information will be used when the group re-tiles it.")
                            (xlib:make-state-keys state-mask)))
         (free-window window group))))
   (call-next-method))
+
+;;;
 
 (defun sync-dyn-order (&optional (group (stumpwm:current-group)))
   (assert (dyn-float-group-p group) ()
