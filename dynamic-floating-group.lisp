@@ -19,7 +19,7 @@
 ;;; TODOs
 ;;;
 ;;; + To implement #'select-layout and get rid of
-;;;   #'toggle-...-layouts.
+;;;   #'toggle-...-layouts. (DONE. STILL TESTING.)
 ;;;
 ;;; + To merge two packages :stumpwm and :stumpwm-dfg (or maybe
 ;;;   not.. await for PuercoPop's opinion).
@@ -28,24 +28,27 @@
 ;;;   floating group.
 ;;;
 ;;; + To implement layouts 'right-vertical, 'fibonacci, and add
-;;;   them to the docstring of *DEFAULT-LAYOUT*.
+;;;   them into *SUPPORTED-LAYOUTS*.
 
 (in-package :stumpwm-dfg)
 
 ;;; Parameters
 
 (defparameter *default-master-ratio* (/ 2 (+ 1 (sqrt 5))))
-(defparameter *default-layout* 'left-vertical
+(defparameter *supported-layouts* '(left-vertical fullscreen horizontal))
+(defparameter *default-layout* (car *supported-layouts*)
   "Currently supported layouts are: 'left-vertical 'horizontal
   'fullscreen. See the body of #'RE-TILE for their details.")
 
 ;;; Classes
 
 (defclass window+ (window)
-  ((drift :initarg t
+  ((window :initarg :window
+           :reader window+-window)
+   (drift :initarg :drift
           :reader window+-drift))
-  :documentation
-  "An augmented window (window+) is a window with some other
+  (:documentation
+   "An augmented window (window+) is a window with some other
 information. Usually, in a dynamic floating group, the
 information will be used during the tiling process (compare
 #'re-tile).
@@ -54,7 +57,7 @@ All windows in a dynamic floating group are floating windows. A
 drifting window is a window+ with :DRIFT slot being T. It is not
 affected by the core tiling function #'RE-TILE. A staying window
 is a window+ with :DRIFT slot being NIL. They are subject to
-#'RE-TILE.")
+#'RE-TILE."))
 
 (defclass dyn-float-group (stumpwm::float-group)
   ((dyn-order :initform nil
@@ -85,9 +88,9 @@ this code to ensure correct type."
     ((group dyn-float-group)
      window
      &key &allow-other-keys)
-  (stumpwm:add-float-window group window)
+  (stumpwm::add-float-window group window)
   (alexandria:appendf (dyn-float-group-dyn-order group)
-                      (list (make-window+ :window window :drift nil)))
+                      (list (make-instance 'window+ :window window :drift nil)))
   (re-tile group))
 
 (defmethod stumpwm:group-delete-window
@@ -141,7 +144,7 @@ DYN-ORDER."
     ;; dyn-order, make one for it.
     (loop for w in (stumpwm::group-windows group)
           unless (member w (mapcar #'window+-window dyn-order))
-          do (push (make-window+ :window w :drift nil) dyn-order))
+          do (push (make-instance 'window+ :window w :drift nil) dyn-order))
     ;; If window W+ does not correspond to a window of GROUP,
     ;; delete W+ from the dyn-order.
     (loop for w+ in dyn-order
@@ -206,10 +209,10 @@ DYN-ORDER."
          (re-tile group)))
 
 (defcommand unfree-all
-    "Make all windows in GROUP stay. It forces re-tiling all
-windows in GROUP."
     (&optional (group (stumpwm:current-group)))
   ()
+  "Make all windows in GROUP stay. It forces re-tiling all
+windows in GROUP."
   (assert (dyn-float-group-p group) ()
           "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
   (progn
@@ -230,11 +233,11 @@ windows in GROUP."
     (re-tile group)))
 
 (defcommand unfree-window
-    "Make WINDOW stay."
     (&optional
      (window (stumpwm:current-window))
      (group (stumpwm:current-group)))
   ()
+  "Make WINDOW stay."
   (assert (dyn-float-group-p group) ()
           "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
   (progn
@@ -327,7 +330,9 @@ the parameter MASTER-RATIO and CURRENT-LAYOUT."
                           :width (round (/ sw (- N 1)))
                           :height (round (* sh (- 1 master-ratio)))))))
            ; ('fibonacci "TODO")
-             (otherwise (error "Layout is not supported."))))))))
+             (otherwise (progn (warn "Layout is not supported. Fall back to the default layout.")
+                               (push *default-layout* layout-hist)
+                               (re-tile)))))))))
 
 (defcommand rotate-window-list
     (&optional
@@ -415,41 +420,64 @@ default value *DEFAULT-MASTER-RATIO*."
     (setf master-ratio *default-master-ratio*)
     (re-tile)))
 
-;; TODO Learn how to use stumpwm's menu and implement this.
-(defcommand select-layout () ()
-  (let ((layout (select-from-menu (current-screen)
-                                  (mapcar #'string '(left-vertical fullscreen horizontal))
-                                  "Select layout: ")))
-    (push (read-from-string layout) layout-hist)
-    (re-tile)))
-
-;; (second (select-from-menu (current-screen)
-;;                           (mapcar (lambda (w)
-;;                                     (list (format-expand *window-formatters* fmt w) w))
-;;                                   windows)
-;;                           prompt
-;;                           (or (position (current-window) windows) 0) ; Initial selection
-;;                           nil           ; Extra keymap
-;;                           filter-pred))
-
-;; TODO Use macro to abstract the following commands.
-(defcommand toggle-left-vertical-layout () ()
+(defcommand select-layout (&optional layout) ()
   (symbol-macrolet ((layout-hist (dyn-float-group-layout-hist (current-group))))
-    (if (eq (car layout-hist) 'left-vertical)
-        (push (nth 1 layout-hist) layout-hist)
-        (push 'left-vertical layout-hist))
+    (when (null layout)
+      (progn
+        (setf layout
+              (select-from-menu (current-screen)
+                                (mapcar #'string *supported-layouts*)
+                                "Select layout: "))
+        ;; TODO Anyway to fix this adhoc solution?
+        (setf layout (concatenate 'string "stumpwm-dfg::" (car layout)))
+        (setf layout (read-from-string layout))))
+    (push layout layout-hist)
     (re-tile)))
 
-(defcommand toggle-horizontal-layout () ()
-  (symbol-macrolet ((layout-hist (dyn-float-group-layout-hist (current-group))))
-    (if (eq (car layout-hist) 'horizontal)
-        (push (nth 1 layout-hist) layout-hist)
-        (push 'horizontal layout-hist))
-    (re-tile)))
+;; TODO - TESTING Use macro to abstract the following commands.
+;; (defcommand toggle-left-vertical-layout () ()
+;;   (symbol-macrolet ((layout-hist (dyn-float-group-layout-hist (current-group))))
+;;     (if (eq (car layout-hist) 'left-vertical)
+;;         (push (nth 1 layout-hist) layout-hist) ;TODO known bug while init
+;;         (push 'left-vertical layout-hist))
+;;     (re-tile)))
 
-(defcommand toggle-fullscreen-layout () ()
-  (symbol-macrolet ((layout-hist (dyn-float-group-layout-hist (current-group))))
-    (if (eq (car layout-hist) 'fullscreen)
-        (push (nth 1 layout-hist) layout-hist)
-        (push 'fullscreen layout-hist))
-    (re-tile)))
+;; (defcommand toggle-horizontal-layout () ()
+;;   (symbol-macrolet ((layout-hist (dyn-float-group-layout-hist (current-group))))
+;;     (if (eq (car layout-hist) 'horizontal)
+;;         (push (nth 1 layout-hist) layout-hist)
+;;         (push 'horizontal layout-hist))
+;;     (re-tile)))
+
+;; (defcommand toggle-fullscreen-layout () ()
+;;   (symbol-macrolet ((layout-hist (dyn-float-group-layout-hist (current-group))))
+;;     (if (eq (car layout-hist) 'fullscreen)
+;;         (push (nth 1 layout-hist) layout-hist)
+;;         (push 'fullscreen layout-hist))
+;;     (re-tile)))
+
+(defmacro define-toggle-layout (layout)
+  `(defcommand
+       ,(read-from-string (concatenate 'string
+                                       "toggle-"
+                                       (string (eval layout))
+                                       "-layout"))
+       () ()
+     (symbol-macrolet ((layout-hist (dyn-float-group-layout-hist (current-group))))
+       (let ((current-layout (car layout-hist)))
+         (if (eq current-layout ,layout)
+             (select-layout (second layout-hist))
+             (select-layout ,layout))))))
+
+;; (defcommand toggle-fullscreen-layout () ()
+;;   (symbol-macrolet ((layout-hist (dyn-float-group-layout-hist (current-group))))
+;;     (let ((current-layout (car layout-hist)))
+;;       (if (eq current-layout 'fullscreen)
+;;           (select-layout (second layout-hist))
+;;           (select-layout 'fullscreen)))))
+
+;; TODO Implement this nicely into a loop.
+;; Note that the operator is a macro.
+(define-toggle-layout 'horizontal)
+(define-toggle-layout 'fullscreen)
+(define-toggle-layout 'left-verticle)
