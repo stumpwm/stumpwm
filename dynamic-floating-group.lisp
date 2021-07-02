@@ -420,6 +420,10 @@ default value *DEFAULT-MASTER-RATIO*."
     (re-tile)))
 
 (defcommand select-layout (&optional layout) ()
+  "Prompt a menu for the user to select a layout, if LAYOUT is
+NIL. Push LAYOUT to the history list of layouts. Call the
+function #'re-tile, which regards the first member in the history
+list as the current layout."
   (symbol-macrolet ((layout-hist (dyn-float-group-layout-hist (current-group))))
     (when (null layout)
       (progn
@@ -431,7 +435,18 @@ default value *DEFAULT-MASTER-RATIO*."
         (setf layout (concatenate 'string "stumpwm-dfg::" (car layout)))
         (setf layout (read-from-string layout))))
     (push layout layout-hist)
+    (stumpwm::echo (format nil "LAYOUT: ~a" layout))
     (re-tile)))
+
+(defcommand select-next-layout () ()
+  "Select the next layout in *SUPPORTED-LAYOUTS*."
+  (symbol-macrolet ((layout-hist (dyn-float-group-layout-hist (current-group))))
+    (let ((current-layout (car layout-hist))
+          next-layout)
+      (setf next-layout (second (member current-layout *supported-layouts*)))
+      (when (null next-layout)
+        (setf next-layout (car *supported-layouts*)))
+      (select-layout next-layout))))
 
 (defmacro define-toggle-layout (layout)
   `(defcommand
