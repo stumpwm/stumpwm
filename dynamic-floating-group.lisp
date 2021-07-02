@@ -355,19 +355,18 @@ the (n+1)th element of RING."
       (re-tile group))))
 
 (defcommand gnew-dyn-float
-    (name) ((:rest "Group Name: "))
+    (name &optional bg) ((:rest "Group Name: "))
   "Create a new dynamic floating group named NAME."
   (unless name (throw 'error :abort))
   (add-group (stumpwm:current-screen) name
-             :type 'dyn-float-group))
+             :type 'dyn-float-group
+             :background bg))
 
 (defcommand gnew-dyn-float-bg
     (name) ((:rest "Group Name: "))
-  "Create a new dynamic floating group named NAME in the background."
-  (unless name (throw 'error :abort))
-  (add-group (stumpwm:current-screen) name
-             :type 'dyn-float-group
-             :background t))
+  "Create a new dynamic floating group named NAME in the
+background."
+  (gnew-dyn-float name t))
 
 (defcommand %print-devel-stat () ()
   "A command that helps development. Should not be exported."
