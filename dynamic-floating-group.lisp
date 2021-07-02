@@ -16,19 +16,6 @@
 ;; along with this software; see the file COPYING.  If not, see
 ;; <http://www.gnu.org/licenses/>.
 
-;;; TODOs
-;;;
-;;; + To write a documentation of the this feature: dynamic
-;;;   floating group.
-;;;
-;;; + Make a list of known issues.
-;;;
-;;; + To merge two packages :stumpwm and :stumpwm-dfg (or maybe
-;;;   not.. await for PuercoPop's opinion).
-;;;
-;;; + To implement layouts 'right-vertical, 'fibonacci, and add
-;;;   them into *SUPPORTED-LAYOUTS*.
-
 (in-package :stumpwm-dfg)
 
 ;;; Parameters
@@ -355,6 +342,7 @@ the parameter MASTER-RATIO and CURRENT-LAYOUT."
      (group (stumpwm:current-group))
      (n (current-window-position group)))
   ()
+  "Permute the window at point with the next one."
   (assert (dyn-float-group-p group) ()
           "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
   (flet ((permute-at (ring n)
@@ -380,6 +368,10 @@ the (n+1)th element of RING."
           ((dyno (dyn-float-group-dyn-order group)))
         (setf dyno (permute-at dyno n)))
       (re-tile group))))
+
+(defcommand permute-window-list--reverse () ()
+  "Permute the window at point with the last one."
+  (permute-window-list t))
 
 (defcommand gnew-dyn-float
     (name &optional bg) ((:rest "Group Name: "))
