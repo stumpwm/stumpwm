@@ -101,9 +101,21 @@ this code to ensure correct type."
 ;;;
 
 (defun sync-dyn-order (&optional (group (stumpwm:current-group)))
+  "Recall that a window+ is a window with some extra data.
+Dynamic-floating-group works by operating on the DYN-ORDER, i.e.
+the list of window+ of the group.
+
+This function ensures that both the ordinary window list and the
+window+ list are in sync. It then ensures that the free windows
+stay in the beginning of the DYN-ORDER. After doing so, it
+ensures the ordinary window list respects the order of
+DYN-ORDER."
   (assert (dyn-float-group-p group) ()
           "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
   (symbol-macrolet ((dyn-order (dyn-float-group-dyn-order group)))
+
+    ;; Sync (w+) according to (w).
+    ;;
     ;; If window W does not have a corresponding W+ in the
     ;; dyn-order, make one for it.
     (loop for w in (stumpwm::group-windows group)
@@ -114,6 +126,7 @@ this code to ensure correct type."
     (loop for w+ in dyn-order
           unless (member (window+-window w+) (stumpwm::group-windows group))
           do (alexandria:deletef dyn-order w+))
+
     ;; Make the free windows on top of the stack.
     (setf dyn-order
           (append (remove-if (lambda (dyno)
@@ -123,7 +136,7 @@ this code to ensure correct type."
                                (equal t (window+-free dyno)))
                              dyn-order)))
     ;; Let the (group-windows group) respect the order of
-    ;; dyn-order
+    ;; dyn-order.
     (setf (stumpwm::group-windows group)
           (mapcar #'window+-window dyn-order))))
 
