@@ -18,14 +18,13 @@
 
 ;;; TODOs
 ;;;
-;;; + To implement #'select-layout and get rid of
-;;;   #'toggle-...-layouts. (DONE. STILL TESTING.)
+;;; + To write a documentation of the this feature: dynamic
+;;;   floating group.
+;;;
+;;; + Make a list of known issues.
 ;;;
 ;;; + To merge two packages :stumpwm and :stumpwm-dfg (or maybe
 ;;;   not.. await for PuercoPop's opinion).
-;;;
-;;; + To write a documentation of the this feature: dynamic
-;;;   floating group.
 ;;;
 ;;; + To implement layouts 'right-vertical, 'fibonacci, and add
 ;;;   them into *SUPPORTED-LAYOUTS*.
@@ -434,28 +433,6 @@ default value *DEFAULT-MASTER-RATIO*."
     (push layout layout-hist)
     (re-tile)))
 
-;; TODO - TESTING Use macro to abstract the following commands.
-;; (defcommand toggle-left-vertical-layout () ()
-;;   (symbol-macrolet ((layout-hist (dyn-float-group-layout-hist (current-group))))
-;;     (if (eq (car layout-hist) 'left-vertical)
-;;         (push (nth 1 layout-hist) layout-hist) ;TODO known bug while init
-;;         (push 'left-vertical layout-hist))
-;;     (re-tile)))
-
-;; (defcommand toggle-horizontal-layout () ()
-;;   (symbol-macrolet ((layout-hist (dyn-float-group-layout-hist (current-group))))
-;;     (if (eq (car layout-hist) 'horizontal)
-;;         (push (nth 1 layout-hist) layout-hist)
-;;         (push 'horizontal layout-hist))
-;;     (re-tile)))
-
-;; (defcommand toggle-fullscreen-layout () ()
-;;   (symbol-macrolet ((layout-hist (dyn-float-group-layout-hist (current-group))))
-;;     (if (eq (car layout-hist) 'fullscreen)
-;;         (push (nth 1 layout-hist) layout-hist)
-;;         (push 'fullscreen layout-hist))
-;;     (re-tile)))
-
 (defmacro define-toggle-layout (layout)
   `(defcommand
        ,(read-from-string (concatenate 'string
@@ -469,15 +446,8 @@ default value *DEFAULT-MASTER-RATIO*."
              (select-layout (second layout-hist))
              (select-layout ,layout))))))
 
-;; (defcommand toggle-fullscreen-layout () ()
-;;   (symbol-macrolet ((layout-hist (dyn-float-group-layout-hist (current-group))))
-;;     (let ((current-layout (car layout-hist)))
-;;       (if (eq current-layout 'fullscreen)
-;;           (select-layout (second layout-hist))
-;;           (select-layout 'fullscreen)))))
-
 ;; TODO Implement this nicely into a loop.
-;; Note that the operator is a macro.
+;;      Note that the operator is a macro.
 (define-toggle-layout 'horizontal)
 (define-toggle-layout 'fullscreen)
 (define-toggle-layout 'left-verticle)
