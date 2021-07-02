@@ -39,19 +39,19 @@ information will be used when the group re-tiles it.")
   ((dyn-order :initform nil
               :accessor dyn-float-group-dyn-order
               :documentation
-              "The list of augmented windows (window+) that the
-              group holds. A dyn-float-group should tile
-              automatically according to it.")
+              "The list of augmented windows (window+) that a
+              dynamic-floating group holds. The dyn-float-group
+              should tile automatically according to its
+              dyn-order.")
    (layout-hist :initform (list *default-layout*)
                 :accessor dyn-float-group-layout-hist
                 :documentation
-                "The list of layout histories. The first element
-                is interpreted as the current layout.")
+                "The list of layout histories, where the first
+                element is interpreted as the current layout.")
    (master-ratio :initform *default-master-ratio*
                  :accessor dyn-float-group-master-ratio
                  :documentation
-                 "The ratio that the master window will take
-                 apart.")))
+                 "The ratio of the master window takes.")))
 
 (defun dyn-float-group-p (group)
   (eq (type-of group) 'dyn-float-group))
