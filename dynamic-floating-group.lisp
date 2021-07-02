@@ -187,20 +187,18 @@ DYN-ORDER."
   "Make all windows in GROUP drift."
   (assert (dyn-float-group-p group) ()
           "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
-  ;; alias: un-tile-all
   (progn (loop for w+ in (dyn-float-group-dyn-order group)
                do (setf (window+-drift w+) t))
          (re-tile group)))
 
-;; This will effectively force re-tile all windows in this group.
 (defcommand unfree-all
-    "Make all windows in GROUP stay."
+    "Make all windows in GROUP stay. It forces re-tiling all
+windows in GROUP."
     (&optional (group (stumpwm:current-group)))
   ()
   (assert (dyn-float-group-p group) ()
           "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
   (progn
-    ;; alias: tile-all
     (loop for w+ in (dyn-float-group-dyn-order group)
           do (setf (window+-drift w+) nil))
     (re-tile group)))
