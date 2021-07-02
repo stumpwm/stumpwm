@@ -16,6 +16,19 @@
 ;; along with this software; see the file COPYING.  If not, see
 ;; <http://www.gnu.org/licenses/>.
 
+;;; TODOs
+;;;
+;;; + To implement #'select-layout and get rid of
+;;;   #'toggle-...-layouts.
+;;;
+;;; + To merge two packages :stumpwm and :stumpwm-dfg.
+;;;
+;;; + To write a documentation of the this feature: dynamic
+;;;   floating group.
+;;;
+;;; + To implement layouts 'right-vertical, 'fibonacci, and add
+;;;   them to the docstring of *DEFAULT-LAYOUT*.
+
 (in-package :stumpwm-dfg)
 
 ;;; Parameters
