@@ -54,6 +54,8 @@ information will be used when the group re-tiles it.")
                  "The ratio of the master window takes.")))
 
 (defun dyn-float-group-p (group)
+  "The predicate of dyn-float-group. It is used frequently in
+this code to ensure correct type."
   (eq (type-of group) 'dyn-float-group))
 
 ;;;
