@@ -28,12 +28,19 @@
 ;;; Classes
 
 (defclass window+ (window)
-  ((free :initarg :free
-         :reader window+-free))
+  ((drift :initarg t
+          :reader window+-drift))
   :documentation
   "An augmented window (window+) is a window with some other
 information. Usually, in a dynamic floating group, the
-information will be used when the group re-tiles it.")
+information will be used during the tiling process (compare
+#'re-tile).
+
+All windows in a dynamic floating group are floating windows. A
+drifting window is a window+ with :DRIFT slot being T. It is not
+affected by the core tiling function #'RE-TILE. A staying window
+is a window+ with :DRIFT slot being NIL. They are subject to
+#'RE-TILE.")
 
 (defclass dyn-float-group (stumpwm::float-group)
   ((dyn-order :initform nil
@@ -66,7 +73,7 @@ this code to ensure correct type."
      &key &allow-other-keys)
   (stumpwm:add-float-window group window)
   (alexandria:appendf (dyn-float-group-dyn-order group)
-                      (list (make-window+ :window window :free nil)))
+                      (list (make-window+ :window window :drift nil)))
   (re-tile group))
 
 (defmethod stumpwm:group-delete-window
@@ -106,7 +113,7 @@ Dynamic-floating-group works by operating on the DYN-ORDER, i.e.
 the list of window+ of the group.
 
 This function ensures that both the ordinary window list and the
-window+ list are in sync. It then ensures that the free windows
+window+ list are in sync. It then ensures that the drifting windows
 stay in the beginning of the DYN-ORDER. After doing so, it
 ensures the ordinary window list respects the order of
 DYN-ORDER."
@@ -120,20 +127,20 @@ DYN-ORDER."
     ;; dyn-order, make one for it.
     (loop for w in (stumpwm::group-windows group)
           unless (member w (mapcar #'window+-window dyn-order))
-          do (push (make-window+ :window w :free nil) dyn-order))
+          do (push (make-window+ :window w :drift nil) dyn-order))
     ;; If window W+ does not correspond to a window of GROUP,
     ;; delete W+ from the dyn-order.
     (loop for w+ in dyn-order
           unless (member (window+-window w+) (stumpwm::group-windows group))
           do (alexandria:deletef dyn-order w+))
 
-    ;; Make the free windows on top of the stack.
+    ;; Make the drifting windows on top of the stack.
     (setf dyn-order
           (append (remove-if (lambda (dyno)
-                               (equal nil (window+-free dyno)))
+                               (equal nil (window+-drift dyno)))
                              dyn-order)
                   (remove-if (lambda (dyno)
-                               (equal t (window+-free dyno)))
+                               (equal t (window+-drift dyno)))
                              dyn-order)))
     ;; Let the (group-windows group) respect the order of
     ;; dyn-order.
@@ -177,15 +184,17 @@ DYN-ORDER."
             :test #'equal))
 
 (defun free-all (&optional (group (stumpwm:current-group)))
+  "Make all windows in GROUP drift."
   (assert (dyn-float-group-p group) ()
           "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
   ;; alias: un-tile-all
   (progn (loop for w+ in (dyn-float-group-dyn-order group)
-               do (setf (window+-free w+) t))
+               do (setf (window+-drift w+) t))
          (re-tile group)))
 
 ;; This will effectively force re-tile all windows in this group.
 (defcommand unfree-all
+    "Make all windows in GROUP stay."
     (&optional (group (stumpwm:current-group)))
   ()
   (assert (dyn-float-group-p group) ()
@@ -193,21 +202,23 @@ DYN-ORDER."
   (progn
     ;; alias: tile-all
     (loop for w+ in (dyn-float-group-dyn-order group)
-          do (setf (window+-free w+) nil))
+          do (setf (window+-drift w+) nil))
     (re-tile group)))
 
 (defun free-window (&optional
                       (window (stumpwm:current-window))
                       (group (stumpwm:current-group)))
+  "Make WINDOW drift."
   (assert (dyn-float-group-p group) ()
           "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
   (progn
     (loop for w+ in (dyn-float-group-dyn-order group)
           if (equal window (window+-window w+))
-            do (setf (window+-free w+) t))
+            do (setf (window+-drift w+) t))
     (re-tile group)))
 
 (defcommand unfree-window
+    "Make WINDOW stay."
     (&optional
      (window (stumpwm:current-window))
      (group (stumpwm:current-group)))
@@ -220,34 +231,34 @@ DYN-ORDER."
             do (when (equal window (window+-window w+))
                  (progn
                    (alexandria:deletef dyno w+)
-                   (setf (window+-free w+) nil)
+                   (setf (window+-drift w+) nil)
                    (if (null dyno)
                        (setf dyno (list w+))
                        (push w+ (cdr (last dyno))))))))
     (re-tile group)))
 
-(defun toggle-freeness-current-window
+(defun toggle-drift-current-window
     (&optional
        (window (stumpwm:current-window))
        (group (stumpwm:current-group)))
   (assert (dyn-float-group-p group) ()
           "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
   (progn
-    (if (eq (window+-free (current-window+ group)) t)
+    (if (eq (window+-drift (current-window+ group)) t)
         (unfree-window window group)
         (free-window window group))
     (re-tile group)))
 
-(defun unfloating-windows+ (&optional (group (stumpwm:current-group)))
-  "Return the list of window+s whose :FREE slot is nil."
+(defun staying-windows+ (&optional (group (stumpwm:current-group)))
+  "Return the list of window+s whose :DRIFT slot is nil."
   (assert (dyn-float-group-p group) ()
           "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
-  (remove-if 'window+-free (dyn-float-group-dyn-order group)))
+  (remove-if 'window+-drift (dyn-float-group-dyn-order group)))
 
 
 (defun re-tile (&optional (group (stumpwm:current-group)))
   "The core function that does the retiling. It operates on the
-list WL of unfloating windows, and tile the members according to
+list WL of staying windows, and tile the members according to
 the parameter MASTER-RATIO and CURRENT-LAYOUT."
   (assert (dyn-float-group-p group) ()
           "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
@@ -256,7 +267,7 @@ the parameter MASTER-RATIO and CURRENT-LAYOUT."
     (let* ((cs (slot-value (stumpwm:current-screen) 'number))
            (sw (xlib:screen-width cs))
            (sh (xlib:screen-height cs))
-           (wl (mapcar #'window+-window (unfloating-windows+ group)))
+           (wl (mapcar #'window+-window (staying-windows+ group)))
            (N (length wl))
 
            (master-ratio (dyn-float-group-master-ratio group))
