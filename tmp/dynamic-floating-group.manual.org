@@ -1,0 +1,121 @@
+* Dynamic Floating Group
+
+In a dynamic floating group, a window can be either tiled or
+floating.
+
+** Design Principle
+
+Dynamic Floating Group is built upon the ordinary Floating Group,
+in which all windows are floating. How dynamic floating group
+works is based on the following.
+
+1. A window with extra information attached is called an
+   augmented window, or a =window+=.
+2. The group has a list of augmented windows; the list is called
+   the dynamic-order of the group.
+3. The group reads the dynamic-order and tiles accordingly. This
+   allows floating windows to "stay".
+4. Since the dynamic-order is a separate list from the original
+   window list, certain syncing should be done properly. This is
+   achieved by the function =syn-dyn-order=.
+
+** Stay, Drift, Resize.
+
+Since Dynamic Floating Group is based on Floating Group, features
+are inherited. In particular,
+
+1. With the key =stumpwm::*float-window-modifier*= pressed, one can
+   free the window that "stays" and allow it to "drift" by
+   dragging them with the cursor. One can also resize the window
+   by dragging with the secondary mouse key. These are the same
+   as in the ordinary floating group.
+
+2. To let the window "stay" again, apply the function
+   =unfree-window= or =unfree-all=.
+
+** Frequently Used Commands
+
+Practically, the user will frequently use the following commands.
+It is useful to bind them to keys.
+
++ =(focus-next-window)=, =(focus-last-window)=
+
+  Basic movement of focus.
+
++ =(permute-window-list)=, =(permute-window-list--reverse)=
+
+  Basic movement of windows.
+
++ =(unfree-all)=, =:super+(mouse:1/2)=
+
+  Resize, let drift, and let stay the window(s).
+
++ =(increase-master-ratio)=, =(decrease-master-ratio)=,
+  =(set-default-master-ratio)=
+
+  Adjust the master ratio.
+
++ =(toggle-fullscreen-layout)=, =(select-next-layout)=
+
+  Switch between layouts easily.
+
+** Example Keybinding
+
+The following is an example of keybindings that address well with
+the Dynamic Floating Group. It is exactly what the author uses.
+
+#+begin_src lisp :eval never
+(in-package :stumpwm-dfg)
+
+;; vim-like movements
+(define-key *top-map* (stumpwm:kbd "s-j") "focus-next-window")
+(define-key *top-map* (stumpwm:kbd "s-k") "focus-last-window")
+(define-key *top-map* (stumpwm:kbd "s-J") "permute-window-list")
+(define-key *top-map* (stumpwm:kbd "s-K") "permute-window-list--reverse")
+
+(define-key *top-map* (stumpwm:kbd "s-_") "unfree-all")
+
+(define-key *top-map* (stumpwm:kbd "s-+") "increase-master-ratio")
+(define-key *top-map* (stumpwm:kbd "s--") "decrease-master-ratio")
+(define-key *top-map* (stumpwm:kbd "s-=") "set-default-master-ratio")
+
+(define-key *top-map* (stumpwm:kbd "s-f") "toggle-fullscreen-layout")
+(define-key *top-map* (stumpwm:kbd "s-F") "select-next-layout")
+#+end_src
+
+** Known Issues
+
++ Losing focus
+
+  With no window presented in a group, =stumpwm= loses focus after
+  interacting with special windows (e.g. =dmenu=, =trayer=).
+  Key-binds become ineffective, and the user would have to =pkill
+  -9 stumpwm= from another console. I am not sure if this is a
+  problem in the ordinary floating group.
+
++ Integration with Modeline
+
+  Currently, =dynamic-floating-group= tiles the windows assuming
+  that the modeline is presented and placed in the bottom of the
+  screen, which might not be the case. [[https://github.com/stumpwm/stumpwm/issues/864][Related]].
+
++ Unimplemented Layouts
+
+  The layouts =right-vertical= and =fibonacci= are await to be
+  implemented.
+
++ Merging packages
+
+  Besides =stumpwm= and =stumpwm-user=, a new package =stumpwm-dfg= was
+  created. Merging the latter back to =stumpwm= require some care
+  on naming. For example, it makes sense to rename
+  =*default-layouts*=. Leaving it as such makes it easy to debug.
+  Dynamic Floating Group was developed in mid 2021, and it will
+  take some time to be widely tested. Merging the packages back
+  can be done a while later, and should not be hard.
+
+** Acknowledgment
+
+Dynamic Floating Group was developed by Jin-Cheng Guu
+(github/jcguu95). The author thanks (github/PuercoPop) for
+several useful comments.
