@@ -21,7 +21,8 @@
 ;;; + To implement #'select-layout and get rid of
 ;;;   #'toggle-...-layouts.
 ;;;
-;;; + To merge two packages :stumpwm and :stumpwm-dfg.
+;;; + To merge two packages :stumpwm and :stumpwm-dfg (or maybe
+;;;   not.. await for PuercoPop's opinion).
 ;;;
 ;;; + To write a documentation of the this feature: dynamic
 ;;;   floating group.
@@ -415,7 +416,21 @@ default value *DEFAULT-MASTER-RATIO*."
     (re-tile)))
 
 ;; TODO Learn how to use stumpwm's menu and implement this.
-;; (defcommand select-layout () ())
+(defcommand select-layout () ()
+  (let ((layout (select-from-menu (current-screen)
+                                  (mapcar #'string '(left-vertical fullscreen horizontal))
+                                  "Select layout: ")))
+    (push (read-from-string layout) layout-hist)
+    (re-tile)))
+
+;; (second (select-from-menu (current-screen)
+;;                           (mapcar (lambda (w)
+;;                                     (list (format-expand *window-formatters* fmt w) w))
+;;                                   windows)
+;;                           prompt
+;;                           (or (position (current-window) windows) 0) ; Initial selection
+;;                           nil           ; Extra keymap
+;;                           filter-pred))
 
 ;; TODO Use macro to abstract the following commands.
 (defcommand toggle-left-vertical-layout () ()
