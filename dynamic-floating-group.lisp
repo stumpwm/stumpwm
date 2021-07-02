@@ -35,7 +35,6 @@
 information. Usually, in a dynamic floating group, the
 information will be used when the group re-tiles it.")
 
-;; A dyn-order, or a dynamic order, is a list of window+.
 (defclass dyn-float-group (stumpwm::float-group)
   ((dyn-order :initform nil
               :accessor dyn-float-group-dyn-order
