@@ -369,7 +369,7 @@ the (n+1)th element of RING."
              :type 'dyn-float-group
              :background t))
 
-(defcommand print-devel-stat () ()
+(defcommand %print-devel-stat () ()
   "A command that helps development. Should not be exported."
   (echo (prin1-to-string
          (list (dyn-float-group-dyn-order (stumpwm:current-group))
