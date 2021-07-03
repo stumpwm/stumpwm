@@ -30,9 +30,9 @@
 
 (defclass window+ (window)
   ((window :initarg :window
-           :reader window+-window)
+           :accessor window+-window)
    (drift :initarg :drift
-          :reader window+-drift))
+          :accessor window+-drift))
   (:documentation
    "An augmented window (window+) is a window with some other
 information. Usually, in a dynamic floating group, the
@@ -95,7 +95,7 @@ this code to ensure correct type."
   (let ((xwin (stumpwm:window-xwin window)))
     (multiple-value-bind (relx rely same-screen-p child state-mask)
         (xlib:query-pointer (stumpwm::window-parent window))
-      (declare (ignore same-screen-p child))
+      (declare (ignore relx rely same-screen-p child))
       (when (or
              (< x (xlib:drawable-x xwin))
              (> x (+ (xlib:drawable-width xwin)
@@ -285,12 +285,12 @@ the parameter MASTER-RATIO and CURRENT-LAYOUT."
             (car wl)
             :x 0 :y 0 :width sw :height sh))
         (t (case current-layout
-             ('fullscreen
+             (fullscreen
               (loop for k from 0 to (- N 1)
                     do (stumpwm::float-window-move-resize
                         (nth k wl)
                         :x 0 :y 0 :width sw :height sh)))
-             ('left-vertical
+             (left-vertical
               (progn
                 (stumpwm::float-window-move-resize
                  (car wl)
@@ -302,8 +302,8 @@ the parameter MASTER-RATIO and CURRENT-LAYOUT."
                           :y (* (round (/ sh (- N 1))) (- k 1))
                           :width (round (* sw (- 1 master-ratio)))
                           :height (round (/ sh (- N 1)))))))
-           ; ('right-vertical "TODO")
-             ('horizontal
+           ; (right-vertical "TODO")
+             (horizontal
               (progn
                 (stumpwm::float-window-move-resize
                  (car wl)
@@ -315,9 +315,10 @@ the parameter MASTER-RATIO and CURRENT-LAYOUT."
                           :y (round (* sh master-ratio))
                           :width (round (/ sw (- N 1)))
                           :height (round (* sh (- 1 master-ratio)))))))
-           ; ('fibonacci "TODO")
+           ; (fibonacci "TODO")
              (otherwise (progn (warn "Layout is not supported. Fall back to the default layout.")
-                               (push *default-layout* layout-hist)
+                               (symbol-macrolet ((layout-hist (dyn-float-group-layout-hist (current-group))))
+                                 (push *default-layout* layout-hist))
                                (re-tile)))))))))
 
 (defcommand rotate-window-list
