@@ -130,21 +130,20 @@ DYN-ORDER."
     ;; dyn-order, make one for it.
     (loop for w in (stumpwm::group-windows group)
           unless (member w (mapcar #'window+-window dyn-order))
-          do (push (make-instance 'window+ :window w :drift nil) dyn-order))
+            do (push (make-instance 'window+ :window w :drift nil) dyn-order))
     ;; If window W+ does not correspond to a window of GROUP,
     ;; delete W+ from the dyn-order.
     (loop for w+ in dyn-order
           unless (member (window+-window w+) (stumpwm::group-windows group))
-          do (alexandria:deletef dyn-order w+))
+            do (alexandria:deletef dyn-order w+))
 
     ;; Make the drifting windows on top of the stack.
-    (setf dyn-order
-          (append (remove-if (lambda (dyno)
-                               (equal nil (window+-drift dyno)))
-                             dyn-order)
-                  (remove-if (lambda (dyno)
-                               (equal t (window+-drift dyno)))
-                             dyn-order)))
+    (flet ((drifting-first (win-a win-b)
+             (declare (ignore win-b))
+             (window+-drift win-a)))
+      (setf dyn-order
+            (sort (copy-list dyn-order) #'drifting-first)))
+
     ;; Let the (group-windows group) respect the order of
     ;; dyn-order.
     (setf (stumpwm::group-windows group)
