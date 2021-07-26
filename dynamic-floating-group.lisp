@@ -469,8 +469,10 @@ list as the current layout."
 ;; 2. (X) Cooperate with the modeline : how to read where it is, whether
 ;; it is active.. etc.
 ;;
-;; another distant goal: add a hook to re-tile every time
-;; mode-line is toggled.
+;; Another distant goal: add a hook to re-tile every time
+;; mode-line is toggled. Key variable: *destroy-mode-line-hook*.
+;; We probably need to create variables *create-mode-line-hook*
+;; and *toggle-mode-line-hook* as well.
 
 (defun head-mode-line-height (&optional (head (current-head)))
   (let* ((modeline (stumpwm::head-mode-line head)))
