@@ -275,8 +275,9 @@ the parameter MASTER-RATIO and CURRENT-LAYOUT."
            (master-ratio (dyn-float-group-master-ratio group))
            (current-layout (car (dyn-float-group-layout-hist group))))
 
-      (setf sh (- sh (head-mode-line-height)
-                  (* 2 stumpwm::*float-window-border*)))
+      (setf sw (- sw (* 2 stumpwm::*float-window-border*)))
+      (setf sh (- sh (* 2 stumpwm::*float-window-border*)
+                  (head-mode-line-height)))
 
       (case N
         (0 nil)
@@ -463,7 +464,7 @@ list as the current layout."
 
 ;;;; Developmental Notes
 
-;; 1. ( ) Create for types of window+s: :pin-top, :pin-bottom, :tiled,
+;; 1. ( ) New types of w+: :pin-top, :pin-bottom, :tiled,
 ;; :unmanaged. The last one will replace :free .
 
 ;; 2. (X) Cooperate with the modeline : how to read where it is, whether
@@ -490,9 +491,11 @@ list as the current layout."
   (let* ((screen-number (slot-value screen 'number)))
     (xlib:screen-height screen-number)))
 
-;; 3. ( ) Resizing and moving the floating windows (with keybinding).
+;; 3. ( ) Resizing and moving the floating windows (with
+;; keybinding). ("Do this after New types of w+")
 
-;; 4. ( ) Drop down window! (:pin-top)
+;; 4. ( ) Drop down window! (:pin-top) ("Do this after New types
+;; of w+")
 
 ;; 5. ( ) Gap support.
 
