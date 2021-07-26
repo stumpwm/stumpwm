@@ -458,3 +458,21 @@ list as the current layout."
 (define-toggle-layout 'horizontal)
 (define-toggle-layout 'fullscreen)
 (define-toggle-layout 'left-verticle)
+
+
+
+;;;; Developmental Notes
+
+;; 1. Create for types of window+s: :pin-top, :pin-bottom, :tiled,
+;; :unmanaged. The last one will replace :free .
+
+;; 2. Cooperate with the modeline : how to read where it is, whether
+;; it is active.. etc.
+
+;; 3. Resizing and moving the floating windows (with keybinding).
+
+;; 4. Drop down window! (:pin-top)
+
+;; 5. Gap support.
+
+;; 6. More distant plan : multilayer support.
