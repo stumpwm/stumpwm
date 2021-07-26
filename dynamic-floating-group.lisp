@@ -264,57 +264,57 @@ the parameter MASTER-RATIO and CURRENT-LAYOUT."
           "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
   (progn
     (sync-dyn-order group)
-    (let* ((cs (slot-value (stumpwm:current-screen) 'number))
-           (sw (xlib:screen-width cs))
-           (sh (xlib:screen-height cs))
+    (let* ((sw (screen-width))
+           (sh (screen-height))
            (wl (mapcar #'window+-window (staying-windows+ group)))
            (N (length wl))
+           (y0 (if (eq (head-mode-line-position) :top)
+                   (head-mode-line-height)
+                   0))
 
            (master-ratio (dyn-float-group-master-ratio group))
            (current-layout (car (dyn-float-group-layout-hist group))))
 
-      ;; Waiting for the fix for a related issue for general floating group.
-      ;; https://github.com/stumpwm/stumpwm/issues/864
-      (setf sw (- sw 2)) ; Adhoc hack to respect boarder width FIXME.
-      (setf sh (- sh 18)) ; Adhoc hack to respect modeline FIXME.
+      (setf sh (- sh (head-mode-line-height)
+                  (* 2 stumpwm::*float-window-border*)))
 
       (case N
         (0 nil)
         (1 (stumpwm::float-window-move-resize
             (car wl)
-            :x 0 :y 0 :width sw :height sh))
+            :x 0 :y y0 :width sw :height sh))
         (t (case current-layout
              (fullscreen
               (loop for k from 0 to (- N 1)
                     do (stumpwm::float-window-move-resize
                         (nth k wl)
-                        :x 0 :y 0 :width sw :height sh)))
+                        :x 0 :y y0 :width sw :height sh)))
              (left-vertical
               (progn
                 (stumpwm::float-window-move-resize
                  (car wl)
-                 :x 0 :y 0 :width (round (* sw master-ratio)) :height sh)
+                 :x 0 :y y0 :width (round (* sw master-ratio)) :height sh)
                 (loop for k from 1 to (- N 1)
                       do (stumpwm::float-window-move-resize
                           (nth k wl)
                           :x (round (* sw master-ratio))
-                          :y (* (round (/ sh (- N 1))) (- k 1))
+                          :y (+ y0 (* (round (/ sh (- N 1))) (- k 1)))
                           :width (round (* sw (- 1 master-ratio)))
                           :height (round (/ sh (- N 1)))))))
-           ; (right-vertical "TODO")
+                                        ; (right-vertical "TODO")
              (horizontal
               (progn
                 (stumpwm::float-window-move-resize
                  (car wl)
-                 :x 0 :y 0 :width sw :height (round (* sh master-ratio)))
+                 :x 0 :y y0 :width sw :height (round (* sh master-ratio)))
                 (loop for k from 1 to (- N 1)
                       do (stumpwm::float-window-move-resize
                           (nth k wl)
                           :x (* (round (/ sw (- N 1))) (- k 1))
-                          :y (round (* sh master-ratio))
+                          :y (+ y0 (round (* sh master-ratio)))
                           :width (round (/ sw (- N 1)))
                           :height (round (* sh (- 1 master-ratio)))))))
-           ; (fibonacci "TODO")
+                                        ; (fibonacci "TODO")
              (otherwise (progn (warn "Layout is not supported. Fall back to the default layout.")
                                (symbol-macrolet ((layout-hist (dyn-float-group-layout-hist (current-group))))
                                  (push *default-layout* layout-hist))
@@ -463,30 +463,35 @@ list as the current layout."
 
 ;;;; Developmental Notes
 
-;; 1. Create for types of window+s: :pin-top, :pin-bottom, :tiled,
+;; 1. ( ) Create for types of window+s: :pin-top, :pin-bottom, :tiled,
 ;; :unmanaged. The last one will replace :free .
 
-;; 2. Cooperate with the modeline : how to read where it is, whether
+;; 2. (X) Cooperate with the modeline : how to read where it is, whether
 ;; it is active.. etc.
 ;;
-;;   NOTE-
-;;
-;;    Can get the detail of the current modeline by
-;;
-;;    (stumpwm::head-mode-line (current-head))
-;;
-;;    in particular, to get its current height and position, run
-;;
-;;    (stumpwm::mode-line-height *)
-;;    (stumpwm::mode-line-position *)
-;;
-;;    notice that altering the width does affect the height!
+;; another distant goal: add a hook to re-tile every time
+;; mode-line is toggled.
 
+(defun head-mode-line-height (&optional (head (current-head)))
+  (let* ((modeline (stumpwm::head-mode-line head)))
+    (if modeline (stumpwm::mode-line-height modeline) 0)))
 
-;; 3. Resizing and moving the floating windows (with keybinding).
+(defun head-mode-line-position (&optional (head (current-head)))
+  (let* ((modeline (stumpwm::head-mode-line head)))
+    (if modeline (stumpwm::mode-line-position modeline) nil)))
 
-;; 4. Drop down window! (:pin-top)
+(defun screen-width (&optional (screen (current-screen)))
+  (let* ((screen-number (slot-value screen 'number)))
+    (xlib:screen-width screen-number)))
 
-;; 5. Gap support.
+(defun screen-height (&optional (screen (current-screen)))
+  (let* ((screen-number (slot-value screen 'number)))
+    (xlib:screen-height screen-number)))
 
-;; 6. More distant plan : multilayer support.
+;; 3. ( ) Resizing and moving the floating windows (with keybinding).
+
+;; 4. ( ) Drop down window! (:pin-top)
+
+;; 5. ( ) Gap support.
+
+;; 6. ( ) More distant plan : multilayer support.
