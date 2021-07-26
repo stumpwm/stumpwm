@@ -468,6 +468,20 @@ list as the current layout."
 
 ;; 2. Cooperate with the modeline : how to read where it is, whether
 ;; it is active.. etc.
+;;
+;;   NOTE-
+;;
+;;    Can get the detail of the current modeline by
+;;
+;;    (stumpwm::head-mode-line (current-head))
+;;
+;;    in particular, to get its current height and position, run
+;;
+;;    (stumpwm::mode-line-height *)
+;;    (stumpwm::mode-line-position *)
+;;
+;;    notice that altering the width does affect the height!
+
 
 ;; 3. Resizing and moving the floating windows (with keybinding).
 
