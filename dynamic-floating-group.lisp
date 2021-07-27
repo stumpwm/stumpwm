@@ -83,7 +83,8 @@ is a window+ with :DRIFT slot being NIL. They are subject to
     :initform t
     :accessor dyn-float-group-gap?
     :documentation
-    "Whether the gap is effective.")
+    "Whether the gap is effective: NON-NIL means effective and
+    NIL means ineffective.")
    (gap-step
     :initform *default-gap-step*
     :accessor dyn-float-group-gap-step
