@@ -67,7 +67,7 @@ is a window+ with :DRIFT slot being NIL. They are subject to
     :initform (list *default-layout*)
     :accessor dyn-float-group-layout-hist
     :documentation
-    "The list of layout histories, where the first element is
+    "The list of layout histories, where the zeroth element is
     interpreted as the current layout.")
    (master-ratio
     :initform *default-master-ratio*
