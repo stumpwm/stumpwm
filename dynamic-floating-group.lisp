@@ -345,6 +345,31 @@ the parameter MASTER-RATIO and CURRENT-LAYOUT."
                           :y (+ y0 gap (round (* sh master-ratio)))
                           :width (- (round (/ sw (- N 1))) (* 2 gap))
                           :height (- (round (* sh (- 1 master-ratio))) (* 2 gap))))))
+             ;; (deck
+             ;;  ;; FIXME This layout is not ready for daily use
+             ;;  ;; yet. Its logic is different. The stack should be
+             ;;  ;; altered everytime the focus changes.
+             ;;  ;;
+             ;;  ;; TODO how do I make this to be (deck k), where k
+             ;;  ;; is an integer that indicates how many "cards"
+             ;;  ;; there are on the "deck". Currently, we default k
+             ;;  ;; to be 3.
+             ;;  (progn
+             ;;    (stumpwm::float-window-move-resize
+             ;;     (car wl)
+             ;;     :x 30 :y 30
+             ;;     :width (- sw (* 2 30)) :height (- sh (* 2 30)))
+             ;;    (loop for k from 1 to (- N 1)
+             ;;          do (if (<= k 2)
+             ;;                 (stumpwm::float-window-move-resize
+             ;;                  (nth k wl)
+             ;;                  :x (- 30 (* 10 k)) :y (- 30 (* 10 k))
+             ;;                  :width (- sw (* 2 (- 30 (* 10 k))))
+             ;;                  :height (- sh (* 2 (- 30 (* 10 k)))))
+             ;;                 (stumpwm::float-window-move-resize
+             ;;                  (nth k wl)
+             ;;                  :x 0 :y 0 :width sw :height sh)))))
+
              (otherwise          ; TODO fibonacci, right-vertical
               (progn
                 (warn "Layout is not supported. Fall back to the default layout.")
@@ -490,6 +515,7 @@ list as the current layout."
 (define-toggle-layout 'horizontal)
 (define-toggle-layout 'fullscreen)
 (define-toggle-layout 'left-verticle)
+;; (define-toggle-layout 'deck) ; the logic is different.. not ready yet.
 
 
 
