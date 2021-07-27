@@ -38,7 +38,8 @@
 
 ;;; Classes
 
-(defclass window+ (window)
+(defclass window+ ()
+;;;;(defclass window+ (window)
   ((window :initarg :window
            :accessor window+-window)
    ;; (drift :initarg :drift
@@ -154,9 +155,8 @@ DYN-ORDER."
   (assert (dyn-float-group-p group) ()
           "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
   (symbol-macrolet ((dyn-order (dyn-float-group-dyn-order group)))
-
     ;; Sync (w+) according to (w).
-    ;;
+
     ;; If window W does not have a corresponding W+ in the
     ;; dyn-order, make one for it.
     (loop for w in (stumpwm::group-windows group)
@@ -167,16 +167,33 @@ DYN-ORDER."
     (loop for w+ in dyn-order
           unless (member (window+-window w+) (stumpwm::group-windows group))
             do (alexandria:deletef dyn-order w+))
+    ;; Sort the dyn-order by the given logic.
+    (flet ((sort-logic (window+a window+b)
+             "This local function dictates if WINDOW+A is smaller
+than WINDOW+B. Effectively, it defines an order on the list of
+window+s. Roughly speaking, the order is as follows:
 
-    ;; Make the unmanaged windows on top of the stack.
-    ;;
-    ;; FIXME DRIFT is going to be deprecated. Need a new ordering function.
-    ;; FIXME This function is currently broken. It needs an urgent care.
-    (flet ((unmanaged-first (win-a win-b)
-             (declare (ignore win-b))
-             (eq (window+-status win-a) 'unmanaged)))
-      (setf dyn-order
-            (sort (copy-list dyn-order) #'unmanaged-first)))
+(1) top-pinned < tiled < bottom-pinned
+(2) the unmanaged windows are \"equal\" to all others
+(3) respect the original order if both are equal."
+             (let ((a (window+-status window+a))
+                   (b (window+-status window+b)))
+               (cond
+                 ;; Recall from CLHS that a and b are considered
+                 ;; equal if (pred a b) and (pred b a) are both
+                 ;; NIL: http://clhs.lisp.se/Body/f_sort_.htm
+                 ((eq a b) nil)
+                 ((or (eq a 'unmanaged)
+                      (eq b 'unmanaged))
+                  nil)
+                 ((eq a 'top-pinned) t)
+                 ((eq a 'bottom-pinned) nil)
+                 (t (alexandria:switch
+                        ((list a b) :test #'equalp)
+                      ('(tiled bottom-pinned) t)
+                      ('(tiled top-pinned) nil)))))))
+
+      (setf dyn-order (stable-sort (copy-list dyn-order) #'sort-logic)))
 
     ;; Let the (group-windows group) respect the order of
     ;; dyn-order.
@@ -205,7 +222,8 @@ DYN-ORDER."
   (assert (dyn-float-group-p group) ()
           "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
   (stumpwm::group-focus-window group
-                               (window+-window (next-window+ N group))))
+                               (window+-window (next-window+ N group)))
+  (re-tile))
 
 (defcommand focus-last-window (&optional (group (stumpwm:current-group))) ()
   (assert (dyn-float-group-p group) ()
@@ -287,9 +305,8 @@ windows in GROUP."
   "Return the list of window+s whose :status slot are 'TILED."
   (assert (dyn-float-group-p group) ()
           "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
-  (remove-if (lambda (w+) (eq (window+-status w+) 'unmanaged))
-             (dyn-float-group-dyn-order group)))
-
+  (remove-if-not (lambda (w+) (eq (window+-status w+) 'tiled))
+                 (dyn-float-group-dyn-order group)))
 
 (defun re-tile (&optional (group (stumpwm:current-group)))
   "The core function that does the retiling. It operates on the
@@ -386,7 +403,7 @@ the parameter MASTER-RATIO and CURRENT-LAYOUT."
              ;;                  (nth k wl)
              ;;                  :x 0 :y 0 :width sw :height sh)))))
 
-             (otherwise          ; TODO fibonacci, right-vertical vertical-roller horizontal-roller
+             (otherwise ; TODO fibonacci, right-vertical vertical-roller horizontal-roller
               (progn
                 (warn "Layout is not supported. Fall back to the default layout.")
                 (symbol-macrolet ((layout-hist (dyn-float-group-layout-hist (current-group))))
@@ -421,6 +438,7 @@ the parameter MASTER-RATIO and CURRENT-LAYOUT."
   (flet ((permute-at (ring n)
            "A pure function that permutes the nth and
 the (n+1)th element of RING."
+           ;; ((0 1 2 3 4 5) 1) => (0 2 1 4 3 5)
            ;; ((0 1 2 3 4 5) 3) => (0 1 2 4 3 5)
            ;; ((0 1 2 3 4 5) 5) => (5 1 2 3 4 0)
            (when (and (listp ring) (not (null ring)))
@@ -539,6 +557,53 @@ list as the current layout."
 
 ;; 1. ( ) New types of w+: :pin-top, :pin-bottom, :tiled,
 ;; :unmanaged. The last one will replace :free .
+;;
+;; NOTE - This is almost done. However, dfg is based on the
+;; floating group, which does not update on live which window
+;; should be on the top according to the window-list. Therefore,
+;; I have to hack the internal of floating group.
+
+(defcommand top-pin-window
+    ;; TODO the code should be abstract with that of #'unfree-window.
+    (&optional
+     (window (stumpwm:current-window))
+     (group (stumpwm:current-group)))
+    ()
+  "Pin WINDOW at the top."
+  (assert (dyn-float-group-p group) ()
+          "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
+  (progn
+    (symbol-macrolet ((dyno (dyn-float-group-dyn-order group)))
+      (loop for w+ in dyno
+            do (when (equal window (window+-window w+))
+                 (progn
+                   (alexandria:deletef dyno w+)
+                   (setf (window+-status w+) 'top-pinned)
+                   (if (null dyno)
+                       (setf dyno (list w+))
+                       (push w+ (cdr (last dyno))))))))
+    (re-tile group)))
+
+(defcommand bottom-pin-window
+    ;; TODO the code should be abstract with that of #'unfree-window.
+    (&optional
+     (window (stumpwm:current-window))
+     (group (stumpwm:current-group)))
+    ()
+  "Pin WINDOW at the bottom."
+  (assert (dyn-float-group-p group) ()
+          "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
+  (progn
+    (symbol-macrolet ((dyno (dyn-float-group-dyn-order group)))
+      (loop for w+ in dyno
+            do (when (equal window (window+-window w+))
+                 (progn
+                   (alexandria:deletef dyno w+)
+                   (setf (window+-status w+) 'bottom-pinned)
+                   (if (null dyno)
+                       (setf dyno (list w+))
+                       (push w+ (cdr (last dyno))))))))
+    (re-tile group)))
 
 ;; 2. (X) Cooperate with the modeline : how to read where it is, whether
 ;; it is active.. etc.
