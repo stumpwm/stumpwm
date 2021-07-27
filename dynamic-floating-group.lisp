@@ -195,6 +195,22 @@ window+s. Roughly speaking, the order is as follows:
 
       (setf dyn-order (stable-sort (copy-list dyn-order) #'sort-logic)))
 
+    ;; Let the window stack respect the newly given order.
+    ;;
+    ;; FIXME It's better to reorder the stack if possible.
+    ;; Currently, it raise EACH window in the reverse order. This
+    ;; is cumbersome, unnecessary, and creates annoying flashes
+    ;; each time the function is called.
+    ;;
+    ;; FIXME And too bad! This introduces a bad bug. Now
+    ;; switching focus loses its functionality in fullscreen mode.
+    ;;
+    ;; NOTE - this might be helpful:
+    ;; https://github.com/stumpwm/stumpwm/blob/master/window.lisp#L378
+    ;;
+    (loop for w+ in (reverse dyn-order)
+          do (stumpwm:raise-window (window+-window w+)))
+
     ;; Let the (group-windows group) respect the order of
     ;; dyn-order.
     (setf (stumpwm::group-windows group)
@@ -247,7 +263,7 @@ window+s. Roughly speaking, the order is as follows:
 
 (defcommand unfree-all
     (&optional (group (stumpwm:current-group)))
-  ()
+    ()
   "Make all windows in GROUP stay. It forces re-tiling all
 windows in GROUP."
   (assert (dyn-float-group-p group) ()
@@ -273,7 +289,7 @@ windows in GROUP."
     (&optional
      (window (stumpwm:current-window))
      (group (stumpwm:current-group)))
-  ()
+    ()
   "Make WINDOW stay."
   (assert (dyn-float-group-p group) ()
           "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
@@ -414,7 +430,7 @@ the parameter MASTER-RATIO and CURRENT-LAYOUT."
     (&optional
      (group (stumpwm:current-group))
      opposite)
-  ()
+    ()
   (assert (dyn-float-group-p group) ()
           "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
   (flet ((rotate-list (xs &optional opposite)
@@ -431,7 +447,7 @@ the parameter MASTER-RATIO and CURRENT-LAYOUT."
      opposite
      (group (stumpwm:current-group))
      (n (current-window-position group)))
-  ()
+    ()
   "Permute the window at point with the next one."
   (assert (dyn-float-group-p group) ()
           "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
