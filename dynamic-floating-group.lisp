@@ -56,34 +56,39 @@ is a window+ with :DRIFT slot being NIL. They are subject to
 #'RE-TILE."))
 
 (defclass dyn-float-group (stumpwm::float-group)
-  ((dyn-order :initform nil
-              :accessor dyn-float-group-dyn-order
-              :documentation
-              "The list of augmented windows (window+) that a
-              dynamic-floating group holds. The dyn-float-group
-              should tile automatically according to its
-              dyn-order.")
-   (layout-hist :initform (list *default-layout*)
-                :accessor dyn-float-group-layout-hist
-                :documentation
-                "The list of layout histories, where the first
-                element is interpreted as the current layout.")
-   (master-ratio :initform *default-master-ratio*
-                 :accessor dyn-float-group-master-ratio
-                 :documentation
-                 "The ratio of the master window takes.")
-   (gap :initform *default-gap*
-        :accessor dyn-float-group-gap
-        :documentation
-        "The gap between windows.")
-   (gap? :initform t
-         :accessor dyn-float-group-gap?
-         :documentation
-         "Whether the gap is effective.")
-   (gap-step :initform *default-gap-step*
-             :accessor dyn-float-group-gap-step
-             :documentation
-             "The gap step taken during alternation.")))
+  ((dyn-order
+    :initform nil
+    :accessor dyn-float-group-dyn-order
+    :documentation
+    "The list of augmented windows (window+) that a
+    dynamic-floating group holds. The dyn-float-group should tile
+    automatically according to its dyn-order.")
+   (layout-hist
+    :initform (list *default-layout*)
+    :accessor dyn-float-group-layout-hist
+    :documentation
+    "The list of layout histories, where the first element is
+    interpreted as the current layout.")
+   (master-ratio
+    :initform *default-master-ratio*
+    :accessor dyn-float-group-master-ratio
+    :documentation
+    "The ratio of the master window takes.")
+   (gap
+    :initform *default-gap*
+    :accessor dyn-float-group-gap
+    :documentation
+    "The gap between windows.")
+   (gap?
+    :initform t
+    :accessor dyn-float-group-gap?
+    :documentation
+    "Whether the gap is effective.")
+   (gap-step
+    :initform *default-gap-step*
+    :accessor dyn-float-group-gap-step
+    :documentation
+    "The gap step taken during alternation.")))
 
 (defun dyn-float-group-p (group)
   "The predicate of dyn-float-group. It is used frequently in
