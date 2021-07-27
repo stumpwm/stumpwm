@@ -41,9 +41,13 @@
 (defclass window+ (window)
   ((window :initarg :window
            :accessor window+-window)
-   (drift :initarg :drift
-          :accessor window+-drift))
+   ;; (drift :initarg :drift
+   ;;        :accessor window+-drift)
+   (status :initarg :status
+           :initform 'tiled             ; tiled, top-pinned, bottom-pinned, unmanaged.
+           :accessor window+-status))
   (:documentation
+   ;; FIXME :DRIFT is going to be deprecated. Rewrite the docstring.
    "An augmented window (window+) is a window with some other
 information. Usually, in a dynamic floating group, the
 information will be used during the tiling process (compare
@@ -104,7 +108,7 @@ this code to ensure correct type."
      &key &allow-other-keys)
   (stumpwm::add-float-window group window)
   (alexandria:appendf (dyn-float-group-dyn-order group)
-                      (list (make-instance 'window+ :window window :drift nil)))
+                      (list (make-instance 'window+ :window window :status 'tiled)))
   (re-tile group))
 
 (defmethod stumpwm:group-delete-window
@@ -143,7 +147,7 @@ Dynamic-floating-group works by operating on the DYN-ORDER, i.e.
 the list of window+ of the group.
 
 This function ensures that both the ordinary window list and the
-window+ list are in sync. It then ensures that the drifting windows
+window+ list are in sync. It then ensures that the unmanaged windows
 stay in the beginning of the DYN-ORDER. After doing so, it
 ensures the ordinary window list respects the order of
 DYN-ORDER."
@@ -157,19 +161,22 @@ DYN-ORDER."
     ;; dyn-order, make one for it.
     (loop for w in (stumpwm::group-windows group)
           unless (member w (mapcar #'window+-window dyn-order))
-            do (push (make-instance 'window+ :window w :drift nil) dyn-order))
+            do (push (make-instance 'window+ :window w :status 'tiled) dyn-order))
     ;; If window W+ does not correspond to a window of GROUP,
     ;; delete W+ from the dyn-order.
     (loop for w+ in dyn-order
           unless (member (window+-window w+) (stumpwm::group-windows group))
             do (alexandria:deletef dyn-order w+))
 
-    ;; Make the drifting windows on top of the stack.
-    (flet ((drifting-first (win-a win-b)
+    ;; Make the unmanaged windows on top of the stack.
+    ;;
+    ;; FIXME DRIFT is going to be deprecated. Need a new ordering function.
+    ;; FIXME This function is currently broken. It needs an urgent care.
+    (flet ((unmanaged-first (win-a win-b)
              (declare (ignore win-b))
-             (window+-drift win-a)))
+             (eq (window+-status win-a) 'unmanaged)))
       (setf dyn-order
-            (sort (copy-list dyn-order) #'drifting-first)))
+            (sort (copy-list dyn-order) #'unmanaged-first)))
 
     ;; Let the (group-windows group) respect the order of
     ;; dyn-order.
@@ -213,11 +220,11 @@ DYN-ORDER."
             :test #'equal))
 
 (defun free-all (&optional (group (stumpwm:current-group)))
-  "Make all windows in GROUP drift."
+  "Unmanage all windows in GROUP."
   (assert (dyn-float-group-p group) ()
           "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
   (progn (loop for w+ in (dyn-float-group-dyn-order group)
-               do (setf (window+-drift w+) t))
+               do (setf (window+-status w+) 'unmanaged))
          (re-tile group)))
 
 (defcommand unfree-all
@@ -229,19 +236,19 @@ windows in GROUP."
           "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
   (progn
     (loop for w+ in (dyn-float-group-dyn-order group)
-          do (setf (window+-drift w+) nil))
+          do (setf (window+-status w+) 'tiled))
     (re-tile group)))
 
 (defun free-window (&optional
                       (window (stumpwm:current-window))
                       (group (stumpwm:current-group)))
-  "Make WINDOW drift."
+  "Unmanage WINDOW."
   (assert (dyn-float-group-p group) ()
           "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
   (progn
     (loop for w+ in (dyn-float-group-dyn-order group)
           if (equal window (window+-window w+))
-            do (setf (window+-drift w+) t))
+            do (setf (window+-status w+) 'unmanaged))
     (re-tile group)))
 
 (defcommand unfree-window
@@ -258,29 +265,30 @@ windows in GROUP."
             do (when (equal window (window+-window w+))
                  (progn
                    (alexandria:deletef dyno w+)
-                   (setf (window+-drift w+) nil)
+                   (setf (window+-status w+) 'tiled)
                    (if (null dyno)
                        (setf dyno (list w+))
                        (push w+ (cdr (last dyno))))))))
     (re-tile group)))
 
-(defun toggle-drift-current-window
+(defun toggle-unmanaged-current-window
     (&optional
        (window (stumpwm:current-window))
        (group (stumpwm:current-group)))
   (assert (dyn-float-group-p group) ()
           "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
   (progn
-    (if (eq (window+-drift (current-window+ group)) t)
+    (if (eq (window+-status (current-window+ group)) 'unmanaged)
         (unfree-window window group)
         (free-window window group))
     (re-tile group)))
 
 (defun staying-windows+ (&optional (group (stumpwm:current-group)))
-  "Return the list of window+s whose :DRIFT slot is nil."
+  "Return the list of window+s whose :status slot are 'TILED."
   (assert (dyn-float-group-p group) ()
           "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
-  (remove-if 'window+-drift (dyn-float-group-dyn-order group)))
+  (remove-if (lambda (w+) (eq (window+-status w+) 'unmanaged))
+             (dyn-float-group-dyn-order group)))
 
 
 (defun re-tile (&optional (group (stumpwm:current-group)))
