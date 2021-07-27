@@ -26,7 +26,10 @@
 ;;; Parameters
 
 (defparameter *default-master-ratio* (/ 2 (+ 1 (sqrt 5))))
-(defparameter *supported-layouts* '(left-vertical fullscreen horizontal))
+(defparameter *supported-layouts* '(left-vertical fullscreen horizontal
+                                    ;; right-vertical fibonacci
+                                    ;; deck vertical-roller horizontal-roller
+                                    ))
 (defparameter *default-layout* (car *supported-layouts*)
   "Currently supported layouts are: 'left-vertical 'horizontal
   'fullscreen. See the body of #'RE-TILE for their details.")
@@ -370,7 +373,7 @@ the parameter MASTER-RATIO and CURRENT-LAYOUT."
              ;;                  (nth k wl)
              ;;                  :x 0 :y 0 :width sw :height sh)))))
 
-             (otherwise          ; TODO fibonacci, right-vertical
+             (otherwise          ; TODO fibonacci, right-vertical vertical-roller horizontal-roller
               (progn
                 (warn "Layout is not supported. Fall back to the default layout.")
                 (symbol-macrolet ((layout-hist (dyn-float-group-layout-hist (current-group))))
