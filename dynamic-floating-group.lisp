@@ -25,6 +25,8 @@
 (defparameter *default-layout* (car *supported-layouts*)
   "Currently supported layouts are: 'left-vertical 'horizontal
   'fullscreen. See the body of #'RE-TILE for their details.")
+(defparameter *default-gap* 5)
+(defparameter *default-gap-step* 5)
 
 ;;; Classes
 
@@ -61,7 +63,19 @@ is a window+ with :DRIFT slot being NIL. They are subject to
    (master-ratio :initform *default-master-ratio*
                  :accessor dyn-float-group-master-ratio
                  :documentation
-                 "The ratio of the master window takes.")))
+                 "The ratio of the master window takes.")
+   (gap :initform *default-gap*
+        :accessor dyn-float-group-gap
+        :documentation
+        "The gap between windows.")
+   (gap? :initform t
+         :accessor dyn-float-group-gap?
+         :documentation
+         "Whether the gap is effective.")
+   (gap-step :initform *default-gap-step*
+             :accessor dyn-float-group-gap-step
+             :documentation
+             "The gap step taken during alternation.")))
 
 (defun dyn-float-group-p (group)
   "The predicate of dyn-float-group. It is used frequently in
@@ -273,7 +287,9 @@ the parameter MASTER-RATIO and CURRENT-LAYOUT."
                    0))
 
            (master-ratio (dyn-float-group-master-ratio group))
-           (current-layout (car (dyn-float-group-layout-hist group))))
+           (current-layout (car (dyn-float-group-layout-hist group)))
+           (gap? (dyn-float-group-gap? group))
+           (gap (if gap? (dyn-float-group-gap group) 0)))
 
       (setf sw (- sw (* 2 stumpwm::*float-window-border*)))
       (setf sh (- sh (* 2 stumpwm::*float-window-border*)
@@ -286,6 +302,7 @@ the parameter MASTER-RATIO and CURRENT-LAYOUT."
             :x 0 :y y0 :width sw :height sh))
         (t (case current-layout
              (fullscreen
+              ;; TODO Give an option to cover the modeline if any.
               (loop for k from 0 to (- N 1)
                     do (stumpwm::float-window-move-resize
                         (nth k wl)
@@ -294,32 +311,41 @@ the parameter MASTER-RATIO and CURRENT-LAYOUT."
               (progn
                 (stumpwm::float-window-move-resize
                  (car wl)
-                 :x 0 :y y0 :width (round (* sw master-ratio)) :height sh)
+                 :x (+ 0 gap)
+                 :y (+ y0 gap)
+                 :width (- (round (* sw master-ratio))
+                           (* 2 gap))
+                 :height (- sh (* 2 gap)))
                 (loop for k from 1 to (- N 1)
                       do (stumpwm::float-window-move-resize
                           (nth k wl)
-                          :x (round (* sw master-ratio))
-                          :y (+ y0 (* (round (/ sh (- N 1))) (- k 1)))
-                          :width (round (* sw (- 1 master-ratio)))
-                          :height (round (/ sh (- N 1)))))))
-                                        ; (right-vertical "TODO")
+                          :x (+ 0 gap (round (* sw master-ratio)))
+                          :y (+ y0 gap (* (round (/ sh (- N 1))) (- k 1)))
+                          :width (- (round (* sw (- 1 master-ratio)))
+                                    (* 2 gap))
+                          :height (- (round (/ sh (- N 1)))
+                                     (* 2 gap))))))
              (horizontal
               (progn
                 (stumpwm::float-window-move-resize
                  (car wl)
-                 :x 0 :y y0 :width sw :height (round (* sh master-ratio)))
+                 :x (+ 0 gap)
+                 :y (+ y0 gap)
+                 :width (- sw (* 2 gap))
+                 :height (- (round (* sh master-ratio)) (* 2 gap)))
                 (loop for k from 1 to (- N 1)
                       do (stumpwm::float-window-move-resize
                           (nth k wl)
-                          :x (* (round (/ sw (- N 1))) (- k 1))
-                          :y (+ y0 (round (* sh master-ratio)))
-                          :width (round (/ sw (- N 1)))
-                          :height (round (* sh (- 1 master-ratio)))))))
-                                        ; (fibonacci "TODO")
-             (otherwise (progn (warn "Layout is not supported. Fall back to the default layout.")
-                               (symbol-macrolet ((layout-hist (dyn-float-group-layout-hist (current-group))))
-                                 (push *default-layout* layout-hist))
-                               (re-tile)))))))))
+                          :x (+ 0 gap (* (round (/ sw (- N 1))) (- k 1)))
+                          :y (+ y0 gap (round (* sh master-ratio)))
+                          :width (- (round (/ sw (- N 1))) (* 2 gap))
+                          :height (- (round (* sh (- 1 master-ratio))) (* 2 gap))))))
+             (otherwise          ; TODO fibonacci, right-vertical
+              (progn
+                (warn "Layout is not supported. Fall back to the default layout.")
+                (symbol-macrolet ((layout-hist (dyn-float-group-layout-hist (current-group))))
+                  (push *default-layout* layout-hist))
+                (re-tile)))))))))
 
 (defcommand rotate-window-list
     (&optional
@@ -497,6 +523,46 @@ list as the current layout."
 ;; 4. ( ) Drop down window! (:pin-top) ("Do this after New types
 ;; of w+")
 
-;; 5. ( ) Gap support.
+;; 5. (X) Gap support.
+
+(defun gap-set (n &optional (group (current-group)))
+  "Set GROUP's :GAP to N and call #'RE-TILE."
+  (assert (integerp n) ()
+          "Expected ~A (N) to be of type INTEGER." n)
+  (assert (dyn-float-group-p group) ()
+          "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
+  (setf (dyn-float-group-gap group) n)
+  (setf (dyn-float-group-gap? group) t)
+  (re-tile))
+
+(defcommand gap-toggle (&optional (group (current-group))) ()
+  "Toggle GROUP's :GAP? between T and NIL, and call #'RE-TILE."
+  (assert (dyn-float-group-p group) ()
+          "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
+  (symbol-macrolet ((gap? (dyn-float-group-gap? group)))
+    (if gap? (setf gap? nil) (setf gap? t)))
+  (re-tile))
+
+(defcommand gap-set-default (&optional (group (current-group))) ()
+  "Set GROUP's :GAP to *DEFAULT-GAP*."
+  (assert (dyn-float-group-p group) ()
+          "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
+  (gap-set *default-gap* group))
+
+(defcommand gap-increase (&optional (group (current-group))) ()
+  "Increase GROUP's :GAP by GROUP's GAP-STEP."
+  (assert (dyn-float-group-p group) ()
+          "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
+  (let ((step (dyn-float-group-gap-step group))
+        (gap (dyn-float-group-gap group)))
+    (gap-set (+ gap step) group)))
+
+(defcommand gap-decrease (&optional (group (current-group))) ()
+  "Decrease GROUP's :GAP by GROUP's GAP-STEP."
+  (assert (dyn-float-group-p group) ()
+          "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
+  (let ((step (dyn-float-group-gap-step group))
+        (gap (dyn-float-group-gap group)))
+    (gap-set (- gap step) group)))
 
 ;; 6. ( ) More distant plan : multilayer support.
