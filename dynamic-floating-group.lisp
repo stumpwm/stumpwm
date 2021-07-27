@@ -18,6 +18,11 @@
 
 (in-package :stumpwm-dfg)
 
+;; This file, dynamic-floating-group.lisp, aims to provide an
+;; experience with the best part of both the tiling group and the
+;; floating group. All windows are floating, but a dynamic
+;; floating group enforces them to be tiled by default.
+
 ;;; Parameters
 
 (defparameter *default-master-ratio* (/ 2 (+ 1 (sqrt 5))))
