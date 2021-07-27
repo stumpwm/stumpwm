@@ -89,7 +89,7 @@ is a window+ with :DRIFT slot being NIL. They are subject to
     :initform *default-gap-step*
     :accessor dyn-float-group-gap-step
     :documentation
-    "The gap step taken during alternation.")))
+    "The step taken during gap alternation.")))
 
 (defun dyn-float-group-p (group)
   "The predicate of dyn-float-group. It is used frequently in
