@@ -31,7 +31,7 @@
                                     ;; deck vertical-roller horizontal-roller
                                     ))
 (defparameter *default-layout* (car *supported-layouts*)
-  "Currently supported layouts are: 'left-vertical 'horizontal
+  "Currently supported layouts are: 'left-vertical, 'horizontal,
   'fullscreen. See the body of #'RE-TILE for their details.")
 (defparameter *default-gap* 5)
 (defparameter *default-gap-step* 5)
@@ -39,26 +39,28 @@
 ;;; Classes
 
 (defclass window+ ()
-;;;;(defclass window+ (window)
   ((window :initarg :window
            :accessor window+-window)
-   ;; (drift :initarg :drift
-   ;;        :accessor window+-drift)
    (status :initarg :status
-           :initform 'tiled             ; tiled, top-pinned, bottom-pinned, unmanaged.
-           :accessor window+-status))
+           :initform 'tiled
+           :accessor window+-status
+           :documentation "The status of the window. Currently,
+           'TILED, 'TOP-PINNED and 'UNMANAGED are supported."))
   (:documentation
-   ;; FIXME :DRIFT is going to be deprecated. Rewrite the docstring.
    "An augmented window (window+) is a window with some other
-information. Usually, in a dynamic floating group, the
-information will be used during the tiling process (compare
+information. Currently, the only other information is given in
+the slot 'STATUS. In a dynamic floating group, the information
+will be used, for example, during the tiling process (cf.
 #'re-tile).
 
-All windows in a dynamic floating group are floating windows. A
-drifting window is a window+ with :DRIFT slot being T. It is not
-affected by the core tiling function #'RE-TILE. A staying window
-is a window+ with :DRIFT slot being NIL. They are subject to
-#'RE-TILE."))
+All windows in a dynamic floating group are floating windows. An
+unmanaged window is a window+ with status 'UNMANAGED. A
+top-pinned window is a window+ with status 'TOP-PINNED. Both of
+the kinds will not be affected by the tiling function #'re-tile.
+However, the latter will be pinned in the top of the window
+stack. Finally, a tiled window is a window+ with status 'TILED.
+Again, it is still a floating window, but its location is managed
+by the tiling function #'re-tile."))
 
 (defclass dyn-float-group (stumpwm::float-group)
   ((dyn-order
@@ -187,29 +189,21 @@ window+s. Roughly speaking, the order is as follows:
                       (eq b 'unmanaged))
                   nil)
                  ((eq a 'top-pinned) t)
-                 ((eq a 'bottom-pinned) nil)
+                 ;; ((eq a 'bottom-pinned) nil)
                  (t (alexandria:switch
                         ((list a b) :test #'equalp)
-                      ('(tiled bottom-pinned) t)
+                      ;; ('(tiled bottom-pinned) t)
                       ('(tiled top-pinned) nil)))))))
 
       (setf dyn-order (stable-sort (copy-list dyn-order) #'sort-logic)))
 
-    ;; Let the window stack respect the newly given order.
-    ;;
-    ;; FIXME It's better to reorder the stack if possible.
-    ;; Currently, it raise EACH window in the reverse order. This
-    ;; is cumbersome, unnecessary, and creates annoying flashes
-    ;; each time the function is called.
-    ;;
-    ;; FIXME And too bad! This introduces a bad bug. Now
-    ;; switching focus loses its functionality in fullscreen mode.
-    ;;
-    ;; NOTE - this might be helpful:
-    ;; https://github.com/stumpwm/stumpwm/blob/master/window.lisp#L378
-    ;;
-    (loop for w+ in (reverse dyn-order)
-          do (stumpwm:raise-window (window+-window w+)))
+    ;; Make use of #'group-on-top-windows to move the top-pinned
+    ;; windows+ to the top of the stack.
+    (setf (stumpwm::group-on-top-windows (current-group))
+          (mapcar #'window+-window
+                  (remove-if-not (lambda (w+)
+                                   (eq (window+-status w+) 'top-pinned))
+                                 (dyn-float-group-dyn-order (current-group)))))
 
     ;; Let the (group-windows group) respect the order of
     ;; dyn-order.
@@ -571,13 +565,15 @@ list as the current layout."
 
 ;;;; Developmental Notes
 
-;; 1. ( ) New types of w+: :pin-top, :pin-bottom, :tiled,
-;; :unmanaged. The last one will replace :free .
+;; 1. (X) New types of w+: :top-pinned, :tiled, :unmanaged. The
+;; last one will replace :free.
 ;;
-;; NOTE - This is almost done. However, dfg is based on the
-;; floating group, which does not update on live which window
-;; should be on the top according to the window-list. Therefore,
-;; I have to hack the internal of floating group.
+;; 1.1 ( ) Leave the support for :bottom-pin for the future.. you
+;; might want to hack window.lisp and group.lisp. More
+;; specifically, refer to
+;; https://github.com/stumpwm/stumpwm/blob/master/window.lisp#L390
+;; and
+;; https://github.com/stumpwm/stumpwm/blob/master/group.lisp#L113
 
 (defcommand top-pin-window
     ;; TODO the code should be abstract with that of #'unfree-window.
@@ -595,27 +591,6 @@ list as the current layout."
                  (progn
                    (alexandria:deletef dyno w+)
                    (setf (window+-status w+) 'top-pinned)
-                   (if (null dyno)
-                       (setf dyno (list w+))
-                       (push w+ (cdr (last dyno))))))))
-    (re-tile group)))
-
-(defcommand bottom-pin-window
-    ;; TODO the code should be abstract with that of #'unfree-window.
-    (&optional
-     (window (stumpwm:current-window))
-     (group (stumpwm:current-group)))
-    ()
-  "Pin WINDOW at the bottom."
-  (assert (dyn-float-group-p group) ()
-          "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
-  (progn
-    (symbol-macrolet ((dyno (dyn-float-group-dyn-order group)))
-      (loop for w+ in dyno
-            do (when (equal window (window+-window w+))
-                 (progn
-                   (alexandria:deletef dyno w+)
-                   (setf (window+-status w+) 'bottom-pinned)
                    (if (null dyno)
                        (setf dyno (list w+))
                        (push w+ (cdr (last dyno))))))))
