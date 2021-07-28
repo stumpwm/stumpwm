@@ -318,7 +318,8 @@ windows in GROUP."
   (remove-if-not (lambda (w+) (eq (window+-status w+) 'tiled))
                  (dyn-float-group-dyn-order group)))
 
-(defun re-tile (&optional (group (stumpwm:current-group)))
+(defun re-tile (&optional (group (stumpwm:current-group))
+                  (screen (stumpwm:current-screen)))
   "The core function that does the retiling. It operates on the
 list WL of staying windows, and tile the members according to
 the parameter MASTER-RATIO and CURRENT-LAYOUT."
@@ -326,8 +327,8 @@ the parameter MASTER-RATIO and CURRENT-LAYOUT."
           "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
   (progn
     (sync-dyn-order group)
-    (let* ((sw (screen-width))
-           (sh (screen-height))
+    (let* ((sw (screen-width screen))
+           (sh (screen-height screen))
            (wl (mapcar #'window+-window (staying-windows+ group)))
            (N (length wl))
            (y0 (if (eq (head-mode-line-position) :top)
@@ -611,14 +612,6 @@ list as the current layout."
 (defun head-mode-line-position (&optional (head (current-head)))
   (let* ((modeline (stumpwm::head-mode-line head)))
     (if modeline (stumpwm::mode-line-position modeline) nil)))
-
-(defun screen-width (&optional (screen (current-screen)))
-  (let* ((screen-number (slot-value screen 'number)))
-    (xlib:screen-width screen-number)))
-
-(defun screen-height (&optional (screen (current-screen)))
-  (let* ((screen-number (slot-value screen 'number)))
-    (xlib:screen-height screen-number)))
 
 ;; 3. ( ) Resizing and moving the floating windows (with
 ;; keybinding). ("Do this after New types of w+")
