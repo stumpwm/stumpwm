@@ -625,11 +625,9 @@ list as the current layout."
         (width (window-width window))
         (height (window-height window)))
     (stumpwm::float-window-move-resize
-     window
-     :x (- x N)
-     :y (- y N)
-     :width (+ width (* 2 N))
-     :height (+ height (* 2 N)))))
+     window :x (- x N) :y (- y N)
+            :width (+ width (* 2 N))
+            :height (+ height (* 2 N)))))
 
 (defcommand window-size-increase (&optional (window (current-window))) ()
   (window-size-alter 10 window))
@@ -646,11 +644,9 @@ list as the current layout."
         (width (window-width window))
         (height (window-height window)))
     (stumpwm::float-window-move-resize
-     window
-     :x (+ x M)
-     :y (+ y N)
-     :width width
-     :height height)))
+     window :x (+ x M) :y (+ y N)
+            :width width
+            :height height)))
 
 (defcommand window-move-up (&optional (window (current-window))) ()
   (window-location-alter 0 -10 window))
@@ -661,8 +657,27 @@ list as the current layout."
 (defcommand window-move-left (&optional (window (current-window))) ()
   (window-location-alter -10 0 window))
 
-;; 4. ( ) Drop down window! (:pin-top) ("Do this after New types
-;; of w+")
+;; 4. (X) Drop down window!
+(defcommand set-as-drop-down-window (&optional (window (current-window))
+                                     (group (current-group))
+                                     (screen (current-screen))) ()
+  (assert (dyn-float-group-p group) ()
+          "Expected GROUP ~A to be of type DYN-FLOAT-GROUP." group)
+  (let ((x (window-x window))
+        (y (window-y window))
+        (width (window-width window))
+        (gap 30)
+        (height 350))
+    (stumpwm::float-window-move-resize
+     window :x gap :y gap
+            :width (- (screen-width screen) (* 2 gap))
+            :height height)
+
+    (loop for w+ in (dyn-float-group-dyn-order group)
+          if (equal window (window+-window w+))
+            do (setf (window+-status w+) 'TOP-PINNED))
+
+    (re-tile)))
 
 ;; 5. (X) Gap support.
 
