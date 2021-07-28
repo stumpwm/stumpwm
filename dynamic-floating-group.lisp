@@ -613,8 +613,53 @@ list as the current layout."
   (let* ((modeline (stumpwm::head-mode-line head)))
     (if modeline (stumpwm::mode-line-position modeline) nil)))
 
-;; 3. ( ) Resizing and moving the floating windows (with
-;; keybinding). ("Do this after New types of w+")
+;; 3. (X) Resizing and moving the floating windows (with
+;; keybinding).
+
+;; TODO These should be put into either my config or
+;; float-group.lisp. And this should work for all floating
+;; windows.
+(defun window-size-alter (N &optional (window (current-window)))
+  (let ((x (window-x window))
+        (y (window-y window))
+        (width (window-width window))
+        (height (window-height window)))
+    (stumpwm::float-window-move-resize
+     window
+     :x (- x N)
+     :y (- y N)
+     :width (+ width (* 2 N))
+     :height (+ height (* 2 N)))))
+
+(defcommand window-size-increase (&optional (window (current-window))) ()
+  (window-size-alter 10 window))
+
+(defcommand window-size-decrease (&optional (window (current-window))) ()
+  (window-size-alter -10 window))
+
+;; TODO These should be put into either my config or
+;; float-group.lisp. And this should work for all floating
+;; windows.
+(defun window-location-alter (M N &optional (window (current-window)))
+  (let ((x (window-x window))
+        (y (window-y window))
+        (width (window-width window))
+        (height (window-height window)))
+    (stumpwm::float-window-move-resize
+     window
+     :x (+ x M)
+     :y (+ y N)
+     :width width
+     :height height)))
+
+(defcommand window-move-up (&optional (window (current-window))) ()
+  (window-location-alter 0 -10 window))
+(defcommand window-move-down (&optional (window (current-window))) ()
+  (window-location-alter 0 10 window))
+(defcommand window-move-right (&optional (window (current-window))) ()
+  (window-location-alter 10 0 window))
+(defcommand window-move-left (&optional (window (current-window))) ()
+  (window-location-alter -10 0 window))
 
 ;; 4. ( ) Drop down window! (:pin-top) ("Do this after New types
 ;; of w+")
