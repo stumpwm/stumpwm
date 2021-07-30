@@ -606,10 +606,7 @@ second and neither excedes the bounds of the input string."
   "Insert @var{char} into the input at the current
 position. @var{input} must be of type @var{input-line}. Input
 functions are passed this structure as their first argument."
-  (vector-push-extend #\_ (input-line-string input))
-  (replace (input-line-string input) (input-line-string input)
-           :start2 (input-line-position input) :start1 (1+ (input-line-position input)))
-  (setf (char (input-line-string input) (input-line-position input)) char)
+  (vector-push-extend char (input-line-string input))
   (incf (input-line-position input)))
 
 (defun input-substring (input start end)
