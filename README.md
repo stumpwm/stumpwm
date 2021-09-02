@@ -61,7 +61,8 @@ The difference in the user space of this branch and the official
 repo is controlled in the files `dynamic-floating-group.lisp`,
 `package.lisp`, and `AUTHORS`. In particular, all new lisp
 definitions are built in a new common lisp package `stumpwm-dfg`.
-That means this repo will not break your StumpWM config. 
+That means this repo **will not break your existing StumpWM
+config**.
 
 ## Config Example
 
