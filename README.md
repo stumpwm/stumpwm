@@ -1,20 +1,25 @@
-![](https://stumpwm.github.io/images/stumpwm-logo-stripe.png)
 # The Stump Window Manager
-![](https://travis-ci.org/stumpwm/stumpwm.svg)
-[![Gitter](https://badges.gitter.im/stumpwm/community.svg)](https://gitter.im/stumpwm/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 ## Unofficial Branch: Dynamic Floating Group
 
-This is an unofficial branch of StumpWM that supports dynamic
-floating windows. Please see the official repo for a proper
-readme file of StumpWM.
+This is an **unofficial branch** of StumpWM that supports dynamic
+floating windows. Please see the [official
+repo](https://github.com/stumpwm/stumpwm) for a proper readme
+file of StumpWM.
 
 The intention this repo is to let interested users to use dynamic
 floating windows before it is merged. The author is dedicated to
 fix bugs and keep updated with the official master branch. Please
-feel free open an issue for any kind of requests. Thank you!
+feel free open an issue for any kind of requests (explanation,
+usage, docstring requests, bugs.. etc). I am very glad to help.
+Thank you!
+
+There is no official manual for this branch. However, you can
+quickly see what it supports in the features and config section
+below.
 
 ## Features
+
 + Basic Movement
 
   ![Basic Movement](https://github.com/jcguu95/stumpwm--dynamic-floating-group/blob/dce224245e38c9c6cd6b04f43b8fabddb3ca9935/img/basic-movement.gif)
