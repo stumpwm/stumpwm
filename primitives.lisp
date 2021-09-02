@@ -532,6 +532,7 @@ are valid values.
 (defvar *maxsize-gravity* :center)
 (defvar *transient-gravity* :center)
 
+(declaim (type (member :message :break :abort) *top-level-error-action*))
 (defvar *top-level-error-action* :abort
   "If an error is encountered at the top level, in
 STUMPWM-INTERNAL-LOOP, then this variable decides what action
