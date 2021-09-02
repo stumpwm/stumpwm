@@ -7,17 +7,6 @@ floating windows. Please see the [official
 repo](https://github.com/stumpwm/stumpwm) for a proper readme
 file of StumpWM.
 
-The intention this repo is to let interested users to use dynamic
-floating windows before it is merged. The author is dedicated to
-fix bugs and keep updated with the official master branch. Please
-feel free open an issue for any kind of requests (explanation,
-usage, docstring requests, bugs.. etc). I am very glad to help.
-Thank you!
-
-There is no official manual for this branch. However, you can
-quickly see what it supports in the feature section and [an
-example config](./tmp/example-config/init.lisp) file below.
-
 For **building and installing**, follow the exact same procedure
 as if you are using the official version. You can also find a
 note [here](./tmp/usage.md).
@@ -25,6 +14,17 @@ note [here](./tmp/usage.md).
 All new lisp definitions are built in a new common lisp package
 `stumpwm-dfg`. That means this repo **will not break your
 existing StumpWM config**.
+
+There is no official manual for this branch. However, you can see
+what it offers quickly in the **short videos** and [an example
+config](./tmp/example-config/init.lisp) file below.
+
+The intention this repo is to let interested users to use dynamic
+floating windows before it is merged. The author is **dedicated
+to fix bugs and keep updated** with the official master branch.
+Please feel free open an issue for any kind of requests
+(explanation, usage, docstring requests, bugs.. etc). I am very
+glad to help. Thank you!
 
 ## Features
 
