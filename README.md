@@ -14,6 +14,10 @@ feel free open an issue for any kind of requests (explanation,
 usage, docstring requests, bugs.. etc). I am very glad to help.
 Thank you!
 
+All new lisp definitions are built in a new common lisp package
+`stumpwm-dfg`. That means this repo **will not break your
+existing StumpWM config**.
+
 There is no official manual for this branch. However, you can
 quickly see what it supports in the features and config section
 below.
@@ -51,18 +55,21 @@ below.
   + decrease/increase gap size
   + toggle gap
   + set default gap size
-  
+
 ## Usage
 
 To build and install, please follow the [official
 guide](https://github.com/stumpwm/stumpwm).
 
+``` sh
+./autogen
+./configure
+./make install
+```
+
 The difference in the user space of this branch and the official
 repo is controlled in the files `dynamic-floating-group.lisp`,
-`package.lisp`, and `AUTHORS`. In particular, all new lisp
-definitions are built in a new common lisp package `stumpwm-dfg`.
-That means this repo **will not break your existing StumpWM
-config**.
+`package.lisp`, and `AUTHORS`.
 
 ## Config Example
 
@@ -86,7 +93,7 @@ config**.
 (define-key *top-map* (stumpwm:kbd "s-f") "toggle-fullscreen-layout")
 (define-key *top-map* (stumpwm:kbd "s-F") "select-next-layout")
 
-;; 
+;;
 (define-key *top-map* (stumpwm:kbd "s-F") "select-next-layout")
 (define-key *top-map* (stumpwm:kbd "s-M-,") "window-size-increase")
 (define-key *top-map* (stumpwm:kbd "s-M-m") "window-size-decrease")
@@ -106,7 +113,7 @@ config**.
 
 ``` common-lisp
 ;; This removes the default group (workspace),
-;; and create 10 dynamic floating groups (workspaces) 
+;; and create 10 dynamic floating groups (workspaces)
 ;; named 1, ,2, .., 9, 0.
 (grename "1")
 (loop for n in '(2 3 4 5 6 7 8 9 0)
