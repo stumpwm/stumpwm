@@ -80,7 +80,7 @@
             (match-properties-or-function
              (or properties-matched (funcall match-properties-or-function w)))
             (match-properties-and-function
-             (and properties-matched (funcall match-properties-or-function w)))
+             (and properties-matched (funcall match-properties-and-function w)))
             (t properties-matched)))))
 
 (defun rule-matching-window (window)
