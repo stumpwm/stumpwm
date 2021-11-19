@@ -39,7 +39,7 @@ which-key window. Two arguments will be passed to this formatter:
 @table @asis
 @item the keybind itself
 @item the associated command
-@end talbe")
+@end table")
 
 (defun columnize (list columns &key col-aligns (pad 1) (char #\Space) (align :left))
   ;; only somewhat nasty
