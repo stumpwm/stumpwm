@@ -24,11 +24,22 @@
 
 (in-package #:stumpwm)
 
-(export '(*help-max-height* *message-max-width*))
+(export '(*help-max-height*
+          *message-max-width*
+          *which-key-format*))
+
 (defvar *message-max-width* 80
   "The maximum width of a message before it wraps.")
 (defvar *help-max-height* 10
   "Maximum number of lines for help to display.")
+(defvar *which-key-format* (concat *key-seq-color* "*5a^n ~a")
+  "The format string that decides how keybindings will show up in the
+which-key window. Two arguments will be passed to this formatter:
+
+@table @asis
+@item the keybind itself
+@item the associated command
+@end table")
 
 (defun columnize (list columns &key col-aligns (pad 1) (char #\Space) (align :left))
   ;; only somewhat nasty
@@ -59,7 +70,7 @@
          (data (mapcan (lambda (map)
                          (mapcar (lambda (b)
                                    (let ((bound-to (binding-command b)))
-                                     (format nil "^5*~5a^n ~a"
+                                     (format nil *which-key-format*
                                              (print-key (binding-key b))
                                              (cond ((or (symbolp bound-to)
                                                         (stringp bound-to))

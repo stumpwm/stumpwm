@@ -950,6 +950,7 @@ Describe the specified command.
 ### *groups-map*
 ### *group-top-maps*
 ### *exchange-window-map*
+### *key-seq-color*
 
 !!! bind
 !!! unbind
@@ -1536,6 +1537,7 @@ return a ``nil'' value in those cases, and let the command handle that.
 @@@ wrap
 ### *message-max-width*
 ### *help-max-height*
+### *which-key-format*
 !!! colon
 
 %%% with-restarts-menu
