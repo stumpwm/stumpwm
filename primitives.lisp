@@ -1157,11 +1157,13 @@ The windows title must not match @var{title-not}.
 
 @item match-properties-and-function
 A function that, if provided, must return true alongside the provided properties
-in order for the rule to match. This function takes one argument, the window.
+in order for the rule to match. This function takes one argument, the window. 
+Must be an unquoted symbol to be looked up at runtime. 
 
 @item match-properties-or-function
 A function that, if provided and returning true, will cause the rule to match
 regardless of whether the window properties match. Takes one argument, the window.
+Must be an unquoted symbol to be looked up at runtime. 
 @end table"
   (let ((x (gensym "X")))
     `(dolist (,x ',frame-rules)
