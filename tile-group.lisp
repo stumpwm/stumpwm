@@ -1401,6 +1401,7 @@ direction. The following are valid directions:
   (let ((frame (tile-group-current-frame group)))
     (change-class window 'float-window)
     (float-window-align window)
+    (update-decoration window)
     (funcall-on-node (tile-group-frame-tree group)
                      (lambda (f) (setf (slot-value f 'window) nil))
                      (lambda (f) (eq frame f)))))
