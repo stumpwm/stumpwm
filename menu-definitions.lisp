@@ -230,7 +230,7 @@ a re-computation of the match."
           (labels ((match-p (table-item)
                      (funcall (single-menu-filter-pred menu)
                               (car table-item)
-                              (second table-item)
+                              (cdr table-item)
                               (single-menu-current-input menu))))
             (setf (menu-table menu) (remove-if-not #'match-p (single-menu-unfiltered-table menu))
                   (menu-selected menu) 0)
