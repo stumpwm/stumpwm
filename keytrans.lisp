@@ -69,6 +69,7 @@ calling KEYSYM->KEYSYM-NAME."
 (define-keysym-name "!" "exclam")
 (define-keysym-name "\"" "quotedbl")
 (define-keysym-name "$" "dollar")
+(define-keysym-name "£" "sterling")
 (define-keysym-name "%" "percent")
 (define-keysym-name "&" "ampersand")
 (define-keysym-name "'" "quoteright")   ;deprecated
