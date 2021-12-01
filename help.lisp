@@ -32,7 +32,7 @@
   "The maximum width of a message before it wraps.")
 (defvar *help-max-height* 10
   "Maximum number of lines for help to display.")
-(defvar *which-key-format* (concat *key-seq-color* "*5a^n ~a")
+(defvar *which-key-format* (concat *key-seq-color* "*~5a^n ~a")
   "The format string that decides how keybindings will show up in the
 which-key window. Two arguments will be passed to this formatter:
 
