@@ -326,8 +326,11 @@ when selecting another window."
     (when pulled-window
       (pull-window pulled-window))))
 
-(defun exchange-windows (win1 win2)
-  "Exchange the windows in their respective frames."
+(defgeneric exchange-windows (win1 win2)
+  (:documentation "Exchange the windows in their respective frames."))
+
+(defmethod exchange-windows ((win1 tile-window) (win2 tile-window))
+  "Exchange tile windows in their respective frames."
   (let ((f1 (window-frame win1))
         (f2 (window-frame win2)))
     (unless (eq f1 f2)
@@ -348,9 +351,7 @@ when selecting another window."
       (let* ((frame-set (group-frames (window-group win)))
              (neighbour (neighbour dir (window-frame win) frame-set)))
         (if (and neighbour (frame-window neighbour))
-            (if (typep (window-group win) 'dynamic-group)
-                (exchange-dynamic-windows win (frame-window neighbour))
-                (exchange-windows win (frame-window neighbour)))
+            (exchange-windows win (frame-window neighbour))
             (message "No window in direction ~A!" dir)))
       (message "No window in current frame!")))
 

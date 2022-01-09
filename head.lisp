@@ -126,7 +126,8 @@
   "Returns a list of windows on HEAD of GROUP"
   (remove-if-not
    (lambda (w)
-     (eq head (window-head w)))
+     (handler-case (eq head (window-head w))
+       (unbound-slot () nil)))
    (group-windows group)))
 
 (defun frame-is-head (group frame)

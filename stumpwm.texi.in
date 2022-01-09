@@ -370,56 +370,35 @@ Most of the window-switching commands listed below do not function in
 a floating group. You're restricted to `other', the `select-window-*'
 commands, and `windowlist'.
 
+
 @node Dynamic Group Basics, Frame Basics, Floating Group Basics, Basic Concepts
 @subsection Dynamic Group Basics
-Within a dynamic group, windows are automatically tiled. Windows get divided
-into a @dfn{master window} and a @dfn{window stack}. Together these form a
-@dfn{window wheel} which can be rotated. Each window is a top-level window, and
-has a frame to itself. As windows are added to the group, the current master
-window gets pushed onto the window stack, and the newest window takes its place.
-This causes the frames holding the stack windows to get progressively smaller
-the more windows are added to the group. When a window stack frame becomes to
-small to split, the window at the bottom of the stack gets sent to an overflow
-group. This behavior can be configured with
-@var{*dynamic-group-overflow-policy*}. 
+Within a dynamic group, windows are organized into a @dfn{master window} and a
+@dfn{window stack}, with one of each per head. When a new window is added to a
+head within a dynamic group, that heads master window is pushed onto that heads
+window stack, and the new window becomes the master window. When a head becomes
+to full (ie more windows cannot be placed upon the stack) a overflow policy is
+used to determine which window to move to a separate head or group. 
 
-### *dynamic-group-overflow-policy*
+!!! gnew-dynamic
 
-### *dynamic-overflow-group*
+!!! gnewbg-dynamic
 
-### *dynamic-group-master-split-ratio*
+!!! rotate-windows
 
-Normal tiling group window and frame commands dont work within a dynamic group,
-being supplanted by the following group specific selection, rotation,
-and swapping commands.
+!!! change-layout
 
-@itemize
-@item
-@command{dyn-cycle} (@kbd{C-t n} or @kbd{C-t p}) Rotate the
-window wheel clockwise or counterclockwise. Takes an optional argument to
-control where focus lays after rotating, one of :master, :remain, or :follow.
+!!! change-default-layout
 
-@item
-@command{dyn-switch} (@kbd{C-t W}) Prompt for a window number to swap with the
-master window
+!!! change-split-ratio
 
-@item
-@command{dyn-switch-prompt-for-window} (@kbd{C-t w}) Displays window numbers on
-each frame: hit a number key or click on a window to swap it with the master
-window.
+!!! change-default-split-ratio
 
-@item
-@command{dyn-switch-prompt-for-frame} (unbound by default) The same as
-@command{dyn-switch-prompt-for-window}, but draws frame numbers. 
+!!! retile
 
+!!! select-floating-window
 
-@item
-@command{dyn-focus-current-window} (@kbd{C-t RET}) Swap the current window with
-the master window.
-
-@item
-@command{dyn-focus-master-window} (@kbd{C-t f}) Move focus to the master window.
-@end itemize
+### *rotation-focus-policy*
 
 When defining commands, anything restricted to tiling groups will also be
 active in dynamic groups. To fully restrict it to tiling groups, call the
