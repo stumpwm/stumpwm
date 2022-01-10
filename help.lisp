@@ -302,14 +302,14 @@ FIND-BINDING-IN-KMAP."
                     (format nil "~&~a" (or (documentation name 'function) "")))
                    *message-max-width*
                    nil)))
-      (when (stringp com)
-        (let ((bindings (find-binding com :top-level-maps (top-maps))))
-          (if bindings 
-              (format stream
-                      "~A~%~%Bound to:~%~{~{~A~#[~; invoking ~:; in ~]~}~^~%~}"
-                      text
-                      (make-even-lengths bindings))
-              (format stream "~A" text)))))))
+      (let ((bindings (when (stringp com)
+                        (find-binding com :top-level-maps (top-maps)))))
+        (if bindings 
+            (format stream
+                    "~A~%~%Bound to:~%~{~{~A~#[~; invoking ~:; in ~]~}~^~%~}"
+                    text
+                    (make-even-lengths bindings))
+            (format stream "~A" text))))))
       
 (defcommand describe-command (com) ((:command "Describe Command: "))
   "Print the online help associated with the specified command."
