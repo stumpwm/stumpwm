@@ -259,36 +259,58 @@ FIND-BINDING-IN-KMAP."
                                      :match-partial-string match-partial-string
                                      :match-with-arguments match-with-arguments)))
 
-(defun describe-command-to-stream (com stream)
-  "Write the help for the command to the stream."
-  (let* ((deref (dereference-command-symbol com))
-         (struct (get-command-structure com nil))
-         (name (command-name struct)))
-    (wrap (concat
-           (unless (eq deref struct)
-             (format nil "\"~a\" is an alias for the command \"~a\":~%"
-                     (command-alias-from deref)
-                     name))
-           (when-let ((message (where-is-to-stream name nil)))
-             (format nil "~&~A~&" message))
-           (when-let ((lambda-list (sb-introspect:function-lambda-list
-                                  (symbol-function name))))
-             (format nil "~%^5~a ^B~{~a~^ ~}^b^n~&~%"
-                     name
-                     lambda-list))
-           (format nil "~&~a" (or (documentation name 'function) ""))
-           (when (stringp com)
-             (when-let ((bindings (find-binding com :top-level-maps (top-maps))))
-               (let ((organized
-                       (mapcar (lambda (b)
-                                 (let ((final
-                                         (lastcar (cl-ppcre:split " " (cadr b)))))
-                                   (list final (lastcar b))))
-                               bindings)))
-                 (format nil "~%Bound to:~&~{~{~S in ~A~}~^~&~}" organized)))))
-          *message-max-width*
-          stream)))
-
+(labels ((make-even-lengths (list)
+           (let ((longest1 0)
+                 (longest2 0))
+             (mapc (lambda (el)
+                     (let* ((final (lastcar (cl-ppcre:split " " (cadr el))))
+                            (l1 (length final))
+                            (l2 (length (symbol-name (lastcar el)))))
+                       (when (> l1 longest1) (setf longest1 l1))
+                       (when (> l2 longest2) (setf longest2 l2))))
+                   list)
+             (mapcar (lambda (el)
+                       (let* ((final (lastcar (cl-ppcre:split " " (cadr el))))
+                              (l1 (length final))
+                              (l2 (length (symbol-name (lastcar el)))))
+                         (list (format nil "~S~A" final
+                                       (make-string (- longest1 l1)
+                                                    :initial-element #\space))
+                               (format nil "~A~A" (lastcar el)
+                                       (make-string (- longest2 l2)
+                                                    :initial-element #\space))
+                               (format nil "~S" (car el)))))
+                     list))))
+  (defun describe-command-to-stream (com stream)
+    "Write the help for the command to the stream."
+    (let* ((deref (dereference-command-symbol com))
+           (struct (get-command-structure com nil))
+           (name (command-name struct))
+           (text 
+             (wrap (concat
+                    (unless (eq deref struct)
+                      (format nil "\"~a\" is an alias for the command \"~a\":~%"
+                              (command-alias-from deref)
+                              name))
+                    (when-let ((message (where-is-to-stream name nil)))
+                      (format nil "~&~A~&" message))
+                    (when-let ((lambda-list (sb-introspect:function-lambda-list
+                                             (symbol-function name))))
+                      (format nil "~%^5~a ^B~{~a~^ ~}^b^n~&~%"
+                              name
+                              lambda-list))
+                    (format nil "~&~a" (or (documentation name 'function) "")))
+                   *message-max-width*
+                   nil)))
+      (when (stringp com)
+        (let ((bindings (find-binding com :top-level-maps (top-maps))))
+          (if bindings 
+              (format stream
+                      "~A~%~%Bound to:~%~{~{~A~#[~; invoking ~:; in ~]~}~^~%~}"
+                      text
+                      (make-even-lengths bindings))
+              (format stream "~A" text)))))))
+      
 (defcommand describe-command (com) ((:command "Describe Command: "))
   "Print the online help associated with the specified command."
   (if (null (get-command-structure com nil))
