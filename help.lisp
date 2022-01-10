@@ -278,7 +278,7 @@ FIND-BINDING-IN-KMAP."
                      lambda-list))
            (format nil "~&~a" (or (documentation name 'function) ""))
            (when (stringp com)
-             (when-let ((bindings (find-binding com)))
+             (when-let ((bindings (find-binding com :top-level-maps (top-maps))))
                (let ((organized
                        (mapcar (lambda (b)
                                  (let ((final
