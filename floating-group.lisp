@@ -18,6 +18,9 @@
   and :NUMLOCK.")
 
 
+(defun float-window-p (window)
+  (typep window 'float-window))
+
 (defun float-window-modifier ()
   "Convert the *FLOAT-WINDOW-MODIFIER* to its corresponding X11."
   (when-let ((fn (find-symbol (concat "MODIFIERS-" (symbol-name *float-window-modifier*))

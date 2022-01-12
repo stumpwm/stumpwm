@@ -519,8 +519,9 @@ leaf is the most right/below of its siblings."
 (defun migrate-frame-windows (group src dest)
   "Migrate all windows in SRC frame to DEST frame."
   (mapc (lambda (w)
-          (when (eq (window-frame w) src)
-            (setf (window-frame w) dest)))
+          (handler-case (when (eq (window-frame w) src)
+                          (setf (window-frame w) dest))
+            (unbound-slot () nil)))
         (group-tile-windows group)))
 
 (defun tree-accum-fn (tree acc fn)
@@ -811,7 +812,7 @@ either :width or :height"
                           (lambda (leaf)
                             (sync-frame-windows group leaf)))))))))
 
-(defun balance-frames-internal (group tree)
+(defun balance-frames-internal (group tree &optional (sync t))
   "Fully balance all the frames contained in tree."
   (labels
       ((balance (tree x y width height)
@@ -823,7 +824,8 @@ either :width or :height"
                (frame-y frame) y
                (frame-width frame) width
                (frame-height frame) height)
-         (sync-frame-windows group frame))
+         (when sync 
+           (sync-frame-windows group frame)))
        (count-splits (tree split-type)
          "Count the number of top-level splits of split-type in tree."
          (cond ((frame-p tree) 1)

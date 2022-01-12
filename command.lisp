@@ -400,11 +400,20 @@ then describes the symbol."
       (window-number win)
       (throw 'error "No such window."))))
 
+(defun parse-fraction (n)
+  "Parse two integers separated by a / and divide the first by the second. "
+  (multiple-value-bind (num i) (parse-integer n :junk-allowed t)
+    (cond ((= i (length n))
+           num)
+          ((char-equal (char n i) #\/)
+           (/ num (parse-integer (subseq n (+ i 1)))))
+          (t (error 'parse-error)))))
+
 (define-stumpwm-type :number (input prompt)
   (when-let ((n (or (argument-pop input)
                     (read-one-line (current-screen) prompt))))
     (handler-case
-        (parse-integer n)
+        (parse-fraction n)
       (parse-error (c)
         (declare (ignore c))
         (throw 'error "Number required.")))))
