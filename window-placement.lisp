@@ -125,7 +125,7 @@
                      (values new-group
                              (if (eq frame :float)
                                  frame
-                                 (frame-by-number group frame))
+                                 (frame-by-number new-group frame))
                              raise)))
                   ((not group-name)
                    (values (current-group)
