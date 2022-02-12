@@ -60,7 +60,15 @@
                (:file "dynamic-window")
                (:file "dynamic-group")
                (:file "remap-keys")
+               (:file "manual")
                ;; keep this last so it always gets recompiled if
                ;; anything changes
                (:file "version"))
   :in-order-to ((test-op (test-op "stumpwm-tests"))))
+
+(defsystem "stumpwm/build"
+  :depends-on ("stumpwm")
+  :build-operation program-op
+  :build-pathname "stumpwm"
+  :entry-point "stumpwm:main"
+  :components ((:file "main")))
