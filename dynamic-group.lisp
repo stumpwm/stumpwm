@@ -311,12 +311,17 @@ the layout, master frame, the master window, and the window stack."
             (dynamic-group-head-info-alist group)))))
 
 (defmethod group-remove-head ((group dynamic-group) head)
-  (group-sync-all-heads group)
+  ;; (group-sync-all-heads group)
   (let* ((windows (head-windows group head))
          (frames-to-delete (tile-group-frame-head group head))
+         (list-of-frames-to-delete (if (atom frame-head)
+                                       (list frame-head)
+                                       (flatten frame-head)))
          (group-frame-tree (tile-group-frame-tree group))
-         (new-frame? (member (tile-group-current-frame group) frames-to-delete))
-         (old-frame? (member (tile-group-last-frame group) frames-to-delete)))
+         (new-frame? (member (tile-group-current-frame group)
+                             list-of-frames-to-delete))
+         (old-frame? (member (tile-group-last-frame group)
+                             list-of-frames-to-delete)))
     ;; Remove the current heads frames
     (setf (tile-group-frame-tree group) (delete frames-to-delete group-frame-tree))
     ;; When the head removed holds the current frame, update it. 
