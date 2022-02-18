@@ -311,7 +311,7 @@ the layout, master frame, the master window, and the window stack."
             (dynamic-group-head-info-alist group)))))
 
 (defmethod group-remove-head ((group dynamic-group) head)
-  ;; (group-sync-all-heads group)
+  (group-sync-all-heads group)
   (let* ((windows (head-windows group head))
          (frames-to-delete (tile-group-frame-head group head))
          (list-of-frames-to-delete (if (atom frame-head)
