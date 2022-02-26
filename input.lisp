@@ -888,8 +888,8 @@ input (pressing Return), nil otherwise."
   "Ask a \"y or n\" question on the current screen and return T if the
 user presses 'y'."
   (message "~a(y or n) " message)
-  (char= (read-one-char (current-screen))
-        #\y))
+  (eql (read-one-char (current-screen))
+       #\y))
 
 (defun yes-or-no-p (message)
   "ask a \"yes or no\" question on the current screen and return T if the
