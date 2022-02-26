@@ -393,6 +393,9 @@ with 1 argument: the menu.")
 (defvar *text-color* "white"
   "The color of message text.")
 
+(defvar *draw-in-color* t
+  "When NIL color formatters are ignored.")
+
 (defvar *menu-maximum-height* nil
   "Defines the maxium number of lines to display in the menu before enabling
    scrolling. If NIL scrolling is disabled.")

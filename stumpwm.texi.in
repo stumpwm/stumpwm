@@ -3061,6 +3061,7 @@ sending them as one.
 ### *suppress-frame-indicator*
 ### *suppress-window-placement-indicator*
 ### *text-color*
+### *draw-in-color*
 ### *timeout-frame-indicator-wait*
 ### *top-level-error-action*
 

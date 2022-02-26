@@ -204,6 +204,11 @@ If COLOR isn't a colorcode a list containing COLOR is returned."
 
 (defgeneric apply-color (ccontext modifier &rest arguments))
 
+(defmethod apply-color :around ((cc ccontext) modifier &rest arguments)
+  (declare (ignorable ccontext modifier arguments))
+  (when *draw-in-color*
+    (call-next-method)))
+
 (defmethod apply-color ((cc ccontext) (modifier (eql :fg)) &rest args)
   (setf (ccontext-fg cc) (first args))
   (let* ((gcontext (ccontext-gc cc))
