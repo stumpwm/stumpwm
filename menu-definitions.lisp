@@ -283,30 +283,43 @@ more spaces; ARGUMENT-POP is used to split the string)."
   (catch :menu-quit
     (unwind-protect
          (with-focus (screen-key-window screen)
-           (let ((*suppress-echo-timeout* t))
+           (let ((*suppress-echo-timeout* t)
+                 (displaying-help-bindings nil))
              (loop
-                (let* ((sel (menu-selected menu))
-                       (start (menu-view-start menu))
-                       (end (menu-view-end menu))
-                       (len (length (menu-table menu)))
-                       (prompt-line (menu-prompt-line menu))
-                       (strings (get-menu-items menu))
-                       (highlight (- sel start)))
-                  (unless (zerop start)
-                    (setf strings (cons "..." strings))
-                    (incf highlight))
-                  (unless (= len end)
-                    (setf strings (nconc strings '("..."))))
-                  (when prompt-line
-                    (push prompt-line strings)
-                    (incf highlight))
-                  (run-hook-with-args *menu-selection-hook* menu)
-                  (echo-string-list screen strings highlight))
-                (multiple-value-bind (action key-seq) (read-from-keymap (menu-keymap menu))
-                  (if action
-                      (progn (funcall action menu)
-                             (bound-check-menu menu))
-                      (typing-action menu (first key-seq)))))))
+               (let* ((sel (menu-selected menu))
+                      (start (menu-view-start menu))
+                      (end (menu-view-end menu))
+                      (len (length (menu-table menu)))
+                      (prompt-line (menu-prompt-line menu))
+                      (strings (get-menu-items menu))
+                      (highlight (- sel start)))
+                 (unless displaying-help-bindings
+                   (unless (zerop start)
+                     (setf strings (cons "..." strings))
+                     (incf highlight))
+                   (unless (= len end)
+                     (setf strings (nconc strings '("..."))))
+                   (when prompt-line
+                     (push prompt-line strings)
+                     (incf highlight))
+                   (run-hook-with-args *menu-selection-hook* menu)
+                   (echo-string-list screen strings highlight)))
+               (multiple-value-bind (action key-seq) (read-from-keymap (menu-keymap menu))
+                 (cond ((and action
+                             (not (or (fboundp action)
+                                      (functionp action)))
+                             (help-key-p key-seq))
+                        (setf displaying-help-bindings t))
+                       ((and displaying-help-bindings
+                             (eql action 'menu-abort))
+                        (setf displaying-help-bindings nil))
+                       (t
+                        (when displaying-help-bindings
+                          (setf displaying-help-bindings nil))
+                        (if (fboundp action)
+                            (progn (funcall action menu)
+                                   (bound-check-menu menu))
+                            (typing-action menu (first key-seq)))))))))
       (unmap-all-message-windows))))
 
 
