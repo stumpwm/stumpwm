@@ -407,7 +407,7 @@ current window of the current group to the new one."
     (move-window-to-group win next)
     (really-raise-window win)))
 
-(defcommand gnew (name) ((:string "Group Name: "))
+(defcommand gnew (name) ((:string "Group name: "))
   "Create a new group with the specified name. The new group becomes the
 current group. If @var{name} begins with a dot (``.'') the group new
 group will be created in the hidden state. Hidden groups have group
@@ -417,7 +417,7 @@ groups and vgroups commands."
     (throw 'error :abort))
   (add-group (current-screen) name))
 
-(defcommand gnewbg (name) ((:string "Group Name: "))
+(defcommand gnewbg (name) ((:string "Group name: "))
   "Create a new group but do not switch to it."
   (unless name
     (throw 'error :abort))
@@ -519,20 +519,20 @@ the default group formatting and window formatting, respectively."
                                      (screen-groups (current-screen)))))))
     (switch-to-group group)))
 
-(defcommand gmove (to-group) ((:group "To Group: "))
+(defcommand gmove (to-group) ((:group "To group: "))
 "Move the current window to the specified group."
   (when (and to-group
              (current-window))
     (move-window-to-group (current-window) to-group)))
 
-(defcommand gmove-and-follow (to-group) ((:group "To Group: "))
+(defcommand gmove-and-follow (to-group) ((:group "To group: "))
   "Move the current window to the specified group, and switch to it."
   (let ((window (current-window)))
     (gmove to-group)
     (switch-to-group to-group)
     (when window (really-raise-window window))))
 
-(defcommand gmove-marked (to-group) ((:group "To Group: "))
+(defcommand gmove-marked (to-group) ((:group "To group: "))
   "move the marked windows to the specified group."
   (when to-group
     (let ((group (current-group)))
@@ -574,7 +574,7 @@ to the current group."
                  (kill-group dead-group current-group))
                (message "Killed other groups.")))))
 
-(defcommand gmerge (from) ((:group "From Group: "))
+(defcommand gmerge (from) ((:group "From group: "))
 "Merge @var{from} into the current group. @var{from} is not deleted."
   (if (eq from (current-group))
       (message "^B^3*Cannot merge group with itself!")

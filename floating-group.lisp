@@ -410,10 +410,10 @@ is a float group.")
 
 (pushnew '(float-group *float-group-top-map*) *group-top-maps*)
 
-(defcommand gnew-float (name) ((:rest "Group Name: "))
+(defcommand gnew-float (name) ((:rest "Group name: "))
   "Create a floating window group with the specified name and switch to it."
   (add-group (current-screen) name :type 'float-group))
 
-(defcommand gnewbg-float (name) ((:rest "Group Name: "))
+(defcommand gnewbg-float (name) ((:rest "Group name: "))
   "Create a floating window group with the specified name, but do not switch to it."
   (add-group (current-screen) name :background t :type 'float-group))

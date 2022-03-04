@@ -123,7 +123,7 @@ which-key window. Two arguments will be passed to this formatter:
   "If a key is the cancelling key binding."
   (final-key-p keys '("C-g")))
 
-(defcommand describe-key (keys) ((:key-seq "Describe Key:"))
+(defcommand describe-key (keys) ((:key-seq "Describe key:"))
   "Either interactively type the key sequence or supply it as text. This
   command prints the command bound to the specified key sequence."
   (if-let ((cmd (loop for map in (top-maps)
@@ -158,7 +158,7 @@ which-key window. Two arguments will be passed to this formatter:
                         (wrap (format nil "~{~a~^~%~}"
                                       (take *help-max-height* split))))))))
 
-(defcommand describe-variable (var) ((:variable "Describe Variable: "))
+(defcommand describe-variable (var) ((:variable "Describe variable: "))
 "Print the online help associated with the specified variable."
   (message-no-timeout "~a"
                       (with-output-to-string (s)
@@ -172,7 +172,7 @@ which-key window. Two arguments will be passed to this formatter:
     (format stream "(^5~a ^B~{~a~^ ~}^b^n)~&~%" (string-downcase (symbol-name fn)) lambda-list))
   (format stream "~&~a"(or (documentation fn 'function) "")))
 
-(defcommand describe-function (fn) ((:function "Describe Function: "))
+(defcommand describe-function (fn) ((:function "Describe function: "))
 "Print the online help associated with the specified function."
   (message-no-timeout "~a"
                       (with-output-to-string (s)
@@ -311,7 +311,7 @@ FIND-BINDING-IN-KMAP."
                     (make-even-lengths bindings))
             (format stream "~A" text))))))
       
-(defcommand describe-command (com) ((:command "Describe Command: "))
+(defcommand describe-command (com) ((:command "Describe command: "))
   "Print the online help associated with the specified command."
   (if (null (get-command-structure com nil))
       (message-no-timeout "Error: Command \"~a\" not found."
