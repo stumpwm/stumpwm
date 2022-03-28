@@ -24,7 +24,7 @@
 
 (in-package #:stumpwm)
 
-(export '(save-frame-excursion))
+(export '(save-frame-excursion only-one-frame-p))
 
 (defclass tile-group (group)
   ((frame-tree :accessor tile-group-frame-tree)
