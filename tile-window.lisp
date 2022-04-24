@@ -456,11 +456,10 @@ frame. Possible values are:
                                                 (window-height-inc window)))))
       (maximize-window window)))))
 
-(defcommand (unmaximize tile-group) () ()
+(defcommand (unmaximize tile-group) (&optional (window (current-window))) (:rest)
   "Use the size the program requested for current window (if any) instead of maximizing it."
-  (let* ((window (current-window))
-         (status (not (window-normal-size window)))
-         (hints (window-normal-hints window)))
+  (let ((status (not (window-normal-size window)))
+        (hints (window-normal-hints window)))
     (if (and (xlib:wm-size-hints-width hints)
              (xlib:wm-size-hints-height hints))
         (progn
