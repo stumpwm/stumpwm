@@ -1706,6 +1706,14 @@ An input function takes 2 arguments: the input structure and the key pressed.
 ### *hidden-window-color*
 
 ### *honor-window-moves*
+
+
+%%% define-fullscreen-in-frame-rule
+@@@ add-fullscreen-in-frame-rule
+@@@ remove-fullscreen-in-frame-rule
+### *fullscreen-in-frame-p-window-functions*
+
+
 @menu
 * Window Marks::
 * Customizing Window Appearance::
