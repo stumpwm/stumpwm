@@ -37,7 +37,8 @@
             (format s "@defun {~A} ~{~A~^ ~}~%~A~&@end defun~%~%"
                     name
                     (sb-introspect:function-lambda-list fn)
-                    (documentation fn 'function)))
+                    (documentation fn 'function))
+            t)
           (warn "Function ~A not found." fn-name)))))
 
 (defun generate-macro-doc (s line)
