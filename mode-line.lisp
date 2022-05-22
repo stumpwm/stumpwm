@@ -324,11 +324,12 @@ timer.")
       (flet ((resize-and-render (string)
                (setf (mode-line-contents ml) string)
                (resize-mode-line ml)
-               (render-strings (mode-line-cc ml)
-                               *mode-line-pad-x*
-                               *mode-line-pad-y*
-                               (split-string string (string #\Newline))
-                               ())))
+               (render-ml-strings ml
+                                  (mode-line-cc ml)
+                                  *mode-line-pad-x*
+                                  *mode-line-pad-y*
+                                  (split-string string (string #\Newline))
+                                  ())))
         (handler-case
             (when (or force (not (string= (mode-line-contents ml) str)))
               (resize-and-render str))

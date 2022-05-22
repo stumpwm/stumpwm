@@ -167,7 +167,7 @@ If COLOR isn't a colorcode a list containing COLOR is returned."
                                       :junk-allowed t)
                        :reset))
              (:reverse nil)))))
-      (list color))) ; this isn't a colorcode
+      (list color))) ; this isn't a colorcode 
 
 (defun parse-color-string (string)
   "Parse a color-coded string into a list of strings and color modifiers"
@@ -305,8 +305,8 @@ string."
         do (incf width (text-line-width (ccontext-font cc)
                                         part
                                         :translate #'translate-id))
-      else
-        do (apply #'apply-color cc (first part) (rest part)))
+      else if (not (member (car part) '(:on-click :on-click-end)))
+             do (apply #'apply-color cc (first part) (rest part)))
     (if resetp (reset-color-context cc))
     (values width height)))
 
@@ -400,6 +400,209 @@ rendered width."
        do (render-string parts cc (+ padx 0) (+ pady y))
        end
        do (incf y line-height))
+    (xlib:copy-area px gc 0 0
+                    (xlib:drawable-width px)
+                    (xlib:drawable-height px) xwin 0 0)
+    (reset-color-context cc)
+    (values)))
+
+
+;;; Mode line rendering to allow on-click events to make sense.
+
+;; The idea here is to let every mode line formatter register a function with an
+;; ID. These functions must accept at least one argument, the button code for
+;; the press. Any other arguments will be read (but not evaluated) from the
+;; string when rendering the mode line. This is done by the color formatters
+;; :on-click and :on-click-end. The former takes an id and an arbitrary number
+;; of arguments, while the latter takes nothing. The text enclosed may contain
+;; any formatter aside from the right alignment formatter (:>). 
+
+#|
+"^(:on-click :ml-on-click-focus-window 1034924)arbitrary text^(:on-click-end)"
+|#
+
+;; When rendering the above string, the bounds of "arbitrary text" are
+;; calculated and saved in the mode line being rendered. Then when clicked, the
+;; position of the click is checked against the saved bounds, and if one is
+;; found its id is looked up and its function is dispatched with the button code
+;; and the arguments provided. Before rendering the bounds registered in the
+;; mode line are cleared.
+
+;; Functions are registered to ids by the function #'REGISTER-ML-ON-CLICK-ID. An
+;; ID can only have one function associated with it. 
+
+(defvar *mode-line-on-click-functions* nil)
+
+(defun register-ml-on-click-id (id fn)
+  (let ((present (assoc id *mode-line-on-click-functions*)))
+    (if present
+        (setf (cdr present) fn)
+        (push (cons id fn) *mode-line-on-click-functions*))))
+
+(defun register-ml-boundaries-with-id (ml xbeg xend id arg)
+  ;; TODO: check if these bounds already exist.
+  (push (list xbeg xend id arg) (mode-line-on-click-bounds ml)))
+
+(defun check-for-ml-press (ml code x y)
+  "A function to hang on the mode line click hook which dispatches the
+appropriate mode line click function."
+  (declare (ignore y))
+  ;; TODO: Should Y be ignored? currently only the x axis is checked, but if the
+  ;; user has a multi line modeline this wont function correctly... 
+  (let ((registered-ids *mode-line-on-click-functions*)
+        (bounds-list (mode-line-on-click-bounds ml)))
+    (dformat 3 "In mode line click: x=~A~&~2Tregistered ids: ~S~&~2Tbounds: ~S~&"
+             x registered-ids bounds-list)
+    (loop for (beg end id arg) in bounds-list
+          do (when (< beg x end)
+               (let ((fn (assoc id registered-ids)))
+                 (when fn
+                   (dformat 3 "Mode line click, calling ~A" (cdr fn))
+                   (apply (cdr fn) code arg)
+                   (loop-finish)))))))
+
+(add-hook *mode-line-click-hook* 'check-for-ml-press)
+
+;; Here is an example of a mode line click-to-focus-window function. It takes a
+;; window id and focuses it. 
+
+(defun ml-on-click-focus-window (code id &rest rest)
+  (declare (ignore code rest))
+  (when-let ((window (window-by-id id)))
+    (focus-all window)))
+
+(register-ml-on-click-id :ml-on-click-focus-window #'ml-on-click-focus-window)
+
+;; This formatter wraps every window in an :on-click formatter which calls the
+;; above function with the appropriate window id. 
+(add-screen-mode-line-formatter #\i 'fmt-head-window-list-clickable)
+(defun fmt-head-window-list-clickable (ml)
+  "Using *window-format*, return a 1 line list of the windows, space seperated."
+  (format nil "~{~a~^ ~}"
+          (mapcar
+           (lambda (w)
+             (format nil
+                     "^(:on-click :ml-on-click-focus-window ~A)~A^(:on-click-end)"
+                     (window-id w)
+                     (let ((str (format-expand *window-formatters*
+                                               *window-format*
+                                               w)))
+                       (if (eq w (current-window))
+                           (fmt-highlight str)
+                           str))))
+           (sort1 (head-windows (mode-line-current-group ml) (mode-line-head ml))
+                  #'< :key #'window-number))))
+
+
+;;;; Click-enabled mode line 
+
+;; The implementation of click-enabled mode line depends on defining mode line
+;; specific render-string(s) functions which check for the :on-click/end
+;; formatters. 
+
+(defun render-ml-string (string-or-parts cc ml x y &aux (draw-x x))
+  "Renders STRING-OR-PARTS to the pixmap in CC. Returns the height and width of
+the rendered line as two values. The returned width is the value of X plus the
+rendered width."
+  (let* ((parts (if (stringp string-or-parts)
+                    (parse-color-string string-or-parts)
+                    string-or-parts))
+         (height (max-font-height parts cc))
+         (current-on-click-beg nil)
+         (current-on-click-id nil)
+         (current-on-click-args nil))
+    (labels ((actually-draw (thing x y)
+               (draw-image-glyphs (ccontext-px cc)
+                                  (ccontext-gc cc)
+                                  (ccontext-font cc)
+                                  x y
+                                  thing
+                                  :translate #'translate-id
+                                  :size 16))
+             (draw-string (thing x y)
+               (actually-draw thing x y)
+               (incf draw-x (text-line-width (ccontext-font cc)
+                                             thing
+                                             :translate #'translate-id))))
+      (loop
+        for (part . rest) on parts
+        for font-height-difference = (- height
+                                        (font-height (ccontext-font cc)))
+        for y-to-center = (floor (/ font-height-difference 2))
+        do (cond ((stringp part)
+                  (draw-string part
+                               draw-x
+                               (+ y
+                                  y-to-center
+                                  (font-ascent (ccontext-font cc)))))
+                 ((eql (car part) :on-click)
+                  (setf current-on-click-beg  draw-x
+                        current-on-click-id   (cadr part)
+                        current-on-click-args (cddr part)))
+                 ((eql (car part) :on-click-end)
+                  (register-ml-boundaries-with-id ml
+                                                  current-on-click-beg
+                                                  draw-x
+                                                  current-on-click-id
+                                                  current-on-click-args)
+                  (setf current-on-click-beg  nil
+                        current-on-click-id   nil
+                        current-on-click-args nil))
+                 ((eql (car part) :>)
+                  (render-ml-string rest cc ml
+                                    (- (xlib:drawable-width (ccontext-px cc))
+                                       x
+                                       (rendered-string-size rest cc))
+                                    y)
+                  (loop-finish))
+                 (t
+                  (apply #'apply-color cc (first part) (rest part))))))
+    (values height draw-x)))
+
+(defun render-ml-strings (ml cc padx pady strings highlights)
+  ;; cribbed from render-strings, theres parts here that arent needed.
+  (let* ((gc (ccontext-gc cc))
+         (xwin (ccontext-win cc))
+         (px (ccontext-px cc))
+         (strings (mapcar (lambda (string)
+                            (if (stringp string)
+                                (parse-color-string string)
+                                string))
+                          strings))
+         (y 0))
+    ;; Create a new pixmap if there isn't one or if it doesn't match the
+    ;; window
+    (when (or (not px)
+              (/= (xlib:drawable-width px) (xlib:drawable-width xwin))
+              (/= (xlib:drawable-height px) (xlib:drawable-height xwin)))
+      (if px (xlib:free-pixmap px))
+      (setf px (xlib:create-pixmap :drawable xwin
+                                   :width (xlib:drawable-width xwin)
+                                   :height (xlib:drawable-height xwin)
+                                   :depth (xlib:drawable-depth xwin))
+            (ccontext-px cc) px))
+    ;; Clear the background
+    (xlib:with-gcontext (gc :foreground (xlib:gcontext-background gc))
+      (xlib:draw-rectangle px gc 0 0
+                           (xlib:drawable-width px)
+                           (xlib:drawable-height px) t))
+    (loop for parts in strings
+          for row from 0 to (length strings)
+          for line-height = (max-font-height parts cc)
+          if (find row highlights :test 'eql)
+            do (xlib:draw-rectangle px gc 0 (+ pady y) (xlib:drawable-width px) line-height t)
+               (xlib:with-gcontext (gc :foreground (xlib:gcontext-background gc)
+                                       :background (xlib:gcontext-foreground gc))
+                 ;; If we don't switch the default colors, a color operation
+                 ;; resetting either color to its default value would undo the
+                 ;; switch.
+                 (rotatef (ccontext-default-fg cc) (ccontext-default-bg cc))
+                 (render-ml-string parts cc ml (+ padx 0) (+ pady y))
+                 (rotatef (ccontext-default-fg cc) (ccontext-default-bg cc)))
+          else
+            do (render-ml-string parts cc ml (+ padx 0) (+ pady y))
+          end
+          do (incf y line-height))
     (xlib:copy-area px gc 0 0
                     (xlib:drawable-width px)
                     (xlib:drawable-height px) xwin 0 0)

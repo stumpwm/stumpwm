@@ -1304,6 +1304,18 @@ of :error."
 (defun command-mode-end-message ()
   (message "Exited command-mode."))
 
+;; (defstruct (mode-line (:constructor %make-mode-line))
+;;   screen
+;;   head
+;;   window
+;;   format
+;;   position
+;;   contents
+;;   cc
+;;   height
+;;   factor
+;;   (mode :stump))
+
 (defstruct (mode-line (:constructor %make-mode-line))
   screen
   head
@@ -1314,7 +1326,12 @@ of :error."
   cc
   height
   factor
-  (mode :stump))
+  (mode :stump)
+  on-click-bounds)
+
+;; on-click is a list whose every element is of the form (BEGIN END FN), where
+;; BEGIN is the x coordinate beginning of the thing being represented, END is
+;; the x coordinate where it ends, and FN is a thunk to call when its clicked.
 
 (defstruct timer
   time repeat function args)
