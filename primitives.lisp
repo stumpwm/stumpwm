@@ -1179,6 +1179,46 @@ Must be an unquoted symbol to be looked up at runtime.
   "Clear all window placement rules."
   (setf *window-placement-rules* nil))
 
+(defvar *fullscreen-in-frame-p-window-functions* nil
+  "A alist of predicate functions for determining if a window should be
+fullscreen in frame.")
+
+(defun fullscreen-in-frame-p (win)
+  (some (lambda (r)
+          (let ((res (funcall (cdr r) win)))
+            (when res
+              (dformat 3 "Fullscreen in frame selector ~A matches window ~A"
+                       (car r) win))
+            res))
+        *fullscreen-in-frame-p-window-functions*))
+
+(defun add-fullscreen-in-frame-rule (name function &key shadow)
+  "Add a function to the fullscreen-in-frame window rules alist.  If @var{NAME}
+already exists as a key in the alist and @var{SHADOW} is nil, then
+@var{FUNCTION} replaces the existing value.  Otherwise @var{NAME} and
+@var{FUNCTION} are pushed onto the alist."
+  (let ((present (assoc name *fullscreen-in-frame-p-window-functions*)))
+    (if (and present (not shadow))
+        (setf (cdr present) function)
+        (push (cons name function) *fullscreen-in-frame-p-window-functions*))))
+
+(defun remove-fullscreen-in-frame-rule (name &key count)
+  "Remove rules named @var{NAME} from the fullscreen-in-frame window rules alist.
+If @var{COUNT} is NIL then all matching rules are removed, otherwise only the
+first @var{COUNT} rules are removed."
+  (setf *fullscreen-in-frame-p-window-functions*
+        (remove name *fullscreen-in-frame-p-window-functions*
+                :key #'car :count count)))
+
+(defmacro define-fullscreen-in-frame-rule (name (window-argument) &body body)
+  "Define a rule for a window to be fullscreened within the frame.  Each rule is a
+function which will be called when a window is made fullscreen.  If the rule
+returns NIL then the fullscreen window takes up the entire head, otherwise it
+takes up only its frame. Within the body of the rule @var{WINDOW-ARGUMENT} is
+bound to the window being processed."
+  `(flet ((,name (,window-argument) ,@body))
+     (add-fullscreen-in-frame-rule ',name #',name)))
+
 (defvar *mouse-focus-policy* :ignore
   "The mouse focus policy decides how the mouse affects input
 focus. Possible values are :ignore, :sloppy, and :click. :ignore means

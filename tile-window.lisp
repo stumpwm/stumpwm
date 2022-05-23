@@ -114,11 +114,22 @@ than the root window's width and height."
       ;; handle specially fullscreen windows.
       ((window-fullscreen win)
        (let* ((win-group (window-group win))
-              (head (frame-head win-group f)))
-         (setf x (frame-x head)
-               y (frame-y head)
-               width (frame-width head)
-               height (frame-height head)))
+              (fs-in-frame (fullscreen-in-frame-p win))
+              (head (frame-head win-group f))
+              (frame-to-fill (if fs-in-frame f head))
+              (ml (head-mode-line head))
+              (adjust-by (if (and fs-in-frame
+                                  (or (eq :stump (mode-line-mode ml))
+                                      (eq :visible (mode-line-mode ml))))
+                             (mode-line-height ml)
+                             0)))
+         ;; determine if the window should be fullscreened in the frame or the
+         ;; head. When fullscreen-in-frame-p returns true, use the current frame
+         ;; and adjust for mode line size. 
+         (setf x (frame-x frame-to-fill)
+               y (+ (frame-y frame-to-fill) adjust-by)
+               width (frame-width frame-to-fill)
+               height (- (frame-height frame-to-fill) adjust-by)))
        (return-from geometry-hints (values x y 0 0 width height 0 t)))
       ;; Adjust the defaults if the window is a transient_for window.
       ((find (window-type win) '(:transient :dialog))
