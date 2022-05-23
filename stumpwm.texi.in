@@ -2084,18 +2084,17 @@ If one wished for right click to delete the window, then the following
 example could be placed in the .stumpwmrc:
 
 @example
-(defun ml-on-click-focus-or-delete-window (code id &rest rest)
-  (declare (ignore rest))
-  (when-let ((window (window-by-id id)))
-    (let ((button (decode-button-code code)))
-      (case button
-        ((:left-button)
-         (focus-all window))
-        ((:right-button)
-         (delete-window window))))))
-
-(register-ml-on-click-id :ml-on-click-focus-window
-                         #'ml-on-click-focus-or-delete-window)
+(labels ((ml-on-click-focus-or-delete-window (code id &rest rest)
+           (declare (ignore rest))
+           (when-let ((window (window-by-id id)))
+             (let ((button (decode-button-code code)))
+               (case button
+                 ((:left-button)
+                  (focus-all window))
+                 ((:right-button)
+                  (delete-window window)))))))
+  (register-ml-on-click-id :ml-on-click-focus-window
+                           #'ml-on-click-focus-or-delete-window))
 @end example
 
 This will replace the @code{:ml-on-click-focus-window} function, and all
