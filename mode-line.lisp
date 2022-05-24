@@ -365,7 +365,7 @@ timer.")
 (defun register-ml-boundaries-with-id (ml xbeg xend ybeg yend id args)
   (push (list xbeg xend ybeg yend id args) (mode-line-new-bounds ml)))
 
-(defun check-for-ml-press (ml code x y)
+(defun mode-line-click-dispatcher (ml code x y)
   "A function to hang on the mode line click hook which dispatches the
 appropriate mode line click function."
   (let ((registered-ids *mode-line-on-click-functions*)
@@ -378,17 +378,27 @@ appropriate mode line click function."
                (let ((fn (assoc id registered-ids)))
                  (when fn
                    (dformat 3 "Mode line click, calling ~A" (cdr fn))
-                   (apply (cdr fn) code args)
-                   (loop-finish)))))))
+                   (apply (cdr fn) code args)))
+               (loop-finish)))))
 
-(add-hook *mode-line-click-hook* 'check-for-ml-press)
+(add-hook *mode-line-click-hook* 'mode-line-click-dispatcher)
 
-(defun ml-on-click-focus-window (code id &rest rest)
-  (declare (ignore code rest))
-  (when-let ((window (window-by-id id)))
-    (focus-all window)))
+(flet ((ml-on-click-focus-window (code id &rest rest)
+         (declare (ignore code rest))
+         (when-let ((window (window-by-id id)))
+           (focus-all window)))
+       (ml-on-click-switch-to-group (code group &rest rest)
+         (declare (ignore rest code))
+         (when-let ((g (find-group (current-screen) group)))
+           (switch-to-group g)))
+       (ml-on-click-do-nothing (code &rest rest)
+         (declare (ignore rest code))
+         nil))
+  (register-ml-on-click-id :ml-on-click-focus-window #'ml-on-click-focus-window)
+  (register-ml-on-click-id :ml-on-click-switch-to-group
+                           #'ml-on-click-switch-to-group)
+  (register-ml-on-click-id :ml-on-click-do-nothing #'ml-on-click-do-nothing))
 
-(register-ml-on-click-id :ml-on-click-focus-window #'ml-on-click-focus-window)
 
 ;;; External mode lines
 

@@ -373,11 +373,21 @@ rendered width."
                                                  (third current-on-click))
                  (setf current-on-click nil)))
               ((:>)
-               (render-string rest cc
-                              (- (xlib:drawable-width (ccontext-px cc))
-                                 x
-                                 (rendered-string-size rest cc))
-                              y)
+               (let ((xbeg (- (xlib:drawable-width (ccontext-px cc))
+                              x
+                              (rendered-string-size rest cc))))
+                 ;; Register a sentinel on click boundary to prevent overlapping
+                 ;; renders from being clickable (eg if a formatter before :> is
+                 ;; larger than the space available for it). 
+                 (when ml 
+                   (register-ml-boundaries-with-id ml xbeg most-positive-fixnum
+                                                   y
+                                                   (+ y y-to-center (font-ascent
+                                                                     (ccontext-font
+                                                                      cc)))
+                                                   :ml-on-click-do-nothing
+                                                   nil))
+                 (render-string rest cc xbeg y :ml ml))
                (loop-finish))
               (otherwise
                (apply #'apply-color cc (first part) (rest part)))))
