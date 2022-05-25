@@ -167,7 +167,7 @@ If COLOR isn't a colorcode a list containing COLOR is returned."
                                       :junk-allowed t)
                        :reset))
              (:reverse nil)))))
-      (list color))) ; this isn't a colorcode 
+      (list color))) ; this isn't a colorcode
 
 (defun parse-color-string (string)
   "Parse a color-coded string into a list of strings and color modifiers"
@@ -312,7 +312,7 @@ string."
         do (incf width (text-line-width (ccontext-font cc)
                                         part
                                         :translate #'translate-id))
-      else 
+      else
         do (apply #'apply-color cc (first part) (rest part)))
     (if resetp (reset-color-context cc))
     (values width height)))
@@ -361,16 +361,14 @@ rendered width."
                  (setf current-on-click (list draw-x (cadr part) (cddr part)))))
               ((:on-click-end)
                (when ml
-                 (register-ml-boundaries-with-id ml
-                                                 (first current-on-click)
-                                                 draw-x
-                                                 y
-                                                 (+ y
-                                                    y-to-center
-                                                    (font-ascent
-                                                     (ccontext-font cc)))
-                                                 (second current-on-click)
-                                                 (third current-on-click))
+                 (register-ml-boundaries-with-id
+                  ml
+                  (first current-on-click)
+                  draw-x
+                  y
+                  (+ y y-to-center (font-ascent (ccontext-font cc)))
+                  (second current-on-click)
+                  (third current-on-click))
                  (setf current-on-click nil)))
               ((:>)
                (let ((xbeg (- (xlib:drawable-width (ccontext-px cc))

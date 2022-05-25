@@ -34,6 +34,16 @@ hidden windows, set this to an empty string.")
 (defvar *mode-line-highlight-template* "^R~A^r"
   "The string passed to FORMAT to highlight things in the mode line.")
 
+;;; Clickable Text
+
+(defun format-with-on-click-id (string id &rest arguments)
+  "Wrap STRING in :on-click and :on-click-end color formatters, using ID as the id
+to call when clicked and ARGUMENTS as the arguments to pass to the ID's
+function. STRING may not contain the :> color formatter, but may contain any
+other color formatters."
+  (format nil "^(:on-click ~S ~{~S~^ ~})~A^(:on-click-end)"
+          id arguments string))
+
 ;;; Utilities
 
 (defun mode-line-current-group (ml)
@@ -201,11 +211,3 @@ critical."
              (decf *scroll-prev-index*)
              (setf *scroll-prev-dir* :forward))))))
   (subseq string *scroll-prev-index* (+ *scroll-prev-index* width)))
-
-(defun format-with-on-click-id (string id &rest arguments)
-  "Wrap STRING in :on-click and :on-click-end color formatters, using ID as the id
-to call when clicked and ARGUMENTS as the arguments to pass to the ID's
-function. STRING may not contain the :> color formatter, but may contain any
-other color formatters."
-  (format nil "^(:on-click ~S ~{~S~^ ~})~A^(:on-click-end)"
-          id arguments string))
