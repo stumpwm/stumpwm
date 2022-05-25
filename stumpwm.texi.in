@@ -2037,7 +2037,7 @@ To disable the on-click behavior, remove the function
 
 To call a function by click the function must first be registered. The
 function must take at least one argument, the button code. Here is an
-example of the click-to-focus function and its registration:
+example of a click-to-focus function and its registration:
 
 @example
 (defun ml-on-click-focus-window (code id &rest rest)
@@ -2076,9 +2076,14 @@ space seperated and clickable."
 @end example
 
 In the above formatter, every windows expansion is wrapped in a
-:on-click/end pair, which refers to the ID we registered and provides
-the window ID as an argument to be passed to its function. The arguments
-provided to :on-click will be read but not evaluated.
+:on-click/end pair, which takes the ID we registered as the function to
+call and the window ID as an argument to be passed to its function. The
+arguments provided to :on-click will be read but not evaluated. The
+string generated will look like so:
+
+@example
+"^(:on-click :ml-on-click-focus-window 308242)window text^(:on-click-end)"
+@end example
 
 If one wished for right click to delete the window, then the following
 example could be placed in the .stumpwmrc:
