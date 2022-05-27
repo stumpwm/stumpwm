@@ -28,6 +28,7 @@
           *input-completion-style*
           *input-map*
           *numpad-map*
+          register-altgr-as-modifier
           completing-read
           input-delete-region
           input-goto-char

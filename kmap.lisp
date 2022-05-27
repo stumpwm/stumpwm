@@ -27,6 +27,7 @@
 (export '(*top-map*
           *root-map*
           *key-seq-color*
+          *altgr-offset*
           define-key
           kbd
           lookup-command
@@ -139,18 +140,19 @@ for passing as the last argument to (apply #'make-key ...)"
   "The offset of altgr keysyms. Often 2 or 4, but always an even number.")
 
 (defun keysym-requires-altgr (keysym)
-  (unless (and (xlib:keysym->keycodes *display* keysym) t)
-    (let* ((min (xlib:display-min-keycode *display*))
-           (max (xlib:display-max-keycode *display*))
-           (map (xlib::display-keyboard-mapping *display*))
-           (size (array-dimension map 1)))
-      (when (> *altgr-offset* size)
-        (error "Cant locate keysym ~A" keysym))
-      (do ((i min (1+ i)))
-          ((> i max) nil)
-        (when (or (= keysym (aref map i *altgr-offset*))
-                  (= keysym (aref map i (1+ *altgr-offset*))))
-          (return-from keysym-requires-altgr t))))))
+  (when *display*
+    (unless (and (xlib:keysym->keycodes *display* keysym) t)
+      (let* ((min (xlib:display-min-keycode *display*))
+             (max (xlib:display-max-keycode *display*))
+             (map (xlib::display-keyboard-mapping *display*))
+             (size (array-dimension map 1)))
+        (when (> *altgr-offset* size)
+          (error "Cant locate keysym ~A" keysym))
+        (do ((i min (1+ i)))
+            ((> i max) nil)
+          (when (or (= keysym (aref map i *altgr-offset*))
+                    (= keysym (aref map i (1+ *altgr-offset*))))
+            (return-from keysym-requires-altgr t)))))))
 
 (defun parse-key (string)
   "Parse STRING and return a key structure. Raise an error of type
