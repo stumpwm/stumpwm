@@ -147,7 +147,7 @@ for passing as the last argument to (apply #'make-key ...)"
              (map (xlib::display-keyboard-mapping *display*))
              (size (array-dimension map 1)))
         (when (> *altgr-offset* size)
-          (error "Cant locate keysym ~A" keysym))
+          (error "AltGr offset is larger than the available offsets"))
         (do ((i min (1+ i)))
             ((> i max) nil)
           (when (or (= keysym (aref map i *altgr-offset*))

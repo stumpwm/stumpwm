@@ -225,6 +225,7 @@ Available completion styles include
       (= (xlib:keycode->keysym *display* keycode 0) 0)))
 
 (defun register-altgr-as-modifier ()
+  "Register the keysym(s) for ISO_Level3_Shift as modifiers."
   (setf *all-modifiers*
         (append (multiple-value-list
                  (xlib:keysym->keycodes *display*
