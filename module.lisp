@@ -109,7 +109,7 @@ with the argument `*module-dir*'"
   (setf *module-dir* dir)
   (init-load-path dir))
 
-(defcommand load-module (name) ((:module "Load Module: "))
+(defcommand load-module (name) ((:module "Load module: "))
   "Loads the contributed module with the given NAME."
   (let ((module (find-module (string-downcase name))))
     (if module

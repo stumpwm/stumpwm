@@ -117,7 +117,7 @@ location."
             (*print-pretty* t))
         (prin1 foo fp)))))
 
-(defcommand dump-group-to-file (file) ((:rest "Dump To File: "))
+(defcommand dump-group-to-file (file) ((:rest "Dump to file: "))
   "Dumps the frames of the current group of the current screen to the named file.
 If FILE is an absolute path, then the dump will be read written there.
 Otherwise, defaults to writing to \"FILE.dump\" in the XDG_DATA_HOME location."
@@ -126,7 +126,7 @@ Otherwise, defaults to writing to \"FILE.dump\" in the XDG_DATA_HOME location."
 
 (defcommand-alias dump-group dump-group-to-file)
 
-(defcommand dump-screen-to-file (file) ((:rest "Dump To File: "))
+(defcommand dump-screen-to-file (file) ((:rest "Dump to file: "))
   "Dumps the frames of all groups of the current screen to the named file.
 If FILE is an absolute path, then the dump will be read written there.
 Otherwise, defaults to writing to \"FILE.dump\" in the XDG_DATA_HOME location."
@@ -135,7 +135,7 @@ Otherwise, defaults to writing to \"FILE.dump\" in the XDG_DATA_HOME location."
 
 (defcommand-alias dump-screen dump-screen-to-file)
 
-(defcommand dump-desktop-to-file (file) ((:rest "Dump To File: "))
+(defcommand dump-desktop-to-file (file) ((:rest "Dump to file: "))
   "Dumps the frames of all groups of all screens to the named file.
 If FILE is an absolute path, then the dump will be read written there.
 Otherwise, defaults to writing to \"FILE.dump\" in the XDG_DATA_HOME location."
@@ -221,7 +221,7 @@ Otherwise, defaults to writing to \"FILE.dump\" in the XDG_DATA_HOME location."
       (when screen
         (restore-screen screen sdump)))))
 
-(defcommand restore-from-file (file) ((:rest "Restore From File: "))
+(defcommand restore-from-file (file) ((:rest "Restore from file: "))
   "Restores screen, groups, or frames from named file, depending on file's
 contents. If FILE is an absolute path, then the dump will be read from there.
 Otherwise, defaults to reading from \"FILE.dump\" in the XDG_DATA_HOME location."

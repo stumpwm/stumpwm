@@ -280,12 +280,12 @@ great example."
 (defcommand-alias escape set-prefix-key)
 
 (defcommand bind (key command)
-                 ((:string "Key Chord: ")
+                 ((:string "Key chord: ")
                   (:rest "Command: "))
   "Hang a key binding off the escape key."
   (define-key *root-map* (kbd key) command))
 
-(defcommand unbind (key) ((:string "Key Chord: "))
+(defcommand unbind (key) ((:string "Key chord: "))
   "Remove a key binding from the escape key."
   (undefine-key *root-map* (kbd key)))
 

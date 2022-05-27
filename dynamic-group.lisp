@@ -1081,13 +1081,13 @@ window. "
       "pull"
       "pull-marked"))
 
-(defcommand gnew-dynamic (name) ((:rest "Group Name: "))
+(defcommand gnew-dynamic (name) ((:rest "Group name: "))
   "Create a new dynamic group named NAME."
   (unless name 
     (throw 'error :abort))
   (add-group (current-screen) name :type 'dynamic-group))
 
-(defcommand gnewbg-dynamic (name) ((:rest "Group Name: "))
+(defcommand gnewbg-dynamic (name) ((:rest "Group name: "))
   "Create a new dynamic group named NAME in the background."
   (unless name
     (throw 'error :abort))
