@@ -802,7 +802,8 @@ to 'dead_acute', 'dead_' is trimmed from the dead keysyms name, and 'a' and
     (if (or (key-mods-p key) (null char)
             (not (characterp char)))
         :error
-        (input-insert-char input char))))
+        (prog1 (input-insert-char input char)
+          (setf (input-line-most-recent-dead-key input) nil)))))
 
 (defun input-yank-selection (input key)
   (declare (ignore key))
