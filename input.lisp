@@ -64,7 +64,7 @@ remaining tail of the list as a second value."
 
 
 (defstruct input-line
-  string position history history-bk password)
+  string position history history-bk password most-recent-dead-key)
 
 
 ;;; completion styles
@@ -753,8 +753,52 @@ functions are passed this structure as their first argument."
          (setf (input-line-string input) (make-input-string (elt *input-history* (input-line-history input)))
                (input-line-position input) (length (input-line-string input))))))
 
+(defun dead-key-character (keysym)
+  "Given a dead key keysym, return the corresponding non-dead character"
+  (let ((symname (subseq (gethash keysym *dead-key-sym->name*) 5)))
+    ;; Some sym names are different from their non-dead name, patch those here.
+    (cond ((string= symname "tilde")
+           (setf symname "asciitilde"))
+          ((string= symname "circumflex")
+           (setf symname "asciicircum")))
+    (xlib:keysym->character *display*
+                            (gethash symname *name-keysym-translations*))))
+
+(defun dead-key-p (keysym)
+  "Check if KEYSYM is dead"
+  (gethash keysym *dead-key-sym->name*))
+
+(defun make-combined-character (keysym dead-keysym)
+  "Try to modify KEYSYM with DEAD-KEYSYM by concatenating the keysym names
+together, finding the keysym for it, and looking up the keysym on the X server.
+
+For example, given a keysym corresponding to 'a' and a dead keysym corresponding
+to 'dead_acute', 'dead_' is trimmed from the dead keysyms name, and 'a' and
+'acute' are concatenated to give 'aacute', the name of the keysym for 'á'."
+  (let ((charname (keysym->keysym-name keysym))
+        (deadstr (ignore-errors
+                  (subseq (gethash dead-keysym *dead-key-sym->name*) 5))))
+    (xlib:keysym->character *display*
+                            (keysym-name->keysym
+                             (concatenate 'string charname deadstr)))))
+
+(defun find-character-for-keysym (input key)
+  "Find a character for the given key with support for dead keys."
+  (cond ((dead-key-p (key-keysym key))
+         (if (and (input-line-most-recent-dead-key input)
+                  (= (input-line-most-recent-dead-key input) (key-keysym key)))
+             (progn (setf (input-line-most-recent-dead-key input) nil)
+                    (dead-key-character (key-keysym key)))
+             (setf (input-line-most-recent-dead-key input) (key-keysym key))))
+        (t (let ((char (make-combined-character
+                        (key-keysym key)
+                        (input-line-most-recent-dead-key input))))
+             (setf (input-line-most-recent-dead-key input) nil)
+             char))))
+
 (defun input-self-insert (input key)
-  (let ((char (xlib:keysym->character *display* (key-keysym key))))
+  (let* ((%char (ignore-errors (find-character-for-keysym input key)))
+         (char (or %char (xlib:keysym->character *display* (key-keysym key)))))
     (if (or (key-mods-p key) (null char)
             (not (characterp char)))
         :error
