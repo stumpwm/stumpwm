@@ -707,6 +707,7 @@ mimics GNU Screen's keyboard handling. StumpWM's default prefix key is
 * List of Default Keybindings::
 * Binding Keys::
 * Modifiers::
+* AltGr Keys::
 * Remapped Keys::
 @end menu
 
@@ -944,7 +945,7 @@ Describe the specified command.
 ### *editor-bindings*
 ### *numpad-map*
 
-@node Modifiers, Remapped Keys, Binding Keys, Key Bindings
+@node Modifiers, AltGr Keys, Binding Keys, Key Bindings
 @section Modifiers
 
 Many users have had some difficulty with setting up modifiers for
@@ -1082,7 +1083,43 @@ commands to the @var{*top-map*}.
 ### *all-modifiers*
 ### *modifiers*
 
-@node Remapped Keys, , Modifiers, Key Bindings
+@node AltGr Keys, Remapped Keys, Modifiers, Key Bindings
+@section AltGr Keys
+
+StumpWM uses the CLX client library for X11, which doesnt support the
+XKB extension. As such support for Alt Graph must be handled
+specially.
+
+Preliminary support for Alt Graph in StumpWM is done by registering
+AltGr as a modifier key and specially handling it when it is a member of
+a key press' state. By default StumpWM treats AltGr key presses as a
+normal key and not a modifier, and this behavior should not be changed
+unless necessary. To enable treating AltGr as a modifier, the user must
+place the following in their stumpwmrc:
+
+@example
+(register-altgr-as-modifier)
+@end example
+
+Additionally, the variable @var{*altgr-offset*} defaults to 2, which may
+be appropriate for the users keyboard layout, or may not. Some users may
+have an AltGr offset of 4, or potentially 6. If, after calling
+@code{register-altgr-as-modifier}, keys on AltGr aren't being registered
+properly, then the offset may need to be changed. The user can check
+this explicitly by finding a keysym that requires AltGr and passing it
+to @code{keysym-requires-altgr}. As an example, some layouts have @kbd{ł} on
+@kbd{AltGr+l}. In such a case, the following example would return true
+when @var{*altgr-offset*} is correct:
+
+@example
+(stumpwm::keysym-requires-altgr
+  (stumpwm::stumpwm-name->keysym "lstroke"))
+@end example
+
+@@@ register-altgr-as-modifier
+### *altgr-offset*
+
+@node Remapped Keys, , AltGr Keys, Key Bindings
 @section Remapped Keys
 
 StumpWM may be configured to translate certain familiar top level

@@ -28,6 +28,7 @@
           *input-completion-style*
           *input-map*
           *numpad-map*
+          register-altgr-as-modifier
           completing-read
           input-delete-region
           input-goto-char
@@ -222,6 +223,14 @@ Available completion styles include
   (or (find keycode *all-modifiers* :test 'eql)
       ;; Treat No Symbol keys as modifiers (and therefore ignorable)
       (= (xlib:keycode->keysym *display* keycode 0) 0)))
+
+(defun register-altgr-as-modifier ()
+  "Register the keysym(s) for ISO_Level3_Shift as modifiers."
+  (setf *all-modifiers*
+        (append (multiple-value-list
+                 (xlib:keysym->keycodes *display*
+                                        (keysym-name->keysym "ISO_Level3_Shift")))
+                *all-modifiers*)))
 
 (defun keycode->character (code mods)
   (let ((idx (if (member :shift mods) 1 0)))
@@ -535,7 +544,7 @@ match with an element of the completions."
   (let* ((mods    (xlib:make-state-keys state))
          (shift-p (and (find :shift mods) t))
          (altgr-p (and (intersection (modifiers-altgr *modifiers*) mods) t))
-         (base    (if altgr-p 2 0))
+         (base    (if altgr-p *altgr-offset* 0))
          (sym     (xlib:keycode->keysym *display* code base))
          (upsym   (xlib:keycode->keysym *display* code (+ base 1))))
     ;; If a keysym has a shift modifier, then use the uppercase keysym
@@ -548,7 +557,8 @@ match with an element of the completions."
               :meta (and (intersection mods (modifiers-meta *modifiers*)) t)
               :alt (and (intersection mods (modifiers-alt *modifiers*)) t)
               :hyper (and (intersection mods (modifiers-hyper *modifiers*)) t)
-              :super (and (intersection mods (modifiers-super *modifiers*)) t))))
+              :super (and (intersection mods (modifiers-super *modifiers*)) t)
+              :altgr altgr-p)))
 
 
 ;;; input string utility functions
