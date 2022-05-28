@@ -378,9 +378,8 @@ rendered width."
                 (let ((xbeg (- (xlib:drawable-width (ccontext-px cc))
                                x
                                (rendered-string-size rest cc))))
-                  ;; Register a sentinel on click boundary to prevent overlapping
-                  ;; renders from being clickable (eg if a formatter before :> is
-                  ;; larger than the space available for it). 
+                  ;; Terminate all clickable areas as they cannot cross the :>
+                  ;; boundary.
                   (when ml
                     (loop for top = (pop current-on-click)
                           while top
