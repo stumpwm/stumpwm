@@ -332,64 +332,64 @@ string."
   "Renders STRING-OR-PARTS to the pixmap in CC. Returns the height and width of
 the rendered line as two values. The returned width is the value of X plus the
 rendered width."
-  (let* ((parts (if (stringp string-or-parts)
-                    (parse-color-string string-or-parts)
-                    string-or-parts))
-         (height (max-font-height parts cc))
-         (current-on-click nil))
-    (loop
-       for (part . rest) on parts
-       for font-height-difference = (- height
-                                       (font-height (ccontext-font cc)))
-       for y-to-center = (floor (/ font-height-difference 2))
-       if (stringp part)
-       do (draw-image-glyphs
-           (ccontext-px cc)
-           (ccontext-gc cc)
-           (ccontext-font cc)
-           draw-x (+ y y-to-center (font-ascent (ccontext-font cc)))
-           part
-           :translate #'translate-id
-           :size 16)
-         (incf draw-x (text-line-width (ccontext-font cc)
-                                       part
-                                       :translate #'translate-id))
-       else
-         do (case (first part)
-              ((:on-click)
-               (when ml
-                 (setf current-on-click (list draw-x (cadr part) (cddr part)))))
-              ((:on-click-end)
-               (when ml
-                 (register-ml-boundaries-with-id
-                  ml
-                  (first current-on-click)
-                  draw-x
-                  y
-                  (+ y y-to-center (font-ascent (ccontext-font cc)))
-                  (second current-on-click)
-                  (third current-on-click))
-                 (setf current-on-click nil)))
-              ((:>)
-               (let ((xbeg (- (xlib:drawable-width (ccontext-px cc))
-                              x
-                              (rendered-string-size rest cc))))
-                 ;; Register a sentinel on click boundary to prevent overlapping
-                 ;; renders from being clickable (eg if a formatter before :> is
-                 ;; larger than the space available for it). 
-                 (when ml 
-                   (register-ml-boundaries-with-id ml xbeg most-positive-fixnum
-                                                   y
-                                                   (+ y y-to-center (font-ascent
-                                                                     (ccontext-font
-                                                                      cc)))
-                                                   :ml-on-click-do-nothing
-                                                   nil))
-                 (render-string rest cc xbeg y :ml ml))
-               (loop-finish))
-              (otherwise
-               (apply #'apply-color cc (first part) (rest part)))))
-    (values height draw-x)))
+  (macrolet ((register (thing)
+               `(let ((top ,thing))
+                  (when top
+                    (register-ml-boundaries-with-id ml
+                                                    (first top)
+                                                    draw-x
+                                                    y
+                                                    (+ y y-to-center
+                                                       (font-ascent
+                                                        (ccontext-font cc)))
+                                                    (second top)
+                                                    (third top))))))
+    (let* ((parts (if (stringp string-or-parts)
+                      (parse-color-string string-or-parts)
+                      string-or-parts))
+           (height (max-font-height parts cc))
+           (current-on-click nil))
+      (loop
+        for (part . rest) on parts
+        for font-height-difference = (- height
+                                        (font-height (ccontext-font cc)))
+        for y-to-center = (floor (/ font-height-difference 2))
+        if (stringp part)
+          do (draw-image-glyphs
+              (ccontext-px cc)
+              (ccontext-gc cc)
+              (ccontext-font cc)
+              draw-x (+ y y-to-center (font-ascent (ccontext-font cc)))
+              part
+              :translate #'translate-id
+              :size 16)
+             (incf draw-x (text-line-width (ccontext-font cc)
+                                           part
+                                           :translate #'translate-id))
+        else
+          do (case (first part)
+               ((:on-click)
+                (when ml
+                  (push (list draw-x (cadr part) (cddr part)) current-on-click)))
+               ((:on-click-end)
+                (when ml
+                  (register (pop current-on-click))))
+               ((:>)
+                (let ((xbeg (- (xlib:drawable-width (ccontext-px cc))
+                               x
+                               (rendered-string-size rest cc))))
+                  ;; Register a sentinel on click boundary to prevent overlapping
+                  ;; renders from being clickable (eg if a formatter before :> is
+                  ;; larger than the space available for it). 
+                  (when ml
+                    (loop for top = (pop current-on-click)
+                          while top
+                          do (register top)))
+                  (render-string rest cc xbeg y :ml ml))
+                (loop-finish))
+               (otherwise
+                (apply #'apply-color cc (first part) (rest part)))))
+      (values height draw-x))))
 
 (defun render-strings (cc padx pady strings highlights &key ml)
   (let* ((gc (ccontext-gc cc))

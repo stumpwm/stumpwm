@@ -2027,10 +2027,12 @@ color variables.
 @node Mode-line Interaction, , Mode-line, Mode-line
 @section Mode-line Interaction
 Mode line formatters can register sections of text to be clickable by
-use of the color formatters :ON-CLICK and :ON-CLICK-END. Any text
-enclosed by these formatters has its bounds saved, and when the
-mode line recieves a button press event these bounds are checked against
-to find a clickable area, whose registered function is then called.
+use of the color formatters @code{:on-click} and
+@code{:on-click-end}. Any text enclosed by these formatters has its
+bounds saved, and when the mode line recieves a button press event these
+bounds are checked against to find a clickable area, whose registered
+function is then called. These formatters can be thought of as similar
+to XML tags.
 
 To disable the on-click behavior, remove the function
 @code{check-for-ml-press} from the hook @var{*mode-line-click-hook*}.
@@ -2049,7 +2051,7 @@ example of a click-to-focus function and its registration:
 @end example
 
 This defines a function that focuses a window based upon its X11 window
-ID, and registers it under the ID @code{:ML-ON-CLICK-FOCUS-WINDOW}. Here
+ID, and registers it under the ID @code{:ml-on-click-focus-window}. Here
 is an example of a mode line formatter that makes use of this function:
 
 @example
@@ -2078,14 +2080,23 @@ space seperated and clickable."
 In the above formatter, every windows expansion is wrapped in a
 :on-click/end pair, which takes the ID we registered as the function to
 call and the window ID as an argument to be passed to its function. The
-arguments provided to :on-click will be read but not evaluated. The
-string generated will look like so:
+arguments provided to @code{:on-click} will be read but not
+evaluated. The string generated will look like so:
 
 @example
 "^(:on-click :ml-on-click-focus-window 308242)window text^(:on-click-end)"
 @end example
 
-If one wished for right click to delete the window, then the following
+Clickable text can be nested, in which case the innermost clickable text
+will take precendent. In the following example @code{:id2} will be
+dispatched when clicking @code{2}, but @code{:id1} will be dispatched
+when clicking @code{1} and @code{3}:
+
+@example
+"^(:on-click :id1)1^(:on-click :id2)2^(:on-click-end)3^(:on-click-end)"
+@end example
+
+If one wished for right click to delete windows, then the following
 example could be placed in the .stumpwmrc:
 
 @example
