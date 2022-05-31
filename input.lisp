@@ -939,20 +939,25 @@ input (pressing Return), nil otherwise."
 ;; (defun cook-keycode (code state)
 ;;   (values (xlib:keycode->keysym *display* code 0) (x11mod->stumpmod state)))
 
-(defun y-or-n-p (message)
+(defun y-or-n-p (&optional message &rest arguments)
   "Ask a \"y or n\" question on the current screen and return T if the
 user presses 'y'."
-  (message "~a(y or n) " message)
-  (eql (read-one-char (current-screen))
-       #\y))
+  (apply #'message (concatenate 'string message " (y or n) ") arguments)
+  (prog1 (eql (read-one-char (current-screen))
+              #\y)
+    (unmap-message-window (current-screen))))
 
-(defun yes-or-no-p (message)
+(defun yes-or-no-p (&optional message &rest arguments)
   "ask a \"yes or no\" question on the current screen and return T if the
 user presses 'yes'"
   (loop for line = (string-trim
                     '(#\Space)
                     (read-one-line (current-screen)
-                                   (format nil "~a(yes or no) " message)
+                                   (apply #'format nil
+                                          (concatenate 'string
+                                                       message
+                                                       "(yes or no) ")
+                                          arguments)
                                    :completions
                                    '("yes" "no")))
         until (find line '("yes" "no") :test 'string-equal)
