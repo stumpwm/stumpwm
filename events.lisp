@@ -221,6 +221,7 @@ The Caller is responsible for setting up the input focus."
    ;; which we don't want groups or minor modes shadowing them.
    (list '*top-map*)
    ;; TODO: Minor Mode maps go here
+   (minor-mode-top-maps group)
    ;; lastly, group maps. Last because minor modes should be able to
    ;; shadow a group's default bindings.
    (case (type-of group)

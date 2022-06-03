@@ -102,6 +102,8 @@ called. When the modeline size changes, this is called."))
 (defgeneric group-repack-frame-numbers (group)
   (:documentation "Repack frame numbers to range from zero to the number of 
 frames such that there are no numerical gaps."))
+(defgeneric group-minor-modes (group)
+  (:documentation "Return a list of minor modes active for GROUP."))
 
 (defclass group ()
   ((screen :initarg :screen :accessor group-screen)
@@ -110,7 +112,13 @@ frames such that there are no numerical gaps."))
    (raised-window :initform nil :accessor group-raised-window)
    (number :initarg :number :accessor group-number)
    (name :initarg :name :accessor group-name)
-   (on-top-windows :initform nil :accessor group-on-top-windows)))
+   (on-top-windows :initform nil :accessor group-on-top-windows)
+   (minor-modes :initform nil)
+   (global-minor-modes :initform nil :allocation :class)))
+
+(defmethod group-minor-modes ((group group))
+  (append (slot-value group 'minor-modes)
+          (slot-value group 'global-minor-modes)))
 
 (defmethod group-delete-window (group window)
   (when (find window *always-show-windows*)
