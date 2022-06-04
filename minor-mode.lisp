@@ -550,9 +550,3 @@ is named define-MODE-command. This option defaults to T."
                           ,gmode))))))
            ,@(when define-command-definer
                (list (define-command-macro mode))))))))
-
-(define-minor-mode test-frame-mode () ()
-  (:top-map ("M-e" . "echo HI!"))
-  (:scope :frame)
-  (:lighter-make-clickable nil)
-  (:interactive t))
