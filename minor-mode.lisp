@@ -136,7 +136,6 @@ provided.")
 (defun minor-mode-enabled-p (mode &rest rest &key (group (current-group))
                                                frame window head screen)
   (declare (ignore group frame window head screen))
-  (declare (optimize (debug 3)))
   (check-type mode symbol)
   (member-if (lambda (m)
                (typep m mode))
@@ -285,45 +284,6 @@ ROOT-MAP-SPEC."
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun make-special-variable-name (mode name)
     (intern (format nil "*~A-~A*" mode name)))
-  
-  (defun make-minor-mode-lighter (lighter make-clickable)
-    (cond ((stringp lighter)
-           (if make-clickable
-               `(lambda (mode)
-                  (format-with-on-click-id ,lighter
-                                           :ml-on-click-minor-mode
-                                           (minor-mode-id mode)))
-               `(lambda (mode)
-                  (declare (ignore mode))
-                  ,lighter)))
-          ((functionp lighter)
-           (if make-clickable
-               `(lambda (mode)
-                  (format-with-on-click-id (funcall ,lighter mode)
-                                           :ml-on-click-minor-mode
-                                           (minor-mode-id mode)))
-               lighter))
-          ((symbolp lighter)
-           (if make-clickable
-               `(lambda (mode)
-                  (format-with-on-click-id
-                   (cond ((fboundp ,lighter)
-                          (funcall ,lighter mode))
-                         ((boundp ,lighter)
-                          (symbol-value ,lighter))
-                         (t ""))
-                   :ml-on-click-minor-mode
-                   (minor-mode-id mode)))
-               `(lambda (mode)
-                  (cond ((fboundp ,lighter)
-                         (funcall ,lighter mode))
-                        ((boundp ,lighter)
-                         (symbol-value ,lighter))
-                        (t "")))))
-          (t
-           `(lambda (mode)
-              (declare (ignore mode))
-              ""))))
   
   (defun parse-minor-mode-options (options)
     (let ((valid-options
