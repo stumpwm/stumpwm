@@ -279,7 +279,7 @@ ROOT-MAP-SPEC."
             (loop for mode in minor-modes
                   collect (minor-mode-lighter mode)))))
 
-;; Usage of the define-minor-mode macro:
+;; Used for the define-minor-mode macro:
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun make-special-variable-name (mode name)
