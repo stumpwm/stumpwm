@@ -113,12 +113,7 @@ frames such that there are no numerical gaps."))
    (number :initarg :number :accessor group-number)
    (name :initarg :name :accessor group-name)
    (on-top-windows :initform nil :accessor group-on-top-windows)
-   (minor-modes :initform nil)
-   (global-minor-modes :initform nil :allocation :class)))
-
-(defmethod group-minor-modes ((group group))
-  (append (slot-value group 'minor-modes)
-          (slot-value group 'global-minor-modes)))
+   (minor-modes :initform nil :accessor group-minor-modes)))
 
 (defmethod group-delete-window (group window)
   (when (find window *always-show-windows*)

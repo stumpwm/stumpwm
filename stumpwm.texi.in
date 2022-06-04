@@ -94,6 +94,7 @@ This document explains how to use The Stump Window Manager.
 * Mode-line::
 * Groups::
 * Screens::
+* Minor Modes::
 * Internals::
 * Interacting With Unix::
 * Interacting With X11::
@@ -174,6 +175,11 @@ Screens
 
 * External Monitors::
 * Programming With Screens::
+
+Minor Modes
+
+* Minor Mode Example::
+* Programming with Minor Modes::
 
 Internals
 
@@ -2134,7 +2140,7 @@ Groups in StumpWM are more commonly known as @dfn{virtual desktops} or
 
 @@@ current-group
 
-@node Screens, Internals, Groups, Top
+@node Screens, Minor Modes, Groups, Top
 @chapter Screens
 StumpWM handles multiple screens.
 
@@ -2176,7 +2182,151 @@ the head configuration.
 @@@ current-window
 
 ### *screen-list*
-@node Internals, Interacting With Unix, Screens, Top
+
+@node Minor Modes, Internals, Screens, Top
+@chapter Minor Modes
+
+Like Emacs, StumpWM has minor modes. These minor modes augment the way
+in which StumpWM functions by introducing their own top and root maps,
+mode line formatters, hooks, and commands. While StumpWM minor modes are
+similar to Emacs minor modes, there are subtle differences. The least
+subtle of these is the scope of the minor mode. A minor mode may be
+scoped to a window, frame, head, group, or screen, or it may be active
+globally.
+
+%%% define-minor-mode
+
+@menu
+* Minor Mode Example::
+* Programming with Minor Modes::
+@end menu
+
+@node Minor Mode Example, Programming with Minor Modes, , Minor Modes
+@section Minor Mode Example
+
+A simple minor mode definition for EVIL-esq functionality might look
+like this:
+
+@example
+(define-minor-mode swm-evil-mode () ()
+  (:interactive t)
+  (:top-map ("i" . "swm-evil-mode")
+            ("h" . "move-focus left")
+            ("j" . "move-focus down")
+            ("k" . "move-focus up")
+            ("l" . "move-focus right")
+            ("g" . *groups-map*)
+            ("H n" . "evil-next-head"))
+  (:expose-keymaps t)
+  (:lighter "CMD")
+  (:lighter-make-clickable nil)
+  (:scope :global)
+  (:make-hooks nil))
+
+(define-swm-evil-mode-command evil-next-head () ()
+  (let* ((gh (group-heads (current-group)))
+         (curhead-list (member (current-head) gh)))
+    (if (cdr curhead-list)
+        (focus-frame (current-group)
+                     (car (flatten (head-frames (current-group)
+                                                (cadr curhead-list)))))
+        (focus-frame (current-group)
+                     (car (flatten (head-frames (current-group) (car gh))))))))
+
+(define-key *top-map* (kbd "s-ESC") "swm-evil-mode")
+@end example
+
+In the above example, a minor mode called @code{swm-evil-mode} is
+defined. The @code{:interactive} option is @code{T}, meaning that a
+command called @code{swm-evil-mode} is defined which toggles the minor
+mode on and off. The generated command takes a single optional argument
+of the type @code{:y-or-n}, which when provided turns the minor mode on
+or off depending on its value.
+
+The @code{:top-map} option contains a set of bindings which will be
+bound on the top level. Most of these are bound to single keys, but of
+note is the binding @code{("h n" . "evil-next-head")}. This binds
+@code{h} to a keymap, and binds @code{n} to @code{evil-next-head} within
+that keymap. Further bindings to this keymap can be achieved by placing
+a space between @code{h} and the next binding, for example @code{("H p"
+. "evil-prev-head")}.
+
+The @code{:expose-keymaps} option is @code{T}, meaning that the top and
+root maps will be stored in variables accessible to the user. These
+keymaps will be named @code{*swm-evil-mode-top-map*} and
+@code{*swm-evil-mode-root-map*}.
+
+The @code{:lighter} option is a string, and as such when
+@code{swm-evil-mode} is active the string @code{"CMD"} will appear in
+the mode line when the minor mode mode line formatter is present in the
+users mode line format.
+
+The @code{:lighter-make-clickable} option is @code{NIL}, so the
+@code{:lighter} option wont be wrapped in a call to
+@code{format-with-on-click-id}. If this option was @code{T} then it
+would be wrapped in a call to @code{format-with-on-click-id} and use the
+id @code{:ml-on-click-minor-mode} with arguments gotten by calling
+@code{minor-mode-id} with the minor mode object.
+
+The @code{:scope} option is @code{:global}, meaning that this minor mode is
+active everywhere.
+
+The @code{:make-hooks} option is @code{NIL}, meaning that hook variables
+are not generated.
+
+After defining the minor mode, we can use the newly defined macro
+@code{define-swm-evil-mode-command} to define commands that are only
+active when @code{swm-evil-mode} is enabled. We use this macro to define
+the command @code{evil-next-head}, which focuses the next head (NB! this
+command is untested and may not function).
+
+Finally, we define a key binding in our normal top map which will force
+the minor mode on.
+
+@node Programming with Minor Modes, , Minor Mode Example, Minor Modes
+@section Programming with Minor Modes
+
+Several generic functions are exposed for the user to customize minor
+mode behavior, specifically when retrieving the keymap, lighter, and on
+enable/disable. When defining a method for these generic functions, only
+define @code{:before}, @code{:after}, or @code{:around} methods to avoid
+clobbering the behavior defined by @code{define-minor-mode}. There are
+two exceptions to this.
+
+The first exception is when defining a method for @code{minor-mode-id}.
+
+The second exception is when defining a method for
+@code{minor-mode-on-enable} or @code{minor-mode-on-disable}. In contrast
+to the functions @code{enable-minor-mode} @code{disable-minor-mode}
+these methods are run only when the mode is actually enabled or
+disabled. In addition, these methods are only defined for the minor mode
+if either @code{:on-enable}/@code{:on-disable} are provided or
+@code{:make-hooks} is @code{T}. When defining a main method for these
+generic functions care must be taken to call @code{call-next-method},
+otherwise keybindings wont be synced and any superclasses that have
+@code{:on-enable}/@code{:on-disable} functions or hooks wont have those
+functions called or those hooks run. Standard behavior is to first call
+@code{:on-enable}/@code{:on-disable} functions, then
+@code{call-next-method}, and finally run the appropriate hook. 
+
+When hooking into the on enable and on disable functionality, note that
+@code{:before}, @code{:after}, or @code{:around} methods for the generic
+functions @code{enable-minor-mode} and @code{disable-minor-mode} will be
+called regardless of whether the mode is already enabled/disabled, while
+methods for the generic functions @code{minor-mode-on-enable} and
+@code{minor-mode-on-disable} will be called only if the minor mode gets
+enabled/disabled.
+
+@@@ minor-mode-id
+@@@ minor-mode-scope
+@@@ enable-minor-mode
+@@@ disable-minor-mode
+@@@ minor-mode-on-enable
+@@@ minor-mode-on-disable
+@@@ minor-mode-keymap
+@@@ minor-mode-lighter
+
+@node Internals, Interacting With Unix, Minor Modes, Top
 @chapter Internals
 @menu
 * IO Loop::

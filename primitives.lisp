@@ -570,7 +570,8 @@ Use the window's resource name.
   window)
 
 (defstruct (head (:include frame))
-  (name "" :type string))
+  (name "" :type string)
+  minor-modes)
 
 (defclass screen ()
   ((id :initarg :id :reader screen-id)
@@ -619,7 +620,8 @@ exist, in which case they go into the current group.")
    (current-msg :initform nil :accessor screen-current-msg)
    (current-msg-highlights :initform nil :accessor screen-current-msg-highlights)
    (last-msg :initform nil :accessor screen-last-msg)
-   (last-msg-highlights :initform nil :accessor screen-last-msg-highlights)))
+   (last-msg-highlights :initform nil :accessor screen-last-msg-highlights)
+   (screen-minor-modes :initform nil :accessor screen-minor-modes)))
 
 (defstruct ccontext
   screen
