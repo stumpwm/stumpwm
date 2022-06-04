@@ -313,13 +313,6 @@ ROOT-MAP-SPEC."
         (mapc #'collect-values options)
         (values all-vals other-opts))))
 
-  (defun minor-mode-parse-default-initargs (default-initargs global gpp)
-    (if gpp
-        (let ((copy (copy-seq default-initargs)))
-          (remf copy :global)
-          (cons :global (cons global copy)))
-        default-initargs))
-
   (defun define-command-macro (mode)
     `(defmacro ,(intern (string-upcase (format nil "define-~A-command" mode))
                         (find-package :stumpwm))
