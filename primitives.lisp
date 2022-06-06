@@ -561,16 +561,99 @@ Use the window's resource class.
 Use the window's resource name.
 @end table")
 
-(defstruct frame
-  (number nil :type integer)
-  x
-  y
-  width
-  height
-  window)
+(defclass frame ()
+  ((number
+    :initform nil
+    :accessor frame-number)
+   (x
+    :initform nil
+    :accessor frame-x
+    :initarg :x)
+   (y
+    :initform nil
+    :accessor frame-y
+    :initarg :y)
+   (width
+    :initform nil
+    :accessor frame-width
+    :initarg :width)
+   (height
+    :initform nil
+    :accessor frame-height
+    :initarg :height)
+   (window
+    :initform nil
+    :accessor frame-window
+    :initarg :window)))
 
-(defstruct (head (:include frame))
-  (name "" :type string))
+(defun frame-p (object)
+  (typep object 'frame))
+
+(defun make-frame (&rest rest &key number x y width height window)
+  (declare (ignore number x y width height window))
+  (apply 'make-instance 'frame rest))
+
+(defun copy-frame (instance)
+  (make-instance 'frame :number (frame-number instance)
+                        :x (frame-x instance)
+                        :y (frame-y instance)
+                        :width (frame-width instance)
+                        :height (frame-height instance)
+                        :window (frame-window instance)))
+
+(defclass head (frame)
+  ((name
+    :initform ""
+    :accessor head-name
+    :initarg :name)))
+
+;; Reduplicate accessors for heads.
+
+(defun head-number (head)
+  (frame-number head))
+(defun (setf head-number) (new head)
+  (setf (frame-number head) new))
+
+(defun head-x (head)
+  (frame-x head))
+(defun (setf head-x) (new head)
+  (setf (frame-x head) new))
+
+(defun head-y (head)
+  (frame-y head))
+(defun (setf head-y) (new head)
+  (setf (frame-y head) new))
+
+(defun head-width (head)
+  (frame-width head))
+(defun (setf head-width) (new head)
+  (setf (frame-width head) new))
+
+(defun head-height (head)
+  (frame-height head))
+(defun (setf head-height) (new head)
+  (setf (frame-height head) new))
+
+(defun head-window (head)
+  (frame-window head))
+(defun (setf head-window) (new head)
+  (setf (frame-window head) new))
+
+(defun head-p (object)
+  (typep object 'head))
+
+(defun make-head (&rest rest &key number x y width height window name)
+  (declare (ignore number x y width height window name))
+  (apply 'make-instance 'head rest))
+
+(defun copy-head (instance)
+  (make-instance 'head :number (frame-number instance)
+                       :x (frame-x instance)
+                       :y (frame-y instance)
+                       :width (frame-width instance)
+                       :height (frame-height instance)
+                       :window (frame-window instance)
+                       :name (head-name instance)))
 
 (defclass screen ()
   ((id :initarg :id :reader screen-id)
