@@ -20,11 +20,9 @@
   (declare (ignore ignore))
   *active-global-minor-modes*)
 
-(defun set-global-minor-modes (ignore value)
+(defun (setf global-minor-modes) (value ignore)
   (declare (ignore ignore))
   (setf *active-global-minor-modes* value))
-
-(defsetf global-minor-modes set-global-minor-modes)
 
 (defvar *active-frame-minor-modes* nil
   "An alist of active minor modes with the frame scope with frame numbers as keys")
