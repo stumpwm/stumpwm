@@ -564,6 +564,7 @@ Use the window's resource name.
 (defclass frame ()
   ((number
     :initform nil
+    :initarg :number
     :accessor frame-number)
    (x
     :initform nil
