@@ -13,7 +13,7 @@
 
 (defvar *minor-mode*)
 
-(defvar *active-global-minor-modes* nil
+(defvar *active-global-minor-modes* ()
   "A list of active minor modes with a global scope.")
 
 (defun global-minor-modes (&optional ignore)
