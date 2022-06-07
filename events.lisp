@@ -220,7 +220,16 @@ The Caller is responsible for setting up the input focus."
    ;; going to throw in their universally accessible customizations
    ;; which we don't want groups or minor modes shadowing them.
    (list '*top-map*)
-   ;; TODO: Minor Mode maps go here
+   (loop for map in *minor-mode-maps*
+         if (or (functionp map)
+                (and (symbolp map)
+                     (not (and (boundp map)
+                               (kmap-p (symbol-value map))))
+                     (fboundp map)))
+           append (funcall map group)
+         else
+           collect map)
+   (minor-mode-top-maps group)
    ;; lastly, group maps. Last because minor modes should be able to
    ;; shadow a group's default bindings.
    (case (type-of group)
