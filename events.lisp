@@ -229,7 +229,6 @@ The Caller is responsible for setting up the input focus."
            append (funcall map group)
          else
            collect map)
-   (minor-mode-top-maps group)
    ;; lastly, group maps. Last because minor modes should be able to
    ;; shadow a group's default bindings.
    (case (type-of group)
