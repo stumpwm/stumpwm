@@ -1450,5 +1450,5 @@ a function. If an element is a function it must take a group instance and return
 a list of keymaps.")
 
 (defvar *custom-command-filters* ()
-  "A list of functions which take a command structure and return true when it
-should be active.")
+  "A list of functions which take a group instance and a command structure, and
+return true when the command should be active.")

@@ -177,9 +177,10 @@ whatever it finds: a command, an alias, or nil."
 
 (defun command-active-p (command)
   (declare (special *dynamic-group-blacklisted-commands*))
-  (let ((active (or (typep (current-group) (command-class command))
-                    (some (lambda (f) (funcall f command))
-                          *custom-command-filters*))))
+  (let* ((group (current-group))
+         (active (or (typep group (command-class command))
+                     (some (lambda (f) (funcall f group command))
+                           *custom-command-filters*))))
     (if (typep (current-group) 'dynamic-group)
         (unless (member command *dynamic-group-blacklisted-commands*)
           active)
