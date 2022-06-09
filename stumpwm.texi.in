@@ -94,6 +94,7 @@ This document explains how to use The Stump Window Manager.
 * Mode-line::
 * Groups::
 * Screens::
+* Minor Modes::
 * Internals::
 * Interacting With Unix::
 * Interacting With X11::
@@ -174,6 +175,11 @@ Screens
 
 * External Monitors::
 * Programming With Screens::
+
+Minor Modes
+
+* Minor Mode Example::
+* Programming With Minor Modes::
 
 Internals
 
@@ -2134,7 +2140,7 @@ Groups in StumpWM are more commonly known as @dfn{virtual desktops} or
 
 @@@ current-group
 
-@node Screens, Internals, Groups, Top
+@node Screens, Minor Modes, Groups, Top
 @chapter Screens
 StumpWM handles multiple screens.
 
@@ -2176,7 +2182,112 @@ the head configuration.
 @@@ current-window
 
 ### *screen-list*
-@node Internals, Interacting With Unix, Screens, Top
+
+@node Minor Modes, Internals, Screens, Top
+@chapter Minor Modes
+
+Like Emacs, StumpWM has the concept of minor modes. These are defined by
+the macro @code{DEFINE-MINOR-MODE}. Defining a minor mode creates a
+class and a set of methods specializing upon it. Minor modes are scoped
+to a window, head, group, or screen, or they may be global. Minor modes
+are mixins, and when enabled are mixed in to the appropriate
+object given the minor modes scope. This allows minor modes to augment
+or override methods specializing on windows, heads, groups, or
+screens. In addition to this, minor modes define their own top level and
+root level keymaps, as well as hooks that are run upon enabling or
+disabling the minor mode.
+
+%%% define-minor-mode
+
+@menu
+* Minor Mode Example::
+* Programming With Minor Modes::
+@end menu
+
+@node Minor Mode Example, Programming With Minor Modes, , Minor Modes
+@section Minor Mode Example
+
+A simple example of a minor mode is a version of the Emacs modes viper
+or evil for StumpWM. Such a minor mode might look like this:
+
+@verbatim
+(define-minor-mode swm-evil-mode () ()
+  (:scope :screen)
+  (:interactive t)
+  (:top-map '(("i" . "swm-evil-mode")
+              ("j" . "move-focus down")
+              ("k" . "move-focus up")
+              ("h" . "move-focus left")
+              ("l" . "move-focus right")
+              ("p" . "pull-hidden-previous")
+              ("n" . "pull-hidden-next")
+              ("S" . "hsplit")
+              ("s" . "vsplit")
+              ("r" . "remove-split")
+              ("g" . *groups-map*)
+              ("x" . *exchange-window-map*)))
+  (:lighter-make-clickable nil)
+  (:lighter "EVIL"))
+@end verbatim
+
+In the above example, the minor mode @code{swm-evil-mode} is defined,
+alongside a command of the same name which toggles it on and off. The
+minor mode is scoped to a screen, meaning that upon activation it will
+be dynamically mixed in to the screen object. The lighter is the string
+@code{"EVIL"} and the lighter is not made clickable.
+
+@node Programming With Minor Modes, , Minor Mode Example, Minor Modes
+@section Programming With Minor Modes
+
+When Programming with minor modes theres a set of generic functions that
+have methods defined upon defining a minor mode.
+
+@@@ minor-mode-scope
+
+This function has a single main method defined that specializes upon the
+minor modes name as a symbol. 
+
+@@@ enable-minor-mode
+@@@ disable-minor-mode
+
+These functions have a set of main methods defined, all specializing
+upon the minor mode name as a symbol for their first argument, and one
+upon the scope object type as the second argument, one upon the mode
+itself, and one upon nil. A single after method is defined which syncs
+the top maps.
+
+@@@ minor-mode-keymap
+
+This function has a set of main methods defined which all call the next
+method to obtain a list of top maps for every minor mode. Any extra
+keymaps one wishes to add to the minor mode may be added by defining a
+main method which calls @code{call-next-method} and returns a flat
+list. Similarly, an around method may be used which abides by the same
+rules.
+
+@@@ minor-mode-lighter
+
+This function operates similarly to @code{minor-mode-keymap}, with a
+main method defined for every minor mode which calls
+@code{call-next-method} and returns a flat list. In addition there is a
+single around method defined which concatenates all these strings
+together.
+
+There are also a set of regular functions and special variables which
+which may be of use when working with minor modes.
+
+@@@ list-modes
+@@@ list-minor-modes
+@@@ current-minor-modes
+@@@ minor-mode-enabled-p
+@@@ find-minor-mode
+
+### *minor-mode*
+### *minor-mode-enable-hook*
+### *minor-mode-disable-hook*
+### *global-minor-modes*
+
+@node Internals, Interacting With Unix, Minor Modes, Top
 @chapter Internals
 @menu
 * IO Loop::

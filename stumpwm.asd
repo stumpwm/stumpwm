@@ -16,7 +16,8 @@
                #:cl-ppcre
                #:clx
                #:sb-posix
-               #:sb-introspect)
+               #:sb-introspect
+               #:dynamic-mixins)
   :components ((:file "package")
                (:file "debug")
                (:file "primitives")
@@ -37,6 +38,7 @@
                (:file "bindings")
                (:file "events")
                (:file "window")
+               (:file "mixin-minor-modes")
                (:file "floating-group")
                (:file "tile-window")
                (:file "tile-group")

@@ -117,6 +117,18 @@ fmt-highlight. Any non-visible windows are colored the
   (declare (ignore ml))
   (time-format *time-modeline-string*))
 
+(add-screen-mode-line-formatter #\m 'fmt-minor-modes)
+(defun fmt-minor-modes (ml)
+  (let* ((screen (mode-line-screen ml))
+         (group (mode-line-current-group ml))
+         (head (mode-line-head ml))
+         (window (group-current-window group)))
+    (format nil "~{~A~^ ~}"
+            (loop for mode in (list window head group screen *global-minor-modes*)
+                  for text = (minor-mode-lighter mode)
+                  unless (string= text "")
+                    collect text))))
+
 (defvar *bar-med-color* "^B")
 (defvar *bar-hi-color* "^B^3*")
 (defvar *bar-crit-color* "^B^1*")
