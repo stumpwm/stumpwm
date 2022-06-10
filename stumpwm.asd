@@ -17,7 +17,7 @@
                #:clx
                #:sb-posix
                #:sb-introspect
-               #:dynamic-mixins)
+               "stumpwm/dynamic-mixins")
   :components ((:file "package")
                (:file "debug")
                (:file "primitives")
@@ -74,3 +74,8 @@
   :build-pathname "stumpwm"
   :entry-point "stumpwm:main"
   :components ((:file "main")))
+
+(defsystem "stumpwm/dynamic-mixins"
+  :serial t
+  :components ((:file "dynamic-mixins/src/package")
+               (:file "dynamic-mixins/src/dynamic-mixins")))
