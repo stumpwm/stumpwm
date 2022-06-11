@@ -121,23 +121,12 @@ stack. Valid values are :left :right :top and :bottom")
 and the window stack. Valid values are any number between zero and one exclusive.")
    ;; Object allocated slots
    (head-info-alist
-    ;; TODO: Potentially update this slot to be an alist whose values is an
-    ;; array. This may make access faster. However given the size of the lists,
-    ;; this is likely to have no impact. This is an implementation specific
-    ;; question, look at sbcl specifics and decide. 
-    
-    ;; TODO: Add superfluous window tracking to this alist. This should always
-    ;; be nil, unless a window ... WAIT! Do we even need to track "superfluous"
-    ;; windows? Or, because we changed how we add windows to a group to no
-    ;; longer use condition signalling (instead calculating the max number of
-    ;; stack windows before trying to place it) can we just... idk, not track
-    ;; it? I need to do some digging and find out...
     :accessor dynamic-group-head-info-alist
     :documentation "Alist with heads as keys containing information for each
-head.  Calling ASSOC on this alist returns a list whose CAR is the head, CADR is
-the layout of the frames, CADDR is the master frame, CADDDR is the the master
-window, CADDDDR is the window stack frames, CADDDDDR is the window stack
-windows, and CADDDDDDR is the major split ratio."))
+head.  Calling ASSOC on this alist returns a list whose FIRST element is the
+head, SECOND is the layout of the frames, THIRD is the master frame, FOURTH is the
+the master window, FIFTH is the window stack frames, SIXTH is the window
+stack windows, and SEVENTH is the major split ratio."))
   (:documentation "A group type that implements dynamic tiling à la DWM with a
 single master window and a window stack."))
 
