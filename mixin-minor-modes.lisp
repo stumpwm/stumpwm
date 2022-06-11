@@ -81,7 +81,7 @@ provided.")
 (defun list-modes (object)
   "List all minor modes followed by the major mode for OBJECT."
   (when (typep object 'dynamic-mixins:mixin-object)
-    (mapcar #'class-name (slot-value (class-of object) 'dynamic-mixins::classes))))
+    (mapcar #'class-name (dynamic-mixins:mixin-classes (class-of object)))))
 
 (defun list-minor-modes (object)
   "List all minor modes active in OBJECT"
@@ -91,10 +91,12 @@ provided.")
   "Return all currently active minor modes."
   (let* ((group (current-group screen))
          (head (current-head group))
+         (frame (when (typep group 'tile-group)
+                  (tile-group-current-frame group)))
          (window (group-current-window group)))
     (apply #'append
            (mapcar #'list-minor-modes
-                   (list window head group screen *global-minor-modes*)))))
+                   (list window frame head group screen *global-minor-modes*)))))
 
 (defun minor-mode-enabled-p (minor-mode &optional (screen (current-screen)))
   "Return T if MINOR-MODE is active"
@@ -111,6 +113,8 @@ provided.")
           (ct screen)
           (ct group)
           (ct (current-head group))
+          (ct (when (typep group 'tile-group)
+                (tile-group-current-frame group)))
           (ct (group-current-window group))))))
 
 (defun minor-mode-command-active-p (group command)
@@ -122,10 +126,12 @@ provided.")
   "Return a list of all minor mode top maps."
   (let* ((screen (group-screen group))
          (head (current-head group))
+         (frame (when (typep group 'tile-group)
+                  (tile-group-current-frame group)))
          (window (group-current-window group)))
     (apply #'append
            (mapcar #'minor-mode-keymap
-                   (list window head group screen *global-minor-modes*)))))
+                   (list window frame head group screen *global-minor-modes*)))))
 
 (push #'minor-mode-top-maps *minor-mode-maps*)
 
@@ -281,28 +287,23 @@ ROOT-MAP-SPEC."
   
   (defun define-enable-methods (mode scope hooks-defined on-enable on-disable)
     (let ((optarg (case scope
-                    ((:window) '((current-window)
-                                 window-minor-modes
-                                 window))
-                    ((:head)   '((current-head)
-                                 head-minor-modes
-                                 head))
-                    ((:group)  '((current-group)
-                                 group-minor-modes
-                                 group))
-                    ((:screen) '((current-screen)
-                                 screen-minor-modes
-                                 screen))
-                    ((:global) '(*global-minor-modes*
-                                 global-minor-modes
-                                 t))
+                    ((:window) '((current-window) window))
+                    ((:frame)  `((let ((group (current-group)))
+                                   (if (typep group 'tile-group)
+                                       (tile-group-current-frame group)
+                                       (error "Cannot enable minor mode ~A~%~4TExpected a frame, but group ~A is not a tiling group" ,mode (group-name group))))
+                                 frame))
+                    ((:head)   '((current-head) head))
+                    ((:group)  '((current-group) group))
+                    ((:screen) '((current-screen) screen))
+                    ((:global) '(*global-minor-modes* t))
                     (otherwise
                      (error "Unknown minor mode scope ~A" scope)))))
       `((defmethod enable-minor-mode ((mode (eql ',mode)) (obj ,mode))
           (error "Minor mode ~A is already active in object ~A" mode obj))
         (defmethod enable-minor-mode ((mode (eql ',mode)) (obj null))
           (enable-minor-mode mode ,(car optarg)))
-        (defmethod enable-minor-mode ((mode (eql ',mode)) (obj ,(caddr optarg)))
+        (defmethod enable-minor-mode ((mode (eql ',mode)) (obj ,(cadr optarg)))
           (dynamic-mixins:ensure-mix obj ',mode)
           ,@(when on-enable `((funcall ,on-enable mode obj)))
           ,@(when hooks-defined
@@ -358,7 +359,7 @@ with the addition of the following options:
 
 @itemize
 @item
-(:SCOPE (MEMBER :WINDOW :HEAD :GROUP :SCREEN :GLOBAL))@*
+(:SCOPE (MEMBER :WINDOW :FRAME :HEAD :GROUP :SCREEN :GLOBAL))@*
 The :SCOPE option determines what object the minor mode shall be mixed in
 with. This object is obtained by calling the appropriate CURRENT-* function if
 it is not explicitly provided.

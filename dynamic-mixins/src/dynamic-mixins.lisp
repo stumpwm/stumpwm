@@ -3,7 +3,7 @@
 (defvar *dynamic-mix-classes* (make-hash-table :test 'equal))
 
 (defclass mixin-class (standard-class)
-  ((classes :initform nil :initarg :classes)))
+  ((classes :initform nil :initarg :classes :accessor mixin-classes)))
 
 (defmethod sb-mop:validate-superclass ((class mixin-class) (super standard-class))
   t)

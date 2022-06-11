@@ -17,7 +17,7 @@
                #:clx
                #:sb-posix
                #:sb-introspect
-               "stumpwm/dynamic-mixins")
+               #:dynamic-mixins)
   :components ((:file "package")
                (:file "debug")
                (:file "primitives")
@@ -75,7 +75,6 @@
   :entry-point "stumpwm:main"
   :components ((:file "main")))
 
-(defsystem "stumpwm/dynamic-mixins"
-  :serial t
-  :components ((:file "dynamic-mixins/src/package")
-               (:file "dynamic-mixins/src/dynamic-mixins")))
+;;; Explicitly load the vendored dynamic mixins asd file
+(asdf:load-asd
+ (asdf:system-relative-pathname "stumpwm" "dynamic-mixins/dynamic-mixins.asd"))
