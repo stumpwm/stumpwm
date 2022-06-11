@@ -441,9 +441,9 @@ Example:
               (\"h\" . \"move-focus left\")
               (\"l\" . \"move-focus right\")
               (\"x\" . *exchange-window-map*)
-              (\"C-m b\" . \"evil-mode\")))
+              (\"C-m b\" . \"evil-echo\")))
   (:lighter \"EVIL\")
-  (:lighter-make-clickabl nil))
+  (:lighter-make-clickable nil))
 
 (define-evil-mode-command evil-echo () ()
   (run-commands \"echo\"))

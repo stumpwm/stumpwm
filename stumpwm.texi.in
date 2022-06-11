@@ -2236,6 +2236,12 @@ minor mode is scoped to a screen, meaning that upon activation it will
 be dynamically mixed in to the screen object. The lighter is the string
 @code{"EVIL"} and the lighter is not made clickable.
 
+When defining a minor mode top map it is important to avoid multi-key
+bindings that clobber the prefix key. For example, if the prefix key is
+@kbd{C-t} then defining the keybinding @kbd{C-t n} in the top map of a
+minor mode is an error. Instead bind the key @kbd{n} in the minor mode's
+root map.
+
 @node Programming With Minor Modes, , Minor Mode Example, Minor Modes
 @section Programming With Minor Modes
 
