@@ -38,7 +38,7 @@
                (:file "bindings")
                (:file "events")
                (:file "window")
-               (:file "mixin-minor-modes")
+               (:file "minor-modes")
                (:file "floating-group")
                (:file "tile-window")
                (:file "tile-group")
