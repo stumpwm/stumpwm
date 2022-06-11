@@ -419,12 +419,6 @@ T (default) then also focus the frame."
   "Return 2 new frames. The first one stealing P's number and window"
   (let* ((w (ratio-or-pixel (frame-width p) ratio))
          (h (frame-height p))
-         (f1 (make-frame :number (frame-number p)
-                         :x (frame-x p)
-                         :y (frame-y p)
-                         :width w
-                         :height h
-                         :window (frame-window p)))
          (f2 (make-frame :number (find-free-frame-number group)
                          :x (+ (frame-x p) w)
                          :y (frame-y p)
@@ -432,20 +426,16 @@ T (default) then also focus the frame."
                          :width (- (frame-width p) w)
                          :height h
                          :window nil)))
-    (run-hook-with-args *split-frame-hook* p f1 f2)
+    (setf (frame-width p) w
+          (frame-height p) h)
+    (run-hook-with-args *split-frame-hook* p p f2)
     (run-hook-with-args *new-frame-hook* f2)
-    (values f1 f2)))
+    (values p f2)))
 
 (defun split-frame-v (group p ratio)
   "Return 2 new frames. The first one stealing P's number and window"
   (let* ((w (frame-width p))
          (h (ratio-or-pixel (frame-height p) ratio))
-         (f1 (make-frame :number (frame-number p)
-                         :x (frame-x p)
-                         :y (frame-y p)
-                         :width w
-                         :height h
-                         :window (frame-window p)))
          (f2 (make-frame :number (find-free-frame-number group)
                          :x (frame-x p)
                          :y (+ (frame-y p) h)
@@ -453,9 +443,11 @@ T (default) then also focus the frame."
                          ;; gobble up the modulo
                          :height (- (frame-height p) h)
                          :window nil)))
-    (run-hook-with-args *split-frame-hook* p f1 f2)
+    (setf (frame-width p) w
+          (frame-height p) h)
+    (run-hook-with-args *split-frame-hook* p p f2)
     (run-hook-with-args *new-frame-hook* f2)
-    (values f1 f2)))
+    (values p f2)))
 
 (defun ratio-or-pixel (length ratio)
   "Return a ratio of length unless ratio is an integer.
