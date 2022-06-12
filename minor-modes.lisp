@@ -5,7 +5,7 @@
           *minor-mode*
           *minor-mode-enable-hook*
           *minor-mode-disable-hook*
-          *global-minor-modes*
+          *unscoped-minor-modes*
 
           minor-mode-scope
           enable-minor-mode
@@ -35,13 +35,31 @@ minor mode symbol and the object they have been added to.")
   "A hook run whenever a minor mode is disabled. Functions are called with the
 minor mode symbol and the object they will be removed from.")
 
-(defclass global-modes () ())
+(defclass unscoped-modes () ())
 
-(defvar *global-minor-modes* (make-instance 'global-modes)
-  "A dynamic variable holding all global minor modes as mixed into the same
+(defvar *unscoped-minor-modes* (make-instance 'unscoped-modes)
+  "A dynamic variable holding all unscoped minor modes as mixed into the same
 object.")
 
 (defclass minor-mode () ())
+
+(defvar *global-minor-modes*
+  (list (list 'window)
+        (list 'frame)
+        (list 'head)
+        (list 'group)
+        (list 'screen)))
+
+(macrolet
+    ((definit (type)
+       `(defmethod initialize-instance :after ((obj ,type) &key &allow-other-keys)
+          (when-let ((automix (cdr (assoc ',type *global-minor-modes*))))
+            (loop for mix in automix do (enable-minor-mode mix obj))))))
+  (definit window)
+  (definit frame)
+  (definit head)
+  (definit group)
+  (definit screen))
 
 (defgeneric minor-mode-scope (minor-mode-symbol)
   (:documentation "Return as a keyword the scope of the minor mode"))
@@ -51,8 +69,7 @@ object.")
    "Enable the minor mode MODE for the scopes current object or SCOPE-OBJECT if
 provided.")
   (:method (mode obj)
-    (declare (ignore obj))
-    (error "Dont know how to enable minor mode ~A" mode))
+    (error "Dont know how to enable minor mode ~A in scope object ~A" mode obj))
   (:method :after (mode obj)
     (run-hook-with-args *minor-mode-enable-hook* mode obj)
     (sync-keys)))
@@ -96,7 +113,7 @@ provided.")
          (window (group-current-window group)))
     (apply #'append
            (mapcar #'list-minor-modes
-                   (list window frame head group screen *global-minor-modes*)))))
+                   (list window frame head group screen *unscoped-minor-modes*)))))
 
 (defun minor-mode-enabled-p (minor-mode &optional (screen (current-screen)))
   "Return T if MINOR-MODE is active"
@@ -109,7 +126,7 @@ provided.")
   (flet ((ct (o)
            (and (typep o minor-mode) o)))
     (let ((group (current-group screen)))
-      (or (ct *global-minor-modes*)
+      (or (ct *unscoped-minor-modes*)
           (ct screen)
           (ct group)
           (ct (current-head group))
@@ -131,7 +148,7 @@ provided.")
          (window (group-current-window group)))
     (apply #'append
            (mapcar #'minor-mode-keymap
-                   (list window frame head group screen *global-minor-modes*)))))
+                   (list window frame head group screen *unscoped-minor-modes*)))))
 
 (push #'minor-mode-top-maps *minor-mode-maps*)
 
@@ -253,11 +270,13 @@ ROOT-MAP-SPEC."
     (let ((valid-options
             '((:interactive            1)
               (:scope                  1)
+              (:global                 1)
               (:lighter-make-clickable 1)
               (:lighter                1)
               (:expose-keymaps         1)
               (:root-map               1)
               (:top-map                1)
+              (:enable-when            1)
               (:on-enable              1)
               (:on-disable             1)
               (:make-hooks             1)
@@ -285,25 +304,35 @@ ROOT-MAP-SPEC."
           (let ((*minor-mode* (find-minor-mode ',',mode (current-screen))))
             ,@body))))
   
-  (defun define-enable-methods (mode scope hooks-defined on-enable on-disable)
+  (defun define-enable-methods (mode scope hooks-defined on-enable on-disable
+                                enable-when)
     (let ((optarg (case scope
-                    ((:window) '((current-window) window))
-                    ((:frame)  `((let ((group (current-group)))
-                                   (if (typep group 'tile-group)
-                                       (tile-group-current-frame group)
-                                       (error "Cannot enable minor mode ~A~%~4TExpected a frame, but group ~A is not a tiling group" ,mode (group-name group))))
-                                 frame))
-                    ((:head)   '((current-head) head))
-                    ((:group)  '((current-group) group))
-                    ((:screen) '((current-screen) screen))
-                    ((:global) '(*global-minor-modes* t))
+                    ((:window)   '(window (current-window)))
+                    ((:frame)    `(frame
+                                   (let ((group (current-group)))
+                                     (if (typep group 'tile-group)
+                                         (tile-group-current-frame group)
+                                         (error "Cannot enable minor mode ~A~%~4TExpected a frame, but group ~A is not a tiling group" ,mode (group-name group))))))
+                    ((:head)     '(head (current-head)))
+                    ((:group)    '(group (current-group)))
+                    ((:screen)   '(screen (current-screen)))
+                    ((:unscoped) '(t *unscoped-minor-modes*))
                     (otherwise
-                     (error "Unknown minor mode scope ~A" scope)))))
+                     (if (and (listp scope)
+                              (eql (car scope) 'quote)
+                              (= 2 (length (cadr scope))))
+                         (cadr scope)
+                         (error "Unknown minor mode scope ~A" scope))))))
       `((defmethod enable-minor-mode ((mode (eql ',mode)) (obj ,mode))
           (error "Minor mode ~A is already active in object ~A" mode obj))
-        (defmethod enable-minor-mode ((mode (eql ',mode)) (obj null))
-          (enable-minor-mode mode ,(car optarg)))
-        (defmethod enable-minor-mode ((mode (eql ',mode)) (obj ,(cadr optarg)))
+        (defmethod enable-minor-mode :around ((mode (eql ',mode))
+                                              (obj (eql :current-object)))
+          (enable-minor-mode mode ,(cadr optarg)))
+        ,@(when enable-when 
+            `((defmethod enable-minor-mode :around ((mode (eql ',mode)) obj)
+                (when (funcall ,enable-when mode obj)
+                  (call-next-method mode obj)))))
+        (defmethod enable-minor-mode ((mode (eql ',mode)) (obj ,(car optarg)))
           (dynamic-mixins:ensure-mix obj ',mode)
           ,@(when on-enable `((funcall ,on-enable mode obj)))
           ,@(when hooks-defined
@@ -316,8 +345,9 @@ ROOT-MAP-SPEC."
                  mode obj)))
           ,@(when on-disable `((funcall ,on-disable mode obj)))
           (dynamic-mixins:delete-from-mix obj ',mode))
-        (defmethod disable-minor-mode ((mode (eql ',mode)) (obj null))
-          (disable-minor-mode mode ,(car optarg))))))
+        (defmethod disable-minor-mode ((mode (eql ',mode))
+                                       (obj (eql :current-object)))
+          (disable-minor-mode mode ,(cadr optarg))))))
 
   (defun genlighter (mode lighter)
     (cond ((null lighter)
@@ -359,10 +389,13 @@ with the addition of the following options:
 
 @itemize
 @item
-(:SCOPE (MEMBER :WINDOW :FRAME :HEAD :GROUP :SCREEN :GLOBAL))@*
+(:SCOPE (OR (MEMBER :WINDOW :FRAME :HEAD :GROUP :SCREEN :UNSCOPED) LIST))@*
 The :SCOPE option determines what object the minor mode shall be mixed in
-with. This object is obtained by calling the appropriate CURRENT-* function if
-it is not explicitly provided.
+with. This is used to generate the enable and disable methods for the minor
+mode. If the object to mix in to is :CURRENT-OBJECT, then the appropriate
+CURRENT-* function is called to obtain it. If :SCOPE is a list then the first
+element of that list must be the type to scope to, and the second element must
+be a function call or variable which will return the current scope object. 
 
 @item
 (:TOP-MAP spec)@*
@@ -405,6 +438,13 @@ as a quoted symbol.
 The :INTERACTIVE option determines whether a command to toggle the minor mode on
 and off is generated. If it is T then a command with the same name as the minor
 mode is generated.
+
+@item
+(:ENABLE-WHEN FUNCTION)@*
+
+The :ENABLE-WHEN option must be a funcallable object which will be called with
+the mode symbol and the object to be enabled in. When this returns T the minor
+mode is enabled.
 
 @item
 (:ON-ENABLE FUNCTION)@*
@@ -455,11 +495,12 @@ Example:
       (parse-minor-mode-options options)
     (destructuring-bind (&key top-map root-map (expose-keymaps t)
                            lighter lighter-make-clickable
-                           (scope :global) interactive
-                           on-enable on-disable
+                           (scope :unscoped) interactive global
+                           on-enable on-disable enable-when
                            (make-hooks t) (define-command-definer t)
                            default-initargs)
         mm-opts
+      (declare (ignore global))
       (with-gensyms (gmode gkeymap)
         `(progn
            ,@(when expose-keymaps 
@@ -505,11 +546,12 @@ Example:
              ,scope)
            (defmethod minor-mode-keymap ((,gmode ,mode))
              (cons (slot-value ,gmode ',gkeymap) (call-next-method)))
-           ,@(define-enable-methods mode scope make-hooks on-enable on-disable)
+           ,@(define-enable-methods mode scope make-hooks
+                                    on-enable on-disable enable-when)
            ,@(when interactive
                `((defcommand ,mode (&optional (yn nil ynpp)) ((:y-or-n))
-                   (flet ((enable () (enable-minor-mode ',mode nil))
-                          (disable () (disable-minor-mode ',mode nil)))
+                   (flet ((enable () (enable-minor-mode ',mode :current-object))
+                          (disable () (disable-minor-mode ',mode :current-object)))
                      (cond (yn (enable))
                            (ynpp (disable))
                            ((minor-mode-enabled-p ',mode) (disable))

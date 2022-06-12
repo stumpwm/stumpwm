@@ -2189,10 +2189,21 @@ the head configuration.
 Like Emacs, StumpWM has the concept of minor modes. These are defined by
 the macro @code{DEFINE-MINOR-MODE}. Defining a minor mode creates a
 class and a set of methods specializing upon it. Minor modes are scoped
-to a window, head, group, or screen, or they may be global. Minor modes
-define their own top level and root level keymaps, as well as hooks that
-are run upon enabling or disabling the minor mode, and a lighter to
-display in the mode line.
+to a window, head, group, or screen, or they may be unscoped. In
+addition to this minor modes may be local or global. When a minor mode
+is global all new instances of the scope object will be created with the
+minor mode already active in them. Minor modes define their own top
+level and root level keymaps, as well as hooks that are run upon
+enabling or disabling the minor mode, and a lighter to display in the
+mode line.
+
+Minor modes are mixins that get added to the appropriate scope object
+when enabled. As such minor modes allow the augmenting, modifying, and
+overriding of default StumpWM behavior by defining methods for the
+generic functions of the scope object. For example, a minor mode may be
+scoped to a window and define a method for the generic function
+@code{UPDATE-DECORATION} to change how window decoration is handled for
+that window.
 
 %%% define-minor-mode
 
@@ -2242,11 +2253,8 @@ root map.
 @node Programming With Minor Modes, , Minor Mode Example, Minor Modes
 @section Programming With Minor Modes
 
-Minor modes are mixins that get added to the appropriate object when
-enabled. This approach allows minor modes to augment or override any
-generic functions which specialize upon an object. When programming with
-minor modes a set of methods are defined via @code{DEFINE-MINOR-MODE}
-which specialize upon it.
+When programming with minor modes a set of methods are defined via
+@code{DEFINE-MINOR-MODE} which specialize upon it.
 
 @@@ minor-mode-scope
 

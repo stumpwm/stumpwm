@@ -609,37 +609,24 @@ Use the window's resource name.
     :accessor head-name
     :initarg :name)))
 
-;; Reduplicate accessors for heads.
-
-(defun head-number (head)
-  (frame-number head))
-(defun (setf head-number) (new head)
-  (setf (frame-number head) new))
-
-(defun head-x (head)
-  (frame-x head))
-(defun (setf head-x) (new head)
-  (setf (frame-x head) new))
-
-(defun head-y (head)
-  (frame-y head))
-(defun (setf head-y) (new head)
-  (setf (frame-y head) new))
-
-(defun head-width (head)
-  (frame-width head))
-(defun (setf head-width) (new head)
-  (setf (frame-width head) new))
-
-(defun head-height (head)
-  (frame-height head))
-(defun (setf head-height) (new head)
-  (setf (frame-height head) new))
-
-(defun head-window (head)
-  (frame-window head))
-(defun (setf head-window) (new head)
-  (setf (frame-window head) new))
+;; duplicate frame accessors for heads.
+(macrolet ((define-head-accessor (name)
+             (let ((pkg (find-package :stumpwm)))
+               `(progn
+                  (defgeneric ,(intern (format nil "HEAD-~A" name) pkg) (head)
+                    (:method ((head head))
+                      (,(intern (format nil "FRAME-~A" name) pkg) head)))
+                  
+                  (defmethod (setf ,(intern (format nil "HEAD-~A" name) pkg))
+                      (new (head head))
+                    (setf (,(intern (format nil "FRAME-~A" name) pkg) head)
+                          new))))))
+  (define-head-accessor number)
+  (define-head-accessor x)
+  (define-head-accessor y)
+  (define-head-accessor width)
+  (define-head-accessor height)
+  (define-head-accessor window))
 
 (defun head-p (object)
   (typep object 'head))
