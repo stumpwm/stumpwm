@@ -22,7 +22,7 @@ stumpwm.info: stumpwm.texi
 	test "$(MAKEINFO)" = "no" || $(MAKEINFO) stumpwm.texi
 
 # FIXME: This rule is too hardcoded
-stumpwm.texi: stumpwm.texi.in
+stumpwm.texi: stumpwm.texi.in $(FILES)
 	$(LISP) $(@LISP@_INFOOPTS)
 
 stumpwm: $(FILES)
