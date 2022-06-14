@@ -1354,7 +1354,9 @@ of :error."
   cc
   height
   factor
-  (mode :stump))
+  (mode :stump)
+  on-click-bounds
+  new-bounds)
 
 (defstruct timer
   time repeat function args)

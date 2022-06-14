@@ -205,7 +205,7 @@ If COLOR isn't a colorcode a list containing COLOR is returned."
 (defgeneric apply-color (ccontext modifier &rest arguments))
 
 (defmethod apply-color :around ((cc ccontext) modifier &rest arguments)
-  (declare (ignorable ccontext modifier arguments))
+  (declare (ignorable cc modifier arguments))
   (when *draw-in-color*
     (call-next-method)))
 
@@ -274,6 +274,13 @@ If COLOR isn't a colorcode a list containing COLOR is returned."
   ;; rendering. Since it doesn't otherwise have any effects, we just ignore it.
   (declare (ignore cc modifier args)))
 
+;; Two more special cases. 
+(defmethod apply-color ((cc ccontext) (modifier (eql :on-click)) &rest args)
+  (declare (ignore cc modifier args)))
+
+(defmethod apply-color ((cc ccontext) (modifier (eql :on-click-end)) &rest args)
+  (declare (ignore cc modifier args)))
+
 (defun max-font-height (parts cc)
   "Return the biggest font height for all of the fonts occurring in PARTS in
 the form of (:FONT ...) modifiers."
@@ -321,43 +328,69 @@ string."
                   (reset-color-context cc)
                   (return (values max-width height)))))
 
-(defun render-string (string-or-parts cc x y &aux (draw-x x))
+(defun render-string (string-or-parts cc x y &key ml &aux (draw-x x))
   "Renders STRING-OR-PARTS to the pixmap in CC. Returns the height and width of
 the rendered line as two values. The returned width is the value of X plus the
 rendered width."
-  (let* ((parts (if (stringp string-or-parts)
-                    (parse-color-string string-or-parts)
-                    string-or-parts))
-         (height (max-font-height parts cc)))
-    (loop
-       for (part . rest) on parts
-       for font-height-difference = (- height
-                                       (font-height (ccontext-font cc)))
-       for y-to-center = (floor (/ font-height-difference 2))
-       if (stringp part)
-       do (draw-image-glyphs
-           (ccontext-px cc)
-           (ccontext-gc cc)
-           (ccontext-font cc)
-           draw-x (+ y y-to-center (font-ascent (ccontext-font cc)))
-           part
-           :translate #'translate-id
-           :size 16)
-         (incf draw-x (text-line-width (ccontext-font cc)
-                                       part
-                                       :translate #'translate-id))
-       else
-       do (if (eq :> (first part))
-              (progn (render-string rest cc
-                                    (- (xlib:drawable-width (ccontext-px cc))
-                                       x
-                                       (rendered-string-size rest cc))
-                                    y)
-                     (loop-finish))
-              (apply #'apply-color cc (first part) (rest part))))
-    (values height draw-x)))
+  (macrolet ((register (thing)
+               `(let ((top ,thing))
+                  (when top
+                    (register-ml-boundaries-with-id ml
+                                                    (first top)
+                                                    draw-x
+                                                    y
+                                                    (+ y y-to-center
+                                                       (font-ascent
+                                                        (ccontext-font cc)))
+                                                    (second top)
+                                                    (third top))))))
+    (let* ((parts (if (stringp string-or-parts)
+                      (parse-color-string string-or-parts)
+                      string-or-parts))
+           (height (max-font-height parts cc))
+           (current-on-click nil))
+      (loop
+        for (part . rest) on parts
+        for font-height-difference = (- height
+                                        (font-height (ccontext-font cc)))
+        for y-to-center = (floor (/ font-height-difference 2))
+        if (stringp part)
+          do (draw-image-glyphs
+              (ccontext-px cc)
+              (ccontext-gc cc)
+              (ccontext-font cc)
+              draw-x (+ y y-to-center (font-ascent (ccontext-font cc)))
+              part
+              :translate #'translate-id
+              :size 16)
+             (incf draw-x (text-line-width (ccontext-font cc)
+                                           part
+                                           :translate #'translate-id))
+        else
+          do (case (first part)
+               ((:on-click)
+                (when ml
+                  (push (list draw-x (cadr part) (cddr part)) current-on-click)))
+               ((:on-click-end)
+                (when ml
+                  (register (pop current-on-click))))
+               ((:>)
+                (let ((xbeg (- (xlib:drawable-width (ccontext-px cc))
+                               x
+                               (rendered-string-size rest cc))))
+                  ;; Terminate all clickable areas as they cannot cross the :>
+                  ;; boundary.
+                  (when ml
+                    (loop for top = (pop current-on-click)
+                          while top
+                          do (register top)))
+                  (render-string rest cc xbeg y :ml ml))
+                (loop-finish))
+               (otherwise
+                (apply #'apply-color cc (first part) (rest part)))))
+      (values height draw-x))))
 
-(defun render-strings (cc padx pady strings highlights)
+(defun render-strings (cc padx pady strings highlights &key ml)
   (let* ((gc (ccontext-gc cc))
          (xwin (ccontext-win cc))
          (px (ccontext-px cc))
@@ -394,10 +427,10 @@ rendered width."
            ;; resetting either color to its default value would undo the
            ;; switch.
            (rotatef (ccontext-default-fg cc) (ccontext-default-bg cc))
-           (render-string parts cc (+ padx 0) (+ pady y))
+           (render-string parts cc (+ padx 0) (+ pady y) :ml ml)
            (rotatef (ccontext-default-fg cc) (ccontext-default-bg cc)))
        else
-       do (render-string parts cc (+ padx 0) (+ pady y))
+         do (render-string parts cc (+ padx 0) (+ pady y) :ml ml)
        end
        do (incf y line-height))
     (xlib:copy-area px gc 0 0

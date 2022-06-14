@@ -2065,6 +2065,106 @@ color variables.
 ### *mode-line-border-color*
 ### *mode-line-timeout*
 
+@menu
+* Mode-line Interaction::
+@end menu
+
+@node Mode-line Interaction, , Mode-line, Mode-line
+@section Mode-line Interaction
+Mode line formatters can register sections of text to be clickable by
+use of the color formatters @code{:on-click} and
+@code{:on-click-end}. Any text enclosed by these formatters has its
+bounds saved, and when the mode line recieves a button press event these
+bounds are checked against to find a clickable area, whose registered
+function is then called. These formatters can be thought of as similar
+to XML tags.
+
+To disable the on-click behavior, remove the function
+@code{check-for-ml-press} from the hook @var{*mode-line-click-hook*}.
+
+To call a function by click the function must first be registered. The
+function must take at least one argument, the button code. Here is an
+example of a click-to-focus function and its registration:
+
+@example
+(defun ml-on-click-focus-window (code id &rest rest)
+  (declare (ignore code rest))
+  (when-let ((window (window-by-id id)))
+    (focus-all window)))
+
+(register-ml-on-click-id :ml-on-click-focus-window #'ml-on-click-focus-window)
+@end example
+
+This defines a function that focuses a window based upon its X11 window
+ID, and registers it under the ID @code{:ml-on-click-focus-window}. Here
+is an example of a mode line formatter that makes use of this function:
+
+@example
+(add-screen-mode-line-formatter #\i 'fmt-head-window-list-clickable)
+(defun fmt-head-window-list-clickable (ml)
+  "Using *window-format*, return a 1 line list of the windows,
+space seperated and clickable."
+  (flet ((fmt-w (w)
+           (let ((str (format-expand *window-formatters*
+                                     *window-format*
+                                     w)))
+             (format-with-on-click-id (if (eq w (current-window))
+                                          (fmt-highlight str)
+                                          str)
+                                      :ml-on-click-focus-window
+                                      (window-id w)))))
+@verbatim
+    (format nil "~{~a~^ ~}"
+@end verbatim
+            (mapcar #'fmt-w
+                    (sort1 (head-windows (mode-line-current-group ml)
+                                         (mode-line-head ml))
+                           #'< :key #'window-number)))))
+@end example
+
+In the above formatter, every windows expansion is wrapped in a
+:on-click/end pair, which takes the ID we registered as the function to
+call and the window ID as an argument to be passed to its function. The
+arguments provided to @code{:on-click} will be read but not
+evaluated. The string generated will look like so:
+
+@example
+"^(:on-click :ml-on-click-focus-window 308242)window text^(:on-click-end)"
+@end example
+
+Clickable text can be nested, in which case the innermost clickable text
+will take precendent. In the following example @code{:id2} will be
+dispatched when clicking @code{2}, but @code{:id1} will be dispatched
+when clicking @code{1} and @code{3}:
+
+@example
+"^(:on-click :id1)1^(:on-click :id2)2^(:on-click-end)3^(:on-click-end)"
+@end example
+
+If one wished for right click to delete windows, then the following
+example could be placed in the .stumpwmrc:
+
+@example
+(labels ((ml-on-click-focus-or-delete-window (code id &rest rest)
+           (declare (ignore rest))
+           (when-let ((window (window-by-id id)))
+             (let ((button (decode-button-code code)))
+               (case button
+                 ((:left-button)
+                  (focus-all window))
+                 ((:right-button)
+                  (delete-window window)))))))
+  (register-ml-on-click-id :ml-on-click-focus-window
+                           #'ml-on-click-focus-or-delete-window))
+@end example
+
+This will replace the @code{:ml-on-click-focus-window} function, and all
+uses of @code{:on-click} formatters referring to
+@code{:ml-on-click-focus-window} will use the new function. 
+
+@@@ register-ml-on-click-id
+@@@ format-with-on-click-id
+
 @node Groups, Screens, Mode-line, Top
 @chapter Groups
 Groups in StumpWM are more commonly known as @dfn{virtual desktops} or
@@ -2567,6 +2667,13 @@ immediately be used. In a string you'll probably only want to specify
 an integer.
 @item
 :> takes no arguments. It triggers right-alignment for the rest of the line.
+@item
+:on-click takes one or more arguments and registers the following text
+area as clickable. The initial argument must be an ID registered using
+the function REGISTER-ML-ON-CLICK-ID.
+@item
+:on-click-end takes no arguments. It marks the end of clickable text
+begun by :on-click. 
 
 @end itemize
 
