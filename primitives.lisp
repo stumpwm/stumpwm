@@ -562,7 +562,9 @@ Use the window's resource class.
 Use the window's resource name.
 @end table")
 
-(defclass frame ()
+(defclass swm-class () ())
+
+(defclass frame (swm-class)
   ((number
     :initform nil
     :initarg :number
@@ -644,7 +646,7 @@ Use the window's resource name.
                        :window (frame-window instance)
                        :name (head-name instance)))
 
-(defclass screen ()
+(defclass screen (swm-class)
   ((id :initarg :id :reader screen-id)
    (host :initarg :host :reader screen-host)
    (number :initarg :number :reader screen-number)

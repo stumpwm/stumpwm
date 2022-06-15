@@ -38,7 +38,6 @@
                (:file "bindings")
                (:file "events")
                (:file "window")
-               (:file "minor-modes")
                (:file "floating-group")
                (:file "tile-window")
                (:file "tile-group")
@@ -63,6 +62,7 @@
                (:file "dynamic-group")
                (:file "remap-keys")
                (:file "manual")
+               (:file "minor-modes")
                ;; keep this last so it always gets recompiled if
                ;; anything changes
                (:file "version"))

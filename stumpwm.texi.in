@@ -2253,22 +2253,66 @@ root map.
 @node Programming With Minor Modes, , Minor Mode Example, Minor Modes
 @section Programming With Minor Modes
 
-When programming with minor modes a set of methods are defined via
-@code{DEFINE-MINOR-MODE} which specialize upon it.
+When enabling and disabling minor modes theres a set of generic
+functions in charge of determining what object to mix the minor mode in
+to and whether or not to mix it. 
+
+@@@ autoenable-minor-mode
+
+Defining a minor mode defines a main method for this generic function
+which will mix the minor mode into the scope object when called and
+returns T. This method specializes upon the minor mode symbol and the
+scope type. When @code{:MAKE-HOOKS} is T the @code{*MODE-ENABLE-HOOK*}
+is run. The minor mode will only be enabled and the hooks run when the
+function @code{ENABLE-WHEN} returns T. Any setup should be defined in a
+before, after, or around method specializing upon the minor mode and the
+scope type.
+
+@@@ autodisable-minor-mode
+
+Defining a minor mode defines a main method for this generic function
+which specializes upon the mode symbol and the mode. When
+@code{:MAKE-HOOKS} is T the @code{*MODE-DISABLE-HOOK*} is run. Finally
+the minor mode is removed from the object. Any teardown for a minor mode
+should be defined in a before, after, or around method specializing upon
+the minor mode symbol and the minor mode. 
+
+@@@ enable-when
+
+@@@ enable-minor-mode
+
+Defining a minor mode defines three main methods for this generic
+function. One main method specializes upon the minor mode symbol and the
+minor mode, and signals an error that the minor mode is already enabled
+in the object. Another main method specializes upon the minor mode
+symbol and the keyword @code{:CURRENT-OBJECT}, and uses the scopes
+current object form to retrieve the current scope object and recall the
+function. The final main method specializes upon the minor mode symbol
+and the scope type. This method calls @code{autoenable-minor-mode} with
+the minor mode symbol and the scope object. When @code{:MAKE-HOOKS} is T
+the hook @code{*MODE-HOOK*} is run with the mode symbol and the scope
+object. When the minor mode is global, it is added to the active global
+minor modes list.
+
+@@@ disable-minor-mode
+
+Defining a minor mode defines two main methods for this generic
+function. One specializes upon the minor mode symbol and the minor
+mode. When the minor mode is global it is removed from the active global
+minor modes and added to the list of minor modes to disable. The other
+main method specializes upon the minor mode symbol and the keyword
+@code{:CURRENT-OBJECT} and uses the scopes current object form to
+retrieve the current scope object and recall the function.
+
+Outside of enabling and disabling minor modes, there are several generic
+functions which dispatch upon minor modes and their names.
+
+@@@ minor-mode-global-p
 
 @@@ minor-mode-scope
 
 This function has a single main method defined that specializes upon the
-minor modes name as a symbol. 
-
-@@@ enable-minor-mode
-@@@ disable-minor-mode
-
-These functions have a set of main methods defined, all specializing
-upon the minor mode name as a symbol for their first argument, and one
-upon the scope object type as the second argument, one upon the mode
-itself, and one upon nil. A single after method is defined which syncs
-the top maps.
+minor modes name as a symbol and returns the minor modes scope type. 
 
 @@@ minor-mode-keymap
 
@@ -2299,7 +2343,12 @@ which may be of use when working with minor modes.
 ### *minor-mode*
 ### *minor-mode-enable-hook*
 ### *minor-mode-disable-hook*
-### *global-minor-modes*
+### *unscoped-minor-modes*
+
+@node Global Minor Modes, , Programming With Minor Modes, Minor Modes
+@section Minor Mode Example
+
+Global minor modes are different from unscoped minor modes
 
 @node Internals, Interacting With Unix, Minor Modes, Top
 @chapter Internals

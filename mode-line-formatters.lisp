@@ -124,7 +124,7 @@ fmt-highlight. Any non-visible windows are colored the
          (head (mode-line-head ml))
          (window (group-current-window group)))
     (format nil "~{~A~^ ~}"
-            (loop for mode in (list window head group screen *global-minor-modes*)
+            (loop for mode in (list-mode-objects :screen (mode-line-screen ml))
                   for text = (minor-mode-lighter mode)
                   unless (string= text "")
                     collect text))))
