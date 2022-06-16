@@ -23,6 +23,9 @@
 
           list-modes
           list-minor-modes
+          list-current-mode-objects
+          list-mode-objects
+          enabled-minor-modes
           current-minor-modes
           minor-mode-enabled-p
           find-minor-mode
@@ -214,7 +217,20 @@ provided.")
   "List all minor modes active in OBJECT"
   (butlast (list-modes object)))
 
-(defun list-mode-objects (&key (screen (current-screen)))
+(defun list-mode-objects ()
+  (let* ((screens (sort-screens))
+         (groups (loop for screen in screens
+                       append (screen-groups screen)))
+         (heads (loop for screen in screens
+                      append (screen-heads screen)))
+         (frames (loop for group in groups
+                       when (typep group 'tile-group)
+                         append (flatten (tile-group-frame-tree group))))
+         (windows (loop for group in groups
+                        append (group-windows group))))
+    (append windows frames heads groups screens (list *unscoped-minor-modes*))))
+
+(defun list-current-mode-objects (&key (screen (current-screen)))
   (let* ((group (current-group screen))
          (head (current-head group))
          (frame (when (typep group 'tile-group)
@@ -224,11 +240,21 @@ provided.")
         (list window frame head group screen *unscoped-minor-modes*)
         (list window head group screen *unscoped-minor-modes*))))
 
-(defun current-minor-modes (&optional (screen (current-screen)))
+(defcommand current-minor-modes (&optional (screen (current-screen))) ()
   "Return all currently active minor modes."
-  (apply #'append
-         (mapcar #'list-minor-modes
-                 (list-mode-objects :screen screen))))
+  (let ((modes (mapcan #'list-minor-modes
+                       (list-current-mode-objects :screen screen))))
+    (prog1 modes 
+      (when %interactivep%
+        (message "~{~A~^~%~}" (or modes '("No active minor modes")))))))
+
+(defcommand enabled-minor-modes () ()
+  "Return all enabled minor modes, with duplicates removed."
+  (let ((modes (remove-duplicates (mapcan #'list-minor-modes
+                                          (list-mode-objects)))))
+    (prog1 modes
+      (when %interactivep%
+        (message "~{~A~^~%~}" (or modes '("No active minor modes")))))))
 
 (defun minor-mode-enabled-p (minor-mode &optional (screen (current-screen)))
   "Return T if MINOR-MODE is active"
@@ -263,8 +289,9 @@ provided.")
 
 (defun minor-mode-top-maps (group)
   "Return a list of all minor mode top maps."
-  (apply #'append (mapcar #'minor-mode-keymap
-                          (list-mode-objects :screen (group-screen group)))))
+  (apply #'append
+         (mapcar #'minor-mode-keymap
+                 (list-current-mode-objects :screen (group-screen group)))))
 
 (push #'minor-mode-top-maps *minor-mode-maps*)
 
@@ -739,8 +766,14 @@ with the addition of the following options:
 @itemize
 @item
 (:SCOPE SCOPE-DESIGNATOR)@*
-The :SCOPE option determies what object(s) the minor mode can be mixed in
-with. New scopes can be defined with the macro DEFINE-MINOR-MODE-SCOPE. 
+The :SCOPE option determines what object(s) the minor mode can be mixed in
+with. New scopes can be defined with the macro DEFINE-MINOR-MODE-SCOPE.
+
+@item
+(:GLOBAL (OR T NIL))@*
+When true the :GLOBAL option changes the way enable methods are defined to track
+the minor mode and autoenable it in all existing scope objects, as well as
+autoenabled when new scope objects are instantiated.
 
 @item
 (:TOP-MAP spec)@*
@@ -903,3 +936,7 @@ Example:
                            (t (enable)))))))
            ,@(when define-command-definer
                (list (define-command-macro mode))))))))
+
+(defcommand current-minor-modes () ()
+  (message "~{~A~^~%~}"
+           (mapcan #'list-minor-modes (list-current-mode-objects))))
