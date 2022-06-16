@@ -966,7 +966,3 @@ Example:
                            (t (enable)))))))
            ,@(when define-command-definer
                (list (define-command-macro mode))))))))
-
-(defcommand current-minor-modes () ()
-  (message "~{~A~^~%~}"
-           (mapcan #'list-minor-modes (list-current-mode-objects))))
