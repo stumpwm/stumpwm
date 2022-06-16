@@ -64,10 +64,6 @@ object.")
 (defvar *active-global-minor-modes* ()
   "A list of all currently active global minor modes.")
 
-;; (defvar *minor-modes-to-disable* ()
-;;   "A list of global minor modes that have been disabled and should be removed from
-;; other objects as they are touched.")
-
 (defmethod initialize-instance :around ((obj swm-class) &key &allow-other-keys)
   ;; This should be called AFTER all other initialize-instance methods. This
   ;; wont be the case for other around methods, but most object setup is done in
@@ -214,7 +210,6 @@ provided.")
 (defun list-modes (object)
   "List all minor modes followed by the major mode for OBJECT."
   (when (typep object 'dynamic-mixins:mixin-object)
-    ;; (%disable-global-minor-modes object)
     (mapcar #'class-name (dynamic-mixins:mixin-classes (class-of object)))))
 
 (defun list-minor-modes (object)
@@ -226,14 +221,10 @@ provided.")
          (head (current-head group))
          (frame (when (typep group 'tile-group)
                   (tile-group-current-frame group)))
-         (window (group-current-window group))
-         (list (if frame
-                   (list window frame head group screen *unscoped-minor-modes*)
-                   (list window head group screen *unscoped-minor-modes*))))
-    ;; (when disable-minor-modes 
-    ;;   (loop for object in list
-    ;;         do (%disable-global-minor-modes object)))
-    list))
+         (window (group-current-window group)))
+    (if frame
+        (list window frame head group screen *unscoped-minor-modes*)
+        (list window head group screen *unscoped-minor-modes*))))
 
 (defun current-minor-modes (&optional (screen (current-screen)))
   "Return all currently active minor modes."
@@ -252,7 +243,6 @@ provided.")
   "Return the minor mode object associated with MINOR-MODE."
   (check-type minor-mode symbol)
   (flet ((ct (o)
-           ;; (%disable-global-minor-modes o)
            (and (typep o minor-mode) o)))
     (let ((group (current-group screen)))
       (or (ct *unscoped-minor-modes*)
@@ -846,12 +836,10 @@ Example:
     (destructuring-bind (&key top-map root-map (expose-keymaps t)
                            lighter lighter-make-clickable
                            (scope :unscoped) interactive global
-                           ;; on-enable on-disable
                            (enable-when nil ewpp)
                            (make-hooks t) (define-command-definer t)
                            default-initargs)
         mm-opts
-      (declare (ignorable global))
       (with-gensyms (gmode gkeymap)
         `(progn
            (validate-scope ,scope ',superclasses)
