@@ -2258,7 +2258,15 @@ Minor modes get their power from their ability to override and augment
 generic functions which are called with the minor mode's scope object as
 an argument. If you find a function whose behavior you wish to augment
 or override in the process of writing a minor mode, open an issue or
-submit a PR to generify the function. 
+submit a PR to generify the function.
+
+One of the common ways to customize the initialization of a class
+instance is to define an @code{:after} method for
+@code{initialize-instance}. However, this wont work for minor modes as
+the mode is never instantiated in a way that calls initialize
+instance. Instead one can define an after method for the generic
+function @code{update-instance-for-different-class} which specializes
+upon the minor mode as its second argument. 
 
 When writing a minor mode, it is often useful to separate out the
 desired functionality into its own mixin classes and use those in the
