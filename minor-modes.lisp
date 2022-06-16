@@ -70,9 +70,7 @@ object.")
   ;; an after method and not around methods, so we should be safe.
   (call-next-method)
   (loop for class in *active-global-minor-modes*
-        for scope = (minor-mode-scope class)
-        for objects = (funcall (scope-all-objects-function scope))
-        when (member obj objects)
+        when (typep obj (scope-type (minor-mode-scope class)))
           do (autoenable-minor-mode class obj)))
 
 

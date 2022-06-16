@@ -2254,6 +2254,12 @@ root map.
 @node Programming With Minor Modes, Minor Mode Scopes, Minor Mode Example, Minor Modes
 @section Programming With Minor Modes
 
+Minor modes get their power from their ability to override and augment
+generic functions which are called with the minor mode's scope object as
+an argument. If you find a function whose behavior you wish to augment
+or override in the process of writing a minor mode, open an issue or
+submit a PR to generify the function. 
+
 When writing a minor mode, it is often useful to separate out the
 desired functionality into its own mixin classes and use those in the
 superclass list of the minor mode. For example:
