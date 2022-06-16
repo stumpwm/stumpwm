@@ -445,7 +445,7 @@ ROOT-MAP-SPEC."
                    ,(make-special-variable-name mode 'enable-hook)
                    mode obj)))
             t))
-        
+
         (defmethod autodisable-minor-mode ((mode (eql ',mode)) (obj ,mode))
           ,@(when hooks-defined
               `((run-hook-with-args
@@ -483,7 +483,7 @@ ROOT-MAP-SPEC."
               ,@(when globalp
                   `((push ',mode *active-global-minor-modes*)))
               enabled)))
-        
+
         (defmethod disable-minor-mode ((mode (eql ',mode)) (obj ,mode))
           ,(if globalp
                `(let ((os (funcall (scope-all-objects-function ,scope))))
