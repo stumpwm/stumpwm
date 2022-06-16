@@ -2266,7 +2266,9 @@ instance is to define an @code{:after} method for
 the mode is never instantiated in a way that calls initialize
 instance. Instead one can define an after method for the generic
 function @code{update-instance-for-different-class} which specializes
-upon the minor mode as its second argument. 
+upon the minor mode as its second argument, or one can define an after
+method for the generic function @code{autoenable-minor-mode} described
+below.
 
 When writing a minor mode, it is often useful to separate out the
 desired functionality into its own mixin classes and use those in the
