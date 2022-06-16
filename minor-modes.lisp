@@ -1,7 +1,13 @@
 (in-package :stumpwm)
 
 (export '(define-minor-mode
+
+          add-minor-mode-scope
           define-minor-mode-scope
+          define-descended-minor-mode-scope
+
+          validate-superscope
+          validate-scope
 
           *minor-mode*
           *minor-mode-enable-hook*
@@ -29,6 +35,7 @@
 "A dynamic variable bound to the minor mode object when executing a minor mode
 command.")
 
+
 ;;;;;;;;;;;;;;;;;;;;;
 ;;; General Hooks ;;;
 ;;;;;;;;;;;;;;;;;;;;;
@@ -41,6 +48,7 @@ minor mode symbol and the object they have been added to.")
   "A hook run whenever a minor mode is disabled. Functions are called with the
 minor mode symbol and the object they will be removed from.")
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Classes and Global Modes ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -56,9 +64,9 @@ object.")
 (defvar *active-global-minor-modes* ()
   "A list of all currently active global minor modes.")
 
-(defvar *minor-modes-to-disable* ()
-  "A list of global minor modes that have been disabled and should be removed from
-other objects as they are touched.")
+;; (defvar *minor-modes-to-disable* ()
+;;   "A list of global minor modes that have been disabled and should be removed from
+;; other objects as they are touched.")
 
 (defmethod initialize-instance :around ((obj swm-class) &key &allow-other-keys)
   ;; This should be called AFTER all other initialize-instance methods. This
@@ -66,8 +74,12 @@ other objects as they are touched.")
   ;; an after method and not around methods, so we should be safe.
   (call-next-method)
   (loop for class in *active-global-minor-modes*
-        do (autoenable-minor-mode class obj)))
+        for scope = (minor-mode-scope class)
+        for objects = (funcall (scope-all-objects-function scope))
+        when (member obj objects)
+          do (autoenable-minor-mode class obj)))
 
+
 ;;;;;;;;;;;;;;;;;
 ;;; Sync Keys ;;;
 ;;;;;;;;;;;;;;;;;
@@ -80,6 +92,7 @@ other objects as they are touched.")
 (add-hook *focus-window-hook* 'minor-mode-sync-keys-hook-function)
 (add-hook *focus-group-hook* 'minor-mode-sync-keys-hook-function)
 
+
 ;;;;;;;;;;;;;;;;;;
 ;;; Conditions ;;;
 ;;;;;;;;;;;;;;;;;;
@@ -92,7 +105,7 @@ other objects as they are touched.")
    (reason :initarg :reason :reader minor-mode-enable-error-reason))
   (:report
    (lambda (c s)
-     (format s "Unable to enable minor mode ~A in object ~A: ~A"
+     (format s "Unable to enable minor mode ~A in object ~A.~%Reason: ~A"
              (minor-mode-enable-error-mode c)
              (minor-mode-enable-error-object c)
              (minor-mode-enable-error-reason c)))))
@@ -103,11 +116,12 @@ other objects as they are touched.")
    (reason :initarg :reason :reader minor-mode-disable-error-reason))
   (:report
    (lambda (c s)
-     (format s "Unable to disable minor mode ~A in object ~A: ~A"
+     (format s "Unable to disable minor mode ~A in object ~A.~%Reason: ~A"
              (minor-mode-disable-error-mode c)
              (minor-mode-disable-error-object c)
              (minor-mode-disable-error-reason c)))))
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Minor Mode Protocol ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -185,11 +199,12 @@ provided.")
             (call-next-method)))
   (:documentation "Return a string of minor mode lighters."))
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Find Minor Modes ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun %disable-global-minor-modes (obj &optional (modes *minor-modes-to-disable*))
+(defun %disable-global-minor-modes (obj &optional modes)
   (when modes
     (loop for mode in modes
           while (typep obj 'dynamic-mixins:mixin-object)
@@ -199,14 +214,14 @@ provided.")
 (defun list-modes (object)
   "List all minor modes followed by the major mode for OBJECT."
   (when (typep object 'dynamic-mixins:mixin-object)
-    (%disable-global-minor-modes object)
+    ;; (%disable-global-minor-modes object)
     (mapcar #'class-name (dynamic-mixins:mixin-classes (class-of object)))))
 
 (defun list-minor-modes (object)
   "List all minor modes active in OBJECT"
   (butlast (list-modes object)))
 
-(defun list-mode-objects (&key (screen (current-screen)) (disable-minor-modes t))
+(defun list-mode-objects (&key (screen (current-screen)))
   (let* ((group (current-group screen))
          (head (current-head group))
          (frame (when (typep group 'tile-group)
@@ -215,27 +230,29 @@ provided.")
          (list (if frame
                    (list window frame head group screen *unscoped-minor-modes*)
                    (list window head group screen *unscoped-minor-modes*))))
-    (when disable-minor-modes 
-      (loop for object in list
-            do (%disable-global-minor-modes object)))
+    ;; (when disable-minor-modes 
+    ;;   (loop for object in list
+    ;;         do (%disable-global-minor-modes object)))
     list))
 
 (defun current-minor-modes (&optional (screen (current-screen)))
   "Return all currently active minor modes."
   (apply #'append
          (mapcar #'list-minor-modes
-                 (list-mode-objects :screen screen :disable-minor-modes nil))))
+                 (list-mode-objects :screen screen))))
 
 (defun minor-mode-enabled-p (minor-mode &optional (screen (current-screen)))
   "Return T if MINOR-MODE is active"
   (check-type minor-mode symbol)
-  (member minor-mode (current-minor-modes screen)))
+  (if (minor-mode-global-p minor-mode)
+      (member minor-mode *active-global-minor-modes*)
+      (member minor-mode (append (current-minor-modes screen)))))
 
 (defun find-minor-mode (minor-mode &optional (screen (current-screen)))
   "Return the minor mode object associated with MINOR-MODE."
   (check-type minor-mode symbol)
   (flet ((ct (o)
-           (%disable-global-minor-modes o)
+           ;; (%disable-global-minor-modes o)
            (and (typep o minor-mode) o)))
     (let ((group (current-group screen)))
       (or (ct *unscoped-minor-modes*)
@@ -246,6 +263,7 @@ provided.")
                 (tile-group-current-frame group)))
           (ct (group-current-window group))))))
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Activep and Top Maps ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -376,10 +394,8 @@ ROOT-MAP-SPEC."
     (fill-keymap top-map *escape-key* root-map)
     (generate-keymap top-map-spec top-map)))
 
+
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defvar *minor-mode-scopes* (make-hash-table)
-    "Store the scope supertypes and object retrieval functions for a scope")
-
   (defun make-special-variable-name (mode name)
     (intern (format nil "*~A-~A*" mode name)))
   
@@ -429,6 +445,7 @@ ROOT-MAP-SPEC."
                    ,(make-special-variable-name mode 'enable-hook)
                    mode obj)))
             t))
+        
         (defmethod autodisable-minor-mode ((mode (eql ',mode)) (obj ,mode))
           ,@(when hooks-defined
               `((run-hook-with-args
@@ -437,13 +454,19 @@ ROOT-MAP-SPEC."
           (dynamic-mixins:delete-from-mix obj ',mode))
         
         (defmethod enable-minor-mode ((mode (eql ',mode)) (obj ,mode))
-          (error 'minor-mode-enable-error :mode mode
-                                          :object obj
-                                          :reason 'already-enabled))
+          (restart-case 
+              (error 'minor-mode-enable-error :mode mode
+                                              :object obj
+                                              :reason 'already-enabled)
+            (continue () nil)))
         (defmethod enable-minor-mode ((mode (eql ',mode))
                                       (obj (eql :current-object)))
-          (enable-minor-mode mode
-                             (funcall (scope-current-object-function ,scope))))
+          ,@(if globalp
+                `((let ((os (funcall (scope-all-objects-function ,scope))))
+                    (enable-minor-mode mode (car os))))
+                `((enable-minor-mode mode
+                                     (funcall
+                                      (scope-current-object-function ,scope))))))
         (defmethod enable-minor-mode ((mode (eql ',mode)) (obj ,(car optarg)))
           (let ((enabled
                   (prog1 (autoenable-minor-mode mode obj)
@@ -458,21 +481,28 @@ ROOT-MAP-SPEC."
                                         mode
                                         obj)))
               ,@(when globalp
-                  `((push ',mode *active-global-minor-modes*)
-                    (setf *minor-modes-to-disable*
-                          (remove ',mode *minor-modes-to-disable*))))
+                  `((push ',mode *active-global-minor-modes*)))
               enabled)))
+        
         (defmethod disable-minor-mode ((mode (eql ',mode)) (obj ,mode))
-          ,@(when globalp
-              `((setf *active-global-minor-modes*
-                      (remove ',(car optarg) *active-global-minor-modes*)
-                      *minor-modes-to-disable*
-                      (cons ',mode *minor-modes-to-disable*))))
-          (autodisable-minor-mode mode obj))
+          ,(if globalp
+               `(let ((os (funcall (scope-all-objects-function ,scope))))
+                  (loop for o in os
+                        do (autodisable-minor-mode mode o))
+                  (setf *active-global-minor-modes*
+                        (remove ',mode *active-global-minor-modes*)))
+               `(autodisable-minor-mode mode obj)))
         (defmethod disable-minor-mode ((mode (eql ',mode))
                                        (obj (eql :current-object)))
-          (disable-minor-mode mode
-                              (funcall (scope-current-object-function ,scope)))))))
+          ,(if globalp
+               `(let ((os (funcall (scope-all-objects-function ,scope))))
+                  (loop for o in os
+                        do (autodisable-minor-mode mode o))
+                  (setf *active-global-minor-modes*
+                        (remove ',mode *active-global-minor-modes*)))
+               `(disable-minor-mode mode
+                                    (funcall (scope-current-object-function
+                                              ,scope))))))))
 
   (defun genlighter (mode lighter)
     (cond ((null lighter)
@@ -519,10 +549,20 @@ for that object."
         ,(format nil
                  "A hook run when explicitly enabling ~A, called with the mode symbol and the
 scope object."
-                 mode))))
+                 mode)))))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Minor Mode Scopes ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defvar *minor-mode-scopes* (make-hash-table)
+    "Store the scope supertypes and object retrieval functions for a scope")
   (defun add-minor-mode-scope
       (designator type current-object-thunk all-objects-thunk)
+    "Add a list of the TYPE, CURRENT-OBJECT-THUNK, and ALL-OBJECTS-THUNK, under
+DESIGNATOR in the minor mode scope hash table."
     (setf (gethash designator *minor-mode-scopes*)
           (list type current-object-thunk all-objects-thunk)))
   (defun get-scope (designator)
@@ -536,22 +576,58 @@ scope object."
   (defun scope-current-object-function (designator)
     (cadr (get-scope designator)))
   (defun scope-all-objects-function (designator)
-    (caddr (get-scope designator)))
-  (defun validate-scope (scope &rest superclasses)
-    "Validate a scope for a set of superclasses. SCOPE must be a designator as
-defined with define-minor-mode-scope, and superclasses should be the list of
-superclasses for a minor mode being defined with a scope of SCOPE."
-    (let ((valid (scope-type scope))
-          (superscopes nil))
-      (dolist (super superclasses superscopes)
-        (let* ((superscope (ignore-errors (minor-mode-scope super)))
-               (superclass (ignore-errors (scope-type superscope))))
-          (when superscope
-            (push superscope superscopes)
-            (unless (superclassp valid superclass)
-              (error "~S is not a valid subscope of scopes (~{~S~^ ~})"
-                     scope superscopes))))))))
+    (caddr (get-scope designator))))
 
+(defgeneric validate-superscope (scope superscope)
+  (:documentation
+   "A generic function for explicitly allowing a scope to descend from an
+otherwise invalid superscope."))
+
+(defmethod no-applicable-method ((f (eql #'validate-superscope)) &rest r)
+  (declare (ignore f r))
+  (values nil nil))
+
+(defun superclassp (class superclass)
+  (check-type class symbol)
+  (check-type superclass symbol)
+  (let ((s (find-class superclass))
+        (superclasses (sb-mop:class-direct-superclasses (find-class class))))
+    (loop for super in superclasses
+          when (or (eq super s)
+                   (superclassp (class-name super) superclass))
+            do (return-from superclassp t))))
+
+(defun validate-scope (scope superclasses &key (errorp t))
+  "Validate a scope for a set of superclasses. SCOPE must be a designator as
+defined with define-minor-mode-scope, and superclasses should be the list of
+superclasses for a minor mode being defined with a scope of SCOPE. When ERRORP
+is T then an error is signalled when an invalid superscope is encountered. If it
+is NIL the NIL is returned instead. Upon success a list of conses is returned
+where the car is the scope designator and the cdr is the class with that scope."
+  (flet ((doerror (scope superscope type)
+           (if errorp
+               (error "~S is not a valid subscope of ~S from class ~A"
+                      scope superscope type)
+               (return-from validate-scope nil))))
+    (let ((scopetype (scope-type scope))
+          (superscopes (mapcar (lambda (el)
+                                 (cons 
+                                  (ignore-errors (minor-mode-scope el))
+                                  el))
+                               superclasses)))
+      (mapc (lambda (superscope)
+              (when (car superscope)
+                (multiple-value-bind (valid invalid)
+                    (validate-superscope scope (car superscope))
+                  (or (and invalid
+                           (doerror scope (car superscope) (cdr superscope)))
+                      valid
+                      (eql scopetype (scope-type (car superscope)))
+                      (superclassp scopetype (scope-type (car superscope)))
+                      (doerror scope (car superscope) (cdr superscope))))))
+            superscopes))))
+
+
 (defmacro define-minor-mode-scope (designator type current-object-form
                                    &body all-objects)
   "Define a minor mode scope for use with DEFINE-MINOR-MODE.  This generates a
@@ -565,6 +641,24 @@ valid objects."
                            ',type
                            (lambda () ,current-object-form)
                            (lambda () ,@all-objects))))
+
+(defmacro define-descended-minor-mode-scope (designator parent
+                                             &key type current-object-form
+                                               all-objects-form)
+  "Define a descended scope which inherits the parents type and functions unless
+provided."
+  `(add-minor-mode-scope ,designator
+                         ,@(if type
+                               `(',type)
+                               `((scope-type ,parent)))
+                         ,(if current-object-form
+                              `(lambda ()
+                                 ,current-object-form)
+                              `(scope-current-object-function ,parent))
+                         ,(if all-objects-form
+                              `(lambda ()
+                                 ,all-objects-form)
+                              `(scope-all-objects-function ,parent))))
 
 (define-minor-mode-scope :unscoped t
     *unscoped-minor-modes*
@@ -601,7 +695,10 @@ valid objects."
                        collect group)))
 
 (define-minor-mode-scope :tiling-non-dynamic-group tile-group
-    (current-group)
+    (let ((object (current-group)))
+      (when (and (typep object 'tile-group)
+                 (not (typep object 'dynamic-group)))
+        object))
   (loop for screen in (sort-screens)
         append (loop for group in (screen-groups screen)
                      when (and (typep group 'tile-group)
@@ -641,6 +738,7 @@ valid objects."
                      when (typep window 'float-window)
                        collect window)))
 
+
 (defmacro define-minor-mode (mode superclasses slots &rest options)
   "Define a minor mode as a class to be instantiated when the minor mode is
 activated. Minor modes are dynamically mixed in to and out of the appropriate
@@ -658,11 +756,11 @@ with. New scopes can be defined with the macro DEFINE-MINOR-MODE-SCOPE.
 
 @item
 (:TOP-MAP spec)@*
-The minor modes top map is created based upon the provided spec,
-which must be a list of cons cells whose car is a key sequence and whose cdr is
-a binding. For example: @code{(list (cons \"C-m x\" \"exec\"))}. This would bind
-the key sequence @kbd{C-m x} to the echo command. A reference to this keymap is
-stored as a slot in the minor mode object and can be accessed via the reader
+The minor modes top map is created based upon the provided spec, which must be a
+list of cons cells whose car is a key sequence and whose cdr is a binding. For
+example: @code{(list (cons \"C-m x\" \"echo\"))}. This would bind the key
+sequence @kbd{C-m x} to the echo command. A reference to this keymap is stored
+as a slot in the minor mode object and can be accessed via the reader
 @code{MODE-KEYMAP} where @code{MODE} is the minor mode name.
 
 @item
@@ -756,7 +854,7 @@ Example:
       (declare (ignorable global))
       (with-gensyms (gmode gkeymap)
         `(progn
-           (apply #'validate-scope ,scope ',superclasses)
+           (validate-scope ,scope ',superclasses)
            ,@(when expose-keymaps 
                `((defvar ,(make-special-variable-name mode 'root-map)
                      (make-minor-mode-keymap ,root-map)
