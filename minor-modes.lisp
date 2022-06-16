@@ -1,3 +1,33 @@
+;;;; MINOR MODES
+
+;; This file is part of stumpwm.
+;;
+;; stumpwm is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation; either version 2, or (at your option)
+;; any later version.
+
+;; stumpwm is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this software; see the file COPYING.  If not, write to
+;; the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
+;; Boston, MA 02111-1307 USA
+
+;;; Commentary:
+
+;; This file implements minor modes for StumpWM. Minor modes are implemented as
+;; mixins which get added to a scope object to allow overriding methods which
+;; are called upon that object. Minor modes are defined with the macro
+;; DEFINE-MINOR-MODE, and new scopes can be defined by
+;; DEFINE-MINOR-MODE-SCOPE. All scope objects must be instances of classes, as
+;; the MOP is used to implement minor modes and add them to scope objects.
+
+;;; Code:
+
 (in-package :stumpwm)
 
 (export '(define-minor-mode
