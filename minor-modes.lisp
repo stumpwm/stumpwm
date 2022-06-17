@@ -153,9 +153,44 @@ object.")
 (defgeneric minor-mode-scope (minor-mode-symbol)
   (:documentation "Return as a keyword the scope of the minor mode"))
 
-(defgeneric minor-mode-enable-hook (minor-mode-symbol))
-(defgeneric minor-mode-disable-hook (minor-mode-symbol))
-(defgeneric minor-mode-hook (minor-mode-symbol))
+(defgeneric minor-mode-enable-hook (minor-mode-symbol)
+  (:documentation
+   "Returns the minor mode enable hook for a given minor mode symbol. This hook is
+run whenever the minor mode is enabled via autoenabled."))
+
+(defmethod no-applicable-method ((f (eql #'minor-mode-enable-hook)) &rest rest)
+  (declare (ignore f rest))
+  nil)
+
+(defgeneric minor-mode-disable-hook (minor-mode-symbol)
+  (:documentation
+   "Returns the minor mode disable hook for a given minor mode symbol. This hook is
+run whenever the minor mode is disabled via autodisable."))
+
+(defmethod no-applicable-method ((f (eql #'minor-mode-disable-hook)) &rest rest)
+  (declare (ignore f rest))
+  nil)
+
+(defgeneric minor-mode-hook (minor-mode-symbol)
+  (:documentation
+   "Returns the minor mode hook for a given minor mode symbol. This hook is run
+whenever the minor mode is explicitly enabled."))
+
+(defmethod no-applicable-method ((f (eql #'minor-mode-hook)) &rest rest)
+  (declare (ignore f rest))
+  nil)
+
+(defun run-hook-for-minor-mode (hook minor-mode object &optional invert-order)
+  (labels ((run (mode)
+             (let ((name (class-name mode))
+                   (supers (sb-mop:class-direct-superclasses mode)))
+               (when invert-order
+                 (run-hook-with-args (funcall hook name) name object))
+               (when supers
+                 (mapc #'run supers))
+               (unless invert-order
+                 (run-hook-with-args (funcall hook name) name object)))))
+    (run (find-class minor-mode))))
 
 (defgeneric autoenable-minor-mode (mode object)
   (:documentation
@@ -189,9 +224,10 @@ be enabled."))
     (setf *active-global-minor-modes*
           (remove minor-mode *active-global-minor-modes*)))
   (flet ((disable (object)
-           (run-hook-with-args (minor-mode-disable-hook minor-mode)
-                               minor-mode
-                               object)
+           (run-hook-for-minor-mode #'minor-mode-disable-hook
+                                    minor-mode
+                                    object
+                                    t)
            (autodisable-minor-mode minor-mode object)))
     (mapc #'disable 
           (cond ((minor-mode-global-p minor-mode)
@@ -216,9 +252,9 @@ be enabled."))
                                                         :reason 'already-enabled)
                       (continue () nil)))
                    ((autoenable-minor-mode minor-mode object)
-                    (run-hook-with-args (minor-mode-enable-hook minor-mode)
-                                        minor-mode
-                                        object)
+                    (run-hook-for-minor-mode #'minor-mode-enable-hook
+                                             minor-mode
+                                             object)
                     (unless run-hook
                       (setf run-hook object))))))
       (mapc #'enable
@@ -231,7 +267,7 @@ be enabled."))
                                (funcall (scope-current-object-function
                                          (minor-mode-scope minor-mode))))))))
       (when run-hook
-        (run-hook-with-args (minor-mode-hook minor-mode) minor-mode run-hook))))
+        (run-hook-for-minor-mode #'minor-mode-hook minor-mode run-hook))))
   (minor-mode-sync-keys-hook-function))
 
 (defgeneric minor-mode-keymap (minor-mode)
