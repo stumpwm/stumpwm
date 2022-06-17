@@ -244,14 +244,15 @@
 (defun (setf tile-group-frame-head) (frame group head)
   (setf (elt (tile-group-frame-tree group) (position head (group-heads group))) frame))
 
-(defun populate-frames (group)
-  "Try to fill empty frames in GROUP with hidden windows"
-  (dolist (f (group-frames group))
-    (unless (frame-window f)
-      (choose-new-frame-window f group)
-      (when (frame-window f)
-        (maximize-window (frame-window f))
-        (unhide-window (frame-window f))))))
+(defgeneric populate-frames (group)
+  (:documentation "Try to fill empty frames in GROUP with hidden windows")
+  (:method (group)
+    (dolist (f (group-frames group))
+      (unless (frame-window f)
+        (choose-new-frame-window f group)
+        (when (frame-window f)
+          (maximize-window (frame-window f))
+          (unhide-window (frame-window f)))))))
 
 (defun frame-by-number (group n)
   (unless (eq n nil)
@@ -272,53 +273,61 @@
         (return f)))))
 
 
-(defun frame-set-x (frame v)
-  (decf (frame-width frame)
-        (- v (frame-x frame)))
-  (setf (frame-x frame) v))
+(defgeneric frame-set-x (frame v)
+  (:method (frame v)
+    (decf (frame-width frame)
+          (- v (frame-x frame)))
+    (setf (frame-x frame) v)))
 
-(defun frame-set-y (frame v)
-  (decf (frame-height frame)
-        (- v (frame-y frame)))
-  (setf (frame-y frame) v))
+(defgeneric frame-set-y (frame v)
+  (:method (frame v)
+    (decf (frame-height frame)
+          (- v (frame-y frame)))
+    (setf (frame-y frame) v)))
 
-(defun frame-set-r (frame v)
-  (setf (frame-width frame)
-        (- v (frame-x frame))))
+(defgeneric frame-set-r (frame v)
+  (:method (frame v)
+    (setf (frame-width frame)
+          (- v (frame-x frame)))))
 
-(defun frame-set-b (frame v)
-  (setf (frame-height frame)
-        (- v (frame-y frame))))
+(defgeneric frame-set-b (frame v)
+  (:method (frame v)
+    (setf (frame-height frame)
+          (- v (frame-y frame)))))
 
-(defun frame-r (frame)
-  (+ (frame-x frame) (frame-width frame)))
+(defgeneric frame-r (frame)
+  (:method (frame)
+    (+ (frame-x frame) (frame-width frame))))
 
-(defun frame-b (frame)
-  (+ (frame-y frame) (frame-height frame)))
+(defgeneric frame-b (frame)
+  (:method (frame)
+    (+ (frame-y frame) (frame-height frame))))
 
-(defun frame-display-y (group frame)
-  "Return a Y for frame that doesn't overlap the mode-line."
-  (let* ((head (frame-head group frame))
-         (ml (head-mode-line head))
-         (head-y (frame-y head))
-         (rel-frame-y (- (frame-y frame) head-y)))
-    (if (and ml (not (eq (mode-line-mode ml) :hidden)))
-        (case (mode-line-position ml)
-          (:top
-           (+ head-y
-              (+ (mode-line-height ml) (round (* rel-frame-y (mode-line-factor ml))))))
-          (:bottom
-           (+ head-y
-              (round (* rel-frame-y (mode-line-factor ml))))))
-        (frame-y frame))))
+(defgeneric frame-display-y (group frame)
+  (:documentation "Return a Y for frame that doesn't overlap the mode-line.")
+  (:method (group frame)
+    (let* ((head (frame-head group frame))
+           (ml (head-mode-line head))
+           (head-y (frame-y head))
+           (rel-frame-y (- (frame-y frame) head-y)))
+      (if (and ml (not (eq (mode-line-mode ml) :hidden)))
+          (case (mode-line-position ml)
+            (:top
+             (+ head-y
+                (+ (mode-line-height ml) (round (* rel-frame-y (mode-line-factor ml))))))
+            (:bottom
+             (+ head-y
+                (round (* rel-frame-y (mode-line-factor ml))))))
+          (frame-y frame)))))
 
-(defun frame-display-height (group frame)
-  "Return a HEIGHT for frame that doesn't overlap the mode-line."
-  (let* ((head (frame-head group frame))
-         (ml (head-mode-line head)))
-    (if (and ml (not (eq (mode-line-mode ml) :hidden)))
-        (round (* (frame-height frame) (mode-line-factor ml)))
-        (frame-height frame))))
+(defgeneric frame-display-height (group frame)
+  (:documentation "Return a HEIGHT for frame that doesn't overlap the mode-line.")
+  (:method (group frame)
+    (let* ((head (frame-head group frame))
+           (ml (head-mode-line head)))
+      (if (and ml (not (eq (mode-line-mode ml) :hidden)))
+          (round (* (frame-height frame) (mode-line-factor ml)))
+          (frame-height frame)))))
 
 (defun frame-intersect (f1 f2)
   "Return a new frame representing (only) the intersection of F1 and F2. WIDTH and HEIGHT will be <= 0 if there is no overlap"
