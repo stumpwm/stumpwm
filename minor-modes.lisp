@@ -160,6 +160,10 @@ object.")
 (defgeneric minor-mode-scope (minor-mode-symbol)
   (:documentation "Return as a keyword the scope of the minor mode"))
 
+(defgeneric minor-mode-enable-hook (minor-mode-symbol))
+(defgeneric minor-mode-disable-hook (minor-mode-symbol))
+(defgeneric minor-mode-hook (minor-mode-symbol))
+
 (defgeneric autoenable-minor-mode (mode object)
   (:documentation
    "The core of enabling minor modes within an object. Mixes the minor mode in to
@@ -187,33 +191,81 @@ be enabled."))
   (declare (ignore f rest))
   nil)
 
-(defgeneric enable-minor-mode (mode scope-object)
-  (:documentation
-   "Enable the minor mode MODE for the scopes current object or SCOPE-OBJECT if
-provided.")
-  (:method :after (mode obj)
-    (run-hook-with-args *minor-mode-enable-hook* mode obj)
-    (sync-keys)))
+(defun disable-minor-mode (minor-mode &optional scope-object)
+  (when (minor-mode-global-p minor-mode)
+    (setf *active-global-minor-modes*
+          (remove minor-mode *active-global-minor-modes*)))
+  (flet ((disable (object)
+           (run-hook-with-args (minor-mode-disable-hook minor-mode)
+                               minor-mode
+                               object)
+           (autodisable-minor-mode minor-mode object)))
+    (mapc #'disable 
+          (cond ((minor-mode-global-p minor-mode)
+                 (append (funcall (scope-all-objects-function
+                                   (minor-mode-scope minor-mode)))
+                         (when scope-object
+                           (list scope-object))))
+                (t (list (or scope-object
+                             (funcall (scope-current-object-function
+                                       (minor-mode-scope minor-mode))))))))))
 
-(defmethod no-applicable-method ((f (eql #'enable-minor-mode)) &rest rest)
-  (declare (ignore f))
-  (error 'minor-mode-enable-error :mode (car rest)
-                                  :object (cadr rest)
-                                  :reason 'not-a-valid-object))
+(defun enable-minor-mode (minor-mode &optional scope-object)
+  (when (minor-mode-global-p minor-mode)
+    (pushnew minor-mode *active-global-minor-modes*))
+  (let* ((run-hook nil))
+    (flet ((enable (object)
+             (cond ((typep object minor-mode)
+                    (restart-case 
+                        (error 'minor-mode-enable-error :mode minor-mode
+                                                        :object object
+                                                        :reason 'already-enabled)
+                      (continue () nil)))
+                   ((autoenable-minor-mode minor-mode object)
+                    (run-hook-with-args (minor-mode-enable-hook minor-mode)
+                                        minor-mode
+                                        object)
+                    (unless run-hook
+                      (setf run-hook object))))))
+      (mapc #'enable
+            (cond ((minor-mode-global-p minor-mode)
+                   (append (funcall (scope-all-objects-function
+                                     (minor-mode-scope minor-mode)))
+                           (when scope-object
+                             (list scope-object))))
+                  (t (list (or scope-object
+                               (funcall (scope-current-object-function
+                                         (minor-mode-scope minor-mode))))))))
+      (when run-hook
+        (run-hook-with-args (minor-mode-hook minor-mode) minor-mode run-hook)))))
 
-(defgeneric disable-minor-mode (mode scope-object)
-  (:documentation
-   "Disable the minor mode MODE for the scopes current object or SCOPE-OBJECT if
-provided.")
-  (:method :after (mode obj)
-    (run-hook-with-args *minor-mode-disable-hook* mode obj)
-    (sync-keys)))
+;; (defgeneric enable-minor-mode (mode scope-object)
+;;   (:documentation
+;;    "Enable the minor mode MODE for the scopes current object or SCOPE-OBJECT if
+;; provided.")
+;;   (:method :after (mode obj)
+;;     (run-hook-with-args *minor-mode-enable-hook* mode obj)
+;;     (sync-keys)))
 
-(defmethod no-applicable-method ((f (eql #'disable-minor-mode)) &rest rest)
-  (declare (ignore f))
-  (error 'minor-mode-disable-error :mode (car rest)
-                                   :object (cadr rest)
-                                   :reason 'not-a-valid-object))
+;; (defmethod no-applicable-method ((f (eql #'enable-minor-mode)) &rest rest)
+;;   (declare (ignore f))
+;;   (error 'minor-mode-enable-error :mode (car rest)
+;;                                   :object (cadr rest)
+;;                                   :reason 'not-a-valid-object))
+
+;; (defgeneric disable-minor-mode (mode scope-object)
+;;   (:documentation
+;;    "Disable the minor mode MODE for the scopes current object or SCOPE-OBJECT if
+;; provided.")
+;;   (:method :after (mode obj)
+;;     (run-hook-with-args *minor-mode-disable-hook* mode obj)
+;;     (sync-keys)))
+
+;; (defmethod no-applicable-method ((f (eql #'disable-minor-mode)) &rest rest)
+;;   (declare (ignore f))
+;;   (error 'minor-mode-disable-error :mode (car rest)
+;;                                    :object (cadr rest)
+;;                                    :reason 'not-a-valid-object))
 
 (defgeneric minor-mode-keymap (minor-mode)
   (:method (minor-mode) nil)
@@ -485,69 +537,70 @@ ROOT-MAP-SPEC."
       `((defmethod autoenable-minor-mode ((mode (eql ',mode)) (obj ,(car optarg)))
           (when (enable-when mode obj)
             (dynamic-mixins:ensure-mix obj ',mode)
-            ,@(when hooks-defined
-                `((run-hook-with-args
-                   ,(make-special-variable-name mode 'enable-hook)
-                   mode obj)))
-            t))
+            ;; ,@(when hooks-defined
+            ;;     `((run-hook-with-args
+            ;;        ,(make-special-variable-name mode 'enable-hook)
+            ;;        mode obj)))
+            ))
 
         (defmethod autodisable-minor-mode ((mode (eql ',mode)) (obj ,mode))
-          ,@(when hooks-defined
-              `((run-hook-with-args
-                 ,(make-special-variable-name mode 'disable-hook)
-                 mode obj)))
+          ;; ,@(when hooks-defined
+          ;;     `((run-hook-with-args
+          ;;        ,(make-special-variable-name mode 'disable-hook)
+          ;;        mode obj)))
           (dynamic-mixins:delete-from-mix obj ',mode))
         
-        (defmethod enable-minor-mode ((mode (eql ',mode)) (obj ,mode))
-          (restart-case 
-              (error 'minor-mode-enable-error :mode mode
-                                              :object obj
-                                              :reason 'already-enabled)
-            (continue () nil)))
-        (defmethod enable-minor-mode ((mode (eql ',mode))
-                                      (obj (eql :current-object)))
-          ,@(if globalp
-                `((let ((os (funcall (scope-all-objects-function ,scope))))
-                    (enable-minor-mode mode (car os))))
-                `((enable-minor-mode mode
-                                     (funcall
-                                      (scope-current-object-function ,scope))))))
-        (defmethod enable-minor-mode ((mode (eql ',mode)) (obj ,(car optarg)))
-          (let ((enabled
-                  (prog1 (autoenable-minor-mode mode obj)
-                    ,@(when globalp
-                        `((loop for o in (funcall
-                                          (scope-all-objects-function ,scope))
-                                unless (eq o obj)
-                                  do (autoenable-minor-mode mode o)))))))
-            (when enabled
-              ,@(when hooks-defined 
-                  `((run-hook-with-args ,(make-special-variable-name mode 'hook)
-                                        mode
-                                        obj)))
-              ,@(when globalp
-                  `((push ',mode *active-global-minor-modes*)))
-              enabled)))
+        ;; (defmethod enable-minor-mode ((mode (eql ',mode)) (obj ,mode))
+        ;;   (restart-case 
+        ;;       (error 'minor-mode-enable-error :mode mode
+        ;;                                       :object obj
+        ;;                                       :reason 'already-enabled)
+        ;;     (continue () nil)))
+        ;; (defmethod enable-minor-mode ((mode (eql ',mode))
+        ;;                               (obj (eql :current-object)))
+        ;;   ,@(if globalp
+        ;;         `((let ((os (funcall (scope-all-objects-function ,scope))))
+        ;;             (enable-minor-mode mode (car os))))
+        ;;         `((enable-minor-mode mode
+        ;;                              (funcall
+        ;;                               (scope-current-object-function ,scope))))))
+        ;; (defmethod enable-minor-mode ((mode (eql ',mode)) (obj ,(car optarg)))
+        ;;   (let ((enabled
+        ;;           (prog1 (autoenable-minor-mode mode obj)
+        ;;             ,@(when globalp
+        ;;                 `((loop for o in (funcall
+        ;;                                   (scope-all-objects-function ,scope))
+        ;;                         unless (eq o obj)
+        ;;                           do (autoenable-minor-mode mode o)))))))
+        ;;     (when enabled
+        ;;       ,@(when hooks-defined 
+        ;;           `((run-hook-with-args ,(make-special-variable-name mode 'hook)
+        ;;                                 mode
+        ;;                                 obj)))
+        ;;       ,@(when globalp
+        ;;           `((push ',mode *active-global-minor-modes*)))
+        ;;       enabled)))
 
-        (defmethod disable-minor-mode ((mode (eql ',mode)) (obj ,mode))
-          ,(if globalp
-               `(let ((os (funcall (scope-all-objects-function ,scope))))
-                  (loop for o in os
-                        do (autodisable-minor-mode mode o))
-                  (setf *active-global-minor-modes*
-                        (remove ',mode *active-global-minor-modes*)))
-               `(autodisable-minor-mode mode obj)))
-        (defmethod disable-minor-mode ((mode (eql ',mode))
-                                       (obj (eql :current-object)))
-          ,(if globalp
-               `(let ((os (funcall (scope-all-objects-function ,scope))))
-                  (loop for o in os
-                        do (autodisable-minor-mode mode o))
-                  (setf *active-global-minor-modes*
-                        (remove ',mode *active-global-minor-modes*)))
-               `(disable-minor-mode mode
-                                    (funcall (scope-current-object-function
-                                              ,scope))))))))
+        ;; (defmethod disable-minor-mode ((mode (eql ',mode)) (obj ,mode))
+        ;;   ,(if globalp
+        ;;        `(let ((os (funcall (scope-all-objects-function ,scope))))
+        ;;           (loop for o in os
+        ;;                 do (autodisable-minor-mode mode o))
+        ;;           (setf *active-global-minor-modes*
+        ;;                 (remove ',mode *active-global-minor-modes*)))
+        ;;        `(autodisable-minor-mode mode obj)))
+        ;; (defmethod disable-minor-mode ((mode (eql ',mode))
+        ;;                                (obj (eql :current-object)))
+        ;;   ,(if globalp
+        ;;        `(let ((os (funcall (scope-all-objects-function ,scope))))
+        ;;           (loop for o in os
+        ;;                 do (autodisable-minor-mode mode o))
+        ;;           (setf *active-global-minor-modes*
+        ;;                 (remove ',mode *active-global-minor-modes*)))
+        ;;        `(disable-minor-mode mode
+        ;;                             (funcall (scope-current-object-function
+        ;;                                       ,scope)))))
+        )))
 
   (defun genlighter (mode lighter)
     (cond ((null lighter)
@@ -594,7 +647,25 @@ for that object."
         ,(format nil
                  "A hook run when explicitly enabling ~A, called with the mode symbol and the
 scope object."
-                 mode)))))
+                 mode))
+      (defmethod minor-mode-enable-hook ((mode (eql ',mode)))
+        (declare (ignore mode))
+        ,(make-special-variable-name mode 'enable-hook))
+      (defmethod (setf minor-mode-enable-hook) (new (mode (eql ',mode)))
+        (declare (ignore mode))
+        (setf ,(make-special-variable-name mode 'enable-hook) new))
+      (defmethod minor-mode-disable-hook ((mode (eql ',mode)))
+        (declare (ignore mode))
+        ,(make-special-variable-name mode 'disable-hook))
+      (defmethod (setf minor-mode-disable-hook) (new (mode (eql ',mode)))
+        (declare (ignore mode))
+        (setf ,(make-special-variable-name mode 'disable-hook) new))
+      (defmethod minor-mode-hook ((mode (eql ',mode)))
+        (declare (ignore mode))
+        ,(make-special-variable-name mode 'hook))
+      (defmethod (setf minor-mode-hook) (new (mode (eql ',mode)))
+        (declare (ignore mode))
+        (setf ,(make-special-variable-name mode 'hook) new)))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -913,8 +984,6 @@ Example:
                       ,top-map
                       ',(make-special-variable-name mode 'root-map))
                      ,(format nil "The top map for ~A" mode))))
-           ,@(when make-hooks
-               (define-hooks mode))
            (defclass ,mode ,superclasses
              ((,gkeymap
                :initform ,@(if expose-keymaps
@@ -941,6 +1010,9 @@ Example:
            (defmethod minor-mode-scope ((,gmode (eql ',mode)))
              (declare (ignore ,gmode))
              ,scope)
+           ,@(when make-hooks
+               (define-hooks mode))
+                     
            (defmethod minor-mode-keymap ((,gmode ,mode))
              (cons (slot-value ,gmode ',gkeymap) (call-next-method)))
            ,@(cond (enable-when
