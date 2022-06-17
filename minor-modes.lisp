@@ -516,74 +516,13 @@ ROOT-MAP-SPEC."
             ,@body))))
   
   (defun define-enable-methods (mode scope hooks-defined globalp)
+    (declare (ignorable mode scope hooks-defined globalp))
     (let ((optarg (get-scope scope)))
       `((defmethod autoenable-minor-mode ((mode (eql ',mode)) (obj ,(car optarg)))
           (when (enable-when mode obj)
-            (dynamic-mixins:ensure-mix obj ',mode)
-            ;; ,@(when hooks-defined
-            ;;     `((run-hook-with-args
-            ;;        ,(make-special-variable-name mode 'enable-hook)
-            ;;        mode obj)))
-            ))
-
+            (dynamic-mixins:ensure-mix obj ',mode)))
         (defmethod autodisable-minor-mode ((mode (eql ',mode)) (obj ,mode))
-          ;; ,@(when hooks-defined
-          ;;     `((run-hook-with-args
-          ;;        ,(make-special-variable-name mode 'disable-hook)
-          ;;        mode obj)))
-          (dynamic-mixins:delete-from-mix obj ',mode))
-        
-        ;; (defmethod enable-minor-mode ((mode (eql ',mode)) (obj ,mode))
-        ;;   (restart-case 
-        ;;       (error 'minor-mode-enable-error :mode mode
-        ;;                                       :object obj
-        ;;                                       :reason 'already-enabled)
-        ;;     (continue () nil)))
-        ;; (defmethod enable-minor-mode ((mode (eql ',mode))
-        ;;                               (obj (eql :current-object)))
-        ;;   ,@(if globalp
-        ;;         `((let ((os (funcall (scope-all-objects-function ,scope))))
-        ;;             (enable-minor-mode mode (car os))))
-        ;;         `((enable-minor-mode mode
-        ;;                              (funcall
-        ;;                               (scope-current-object-function ,scope))))))
-        ;; (defmethod enable-minor-mode ((mode (eql ',mode)) (obj ,(car optarg)))
-        ;;   (let ((enabled
-        ;;           (prog1 (autoenable-minor-mode mode obj)
-        ;;             ,@(when globalp
-        ;;                 `((loop for o in (funcall
-        ;;                                   (scope-all-objects-function ,scope))
-        ;;                         unless (eq o obj)
-        ;;                           do (autoenable-minor-mode mode o)))))))
-        ;;     (when enabled
-        ;;       ,@(when hooks-defined 
-        ;;           `((run-hook-with-args ,(make-special-variable-name mode 'hook)
-        ;;                                 mode
-        ;;                                 obj)))
-        ;;       ,@(when globalp
-        ;;           `((push ',mode *active-global-minor-modes*)))
-        ;;       enabled)))
-
-        ;; (defmethod disable-minor-mode ((mode (eql ',mode)) (obj ,mode))
-        ;;   ,(if globalp
-        ;;        `(let ((os (funcall (scope-all-objects-function ,scope))))
-        ;;           (loop for o in os
-        ;;                 do (autodisable-minor-mode mode o))
-        ;;           (setf *active-global-minor-modes*
-        ;;                 (remove ',mode *active-global-minor-modes*)))
-        ;;        `(autodisable-minor-mode mode obj)))
-        ;; (defmethod disable-minor-mode ((mode (eql ',mode))
-        ;;                                (obj (eql :current-object)))
-        ;;   ,(if globalp
-        ;;        `(let ((os (funcall (scope-all-objects-function ,scope))))
-        ;;           (loop for o in os
-        ;;                 do (autodisable-minor-mode mode o))
-        ;;           (setf *active-global-minor-modes*
-        ;;                 (remove ',mode *active-global-minor-modes*)))
-        ;;        `(disable-minor-mode mode
-        ;;                             (funcall (scope-current-object-function
-        ;;                                       ,scope)))))
-        )))
+          (dynamic-mixins:delete-from-mix obj ',mode)))))
 
   (defun genlighter (mode lighter)
     (cond ((null lighter)
@@ -957,7 +896,9 @@ Example:
         mm-opts
       (with-gensyms (gmode gkeymap)
         `(progn
+           ;; Ensure that SCOPE is a valid scope for the superclass list.
            (validate-scope ,scope ',superclasses)
+
            ,@(when expose-keymaps 
                `((defvar ,(make-special-variable-name mode 'root-map)
                      (make-minor-mode-keymap ,root-map)
@@ -967,6 +908,7 @@ Example:
                       ,top-map
                       ',(make-special-variable-name mode 'root-map))
                      ,(format nil "The top map for ~A" mode))))
+
            (defclass ,mode ,superclasses
              ((,gkeymap
                :initform ,@(if expose-keymaps
@@ -979,8 +921,10 @@ Example:
               ,@slots)
              (:default-initargs ,@default-initargs)
              ,@other-opts)
+
            ,@(when global 
                `((defmethod minor-mode-global-p ((mode (eql ',mode))) t)))
+
            (defmethod minor-mode-lighter ((,gmode ,mode))
              (cons
               ,(if lighter-make-clickable
@@ -990,14 +934,17 @@ Example:
                                              ',mode)
                    `(funcall ,(genlighter mode lighter) ,gmode))
               (call-next-method)))
+
            (defmethod minor-mode-scope ((,gmode (eql ',mode)))
              (declare (ignore ,gmode))
              ,scope)
+
            ,@(when make-hooks
                (define-hooks mode))
-                     
+
            (defmethod minor-mode-keymap ((,gmode ,mode))
              (cons (slot-value ,gmode ',gkeymap) (call-next-method)))
+
            ,@(cond (enable-when
                     (let ((args (car enable-when))
                           (body (cdr enable-when)))
@@ -1008,18 +955,19 @@ Example:
                    (t `((defmethod enable-when ((mode (eql ',mode))
                                                 (obj ,(scope-type scope)))
                           t))))
+
            ,@(define-enable-methods mode scope make-hooks global)
+
            ,@(when interactive
                `((defcommand ,(cond ((eq interactive t) mode)
                                     (t interactive))
                      (&optional (yn nil ynpp)) ((:y-or-n))
-                   (flet ((enable () (enable-minor-mode ',mode ;; :current-object
-                                                        ))
-                          (disable () (disable-minor-mode ',mode ;; :current-object
-                                                          )))
+                   (flet ((enable () (enable-minor-mode ',mode))
+                          (disable () (disable-minor-mode ',mode)))
                      (cond (yn (enable))
                            (ynpp (disable))
                            ((minor-mode-enabled-p ',mode) (disable))
                            (t (enable)))))))
+
            ,@(when define-command-definer
                (list (define-command-macro mode))))))))
