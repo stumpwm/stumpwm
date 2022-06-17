@@ -224,21 +224,26 @@ be enabled."))
   (when (minor-mode-global-p minor-mode)
     (setf *active-global-minor-modes*
           (remove minor-mode *active-global-minor-modes*)))
-  (flet ((disable (object)
-           (run-hook-for-minor-mode #'minor-mode-disable-hook
-                                    minor-mode
-                                    object
-                                    t)
-           (autodisable-minor-mode minor-mode object)))
-    (mapc #'disable 
-          (cond ((minor-mode-global-p minor-mode)
-                 (append (funcall (scope-all-objects-function
-                                   (minor-mode-scope minor-mode)))
-                         (when scope-object
-                           (list scope-object))))
-                (t (list (or scope-object
-                             (funcall (scope-current-object-function
-                                       (minor-mode-scope minor-mode)))))))))
+  (let ((run-hook nil))
+    (flet ((disable (object)
+             (run-hook-for-minor-mode #'minor-mode-disable-hook
+                                      minor-mode
+                                      object
+                                      t)
+             (when (and (autodisable-minor-mode minor-mode object)
+                        (not run-hook))
+               (setf run-hook object))))
+      (mapc #'disable 
+            (cond ((minor-mode-global-p minor-mode)
+                   (append (funcall (scope-all-objects-function
+                                     (minor-mode-scope minor-mode)))
+                           (when scope-object
+                             (list scope-object))))
+                  (t (list (or scope-object
+                               (funcall (scope-current-object-function
+                                         (minor-mode-scope minor-mode))))))))
+      (when run-hook
+        (run-hook-with-args *minor-mode-disable-hook* minor-mode run-hook))))
   (minor-mode-sync-keys-hook-function))
 
 (defun enable-minor-mode (minor-mode &optional scope-object)
@@ -248,7 +253,7 @@ use SCOPE-OBJECT instead of the current object, or include it in the list of
 current objects if MINOR-MODE is global"
   (when (minor-mode-global-p minor-mode)
     (pushnew minor-mode *active-global-minor-modes*))
-  (let* ((run-hook nil))
+  (let ((run-hook nil))
     (flet ((enable (object)
              (cond ((typep object minor-mode)
                     (restart-case 
@@ -272,7 +277,8 @@ current objects if MINOR-MODE is global"
                                (funcall (scope-current-object-function
                                          (minor-mode-scope minor-mode))))))))
       (when run-hook
-        (run-hook-for-minor-mode #'minor-mode-hook minor-mode run-hook))))
+        (run-hook-for-minor-mode #'minor-mode-hook minor-mode run-hook)
+        (run-hook-with-args *minor-mode-enable-hook* minor-mode run-hook))))
   (minor-mode-sync-keys-hook-function))
 
 (defgeneric minor-mode-keymap (minor-mode)
