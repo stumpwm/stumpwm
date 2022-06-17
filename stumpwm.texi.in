@@ -2213,7 +2213,7 @@ the windows it is enabled in.
 * Minor Mode Example::
 @end menu
 
-@node Programming With Minor Modes, Minor Modes, Minor Mode Example, Minor Modes
+@node Programming With Minor Modes, Minor Mode Scopes, Minor Modes, Minor Modes
 @section Programming With Minor Modes
 
 Minor modes get their power from their ability to override and augment
@@ -2275,11 +2275,11 @@ definitions:
 (define-minor-mode x () ())
 (define-minor-mode y (x) ())
 
-(enable-minor-mode 'x :current-object)
-(enable-minor-mode 'y :current-object) ; both modes are enabled
+(enable-minor-mode 'x)
+(enable-minor-mode 'y) ; both modes are enabled
 ;; As opposed to
-(enable-minor-mode 'y :current-object)
-(enable-minor-mode 'x :current-object) ; signals an error
+(enable-minor-mode 'y)
+(enable-minor-mode 'x) ; signals an error
 @end example
 
 

@@ -220,6 +220,7 @@ be enabled."))
   nil)
 
 (defun disable-minor-mode (minor-mode &optional scope-object)
+  "Disable MINOR-MODE in the relevant objects."
   (when (minor-mode-global-p minor-mode)
     (setf *active-global-minor-modes*
           (remove minor-mode *active-global-minor-modes*)))
@@ -241,6 +242,10 @@ be enabled."))
   (minor-mode-sync-keys-hook-function))
 
 (defun enable-minor-mode (minor-mode &optional scope-object)
+  "Enable MINOR-MODE. If MINOR-MODE is global, then enable it in all relevant
+objects. Otherwise enable it in the current object. If SCOPE-OBJECT is provided,
+use SCOPE-OBJECT instead of the current object, or include it in the list of
+current objects if MINOR-MODE is global"
   (when (minor-mode-global-p minor-mode)
     (pushnew minor-mode *active-global-minor-modes*))
   (let* ((run-hook nil))
