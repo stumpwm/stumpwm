@@ -36,6 +36,8 @@
           define-minor-mode-scope
           define-descended-minor-mode-scope
 
+          sync-minor-modes
+
           validate-superscope
           validate-scope
 
@@ -665,6 +667,14 @@ where the car is the scope designator and the cdr is the class with that scope."
                       (doerror scope (car superscope) (cdr superscope))))))
             superscopes))))
 
+(defun validate-minor-mode-superclasses (superclasses)
+  (flet ((validate (class)
+           (when (or (eq class 'swm-class)
+                     (superclassp class 'swm-class))
+             (error "The class ~A is not a valid superclass for minor modes~%as it descends from SWM-CLASS"
+                    class))))
+    (mapc #'validate superclasses)))
+
 
 (defmacro define-minor-mode-scope (designator type current-object-form
                                    &body all-objects)
@@ -896,6 +906,9 @@ Example:
         mm-opts
       (with-gensyms (gmode gkeymap)
         `(progn
+           ;; Ensure that the superclasses are valid for a minor mode. 
+           (validate-minor-mode-superclasses ',superclasses)
+
            ;; Ensure that SCOPE is a valid scope for the superclass list.
            (validate-scope ,scope ',superclasses)
 
