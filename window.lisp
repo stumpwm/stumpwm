@@ -776,22 +776,19 @@ and bottom_end_x."
 (defun xwin-ungrab-buttons (win)
   (xlib:ungrab-button win :any :modifiers :any))
 
-(defvar *syncing-keys* nil)
-
 (defun sync-keys ()
   "Any time *top-map* is modified this must be called."
-  (let ((*syncing-keys* t))
-    (loop for i in *screen-list*
-          do (xwin-ungrab-keys (screen-focus-window i))
-          do (loop for j in (screen-mapped-windows i)
-                   do (xwin-ungrab-keys j))
-          do (xlib:display-finish-output *display*)
-          do (loop for j in (screen-mapped-windows i)
-                   do (xwin-grab-keys j (window-group (find-window j))))
-          do (xwin-grab-keys (screen-focus-window i) (screen-current-group i)))
-    (when (current-window)
-      (remap-keys-grab-keys (current-window)))
-    (xlib:display-finish-output *display*)))
+  (loop for i in *screen-list*
+        do (xwin-ungrab-keys (screen-focus-window i))
+        do (loop for j in (screen-mapped-windows i)
+                 do (xwin-ungrab-keys j))
+        do (xlib:display-finish-output *display*)
+        do (loop for j in (screen-mapped-windows i)
+                 do (xwin-grab-keys j (window-group (find-window j))))
+        do (xwin-grab-keys (screen-focus-window i) (screen-current-group i)))
+  (when (current-window)
+    (remap-keys-grab-keys (current-window)))
+  (xlib:display-finish-output *display*))
 
 (defun netwm-remove-window (window)
   (xlib:delete-property (window-xwin window) :_NET_WM_DESKTOP))

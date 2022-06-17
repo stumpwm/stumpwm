@@ -220,6 +220,9 @@ The Caller is responsible for setting up the input focus."
    ;; going to throw in their universally accessible customizations
    ;; which we don't want groups or minor modes shadowing them.
    (list '*top-map*)
+   ;; If a minor mode map element is a function or a symbol that does not denote
+   ;; a keymap but is fbound, then funcall it with the group. Otherwise it
+   ;; should be a kmap object or a symbol bound to a kmap object.
    (loop for map in *minor-mode-maps*
          if (or (functionp map)
                 (and (symbolp map)

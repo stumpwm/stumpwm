@@ -104,15 +104,7 @@ object.")
 
 (defun minor-mode-sync-keys-hook-function (&rest rest)
   (declare (ignore rest))
-  (unless *syncing-keys*
-    (let ((objects (swm-class-new-objects (current-screen))))
-      (when objects
-        (loop for class in *active-global-minor-modes*
-              do (loop for obj in objects 
-                       when (typep obj (scope-type (minor-mode-scope class)))
-                         do (autoenable-minor-mode class obj)))
-        (setf (swm-class-new-objects (current-screen)) nil)))
-    (sync-keys)))
+  (sync-keys))
 
 (add-hook *focus-frame-hook* 'minor-mode-sync-keys-hook-function)
 (add-hook *focus-window-hook* 'minor-mode-sync-keys-hook-function)
@@ -240,34 +232,6 @@ be enabled."))
         (run-hook-with-args (minor-mode-hook minor-mode) minor-mode run-hook))))
   (minor-mode-sync-keys-hook-function))
 
-;; (defgeneric enable-minor-mode (mode scope-object)
-;;   (:documentation
-;;    "Enable the minor mode MODE for the scopes current object or SCOPE-OBJECT if
-;; provided.")
-;;   (:method :after (mode obj)
-;;     (run-hook-with-args *minor-mode-enable-hook* mode obj)
-;;     (sync-keys)))
-
-;; (defmethod no-applicable-method ((f (eql #'enable-minor-mode)) &rest rest)
-;;   (declare (ignore f))
-;;   (error 'minor-mode-enable-error :mode (car rest)
-;;                                   :object (cadr rest)
-;;                                   :reason 'not-a-valid-object))
-
-;; (defgeneric disable-minor-mode (mode scope-object)
-;;   (:documentation
-;;    "Disable the minor mode MODE for the scopes current object or SCOPE-OBJECT if
-;; provided.")
-;;   (:method :after (mode obj)
-;;     (run-hook-with-args *minor-mode-disable-hook* mode obj)
-;;     (sync-keys)))
-
-;; (defmethod no-applicable-method ((f (eql #'disable-minor-mode)) &rest rest)
-;;   (declare (ignore f))
-;;   (error 'minor-mode-disable-error :mode (car rest)
-;;                                    :object (cadr rest)
-;;                                    :reason 'not-a-valid-object))
-
 (defgeneric minor-mode-keymap (minor-mode)
   (:method (minor-mode) nil)
   (:documentation "Return the top map for the minor mode"))
@@ -284,6 +248,21 @@ be enabled."))
 ;;; Find Minor Modes ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun sync-minor-modes (&aux (objects-list
+                               (swm-class-new-objects (current-screen))))
+  "Loop through all recently created objects and ensure that the appropriate minor
+modes are enabled in them, then nullify the list of objects."
+  ;; This functions is needed because calling autoenable-minor-mode from within
+  ;; a method that accesses slots is implied to be undefined behavior, so we
+  ;; cant do this from within initialize-instance. 
+  (let ((objects (prog1 objects-list
+                   (setf (swm-class-new-objects (current-screen)) nil))))
+    (when (and objects *active-global-minor-modes*)
+      (loop for object in objects
+            do (loop for class in *active-global-minor-modes*
+                     when (typep object (scope-type (minor-mode-scope class)))
+                       do (autoenable-minor-mode class object))))))
+
 (defun %disable-global-minor-modes (obj &optional modes)
   (when modes
     (loop for mode in modes
@@ -293,6 +272,7 @@ be enabled."))
 
 (defun list-modes (object)
   "List all minor modes followed by the major mode for OBJECT."
+  (sync-minor-modes)
   (when (typep object 'dynamic-mixins:mixin-object)
     (mapcar #'class-name (dynamic-mixins:mixin-classes (class-of object)))))
 
@@ -301,6 +281,7 @@ be enabled."))
   (butlast (list-modes object)))
 
 (defun list-mode-objects ()
+  (sync-minor-modes)
   (let* ((screens (sort-screens))
          (groups (loop for screen in screens
                        append (screen-groups screen)))
@@ -314,6 +295,7 @@ be enabled."))
     (append windows frames heads groups screens (list *unscoped-minor-modes*))))
 
 (defun list-current-mode-objects (&key (screen (current-screen)))
+  (sync-minor-modes)
   (let* ((group (current-group screen))
          (head (current-head group))
          (frame (when (typep group 'tile-group)
@@ -1031,8 +1013,10 @@ Example:
                `((defcommand ,(cond ((eq interactive t) mode)
                                     (t interactive))
                      (&optional (yn nil ynpp)) ((:y-or-n))
-                   (flet ((enable () (enable-minor-mode ',mode :current-object))
-                          (disable () (disable-minor-mode ',mode :current-object)))
+                   (flet ((enable () (enable-minor-mode ',mode ;; :current-object
+                                                        ))
+                          (disable () (disable-minor-mode ',mode ;; :current-object
+                                                          )))
                      (cond (yn (enable))
                            (ynpp (disable))
                            ((minor-mode-enabled-p ',mode) (disable))
