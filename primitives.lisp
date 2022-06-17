@@ -572,7 +572,7 @@ Use the window's resource name.
 when they are touched")))
 
 (defmethod initialize-instance :after ((obj swm-class) &key &allow-other-keys)
-  (adjoin obj (swm-class-new-objects obj) :test #'eq))
+  (pushnew obj (swm-class-new-objects obj) :test #'eq))
 
 (defclass frame (swm-class)
   ((number
