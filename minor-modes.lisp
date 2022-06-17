@@ -97,15 +97,6 @@ object.")
 (defvar *active-global-minor-modes* ()
   "A list of all currently active global minor modes.")
 
-(defmethod initialize-instance :around ((obj swm-class) &key &allow-other-keys)
-  ;; This should be called AFTER all other initialize-instance methods. This
-  ;; wont be the case for other around methods, but most object setup is done in
-  ;; an after method and not around methods, so we should be safe.
-  (call-next-method)
-  (loop for class in *active-global-minor-modes*
-        when (typep obj (scope-type (minor-mode-scope class)))
-          do (autoenable-minor-mode class obj)))
-
 
 ;;;;;;;;;;;;;;;;;
 ;;; Sync Keys ;;;
@@ -113,7 +104,15 @@ object.")
 
 (defun minor-mode-sync-keys-hook-function (&rest rest)
   (declare (ignore rest))
-  (sync-keys))
+  (unless *syncing-keys*
+    (let ((objects (swm-class-new-objects (current-screen))))
+      (when objects
+        (loop for class in *active-global-minor-modes*
+              do (loop for obj in objects 
+                       when (typep obj (scope-type (minor-mode-scope class)))
+                         do (autoenable-minor-mode class obj)))
+        (setf (swm-class-new-objects (current-screen)) nil)))
+    (sync-keys)))
 
 (add-hook *focus-frame-hook* 'minor-mode-sync-keys-hook-function)
 (add-hook *focus-window-hook* 'minor-mode-sync-keys-hook-function)
@@ -208,7 +207,8 @@ be enabled."))
                            (list scope-object))))
                 (t (list (or scope-object
                              (funcall (scope-current-object-function
-                                       (minor-mode-scope minor-mode))))))))))
+                                       (minor-mode-scope minor-mode)))))))))
+  (minor-mode-sync-keys-hook-function))
 
 (defun enable-minor-mode (minor-mode &optional scope-object)
   (when (minor-mode-global-p minor-mode)
@@ -237,7 +237,8 @@ be enabled."))
                                (funcall (scope-current-object-function
                                          (minor-mode-scope minor-mode))))))))
       (when run-hook
-        (run-hook-with-args (minor-mode-hook minor-mode) minor-mode run-hook)))))
+        (run-hook-with-args (minor-mode-hook minor-mode) minor-mode run-hook))))
+  (minor-mode-sync-keys-hook-function))
 
 ;; (defgeneric enable-minor-mode (mode scope-object)
 ;;   (:documentation

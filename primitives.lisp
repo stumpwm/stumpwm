@@ -562,7 +562,17 @@ Use the window's resource class.
 Use the window's resource name.
 @end table")
 
-(defclass swm-class () ())
+(defclass swm-class ()
+  ((new-objects
+    :initform nil
+    :accessor swm-class-new-objects
+    :allocation :class
+    :documentation
+"Track all newly created objects in order to mix in the appropriate minor modes
+when they are touched")))
+
+(defmethod initialize-instance :after ((obj swm-class) &key &allow-other-keys)
+  (adjoin obj (swm-class-new-objects obj) :test #'eq))
 
 (defclass frame (swm-class)
   ((number
