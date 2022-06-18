@@ -128,7 +128,7 @@ than the root window's width and height."
              (setf x (frame-x frame-to-fill)
                    y (frame-y frame-to-fill)
                    width (frame-width frame-to-fill)
-                   height (frame-height frame-to-fill)))
+                   height (frame-height frame-to-fill))))
        (return-from geometry-hints (values x y 0 0 width height 0 t)))
       ;; Adjust the defaults if the window is a transient_for window.
       ((find (window-type win) '(:transient :dialog))
