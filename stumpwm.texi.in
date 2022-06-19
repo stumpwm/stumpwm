@@ -2353,8 +2353,8 @@ which may be of use when working with minor modes.
 Minor modes can be scoped to different objects in a rather arbitrary
 manner. These scopes are defined by the macro
 @code{DEFINE-MINOR-MODE-SCOPE}. Because minor modes are implemented as
-mixins, the objects returned by a scopes current- and all- object
-functions must be class instances.
+mixins, the object returned by a scopes current object function must be
+a class instance. 
 
 %%% define-minor-mode-scope
 
@@ -2385,6 +2385,12 @@ invalid parent of the scope. For example:
   "Explicitly prevent id3 from descending from id4"
   (values nil t))
 @end verbatim
+
+When defining and using scopes the type specifier is important; it is
+used to determine what minor modes should be mixed into an object when
+it is created. For this reason it is important when defining a minor
+mode or minor mode scope to understand the type hierarchy. It may also
+be in the programmers best interests to define an accompanying type.
 
 The following scopes are predefined:
 @itemize
@@ -2446,6 +2452,11 @@ Designator: @code{:FRAME}, type: @code{FRAME}
 
 Current object: return the current frame when in a tiling group.@*
 All objects: for every tiling group collect and flatten its frame tree.
+
+@item
+Designator: @code{:FRAME-EXCLUDING-HEAD}, type: @code{ONLY-FRAME-NO-HEADS}
+
+Descends from minor mode scope @code{:FRAME}.
 
 @item
 Designator: @code{:WINDOW}, type: @code{WINDOW}

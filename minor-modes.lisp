@@ -237,9 +237,7 @@ be enabled."))
                              (list scope-object))))
                   (t (list (or scope-object
                                (funcall (scope-current-object-function
-                                         (minor-mode-scope minor-mode))))))))
-      (when run-hook
-        (run-hook-with-args *minor-mode-disable-hook* minor-mode run-hook))))
+                                         (minor-mode-scope minor-mode))))))))))
   (minor-mode-sync-keys-hook-function))
 
 (defun enable-minor-mode (minor-mode &optional scope-object)
@@ -321,8 +319,9 @@ modes are enabled in them, then nullify the list of objects."
   "List all minor modes active in OBJECT"
   (butlast (list-modes object)))
 
-(defun list-mode-objects ()
-  (sync-minor-modes)
+(defun list-mode-objects (&optional (sync t))
+  (when sync
+    (sync-minor-modes))
   (let* ((screens (sort-screens))
          (groups (loop for screen in screens
                        append (screen-groups screen)))
@@ -550,15 +549,25 @@ ROOT-MAP-SPEC."
     `(defmacro ,(intern (string-upcase (format nil "define-~A-command" mode))
                         (find-package :stumpwm))
          (name (&rest args) (&rest interactive-args) &body body)
-       `(defcommand (,name ,',mode) ,args ,interactive-args
-          (let ((*minor-mode* (find-minor-mode ',',mode (current-screen))))
-            ,@body))))
+       (multiple-value-bind (bod decls docstring)
+           (parse-body body :documentation t)
+         `(defcommand (,name ,',mode) ,args ,interactive-args
+            ,@(when docstring
+                `(,docstring))
+            ,@decls 
+            (let ((*minor-mode* (find-minor-mode ',',mode (current-screen))))
+              ,@bod)))))
   
   (defun define-enable-methods (mode scope hooks-defined globalp)
     (declare (ignorable mode scope hooks-defined globalp))
     (let ((optarg (get-scope scope)))
       `((defmethod autoenable-minor-mode ((mode (eql ',mode)) (obj ,(car optarg)))
-          (when (enable-when mode obj)
+          (when (and ,@(unless (eql (third optarg) (first optarg))
+                         ;; Check if the filter type is the same as the class
+                         ;; type, and if not then explicitly check if the object
+                         ;; conforms to that type.
+                         `((typep obj ',(third optarg))))
+                     (enable-when mode obj))
             (prog1 (dynamic-mixins:ensure-mix obj ',mode)
               (run-hook-for-minor-mode #'minor-mode-enable-hook
                                        ',mode
@@ -641,11 +650,11 @@ scope object."
   (defvar *minor-mode-scopes* (make-hash-table)
     "Store the scope supertypes and object retrieval functions for a scope")
   (defun add-minor-mode-scope
-      (designator type current-object-thunk all-objects-thunk)
+      (designator type current-object-thunk &optional filter-type)
     "Add a list of the TYPE, CURRENT-OBJECT-THUNK, and ALL-OBJECTS-THUNK, under
 DESIGNATOR in the minor mode scope hash table."
     (setf (gethash designator *minor-mode-scopes*)
-          (list type current-object-thunk all-objects-thunk)))
+          (list type current-object-thunk (or filter-type type))))
   (defun get-scope (designator)
     (multiple-value-bind (value foundp)
         (gethash designator *minor-mode-scopes*)
@@ -653,11 +662,17 @@ DESIGNATOR in the minor mode scope hash table."
           value
           (error "Invalid scope designator ~A" designator))))
   (defun scope-type (designator)
-    (car (get-scope designator)))
+    (first (get-scope designator)))
+  (defun scope-filter-type (designator)
+    (third (get-scope designator)))
   (defun scope-current-object-function (designator)
     (cadr (get-scope designator)))
   (defun scope-all-objects-function (designator)
-    (caddr (get-scope designator))))
+    (let ((type (first (get-scope designator))))
+      (lambda ()
+        (loop for object in (list-mode-objects nil)
+              when (typep object type)
+                collect object)))))
 
 (defgeneric validate-superscope (scope superscope)
   (:documentation
@@ -717,125 +732,86 @@ where the car is the scope designator and the cdr is the class with that scope."
     (mapc #'validate superclasses)))
 
 
-(defmacro define-minor-mode-scope (designator type current-object-form
-                                   &body all-objects)
+(defmacro define-minor-mode-scope
+    ((designator class &optional filter-type) &body retrieve-current-object)
   "Define a minor mode scope for use with DEFINE-MINOR-MODE.  This generates a
 call to ADD-MINOR-MODE-SCOPE which is evaluated when compiled, loaded, or
-executed. DESIGNATOR should be a keyword and TYPE should denote a class
-type. CURRENT-OBJECT-FORM should be a single form which returns the current
-object, and ALL-OBJECTS is a set of forms which should return a flat list of all
-valid objects."
+executed. DESIGNATOR should be a keyword and TYPE should denote a class, while
+FILTER-TYPE should denote a general type. RETRIEVE-CURRENT-OBJECT should be a
+thunk body which returns the current object for this scope."
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (add-minor-mode-scope ,designator
-                           ',type
-                           (lambda () ,current-object-form)
-                           (lambda () ,@all-objects))))
+                           ',class
+                           (lambda () ,@retrieve-current-object)
+                           ,@(when filter-type
+                               `(',filter-type)))))
 
 (defmacro define-descended-minor-mode-scope (designator parent
-                                             &key type current-object-form
-                                               all-objects-form)
+                                             &key class filter-type
+                                               retrieve-current-object)
   "Define a descended scope which inherits the parents type and functions unless
 provided."
-  `(add-minor-mode-scope ,designator
-                         ,@(if type
-                               `(',type)
-                               `((scope-type ,parent)))
-                         ,(if current-object-form
-                              `(lambda ()
-                                 ,current-object-form)
-                              `(scope-current-object-function ,parent))
-                         ,(if all-objects-form
-                              `(lambda ()
-                                 ,all-objects-form)
-                              `(scope-all-objects-function ,parent))))
+  `(eval-when (:compile-toplevel :load-toplevel :execute)
+     (add-minor-mode-scope ,designator
+                           ,@(if class
+                                 `(',class)
+                                 `((scope-type ,parent)))
+                           ,(if retrieve-current-object
+                                `(lambda ()
+                                   ,retrieve-current-object)
+                                `(scope-current-object-function ,parent))
+                           ,@(when filter-type
+                               `(',filter-type)))))
 
-(define-minor-mode-scope :unscoped t
-    *unscoped-minor-modes*
-  (list *unscoped-minor-modes*))
+(define-minor-mode-scope (:unscoped unscoped-modes)
+  *unscoped-minor-modes*)
 
-(define-minor-mode-scope :screen screen
-    (current-screen)
-  (sort-screens))
+(define-minor-mode-scope (:screen screen)
+  (current-screen))
 
-(define-minor-mode-scope :group group
-    (current-group)
-  (loop for screen in (sort-screens)
-        append (screen-groups screen)))
+(define-minor-mode-scope (:group group)
+  (current-group))
 
-(define-minor-mode-scope :tile-group tile-group
-    (current-group)
-  (loop for screen in (sort-screens)
-        append (loop for group in (screen-groups screen)
-                     when (typep group 'tile-group)
-                       collect group)))
+(define-minor-mode-scope (:tile-group tile-group)
+  (current-group))
 
-(define-minor-mode-scope :float-group float-group
-    (current-group)
-  (loop for screen in (sort-screens)
-        append (loop for group in (screen-groups screen)
-                     when (typep group 'float-group)
-                       collect group)))
+(define-minor-mode-scope (:float-group float-group)
+  (current-group))
 
-(define-minor-mode-scope :dynamic-group dynamic-group
-    (current-group)
-  (loop for screen in (sort-screens)
-        append (loop for group in (screen-groups screen)
-                     when (typep group 'dynamic-group)
-                       collect group)))
+(define-minor-mode-scope (:dynamic-group dynamic-group)
+  (current-group))
 
-(define-minor-mode-scope :tiling-non-dynamic-group tile-group
-    (let ((object (current-group)))
-      (when (and (typep object 'tile-group)
-                 (not (typep object 'dynamic-group)))
-        object))
-  (loop for screen in (sort-screens)
-        append (loop for group in (screen-groups screen)
-                     when (and (typep group 'tile-group)
-                               (not (typep group 'dynamic-group)))
-                       collect group)))
+(defun %manual-tiling-group-p (g)
+  (and (typep g 'tile-group)
+       (not (typep g 'dynamic-group))))
 
-(define-minor-mode-scope :head head
-    (current-head)
-  (screen-heads (current-screen)))
+(define-minor-mode-scope (:manual-tiling-group tile-group
+                                               (satisfies %manual-tiling-group-p))
+  (current-group))
 
-(define-minor-mode-scope :frame frame
-    (let ((g (current-group)))
-      (when (typep g 'tile-group)
-        (tile-group-current-frame g)))
-  (let ((groups (screen-groups (current-screen))))
-    (loop for group in groups
-          when (typep group 'tile-group)
-            append (flatten (tile-group-frame-tree group)))))
+(define-minor-mode-scope (:frame frame)
+  (let ((g (current-group)))
+    (when (typep g 'tile-group)
+      (tile-group-current-frame g))))
+
+(define-minor-mode-scope (:head head)
+  (current-head))
 
 (defun %frame-but-not-head (o)
   (and (typep o 'frame)
        (not (typep o 'head))))
 
-(deftype only-frame ()
-  `(satisfies %frame-but-not-head))
-
 (define-descended-minor-mode-scope :frame-excluding-head :frame
-  :type only-frame)
+  :filter-type (satisfies %frame-but-not-head))
 
-(define-minor-mode-scope :window window
-    (current-window)
-  (loop for group in (screen-groups (current-screen))
-        append (group-windows group)))
+(define-minor-mode-scope (:window window)
+  (current-window))
 
-(define-minor-mode-scope :tile-window tile-window
-    (current-window)
-  (loop for group in (screen-groups (current-screen))
-        when (typep group 'tile-group)
-          append (loop for window in (group-windows group)
-                       when (typep window 'tile-window)
-                         collect window)))
+(define-minor-mode-scope (:tile-window tile-window)
+  (current-window))
 
-(define-minor-mode-scope :float-window float-window
-    (current-window)
-  (loop for group in (screen-groups (current-screen))
-        append (loop for window in (group-windows group)
-                     when (typep window 'float-window)
-                       collect window)))
+(define-minor-mode-scope (:float-window float-window)
+  (current-window))
 
 
 (defmacro define-minor-mode (mode superclasses slots &rest options)
