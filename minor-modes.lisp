@@ -90,7 +90,9 @@ minor mode symbol and the object they will be removed from.")
 
 (defclass unscoped-modes () ())
 
-(defclass minor-mode () ())
+(defclass minor-mode () ()
+  (:documentation "The root minor mode class. All minor modes are subclasses of
+this class."))
 
 (defvar *unscoped-minor-modes* (make-instance 'unscoped-modes)
   "A dynamic variable holding all unscoped minor modes as mixed into the same

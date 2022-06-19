@@ -2347,6 +2347,8 @@ which may be of use when working with minor modes.
 ### *minor-mode-disable-hook*
 ### *unscoped-minor-modes*
 
+€€€ minor-mode
+
 @node Minor Mode Scopes, Minor Mode Example, Programming With Minor Modes, Minor Modes
 @section Minor Mode Scopes
 
@@ -2396,66 +2398,43 @@ The following scopes are predefined:
 @itemize
 @item
 Designator: @code{:UNSCOPED}, type: @code{T}
-
 Current object: return the global unscoped object.@*
-All objects: list the global unscoped object.
 
 @item
 Designator: @code{:SCREEN}, type: @code{SCREEN}
-
 Current object: return the current screen.@*
-All objects: list all screens.
 
 @item
 Designator: @code{:GROUP}, type: @code{GROUP}
-
 Current object: return the current group.@*
-All objects: loop over every screen and append its groups.
 
 @item
 Designator: @code{:TILE-GROUP}, type: @code{TILE-GROUP}
-
 Current object: return the current group.@*
-All objects: collect every group from every screen, filtering all
-non-tiling groups.
 
 @item
 Designator: @code{:DYNAMIC-GROUP}, type: @code{DYNAMIC-GROUP}
-
 Current object: return the current group.@*
-All objects: collect every group from every screen, filtering all
-non-dynamic groups.
 
 @item
 Designator: @code{:FLOAT-GROUP}, type: @code{FLOAT-GROUP}
-
 Current object: return the current group.@*
-All objects: collect every group from every screen, filtering all
-non-float groups.
 
 @item
 Designator: @code{:TILING-NON-DYNAMIC-GROUP}, type: @code{TILE-GROUP}
-
 Current object: return the current group when it is a non-dynamic tiling
 group.@*
-All objects: collect every group from every screen, filtering all non
-tiling groups and all dynamic tiling groups.
 
 @item
 Designator: @code{:HEAD}, type: @code{HEAD}
-
 Current object: return the current head.@*
-All objects: return all heads of the current screen.
 
 @item
 Designator: @code{:FRAME}, type: @code{FRAME}
-
 Current object: return the current frame when in a tiling group.@*
-All objects: for every tiling group collect and flatten its frame tree.
 
 @item
 Designator: @code{:FRAME-EXCLUDING-HEAD}, type: @code{ONLY-FRAME-NO-HEADS}
-
 Descends from minor mode scope @code{:FRAME}.
 
 @item
