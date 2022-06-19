@@ -77,11 +77,13 @@ command.")
 
 (defvar *minor-mode-enable-hook* ()
   "A hook run whenever a minor mode is enabled. Functions are called with the
-minor mode symbol and the object they have been added to.")
+minor mode symbol and the object they have been added to. This is run when a
+minor mode is explicitly enabled via enable-minor-mode.")
 
 (defvar *minor-mode-disable-hook* ()
   "A hook run whenever a minor mode is disabled. Functions are called with the
-minor mode symbol and the scope object.")
+minor mode symbol and the scope object. This is run when a minor mode is
+explicitly disabled via disable-minor-mode.")
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
