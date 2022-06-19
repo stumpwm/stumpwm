@@ -4,7 +4,7 @@
 
 (defun xwin-to-window (xwin)
   "Build a window for XWIN"
-  (make-instance 'window
+  (make-swm-class-instance 'window
    :xwin xwin
    :width (xlib:drawable-width xwin) :height (xlib:drawable-height xwin)
    :x (xlib:drawable-x xwin) :y (xlib:drawable-y xwin)

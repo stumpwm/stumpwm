@@ -354,12 +354,13 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 (defun %ensure-group (group-name group-type screen)
   "If there is a group named with GROUP-NAME in SCREEN return it, otherwise create it."
   (or (find-group screen group-name)
-      (let ((group (make-instance group-type
-                                  :screen screen
-                                  :number (if (char= (char group-name 0) #\.)
-                                                     (find-free-hidden-group-number screen)
-                                                     (find-free-group-number screen))
-                                  :name group-name)))
+      (let ((group (make-swm-class-instance
+                    group-type
+                    :screen screen
+                    :number (if (char= (char group-name 0) #\.)
+                                (find-free-hidden-group-number screen)
+                                (find-free-group-number screen))
+                    :name group-name)))
         (setf (screen-groups screen) (append (screen-groups screen) (list group)))
         (netwm-set-group-properties screen)
         (netwm-update-groups screen)
