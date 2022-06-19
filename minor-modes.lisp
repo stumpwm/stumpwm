@@ -81,7 +81,7 @@ minor mode symbol and the object they have been added to.")
 
 (defvar *minor-mode-disable-hook* ()
   "A hook run whenever a minor mode is disabled. Functions are called with the
-minor mode symbol and the object they will be removed from.")
+minor mode symbol and the scope object.")
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -254,6 +254,7 @@ be enabled."))
   (let ((run-hook nil))
     (flet ((disable (object)
              (unless run-hook
+               (run-hook-with-args *minor-mode-disable-hook* minor-mode object)
                (run-hook-for-minor-mode #'minor-mode-destroy-hook
                                         minor-mode
                                         object
@@ -300,7 +301,8 @@ current objects if MINOR-MODE is global"
                                (funcall (scope-current-object-function
                                          (minor-mode-scope minor-mode))))))))
       (when run-hook
-        (run-hook-for-minor-mode #'minor-mode-hook minor-mode run-hook))))
+        (run-hook-for-minor-mode #'minor-mode-hook minor-mode run-hook)
+        (run-hook-with-args *minor-mode-enable-hook* minor-mode run-hook))))
   (minor-mode-sync-keys-hook-function))
 
 
