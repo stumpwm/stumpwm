@@ -226,10 +226,6 @@ be enabled."))
           (remove minor-mode *active-global-minor-modes*)))
   (let ((run-hook nil))
     (flet ((disable (object)
-             (run-hook-for-minor-mode #'minor-mode-disable-hook
-                                      minor-mode
-                                      object
-                                      t)
              (when (and (autodisable-minor-mode minor-mode object)
                         (not run-hook))
                (setf run-hook object))))
@@ -262,9 +258,6 @@ current objects if MINOR-MODE is global"
                                                         :reason 'already-enabled)
                       (continue () nil)))
                    ((autoenable-minor-mode minor-mode object)
-                    (run-hook-for-minor-mode #'minor-mode-enable-hook
-                                             minor-mode
-                                             object)
                     (unless run-hook
                       (setf run-hook object))))))
       (mapc #'enable
@@ -566,8 +559,12 @@ ROOT-MAP-SPEC."
     (let ((optarg (get-scope scope)))
       `((defmethod autoenable-minor-mode ((mode (eql ',mode)) (obj ,(car optarg)))
           (when (enable-when mode obj)
-            (dynamic-mixins:ensure-mix obj ',mode)))
+            (prog1 (dynamic-mixins:ensure-mix obj ',mode)
+              (run-hook-for-minor-mode #'minor-mode-enable-hook
+                                       ',mode
+                                       obj))))
         (defmethod autodisable-minor-mode ((mode (eql ',mode)) (obj ,mode))
+          (run-hook-for-minor-mode #'minor-mode-disable-hook ',mode obj t)
           (dynamic-mixins:delete-from-mix obj ',mode)))))
 
   (defun genlighter (mode lighter)
@@ -809,6 +806,16 @@ provided."
     (loop for group in groups
           when (typep group 'tile-group)
             append (flatten (tile-group-frame-tree group)))))
+
+(defun %frame-but-not-head (o)
+  (and (typep o 'frame)
+       (not (typep o 'head))))
+
+(deftype only-frame ()
+  `(satisfies %frame-but-not-head))
+
+(define-descended-minor-mode-scope :frame-excluding-head :frame
+  :type only-frame)
 
 (define-minor-mode-scope :window window
     (current-window)

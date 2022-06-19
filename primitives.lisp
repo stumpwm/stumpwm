@@ -572,7 +572,26 @@ Use the window's resource name.
 when they are touched")))
 
 (defmethod initialize-instance :after ((obj swm-class) &key &allow-other-keys)
+  ;; Register all newly created objects so that they can have the relevant minor
+  ;; modes autoenabled.
   (pushnew obj (swm-class-new-objects obj) :test #'eq))
+
+(defun make-swm-class-instance (class &rest initargs)
+  "Make an instance of a StumpWM class and autoenable any relevant minor
+modes. CLASS must be a symbol denoting a class which descends, directly or
+indirectly, from swm-class. INITARGS must be all initargs one would pass to
+make-instance."
+  ;; This is implemented as a function instead of as an after method for
+  ;; initialize-instance because autoenabling a minor mode involves changing the
+  ;; class of the object, which is implied to be undefined behavior if called
+  ;; within a method which accesses the objects slots.
+  (let ((object (apply #'make-instance class initargs)))
+    (prog1 object
+      (loop for class in *active-global-minor-modes*
+            when (typep object (scope-type (minor-mode-scope class)))
+              do (autoenable-minor-mode class object))
+      (setf (swm-class-new-objects object)
+            (remove object (swm-class-new-objects object) :test #'eq)))))
 
 (defclass frame (swm-class)
   ((number
@@ -605,15 +624,15 @@ when they are touched")))
 
 (defun make-frame (&rest rest &key number x y width height window)
   (declare (ignore number x y width height window))
-  (apply 'make-instance 'frame rest))
+  (apply 'make-swm-class-instance 'frame rest))
 
 (defun copy-frame (instance)
-  (make-instance 'frame :number (frame-number instance)
-                        :x (frame-x instance)
-                        :y (frame-y instance)
-                        :width (frame-width instance)
-                        :height (frame-height instance)
-                        :window (frame-window instance)))
+  (make-swm-class-instance 'frame :number (frame-number instance)
+                                  :x (frame-x instance)
+                                  :y (frame-y instance)
+                                  :width (frame-width instance)
+                                  :height (frame-height instance)
+                                  :window (frame-window instance)))
 
 (defclass head (frame)
   ((name
@@ -645,16 +664,16 @@ when they are touched")))
 
 (defun make-head (&rest rest &key number x y width height window name)
   (declare (ignore number x y width height window name))
-  (apply 'make-instance 'head rest))
+  (apply 'make-swm-class-instance 'head rest))
 
 (defun copy-head (instance)
-  (make-instance 'head :number (frame-number instance)
-                       :x (frame-x instance)
-                       :y (frame-y instance)
-                       :width (frame-width instance)
-                       :height (frame-height instance)
-                       :window (frame-window instance)
-                       :name (head-name instance)))
+  (make-swm-class-instance 'head :number (frame-number instance)
+                                 :x (frame-x instance)
+                                 :y (frame-y instance)
+                                 :width (frame-width instance)
+                                 :height (frame-height instance)
+                                 :window (frame-window instance)
+                                 :name (head-name instance)))
 
 (defclass screen (swm-class)
   ((id :initarg :id :reader screen-id)
