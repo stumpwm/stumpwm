@@ -251,6 +251,11 @@ be enabled."))
           (remove minor-mode *active-global-minor-modes*)))
   (let ((run-hook nil))
     (flet ((disable (object)
+             (unless run-hook
+               (run-hook-for-minor-mode #'minor-mode-destroy-hook
+                                        minor-mode
+                                        object
+                                        t))
              (when (and (autodisable-minor-mode minor-mode object)
                         (not run-hook))
                (setf run-hook object))))
@@ -262,9 +267,7 @@ be enabled."))
                              (list scope-object))))
                   (t (list (or scope-object
                                (funcall (scope-current-object-function
-                                         (minor-mode-scope minor-mode)))))))))
-    (when run-hook
-      (run-hook-for-minor-mode #'minor-mode-destroy-hook minor-mode run-hook t)))
+                                         (minor-mode-scope minor-mode))))))))))
   (minor-mode-sync-keys-hook-function))
 
 (defun enable-minor-mode (minor-mode &optional scope-object)
@@ -916,9 +919,11 @@ symbol and the scope type for the minor mode must be manually defined.
 @item
 (:MAKE-HOOKS (OR T NIL))@*
 When :MAKE-HOOKS is T a set of hook variables are generated. These variables are
-called *MODE-ENABLE-HOOK* and *MODE-DISABLE-HOOK*. This option defaults to
-T. These hooks are run only when the minor mode is explicitly enabled or
-disabled by the functions ENABLE-MINOR-MODE and DISABLE-MINOR-MODE.
+fourfold: *MODE-HOOK* is run after explicitly enabling the minor
+mode. *MODE-ENABLE-HOOK* is run when the minor mode is
+autoenabled. *MODE-DISABLE-HOOK* is run when the minor mode is
+autodisabled. Finally *MODE-DESTROY-HOOK* is run when the minor mode is
+explicitly disabled. 
 
 @item
 (:DEFINE-COMMAND-DEFINER (OR T NIL))@*
