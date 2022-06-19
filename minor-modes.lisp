@@ -326,13 +326,6 @@ modes are enabled in them, then nullify the list of objects."
                      when (typep object (scope-type (minor-mode-scope class)))
                        do (autoenable-minor-mode class object))))))
 
-(defun %disable-global-minor-modes (obj &optional modes)
-  (when modes
-    (loop for mode in modes
-          while (typep obj 'dynamic-mixins:mixin-object)
-          when (typep obj mode)
-            do (autodisable-minor-mode mode obj))))
-
 (defun list-modes (object)
   "List all minor modes followed by the major mode for OBJECT."
   (sync-minor-modes)

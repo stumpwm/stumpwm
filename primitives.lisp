@@ -585,6 +585,7 @@ make-instance."
   ;; initialize-instance because autoenabling a minor mode involves changing the
   ;; class of the object, which is implied to be undefined behavior if called
   ;; within a method which accesses the objects slots.
+  (declare (special *active-global-minor-modes*))
   (let ((object (apply #'make-instance class initargs)))
     (prog1 object
       (loop for class in *active-global-minor-modes*
