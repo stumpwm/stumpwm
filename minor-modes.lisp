@@ -297,14 +297,13 @@ current objects if MINOR-MODE is global"
 ;;; Find Minor Modes ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun sync-minor-modes (&aux (objects-list
-                               (swm-class-new-objects (current-screen))))
+(defun sync-minor-modes ()
   "Loop through all recently created objects and ensure that the appropriate minor
 modes are enabled in them, then nullify the list of objects."
   ;; This functions is needed because calling autoenable-minor-mode from within
   ;; a method that accesses slots is implied to be undefined behavior, so we
-  ;; cant do this from within initialize-instance. 
-  (let ((objects (prog1 objects-list
+  ;; cant do this from within initialize-instance.
+  (let ((objects (prog1 (swm-class-new-objects (current-screen))
                    (setf (swm-class-new-objects (current-screen)) nil))))
     (when (and objects *active-global-minor-modes*)
       (loop for object in objects
@@ -406,8 +405,6 @@ modes are enabled in them, then nullify the list of objects."
   (apply #'append
          (mapcar #'minor-mode-keymap
                  (list-current-mode-objects :screen (group-screen group)))))
-
-(push #'minor-mode-top-maps *minor-mode-maps*)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Helper Functions ;;;
