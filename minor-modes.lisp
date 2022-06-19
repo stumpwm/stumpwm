@@ -153,10 +153,21 @@ object.")
 (defgeneric minor-mode-scope (minor-mode-symbol)
   (:documentation "Return as a keyword the scope of the minor mode"))
 
+(defgeneric minor-mode-keymap (minor-mode)
+  (:method (minor-mode) nil)
+  (:documentation "Return the top map for the minor mode"))
+
+(defgeneric minor-mode-lighter (mode)
+  (:method (minor-mode) nil)
+  (:method :around (mode)
+    (format nil "~{~A~^ ~}"
+            (call-next-method)))
+  (:documentation "Return a string of minor mode lighters."))
+
 (defgeneric minor-mode-enable-hook (minor-mode-symbol)
   (:documentation
    "Returns the minor mode enable hook for a given minor mode symbol. This hook is
-run whenever the minor mode is enabled via autoenabled."))
+run whenever the minor mode is enabled via autoenable."))
 
 (defmethod no-applicable-method ((f (eql #'minor-mode-enable-hook)) &rest rest)
   (declare (ignore f rest))
@@ -164,8 +175,8 @@ run whenever the minor mode is enabled via autoenabled."))
 
 (defgeneric minor-mode-disable-hook (minor-mode-symbol)
   (:documentation
-   "Returns the minor mode disable hook for a given minor mode symbol. This hook is
-run whenever the minor mode is disabled via autodisable."))
+   "Returns the minor mode disable hook for a given minor mode symbol.  This hook
+is run whenever the minor mode is disabled via autodisable."))
 
 (defmethod no-applicable-method ((f (eql #'minor-mode-disable-hook)) &rest rest)
   (declare (ignore f rest))
@@ -180,7 +191,21 @@ whenever the minor mode is explicitly enabled."))
   (declare (ignore f rest))
   nil)
 
+(defgeneric minor-mode-destroy-hook (minor-mode-symbol)
+  (:documentation
+   "Returns the minor mode hook for a given minor mode symbol. This hook is run
+whenever the minor mode is explicitly disabled."))
+
+(defmethod no-applicable-method ((f (eql #'minor-mode-destroy-hook)) &rest rest)
+  (declare (ignore f rest))
+  nil)
+
 (defun run-hook-for-minor-mode (hook minor-mode object &optional invert-order)
+  "Run a specific minor mode hook for the minor mode and all of its superclasses
+which have such a hook defined. HOOK must be a function which takes a symbol and
+returns a list of functions. MINOR-MODE is a symbol to be passed to HOOK. OBJECT
+is the minor mode object to pass to the hook functions. When INVERT-ORDER is T
+the superclass hooks are run first."
   (labels ((run (mode)
              (let ((name (class-name mode))
                    (supers (sb-mop:class-direct-superclasses mode)))
@@ -237,7 +262,9 @@ be enabled."))
                              (list scope-object))))
                   (t (list (or scope-object
                                (funcall (scope-current-object-function
-                                         (minor-mode-scope minor-mode))))))))))
+                                         (minor-mode-scope minor-mode)))))))))
+    (when run-hook
+      (run-hook-for-minor-mode #'minor-mode-destroy-hook minor-mode run-hook t)))
   (minor-mode-sync-keys-hook-function))
 
 (defun enable-minor-mode (minor-mode &optional scope-object)
@@ -268,20 +295,8 @@ current objects if MINOR-MODE is global"
                                (funcall (scope-current-object-function
                                          (minor-mode-scope minor-mode))))))))
       (when run-hook
-        (run-hook-for-minor-mode #'minor-mode-hook minor-mode run-hook)
-        (run-hook-with-args *minor-mode-enable-hook* minor-mode run-hook))))
+        (run-hook-for-minor-mode #'minor-mode-hook minor-mode run-hook))))
   (minor-mode-sync-keys-hook-function))
-
-(defgeneric minor-mode-keymap (minor-mode)
-  (:method (minor-mode) nil)
-  (:documentation "Return the top map for the minor mode"))
-
-(defgeneric minor-mode-lighter (mode)
-  (:method (minor-mode) nil)
-  (:method :around (mode)
-    (format nil "~{~A~^ ~}"
-            (call-next-method)))
-  (:documentation "Return a string of minor mode lighters."))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
@@ -608,18 +623,23 @@ ROOT-MAP-SPEC."
   (defun define-hooks (mode)
     `((defvar ,(make-special-variable-name mode 'enable-hook) nil
         ,(format nil
-                 "A hook run when enabling ~A, called with the mode symbol and the scope object."
+"A hook run when enabling ~A, called with the mode symbol and the scope object."
                  mode))
       (defvar ,(make-special-variable-name mode 'disable-hook) nil
         ,(format nil
-                 "A hook run when disabling ~A, called with the mode symbol and the scope
+"A hook run when disabling ~A, called with the mode symbol and the scope
 object. This hook is run when ~A is disabled in an object, however if an object
 goes out of scope before a minor mode is disabled then this hook will not be run
 for that object."
                  mode mode))
       (defvar ,(make-special-variable-name mode 'hook) nil
         ,(format nil
-                 "A hook run when explicitly enabling ~A, called with the mode symbol and the
+"A hook run when explicitly enabling ~A, called with the mode symbol and the
+scope object."
+                 mode))
+      (defvar ,(make-special-variable-name mode 'destroy-hook) nil
+        ,(format nil
+"A hook run when explicitly disabling ~A, called with the mode symbol and the
 scope object."
                  mode))
       (defmethod minor-mode-enable-hook ((mode (eql ',mode)))
@@ -639,7 +659,13 @@ scope object."
         ,(make-special-variable-name mode 'hook))
       (defmethod (setf minor-mode-hook) (new (mode (eql ',mode)))
         (declare (ignore mode))
-        (setf ,(make-special-variable-name mode 'hook) new)))))
+        (setf ,(make-special-variable-name mode 'hook) new))
+      (defmethod minor-mode-destroy-hook ((mode (eql ',mode)))
+        (declare (ignore mode))
+        ,(make-special-variable-name mode 'destroy-hook))
+      (defmethod (setf minor-mode-destroy-hook) (new (mode (eql ',mode)))
+        (declare (ignore mode))
+        (setf ,(make-special-variable-name mode 'destroy-hook) new)))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
