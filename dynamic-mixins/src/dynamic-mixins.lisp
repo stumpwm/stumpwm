@@ -82,3 +82,20 @@ instance; further elements must be class names or classes."
 
 (defmethod make-instance ((items mix-list) &rest initargs &key &allow-other-keys)
   (apply #'make-instance (ensure-mixin items) initargs))
+
+(defun change-base-class-preserving-mixins (object new-base-class &rest initargs)
+  (if (typep (class-of object) 'mixin-class)
+      (let ((base-class
+             (loop for l on (mixin-classes (class-of object))
+                   until (cdr l)
+                   finally (return (car l)))))
+        (when (eql new-base-class base-class)
+          (return-from change-base-class-preserving-mixins object))
+        (let ((new-class
+               (ensure-mixin
+                (apply #'%mix
+                       new-base-class
+                       (butlast (mapcar #'class-name
+                                        (mixin-classes (class-of object))))))))
+          (apply #'change-class object new-class initargs)))
+    (apply #'change-class object new-base-class initargs)))
