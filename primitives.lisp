@@ -562,6 +562,11 @@ Use the window's resource class.
 Use the window's resource name.
 @end table")
 
+;; (defclass swm-metaclass (standard-class) ())
+
+;; (defmethod sb-mop:validate-superclass ((c2 standard-class) (c1 swm-metaclass))
+;;   t)
+
 (defclass swm-class ()
   ((new-objects
     :initform nil
@@ -569,7 +574,9 @@ Use the window's resource name.
     :allocation :class
     :documentation
 "Track all newly created objects in order to mix in the appropriate minor modes
-when they are touched")))
+when they are touched"))
+  ;; (:metaclass swm-metaclass)
+  )
 
 (defmethod initialize-instance :after ((obj swm-class) &key &allow-other-keys)
   ;; Register all newly created objects so that they can have the relevant minor

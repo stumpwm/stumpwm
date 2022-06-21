@@ -30,13 +30,14 @@
 
 (in-package :stumpwm)
 
-(export '(define-minor-mode
+(export '(minor-mode
+          define-minor-mode
 
           add-minor-mode-scope
           define-minor-mode-scope
           define-descended-minor-mode-scope
 
-          sync-minor-modes
+          sync-all-minor-modes
 
           validate-superscope
           validate-scope
@@ -312,7 +313,13 @@ current objects if MINOR-MODE is global"
 ;;; Find Minor Modes ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun sync-minor-modes ()
+(defun sync-minor-modes (object)
+  "Sync the globally active minor modes in the object"
+  (loop for class in *active-global-minor-modes*
+        when (typep object (scope-type (minor-mode-scope class)))
+          do (autoenable-minor-mode class object)))
+
+(defun sync-all-minor-modes ()
   "Loop through all recently created objects and ensure that the appropriate minor
 modes are enabled in them, then nullify the list of objects."
   ;; This functions is needed because calling autoenable-minor-mode from within
@@ -322,13 +329,37 @@ modes are enabled in them, then nullify the list of objects."
                    (setf (swm-class-new-objects (current-screen)) nil))))
     (when (and objects *active-global-minor-modes*)
       (loop for object in objects
-            do (loop for class in *active-global-minor-modes*
-                     when (typep object (scope-type (minor-mode-scope class)))
-                       do (autoenable-minor-mode class object))))))
+            do (sync-minor-modes object)))))
+
+(defun change-class-preserving-minor-modes (object new-class &rest initargs)
+  (apply #'dynamic-mixins::change-base-class-preserving-mixins
+         object new-class initargs))
+
+;; (defmethod change-class :after ((object swm-class) new-class &rest rest)
+;;   (declare (ignore new-class rest))
+;;   (sync-minor-modes object))
+
+;; (defparameter *my-tracker* nil)
+
+;; (defmethod change-class :after (object (new-class standard-class) &rest rest)
+;;   (declare (ignore rest))
+;;   (labels ((class-search (subclass)
+;;              (loop for class in (sb-mop:class-direct-superclasses subclass)
+;;                    when (or (eql (class-name class) 'swm-class)
+;;                             (class-search class))
+;;                      do (setf *my-tracker* object)
+;;                         (sync-minor-modes object)
+;;                         (return-from class-search nil))))
+;;     (class-search new-class)))
+
+;; (defmethod change-class :after (object (new-class swm-class) &rest rest)
+;;   (declare (ignore rest))
+;;   (setf *my-tracker* (class-of object))
+;;   (sync-minor-modes object))
 
 (defun list-modes (object)
   "List all minor modes followed by the major mode for OBJECT."
-  (sync-minor-modes)
+  (sync-all-minor-modes)
   (when (typep object 'dynamic-mixins:mixin-object)
     (mapcar #'class-name (dynamic-mixins:mixin-classes (class-of object)))))
 
@@ -338,7 +369,7 @@ modes are enabled in them, then nullify the list of objects."
 
 (defun list-mode-objects (&optional (sync t))
   (when sync
-    (sync-minor-modes))
+    (sync-all-minor-modes))
   (let* ((screens (sort-screens))
          (groups (loop for screen in screens
                        append (screen-groups screen)))
@@ -352,7 +383,7 @@ modes are enabled in them, then nullify the list of objects."
     (append windows frames heads groups screens (list *unscoped-minor-modes*))))
 
 (defun list-current-mode-objects (&key (screen (current-screen)))
-  (sync-minor-modes)
+  (sync-all-minor-modes)
   (let* ((group (current-group screen))
          (head (current-head group))
          (frame (when (typep group 'tile-group)
@@ -563,8 +594,7 @@ ROOT-MAP-SPEC."
         (values all-vals other-opts))))
 
   (defun define-command-macro (mode)
-    `(defmacro ,(intern (string-upcase (format nil "define-~A-command" mode))
-                        (find-package :stumpwm))
+    `(defmacro ,(intern (string-upcase (format nil "define-~A-command" mode)))
          (name (&rest args) (&rest interactive-args) &body body)
        (multiple-value-bind (bod decls docstring)
            (parse-body body :documentation t)
@@ -578,7 +608,11 @@ ROOT-MAP-SPEC."
   (defun define-enable-methods (mode scope hooks-defined globalp)
     (declare (ignorable mode scope hooks-defined globalp))
     (let ((optarg (get-scope scope)))
-      `((defmethod autoenable-minor-mode ((mode (eql ',mode)) (obj ,(car optarg)))
+      `((defmethod autoenable-minor-mode ((mode (eql ',mode)) (obj ,mode))
+          (signal 'minor-mode-enable-error :mode ',mode
+                                           :object obj
+                                           :reason 'already-enabled))
+        (defmethod autoenable-minor-mode ((mode (eql ',mode)) (obj ,(car optarg)))
           (when (and ,@(unless (eql (third optarg) (first optarg))
                          ;; Check if the filter type is the same as the class
                          ;; type, and if not then explicitly check if the object
@@ -700,7 +734,11 @@ DESIGNATOR in the minor mode scope hash table."
       (lambda ()
         (loop for object in (list-mode-objects nil)
               when (typep object type)
-                collect object)))))
+                collect object))))
+  (defun find-active-global-minor-modes-for-scope (scope)
+    (loop for mode in *active-global-minor-modes*
+          when (eql scope (minor-mode-scope mode))
+            collect mode)))
 
 (defgeneric validate-superscope (scope superscope)
   (:documentation

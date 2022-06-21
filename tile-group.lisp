@@ -69,12 +69,14 @@
   (cond ((typep window 'float-window)
          (call-next-method))
         ((eq frame :float)
-         (change-class window 'float-window)
+         (change-class-preserving-minor-modes window 'float-window)
          (float-window-align window)
-        (when raise
-          (group-focus-window group window)))
+         (sync-minor-modes window)
+         (when raise
+           (group-focus-window group window)))
         (t
-         (change-class window 'tile-window)
+         (change-class-preserving-minor-modes window 'tile-window)
+         ;; (change-class window 'tile-window)
          ;; Try to put the window in the appropriate frame for the group.
          (setf (window-frame window)
                (or frame
@@ -87,6 +89,7 @@
          (when (and frame raise)
            (setf (tile-group-current-frame group) frame
                  (frame-window frame) nil))
+         (sync-minor-modes window)
          (sync-frame-windows group (window-frame window))
          (when (null (frame-window (window-frame window)))
            (frame-raise-window (window-group window) (window-frame window)
