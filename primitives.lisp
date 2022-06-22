@@ -601,7 +601,17 @@ make-instance."
       (setf (swm-class-new-objects object)
             (remove object (swm-class-new-objects object) :test #'eq)))))
 
-(defclass frame (swm-class)
+(defmacro define-swm-class (class-name superclasses slots &rest options)
+  "Define a class and a method for DYNAMIC-MIXINS:REPLACE-CLASS which specializes
+upon the class and replaces it. If SUPERCLASSES is NIL then (SWM-CLASS) is used."
+  (unless superclasses (setq superclasses '(swm-class)))
+  `(progn
+     (defclass ,class-name ,superclasses ,slots ,@options)
+     (defmethod dynamic-mixins:replace-class ((object ,class-name) new &rest r)
+       (apply #'dynamic-mixins:replace-class-in-mixin
+              object new ',class-name r))))
+
+(define-swm-class frame ()
   ((number
     :initform nil
     :initarg :number
