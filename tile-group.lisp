@@ -1393,12 +1393,14 @@ direction. The following are valid directions:
 
 (defun tile-group-unfloat-window (window group)
   (let ((frame (closest-frame window group)))
-    (change-class window 'tile-window :frame frame)
+    (dynamic-mixins:replace-class window 'tile-window :frame frame)
+    ;; (change-class window 'tile-window :frame frame)
     (setf (window-frame window) frame
           (frame-window frame) window
           (tile-group-current-frame group) frame)
     (update-decoration window)
-    (sync-frame-windows group frame)))
+    (sync-frame-windows group frame)
+    (sync-minor-modes window)))
 
 (defun float-window (window group)
   (typecase group
@@ -1407,12 +1409,14 @@ direction. The following are valid directions:
 
 (defun tile-group-float-window (window group)
   (let ((frame (tile-group-current-frame group)))
-    (change-class window 'float-window)
+    (dynamic-mixins:replace-class object 'float-window)
+    ;; (change-class window 'float-window)
     (float-window-align window)
     (update-decoration window)
     (funcall-on-node (tile-group-frame-tree group)
                      (lambda (f) (setf (slot-value f 'window) nil))
-                     (lambda (f) (eq frame f)))))
+                     (lambda (f) (eq frame f)))
+    (sync-minor-modes window)))
 
 (defcommand (float-this tile-group) () ()
   "Transforms a tile-window into a float-window"

@@ -142,8 +142,10 @@
 (defmethod group-startup ((group float-group)))
 
 (flet ((add-float-window (group window raise)
-         (change-class window 'float-window)
+         (dynamic-mixins:replace-class window 'float-window)
+         ;; (change-class window 'float-window)
          (float-window-align window)
+         (sync-minor-modes window)
          (when raise
            (group-focus-window group window))))
   (defmethod group-add-window ((group float-group) window &key raise &allow-other-keys)

@@ -443,14 +443,17 @@ return NIL. RATIO is a fraction to split by."
   (cond ((typep window 'float-window)
          (call-next-method)) 
         ((eq frame :float)
-         (change-class window 'float-window)
+         (dynamic-mixins:replace-class window 'float-window)
          (float-window-align window)
+         (sync-minor-modes window)
          (when raise (group-focus-window group window)))
         (t ; if were not dealing with a floating window
          (let ((head (choose-head-from-placement-policy group)))
            ;; keep all calls to change-class in the same place.x
-           (change-class window 'dynamic-window) 
-           (dynamic-group-add-window group head window)))))
+           (dynamic-mixins:replace-class window 'dynamic-window) 
+           ;; (change-class window 'dynamic-window) 
+           (dynamic-group-add-window group head window)
+           (sync-minor-modes window)))))
 
 (defmethod group-delete-window ((group dynamic-group) (window dynamic-window))
   "Delete a dynamic window from a dynamic group. For floating windows we fall
@@ -713,13 +716,19 @@ floating windows onto the stack."
                                 (append
                                  (loop for w in (head-windows group head)
                                        when (float-window-p w)
-                                         collect (change-class w 'dynamic-window))
+                                         collect w)
                                  stack-windows)
                                 stack-windows)))))
         (setf master-window nil
               stack-windows nil)
-        (loop for window in windows
-              do (dynamic-group-place-window group head window))
+        (loop with previous-floats = nil
+              for window in windows
+              do (when (float-window-p window)
+                   (push window previous-floats)
+                   (dynamic-mixins:replace-class window 'dynamic-window))
+                 (dynamic-group-place-window group head window)
+              finally (loop for window in previous-floats
+                            do (sync-minor-modes window)))
         (focus-frame group (window-frame master-window))))))
 
 ;;; Handle overflow of both heads and groups
@@ -1025,8 +1034,10 @@ window. "
       (message "Window ~A is already a floating window." window)
       (progn
         (group-delete-window group window)
-        (change-class window 'float-window)
+        (dynamic-mixins:replace-class window 'float-window)
+        ;; (change-class window 'float-window)
         (float-window-align window)
+        (sync-minor-modes window)
         (focus-all window))))
 
 (defun dynamic-group-unfloat-window (window group)
@@ -1035,8 +1046,10 @@ window. "
       (message "Window ~A is already a dynamic window." window)
       (progn
         (let ((head (window-head window)))
-          (change-class window 'dynamic-window)
-          (dynamic-group-add-window group head window)))))
+          (dynamic-mixins:replace-class window 'dynamic-window)
+          ;; (change-class window 'dynamic-window)
+          (dynamic-group-add-window group head window)
+          (sync-minor-modes window)))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
