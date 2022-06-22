@@ -556,14 +556,15 @@ ROOT-MAP-SPEC."
           (all-vals '())
           (other-opts '()))
       (flet ((collect-values (option)
-               (let ((argcount (cdr (assoc (car option) valid-options))))
-                 (if argcount
-                     (progn (if (and (numberp argcount)
-                                     (= argcount 1))
-                                (push (cadr option) all-vals)
-                                (push (cdr option) all-vals))
-                            (push (car option) all-vals))
-                     (push option other-opts)))))
+               (destructuring-bind (option-name &rest option-arguments) option
+                 (let ((argcount (cdr (assoc option-name valid-options))))
+                   (if argcount
+                       (progn (if (and (numberp argcount)
+                                       (= argcount 1))
+                                  (push (car option-arguments) all-vals)
+                                  (push option-arguments all-vals))
+                              (push option-name all-vals))
+                       (push option other-opts))))))
         (mapc #'collect-values options)
         (values all-vals other-opts))))
 
