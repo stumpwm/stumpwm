@@ -4,7 +4,7 @@
 
 ;;; floating window
 
-(defclass float-window (window)
+(define-swm-class float-window (window)
   ((last-width :initform 0 :accessor float-window-last-width)
    (last-height :initform 0 :accessor float-window-last-height)
    (last-x :initform 0 :accessor float-window-last-x)
@@ -136,7 +136,7 @@
 
 ;;; floating group
 
-(defclass float-group (group)
+(define-swm-class float-group (group)
   ((current-window :accessor float-group-current-window)))
 
 (defmethod group-startup ((group float-group)))

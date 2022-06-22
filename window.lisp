@@ -49,7 +49,7 @@
 (defvar *default-window-name* "Unnamed"
   "The name given to a window that does not supply its own name.")
 
-(defclass window (swm-class)
+(define-swm-class window ()
   ((xwin    :initarg :xwin    :accessor window-xwin)
    (width   :initarg :width   :accessor window-width)
    (height  :initarg :height  :accessor window-height)

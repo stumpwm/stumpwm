@@ -68,7 +68,7 @@
 ;; The window definition remains unchanged, as at its core it is a tile
 ;; window. All we do is add a single tag.
 
-(defclass dynamic-window (tile-window)
+(define-swm-class dynamic-window (tile-window)
   ((superfluous :initform nil
                 :accessor superfluous-window-tag)))
 
@@ -84,7 +84,7 @@
 ;; policy to live at the class level and add a head placement policy to
 ;; determine where new windows should be placed. 
 
-(defclass dynamic-group (tile-group)
+(define-swm-class dynamic-group (tile-group)
   (;; Class allocated slots
    (head-placement-policy
     :reader dynamic-group-head-placement-policy

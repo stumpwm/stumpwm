@@ -103,7 +103,7 @@ called. When the modeline size changes, this is called."))
   (:documentation "Repack frame numbers to range from zero to the number of 
 frames such that there are no numerical gaps."))
 
-(defclass group (swm-class)
+(define-swm-class group ()
   ((screen :initarg :screen :accessor group-screen)
    (windows :initform nil :accessor group-windows)
    (current-window :initform nil :accessor group-current-window)
