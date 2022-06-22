@@ -89,19 +89,35 @@ instance; further elements must be class names or classes."
     (apply #'change-class object n rest)))
 
 (defmethod replace-class-in-mixin ((object mixin-object)
+                                   (new-class class)
+                                   (old-class class)
+                                   &rest rest)
+  (apply #'replace-class-in-mixin 
+         object (class-name new-class) (class-name old-class) rest))
+
+(defmethod replace-class-in-mixin ((object mixin-object)
+                                   (new-class class)
+                                   (old-class symbol)
+                                   &rest rest)
+  (apply #'replace-class-in-mixin object (class-name new-class) old-class rest))
+
+(defmethod replace-class-in-mixin ((object mixin-object)
+                                   (new-class symbol)
+                                   (old-class class)
+                                   &rest rest)
+  (apply #'replace-class-in-mixin object new-class (class-name  old-class) rest))
+
+(defmethod replace-class-in-mixin ((object mixin-object)
                                    (new-class symbol)
                                    (old-class symbol)
                                    &rest initargs)
-  (dformat 0 "replacing ~A with ~A in ~A~%" old-class new-class object)
   (cond ((eql new-class old-class)
          object)
         (t
          (flet ((mix-it (mix-list)
-                  (format t "MIXINg!! ~a" mix-list)
-                  (dformat 0 "applied mix ~A to ~A" mix-list object)
                   (apply #'change-class object (ensure-mixin mix-list) initargs)
                   object))
-           (let* ((tag t)
+           (let* ((tag nil)
                   (fn (lambda (e)
                         (when (eql e old-class)
                           (setf tag t)
@@ -110,10 +126,10 @@ instance; further elements must be class names or classes."
                     (make-mix-list
                      :list (remove-duplicates
                             (mapcar #'find-class
-                                    (subst new-class
-                                           old-class
-                                           (mixin-classes
-                                            (class-of object))))))))
+                                    (subst-if new-class
+                                              fn
+                                              (mixin-classes
+                                               (class-of object))))))))
              (if tag
                  (mix-it mix-list)
                  (restart-case (error "~A is not an explicitly mixed class in ~A"
@@ -124,29 +140,14 @@ instance; further elements must be class names or classes."
                      (ensure-mix object new-class)))))))))
 
 (defgeneric replace-class (object new-class &rest initargs))
-;; (defmethod replace-class :around (object new-class &rest initargs)
-;;   (if (typep object new-class)
-;;       (apply #'change-class object new-class initargs)
-;;       (call-next-method)))
-(defmethod replace-class :around (object new &rest rest)
-  (call-next-method)
-  (unless (typep object new)
-    (error "Failed to change class ~A ~A" object new))
-  object)
 
-(defun change-base-class-preserving-mixins (object new-base-class &rest initargs)
-  (if (typep (class-of object) 'mixin-class)
-      (let ((base-class
-             (loop for l on (mixin-classes (class-of object))
-                   until (cdr l)
-                   finally (return (car l)))))
-        (when (eql new-base-class base-class)
-          (return-from change-base-class-preserving-mixins object))
-        (let ((new-class
-               (ensure-mixin
-                (apply #'%mix
-                       new-base-class
-                       (butlast (mapcar #'class-name
-                                        (mixin-classes (class-of object))))))))
-          (apply #'change-class object new-class initargs)))
-    (apply #'change-class object new-base-class initargs)))
+(defmethod replace-class :around (object new &rest rest)
+  (restart-case (progn
+                  (call-next-method)
+                  (unless (typep object new)
+                    (error "Failed to change class ~A ~A" object new)))
+    (force-change ()
+      :report (lambda (s)
+                (format s "Change class to ~A, removing all mixins" new))
+      (apply #'change-class object new rest)))
+  object)
