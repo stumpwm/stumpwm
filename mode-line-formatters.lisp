@@ -123,12 +123,13 @@ fmt-highlight. Any non-visible windows are colored the
          (group (mode-line-current-group ml))
          (head (mode-line-head ml))
          (window (group-current-window group)))
-    (format nil "~{~A~^ ~}"
-            (loop for mode in (list-current-mode-objects
-                               :screen (mode-line-screen ml))
-                  for text = (minor-mode-lighter mode)
-                  unless (string= text "")
-                    collect text))))
+    (with-output-to-string (s)
+      (loop for modes on (list-current-mode-objects :screen (mode-line-screen ml))
+            for text = (minor-mode-lighter (car modes))
+            unless (string= text "")
+              do (write-string text s)
+                 (when (cdr modes)
+                   (write-string " " s))))))
 
 (defvar *bar-med-color* "^B")
 (defvar *bar-hi-color* "^B^3*")
