@@ -72,9 +72,7 @@
 command.")
 
 
-;;;;;;;;;;;;;;;;;;;;;
-;;; General Hooks ;;;
-;;;;;;;;;;;;;;;;;;;;;
+;;; General Hooks
 
 (defvar *minor-mode-enable-hook* ()
   "A hook run whenever a minor mode is enabled. Functions are called with the
@@ -84,12 +82,12 @@ minor mode is explicitly enabled via enable-minor-mode.")
 (defvar *minor-mode-disable-hook* ()
   "A hook run whenever a minor mode is disabled. Functions are called with the
 minor mode symbol and the scope object. This is run when a minor mode is
-explicitly disabled via disable-minor-mode.")
+explicitly disabled via disable-minor-mode. This is run AFTER the minor mode has
+been disabled, and is called with the minor mode and the first object it was
+disabled in.")
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Classes and Global Modes ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Classes and Global Modes
 
 (defclass unscoped-modes () ())
 
@@ -105,9 +103,7 @@ object.")
   "A list of all currently active global minor modes.")
 
 
-;;;;;;;;;;;;;;;;;
-;;; Sync Keys ;;;
-;;;;;;;;;;;;;;;;;
+;;; Sync Keys
 
 (defun minor-mode-sync-keys-hook-function (&rest rest)
   (declare (ignore rest))
@@ -118,11 +114,18 @@ object.")
 (add-hook *focus-group-hook* 'minor-mode-sync-keys-hook-function)
 
 
-;;;;;;;;;;;;;;;;;;
-;;; Conditions ;;;
-;;;;;;;;;;;;;;;;;;
+;;; Conditions
 
 (define-condition minor-mode-error (error) ())
+
+(define-condition minor-mode-hook-error (minor-mode-error)
+  ((mode :initarg :mode :reader minor-mode-hook-error-mode)
+   (hook :initarg :hook :reader minor-mode-hook-error-hook))
+  (:report
+   (lambda (c s)
+     (format s "There is no hook of type ~A for minor mode ~A"
+             (minor-mode-hook-error-hook c)
+             (minor-mode-hook-error-mode c)))))
 
 (define-condition minor-mode-enable-error (minor-mode-error)
   ((mode :initarg :mode :reader minor-mode-enable-error-mode)
@@ -147,9 +150,7 @@ object.")
              (minor-mode-disable-error-reason c)))))
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Minor Mode Protocol ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Minor Mode Protocol
 
 (defgeneric minor-mode-global-p (minor-mode-symbol)
   (:documentation "Return T when MINOR-MODE-SYMBOL denotes a global minor mode")
@@ -174,36 +175,38 @@ object.")
    "Returns the minor mode enable hook for a given minor mode symbol. This hook is
 run whenever the minor mode is enabled via autoenable."))
 
-(defmethod no-applicable-method ((f (eql #'minor-mode-enable-hook)) &rest rest)
-  (declare (ignore f rest))
-  nil)
-
 (defgeneric minor-mode-disable-hook (minor-mode-symbol)
   (:documentation
    "Returns the minor mode disable hook for a given minor mode symbol.  This hook
 is run whenever the minor mode is disabled via autodisable."))
-
-(defmethod no-applicable-method ((f (eql #'minor-mode-disable-hook)) &rest rest)
-  (declare (ignore f rest))
-  nil)
 
 (defgeneric minor-mode-hook (minor-mode-symbol)
   (:documentation
    "Returns the minor mode hook for a given minor mode symbol. This hook is run
 whenever the minor mode is explicitly enabled."))
 
-(defmethod no-applicable-method ((f (eql #'minor-mode-hook)) &rest rest)
-  (declare (ignore f rest))
-  nil)
-
 (defgeneric minor-mode-destroy-hook (minor-mode-symbol)
   (:documentation
    "Returns the minor mode hook for a given minor mode symbol. This hook is run
 whenever the minor mode is explicitly disabled."))
 
-(defmethod no-applicable-method ((f (eql #'minor-mode-destroy-hook)) &rest rest)
-  (declare (ignore f rest))
-  nil)
+(macrolet ((def-hook-error (function)
+             `(defmethod no-applicable-method ((f (eql #',function)) &rest rest)
+                (declare (ignore f))
+                (restart-case (error 'minor-mode-hook-error :mode (car rest)
+                                                            :hook ',function)
+                  (use-hook (hook)
+                    :report "Provide a hook to run"
+                    :interactive (lambda ()
+                                   (list (eval (read *query-io*))))
+                    hook)
+                  (continue ()
+                    :report "Run no hooks and continue"
+                    nil)))))
+  (def-hook-error minor-mode-enable-hook)
+  (def-hook-error minor-mode-disable-hook)
+  (def-hook-error minor-mode-hook)
+  (def-hook-error minor-mode-destroy-hook))
 
 (defun run-hook-for-minor-mode (hook minor-mode object &optional invert-order)
   "Run a specific minor mode hook for the minor mode and all of its superclasses
@@ -249,31 +252,37 @@ be enabled."))
   (declare (ignore f rest))
   nil)
 
+(defun relevant-objects-for-minor-mode (mode &optional default)
+  "Find the relevant objects for MODE. If MODE is not global and DEFAULT is
+non-nil, then DEFAULT is used in place of the current object."
+  (let ((scope (minor-mode-scope mode)))
+    (cond ((minor-mode-global-p mode)
+           (let ((objs (funcall (scope-all-objects-function scope))))
+             (if (or (null default)
+                     (member default objs))
+                 objs
+                 (cons default objs))))
+          (t (list (or default
+                       (funcall (scope-current-object-function scope))))))))
+
 (defun disable-minor-mode (minor-mode &optional scope-object)
   "Disable MINOR-MODE in the relevant objects."
   (when (minor-mode-global-p minor-mode)
     (setf *active-global-minor-modes*
           (remove minor-mode *active-global-minor-modes*)))
-  (let ((run-hook nil))
+  (let ((run-destroy-hook nil))
     (flet ((disable (object)
-             (unless run-hook
-               (run-hook-with-args *minor-mode-disable-hook* minor-mode object)
-               (run-hook-for-minor-mode #'minor-mode-destroy-hook
-                                        minor-mode
-                                        object
-                                        t))
-             (when (and (autodisable-minor-mode minor-mode object)
-                        (not run-hook))
-               (setf run-hook object))))
-      (mapc #'disable 
-            (cond ((minor-mode-global-p minor-mode)
-                   (append (funcall (scope-all-objects-function
-                                     (minor-mode-scope minor-mode)))
-                           (when scope-object
-                             (list scope-object))))
-                  (t (list (or scope-object
-                               (funcall (scope-current-object-function
-                                         (minor-mode-scope minor-mode))))))))))
+             (when (typep object minor-mode)
+               (unless run-destroy-hook
+                 (setf run-destroy-hook object)
+                 (run-hook-for-minor-mode #'minor-mode-destroy-hook
+                                          minor-mode
+                                          object
+                                          t))
+               (autodisable-minor-mode minor-mode object))))
+      (map nil #'disable (relevant-objects-for-minor-mode minor-mode
+                                                          scope-object)))
+    (run-hook-with-args *minor-mode-disable-hook* minor-mode run-destroy-hook))
   (minor-mode-sync-keys-hook-function))
 
 (defun enable-minor-mode (minor-mode &optional scope-object)
@@ -294,24 +303,14 @@ current objects if MINOR-MODE is global"
                    ((autoenable-minor-mode minor-mode object)
                     (unless run-hook
                       (setf run-hook object))))))
-      (mapc #'enable
-            (cond ((minor-mode-global-p minor-mode)
-                   (append (funcall (scope-all-objects-function
-                                     (minor-mode-scope minor-mode)))
-                           (when scope-object
-                             (list scope-object))))
-                  (t (list (or scope-object
-                               (funcall (scope-current-object-function
-                                         (minor-mode-scope minor-mode))))))))
+      (map nil #'enable (relevant-objects-for-minor-mode minor-mode scope-object))
       (when run-hook
         (run-hook-for-minor-mode #'minor-mode-hook minor-mode run-hook)
         (run-hook-with-args *minor-mode-enable-hook* minor-mode run-hook))))
   (minor-mode-sync-keys-hook-function))
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Find Minor Modes ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Find Minor Modes
 
 (defun sync-minor-modes (object)
   "Sync the globally active minor modes in the object"
@@ -328,36 +327,13 @@ modes are enabled in them, then nullify the list of objects."
   (let ((objects (prog1 (swm-class-new-objects (current-screen))
                    (setf (swm-class-new-objects (current-screen)) nil))))
     (when (and objects *active-global-minor-modes*)
-      (loop for object in objects
-            do (sync-minor-modes object)))))
+      (map nil #'sync-minor-modes objects))))
 
 (defun replace-class-and-sync (object new-class &rest initargs)
   "Replaces the main class in OBJECT with the new class, and then syncs all minor
 modes."
   (apply #'dynamic-mixins:replace-class object new-class initargs)
   (sync-minor-modes object))
-
-;; (defmethod change-class :after ((object swm-class) new-class &rest rest)
-;;   (declare (ignore new-class rest))
-;;   (sync-minor-modes object))
-
-;; (defparameter *my-tracker* nil)
-
-;; (defmethod change-class :after (object (new-class standard-class) &rest rest)
-;;   (declare (ignore rest))
-;;   (labels ((class-search (subclass)
-;;              (loop for class in (sb-mop:class-direct-superclasses subclass)
-;;                    when (or (eql (class-name class) 'swm-class)
-;;                             (class-search class))
-;;                      do (setf *my-tracker* object)
-;;                         (sync-minor-modes object)
-;;                         (return-from class-search nil))))
-;;     (class-search new-class)))
-
-;; (defmethod change-class :after (object (new-class swm-class) &rest rest)
-;;   (declare (ignore rest))
-;;   (setf *my-tracker* (class-of object))
-;;   (sync-minor-modes object))
 
 (defun list-modes (object)
   "List all minor modes followed by the major mode for OBJECT."
@@ -433,9 +409,7 @@ modes."
           (ct (group-current-window group))))))
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Activep and Top Maps ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Activep and Top Maps
 
 (defun minor-mode-command-active-p (group command)
   (find-minor-mode (command-class command) (group-screen group)))
@@ -448,9 +422,7 @@ modes."
          (mapcar #'minor-mode-keymap
                  (list-current-mode-objects :screen (group-screen group)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Helper Functions ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Helper Functions
 
 (defun generate-keymap (keymap-spec &optional
                                       (top-map (stumpwm:make-sparse-keymap))
@@ -706,9 +678,7 @@ scope object."
         (setf ,(make-special-variable-name mode 'destroy-hook) new)))))
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Minor Mode Scopes ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Minor Mode Scopes
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defvar *minor-mode-scopes* (make-hash-table)
