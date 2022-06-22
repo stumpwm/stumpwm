@@ -331,9 +331,11 @@ modes are enabled in them, then nullify the list of objects."
       (loop for object in objects
             do (sync-minor-modes object)))))
 
-(defun change-class-preserving-minor-modes (object new-class &rest initargs)
-  (apply #'dynamic-mixins::change-base-class-preserving-mixins
-         object new-class initargs))
+(defun replace-class-and-sync (object new-class &rest initargs)
+  "Replaces the main class in OBJECT with the new class, and then syncs all minor
+modes."
+  (apply #'dynamic-mixins:replace-class object new-class initargs)
+  (sync-minor-modes object))
 
 ;; (defmethod change-class :after ((object swm-class) new-class &rest rest)
 ;;   (declare (ignore new-class rest))
