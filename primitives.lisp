@@ -645,7 +645,7 @@ upon the class and replaces it. If SUPERCLASSES is NIL then (SWM-CLASS) is used.
                                   :height (frame-height instance)
                                   :window (frame-window instance)))
 
-(define-swm-class head ()
+(define-swm-class head (frame)
   ((name
     :initform ""
     :accessor head-name

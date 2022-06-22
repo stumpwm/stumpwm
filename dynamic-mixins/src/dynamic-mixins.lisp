@@ -85,30 +85,35 @@ instance; further elements must be class names or classes."
 
 (defgeneric replace-class-in-mixin (object new-class old-class &rest initargs)
   (:method ((object standard-object) n o &rest rest)
-    (declare (ignore n o rest))
-    object))
+    (declare (ignore o))
+    (apply #'change-class object n rest)))
 
 (defmethod replace-class-in-mixin ((object mixin-object)
                                    (new-class symbol)
                                    (old-class symbol)
                                    &rest initargs)
+  (dformat 0 "replacing ~A with ~A in ~A~%" old-class new-class object)
   (cond ((eql new-class old-class)
          object)
         (t
          (flet ((mix-it (mix-list)
-                  (apply #'change-class object (ensure-mixin mix-list) initargs)))
-           (let* ((tag nil)
+                  (format t "MIXINg!! ~a" mix-list)
+                  (dformat 0 "applied mix ~A to ~A" mix-list object)
+                  (apply #'change-class object (ensure-mixin mix-list) initargs)
+                  object))
+           (let* ((tag t)
                   (fn (lambda (e)
                         (when (eql e old-class)
-                          (setf tag t))))
+                          (setf tag t)
+                          t)))
                   (mix-list
                     (make-mix-list
                      :list (remove-duplicates
                             (mapcar #'find-class
-                                    (subst-if new-class
-                                              fn
-                                              (mixin-classes
-                                               (class-of object))))))))
+                                    (subst new-class
+                                           old-class
+                                           (mixin-classes
+                                            (class-of object))))))))
              (if tag
                  (mix-it mix-list)
                  (restart-case (error "~A is not an explicitly mixed class in ~A"
@@ -119,10 +124,15 @@ instance; further elements must be class names or classes."
                      (ensure-mix object new-class)))))))))
 
 (defgeneric replace-class (object new-class &rest initargs))
-(defmethod replace-class :around (object new-class &rest initargs)
-  (if (typep object new-class)
-      (apply #'change-class object new-class initargs)
-      (call-next-method)))
+;; (defmethod replace-class :around (object new-class &rest initargs)
+;;   (if (typep object new-class)
+;;       (apply #'change-class object new-class initargs)
+;;       (call-next-method)))
+(defmethod replace-class :around (object new &rest rest)
+  (call-next-method)
+  (unless (typep object new)
+    (error "Failed to change class ~A ~A" object new))
+  object)
 
 (defun change-base-class-preserving-mixins (object new-base-class &rest initargs)
   (if (typep (class-of object) 'mixin-class)

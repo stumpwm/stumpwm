@@ -1081,3 +1081,6 @@ Example:
 
            ,@(when define-command-definer
                (list (define-command-macro mode))))))))
+
+(defun dynamic-mixins::dformat (&rest r)
+  (apply #'dformat r))

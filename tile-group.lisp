@@ -76,7 +76,7 @@
          (when raise
            (group-focus-window group window)))
         (t
-         (dynamic-mixins:replace-class window 'window 'tile-window)
+         (dynamic-mixins:replace-class window 'tile-window)
          ;; (change-class-preserving-minor-modes window 'tile-window)
          ;; (change-class window 'tile-window)
          ;; Try to put the window in the appropriate frame for the group.
@@ -1409,7 +1409,7 @@ direction. The following are valid directions:
 
 (defun tile-group-float-window (window group)
   (let ((frame (tile-group-current-frame group)))
-    (dynamic-mixins:replace-class object 'float-window)
+    (dynamic-mixins:replace-class window 'float-window)
     ;; (change-class window 'float-window)
     (float-window-align window)
     (update-decoration window)
