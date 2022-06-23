@@ -270,19 +270,24 @@ non-nil, then DEFAULT is used in place of the current object."
   (when (minor-mode-global-p minor-mode)
     (setf *active-global-minor-modes*
           (remove minor-mode *active-global-minor-modes*)))
-  (let ((run-destroy-hook nil))
-    (flet ((disable (object)
-             (when (typep object minor-mode)
-               (unless run-destroy-hook
-                 (setf run-destroy-hook object)
-                 (run-hook-for-minor-mode #'minor-mode-destroy-hook
-                                          minor-mode
-                                          object
-                                          t))
-               (autodisable-minor-mode minor-mode object))))
-      (map nil #'disable (relevant-objects-for-minor-mode minor-mode
-                                                          scope-object)))
-    (run-hook-with-args *minor-mode-disable-hook* minor-mode run-destroy-hook))
+  (handler-bind ((minor-mode-hook-error
+                   (lambda (c)
+                     (let ((r (find-restart 'continue c)))
+                       (when r
+                         (invoke-restart r))))))
+    (let ((run-destroy-hook nil))
+      (flet ((disable (object)
+               (when (typep object minor-mode)
+                 (unless run-destroy-hook
+                   (setf run-destroy-hook object)
+                   (run-hook-for-minor-mode #'minor-mode-destroy-hook
+                                            minor-mode
+                                            object
+                                            t))
+                 (autodisable-minor-mode minor-mode object))))
+        (map nil #'disable (relevant-objects-for-minor-mode minor-mode
+                                                            scope-object)))
+      (run-hook-with-args *minor-mode-disable-hook* minor-mode run-destroy-hook)))
   (minor-mode-sync-keys-hook-function))
 
 (defun enable-minor-mode (minor-mode &optional scope-object)
@@ -292,21 +297,27 @@ use SCOPE-OBJECT instead of the current object, or include it in the list of
 current objects if MINOR-MODE is global"
   (when (minor-mode-global-p minor-mode)
     (pushnew minor-mode *active-global-minor-modes*))
-  (let ((run-hook nil))
-    (flet ((enable (object)
-             (cond ((typep object minor-mode)
-                    (restart-case 
-                        (error 'minor-mode-enable-error :mode minor-mode
-                                                        :object object
-                                                        :reason 'already-enabled)
-                      (continue () nil)))
-                   ((autoenable-minor-mode minor-mode object)
-                    (unless run-hook
-                      (setf run-hook object))))))
-      (map nil #'enable (relevant-objects-for-minor-mode minor-mode scope-object))
-      (when run-hook
-        (run-hook-for-minor-mode #'minor-mode-hook minor-mode run-hook)
-        (run-hook-with-args *minor-mode-enable-hook* minor-mode run-hook))))
+  (handler-bind ((minor-mode-hook-error
+                   (lambda (c)
+                     (let ((r (find-restart 'continue c)))
+                       (when r
+                         (invoke-restart r))))))
+    (let ((run-hook nil))
+      (flet ((enable (object)
+               (cond ((typep object minor-mode)
+                      (restart-case 
+                          (error 'minor-mode-enable-error :mode minor-mode
+                                                          :object object
+                                                          :reason 'already-enabled)
+                        (continue () nil)))
+                     ((autoenable-minor-mode minor-mode object)
+                      (unless run-hook
+                        (setf run-hook object))))))
+        (map nil #'enable (relevant-objects-for-minor-mode minor-mode
+                                                           scope-object))
+        (when run-hook
+          (run-hook-for-minor-mode #'minor-mode-hook minor-mode run-hook)
+          (run-hook-with-args *minor-mode-enable-hook* minor-mode run-hook)))))
   (minor-mode-sync-keys-hook-function))
 
 
@@ -595,11 +606,21 @@ ROOT-MAP-SPEC."
                          `((typep obj ',(third optarg))))
                      (enable-when mode obj))
             (prog1 (dynamic-mixins:ensure-mix obj ',mode)
-              (run-hook-for-minor-mode #'minor-mode-enable-hook
-                                       ',mode
-                                       obj))))
+              (handler-bind ((minor-mode-hook-error
+                               (lambda (c)
+                                 (let ((r (find-restart 'continue c)))
+                                   (when r
+                                     (invoke-restart r))))))
+                (run-hook-for-minor-mode #'minor-mode-enable-hook
+                                         ',mode
+                                         obj)))))
         (defmethod autodisable-minor-mode ((mode (eql ',mode)) (obj ,mode))
-          (run-hook-for-minor-mode #'minor-mode-disable-hook ',mode obj t)
+          (handler-bind ((minor-mode-hook-error
+                           (lambda (c)
+                             (let ((r (find-restart 'continue c)))
+                               (when r
+                                 (invoke-restart r))))))
+            (run-hook-for-minor-mode #'minor-mode-disable-hook ',mode obj t))
           (dynamic-mixins:delete-from-mix obj ',mode)))))
 
   (defun genlighter (mode lighter)
