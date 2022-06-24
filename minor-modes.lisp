@@ -127,27 +127,36 @@ object.")
              (minor-mode-hook-error-hook c)
              (minor-mode-hook-error-mode c)))))
 
-(define-condition minor-mode-enable-error (minor-mode-error)
-  ((mode :initarg :mode :reader minor-mode-enable-error-mode)
-   (object :initarg :object :reader minor-mode-enable-error-object)
-   (reason :initarg :reason :reader minor-mode-enable-error-reason))
+(define-condition minor-mode-e/d-error (minor-mode-error)
+  ((mode :initarg :mode :reader minor-mode-e/d-error-mode)
+   (object :initarg :object :reader minor-mode-e/d-error-object)
+   (reason :initarg :reason :reader minor-mode-e/d-error-reason))
+  (:report
+   (lambda (c s)
+     (format s "Error encountered when enabling or disabling minor mode ~A in object ~A.~%Reason: ~A"
+             (minor-mode-e/d-error-mode c)
+             (minor-mode-e/d-error-object c)
+             (minor-mode-e/d-error-reason c)))))
+
+(define-condition minor-mode-autoenable-error (minor-mode-e/d-error) ()
   (:report
    (lambda (c s)
      (format s "Unable to enable minor mode ~A in object ~A.~%Reason: ~A"
-             (minor-mode-enable-error-mode c)
-             (minor-mode-enable-error-object c)
-             (minor-mode-enable-error-reason c)))))
+             (minor-mode-e/d-error-mode c)
+             (minor-mode-e/d-error-object c)
+             (minor-mode-e/d-error-reason c)))))
 
-(define-condition minor-mode-disable-error (minor-mode-error)
-  ((mode :initarg :mode :reader minor-mode-disable-error-mode)
-   (object :initarg :object :reader minor-mode-disable-error-object)
-   (reason :initarg :reason :reader minor-mode-disable-error-reason))
+(define-condition minor-mode-enable-error (minor-mode-autoenable-error) ())
+
+(define-condition minor-mode-autodisable-error (minor-mode-e/d-error) ()
   (:report
    (lambda (c s)
      (format s "Unable to disable minor mode ~A in object ~A.~%Reason: ~A"
-             (minor-mode-disable-error-mode c)
-             (minor-mode-disable-error-object c)
-             (minor-mode-disable-error-reason c)))))
+             (minor-mode-e/d-error-mode c)
+             (minor-mode-e/d-error-object c)
+             (minor-mode-e/d-error-reason c)))))
+
+(define-condition minor-mode-disable-error (minor-mode-autodisable-error) ())
 
 
 ;;; Minor Mode Protocol
@@ -231,8 +240,10 @@ the superclass hooks are run first."
 the object"))
 
 (defmethod no-applicable-method ((f (eql #'autoenable-minor-mode)) &rest rest)
-  (declare (ignore f rest))
-  nil)
+  (declare (ignore f))
+  (signal 'minor-mode-autoenable-error :mode (car rest)
+                                       :object (cadr rest)
+                                       :reason 'no-applicable-method))
 
 (defgeneric autodisable-minor-mode (mode object)
   (:documentation
@@ -240,17 +251,18 @@ the object"))
 on-disable function."))
 
 (defmethod no-applicable-method ((f (eql #'autodisable-minor-mode)) &rest rest)
-  (declare (ignore f rest))
-  nil)
+  (declare (ignore f))
+  (signal 'minor-mode-autodisable-error :mode (car rest)
+                                        :object (cadr rest)
+                                        :reason 'no-applicable-method))
 
 (defgeneric enable-when (mode object)
   (:documentation
    "Define methods for this generic function to control when the minor mode should
-be enabled."))
-
-(defmethod no-applicable-method ((f (eql #'enable-when)) &rest rest)
-  (declare (ignore f rest))
-  nil)
+be enabled.")
+  (:method (mode object)
+    (declare (ignore mode object))
+    nil))
 
 (defun relevant-objects-for-minor-mode (mode &optional default)
   "Find the relevant objects for MODE. If MODE is not global and DEFAULT is
@@ -1003,13 +1015,13 @@ Example:
 
            ,@(when expose-keymaps 
                `((defvar ,(make-special-variable-name mode 'root-map)
-                     (make-minor-mode-keymap ,root-map)
+                   (make-minor-mode-keymap ,root-map)
                    ,(format nil "The root map for ~A" mode))
                  (defvar ,(make-special-variable-name mode 'top-map)
-                     (make-minor-mode-top-map
-                      ,top-map
-                      ',(make-special-variable-name mode 'root-map))
-                     ,(format nil "The top map for ~A" mode))))
+                   (make-minor-mode-top-map
+                    ,top-map
+                    ',(make-special-variable-name mode 'root-map))
+                   ,(format nil "The top map for ~A" mode))))
 
            (defclass ,mode ,superclasses
              ((,gkeymap
