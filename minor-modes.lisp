@@ -241,9 +241,11 @@ the object"))
 
 (defmethod no-applicable-method ((f (eql #'autoenable-minor-mode)) &rest rest)
   (declare (ignore f))
-  (signal 'minor-mode-autoenable-error :mode (car rest)
-                                       :object (cadr rest)
-                                       :reason 'no-applicable-method))
+  (restart-case
+      (signal 'minor-mode-autoenable-error :mode (car rest)
+                                           :object (cadr rest)
+                                           :reason 'no-applicable-method)
+    (continue () nil)))
 
 (defgeneric autodisable-minor-mode (mode object)
   (:documentation
@@ -252,9 +254,11 @@ on-disable function."))
 
 (defmethod no-applicable-method ((f (eql #'autodisable-minor-mode)) &rest rest)
   (declare (ignore f))
-  (signal 'minor-mode-autodisable-error :mode (car rest)
-                                        :object (cadr rest)
-                                        :reason 'no-applicable-method))
+  (restart-case
+      (signal 'minor-mode-autodisable-error :mode (car rest)
+                                            :object (cadr rest)
+                                            :reason 'no-applicable-method)
+    (continue () nil)))
 
 (defgeneric enable-when (mode object)
   (:documentation
@@ -570,6 +574,7 @@ ROOT-MAP-SPEC."
               (:lighter-make-clickable . 1)
               (:lighter                . 1)
               (:expose-keymaps         . 1)
+              (:rebind                 . 1)
               (:root-map               . 1)
               (:top-map                . 1)
               (:enable-when            . t)
@@ -925,7 +930,16 @@ described in the :TOP-MAP option.
 (:EXPOSE-KEYMAPS (OR T NIL))@*
 This value is used at macroexpansion time to determine whether or not to
 generate keymap variables or store the keymap within the object. When T the
-variables *MODE-TOP-MAP* and *MODE-ROOT-MAP* will be generated. 
+variables *MODE-TOP-MAP* and *MODE-ROOT-MAP* will be generated.
+
+@item
+(:REBIND (MEMBER :TOP-MAP :ROOT-MAP :ALL-MAPS))@*
+
+This option controls rebinding of the top and root maps. When it is :TOP-MAP the
+top map is rebound, when it is :ROOT-MAP the root map is rebound, and when it is
+:ALL-MAPS both the top and root map are rebound. Any rebound map will be rebound
+to the provided keymap specification. This only has an effect if the minor mode
+has previously been defined.
 
 @item
 (:LIGHTER T)@*
@@ -974,7 +988,7 @@ When :DEFINE-COMMAND-DEFINER is T a macro is defined for defining commands that
 are active only when the minor mode is active. Commands defined with this macro
 have the special variable *MINOR-MODE* bound to the minor mode object in their
 body. The generated macro is called DEFINE-MODE-COMMAND. This option defaults to
-T. 
+T.
 @end itemize
 
 Example:
@@ -998,10 +1012,10 @@ Example:
     (setq superclasses '(minor-mode)))
   (multiple-value-bind (mm-opts other-opts)
       (parse-minor-mode-options options)
-    (destructuring-bind (&key top-map root-map (expose-keymaps t)
+    (destructuring-bind (&key top-map root-map (expose-keymaps t) rebind
                            lighter lighter-make-clickable
                            (scope :unscoped) interactive global
-                           (enable-when nil ewpp)
+                           (enable-when nil ewpp) 
                            (make-hooks t) (define-command-definer t)
                            default-initargs)
         mm-opts
@@ -1014,10 +1028,18 @@ Example:
            (validate-scope ,scope ',superclasses)
 
            ,@(when expose-keymaps 
-               `((defvar ,(make-special-variable-name mode 'root-map)
+               `((,(if (or (eql rebind :root-map)
+                           (eql rebind :all-maps))
+                       'defparameter
+                       'defvar)
+                  ,(make-special-variable-name mode 'root-map)
                    (make-minor-mode-keymap ,root-map)
                    ,(format nil "The root map for ~A" mode))
-                 (defvar ,(make-special-variable-name mode 'top-map)
+                 (,(if (or (eql rebind :top-map)
+                           (eql rebind :all-maps))
+                       'defparameter
+                       'defvar)
+                  ,(make-special-variable-name mode 'top-map)
                    (make-minor-mode-top-map
                     ,top-map
                     ',(make-special-variable-name mode 'root-map))
@@ -1035,9 +1057,13 @@ Example:
               ,@slots)
              (:default-initargs ,@default-initargs)
              ,@other-opts)
-
-           ,@(when global 
-               `((defmethod minor-mode-global-p ((mode (eql ',mode))) t)))
+           ,(if global 
+                `(defmethod minor-mode-global-p ((mode (eql ',mode))) t)
+                `(let ((method (ignore-errors
+                                (find-method #'minor-mode-global-p
+                                             nil '((eql ,mode))))))
+                   (when method
+                     (remove-method #'minor-mode-global-p method))))
 
            (defmethod minor-mode-lighter ((,gmode ,mode))
              (cons
