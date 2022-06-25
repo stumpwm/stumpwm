@@ -122,10 +122,11 @@ fmt-highlight. Any non-visible windows are colored the
   (subseq (with-output-to-string (s)
             (loop for modes on (list-current-mode-objects
                                 :screen (mode-line-screen ml))
-                  for text = (minor-mode-lighter (car modes))
-                  unless (string= text "")
-                    do (write-string " " s)
-                       (write-string text s)))
+                  for list = (minor-mode-lighter (car modes))
+                  do (loop for text in list
+                           unless (string= text "")
+                             do (write-string " " s)
+                                (write-string text s))))
           1))
 
 (defvar *bar-med-color* "^B")
