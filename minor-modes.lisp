@@ -594,13 +594,13 @@ ROOT-MAP-SPEC."
         (values all-vals other-opts))))
 
   (defun define-command-macro (mode)
-    `(defmacro ,(intern (string-upcase (format nil "define-~A-command" mode)))
+    `(defmacro ,(intern (format nil "~:@(define-~A-command~)" mode))
          (name (&rest args) (&rest interactive-args) &body body)
        (multiple-value-bind (bod decls docstring)
            (parse-body body :documentation t)
          `(defcommand (,name ,',mode) ,args ,interactive-args
             ,@(when docstring
-                `(,docstring))
+                (list docstring))
             ,@decls 
             (let ((*minor-mode* (find-minor-mode ',',mode (current-screen))))
               ,@bod)))))
