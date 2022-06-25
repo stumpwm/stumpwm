@@ -581,29 +581,28 @@ ROOT-MAP-SPEC."
           (all-vals '())
           (other-opts '()))
       (flet ((collect-values (option)
-               (destructuring-bind (option-name &rest option-arguments) option
-                 (let ((argcount (cdr (assoc option-name valid-options))))
-                   (if argcount
-                       (progn (if (and (numberp argcount)
-                                       (= argcount 1))
-                                  (push (car option-arguments) all-vals)
-                                  (push option-arguments all-vals))
-                              (push option-name all-vals))
-                       (push option other-opts))))))
+               (destructuring-bind (optname . option-arguments) option
+                 (alexandria:if-let (argcount (cdr (assoc optname valid-options)))
+                   (progn (if (and (numberp argcount)
+                                   (= argcount 1))
+                              (push (car option-arguments) all-vals)
+                              (push option-arguments all-vals))
+                          (push optname all-vals))
+                   (push option other-opts)))))
         (mapc #'collect-values options)
         (values all-vals other-opts))))
 
   (defun define-command-macro (mode)
     `(defmacro ,(intern (format nil "~:@(define-~A-command~)" mode))
          (name (&rest args) (&rest interactive-args) &body body)
-       (multiple-value-bind (bod decls docstring)
+       (multiple-value-bind (body decls docstring)
            (parse-body body :documentation t)
          `(defcommand (,name ,',mode) ,args ,interactive-args
             ,@(when docstring
                 (list docstring))
             ,@decls 
             (let ((*minor-mode* (find-minor-mode ',',mode (current-screen))))
-              ,@bod)))))
+              ,@body)))))
   
   (defun define-enable-methods (mode scope hooks-defined globalp)
     (declare (ignorable mode scope hooks-defined globalp))
