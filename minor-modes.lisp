@@ -603,7 +603,7 @@ ROOT-MAP-SPEC."
            (parse-body body :documentation t)
          `(defcommand (,name ,',mode) ,args ,interactive-args
             ,@(when docstring
-                `(,docstring))
+                (list docstring))
             ,@decls 
             (let ((*minor-mode* (find-minor-mode ',',mode (current-screen))))
               ,@bod)))))
