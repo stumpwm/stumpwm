@@ -174,9 +174,6 @@ object.")
 
 (defgeneric minor-mode-lighter (mode)
   (:method (minor-mode) nil)
-  (:method :around (mode)
-    (format nil "~{~A~^ ~}"
-            (call-next-method)))
   (:documentation "Return a string of minor mode lighters."))
 
 (defgeneric minor-mode-enable-hook (minor-mode-symbol)
@@ -910,7 +907,8 @@ with. New scopes can be defined with the macro DEFINE-MINOR-MODE-SCOPE.
 (:GLOBAL (OR T NIL))@*
 When true the :GLOBAL option changes the way enable methods are defined to track
 the minor mode and autoenable it in all existing scope objects, as well as
-autoenabled when new scope objects are instantiated.
+autoenabled when new scope objects are instantiated. If the :SCOPE option is
+:UNSCOPED then this option does not need to be provided.
 
 @item
 (:TOP-MAP spec)@*
@@ -994,7 +992,7 @@ T.
 Example:
 @verbatim
 (define-minor-mode evil-mode () ()
-  (:scope :screen)
+  (:scope :unscoped)
   (:top-map '((\"j\" . \"move-focus down\")
               (\"k\" . \"move-focus up\")
               (\"h\" . \"move-focus left\")
@@ -1033,17 +1031,17 @@ Example:
                        'defparameter
                        'defvar)
                   ,(make-special-variable-name mode 'root-map)
-                   (make-minor-mode-keymap ,root-map)
-                   ,(format nil "The root map for ~A" mode))
+                  (make-minor-mode-keymap ,root-map)
+                  ,(format nil "The root map for ~A" mode))
                  (,(if (or (eql rebind :top-map)
                            (eql rebind :all-maps))
                        'defparameter
                        'defvar)
                   ,(make-special-variable-name mode 'top-map)
-                   (make-minor-mode-top-map
-                    ,top-map
-                    ',(make-special-variable-name mode 'root-map))
-                   ,(format nil "The top map for ~A" mode))))
+                  (make-minor-mode-top-map
+                   ,top-map
+                   ',(make-special-variable-name mode 'root-map))
+                  ,(format nil "The top map for ~A" mode))))
 
            (defclass ,mode ,superclasses
              ((,gkeymap
@@ -1110,4 +1108,5 @@ Example:
                            (t (enable)))))))
 
            ,@(when define-command-definer
-               (list (define-command-macro mode))))))))
+               (list (define-command-macro mode)))
+           (sync-keys))))))
