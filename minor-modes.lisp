@@ -604,8 +604,7 @@ ROOT-MAP-SPEC."
             (let ((*minor-mode* (find-minor-mode ',',mode (current-screen))))
               ,@body)))))
   
-  (defun define-enable-methods (mode scope hooks-defined globalp)
-    (declare (ignorable mode scope hooks-defined globalp))
+  (defun define-enable-methods (mode scope)
     (let ((optarg (get-scope scope)))
       `((defmethod autoenable-minor-mode ((mode (eql ',mode)) (obj ,mode))
           (signal 'minor-mode-enable-error :mode ',mode
@@ -1093,7 +1092,7 @@ Example:
                                                 (obj ,(scope-type scope)))
                           t))))
 
-           ,@(define-enable-methods mode scope make-hooks global)
+           ,@(define-enable-methods mode scope)
 
            ,@(when interactive
                `((defcommand ,(cond ((eq interactive t) mode)
