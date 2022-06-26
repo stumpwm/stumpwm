@@ -177,13 +177,14 @@ whatever it finds: a command, an alias, or nil."
 
 (defun command-active-p (command)
   (declare (special *dynamic-group-blacklisted-commands*))
-  (let ((active (typep (current-group) (command-class command))))
+  (let* ((group (current-group))
+         (active (or (typep group (command-class command))
+                     (some (lambda (f) (funcall f group command))
+                           *custom-command-filters*))))
     (if (typep (current-group) 'dynamic-group)
         (unless (member command *dynamic-group-blacklisted-commands*)
           active)
-        active))
-  ;; TODO: minor modes
-  )
+        active)))
 
 (defun get-command-structure (command &optional (only-active t))
   "Return the command structure for COMMAND. COMMAND can be a string,

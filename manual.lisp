@@ -77,6 +77,36 @@
         t)
       (warn "Symbol ~A not found in package STUMPWM" name))))
 
+(defun generate-class-doc (s line)
+  (ppcre:register-groups-bind (name) ("^€€€ (.*)" line)
+    (let ((sym (find-symbol (string-upcase name) :stumpwm)))
+      (if sym
+          (let ((class (find-class sym)))
+            (if class
+                (progn
+                  (format s "@deftp {Class} ~A ~{~A~^ ~}~%~ADirect Superclasses: ~{~A~^, ~}@*~&Direct Subclasses: ~{~A~^, ~}@*~&Direct Slots: @*@ @ ~{~{~A~^@ -@ ~}~^@*@ @ ~}@*~&@end deftp~%~%"
+                          sym
+                          (mapcar #'sb-mop:slot-definition-name
+                                  (sb-mop:class-direct-slots class))
+                          (let ((doc (documentation class t)))
+                            (if doc
+                                (concatenate 'string doc "@*")
+                                ""))
+                          (mapcar #'sb-mop:class-name
+                                  (sb-mop:class-direct-superclasses class))
+                          (mapcar #'sb-mop:class-name
+                                  (sb-mop:class-direct-subclasses class))
+                          (mapcar (lambda (slot)
+                                    (let ((name (sb-mop:slot-definition-name slot))
+                                          (docs (documentation slot t)))
+                                      (if docs
+                                          (list name docs)
+                                          (list name))))
+                                  (sb-mop:class-direct-slots class)))
+                  t)
+                (warn "Symbol ~A does not denote a class" sym)))
+          (warn "Symbol ~A not found in package STUMPWM" sym)))))
+
 (defun generate-manual (&key (in #p"stumpwm.texi.in") (out #p"stumpwm.texi"))
   (let ((*print-case* :downcase))
     (with-open-file (os out :direction :output :if-exists :supersede)
@@ -88,4 +118,5 @@
                   (generate-hook-doc os line)
                   (generate-variable-doc os line)
                   (generate-command-doc os line)
+                  (generate-class-doc os line)
                   (write-line line os)))))))

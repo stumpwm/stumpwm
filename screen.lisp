@@ -413,63 +413,64 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
                                                :border-width 1
                                                :bit-gravity :north-east
                                                :event-mask '(:exposure)))
-           (screen (make-instance 'screen
-                                  :id id
-                                  :host host
-                                  :number screen-number
-                                  :border-color border-color
-                                  :fg-color fg-color
-                                  :bg-color bg-color
-                                  :win-bg-color win-bg-color
-                                  :focus-color focus-color
-                                  :unfocus-color unfocus-color
-                                  :float-focus-color float-focus-color
-                                  :float-unfocus-color float-unfocus-color
-                                  :msg-border-width 1
-                                  :frame-outline-width +default-frame-outline-width+
-                                  :fonts (list font)
-                                  :input-window (xlib:create-window
-                                                 :parent screen-root
-                                                 :x 0 :y 0 :width 20 :height 20
-                                                 :colormap default-colormap
-                                                 :background bg-color
-                                                 :border border-color
-                                                 :border-width 1
-                                                 :event-mask '(:key-press :key-release))
-                                  :focus-window (xlib:create-window
-                                                 :parent screen-root
-                                                 :x 0 :y 0 :width 1 :height 1)
-                                  :key-window (xlib:create-window
-                                               :parent screen-root
-                                               :x 0 :y 0 :width 1 :height 1
-                                               :event-mask '(:key-press :key-release))
-                                  :frame-window (xlib:create-window
-                                                 :parent screen-root
-                                                 :x 0 :y 0 :width 20 :height 20
-                                                 :colormap default-colormap
-                                                 :background bg-color
-                                                 :border border-color
-                                                 :border-width 1
-                                                 :event-mask '(:exposure))
-                                  :frame-outline-gc (xlib:create-gcontext
-                                                     :drawable screen-root
-                                                     :font (when (typep font 'xlib:font) font)
-                                                     :foreground fg-color
-                                                     :background fg-color
-                                                     :line-style :double-dash
-                                                     :line-width +default-frame-outline-width+)
-                                  :message-cc (make-ccontext
-                                               :win message-window
-                                               :font font
-                                               :gc (xlib:create-gcontext
-                                                    :drawable message-window
-                                                    :font (when (typep font 'xlib:font) font)
-                                                    :foreground fg-color
-                                                    :background bg-color))))
-           (group (make-instance 'tile-group
-                                 :screen screen
-                                 :number 1
-                                 :name *default-group-name*)))
+           (screen (make-swm-class-instance
+                    'screen
+                    :id id
+                    :host host
+                    :number screen-number
+                    :border-color border-color
+                    :fg-color fg-color
+                    :bg-color bg-color
+                    :win-bg-color win-bg-color
+                    :focus-color focus-color
+                    :unfocus-color unfocus-color
+                    :float-focus-color float-focus-color
+                    :float-unfocus-color float-unfocus-color
+                    :msg-border-width 1
+                    :frame-outline-width +default-frame-outline-width+
+                    :fonts (list font)
+                    :input-window (xlib:create-window
+                                   :parent screen-root
+                                   :x 0 :y 0 :width 20 :height 20
+                                   :colormap default-colormap
+                                   :background bg-color
+                                   :border border-color
+                                   :border-width 1
+                                   :event-mask '(:key-press :key-release))
+                    :focus-window (xlib:create-window
+                                   :parent screen-root
+                                   :x 0 :y 0 :width 1 :height 1)
+                    :key-window (xlib:create-window
+                                 :parent screen-root
+                                 :x 0 :y 0 :width 1 :height 1
+                                 :event-mask '(:key-press :key-release))
+                    :frame-window (xlib:create-window
+                                   :parent screen-root
+                                   :x 0 :y 0 :width 20 :height 20
+                                   :colormap default-colormap
+                                   :background bg-color
+                                   :border border-color
+                                   :border-width 1
+                                   :event-mask '(:exposure))
+                    :frame-outline-gc (xlib:create-gcontext
+                                       :drawable screen-root
+                                       :font (when (typep font 'xlib:font) font)
+                                       :foreground fg-color
+                                       :background fg-color
+                                       :line-style :double-dash
+                                       :line-width +default-frame-outline-width+)
+                    :message-cc (make-ccontext
+                                 :win message-window
+                                 :font font
+                                 :gc (xlib:create-gcontext
+                                      :drawable message-window
+                                      :font (when (typep font 'xlib:font) font)
+                                      :foreground fg-color
+                                      :background bg-color))))
+           (group (make-swm-class-instance 'tile-group
+                                           :screen screen
+                                           :number 1
+                                           :name *default-group-name*)))
       (setf (screen-groups screen) (list group)
             (screen-current-group screen) group
             (ccontext-screen (screen-message-cc screen)) screen

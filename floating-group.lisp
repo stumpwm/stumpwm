@@ -4,11 +4,15 @@
 
 ;;; floating window
 
-(defclass float-window (window)
+(define-swm-class float-window (window)
   ((last-width :initform 0 :accessor float-window-last-width)
    (last-height :initform 0 :accessor float-window-last-height)
    (last-x :initform 0 :accessor float-window-last-x)
    (last-y :initform 0 :accessor float-window-last-y)))
+
+(defmethod print-swm-object ((object float-window) stream)
+  (write-string "FLOAT-" stream)
+  (call-next-method))
 
 (defvar *float-window-border* 1)
 (defvar *float-window-title-height* 10)
@@ -136,14 +140,20 @@
 
 ;;; floating group
 
-(defclass float-group (group)
+(define-swm-class float-group (group)
   ((current-window :accessor float-group-current-window)))
+
+(defmethod print-swm-object ((object float-group) stream)
+  (write-string "FLOAT-" stream)
+  (call-next-method))
 
 (defmethod group-startup ((group float-group)))
 
 (flet ((add-float-window (group window raise)
-         (change-class window 'float-window)
+         (dynamic-mixins:replace-class window 'float-window)
+         ;; (change-class window 'float-window)
          (float-window-align window)
+         (sync-minor-modes window)
          (when raise
            (group-focus-window group window))))
   (defmethod group-add-window ((group float-group) window &key raise &allow-other-keys)

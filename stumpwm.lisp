@@ -254,6 +254,9 @@ further up. "
                                       for n from 0
                                       collect (init-screen i n host)))
                (xlib:display-finish-output *display*)
+               ;; Enable minor mode keymap lookup. This needs to be done after
+               ;; screens are initialized.
+               (push #'minor-mode-top-maps *minor-mode-maps*)
                ;; Load rc file
                (let ((*package* (find-package *default-package*)))
                  (multiple-value-bind (success err rc) (load-rc-file)

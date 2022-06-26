@@ -16,7 +16,8 @@
                #:cl-ppcre
                #:clx
                #:sb-posix
-               #:sb-introspect)
+               #:sb-introspect
+               #:dynamic-mixins)
   :components ((:file "package")
                (:file "debug")
                (:file "primitives")
@@ -61,6 +62,7 @@
                (:file "dynamic-group")
                (:file "remap-keys")
                (:file "manual")
+               (:file "minor-modes")
                ;; keep this last so it always gets recompiled if
                ;; anything changes
                (:file "version"))
@@ -72,3 +74,7 @@
   :build-pathname "stumpwm"
   :entry-point "stumpwm:main"
   :components ((:file "main")))
+
+;;; Explicitly load the vendored dynamic mixins asd file
+(asdf:load-asd
+ (asdf:system-relative-pathname "stumpwm" "dynamic-mixins/dynamic-mixins.asd"))

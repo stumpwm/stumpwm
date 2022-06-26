@@ -94,6 +94,7 @@ This document explains how to use The Stump Window Manager.
 * Mode-line::
 * Groups::
 * Screens::
+* Minor Modes::
 * Internals::
 * Interacting With Unix::
 * Interacting With X11::
@@ -174,6 +175,11 @@ Screens
 
 * External Monitors::
 * Programming With Screens::
+
+Minor Modes
+
+* Minor Mode Example::
+* Programming With Minor Modes::
 
 Internals
 
@@ -2234,7 +2240,7 @@ Groups in StumpWM are more commonly known as @dfn{virtual desktops} or
 
 @@@ current-group
 
-@node Screens, Internals, Groups, Top
+@node Screens, Minor Modes, Groups, Top
 @chapter Screens
 StumpWM handles multiple screens.
 
@@ -2276,7 +2282,367 @@ the head configuration.
 @@@ current-window
 
 ### *screen-list*
-@node Internals, Interacting With Unix, Screens, Top
+
+@node Minor Modes, Internals, Screens, Top
+@chapter Minor Modes
+
+Like Emacs, StumpWM has the concept of minor modes. These are defined by
+the macro @code{DEFINE-MINOR-MODE}. Defining a minor mode creates a
+class and a set of methods specializing upon it. Minor modes are scoped
+to a window, head, group, or screen, or they may be unscoped. In
+addition to this minor modes may be local or global. When a minor mode
+is global all new instances of the scope object will be created with the
+minor mode already active in them. Minor modes define their own top
+level and root level keymaps, as well as hooks that are run upon
+enabling or disabling the minor mode, and a lighter to display in the
+mode line.
+
+Minor modes are mixins that get added to the appropriate scope object
+when enabled. As such minor modes allow the augmenting, modifying, and
+overriding of default StumpWM behavior by defining methods for the
+generic functions of the scope object. For example, a minor mode may be
+scoped to a window and define a method for the generic function
+@code{UPDATE-DECORATION} to change how window decoration is handled for
+the windows it is enabled in.
+
+%%% define-minor-mode
+
+@menu
+* Programming With Minor Modes::
+* Minor Mode Scopes::
+* Minor Mode Example::
+@end menu
+
+@node Programming With Minor Modes, Minor Mode Scopes, Minor Modes, Minor Modes
+@section Programming With Minor Modes
+
+Minor modes get their power from their ability to override and augment
+generic functions which are called with the minor mode's scope object as
+an argument. If you find a function whose behavior you wish to augment
+or override in the process of writing a minor mode, open an issue or
+submit a PR to generify the function. Generification is easily done like
+so:
+
+@example
+(defun somefun (a b)
+  "docstring"
+  (otherfun (+ a b)))
+;; the above becomes
+(defgeneric somefun (a b)
+  (:documentation "docstring")
+  (:method (a b)
+    (otherfun (+ a b))))
+@end example
+
+When defining a minor mode, the programmer may desire to perform setup
+for the minor mode. This is can be done in three ways. The first is to
+hang a function upon the minor modes enable hook. However this runs the
+risk of users potentially clobbering the initialization function, or
+modifying the hook such that the initialization function is not the
+first function run. The second way is to define a method for the generic
+function @code{update-instance-for-different-class}. This function
+should specialize upon the minor mode as the second argument. As a final
+option, one can define before, after, and around methods for the generic
+function @code{autoenable-minor-mode} if and only if the method does not
+access any slots within the object.
+
+One of the pitfalls of minor modes is that they are ultimately enabled
+by calling @code{change-class}, which places some restrictions upon
+where they can be enabled. Specifically, it is implied to be undefined
+behavior if a minor mode is enabled in an object from within a method
+which accesses slots of that object. While in practice this has not
+proven to be an issue at the time of writing, this is undefined behavior
+and future versions of SBCL may break if this is done.
+
+When writing a minor mode, it is often useful to separate out the
+desired functionality into its own mixin classes and use those in the
+superclass list of the minor mode. For example:
+
+@example
+(define-minor-mode my-mode (my-mixin minor-mode) ())
+@end example
+
+This prevents issues with inheritance and dynamic mixins from cropping
+up. Since minor modes are just classes, a minor mode can descend from
+another minor mode. However after enabling the subclass minor mode, the
+superclass minor mode cannot be enabled. However if the superclass minor
+mode is enabled first, then the subclass minor mode can be enabled. The
+easiest way around this is the aforementioned approach of mixins.
+As an example of the inheritance issue, take the following minor mode
+definitions:
+
+@example
+(define-minor-mode x () ())
+(define-minor-mode y (x) ())
+
+(enable-minor-mode 'x)
+(enable-minor-mode 'y) ; both modes are enabled
+;; As opposed to
+(enable-minor-mode 'y)
+(enable-minor-mode 'x) ; signals an error
+@end example
+
+
+When enabling and disabling minor modes theres a set of generic
+functions in charge of determining what object to mix the minor mode in
+to and whether or not to mix it.
+
+@@@ autoenable-minor-mode
+
+Defining a minor mode defines a main method for this generic function
+which will mix the minor mode into the scope object when called and
+returns T. This method specializes upon the minor mode symbol and the
+scope type. The minor mode will only be enabled and the hooks run when
+the function @code{ENABLE-WHEN} returns T. Any before after or around
+methods for this function must not access any slots. 
+
+@@@ autodisable-minor-mode
+
+Defining a minor mode defines a main method for this generic function
+which specializes upon the mode symbol and the mode, and removes the
+minor mode from the object. Any methods for this function must not
+access any slots.
+
+@@@ enable-when
+
+Outside of autoenabling and autodisabling minor modes, there are several
+generic functions which dispatch upon minor modes and their names.
+
+@@@ minor-mode-global-p
+@@@ minor-mode-scope
+@@@ minor-mode-enable-hook
+@@@ minor-mode-disable-hook
+@@@ minor-mode-hook
+
+@@@ minor-mode-keymap
+
+This function has a set of main methods defined which all call the next
+method to obtain a list of top maps for every minor mode. Any extra
+keymaps one wishes to add to the minor mode may be added by defining a
+main method which calls @code{call-next-method} and returns a flat
+list. Similarly, an around method may be used which abides by the same
+rules.
+
+@@@ minor-mode-lighter
+
+This function operates similarly to @code{minor-mode-keymap}, with a
+main method defined for every minor mode which calls
+@code{call-next-method} and returns a flat list. In addition there is a
+single around method defined which concatenates all these strings
+together.
+
+There are also a set of regular functions and special variables which
+which may be of use when working with minor modes.
+
+@@@ enable-minor-mode
+@@@ disable-minor-mode
+@@@ list-modes
+@@@ list-minor-modes
+@@@ current-minor-modes
+@@@ minor-mode-enabled-p
+@@@ find-minor-mode
+
+### *minor-mode*
+### *minor-mode-enable-hook*
+### *minor-mode-disable-hook*
+### *unscoped-minor-modes*
+
+€€€ minor-mode
+
+@node Minor Mode Scopes, Minor Mode Example, Programming With Minor Modes, Minor Modes
+@section Minor Mode Scopes
+
+Minor modes can be scoped to different objects in a rather arbitrary
+manner. These scopes are defined by the macro
+@code{DEFINE-MINOR-MODE-SCOPE}. Because minor modes are implemented as
+mixins, the object returned by a scopes current object function must be
+a class instance. 
+
+%%% define-minor-mode-scope
+
+%%% define-descended-minor-mode-scope
+
+@@@ add-minor-mode-scope
+
+When a minor mode is defined its scope is looked up and validated by the
+function @code{VALIDATE-SCOPE}. This function takes a scope and a list
+of superclasses, and ensures that the scope can descend from the
+superclasses scopes. This restricts the valid scopes to ensure that a
+minor mode scoped to @code{:GROUP} cant be a subclass of a minor mode
+scoped to @code{:WINDOW}, for example. However there is a way to
+override this by explicitly stating that two otherwise incompatible
+scopes are compatible. This is done by defining methods for the generic
+function @code{VALIDATE-SUPERSCOPE} which dispatch upon the scope
+designators. Such methods should return at least one value, indicating
+if the superscope is a valid parent of the scope. If multiple values are
+returned, the second value must indicate whether the superscope is an
+invalid parent of the scope. For example:
+
+@verbatim
+(defmethod stumpwm:validate-superscope ((c (eql :id1)) (p (eql :id2)))
+  "Explicitly allow id1 to descend from id2"
+  (values t nil))
+
+(defmethod stumpwm:validate-superscope ((c (eql :id3)) (p (eql :id4)))
+  "Explicitly prevent id3 from descending from id4"
+  (values nil t))
+@end verbatim
+
+When defining and using scopes the type specifier is important; it is
+used to determine what minor modes should be mixed into an object when
+it is created. For this reason it is important when defining a minor
+mode or minor mode scope to understand the type hierarchy. It may also
+be in the programmers best interests to define an accompanying type.
+
+The following scopes are predefined:
+@itemize
+@item
+Designator: @code{:UNSCOPED}, type: @code{T}
+Current object: return the global unscoped object.@*
+
+@item
+Designator: @code{:SCREEN}, type: @code{SCREEN}
+Current object: return the current screen.@*
+
+@item
+Designator: @code{:GROUP}, type: @code{GROUP}
+Current object: return the current group.@*
+
+@item
+Designator: @code{:TILE-GROUP}, type: @code{TILE-GROUP}
+Current object: return the current group.@*
+
+@item
+Designator: @code{:DYNAMIC-GROUP}, type: @code{DYNAMIC-GROUP}
+Current object: return the current group.@*
+
+@item
+Designator: @code{:FLOAT-GROUP}, type: @code{FLOAT-GROUP}
+Current object: return the current group.@*
+
+@item
+Designator: @code{:TILING-NON-DYNAMIC-GROUP}, type: @code{TILE-GROUP}
+Current object: return the current group when it is a non-dynamic tiling
+group.@*
+
+@item
+Designator: @code{:HEAD}, type: @code{HEAD}
+Current object: return the current head.@*
+
+@item
+Designator: @code{:FRAME}, type: @code{FRAME}
+Current object: return the current frame when in a tiling group.@*
+
+@item
+Designator: @code{:FRAME-EXCLUDING-HEAD}, type: @code{ONLY-FRAME-NO-HEADS}
+Descends from minor mode scope @code{:FRAME}.
+
+@item
+Designator: @code{:WINDOW}, type: @code{WINDOW}
+
+Current object: return the current window.@*
+All objects: collect every window from every group in the current screen.
+
+@item
+Designator: @code{:TILE-WINDOW}, type: @code{TILE-WINDOW}
+
+Current object: return the current window.@*
+All objects: collect every window from every tiling group, filtering all
+floating windows.
+
+@item
+Designator: @code{:FLOAT-WINDOW}, type: @code{FLOAT-WINDOW}
+
+Current object: return the current window.@*
+All objects: colelct every window from every group, filtering all non
+floating windows.
+
+@end itemize
+
+@node Minor Mode Example, , Minor Mode Scopes, Minor Modes
+@section Minor Mode Example
+
+A simple example of a minor mode is a version of the Emacs modes viper
+or evil for StumpWM. Such a minor mode might look like this:
+
+@verbatim
+(define-minor-mode swm-evil-mode () ()
+  (:scope :screen)
+  (:interactive t)
+  (:top-map '(("i" . "swm-evil-mode")
+              ("j" . "move-focus down")
+              ("k" . "move-focus up")
+              ("h" . "move-focus left")
+              ("l" . "move-focus right")
+              ("p" . "pull-hidden-previous")
+              ("n" . "pull-hidden-next")
+              ("S" . "hsplit")
+              ("s" . "vsplit")
+              ("r" . "remove-split")
+              ("g" . *groups-map*)
+              ("x" . *exchange-window-map*)))
+  (:lighter-make-clickable nil)
+  (:lighter "EVIL"))
+@end verbatim
+
+In the above example, the minor mode @code{swm-evil-mode} is defined,
+alongside a command of the same name which toggles it on and off. The
+minor mode is scoped to a screen, meaning that upon activation it will
+be dynamically mixed in to the screen object. The lighter is the string
+@code{"EVIL"} and the lighter is not made clickable.
+
+When defining a minor mode top map it is important to avoid multi-key
+bindings that clobber the prefix key. For example, if the prefix key is
+@kbd{C-t} then defining the keybinding @kbd{C-t n} in the top map of a
+minor mode is an error. Instead bind the key @kbd{n} in the minor mode's
+root map.
+
+As another example we can define a frame topbar mode. This should adjust
+every frame to leave extra space at the top of the frame to display a
+bar of some sort. The following assumes that the functions
+@code{frame-display-height} and @code{frame-display-y} are generic. 
+
+@example
+(defclass frame-topbar ()
+  ((frame-topbar-height :initform 10 :accessor frame-topbar-height)))
+
+(defmethod frame-display-height :around (group (frame frame-topbar))
+  (let ((height (call-next-method)))
+    (- height (frame-topbar-height frame))))
+
+(defmethod frame-display-y :around (group (frame frame-topbar))
+  (let ((y (call-next-method)))
+    (+ y (frame-topbar-height frame))))
+
+(define-minor-mode frame-bar (frame-topbar minor-mode) ()
+  (:global t)
+  (:scope :frame)
+  (:lighter "T-BAR")
+  (:interactive frame-topbar-mode))
+
+(defmethod update-instance-for-different-class :after
+    (prev (obj frame-bar) &rest rest)
+  (declare (ignore prev rest))
+  (when (frame-window obj)
+    (let* ((group (window-group (frame-window obj)))
+           (windows (frame-windows group obj)))
+      (mapc #'maximize-window windows))))
+@end example
+
+In the above example, a class is defined which holds the height of the
+frame topbar. Then two around methods are defined such that windows
+querying the frame for their y position and height get an updated value
+reflecting the topbars presence. Then a minor mode is defined which
+inherits from the class we defined. It is scoped to frames and is a
+global minor mode, so it will be enabled in all existing frames and any
+other frames as they are created. Finally the initialization is handled
+in the after method for update-instance-for-different-class, which
+updates every window to have a new size which respects the topbar.
+
+The implementation of the actual topbar is left as an exercise for the
+reader. 
+
+@node Internals, Interacting With Unix, Minor Modes, Top
 @chapter Internals
 @menu
 * IO Loop::

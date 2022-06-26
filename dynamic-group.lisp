@@ -68,9 +68,12 @@
 ;; The window definition remains unchanged, as at its core it is a tile
 ;; window. All we do is add a single tag.
 
-(defclass dynamic-window (tile-window)
+(define-swm-class dynamic-window (tile-window)
   ((superfluous :initform nil
                 :accessor superfluous-window-tag)))
+
+(defmethod print-swm-object ((object dynamic-window) stream)
+  (format stream "DYNAMIC-WINDOW ~s #x~x" (window-name object) (window-id object)))
 
 (defmethod superfluous-window-p ((window dynamic-window))
   (superfluous-window-tag window))
@@ -84,7 +87,7 @@
 ;; policy to live at the class level and add a head placement policy to
 ;; determine where new windows should be placed. 
 
-(defclass dynamic-group (tile-group)
+(define-swm-class dynamic-group (tile-group)
   (;; Class allocated slots
    (head-placement-policy
     :reader dynamic-group-head-placement-policy
@@ -129,6 +132,9 @@ the master window, FIFTH is the window stack frames, SIXTH is the window
 stack windows, and SEVENTH is the major split ratio."))
   (:documentation "A group type that implements dynamic tiling à la DWM with a
 single master window and a window stack."))
+
+(defmethod print-swm-object ((object dynamic-window) stream)
+  (format stream "DYNAMIC-WINDOW ~s #x~x" (window-name object) (window-id object)))
 
 (defun dynamic-group-p (thing)
   (typep thing 'dynamic-group))
@@ -432,14 +438,17 @@ return NIL. RATIO is a fraction to split by."
   (cond ((typep window 'float-window)
          (call-next-method)) 
         ((eq frame :float)
-         (change-class window 'float-window)
+         (dynamic-mixins:replace-class window 'float-window)
          (float-window-align window)
+         (sync-minor-modes window)
          (when raise (group-focus-window group window)))
         (t ; if were not dealing with a floating window
          (let ((head (choose-head-from-placement-policy group)))
            ;; keep all calls to change-class in the same place.x
-           (change-class window 'dynamic-window) 
-           (dynamic-group-add-window group head window)))))
+           (dynamic-mixins:replace-class window 'dynamic-window) 
+           ;; (change-class window 'dynamic-window) 
+           (dynamic-group-add-window group head window)
+           (sync-minor-modes window)))))
 
 (defmethod group-delete-window ((group dynamic-group) (window dynamic-window))
   "Delete a dynamic window from a dynamic group. For floating windows we fall
@@ -702,13 +711,18 @@ floating windows onto the stack."
                                 (append
                                  (loop for w in (head-windows group head)
                                        when (float-window-p w)
-                                         collect (change-class w 'dynamic-window))
+                                         collect w)
                                  stack-windows)
                                 stack-windows)))))
         (setf master-window nil
               stack-windows nil)
-        (loop for window in windows
-              do (dynamic-group-place-window group head window))
+        (loop with previous-floats = nil
+              for window in windows
+              do (when (float-window-p window)
+                   (push window previous-floats)
+                   (dynamic-mixins:replace-class window 'dynamic-window))
+                 (dynamic-group-place-window group head window)
+              finally (map nil #'sync-minor-modes window))
         (focus-frame group (window-frame master-window))))))
 
 ;;; Handle overflow of both heads and groups
@@ -1014,8 +1028,10 @@ window. "
       (message "Window ~A is already a floating window." window)
       (progn
         (group-delete-window group window)
-        (change-class window 'float-window)
+        (dynamic-mixins:replace-class window 'float-window)
+        ;; (change-class window 'float-window)
         (float-window-align window)
+        (sync-minor-modes window)
         (focus-all window))))
 
 (defun dynamic-group-unfloat-window (window group)
@@ -1024,8 +1040,10 @@ window. "
       (message "Window ~A is already a dynamic window." window)
       (progn
         (let ((head (window-head window)))
-          (change-class window 'dynamic-window)
-          (dynamic-group-add-window group head window)))))
+          (dynamic-mixins:replace-class window 'dynamic-window)
+          ;; (change-class window 'dynamic-window)
+          (dynamic-group-add-window group head window)
+          (sync-minor-modes window)))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

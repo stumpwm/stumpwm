@@ -103,7 +103,7 @@ called. When the modeline size changes, this is called."))
   (:documentation "Repack frame numbers to range from zero to the number of 
 frames such that there are no numerical gaps."))
 
-(defclass group ()
+(define-swm-class group ()
   ((screen :initarg :screen :accessor group-screen)
    (windows :initform nil :accessor group-windows)
    (current-window :initform nil :accessor group-current-window)
@@ -111,6 +111,9 @@ frames such that there are no numerical gaps."))
    (number :initarg :number :accessor group-number)
    (name :initarg :name :accessor group-name)
    (on-top-windows :initform nil :accessor group-on-top-windows)))
+
+(defmethod print-swm-object ((object group) stream)
+  (format stream "GROUP ~A" (ignore-errors (group-name object))))
 
 (defmethod group-delete-window (group window)
   (when (find window *always-show-windows*)
@@ -354,12 +357,13 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 (defun %ensure-group (group-name group-type screen)
   "If there is a group named with GROUP-NAME in SCREEN return it, otherwise create it."
   (or (find-group screen group-name)
-      (let ((group (make-instance group-type
-                                  :screen screen
-                                  :number (if (char= (char group-name 0) #\.)
-                                                     (find-free-hidden-group-number screen)
-                                                     (find-free-group-number screen))
-                                  :name group-name)))
+      (let ((group (make-swm-class-instance
+                    group-type
+                    :screen screen
+                    :number (if (char= (char group-name 0) #\.)
+                                (find-free-hidden-group-number screen)
+                                (find-free-group-number screen))
+                    :name group-name)))
         (setf (screen-groups screen) (append (screen-groups screen) (list group)))
         (netwm-set-group-properties screen)
         (netwm-update-groups screen)

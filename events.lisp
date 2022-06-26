@@ -215,24 +215,38 @@ The Caller is responsible for setting up the input focus."
 
 (defun top-maps (&optional (group (current-group)))
   "Return all top level keymaps that are active."
-  (append
-   ;; The plain jane top map is first because that's where users are
-   ;; going to throw in their universally accessible customizations
-   ;; which we don't want groups or minor modes shadowing them.
-   (list '*top-map*)
-   ;; TODO: Minor Mode maps go here
-   ;; lastly, group maps. Last because minor modes should be able to
-   ;; shadow a group's default bindings.
-   (case (type-of group)
-     (dynamic-group ; dynamic group cannot inherit tile groups maps. 
-      (loop for i in *group-top-maps*
-            when (and (not (eql (first i) 'tile-group))
-                      (typep group (first i)))
-              collect (second i)))
-     (otherwise 
-      (loop for i in *group-top-maps*
-            when (typep group (first i))
-              collect (second i))))))
+  (flet ((funcallable-or-kmap (thing)
+           "determine if THING is a function, or if it is bound to a kmap. Used to
+determine whether or not to funcall a symbol or lookup the symbol to retrieve a
+kmap."
+           (or (functionp thing)
+               (and (symbolp thing)
+                    (not (and (boundp thing)
+                              (kmap-p (symbol-value thing))))
+                    (fboundp thing)))))
+    (append
+     ;; The plain jane top map is first because that's where users are
+     ;; going to throw in their universally accessible customizations
+     ;; which we don't want groups or minor modes shadowing them.
+     (list '*top-map*)
+     ;; If a minor mode map element is a function or a symbol that does not denote
+     ;; a keymap but is fbound, then funcall it with the group. Otherwise it
+     ;; should be a kmap object or a symbol bound to a kmap object.
+     (loop for map in *minor-mode-maps*
+           if (funcallable-or-kmap map)
+             append (funcall map group)
+           else
+             collect map)
+     ;; lastly, group maps. Last because minor modes should be able to
+     ;; shadow a group's default bindings.
+     (cond ((typep group 'dynamic-group)
+            (loop for i in *group-top-maps*
+                  when (and (not (eql (first i) 'tile-group))
+                            (typep group (first i)))
+                    collect (second i)))
+           (t (loop for i in *group-top-maps*
+                    when (typep group (first i))
+                      collect (second i)))))))
 
 (defvar *current-key-seq* nil
   "The sequence of keys which were used to invoke a command, available

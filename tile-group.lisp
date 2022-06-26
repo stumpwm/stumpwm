@@ -26,10 +26,14 @@
 
 (export '(save-frame-excursion))
 
-(defclass tile-group (group)
+(define-swm-class tile-group (group)
   ((frame-tree :accessor tile-group-frame-tree)
    (last-frame :initform nil :accessor tile-group-last-frame)
    (current-frame :accessor tile-group-current-frame)))
+
+(defmethod print-swm-object ((object tile-group) stream)
+  (write-string "TILE-" stream)
+  (call-next-method))
 
 (defmethod initialize-instance :after ((group tile-group) &key &allow-other-keys)
   (let* ((heads (copy-heads (group-screen group))))
@@ -69,12 +73,16 @@
   (cond ((typep window 'float-window)
          (call-next-method))
         ((eq frame :float)
-         (change-class window 'float-window)
+         (dynamic-mixins:replace-class window 'float-window)
+         ;; (change-class-preserving-minor-modes window 'float-window)
          (float-window-align window)
-        (when raise
-          (group-focus-window group window)))
+         (sync-minor-modes window)
+         (when raise
+           (group-focus-window group window)))
         (t
-         (change-class window 'tile-window)
+         (dynamic-mixins:replace-class window 'tile-window)
+         ;; (change-class-preserving-minor-modes window 'tile-window)
+         ;; (change-class window 'tile-window)
          ;; Try to put the window in the appropriate frame for the group.
          (setf (window-frame window)
                (or frame
@@ -90,7 +98,8 @@
          (sync-frame-windows group (window-frame window))
          (when (null (frame-window (window-frame window)))
            (frame-raise-window (window-group window) (window-frame window)
-                               window nil)))))
+                               window nil))
+         (sync-minor-modes window))))
 
 (defmethod group-current-head ((group tile-group))
   (if-let ((current-window (group-current-window group)))
@@ -244,14 +253,15 @@
 (defun (setf tile-group-frame-head) (frame group head)
   (setf (elt (tile-group-frame-tree group) (position head (group-heads group))) frame))
 
-(defun populate-frames (group)
-  "Try to fill empty frames in GROUP with hidden windows"
-  (dolist (f (group-frames group))
-    (unless (frame-window f)
-      (choose-new-frame-window f group)
-      (when (frame-window f)
-        (maximize-window (frame-window f))
-        (unhide-window (frame-window f))))))
+(defgeneric populate-frames (group)
+  (:documentation "Try to fill empty frames in GROUP with hidden windows")
+  (:method (group)
+    (dolist (f (group-frames group))
+      (unless (frame-window f)
+        (choose-new-frame-window f group)
+        (when (frame-window f)
+          (maximize-window (frame-window f))
+          (unhide-window (frame-window f)))))))
 
 (defun frame-by-number (group n)
   (unless (eq n nil)
@@ -272,53 +282,61 @@
         (return f)))))
 
 
-(defun frame-set-x (frame v)
-  (decf (frame-width frame)
-        (- v (frame-x frame)))
-  (setf (frame-x frame) v))
+(defgeneric frame-set-x (frame v)
+  (:method (frame v)
+    (decf (frame-width frame)
+          (- v (frame-x frame)))
+    (setf (frame-x frame) v)))
 
-(defun frame-set-y (frame v)
-  (decf (frame-height frame)
-        (- v (frame-y frame)))
-  (setf (frame-y frame) v))
+(defgeneric frame-set-y (frame v)
+  (:method (frame v)
+    (decf (frame-height frame)
+          (- v (frame-y frame)))
+    (setf (frame-y frame) v)))
 
-(defun frame-set-r (frame v)
-  (setf (frame-width frame)
-        (- v (frame-x frame))))
+(defgeneric frame-set-r (frame v)
+  (:method (frame v)
+    (setf (frame-width frame)
+          (- v (frame-x frame)))))
 
-(defun frame-set-b (frame v)
-  (setf (frame-height frame)
-        (- v (frame-y frame))))
+(defgeneric frame-set-b (frame v)
+  (:method (frame v)
+    (setf (frame-height frame)
+          (- v (frame-y frame)))))
 
-(defun frame-r (frame)
-  (+ (frame-x frame) (frame-width frame)))
+(defgeneric frame-r (frame)
+  (:method (frame)
+    (+ (frame-x frame) (frame-width frame))))
 
-(defun frame-b (frame)
-  (+ (frame-y frame) (frame-height frame)))
+(defgeneric frame-b (frame)
+  (:method (frame)
+    (+ (frame-y frame) (frame-height frame))))
 
-(defun frame-display-y (group frame)
-  "Return a Y for frame that doesn't overlap the mode-line."
-  (let* ((head (frame-head group frame))
-         (ml (head-mode-line head))
-         (head-y (frame-y head))
-         (rel-frame-y (- (frame-y frame) head-y)))
-    (if (and ml (not (eq (mode-line-mode ml) :hidden)))
-        (case (mode-line-position ml)
-          (:top
-           (+ head-y
-              (+ (mode-line-height ml) (round (* rel-frame-y (mode-line-factor ml))))))
-          (:bottom
-           (+ head-y
-              (round (* rel-frame-y (mode-line-factor ml))))))
-        (frame-y frame))))
+(defgeneric frame-display-y (group frame)
+  (:documentation "Return a Y for frame that doesn't overlap the mode-line.")
+  (:method (group frame)
+    (let* ((head (frame-head group frame))
+           (ml (head-mode-line head))
+           (head-y (frame-y head))
+           (rel-frame-y (- (frame-y frame) head-y)))
+      (if (and ml (not (eq (mode-line-mode ml) :hidden)))
+          (case (mode-line-position ml)
+            (:top
+             (+ head-y
+                (+ (mode-line-height ml) (round (* rel-frame-y (mode-line-factor ml))))))
+            (:bottom
+             (+ head-y
+                (round (* rel-frame-y (mode-line-factor ml))))))
+          (frame-y frame)))))
 
-(defun frame-display-height (group frame)
-  "Return a HEIGHT for frame that doesn't overlap the mode-line."
-  (let* ((head (frame-head group frame))
-         (ml (head-mode-line head)))
-    (if (and ml (not (eq (mode-line-mode ml) :hidden)))
-        (round (* (frame-height frame) (mode-line-factor ml)))
-        (frame-height frame))))
+(defgeneric frame-display-height (group frame)
+  (:documentation "Return a HEIGHT for frame that doesn't overlap the mode-line.")
+  (:method (group frame)
+    (let* ((head (frame-head group frame))
+           (ml (head-mode-line head)))
+      (if (and ml (not (eq (mode-line-mode ml) :hidden)))
+          (round (* (frame-height frame) (mode-line-factor ml)))
+          (frame-height frame)))))
 
 (defun frame-intersect (f1 f2)
   "Return a new frame representing (only) the intersection of F1 and F2. WIDTH and HEIGHT will be <= 0 if there is no overlap"
@@ -419,12 +437,6 @@ T (default) then also focus the frame."
   "Return 2 new frames. The first one stealing P's number and window"
   (let* ((w (ratio-or-pixel (frame-width p) ratio))
          (h (frame-height p))
-         (f1 (make-frame :number (frame-number p)
-                         :x (frame-x p)
-                         :y (frame-y p)
-                         :width w
-                         :height h
-                         :window (frame-window p)))
          (f2 (make-frame :number (find-free-frame-number group)
                          :x (+ (frame-x p) w)
                          :y (frame-y p)
@@ -432,20 +444,16 @@ T (default) then also focus the frame."
                          :width (- (frame-width p) w)
                          :height h
                          :window nil)))
-    (run-hook-with-args *split-frame-hook* p f1 f2)
+    (setf (frame-width p) w
+          (frame-height p) h)
+    (run-hook-with-args *split-frame-hook* p p f2)
     (run-hook-with-args *new-frame-hook* f2)
-    (values f1 f2)))
+    (values p f2)))
 
 (defun split-frame-v (group p ratio)
   "Return 2 new frames. The first one stealing P's number and window"
   (let* ((w (frame-width p))
          (h (ratio-or-pixel (frame-height p) ratio))
-         (f1 (make-frame :number (frame-number p)
-                         :x (frame-x p)
-                         :y (frame-y p)
-                         :width w
-                         :height h
-                         :window (frame-window p)))
          (f2 (make-frame :number (find-free-frame-number group)
                          :x (frame-x p)
                          :y (+ (frame-y p) h)
@@ -453,9 +461,11 @@ T (default) then also focus the frame."
                          ;; gobble up the modulo
                          :height (- (frame-height p) h)
                          :window nil)))
-    (run-hook-with-args *split-frame-hook* p f1 f2)
+    (setf (frame-width p) w
+          (frame-height p) h)
+    (run-hook-with-args *split-frame-hook* p p f2)
     (run-hook-with-args *new-frame-hook* f2)
-    (values f1 f2)))
+    (values p f2)))
 
 (defun ratio-or-pixel (length ratio)
   "Return a ratio of length unless ratio is an integer.
@@ -1387,12 +1397,14 @@ direction. The following are valid directions:
 
 (defun tile-group-unfloat-window (window group)
   (let ((frame (closest-frame window group)))
-    (change-class window 'tile-window :frame frame)
+    (dynamic-mixins:replace-class window 'tile-window :frame frame)
+    ;; (change-class window 'tile-window :frame frame)
     (setf (window-frame window) frame
           (frame-window frame) window
           (tile-group-current-frame group) frame)
     (update-decoration window)
-    (sync-frame-windows group frame)))
+    (sync-frame-windows group frame)
+    (sync-minor-modes window)))
 
 (defun float-window (window group)
   (typecase group
@@ -1401,12 +1413,14 @@ direction. The following are valid directions:
 
 (defun tile-group-float-window (window group)
   (let ((frame (tile-group-current-frame group)))
-    (change-class window 'float-window)
+    (dynamic-mixins:replace-class window 'float-window)
+    ;; (change-class window 'float-window)
     (float-window-align window)
     (update-decoration window)
     (funcall-on-node (tile-group-frame-tree group)
                      (lambda (f) (setf (slot-value f 'window) nil))
-                     (lambda (f) (eq frame f)))))
+                     (lambda (f) (eq frame f)))
+    (sync-minor-modes window)))
 
 (defcommand (float-this tile-group) () ()
   "Transforms a tile-window into a float-window"

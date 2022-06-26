@@ -8,9 +8,13 @@
   "Set this to T if you never want windows to resize based on incremental WM_HINTs,
 like xterm and emacs.")
 
-(defclass tile-window (window)
+(define-swm-class tile-window (window)
   ((frame   :initarg :frame   :accessor window-frame)
    (normal-size :initform nil :accessor window-normal-size)))
+
+(defmethod print-swm-object ((object tile-window) stream)
+  (write-string "TILE-" stream)
+  (call-next-method))
 
 (defmethod update-decoration ((window tile-window))
   ;; give it a colored border but only if there are more than 1 frames.
