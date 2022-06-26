@@ -112,6 +112,9 @@ frames such that there are no numerical gaps."))
    (name :initarg :name :accessor group-name)
    (on-top-windows :initform nil :accessor group-on-top-windows)))
 
+(defmethod print-swm-object ((object group) stream)
+  (format stream "GROUP ~A" (ignore-errors (group-name object))))
+
 (defmethod group-delete-window (group window)
   (when (find window *always-show-windows*)
     (disable-always-show-window window (current-screen)))

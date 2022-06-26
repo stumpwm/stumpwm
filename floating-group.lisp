@@ -10,6 +10,10 @@
    (last-x :initform 0 :accessor float-window-last-x)
    (last-y :initform 0 :accessor float-window-last-y)))
 
+(defmethod print-swm-object ((object float-window) stream)
+  (write-string "FLOAT-" stream)
+  (call-next-method))
+
 (defvar *float-window-border* 1)
 (defvar *float-window-title-height* 10)
 (defvar *float-window-modifier* :super
@@ -138,6 +142,10 @@
 
 (define-swm-class float-group (group)
   ((current-window :accessor float-group-current-window)))
+
+(defmethod print-swm-object ((object float-group) stream)
+  (write-string "FLOAT-" stream)
+  (call-next-method))
 
 (defmethod group-startup ((group float-group)))
 

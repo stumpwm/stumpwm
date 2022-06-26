@@ -640,6 +640,10 @@ upon the class and replaces it. If SUPERCLASSES is NIL then (SWM-CLASS) is used.
     :accessor frame-window
     :initarg :window)))
 
+(defmethod print-swm-object ((object frame) stream)
+  (format stream "FRAME ~d ~a ~d ~d ~d ~d"
+          (frame-number object) (frame-window object) (frame-x object) (frame-y object) (frame-width object) (frame-height object)))
+
 (defun frame-p (object)
   (typep object 'frame))
 
@@ -660,6 +664,10 @@ upon the class and replaces it. If SUPERCLASSES is NIL then (SWM-CLASS) is used.
     :initform ""
     :accessor head-name
     :initarg :name)))
+
+(defmethod print-swm-object ((object head) stream)
+  (write-string "HEAD-" stream)
+  (call-next-method))
 
 ;; duplicate frame accessors for heads.
 (macrolet ((define-head-accessor (name)
@@ -760,10 +768,6 @@ exist, in which case they go into the current group.")
   color-stack
   font)
 
-(defmethod print-object ((object frame) stream)
-  (format stream "#S(frame ~d ~a ~d ~d ~d ~d)"
-          (frame-number object) (frame-window object) (frame-x object) (frame-y object) (frame-width object) (frame-height object)))
-
 (defvar *window-number-map* "0123456789"
   "Set this to a string to remap the window numbers to something more convenient.")
 
@@ -804,8 +808,8 @@ char."
 (defvar *modifiers* nil
   "A mapping from modifier type to x11 modifier.")
 
-(defmethod print-object ((object screen) stream)
-  (format stream "#S<screen ~s>" (screen-number object)))
+(defmethod print-swm-object ((object screen) stream)
+  (format stream "SCREEN ~s" (screen-number object)))
 
 (defvar *screen-list* '()
   "The list of screens managed by stumpwm.")

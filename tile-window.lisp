@@ -12,6 +12,10 @@ like xterm and emacs.")
   ((frame   :initarg :frame   :accessor window-frame)
    (normal-size :initform nil :accessor window-normal-size)))
 
+(defmethod print-swm-object ((object tile-window) stream)
+  (write-string "TILE-" stream)
+  (call-next-method))
+
 (defmethod update-decoration ((window tile-window))
   ;; give it a colored border but only if there are more than 1 frames.
   (let* ((group (window-group window))

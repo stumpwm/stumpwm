@@ -72,6 +72,9 @@
   ((superfluous :initform nil
                 :accessor superfluous-window-tag)))
 
+(defmethod print-swm-object ((object dynamic-window) stream)
+  (format stream "DYNAMIC-WINDOW ~s #x~x" (window-name object) (window-id object)))
+
 (defmethod superfluous-window-p ((window dynamic-window))
   (superfluous-window-tag window))
 
@@ -140,6 +143,9 @@ window, CADDDDR is the window stack frames, CADDDDDR is the window stack
 windows, and CADDDDDDR is the major split ratio."))
   (:documentation "A group type that implements dynamic tiling à la DWM with a
 single master window and a window stack."))
+
+(defmethod print-swm-object ((object dynamic-window) stream)
+  (format stream "DYNAMIC-WINDOW ~s #x~x" (window-name object) (window-id object)))
 
 (defun dynamic-group-p (thing)
   (typep thing 'dynamic-group))

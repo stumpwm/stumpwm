@@ -31,6 +31,10 @@
    (last-frame :initform nil :accessor tile-group-last-frame)
    (current-frame :accessor tile-group-current-frame)))
 
+(defmethod print-swm-object ((object tile-group) stream)
+  (write-string "TILE-" stream)
+  (call-next-method))
+
 (defmethod initialize-instance :after ((group tile-group) &key &allow-other-keys)
   (let* ((heads (copy-heads (group-screen group))))
     (setf (tile-group-frame-tree group) heads
