@@ -129,6 +129,18 @@ fmt-highlight. Any non-visible windows are colored the
                                 (write-string text s))))
           1))
 
+(add-screen-mode-line-formatter #\M 'fmt-all-minor-modes)
+(defun fmt-all-minor-modes (ml)
+  (declare (ignore ml))
+  (subseq (with-output-to-string (s)
+            (loop for text in (remove-duplicates (mapcan #'minor-mode-lighter
+                                                         (list-mode-objects nil))
+                                                 :test #'string-equal)
+                  unless (string= text "")
+                    do (write-string " " s)
+                       (write-string text s)))
+          1))
+
 (defvar *bar-med-color* "^B")
 (defvar *bar-hi-color* "^B^3*")
 (defvar *bar-crit-color* "^B^1*")
