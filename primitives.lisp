@@ -576,6 +576,16 @@ when they are touched")))
   ;; modes autoenabled.
   (pushnew obj (swm-class-new-objects obj) :test #'eq))
 
+(defgeneric print-swm-object (object stream)
+  (:method (object stream)
+    (format stream "~A" (type-of object))))
+
+(defmethod print-object ((object swm-class) stream)
+  (print-unreadable-object (object stream)
+    (print-swm-object object stream)
+    (when-let ((minor-modes (list-minor-modes object)))
+      (format stream " :MINOR-MODES ~A" minor-modes))))
+
 (defun make-swm-class-instance (class &rest initargs)
   "Make an instance of a StumpWM class and autoenable any relevant minor
 modes. CLASS must be a symbol denoting a class which descends, directly or
