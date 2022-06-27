@@ -1,5 +1,29 @@
 (in-package :dynamic-mixins)
 
+(defgeneric replace-class-in-mixin (object new-class old-class &rest initargs)
+  (:method ((object standard-object) n o &rest rest)
+    (declare (ignore o))
+    (apply #'change-class object n rest)))
+
+(defmethod replace-class-in-mixin ((object mixin-object)
+                                   (new-class class)
+                                   (old-class class)
+                                   &rest rest)
+  (apply #'replace-class-in-mixin 
+         object (class-name new-class) (class-name old-class) rest))
+
+(defmethod replace-class-in-mixin ((object mixin-object)
+                                   (new-class class)
+                                   (old-class symbol)
+                                   &rest rest)
+  (apply #'replace-class-in-mixin object (class-name new-class) old-class rest))
+
+(defmethod replace-class-in-mixin ((object mixin-object)
+                                   (new-class symbol)
+                                   (old-class class)
+                                   &rest rest)
+  (apply #'replace-class-in-mixin object new-class (class-name  old-class) rest))
+
 (defmethod replace-class-in-mixin ((object mixin-object)
                                    (new-class symbol)
                                    (old-class symbol)
@@ -44,3 +68,16 @@
                        (mix-in-new-class ()
                          (ensure-mix object new-class))))))
              (apply #'change-class object new-class initargs)))))
+
+(defgeneric replace-class (object new-class &rest initargs))
+
+(defmethod replace-class :around (object new &rest rest)
+  (restart-case (progn
+                  (call-next-method)
+                  (unless (typep object new)
+                    (error "Failed to change class ~A ~A" object new)))
+    (force-change ()
+      :report (lambda (s)
+                (format s "Change class to ~A, removing all mixins" new))
+      (apply #'change-class object new rest)))
+  object)

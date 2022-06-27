@@ -83,39 +83,4 @@ instance; further elements must be class names or classes."
 (defmethod make-instance ((items mix-list) &rest initargs &key &allow-other-keys)
   (apply #'make-instance (ensure-mixin items) initargs))
 
-(defgeneric replace-class-in-mixin (object new-class old-class &rest initargs)
-  (:method ((object standard-object) n o &rest rest)
-    (declare (ignore o))
-    (apply #'change-class object n rest)))
 
-(defmethod replace-class-in-mixin ((object mixin-object)
-                                   (new-class class)
-                                   (old-class class)
-                                   &rest rest)
-  (apply #'replace-class-in-mixin 
-         object (class-name new-class) (class-name old-class) rest))
-
-(defmethod replace-class-in-mixin ((object mixin-object)
-                                   (new-class class)
-                                   (old-class symbol)
-                                   &rest rest)
-  (apply #'replace-class-in-mixin object (class-name new-class) old-class rest))
-
-(defmethod replace-class-in-mixin ((object mixin-object)
-                                   (new-class symbol)
-                                   (old-class class)
-                                   &rest rest)
-  (apply #'replace-class-in-mixin object new-class (class-name  old-class) rest))
-
-(defgeneric replace-class (object new-class &rest initargs))
-
-(defmethod replace-class :around (object new &rest rest)
-  (restart-case (progn
-                  (call-next-method)
-                  (unless (typep object new)
-                    (error "Failed to change class ~A ~A" object new)))
-    (force-change ()
-      :report (lambda (s)
-                (format s "Change class to ~A, removing all mixins" new))
-      (apply #'change-class object new rest)))
-  object)
