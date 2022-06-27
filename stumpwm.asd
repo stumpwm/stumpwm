@@ -63,6 +63,7 @@
                (:file "remap-keys")
                (:file "manual")
                (:file "minor-modes")
+               (:file "dynamic-mixins-patch")
                ;; keep this last so it always gets recompiled if
                ;; anything changes
                (:file "version"))
