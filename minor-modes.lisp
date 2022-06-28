@@ -607,9 +607,9 @@ ROOT-MAP-SPEC."
   (defun define-enable-methods (mode scope)
     (let ((optarg (get-scope scope)))
       `((defmethod autoenable-minor-mode ((mode (eql ',mode)) (obj ,mode))
-          (signal 'minor-mode-enable-error :mode ',mode
-                                           :object obj
-                                           :reason 'already-enabled))
+          (signal 'minor-mode-autoenable-error :mode ',mode
+                                               :object obj
+                                               :reason 'already-enabled))
         (defmethod autoenable-minor-mode ((mode (eql ',mode)) (obj ,(car optarg)))
           (when (and ,@(unless (eql (third optarg) (first optarg))
                          ;; Check if the filter type is the same as the class
