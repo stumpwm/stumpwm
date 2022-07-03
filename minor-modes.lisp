@@ -51,6 +51,8 @@
           minor-mode-global-p
           enable-minor-mode
           disable-minor-mode
+          autoenable-minor-mode
+          autodisable-minor-mode
           minor-mode-keymap
           minor-mode-lighter
 
