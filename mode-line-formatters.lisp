@@ -150,29 +150,31 @@ fmt-highlight. Any non-visible windows are colored the
   (declare (ignore ml))
   (time-format *time-modeline-string*))
 
+(defun format-minor-modes-for-mode-line (mode-objects)
+  (with-output-to-string (s)
+    (loop for modes on mode-objects
+          for list = (minor-mode-lighter (car modes))
+          do (loop for text in list
+                   unless (string= text "")
+                     do (write-string " " s)
+                        (write-string text s)))))
+
 (add-screen-mode-line-formatter #\m 'fmt-minor-modes)
 (defun fmt-minor-modes (ml)
-  (subseq (with-output-to-string (s)
-            (loop for modes on (list-current-mode-objects
-                                :screen (mode-line-screen ml))
-                  for list = (minor-mode-lighter (car modes))
-                  do (loop for text in list
-                           unless (string= text "")
-                             do (write-string " " s)
-                                (write-string text s))))
-          1))
+  (let ((total-string
+          (format-minor-modes-for-mode-line (list-current-mode-objects
+                                             :screen (mode-line-screen ml)))))
+    (if (string= "" total-string)
+        total-string
+        (subseq total-string 1))))
 
 (add-screen-mode-line-formatter #\M 'fmt-all-minor-modes)
 (defun fmt-all-minor-modes (ml)
   (declare (ignore ml))
-  (subseq (with-output-to-string (s)
-            (loop for text in (remove-duplicates (mapcan #'minor-mode-lighter
-                                                         (list-mode-objects nil))
-                                                 :test #'string-equal)
-                  unless (string= text "")
-                    do (write-string " " s)
-                       (write-string text s)))
-          1))
+  (let ((total-string (format-minor-modes-for-mode-line (list-mode-objects nil))))
+    (if (string= "" total-string)
+        total-string
+        (subseq total-string 1))))
 
 (defvar *bar-med-color* "^B")
 (defvar *bar-hi-color* "^B^3*")
