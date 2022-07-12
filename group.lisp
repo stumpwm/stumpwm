@@ -409,7 +409,7 @@ current window of the current group to the new one."
   (when-let ((next (group-forward current list))
              (win (group-current-window current)))
     (move-window-to-group win next)
-    (really-raise-window win)))
+    (focus-all win)))
 
 (defcommand gnew (name) ((:string "Group name: "))
   "Create a new group with the specified name. The new group becomes the
