@@ -6,7 +6,7 @@ generate-tests: test-runner.iid
 testcases/%.results/success: testcases/%.sh test-runner.iid
 	./script internal-run-one-test "$*"
 
-test-runner.iid: container-scripts/* Dockerfile Makefile ../../*.ac ../../*.asd ../../*.in ../../*.lisp ../../*.sh ../../.*.el ../../.*.yml ../../[A-Z]*
+test-runner.iid: $(shell git ls-files ../..)
 	docker build --iidfile test-runner.iid --build-arg userUID="$(shell id -u)" -f Dockerfile ../..
 
 .PHONY: run-tests generate-tests

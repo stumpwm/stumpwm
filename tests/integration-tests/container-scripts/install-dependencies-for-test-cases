@@ -1,9 +1,0 @@
-#!/bin/bash
-set -e
-
-packages=`tempfile`
-package () { echo "$@" >> $packages; }
-
-package xterm # used in 001, 002
-
-install-packages `cat "$packages"`

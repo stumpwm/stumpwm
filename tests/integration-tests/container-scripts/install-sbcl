@@ -1,9 +1,0 @@
-#!/bin/bash
-set -e
-
-sbcl_version=2.1.5
-
-install-packages curl bzip2 make
-curl -L https://downloads.sourceforge.net/project/sbcl/sbcl/${sbcl_version}/sbcl-${sbcl_version}-x86-64-linux-binary.tar.bz2 | tar xjf -
-cd sbcl-${sbcl_version}-x86-64-linux
-./install.sh
