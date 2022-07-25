@@ -26,6 +26,8 @@
 
 (export '(*top-map*
           *root-map*
+          *key-seq-color*
+          *altgr-offset*
           define-key
           kbd
           lookup-command
@@ -42,8 +44,12 @@
  *group-root-map* and either *tile-group-root-map*, *float-group-root-map*,
  or *dynamic-group-map*). It is known as the @dfn{prefix map}.")
 
+(defvar *key-seq-color* "^5"
+  "Color of a keybinding when displayed in windows such as the prefix
+keybinding in the which-key window.")
+
 (defstruct key
-  keysym shift control meta alt hyper super)
+  keysym shift control meta alt hyper super altgr)
 
 (defstruct kmap
   bindings)
@@ -130,13 +136,34 @@ for passing as the last argument to (apply #'make-key ...)"
                 (#\S (list :shift t))
                 (t (error 'kbd-parse-error :string mods)))))
 
+(defvar *altgr-offset* 2
+  "The offset of altgr keysyms. Often 2 or 4, but always an even number.")
+
+(defun keysym-requires-altgr (keysym)
+  (when *display*
+    (unless (and (xlib:keysym->keycodes *display* keysym) t)
+      (let* ((min (xlib:display-min-keycode *display*))
+             (max (xlib:display-max-keycode *display*))
+             (map (xlib::display-keyboard-mapping *display*))
+             (size (array-dimension map 1)))
+        (when (> *altgr-offset* size)
+          (error "AltGr offset is larger than the available offsets"))
+        (do ((i min (1+ i)))
+            ((> i max) nil)
+          (when (or (= keysym (aref map i *altgr-offset*))
+                    (= keysym (aref map i (1+ *altgr-offset*))))
+            (return-from keysym-requires-altgr t)))))))
+
 (defun parse-key (string)
   "Parse STRING and return a key structure. Raise an error of type
 kbd-parse if the key failed to parse."
   (let* ((p (when (> (length string) 2)
               (position #\- string :from-end t :end (- (length string) 1))))
-         (mods (parse-mods string (if p (1+ p) 0)))
-         (keysym (stumpwm-name->keysym (subseq string (if p (1+ p) 0)))))
+         (%mods (parse-mods string (if p (1+ p) 0)))
+         (keysym (stumpwm-name->keysym (subseq string (if p (1+ p) 0))))
+         (mods (if (keysym-requires-altgr keysym)
+                   (append '(:altgr t) %mods)
+                   %mods)))
     (if keysym
         (apply 'make-key :keysym keysym mods)
         (error 'kbd-parse-error :string string))))
@@ -177,7 +204,9 @@ others."
           (keysym->stumpwm-name (key-keysym key))))
 
 (defun print-key-seq (seq)
-  (format nil "^5*~{~a~^ ~}^n" (mapcar 'print-key seq)))
+  (format nil
+          (concat *key-seq-color* "*~{~a~^ ~}^n")
+          (mapcar 'print-key seq)))
 
 (defun define-key (map key command)
   "Add a keybinding mapping for the key, @var{key}, to the command,

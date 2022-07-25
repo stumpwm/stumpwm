@@ -94,6 +94,7 @@ This document explains how to use The Stump Window Manager.
 * Mode-line::
 * Groups::
 * Screens::
+* Minor Modes::
 * Internals::
 * Interacting With Unix::
 * Interacting With X11::
@@ -174,6 +175,11 @@ Screens
 
 * External Monitors::
 * Programming With Screens::
+
+Minor Modes
+
+* Minor Mode Example::
+* Programming With Minor Modes::
 
 Internals
 
@@ -370,56 +376,35 @@ Most of the window-switching commands listed below do not function in
 a floating group. You're restricted to `other', the `select-window-*'
 commands, and `windowlist'.
 
+
 @node Dynamic Group Basics, Frame Basics, Floating Group Basics, Basic Concepts
 @subsection Dynamic Group Basics
-Within a dynamic group, windows are automatically tiled. Windows get divided
-into a @dfn{master window} and a @dfn{window stack}. Together these form a
-@dfn{window wheel} which can be rotated. Each window is a top-level window, and
-has a frame to itself. As windows are added to the group, the current master
-window gets pushed onto the window stack, and the newest window takes its place.
-This causes the frames holding the stack windows to get progressively smaller
-the more windows are added to the group. When a window stack frame becomes to
-small to split, the window at the bottom of the stack gets sent to an overflow
-group. This behavior can be configured with
-@var{*dynamic-group-overflow-policy*}. 
+Within a dynamic group, windows are organized into a @dfn{master window} and a
+@dfn{window stack}, with one of each per head. When a new window is added to a
+head within a dynamic group, that heads master window is pushed onto that heads
+window stack, and the new window becomes the master window. When a head becomes
+to full (ie more windows cannot be placed upon the stack) a overflow policy is
+used to determine which window to move to a separate head or group. 
 
-### *dynamic-group-overflow-policy*
+!!! gnew-dynamic
 
-### *dynamic-overflow-group*
+!!! gnewbg-dynamic
 
-### *dynamic-group-master-split-ratio*
+!!! rotate-windows
 
-Normal tiling group window and frame commands dont work within a dynamic group,
-being supplanted by the following group specific selection, rotation,
-and swapping commands.
+!!! change-layout
 
-@itemize
-@item
-@command{dyn-cycle} (@kbd{C-t n} or @kbd{C-t p}) Rotate the
-window wheel clockwise or counterclockwise. Takes an optional argument to
-control where focus lays after rotating, one of :master, :remain, or :follow.
+!!! change-default-layout
 
-@item
-@command{dyn-switch} (@kbd{C-t W}) Prompt for a window number to swap with the
-master window
+!!! change-split-ratio
 
-@item
-@command{dyn-switch-prompt-for-window} (@kbd{C-t w}) Displays window numbers on
-each frame: hit a number key or click on a window to swap it with the master
-window.
+!!! change-default-split-ratio
 
-@item
-@command{dyn-switch-prompt-for-frame} (unbound by default) The same as
-@command{dyn-switch-prompt-for-window}, but draws frame numbers. 
+!!! retile
 
+!!! select-floating-window
 
-@item
-@command{dyn-focus-current-window} (@kbd{C-t RET}) Swap the current window with
-the master window.
-
-@item
-@command{dyn-focus-master-window} (@kbd{C-t f}) Move focus to the master window.
-@end itemize
+### *rotation-focus-policy*
 
 When defining commands, anything restricted to tiling groups will also be
 active in dynamic groups. To fully restrict it to tiling groups, call the
@@ -728,6 +713,7 @@ mimics GNU Screen's keyboard handling. StumpWM's default prefix key is
 * List of Default Keybindings::
 * Binding Keys::
 * Modifiers::
+* AltGr Keys::
 * Remapped Keys::
 @end menu
 
@@ -839,7 +825,7 @@ input should be valid Common Lisp.
 
 @item C-t C-h
 @itemx C-t ?
-The help.
+The help. These can be customized using the @var{*help-keys*} variable.
 
 @item C-t -
 Hide all frames and show the root window.
@@ -950,6 +936,7 @@ Describe the specified command.
 ### *groups-map*
 ### *group-top-maps*
 ### *exchange-window-map*
+### *key-seq-color*
 
 !!! bind
 !!! unbind
@@ -964,7 +951,7 @@ Describe the specified command.
 ### *editor-bindings*
 ### *numpad-map*
 
-@node Modifiers, Remapped Keys, Binding Keys, Key Bindings
+@node Modifiers, AltGr Keys, Binding Keys, Key Bindings
 @section Modifiers
 
 Many users have had some difficulty with setting up modifiers for
@@ -1102,7 +1089,43 @@ commands to the @var{*top-map*}.
 ### *all-modifiers*
 ### *modifiers*
 
-@node Remapped Keys, , Modifiers, Key Bindings
+@node AltGr Keys, Remapped Keys, Modifiers, Key Bindings
+@section AltGr Keys
+
+StumpWM uses the CLX client library for X11, which doesnt support the
+XKB extension. As such support for Alt Graph must be handled
+specially.
+
+Preliminary support for Alt Graph in StumpWM is done by registering
+AltGr as a modifier key and specially handling it when it is a member of
+a key press' state. By default StumpWM treats AltGr key presses as a
+normal key and not a modifier, and this behavior should not be changed
+unless necessary. To enable treating AltGr as a modifier, the user must
+place the following in their stumpwmrc:
+
+@example
+(register-altgr-as-modifier)
+@end example
+
+Additionally, the variable @var{*altgr-offset*} defaults to 2, which may
+be appropriate for the users keyboard layout, or may not. Some users may
+have an AltGr offset of 4, or potentially 6. If, after calling
+@code{register-altgr-as-modifier}, keys on AltGr aren't being registered
+properly, then the offset may need to be changed. The user can check
+this explicitly by finding a keysym that requires AltGr and passing it
+to @code{keysym-requires-altgr}. As an example, some layouts have @kbd{ł} on
+@kbd{AltGr+l}. In such a case, the following example would return true
+when @var{*altgr-offset*} is correct:
+
+@example
+(stumpwm::keysym-requires-altgr
+  (stumpwm::stumpwm-name->keysym "lstroke"))
+@end example
+
+@@@ register-altgr-as-modifier
+### *altgr-offset*
+
+@node Remapped Keys, , AltGr Keys, Key Bindings
 @section Remapped Keys
 
 StumpWM may be configured to translate certain familiar top level
@@ -1536,6 +1559,7 @@ return a ``nil'' value in those cases, and let the command handle that.
 @@@ wrap
 ### *message-max-width*
 ### *help-max-height*
+### *which-key-format*
 !!! colon
 
 %%% with-restarts-menu
@@ -1725,6 +1749,14 @@ An input function takes 2 arguments: the input structure and the key pressed.
 ### *hidden-window-color*
 
 ### *honor-window-moves*
+
+
+%%% define-fullscreen-in-frame-rule
+@@@ add-fullscreen-in-frame-rule
+@@@ remove-fullscreen-in-frame-rule
+### *fullscreen-in-frame-p-window-functions*
+
+
 @menu
 * Window Marks::
 * Customizing Window Appearance::
@@ -2039,6 +2071,106 @@ color variables.
 ### *mode-line-border-color*
 ### *mode-line-timeout*
 
+@menu
+* Mode-line Interaction::
+@end menu
+
+@node Mode-line Interaction, , Mode-line, Mode-line
+@section Mode-line Interaction
+Mode line formatters can register sections of text to be clickable by
+use of the color formatters @code{:on-click} and
+@code{:on-click-end}. Any text enclosed by these formatters has its
+bounds saved, and when the mode line recieves a button press event these
+bounds are checked against to find a clickable area, whose registered
+function is then called. These formatters can be thought of as similar
+to XML tags.
+
+To disable the on-click behavior, remove the function
+@code{check-for-ml-press} from the hook @var{*mode-line-click-hook*}.
+
+To call a function by click the function must first be registered. The
+function must take at least one argument, the button code. Here is an
+example of a click-to-focus function and its registration:
+
+@example
+(defun ml-on-click-focus-window (code id &rest rest)
+  (declare (ignore code rest))
+  (when-let ((window (window-by-id id)))
+    (focus-all window)))
+
+(register-ml-on-click-id :ml-on-click-focus-window #'ml-on-click-focus-window)
+@end example
+
+This defines a function that focuses a window based upon its X11 window
+ID, and registers it under the ID @code{:ml-on-click-focus-window}. Here
+is an example of a mode line formatter that makes use of this function:
+
+@example
+(add-screen-mode-line-formatter #\i 'fmt-head-window-list-clickable)
+(defun fmt-head-window-list-clickable (ml)
+  "Using *window-format*, return a 1 line list of the windows,
+space seperated and clickable."
+  (flet ((fmt-w (w)
+           (let ((str (format-expand *window-formatters*
+                                     *window-format*
+                                     w)))
+             (format-with-on-click-id (if (eq w (current-window))
+                                          (fmt-highlight str)
+                                          str)
+                                      :ml-on-click-focus-window
+                                      (window-id w)))))
+@verbatim
+    (format nil "~{~a~^ ~}"
+@end verbatim
+            (mapcar #'fmt-w
+                    (sort1 (head-windows (mode-line-current-group ml)
+                                         (mode-line-head ml))
+                           #'< :key #'window-number)))))
+@end example
+
+In the above formatter, every windows expansion is wrapped in a
+:on-click/end pair, which takes the ID we registered as the function to
+call and the window ID as an argument to be passed to its function. The
+arguments provided to @code{:on-click} will be read but not
+evaluated. The string generated will look like so:
+
+@example
+"^(:on-click :ml-on-click-focus-window 308242)window text^(:on-click-end)"
+@end example
+
+Clickable text can be nested, in which case the innermost clickable text
+will take precendent. In the following example @code{:id2} will be
+dispatched when clicking @code{2}, but @code{:id1} will be dispatched
+when clicking @code{1} and @code{3}:
+
+@example
+"^(:on-click :id1)1^(:on-click :id2)2^(:on-click-end)3^(:on-click-end)"
+@end example
+
+If one wished for right click to delete windows, then the following
+example could be placed in the .stumpwmrc:
+
+@example
+(labels ((ml-on-click-focus-or-delete-window (code id &rest rest)
+           (declare (ignore rest))
+           (when-let ((window (window-by-id id)))
+             (let ((button (decode-button-code code)))
+               (case button
+                 ((:left-button)
+                  (focus-all window))
+                 ((:right-button)
+                  (delete-window window)))))))
+  (register-ml-on-click-id :ml-on-click-focus-window
+                           #'ml-on-click-focus-or-delete-window))
+@end example
+
+This will replace the @code{:ml-on-click-focus-window} function, and all
+uses of @code{:on-click} formatters referring to
+@code{:ml-on-click-focus-window} will use the new function. 
+
+@@@ register-ml-on-click-id
+@@@ format-with-on-click-id
+
 @node Groups, Screens, Mode-line, Top
 @chapter Groups
 Groups in StumpWM are more commonly known as @dfn{virtual desktops} or
@@ -2108,7 +2240,7 @@ Groups in StumpWM are more commonly known as @dfn{virtual desktops} or
 
 @@@ current-group
 
-@node Screens, Internals, Groups, Top
+@node Screens, Minor Modes, Groups, Top
 @chapter Screens
 StumpWM handles multiple screens.
 
@@ -2150,7 +2282,367 @@ the head configuration.
 @@@ current-window
 
 ### *screen-list*
-@node Internals, Interacting With Unix, Screens, Top
+
+@node Minor Modes, Internals, Screens, Top
+@chapter Minor Modes
+
+Like Emacs, StumpWM has the concept of minor modes. These are defined by
+the macro @code{DEFINE-MINOR-MODE}. Defining a minor mode creates a
+class and a set of methods specializing upon it. Minor modes are scoped
+to a window, head, group, or screen, or they may be unscoped. In
+addition to this minor modes may be local or global. When a minor mode
+is global all new instances of the scope object will be created with the
+minor mode already active in them. Minor modes define their own top
+level and root level keymaps, as well as hooks that are run upon
+enabling or disabling the minor mode, and a lighter to display in the
+mode line.
+
+Minor modes are mixins that get added to the appropriate scope object
+when enabled. As such minor modes allow the augmenting, modifying, and
+overriding of default StumpWM behavior by defining methods for the
+generic functions of the scope object. For example, a minor mode may be
+scoped to a window and define a method for the generic function
+@code{UPDATE-DECORATION} to change how window decoration is handled for
+the windows it is enabled in.
+
+%%% define-minor-mode
+
+@menu
+* Programming With Minor Modes::
+* Minor Mode Scopes::
+* Minor Mode Example::
+@end menu
+
+@node Programming With Minor Modes, Minor Mode Scopes, Minor Modes, Minor Modes
+@section Programming With Minor Modes
+
+Minor modes get their power from their ability to override and augment
+generic functions which are called with the minor mode's scope object as
+an argument. If you find a function whose behavior you wish to augment
+or override in the process of writing a minor mode, open an issue or
+submit a PR to generify the function. Generification is easily done like
+so:
+
+@example
+(defun somefun (a b)
+  "docstring"
+  (otherfun (+ a b)))
+;; the above becomes
+(defgeneric somefun (a b)
+  (:documentation "docstring")
+  (:method (a b)
+    (otherfun (+ a b))))
+@end example
+
+When defining a minor mode, the programmer may desire to perform setup
+for the minor mode. This is can be done in three ways. The first is to
+hang a function upon the minor modes enable hook. However this runs the
+risk of users potentially clobbering the initialization function, or
+modifying the hook such that the initialization function is not the
+first function run. The second way is to define a method for the generic
+function @code{update-instance-for-different-class}. This function
+should specialize upon the minor mode as the second argument. As a final
+option, one can define before, after, and around methods for the generic
+function @code{autoenable-minor-mode} if and only if the method does not
+access any slots within the object.
+
+One of the pitfalls of minor modes is that they are ultimately enabled
+by calling @code{change-class}, which places some restrictions upon
+where they can be enabled. Specifically, it is implied to be undefined
+behavior if a minor mode is enabled in an object from within a method
+which accesses slots of that object. While in practice this has not
+proven to be an issue at the time of writing, this is undefined behavior
+and future versions of SBCL may break if this is done.
+
+When writing a minor mode, it is often useful to separate out the
+desired functionality into its own mixin classes and use those in the
+superclass list of the minor mode. For example:
+
+@example
+(define-minor-mode my-mode (my-mixin minor-mode) ())
+@end example
+
+This prevents issues with inheritance and dynamic mixins from cropping
+up. Since minor modes are just classes, a minor mode can descend from
+another minor mode. However after enabling the subclass minor mode, the
+superclass minor mode cannot be enabled. However if the superclass minor
+mode is enabled first, then the subclass minor mode can be enabled. The
+easiest way around this is the aforementioned approach of mixins.
+As an example of the inheritance issue, take the following minor mode
+definitions:
+
+@example
+(define-minor-mode x () ())
+(define-minor-mode y (x) ())
+
+(enable-minor-mode 'x)
+(enable-minor-mode 'y) ; both modes are enabled
+;; As opposed to
+(enable-minor-mode 'y)
+(enable-minor-mode 'x) ; signals an error
+@end example
+
+
+When enabling and disabling minor modes theres a set of generic
+functions in charge of determining what object to mix the minor mode in
+to and whether or not to mix it.
+
+@@@ autoenable-minor-mode
+
+Defining a minor mode defines a main method for this generic function
+which will mix the minor mode into the scope object when called and
+returns T. This method specializes upon the minor mode symbol and the
+scope type. The minor mode will only be enabled and the hooks run when
+the function @code{ENABLE-WHEN} returns T. Any before after or around
+methods for this function must not access any slots. 
+
+@@@ autodisable-minor-mode
+
+Defining a minor mode defines a main method for this generic function
+which specializes upon the mode symbol and the mode, and removes the
+minor mode from the object. Any methods for this function must not
+access any slots.
+
+@@@ enable-when
+
+Outside of autoenabling and autodisabling minor modes, there are several
+generic functions which dispatch upon minor modes and their names.
+
+@@@ minor-mode-global-p
+@@@ minor-mode-scope
+@@@ minor-mode-enable-hook
+@@@ minor-mode-disable-hook
+@@@ minor-mode-hook
+
+@@@ minor-mode-keymap
+
+This function has a set of main methods defined which all call the next
+method to obtain a list of top maps for every minor mode. Any extra
+keymaps one wishes to add to the minor mode may be added by defining a
+main method which calls @code{call-next-method} and returns a flat
+list. Similarly, an around method may be used which abides by the same
+rules.
+
+@@@ minor-mode-lighter
+
+This function operates similarly to @code{minor-mode-keymap}, with a
+main method defined for every minor mode which calls
+@code{call-next-method} and returns a flat list. In addition there is a
+single around method defined which concatenates all these strings
+together.
+
+There are also a set of regular functions and special variables which
+which may be of use when working with minor modes.
+
+@@@ enable-minor-mode
+@@@ disable-minor-mode
+@@@ list-modes
+@@@ list-minor-modes
+@@@ current-minor-modes
+@@@ minor-mode-enabled-p
+@@@ find-minor-mode
+
+### *minor-mode*
+### *minor-mode-enable-hook*
+### *minor-mode-disable-hook*
+### *unscoped-minor-modes*
+
+€€€ minor-mode
+
+@node Minor Mode Scopes, Minor Mode Example, Programming With Minor Modes, Minor Modes
+@section Minor Mode Scopes
+
+Minor modes can be scoped to different objects in a rather arbitrary
+manner. These scopes are defined by the macro
+@code{DEFINE-MINOR-MODE-SCOPE}. Because minor modes are implemented as
+mixins, the object returned by a scopes current object function must be
+a class instance. 
+
+%%% define-minor-mode-scope
+
+%%% define-descended-minor-mode-scope
+
+@@@ add-minor-mode-scope
+
+When a minor mode is defined its scope is looked up and validated by the
+function @code{VALIDATE-SCOPE}. This function takes a scope and a list
+of superclasses, and ensures that the scope can descend from the
+superclasses scopes. This restricts the valid scopes to ensure that a
+minor mode scoped to @code{:GROUP} cant be a subclass of a minor mode
+scoped to @code{:WINDOW}, for example. However there is a way to
+override this by explicitly stating that two otherwise incompatible
+scopes are compatible. This is done by defining methods for the generic
+function @code{VALIDATE-SUPERSCOPE} which dispatch upon the scope
+designators. Such methods should return at least one value, indicating
+if the superscope is a valid parent of the scope. If multiple values are
+returned, the second value must indicate whether the superscope is an
+invalid parent of the scope. For example:
+
+@verbatim
+(defmethod stumpwm:validate-superscope ((c (eql :id1)) (p (eql :id2)))
+  "Explicitly allow id1 to descend from id2"
+  (values t nil))
+
+(defmethod stumpwm:validate-superscope ((c (eql :id3)) (p (eql :id4)))
+  "Explicitly prevent id3 from descending from id4"
+  (values nil t))
+@end verbatim
+
+When defining and using scopes the type specifier is important; it is
+used to determine what minor modes should be mixed into an object when
+it is created. For this reason it is important when defining a minor
+mode or minor mode scope to understand the type hierarchy. It may also
+be in the programmers best interests to define an accompanying type.
+
+The following scopes are predefined:
+@itemize
+@item
+Designator: @code{:UNSCOPED}, type: @code{T}
+Current object: return the global unscoped object.@*
+
+@item
+Designator: @code{:SCREEN}, type: @code{SCREEN}
+Current object: return the current screen.@*
+
+@item
+Designator: @code{:GROUP}, type: @code{GROUP}
+Current object: return the current group.@*
+
+@item
+Designator: @code{:TILE-GROUP}, type: @code{TILE-GROUP}
+Current object: return the current group.@*
+
+@item
+Designator: @code{:DYNAMIC-GROUP}, type: @code{DYNAMIC-GROUP}
+Current object: return the current group.@*
+
+@item
+Designator: @code{:FLOAT-GROUP}, type: @code{FLOAT-GROUP}
+Current object: return the current group.@*
+
+@item
+Designator: @code{:TILING-NON-DYNAMIC-GROUP}, type: @code{TILE-GROUP}
+Current object: return the current group when it is a non-dynamic tiling
+group.@*
+
+@item
+Designator: @code{:HEAD}, type: @code{HEAD}
+Current object: return the current head.@*
+
+@item
+Designator: @code{:FRAME}, type: @code{FRAME}
+Current object: return the current frame when in a tiling group.@*
+
+@item
+Designator: @code{:FRAME-EXCLUDING-HEAD}, type: @code{ONLY-FRAME-NO-HEADS}
+Descends from minor mode scope @code{:FRAME}.
+
+@item
+Designator: @code{:WINDOW}, type: @code{WINDOW}
+
+Current object: return the current window.@*
+All objects: collect every window from every group in the current screen.
+
+@item
+Designator: @code{:TILE-WINDOW}, type: @code{TILE-WINDOW}
+
+Current object: return the current window.@*
+All objects: collect every window from every tiling group, filtering all
+floating windows.
+
+@item
+Designator: @code{:FLOAT-WINDOW}, type: @code{FLOAT-WINDOW}
+
+Current object: return the current window.@*
+All objects: colelct every window from every group, filtering all non
+floating windows.
+
+@end itemize
+
+@node Minor Mode Example, , Minor Mode Scopes, Minor Modes
+@section Minor Mode Example
+
+A simple example of a minor mode is a version of the Emacs modes viper
+or evil for StumpWM. Such a minor mode might look like this:
+
+@verbatim
+(define-minor-mode swm-evil-mode () ()
+  (:scope :screen)
+  (:interactive t)
+  (:top-map '(("i" . "swm-evil-mode")
+              ("j" . "move-focus down")
+              ("k" . "move-focus up")
+              ("h" . "move-focus left")
+              ("l" . "move-focus right")
+              ("p" . "pull-hidden-previous")
+              ("n" . "pull-hidden-next")
+              ("S" . "hsplit")
+              ("s" . "vsplit")
+              ("r" . "remove-split")
+              ("g" . *groups-map*)
+              ("x" . *exchange-window-map*)))
+  (:lighter-make-clickable nil)
+  (:lighter "EVIL"))
+@end verbatim
+
+In the above example, the minor mode @code{swm-evil-mode} is defined,
+alongside a command of the same name which toggles it on and off. The
+minor mode is scoped to a screen, meaning that upon activation it will
+be dynamically mixed in to the screen object. The lighter is the string
+@code{"EVIL"} and the lighter is not made clickable.
+
+When defining a minor mode top map it is important to avoid multi-key
+bindings that clobber the prefix key. For example, if the prefix key is
+@kbd{C-t} then defining the keybinding @kbd{C-t n} in the top map of a
+minor mode is an error. Instead bind the key @kbd{n} in the minor mode's
+root map.
+
+As another example we can define a frame topbar mode. This should adjust
+every frame to leave extra space at the top of the frame to display a
+bar of some sort. The following assumes that the functions
+@code{frame-display-height} and @code{frame-display-y} are generic. 
+
+@example
+(defclass frame-topbar ()
+  ((frame-topbar-height :initform 10 :accessor frame-topbar-height)))
+
+(defmethod frame-display-height :around (group (frame frame-topbar))
+  (let ((height (call-next-method)))
+    (- height (frame-topbar-height frame))))
+
+(defmethod frame-display-y :around (group (frame frame-topbar))
+  (let ((y (call-next-method)))
+    (+ y (frame-topbar-height frame))))
+
+(define-minor-mode frame-bar (frame-topbar minor-mode) ()
+  (:global t)
+  (:scope :frame)
+  (:lighter "T-BAR")
+  (:interactive frame-topbar-mode))
+
+(defmethod update-instance-for-different-class :after
+    (prev (obj frame-bar) &rest rest)
+  (declare (ignore prev rest))
+  (when (frame-window obj)
+    (let* ((group (window-group (frame-window obj)))
+           (windows (frame-windows group obj)))
+      (mapc #'maximize-window windows))))
+@end example
+
+In the above example, a class is defined which holds the height of the
+frame topbar. Then two around methods are defined such that windows
+querying the frame for their y position and height get an updated value
+reflecting the topbars presence. Then a minor mode is defined which
+inherits from the class we defined. It is scoped to frames and is a
+global minor mode, so it will be enabled in all existing frames and any
+other frames as they are created. Finally the initialization is handled
+in the after method for update-instance-for-different-class, which
+updates every window to have a new size which respects the topbar.
+
+The implementation of the actual topbar is left as an exercise for the
+reader. 
+
+@node Internals, Interacting With Unix, Minor Modes, Top
 @chapter Internals
 @menu
 * IO Loop::
@@ -2465,6 +2957,7 @@ Return T if TIMER is a timer structure.
 @@@ lookup-command
 
 ### *help-map*
+### *help-keys*
 
 @node Colors, Hooks, Miscellaneous Commands, Top
 @chapter Colors
@@ -2540,6 +3033,13 @@ immediately be used. In a string you'll probably only want to specify
 an integer.
 @item
 :> takes no arguments. It triggers right-alignment for the rest of the line.
+@item
+:on-click takes one or more arguments and registers the following text
+area as clickable. The initial argument must be an ID registered using
+the function REGISTER-ML-ON-CLICK-ID.
+@item
+:on-click-end takes no arguments. It marks the end of clickable text
+begun by :on-click. 
 
 @end itemize
 
@@ -3079,6 +3579,7 @@ sending them as one.
 ### *suppress-frame-indicator*
 ### *suppress-window-placement-indicator*
 ### *text-color*
+### *draw-in-color*
 ### *timeout-frame-indicator-wait*
 ### *top-level-error-action*
 

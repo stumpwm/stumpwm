@@ -30,6 +30,7 @@
           *screen-mode-line-format*
           *screen-mode-line-formatters*
           add-screen-mode-line-formatter
+          register-ml-on-click-id
           enable-mode-line
           toggle-mode-line))
 
@@ -315,14 +316,31 @@ timer.")
 
 (defun redraw-mode-line (ml &optional force)
   (when (eq (mode-line-mode ml) :stump)
+    (setf (mode-line-new-bounds ml) nil)
     (let* ((*current-mode-line-formatters* *screen-mode-line-formatters*)
            (*current-mode-line-formatter-args* (list ml))
-           (string (mode-line-format-string ml)))
-      (when (or force (not (string= (mode-line-contents ml) string)))
-        (setf (mode-line-contents ml) string)
-        (resize-mode-line ml)
-        (render-strings (mode-line-cc ml) *mode-line-pad-x* *mode-line-pad-y*
-                        (split-string string (string #\Newline)) ())))))
+           (str
+             (handler-case (mode-line-format-string ml)
+               (error (c)
+                 (format nil "Unable to expand mode line format string: ~S" c)))))
+      (flet ((resize-and-render (string)
+               (setf (mode-line-contents ml) string)
+               (resize-mode-line ml)
+               (render-strings (mode-line-cc ml)
+                               *mode-line-pad-x*
+                               *mode-line-pad-y*
+                               (split-string string (string #\Newline))
+                               ()
+                               :ml ml)
+               (when (mode-line-new-bounds ml)
+                 (setf (mode-line-on-click-bounds ml)
+                       (reverse (mode-line-new-bounds ml))))))
+        (handler-case
+            (when (or force (not (string= (mode-line-contents ml) str)))
+              (resize-and-render str))
+          (error (c)
+            (resize-and-render
+             (format nil "Unable to render mode line: ~S" c))))))))
 
 (defun update-mode-lines (screen)
   "Update all mode lines on SCREEN"
@@ -332,6 +350,56 @@ timer.")
 (defun update-all-mode-lines ()
   "Update all mode lines."
   (mapc 'redraw-mode-line *mode-lines*))
+
+;;; Registering mode line clickable areas
+
+(defvar *mode-line-on-click-functions* nil
+  "An alist of IDs and and functions, used by :on-click formatter calls")
+
+(defun register-ml-on-click-id (id fn)
+  "Register FN with ID, to be used by the :on-click mode line color formatter."
+  (let ((present (assoc id *mode-line-on-click-functions*)))
+    (if present
+        (setf (cdr present) fn)
+        (push (cons id fn) *mode-line-on-click-functions*))))
+
+(defun register-ml-boundaries-with-id (ml xbeg xend ybeg yend id args)
+  (push (list xbeg xend ybeg yend id args) (mode-line-new-bounds ml)))
+
+(defun mode-line-click-dispatcher (ml code x y)
+  "A function to hang on the mode line click hook which dispatches the
+appropriate mode line click function."
+  (let ((registered-ids *mode-line-on-click-functions*)
+        (bounds-list (mode-line-on-click-bounds ml)))
+    (dformat 3 "In mode line click: x=~A~&~2Tregistered ids: ~S~&~2Tbounds: ~S~&"
+             x registered-ids bounds-list)
+    (loop for (xbeg xend ybeg yend id args) in bounds-list
+          do (when (and (< xbeg x xend)
+                        (< ybeg y yend))
+               (let ((fn (assoc id registered-ids)))
+                 (when fn
+                   (dformat 3 "Mode line click, calling ~A" (cdr fn))
+                   (apply (cdr fn) code args)))
+               (loop-finish)))))
+
+(add-hook *mode-line-click-hook* 'mode-line-click-dispatcher)
+
+(flet ((ml-on-click-focus-window (code id &rest rest)
+         (declare (ignore code rest))
+         (when-let ((window (window-by-id id)))
+           (focus-all window)))
+       (ml-on-click-switch-to-group (code group &rest rest)
+         (declare (ignore rest code))
+         (when-let ((g (find-group (current-screen) group)))
+           (switch-to-group g)))
+       (ml-on-click-do-nothing (code &rest rest)
+         (declare (ignore rest code))
+         nil))
+  (register-ml-on-click-id :ml-on-click-focus-window #'ml-on-click-focus-window)
+  (register-ml-on-click-id :ml-on-click-switch-to-group
+                           #'ml-on-click-switch-to-group)
+  (register-ml-on-click-id :ml-on-click-do-nothing #'ml-on-click-do-nothing))
+
 
 ;;; External mode lines
 

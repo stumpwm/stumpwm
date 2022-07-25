@@ -16,7 +16,8 @@
                #:cl-ppcre
                #:clx
                #:sb-posix
-               #:sb-introspect)
+               #:sb-introspect
+               #:dynamic-mixins)
   :components ((:file "package")
                (:file "debug")
                (:file "primitives")
@@ -60,7 +61,21 @@
                (:file "dynamic-window")
                (:file "dynamic-group")
                (:file "remap-keys")
+               (:file "manual")
+               (:file "minor-modes")
+               (:file "replace-class")
                ;; keep this last so it always gets recompiled if
                ;; anything changes
                (:file "version"))
   :in-order-to ((test-op (test-op "stumpwm-tests"))))
+
+(defsystem "stumpwm/build"
+  :depends-on ("stumpwm")
+  :build-operation program-op
+  :build-pathname "stumpwm"
+  :entry-point "stumpwm:main"
+  :components ((:file "main")))
+
+;;; Explicitly load the vendored dynamic mixins asd file
+(asdf:load-asd
+ (asdf:system-relative-pathname "stumpwm" "dynamic-mixins/dynamic-mixins.asd"))

@@ -8,9 +8,13 @@
   "Set this to T if you never want windows to resize based on incremental WM_HINTs,
 like xterm and emacs.")
 
-(defclass tile-window (window)
+(define-swm-class tile-window (window)
   ((frame   :initarg :frame   :accessor window-frame)
    (normal-size :initform nil :accessor window-normal-size)))
+
+(defmethod print-swm-object ((object tile-window) stream)
+  (write-string "TILE-" stream)
+  (call-next-method))
 
 (defmethod update-decoration ((window tile-window))
   ;; give it a colored border but only if there are more than 1 frames.
@@ -114,15 +118,21 @@ than the root window's width and height."
       ;; handle specially fullscreen windows.
       ((window-fullscreen win)
        (let* ((win-group (window-group win))
-              (head (frame-head win-group f)))
-         (setf x (frame-x head)
-               y (frame-y head)
-               width (frame-width head)
-               height (frame-height head)
-               (group-raised-window (window-group win)) win)
-         (when (group-raised-window win-group)
-           (setf (xlib:window-priority (window-parent win)
-                                       (window-parent (group-raised-window win-group))) :above)))
+              (fs-in-frame (fullscreen-in-frame-p win))
+              (head (frame-head win-group f))
+              (frame-to-fill (if fs-in-frame f head)))
+         ;; Determine if the window should be fullscreened in the frame or the
+         ;; head. If fullscreening a frame, use the frame-display functions on
+         ;; y axis to account for the modeline.
+         (if fs-in-frame
+             (setf x (frame-x frame-to-fill)
+                   y (frame-display-y win-group frame-to-fill)
+                   width (frame-width frame-to-fill)
+                   height (frame-display-height win-group frame-to-fill))
+             (setf x (frame-x frame-to-fill)
+                   y (frame-y frame-to-fill)
+                   width (frame-width frame-to-fill)
+                   height (frame-height frame-to-fill))))
        (return-from geometry-hints (values x y 0 0 width height 0 t)))
       ;; Adjust the defaults if the window is a transient_for window.
       ((find (window-type win) '(:transient :dialog))
@@ -330,8 +340,11 @@ when selecting another window."
     (when pulled-window
       (pull-window pulled-window))))
 
-(defun exchange-windows (win1 win2)
-  "Exchange the windows in their respective frames."
+(defgeneric exchange-windows (win1 win2)
+  (:documentation "Exchange the windows in their respective frames."))
+
+(defmethod exchange-windows ((win1 tile-window) (win2 tile-window))
+  "Exchange tile windows in their respective frames."
   (let ((f1 (window-frame win1))
         (f2 (window-frame win2)))
     (unless (eq f1 f2)
@@ -352,9 +365,7 @@ when selecting another window."
       (let* ((frame-set (group-frames (window-group win)))
              (neighbour (neighbour dir (window-frame win) frame-set)))
         (if (and neighbour (frame-window neighbour))
-            (if (typep (window-group win) 'dynamic-group)
-                (exchange-dynamic-windows win (frame-window neighbour))
-                (exchange-windows win (frame-window neighbour)))
+            (exchange-windows win (frame-window neighbour))
             (message "No window in direction ~A!" dir)))
       (message "No window in current frame!")))
 
@@ -459,11 +470,10 @@ frame. Possible values are:
                                                 (window-height-inc window)))))
       (maximize-window window)))))
 
-(defcommand (unmaximize tile-group) () ()
+(defcommand (unmaximize tile-group) (&optional (window (current-window))) (:rest)
   "Use the size the program requested for current window (if any) instead of maximizing it."
-  (let* ((window (current-window))
-         (status (not (window-normal-size window)))
-         (hints (window-normal-hints window)))
+  (let ((status (not (window-normal-size window)))
+        (hints (window-normal-hints window)))
     (if (and (xlib:wm-size-hints-width hints)
              (xlib:wm-size-hints-height hints))
         (progn

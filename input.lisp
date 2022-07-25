@@ -28,6 +28,7 @@
           *input-completion-style*
           *input-map*
           *numpad-map*
+          register-altgr-as-modifier
           completing-read
           input-delete-region
           input-goto-char
@@ -64,7 +65,7 @@ remaining tail of the list as a second value."
 
 
 (defstruct input-line
-  string position history history-bk password)
+  string position history history-bk password most-recent-dead-key)
 
 
 ;;; completion styles
@@ -222,6 +223,14 @@ Available completion styles include
   (or (find keycode *all-modifiers* :test 'eql)
       ;; Treat No Symbol keys as modifiers (and therefore ignorable)
       (= (xlib:keycode->keysym *display* keycode 0) 0)))
+
+(defun register-altgr-as-modifier ()
+  "Register the keysym(s) for ISO_Level3_Shift as modifiers."
+  (setf *all-modifiers*
+        (append (multiple-value-list
+                 (xlib:keysym->keycodes *display*
+                                        (keysym-name->keysym "ISO_Level3_Shift")))
+                *all-modifiers*)))
 
 (defun keycode->character (code mods)
   (let ((idx (if (member :shift mods) 1 0)))
@@ -535,7 +544,7 @@ match with an element of the completions."
   (let* ((mods    (xlib:make-state-keys state))
          (shift-p (and (find :shift mods) t))
          (altgr-p (and (intersection (modifiers-altgr *modifiers*) mods) t))
-         (base    (if altgr-p 2 0))
+         (base    (if altgr-p *altgr-offset* 0))
          (sym     (xlib:keycode->keysym *display* code base))
          (upsym   (xlib:keycode->keysym *display* code (+ base 1))))
     ;; If a keysym has a shift modifier, then use the uppercase keysym
@@ -548,7 +557,8 @@ match with an element of the completions."
               :meta (and (intersection mods (modifiers-meta *modifiers*)) t)
               :alt (and (intersection mods (modifiers-alt *modifiers*)) t)
               :hyper (and (intersection mods (modifiers-hyper *modifiers*)) t)
-              :super (and (intersection mods (modifiers-super *modifiers*)) t))))
+              :super (and (intersection mods (modifiers-super *modifiers*)) t)
+              :altgr altgr-p)))
 
 
 ;;; input string utility functions
@@ -753,12 +763,57 @@ functions are passed this structure as their first argument."
          (setf (input-line-string input) (make-input-string (elt *input-history* (input-line-history input)))
                (input-line-position input) (length (input-line-string input))))))
 
+(defun dead-key-character (keysym)
+  "Given a dead key keysym, return the corresponding non-dead character"
+  (let ((symname (subseq (gethash keysym *dead-key-sym->name*) 5)))
+    ;; Some sym names are different from their non-dead name, patch those here.
+    (cond ((string= symname "tilde")
+           (setf symname "asciitilde"))
+          ((string= symname "circumflex")
+           (setf symname "asciicircum")))
+    (xlib:keysym->character *display*
+                            (gethash symname *name-keysym-translations*))))
+
+(defun dead-key-p (keysym)
+  "Check if KEYSYM is dead"
+  (gethash keysym *dead-key-sym->name*))
+
+(defun make-combined-character (keysym dead-keysym)
+  "Try to modify KEYSYM with DEAD-KEYSYM by concatenating the keysym names
+together, finding the keysym for it, and looking up the keysym on the X server.
+
+For example, given a keysym corresponding to 'a' and a dead keysym corresponding
+to 'dead_acute', 'dead_' is trimmed from the dead keysyms name, and 'a' and
+'acute' are concatenated to give 'aacute', the name of the keysym for 'á'."
+  (let ((charname (keysym->keysym-name keysym))
+        (deadstr (ignore-errors
+                  (subseq (gethash dead-keysym *dead-key-sym->name*) 5))))
+    (xlib:keysym->character *display*
+                            (keysym-name->keysym
+                             (concatenate 'string charname deadstr)))))
+
+(defun find-character-for-keysym (input key)
+  "Find a character for the given key with support for dead keys."
+  (cond ((dead-key-p (key-keysym key))
+         (if (and (input-line-most-recent-dead-key input)
+                  (= (input-line-most-recent-dead-key input) (key-keysym key)))
+             (progn (setf (input-line-most-recent-dead-key input) nil)
+                    (dead-key-character (key-keysym key)))
+             (setf (input-line-most-recent-dead-key input) (key-keysym key))))
+        (t (let ((char (make-combined-character
+                        (key-keysym key)
+                        (input-line-most-recent-dead-key input))))
+             (setf (input-line-most-recent-dead-key input) nil)
+             char))))
+
 (defun input-self-insert (input key)
-  (let ((char (xlib:keysym->character *display* (key-keysym key))))
+  (let* ((%char (ignore-errors (find-character-for-keysym input key)))
+         (char (or %char (xlib:keysym->character *display* (key-keysym key)))))
     (if (or (key-mods-p key) (null char)
             (not (characterp char)))
         :error
-        (input-insert-char input char))))
+        (prog1 (input-insert-char input char)
+          (setf (input-line-most-recent-dead-key input) nil)))))
 
 (defun input-yank-selection (input key)
   (declare (ignore key))
@@ -888,8 +943,8 @@ input (pressing Return), nil otherwise."
   "Ask a \"y or n\" question on the current screen and return T if the
 user presses 'y'."
   (message "~a(y or n) " message)
-  (char= (read-one-char (current-screen))
-        #\y))
+  (eql (read-one-char (current-screen))
+       #\y))
 
 (defun yes-or-no-p (message)
   "ask a \"yes or no\" question on the current screen and return T if the

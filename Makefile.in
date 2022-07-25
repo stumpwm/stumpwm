@@ -13,7 +13,7 @@ infodir=@infodir@
 
 # You shouldn't have to edit past this
 
-FILES=stumpwm.asd $(shell grep -o ":file \".*\"" stumpwm.asd | sed 's,:file ",,g' | sed 's,",.lisp,g' )
+FILES=stumpwm.asd $(shell grep -o ":file \".*\"" stumpwm.asd | sed 's,:file ",,g' | sed 's,",.lisp,g' ) dynamic-mixins/dynamic-mixins.asd $(shell grep -o ":file \".*\"" dynamic-mixins/dynamic-mixins.asd | sed 's,:file ",dynamic-mixins/src/,g' | sed 's,",.lisp,g')
 
 all: stumpwm stumpwm.info
 
@@ -22,7 +22,7 @@ stumpwm.info: stumpwm.texi
 	test "$(MAKEINFO)" = "no" || $(MAKEINFO) stumpwm.texi
 
 # FIXME: This rule is too hardcoded
-stumpwm.texi: stumpwm.texi.in
+stumpwm.texi: stumpwm.texi.in $(FILES)
 	$(LISP) $(@LISP@_INFOOPTS)
 
 stumpwm: $(FILES)

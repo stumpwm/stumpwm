@@ -24,11 +24,22 @@
 
 (in-package #:stumpwm)
 
-(export '(*help-max-height* *message-max-width*))
+(export '(*help-max-height*
+          *message-max-width*
+          *which-key-format*))
+
 (defvar *message-max-width* 80
   "The maximum width of a message before it wraps.")
 (defvar *help-max-height* 10
   "Maximum number of lines for help to display.")
+(defvar *which-key-format* (concat *key-seq-color* "*~5a^n ~a")
+  "The format string that decides how keybindings will show up in the
+which-key window. Two arguments will be passed to this formatter:
+
+@table @asis
+@item the keybind itself
+@item the associated command
+@end table")
 
 (defun columnize (list columns &key col-aligns (pad 1) (char #\Space) (align :left))
   ;; only somewhat nasty
@@ -59,7 +70,7 @@
          (data (mapcan (lambda (map)
                          (mapcar (lambda (b)
                                    (let ((bound-to (binding-command b)))
-                                     (format nil "^5*~5a^n ~a"
+                                     (format nil *which-key-format*
                                              (print-key (binding-key b))
                                              (cond ((or (symbolp bound-to)
                                                         (stringp bound-to))
@@ -106,13 +117,13 @@
 
 (defun help-key-p (keys)
   "If the key is for the help command."
-  (final-key-p keys '("?" "C-h")))
+  (final-key-p keys *help-keys*))
 
 (defun cancel-key-p (keys)
   "If a key is the cancelling key binding."
   (final-key-p keys '("C-g")))
 
-(defcommand describe-key (keys) ((:key-seq "Describe Key:"))
+(defcommand describe-key (keys) ((:key-seq "Describe key:"))
   "Either interactively type the key sequence or supply it as text. This
   command prints the command bound to the specified key sequence."
   (if-let ((cmd (loop for map in (top-maps)
@@ -147,7 +158,7 @@
                         (wrap (format nil "~{~a~^~%~}"
                                       (take *help-max-height* split))))))))
 
-(defcommand describe-variable (var) ((:variable "Describe Variable: "))
+(defcommand describe-variable (var) ((:variable "Describe variable: "))
 "Print the online help associated with the specified variable."
   (message-no-timeout "~a"
                       (with-output-to-string (s)
@@ -161,34 +172,146 @@
     (format stream "(^5~a ^B~{~a~^ ~}^b^n)~&~%" (string-downcase (symbol-name fn)) lambda-list))
   (format stream "~&~a"(or (documentation fn 'function) "")))
 
-(defcommand describe-function (fn) ((:function "Describe Function: "))
+(defcommand describe-function (fn) ((:function "Describe function: "))
 "Print the online help associated with the specified function."
   (message-no-timeout "~a"
                       (with-output-to-string (s)
                         (describe-function-to-stream fn s))))
 
-(defun describe-command-to-stream (com stream)
-  "Write the help for the command to the stream."
-  (let* ((deref (dereference-command-symbol com))
-         (struct (get-command-structure com nil))
-         (name (command-name struct)))
-    (wrap (concat
-           (unless (eq deref struct)
-             (format nil "\"~a\" is an alias for the command \"~a\":~%"
-                     (command-alias-from deref)
-                     name))
-           (when-let ((message (where-is-to-stream name nil)))
-             (format nil "~&~A~&" message))
-           (when-let ((lambda-list (sb-introspect:function-lambda-list
-                                  (symbol-function name))))
-             (format nil "~%^5~a ^B~{~a~^ ~}^b^n~&~%"
-                     name
-                     lambda-list))
-           (format nil "~&~a" (or (documentation name 'function) "")))
-          *message-max-width*
-          stream)))
+(defun find-binding-in-kmap (command keymap &key match-partial-string
+                                              match-with-arguments)
+  "Walk through KEYMAP recursively looking for bindings that match COMMAND.
+Return a list of keybindings where each keybinding is of the form:
 
-(defcommand describe-command (com) ((:command "Describe Command: "))
+(command \"binding-1 binding-2 ... binding-n\" *map1* *map2* ... *mapn*) 
+
+For every space-separated binding there is a corresponding keymap that it is
+bound in. In the above list, binding-1 is bound in *map1*, binding-2 in *map2*,
+and binding-n in *mapn*. 
+
+COMMAND must be a string, a symbol, or a kmap structure. 
+
+KEYMAP must be a symbol or a kmap structure, though it should be a symbol if readable return values are desired. 
+
+MATCH-PARTIAL-STRING is a true/false value. If true, any binding structure whose
+command slot contains the string COMMAND is treated as a match. 
+
+In the list returned, command refers to the value of (binding-command binding)
+where binding is the keybinding that matches COMMAND. 
+
+Example: 
+=> (find-binding-in-kmap \"grename\" '*root-map*)
+((\"grename\" \"g A\" *ROOT-MAP* *GROUPS-MAP*)
+ (\"grename\" \"g r\" *ROOT-MAP* *GROUPS-MAP*))
+"
+  (labels ((key->str (key)
+             ;; Inverse of (kbd ...) 
+             (concatenate 'string
+                          (when (key-control key) "C-")
+                          (when (key-meta key)    "M-")
+                          (when (key-super key)   "s-")
+                          (when (key-hyper key)   "H-")
+                          (when (key-alt key)     "A-")
+                          (when (key-shift key)   "S-")
+                          (keysym->keysym-name (key-keysym key))))
+           (command-equal (cmd)
+             (cond ((and (stringp cmd) (stringp command))
+                    (cond (match-partial-string
+                           (cl-ppcre:scan command cmd))
+                          (match-with-arguments
+                           (let ((els (cl-ppcre:split " " cmd)))
+                             (member command els :test #'string-equal)))
+                          (t (string-equal cmd command))))
+                   ((or (and (symbolp cmd) (symbolp command))
+                        (and (kmap-p cmd) (kmap-p command)))
+                    (eql cmd command))))
+           (walk-keymap (keymap &optional binding-acc kmap-acc)
+             (loop for binding in (kmap-bindings (car (dereference-kmaps
+                                                       (list keymap))))
+                   if (command-equal (binding-command binding))
+                     collect (list* (binding-command binding)
+                                    (format nil "~{~A~^ ~}"
+                                            (reverse (cons (key->str
+                                                            (binding-key binding))
+                                                           binding-acc)))
+                                    (reverse kmap-acc))
+                   else
+                     if (kmap-or-kmap-symbol-p (binding-command binding))
+                       append (walk-keymap (binding-command binding)
+                                           (cons (key->str (binding-key binding))
+                                                 binding-acc)
+                                           (cons
+                                            (if (kmap-p (binding-command binding))
+                                                'anonymous-keymap
+                                                (binding-command binding))
+                                            kmap-acc)))))
+    (let ((keys (walk-keymap keymap nil (list keymap))))
+      keys)))
+
+(defun find-binding (command &key match-partial-string (match-with-arguments t)
+                               (top-level-maps
+                                (cons '*top-map*
+                                      (mapcar #'cadr *group-top-maps*))))
+  "Return a list of all keybindings matching COMMAND as specified by
+FIND-BINDING-IN-KMAP."
+  (loop for map in top-level-maps
+        append (find-binding-in-kmap command map
+                                     :match-partial-string match-partial-string
+                                     :match-with-arguments match-with-arguments)))
+
+(labels ((make-even-lengths (list)
+           (let ((longest1 0)
+                 (longest2 0))
+             (mapc (lambda (el)
+                     (let* ((final (lastcar (cl-ppcre:split " " (cadr el))))
+                            (l1 (length final))
+                            (l2 (length (symbol-name (lastcar el)))))
+                       (when (> l1 longest1) (setf longest1 l1))
+                       (when (> l2 longest2) (setf longest2 l2))))
+                   list)
+             (mapcar (lambda (el)
+                       (let* ((final (lastcar (cl-ppcre:split " " (cadr el))))
+                              (l1 (length final))
+                              (l2 (length (symbol-name (lastcar el)))))
+                         (list (format nil "~S~A" final
+                                       (make-string (- longest1 l1)
+                                                    :initial-element #\space))
+                               (format nil "~A~A" (lastcar el)
+                                       (make-string (- longest2 l2)
+                                                    :initial-element #\space))
+                               (format nil "~S" (car el)))))
+                     list))))
+  (defun describe-command-to-stream (com stream)
+    "Write the help for the command to the stream."
+    (let* ((deref (dereference-command-symbol com))
+           (struct (get-command-structure com nil))
+           (name (command-name struct))
+           (text 
+             (wrap (concat
+                    (unless (eq deref struct)
+                      (format nil "\"~a\" is an alias for the command \"~a\":~%"
+                              (command-alias-from deref)
+                              name))
+                    (when-let ((message (where-is-to-stream name nil)))
+                      (format nil "~&~A~&" message))
+                    (when-let ((lambda-list (sb-introspect:function-lambda-list
+                                             (symbol-function name))))
+                      (format nil "~%^5~a ^B~{~a~^ ~}^b^n~&~%"
+                              name
+                              lambda-list))
+                    (format nil "~&~a" (or (documentation name 'function) "")))
+                   *message-max-width*
+                   nil)))
+      (let ((bindings (when (stringp com)
+                        (find-binding com :top-level-maps (top-maps)))))
+        (if bindings 
+            (format stream
+                    "~A~%~%Bound to:~%~{~{~A~#[~; invoking ~:; in ~]~}~^~%~}"
+                    text
+                    (make-even-lengths bindings))
+            (format stream "~A" text))))))
+      
+(defcommand describe-command (com) ((:command "Describe command: "))
   "Print the online help associated with the specified command."
   (if (null (get-command-structure com nil))
       (message-no-timeout "Error: Command \"~a\" not found."

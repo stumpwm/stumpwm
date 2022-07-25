@@ -103,7 +103,7 @@ called. When the modeline size changes, this is called."))
   (:documentation "Repack frame numbers to range from zero to the number of 
 frames such that there are no numerical gaps."))
 
-(defclass group ()
+(define-swm-class group ()
   ((screen :initarg :screen :accessor group-screen)
    (windows :initform nil :accessor group-windows)
    (current-window :initform nil :accessor group-current-window)
@@ -111,6 +111,9 @@ frames such that there are no numerical gaps."))
    (number :initarg :number :accessor group-number)
    (name :initarg :name :accessor group-name)
    (on-top-windows :initform nil :accessor group-on-top-windows)))
+
+(defmethod print-swm-object ((object group) stream)
+  (format stream "GROUP ~A" (ignore-errors (group-name object))))
 
 (defmethod group-delete-window (group window)
   (when (find window *always-show-windows*)
@@ -344,13 +347,9 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
                           :UTF8_STRING 8)))
 
 (defun kill-group (group to-group)
-  (declare (special *dynamic-overflow-group*))
   (unless (eq group to-group)
     (let ((screen (group-screen group)))
-      (if (and (string= (group-name group) *dynamic-overflow-group*)
-               (typep to-group 'dynamic-group))
-          (dynamic-merge-overflow-group group to-group)
-          (merge-groups group to-group))
+      (merge-groups group to-group)
       (setf (screen-groups screen) (remove group (screen-groups screen)))
       (netwm-update-groups screen)
       (netwm-set-group-properties screen))))
@@ -358,12 +357,13 @@ Groups are known as \"virtual desktops\" in the NETWM standard."
 (defun %ensure-group (group-name group-type screen)
   "If there is a group named with GROUP-NAME in SCREEN return it, otherwise create it."
   (or (find-group screen group-name)
-      (let ((group (make-instance group-type
-                                  :screen screen
-                                  :number (if (char= (char group-name 0) #\.)
-                                                     (find-free-hidden-group-number screen)
-                                                     (find-free-group-number screen))
-                                  :name group-name)))
+      (let ((group (make-swm-class-instance
+                    group-type
+                    :screen screen
+                    :number (if (char= (char group-name 0) #\.)
+                                (find-free-hidden-group-number screen)
+                                (find-free-group-number screen))
+                    :name group-name)))
         (setf (screen-groups screen) (append (screen-groups screen) (list group)))
         (netwm-set-group-properties screen)
         (netwm-update-groups screen)
@@ -411,7 +411,7 @@ current window of the current group to the new one."
     (move-window-to-group win next)
     (really-raise-window win)))
 
-(defcommand gnew (name) ((:string "Group Name: "))
+(defcommand gnew (name) ((:string "Group name: "))
   "Create a new group with the specified name. The new group becomes the
 current group. If @var{name} begins with a dot (``.'') the group new
 group will be created in the hidden state. Hidden groups have group
@@ -421,7 +421,7 @@ groups and vgroups commands."
     (throw 'error :abort))
   (add-group (current-screen) name))
 
-(defcommand gnewbg (name) ((:string "Group Name: "))
+(defcommand gnewbg (name) ((:string "Group name: "))
   "Create a new group but do not switch to it."
   (unless name
     (throw 'error :abort))
@@ -523,20 +523,20 @@ the default group formatting and window formatting, respectively."
                                      (screen-groups (current-screen)))))))
     (switch-to-group group)))
 
-(defcommand gmove (to-group) ((:group "To Group: "))
+(defcommand gmove (to-group) ((:group "To group: "))
 "Move the current window to the specified group."
   (when (and to-group
              (current-window))
     (move-window-to-group (current-window) to-group)))
 
-(defcommand gmove-and-follow (to-group) ((:group "To Group: "))
+(defcommand gmove-and-follow (to-group) ((:group "To group: "))
   "Move the current window to the specified group, and switch to it."
   (let ((window (current-window)))
     (gmove to-group)
     (switch-to-group to-group)
     (when window (really-raise-window window))))
 
-(defcommand gmove-marked (to-group) ((:group "To Group: "))
+(defcommand gmove-marked (to-group) ((:group "To group: "))
   "move the marked windows to the specified group."
   (when to-group
     (let ((group (current-group)))
@@ -578,7 +578,7 @@ to the current group."
                  (kill-group dead-group current-group))
                (message "Killed other groups.")))))
 
-(defcommand gmerge (from) ((:group "From Group: "))
+(defcommand gmerge (from) ((:group "From group: "))
 "Merge @var{from} into the current group. @var{from} is not deleted."
   (if (eq from (current-group))
       (message "^B^3*Cannot merge group with itself!")

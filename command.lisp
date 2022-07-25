@@ -177,13 +177,14 @@ whatever it finds: a command, an alias, or nil."
 
 (defun command-active-p (command)
   (declare (special *dynamic-group-blacklisted-commands*))
-  (let ((active (typep (current-group) (command-class command))))
+  (let* ((group (current-group))
+         (active (or (typep group (command-class command))
+                     (some (lambda (f) (funcall f group command))
+                           *custom-command-filters*))))
     (if (typep (current-group) 'dynamic-group)
         (unless (member command *dynamic-group-blacklisted-commands*)
           active)
-        active))
-  ;; TODO: minor modes
-  )
+        active)))
 
 (defun get-command-structure (command &optional (only-active t))
   "Return the command structure for COMMAND. COMMAND can be a string,
@@ -338,9 +339,10 @@ then describes the symbol."
       ,@body)))
 
 (define-stumpwm-type :y-or-n (input prompt)
-  (let ((s (or (argument-pop input)
-               (read-one-line (current-screen) (concat prompt "(y/n): ")))))
-    (equal s "y")))
+  (let* ((positive-responses '("y" t))
+         (s (or (argument-pop input)
+                (read-one-line (current-screen) (concat prompt "(y/n): ")))))
+    (member s positive-responses :test #'equalp)))
 
 (defun lookup-symbol (string)
   ;; FIXME: should we really use string-upcase?
@@ -399,11 +401,20 @@ then describes the symbol."
       (window-number win)
       (throw 'error "No such window."))))
 
+(defun parse-fraction (n)
+  "Parse two integers separated by a / and divide the first by the second. "
+  (multiple-value-bind (num i) (parse-integer n :junk-allowed t)
+    (cond ((= i (length n))
+           num)
+          ((char-equal (char n i) #\/)
+           (/ num (parse-integer (subseq n (+ i 1)))))
+          (t (error 'parse-error)))))
+
 (define-stumpwm-type :number (input prompt)
   (when-let ((n (or (argument-pop input)
                     (read-one-line (current-screen) prompt))))
     (handler-case
-        (parse-integer n)
+        (parse-fraction n)
       (parse-error (c)
         (declare (ignore c))
         (throw 'error "Number required.")))))

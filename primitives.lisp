@@ -181,7 +181,8 @@
           ;; Completion Options
           *maximum-completions*
 
-          ))
+          ;; Minor mode keymaps
+          *minor-mode-maps*))
 
 
 ;;; Completions
@@ -393,6 +394,9 @@ with 1 argument: the menu.")
 (defvar *text-color* "white"
   "The color of message text.")
 
+(defvar *draw-in-color* t
+  "When NIL color formatters are ignored.")
+
 (defvar *menu-maximum-height* nil
   "Defines the maxium number of lines to display in the menu before enabling
    scrolling. If NIL scrolling is disabled.")
@@ -532,6 +536,7 @@ are valid values.
 (defvar *maxsize-gravity* :center)
 (defvar *transient-gravity* :center)
 
+(declaim (type (member :message :break :abort) *top-level-error-action*))
 (defvar *top-level-error-action* :abort
   "If an error is encountered at the top level, in
 STUMPWM-INTERNAL-LOOP, then this variable decides what action
@@ -557,18 +562,149 @@ Use the window's resource class.
 Use the window's resource name.
 @end table")
 
-(defstruct frame
-  (number nil :type integer)
-  x
-  y
-  width
-  height
-  window)
+(defclass swm-class ()
+  ((new-objects
+    :initform nil
+    :accessor swm-class-new-objects
+    :allocation :class
+    :documentation
+"Track all newly created objects in order to mix in the appropriate minor modes
+when they are touched")))
 
-(defstruct (head (:include frame))
-  (name "" :type string))
+(defmethod initialize-instance :after ((obj swm-class) &key &allow-other-keys)
+  ;; Register all newly created objects so that they can have the relevant minor
+  ;; modes autoenabled.
+  (pushnew obj (swm-class-new-objects obj) :test #'eq))
 
-(defclass screen ()
+(defgeneric print-swm-object (object stream)
+  (:method (object stream)
+    (format stream "~A" (type-of object))))
+
+(defmethod print-object ((object swm-class) stream)
+  (print-unreadable-object (object stream)
+    (print-swm-object object stream)
+    (when-let ((minor-modes (list-minor-modes object)))
+      (format stream " :MINOR-MODES ~A" minor-modes))))
+
+(defun make-swm-class-instance (class &rest initargs)
+  "Make an instance of a StumpWM class and autoenable any relevant minor
+modes. CLASS must be a symbol denoting a class which descends, directly or
+indirectly, from swm-class. INITARGS must be all initargs one would pass to
+make-instance."
+  ;; This is implemented as a function instead of as an after method for
+  ;; initialize-instance because autoenabling a minor mode involves changing the
+  ;; class of the object, which is implied to be undefined behavior if called
+  ;; within a method which accesses the objects slots.
+  (declare (special *active-global-minor-modes*))
+  (let ((object (apply #'make-instance class initargs)))
+    (prog1 object
+      (loop for class in *active-global-minor-modes*
+            when (typep object (scope-type (minor-mode-scope class)))
+              do (autoenable-minor-mode class object))
+      (setf (swm-class-new-objects object)
+            (remove object (swm-class-new-objects object) :test #'eq)))))
+
+(defmacro define-swm-class (class-name superclasses slots &rest options)
+  "Define a class and a method for DYNAMIC-MIXINS:REPLACE-CLASS which specializes
+upon the class and replaces it. If SUPERCLASSES is NIL then (SWM-CLASS) is used."
+  (unless superclasses (setq superclasses '(swm-class)))
+  `(progn
+     (defclass ,class-name ,superclasses ,slots ,@options)
+     (defmethod dynamic-mixins:replace-class ((object ,class-name) new &rest r)
+       (apply #'dynamic-mixins:replace-class-in-mixin
+              object new ',class-name r))))
+
+(define-swm-class frame ()
+  ((number
+    :initform nil
+    :initarg :number
+    :accessor frame-number)
+   (x
+    :initform nil
+    :accessor frame-x
+    :initarg :x)
+   (y
+    :initform nil
+    :accessor frame-y
+    :initarg :y)
+   (width
+    :initform nil
+    :accessor frame-width
+    :initarg :width)
+   (height
+    :initform nil
+    :accessor frame-height
+    :initarg :height)
+   (window
+    :initform nil
+    :accessor frame-window
+    :initarg :window)))
+
+(defmethod print-swm-object ((object frame) stream)
+  (format stream "FRAME ~d ~a ~d ~d ~d ~d"
+          (frame-number object) (frame-window object) (frame-x object) (frame-y object) (frame-width object) (frame-height object)))
+
+(defun frame-p (object)
+  (typep object 'frame))
+
+(defun make-frame (&rest rest &key number x y width height window)
+  (declare (ignore number x y width height window))
+  (apply 'make-swm-class-instance 'frame rest))
+
+(defun copy-frame (instance)
+  (make-swm-class-instance 'frame :number (frame-number instance)
+                                  :x (frame-x instance)
+                                  :y (frame-y instance)
+                                  :width (frame-width instance)
+                                  :height (frame-height instance)
+                                  :window (frame-window instance)))
+
+(define-swm-class head (frame)
+  ((name
+    :initform ""
+    :accessor head-name
+    :initarg :name)))
+
+(defmethod print-swm-object ((object head) stream)
+  (write-string "HEAD-" stream)
+  (call-next-method))
+
+;; duplicate frame accessors for heads.
+(macrolet ((define-head-accessor (name)
+             (let ((pkg (find-package :stumpwm)))
+               `(progn
+                  (defgeneric ,(intern (format nil "HEAD-~A" name) pkg) (head)
+                    (:method ((head head))
+                      (,(intern (format nil "FRAME-~A" name) pkg) head)))
+                  
+                  (defmethod (setf ,(intern (format nil "HEAD-~A" name) pkg))
+                      (new (head head))
+                    (setf (,(intern (format nil "FRAME-~A" name) pkg) head)
+                          new))))))
+  (define-head-accessor number)
+  (define-head-accessor x)
+  (define-head-accessor y)
+  (define-head-accessor width)
+  (define-head-accessor height)
+  (define-head-accessor window))
+
+(defun head-p (object)
+  (typep object 'head))
+
+(defun make-head (&rest rest &key number x y width height window name)
+  (declare (ignore number x y width height window name))
+  (apply 'make-swm-class-instance 'head rest))
+
+(defun copy-head (instance)
+  (make-swm-class-instance 'head :number (frame-number instance)
+                                 :x (frame-x instance)
+                                 :y (frame-y instance)
+                                 :width (frame-width instance)
+                                 :height (frame-height instance)
+                                 :window (frame-window instance)
+                                 :name (head-name instance)))
+
+(define-swm-class screen ()
   ((id :initarg :id :reader screen-id)
    (host :initarg :host :reader screen-host)
    (number :initarg :number :reader screen-number)
@@ -632,10 +768,6 @@ exist, in which case they go into the current group.")
   color-stack
   font)
 
-(defmethod print-object ((object frame) stream)
-  (format stream "#S(frame ~d ~a ~d ~d ~d ~d)"
-          (frame-number object) (frame-window object) (frame-x object) (frame-y object) (frame-width object) (frame-height object)))
-
 (defvar *window-number-map* "0123456789"
   "Set this to a string to remap the window numbers to something more convenient.")
 
@@ -676,8 +808,8 @@ char."
 (defvar *modifiers* nil
   "A mapping from modifier type to x11 modifier.")
 
-(defmethod print-object ((object screen) stream)
-  (format stream "#S<screen ~s>" (screen-number object)))
+(defmethod print-swm-object ((object screen) stream)
+  (format stream "SCREEN ~s" (screen-number object)))
 
 (defvar *screen-list* '()
   "The list of screens managed by stumpwm.")
@@ -1156,11 +1288,13 @@ The windows title must not match @var{title-not}.
 
 @item match-properties-and-function
 A function that, if provided, must return true alongside the provided properties
-in order for the rule to match. This function takes one argument, the window.
+in order for the rule to match. This function takes one argument, the window. 
+Must be an unquoted symbol to be looked up at runtime. 
 
 @item match-properties-or-function
 A function that, if provided and returning true, will cause the rule to match
 regardless of whether the window properties match. Takes one argument, the window.
+Must be an unquoted symbol to be looked up at runtime. 
 @end table"
   (let ((x (gensym "X")))
     `(dolist (,x ',frame-rules)
@@ -1172,6 +1306,46 @@ regardless of whether the window properties match. Takes one argument, the windo
 (defun clear-window-placement-rules ()
   "Clear all window placement rules."
   (setf *window-placement-rules* nil))
+
+(defvar *fullscreen-in-frame-p-window-functions* nil
+  "A alist of predicate functions for determining if a window should be
+fullscreen in frame.")
+
+(defun fullscreen-in-frame-p (win)
+  (some (lambda (r)
+          (let ((res (funcall (cdr r) win)))
+            (when res
+              (dformat 3 "Fullscreen in frame selector ~A matches window ~A"
+                       (car r) win))
+            res))
+        *fullscreen-in-frame-p-window-functions*))
+
+(defun add-fullscreen-in-frame-rule (name function &key shadow)
+  "Add a function to the fullscreen-in-frame window rules alist.  If @var{NAME}
+already exists as a key in the alist and @var{SHADOW} is nil, then
+@var{FUNCTION} replaces the existing value.  Otherwise @var{NAME} and
+@var{FUNCTION} are pushed onto the alist."
+  (let ((present (assoc name *fullscreen-in-frame-p-window-functions*)))
+    (if (and present (not shadow))
+        (setf (cdr present) function)
+        (push (cons name function) *fullscreen-in-frame-p-window-functions*))))
+
+(defun remove-fullscreen-in-frame-rule (name &key count)
+  "Remove rules named @var{NAME} from the fullscreen-in-frame window rules alist.
+If @var{COUNT} is NIL then all matching rules are removed, otherwise only the
+first @var{COUNT} rules are removed."
+  (setf *fullscreen-in-frame-p-window-functions*
+        (remove name *fullscreen-in-frame-p-window-functions*
+                :key #'car :count count)))
+
+(defmacro define-fullscreen-in-frame-rule (name (window-argument) &body body)
+  "Define a rule for a window to be fullscreened within the frame.  Each rule is a
+function which will be called when a window is made fullscreen.  If the rule
+returns NIL then the fullscreen window takes up the entire head, otherwise it
+takes up only its frame. Within the body of the rule @var{WINDOW-ARGUMENT} is
+bound to the window being processed."
+  `(flet ((,name (,window-argument) ,@body))
+     (add-fullscreen-in-frame-rule ',name #',name)))
 
 (defvar *mouse-focus-policy* :ignore
   "The mouse focus policy decides how the mouse affects input
@@ -1308,7 +1482,18 @@ of :error."
   cc
   height
   factor
-  (mode :stump))
+  (mode :stump)
+  on-click-bounds
+  new-bounds)
 
 (defstruct timer
   time repeat function args)
+
+(defvar *minor-mode-maps* ()
+  "A list of minor mode keymaps. An element of the list may be a single keymap or
+a function. If an element is a function it must take a group instance and return
+a list of keymaps.")
+
+(defvar *custom-command-filters* ()
+  "A list of functions which take a group instance and a command structure, and
+return true when the command should be active.")
