@@ -2,10 +2,13 @@
 set -e
 
 [ -n "$1" ]
-xwdfile=`tempfile -s .xwd`
-pnmfile=`tempfile -s .pnm`
+xwdfile=$(mktemp --suffix=.xwd)
+pnmfile=$(mktemp --suffix=.pnm)
 pngfile="screenshot-${1}.png"
-[ '!' -e "$pngfile" ]
+if [ -e "$pngfile" ]; then
+    echo "$pngfile already exists."
+    exit 1
+fi
 xwd -root > "$xwdfile"
 xwdtopnm "$xwdfile" > "$pnmfile"
 pnmtopng "$pnmfile" > "$pngfile"

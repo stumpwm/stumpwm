@@ -13,4 +13,5 @@ EOF
              )
 }
 
-xdotool key --delay 100 `echo "$@"|convert-from-stumpwm-to-xdotool`
+# shellcheck disable=SC2046
+xdotool key --delay 100 $(echo "$@"|convert-from-stumpwm-to-xdotool)

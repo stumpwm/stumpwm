@@ -31,8 +31,8 @@ loop2args() {
     done
 }
 
-tf=`tempfile`
-xmodmap -pk -pm > $tf
+tf=$(mktemp)
+xmodmap -pk -pm > "$tf"
 
 # Modifiers
 
@@ -40,10 +40,10 @@ loop2args clear-mod "$@"
 loop2args map-mod "$@"
 
 echo Remapped modifiers, resulting in the following change:
-if diff $tf <(xmodmap -pk -pm); then
+if diff "$tf" <(xmodmap -pk -pm); then
     echo Error: Ineffective modifier remap
     exit 1
 else
     true
 fi
-rm $tf
+rm "$tf"

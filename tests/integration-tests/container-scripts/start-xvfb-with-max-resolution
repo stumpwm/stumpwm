@@ -3,5 +3,5 @@ set -e
 
 startup_width="$1"
 startup_height="$2"
-Xvfb $DISPLAY -screen 0 ${startup_width}x${startup_height}x24 &
+Xvfb "$DISPLAY" -screen 0 "${startup_width}x${startup_height}x24" &
 sleep 1 # Wait for Xvfb to start
