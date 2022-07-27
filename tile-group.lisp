@@ -1099,8 +1099,10 @@ space."
           (frame-raise-window group l (frame-window l) nil)
           (when (frame-window l)
             (update-decoration (frame-window l)))
-          (when (eq frame current)
-            (show-frame-indicator group))
+          (if (and (eq frame current)
+                   (not (only-one-frame-p)))
+              (show-frame-indicator group)
+              (unmap-all-frame-indicator-windows))
           (run-hook-with-args *remove-split-hook* l frame)))))
 
 (defcommand-alias remove remove-split)
