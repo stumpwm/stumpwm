@@ -1137,7 +1137,8 @@ This can be used around a the \"only\" command to avoid the warning message."
           (if (frame-window frame)
               (update-decoration (frame-window frame))
               (show-frame-indicator group))
-          (sync-frame-windows group (tile-group-current-frame group))))))
+          (sync-frame-windows group (tile-group-current-frame group))
+          (unmap-all-frame-indicator-windows)))))
 
 (defcommand (curframe tile-group) () ()
 "Display a window indicating which frame is focused."
