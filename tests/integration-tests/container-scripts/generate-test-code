@@ -209,15 +209,18 @@
 
 ;; Random X11 modifier remapping
 (define-generator (state :normal-phase)
-  (line "# Random X11 modifier remapping")
-  (apply #'line "x-remap-modifiers"
-         (apply #'append
-                (mapcar #'list
-                        (random-sort '(" 1" " 2" " 3" " 4" " 5"))
-                        (random-sort '(" \"\"" " Alt" " Hyper" " Meta" " Super")))))
-  (next
-   :modifiers-remapped t
-   :can-stop nil))
+  (let ((modifier-list (random-sort '(" \"\"" " Alt" " Hyper" " Meta" " Super"))))
+    (if (equal modifier-list (state :modifiers-remapped))
+        (next)
+        (progn
+          (line "# Random X11 modifier remapping")
+          (apply #'line "x-remap-modifiers"
+                 (random-sort (mapcar (lambda (a b) (concatenate 'string a b))
+                                      '(" 1" " 2" " 3" " 4" " 5")
+                                      modifier-list)))
+          (next
+           :modifiers-remapped modifier-list
+           :can-stop nil)))))
 
 ;; Random X11 key swap
 (define-generator (state :normal-phase)
@@ -248,7 +251,8 @@
   (line "open-test-window-with-font-size " (+ 1 (random 20)))
   (next
    :can-stop nil
-   :number-of-windows (+ (state :number-of-windows) 1)))
+   :number-of-windows (+ (state :number-of-windows) 1)
+   :windows-maybe-snap-differently (< 0 (state :number-of-windows))))
 
 ;; One frame only
 (defun one-frame ()
@@ -269,11 +273,11 @@
 ;; Split frame
 (defun can-hsplit ()
   (and (state :normal-phase)
-       (<= (* *min-frame-width* (expt 2 (state :number-of-hsplits)) 2)
+       (<= (* *min-frame-width* (expt 2 (state :number-of-hsplits)) 3)
            (state :x-resolution))))
 (defun can-vsplit ()
   (and (state :normal-phase)
-       (<= (* *min-frame-height* (expt 2 (state :number-of-vsplits)) 2)
+       (<= (* *min-frame-height* (expt 2 (state :number-of-vsplits)) 3)
            (state :y-resolution))))
 (define-generator (or (can-hsplit) (can-vsplit))
   (let* ((horizontal (if (and (can-hsplit) (can-vsplit))
@@ -329,10 +333,15 @@
      :can-stop t)))
 
 ;; No-op test: Split then undo
-(define-generator (normal-stable)
+(defun maybe-show-frame-indicator ()
+  (when (state :frame-indicator)
+    (line "stumpwm-cmd curframe")))
+(define-generator (and (normal-stable) (not (state :windows-maybe-snap-differently)))
   (let ((horizontal (random-boolean))
         (s1 nil) (s2 nil) (s3 nil))
     (line "# No-op test: Split then undo")
+    (unless (one-frame)
+      (maybe-show-frame-indicator))
     (setq s1 (screenshot))
     (line "stumpwm-cmd " (if horizontal "hsplit" "vsplit"))
     (move-focus (if horizontal "Right" "Down"))
@@ -365,6 +374,7 @@
          (new-y (if do-double (* y 2) (/ y 2)))
          (s1 nil) (s2 nil) (s3 nil))
     (line "# No-op test: Change resolution then restore")
+    (maybe-show-frame-indicator)
     (setq s1 (screenshot))
     (line "set-resolution " new-x " " new-y)
     (setq s2 (screenshot))

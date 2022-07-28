@@ -1,7 +1,7 @@
 #!/bin/bash
 set -ex
 
-# Test that the frame indicator is drawn correctly after `remove` results in an only frame
+# Test that the frame indicator is not drawn after `remove` results in an only frame
 
 start-xvfb-with-max-resolution 2000 2000
 start-stumpwm

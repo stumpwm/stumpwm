@@ -1,7 +1,7 @@
 #!/bin/bash
 set -ex
 
-# Test that the frame indicator is drawn correctly after `only`
+# Test that the frame indicator does not remain in the previous position after `only`
 
 start-xvfb-with-max-resolution 2000 2000
 start-stumpwm
