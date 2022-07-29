@@ -713,13 +713,14 @@ one."
                      (remove-frame sib leaf))
                    tree))))
 
-(defun sync-frame-windows (group frame)
-  "synchronize windows attached to FRAME."
-  (mapc (lambda (w)
-          (when (eq (window-frame w) frame)
-            (dformat 3 "maximizing ~S~%" w)
-            (maximize-window w)))
-        (group-tile-windows group)))
+(defgeneric sync-frame-windows (group frame)
+  (:documentation "synchronize windows attached to FRAME.")
+  (:method (group frame)
+    (mapc (lambda (w)
+            (when (eq (window-frame w) frame)
+              (dformat 3 "maximizing ~S~%" w)
+              (maximize-window w)))
+          (group-tile-windows group))))
 
 (defun sync-all-frame-windows (group)
   "synchronize all frames in GROUP."

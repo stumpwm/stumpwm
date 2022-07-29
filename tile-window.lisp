@@ -82,115 +82,116 @@ like xterm and emacs.")
 
 ;;;
 
-(defun geometry-hints (win)
-  "Return hints for max width and height and increment hints. These
+(defgeneric geometry-hints (win)
+  (:documentation "Return hints for max width and height and increment hints. These
 hints have been modified to always be defined and never be greater
-than the root window's width and height."
-  (let* ((f (window-frame win))
-         (x (frame-x f))
-         (y (frame-display-y (window-group win) f))
-         (border (if (or (eq *window-border-style* :none)
-                         (= (length (group-frames (window-group win))) 1))
-                     0
-                   (default-border-width-for-type win)))
-         (fwidth (- (frame-width f) (* 2 border)))
-         (fheight (- (frame-display-height (window-group win) f)
-                     (* 2 border)))
-         (width fwidth)
-         (height fheight)
-         (hints (window-normal-hints win))
-         (hints-min-width (and hints (xlib:wm-size-hints-min-width hints)))
-         (hints-min-height (and hints (xlib:wm-size-hints-min-height hints)))
-         (hints-max-width (and hints (xlib:wm-size-hints-max-width hints)))
-         (hints-max-height (and hints (xlib:wm-size-hints-max-height hints)))
-         (hints-width (and hints (xlib:wm-size-hints-base-width hints)))
-         (hints-height (and hints (xlib:wm-size-hints-base-height hints)))
-         (hints-spec-width (and hints (xlib:wm-size-hints-width hints)))
-         (hints-spec-height (and hints (xlib:wm-size-hints-height hints)))
-         (hints-inc-x (and hints (xlib:wm-size-hints-width-inc hints)))
-         (hints-inc-y (and hints (xlib:wm-size-hints-height-inc hints)))
-         (hints-min-aspect (and hints (xlib:wm-size-hints-min-aspect hints)))
-         (hints-max-aspect (and hints (xlib:wm-size-hints-max-aspect hints)))
-         center)
-    ;;    (dformat 4 "hints: ~s~%" hints)
-    ;; determine what the width and height should be
-    (cond
-      ;; handle specially fullscreen windows.
-      ((window-fullscreen win)
-       (let* ((win-group (window-group win))
-              (fs-in-frame (fullscreen-in-frame-p win))
-              (head (frame-head win-group f))
-              (frame-to-fill (if fs-in-frame f head)))
-         ;; Determine if the window should be fullscreened in the frame or the
-         ;; head. If fullscreening a frame, use the frame-display functions on
-         ;; y axis to account for the modeline.
-         (if fs-in-frame
-             (setf x (frame-x frame-to-fill)
-                   y (frame-display-y win-group frame-to-fill)
-                   width (frame-width frame-to-fill)
-                   height (frame-display-height win-group frame-to-fill))
-             (setf x (frame-x frame-to-fill)
-                   y (frame-y frame-to-fill)
-                   width (frame-width frame-to-fill)
-                   height (frame-height frame-to-fill))))
-       (return-from geometry-hints (values x y 0 0 width height 0 t)))
-      ;; Adjust the defaults if the window is a transient_for window.
-      ((find (window-type win) '(:transient :dialog))
-       (setf center t
-             width (min (max (or hints-width 0)
-                             (or hints-min-width 0)
-                             (window-width win))
-                        width)
-             height (min (max (or hints-height 0)
-                              (or hints-min-height 0)
-                              (window-height win))
-                         height)))
-      ;; Set requested size for non-maximized windows
-      ((and (window-normal-size win)
-            hints-spec-width hints-spec-height)
-       (setf center t
-             width (min hints-spec-width width)
-             height (min hints-spec-height height)))
-      ;; aspect hints are handled similar to max size hints
-      ((and hints-min-aspect hints-max-aspect)
-       (let ((ratio (/ width height)))
-         (cond ((< ratio hints-min-aspect)
-                (setf height (ceiling width hints-min-aspect)))
-               ((> ratio hints-max-aspect)
-                (setf width  (ceiling (* height hints-max-aspect)))))
-         (setf center t)))
-      ;; Update our defaults if the window has the maxsize hints
-      ((or hints-max-width hints-max-height)
-       (when (and hints-max-width
-                  (< hints-max-width width))
-         (setf width hints-max-width))
-       (when (and hints-max-height
-                  (< hints-max-height height))
-         (setf height hints-max-height))
-       (setf center t))
-      (t
-       ;; if they have inc hints then start with the size and adjust
-       ;; based on those increments until the window fits in the frame
-       (when (and (not *ignore-wm-inc-hints*) hints-inc-x (plusp hints-inc-x))
-         (let ((w (or hints-width (window-width win))))
-           (setf width (+ w (* hints-inc-x
-                               (+ (floor (- fwidth w) hints-inc-x)))))))
-       (when (and (not *ignore-wm-inc-hints*) hints-inc-y (plusp hints-inc-y))
-         (let ((h (or hints-height (window-height win))))
-           (setf height (+ h (* hints-inc-y
-                                (+ (floor (- fheight h) hints-inc-y)))))))))
-    ;; adjust for gravity
-    (multiple-value-bind (wx wy) (gravity-coords (gravity-for-window win)
-                                                     width height
-                                                     0 0
-                                                     fwidth fheight)
-      (when (or center
-                (find *window-border-style* '(:tight :none)))
-        (setf x (+ wx (frame-x f))
-              y (+ wy (frame-display-y (window-group win) f))
-              wx 0 wy 0))
-      ;; Now return our findings
-      (values x y wx wy width height border center))))
+than the root window's width and height.")
+  (:method (win)
+    (let* ((f (window-frame win))
+           (x (frame-x f))
+           (y (frame-display-y (window-group win) f))
+           (border (if (or (eq *window-border-style* :none)
+                           (= (length (group-frames (window-group win))) 1))
+                       0
+                       (default-border-width-for-type win)))
+           (fwidth (- (frame-width f) (* 2 border)))
+           (fheight (- (frame-display-height (window-group win) f)
+                       (* 2 border)))
+           (width fwidth)
+           (height fheight)
+           (hints (window-normal-hints win))
+           (hints-min-width (and hints (xlib:wm-size-hints-min-width hints)))
+           (hints-min-height (and hints (xlib:wm-size-hints-min-height hints)))
+           (hints-max-width (and hints (xlib:wm-size-hints-max-width hints)))
+           (hints-max-height (and hints (xlib:wm-size-hints-max-height hints)))
+           (hints-width (and hints (xlib:wm-size-hints-base-width hints)))
+           (hints-height (and hints (xlib:wm-size-hints-base-height hints)))
+           (hints-spec-width (and hints (xlib:wm-size-hints-width hints)))
+           (hints-spec-height (and hints (xlib:wm-size-hints-height hints)))
+           (hints-inc-x (and hints (xlib:wm-size-hints-width-inc hints)))
+           (hints-inc-y (and hints (xlib:wm-size-hints-height-inc hints)))
+           (hints-min-aspect (and hints (xlib:wm-size-hints-min-aspect hints)))
+           (hints-max-aspect (and hints (xlib:wm-size-hints-max-aspect hints)))
+           center)
+      ;;    (dformat 4 "hints: ~s~%" hints)
+      ;; determine what the width and height should be
+      (cond
+        ;; handle specially fullscreen windows.
+        ((window-fullscreen win)
+         (let* ((win-group (window-group win))
+                (fs-in-frame (fullscreen-in-frame-p win))
+                (head (frame-head win-group f))
+                (frame-to-fill (if fs-in-frame f head)))
+           ;; Determine if the window should be fullscreened in the frame or the
+           ;; head. If fullscreening a frame, use the frame-display functions on
+           ;; y axis to account for the modeline.
+           (if fs-in-frame
+               (setf x (frame-x frame-to-fill)
+                     y (frame-display-y win-group frame-to-fill)
+                     width (frame-width frame-to-fill)
+                     height (frame-display-height win-group frame-to-fill))
+               (setf x (frame-x frame-to-fill)
+                     y (frame-y frame-to-fill)
+                     width (frame-width frame-to-fill)
+                     height (frame-height frame-to-fill))))
+         (return-from geometry-hints (values x y 0 0 width height 0 t)))
+        ;; Adjust the defaults if the window is a transient_for window.
+        ((find (window-type win) '(:transient :dialog))
+         (setf center t
+               width (min (max (or hints-width 0)
+                               (or hints-min-width 0)
+                               (window-width win))
+                          width)
+               height (min (max (or hints-height 0)
+                                (or hints-min-height 0)
+                                (window-height win))
+                           height)))
+        ;; Set requested size for non-maximized windows
+        ((and (window-normal-size win)
+              hints-spec-width hints-spec-height)
+         (setf center t
+               width (min hints-spec-width width)
+               height (min hints-spec-height height)))
+        ;; aspect hints are handled similar to max size hints
+        ((and hints-min-aspect hints-max-aspect)
+         (let ((ratio (/ width height)))
+           (cond ((< ratio hints-min-aspect)
+                  (setf height (ceiling width hints-min-aspect)))
+                 ((> ratio hints-max-aspect)
+                  (setf width  (ceiling (* height hints-max-aspect)))))
+           (setf center t)))
+        ;; Update our defaults if the window has the maxsize hints
+        ((or hints-max-width hints-max-height)
+         (when (and hints-max-width
+                    (< hints-max-width width))
+           (setf width hints-max-width))
+         (when (and hints-max-height
+                    (< hints-max-height height))
+           (setf height hints-max-height))
+         (setf center t))
+        (t
+         ;; if they have inc hints then start with the size and adjust
+         ;; based on those increments until the window fits in the frame
+         (when (and (not *ignore-wm-inc-hints*) hints-inc-x (plusp hints-inc-x))
+           (let ((w (or hints-width (window-width win))))
+             (setf width (+ w (* hints-inc-x
+                                 (+ (floor (- fwidth w) hints-inc-x)))))))
+         (when (and (not *ignore-wm-inc-hints*) hints-inc-y (plusp hints-inc-y))
+           (let ((h (or hints-height (window-height win))))
+             (setf height (+ h (* hints-inc-y
+                                  (+ (floor (- fheight h) hints-inc-y)))))))))
+      ;; adjust for gravity
+      (multiple-value-bind (wx wy) (gravity-coords (gravity-for-window win)
+                                                   width height
+                                                   0 0
+                                                   fwidth fheight)
+        (when (or center
+                  (find *window-border-style* '(:tight :none)))
+          (setf x (+ wx (frame-x f))
+                y (+ wy (frame-display-y (window-group win) f))
+                wx 0 wy 0))
+        ;; Now return our findings
+        (values x y wx wy width height border center)))))
 
 (defun maximize-window (win)
   "Maximize the window."
