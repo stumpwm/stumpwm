@@ -210,7 +210,9 @@
   (populate-frames group))
 
 (defmethod group-resize-head ((group tile-group) oh nh)
-  (resize-tree (tile-group-frame-head group oh) (head-width nh) (head-height nh) (head-x nh) (head-y nh)))
+  (resize-tree (tile-group-frame-head group oh) (head-width nh) (head-height nh) (head-x nh) (head-y nh))
+  (redraw-frame-indicator group)
+  (redraw-frame-outline group))
 
 (defmethod group-sync-all-heads ((group tile-group))
   (sync-all-frame-windows group))
