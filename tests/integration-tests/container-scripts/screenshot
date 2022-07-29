@@ -1,0 +1,16 @@
+#!/bin/bash
+set -e
+
+[ -n "$1" ]
+xwdfile=$(mktemp --suffix=.xwd)
+pnmfile=$(mktemp --suffix=.pnm)
+pngfile="screenshot-${1}.png"
+if [ -e "$pngfile" ]; then
+    echo "$pngfile already exists."
+    exit 1
+fi
+xwd -root > "$xwdfile"
+xwdtopnm "$xwdfile" > "$pnmfile"
+pnmtopng "$pnmfile" > "$pngfile"
+rm "$xwdfile" "$pnmfile"
+echo "$pngfile"

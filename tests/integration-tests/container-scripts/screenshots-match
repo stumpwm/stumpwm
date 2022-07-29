@@ -1,0 +1,16 @@
+#!/bin/bash
+set -e
+
+hashofscreenshot() {
+    file="screenshot-${1}.png"
+    [ -e "$file" ]
+    < "$file" png2ff | sha256sum | cut -d " " -f 1
+}
+
+if [ "$(hashofscreenshot "$1")" == "$(hashofscreenshot "$2")" ]; then
+    echo Screenshots "$1" and "$2" match, as expected.
+    exit 0
+else
+    echo FAIL: Screenshots "$1" and "$2" differ, but they should match.
+    exit 1
+fi

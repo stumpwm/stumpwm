@@ -1,0 +1,116 @@
+#!/bin/bash
+set -e
+
+echo-green () {
+    if [ -t ]; then
+        echo -e "\\e[32m$@\\e[0m"
+    else
+        echo "$@"
+    fi
+}
+
+echo-red () {
+    if [ -t ]; then
+        echo -e "\\e[31m$@\\e[0m"
+    else
+        echo "$@"
+    fi
+}
+
+die() {
+    echo-red "$@"
+    exit 1
+}
+
+docker-interrupt() {
+    echo-red "Got interrupt, sending SIGTERM to docker process $dockerprocess"
+    kill -s SIGTERM "$dockerprocess"
+    exit 2
+}
+
+docker-wrapper() {
+    greeting="$1"
+    shift
+    trap docker-interrupt INT
+    docker "$@" &
+    dockerprocess=$!
+    echo-green "=== $greeting: Begin in docker process $dockerprocess"
+    wait "$dockerprocess" || die "=== $greeting: FAIL"
+    echo-green "=== $greeting: Done"
+}
+
+generate-tests() {
+    count="$1"
+    [ 1 -le "$count" ] || die COUNT must be a positive integer.
+    COUNT="$count" make generate-tests
+}
+
+internal-generate-tests() {
+    count="$1"
+    [ 1 -le "$count" ] || die COUNT must be a positive integer.
+    docker-wrapper "Generating $count tests" run --rm -v "`pwd`/testcases":/home/user/testcases --init `cat test-runner.iid` generate-tests "$count"
+}
+
+generate-tests-locally() {
+    count="$1"
+    [ 1 -le "$count" ] || die COUNT must be a positive integer.
+    which sbcl || die Requires sbcl installed.
+    PATH="`pwd`/container-scripts:$PATH" container-scripts/generate-tests "$count"
+}
+
+run-tests() {
+    number_of_processors=`grep -cE '^$' /proc/cpuinfo`
+    let acceptable_load=$number_of_processors*2
+    make -j -k -l $acceptable_load -s run-tests
+}
+
+run-one-test() {
+    testname="$1"
+    [ -n "$testname" ] || die NAME must be given.
+    [ -e "testcases/$testname.sh" ] || die testcases/$testname.sh does not exist.
+    make "testcases/${testname}.results/success"
+}
+
+internal-run-one-test() {
+    testname="$1"
+    [ -n "$testname" ] || die NAME must be given.
+    [ -e "testcases/$testname.sh" ] || die testcases/$testname.sh does not exist.
+    docker-wrapper "Test $testname" run --rm -v "`pwd`/testcases":/home/user/testcases --init `cat test-runner.iid` run-test "$testname"
+}
+
+clean-results() {
+    rm -rf test-runner.iid testcases/*.results
+}
+
+remove-generated-testcases() {
+    rm -rf testcases/generated-*
+}
+
+show-help() {
+    cat <<EOF
+Usage:
+
+  ./script run-tests                    # Run test suite.
+
+  ./script run-one-test NAME            # Run one test.
+                                        # NAME can for example be "001".
+
+  ./script clean-results                # Clean up test results.
+                                        # Generated test cases will remain.
+
+  ./script remove-generated-testcases   # Delete all generated test cases.
+
+  ./script generate-tests COUNT         # Generate new test cases.
+                                        # COUNT can for example be "100".
+
+  ./script generate-tests-locally COUNT # As above, except don't use docker.
+EOF
+}
+
+[ "$0" == "./script" ] || die Must be called as ./script from the same directory
+
+if [ -n "$1" ]; then
+    "$@"
+else
+    show-help
+fi
