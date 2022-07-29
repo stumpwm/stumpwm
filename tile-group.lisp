@@ -1102,8 +1102,10 @@ space."
           (frame-raise-window group l (frame-window l) nil)
           (when (frame-window l)
             (update-decoration (frame-window l)))
-          (when (eq frame current)
-            (show-frame-indicator group))
+          (if (and (eq frame current)
+                   (not (only-one-frame-p)))
+              (show-frame-indicator group)
+              (unmap-all-frame-indicator-windows))
           (run-hook-with-args *remove-split-hook* l frame)))))
 
 (defcommand-alias remove remove-split)
@@ -1140,7 +1142,8 @@ This can be used around a the \"only\" command to avoid the warning message."
           (if (frame-window frame)
               (update-decoration (frame-window frame))
               (show-frame-indicator group))
-          (sync-frame-windows group (tile-group-current-frame group))))))
+          (sync-frame-windows group (tile-group-current-frame group))
+          (unmap-all-frame-indicator-windows)))))
 
 (defcommand (curframe tile-group) () ()
 "Display a window indicating which frame is focused."
