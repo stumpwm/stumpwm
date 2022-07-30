@@ -1,0 +1,7 @@
+#!/bin/bash
+set -e
+
+screenshot "$1-before-check-invariants"
+stumpwm-cmd check-invariants
+screenshot "$1-after-check-invariants"
+screenshots-match "$1-before-check-invariants" "$1-after-check-invariants"

@@ -3,3 +3,6 @@
 
 ;; Configuration
 (setf *timeout-frame-indicator-wait* 60)
+
+;; Invariant testing
+(load "~/.stumpwm.d/invariants.lisp")

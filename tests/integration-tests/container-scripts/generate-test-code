@@ -418,6 +418,13 @@
     (next
      :can-stop t)))
 
+;; No-op test: check-invariants
+(define-generator (normal-stable)
+  (line "# No-op test: Check invariants")
+  (line "check-invariants " (incf *screenshot-index*))
+  (next
+   :can-stop t))
+
 ;;; Generate one test script to stdout
 
 (set-state
