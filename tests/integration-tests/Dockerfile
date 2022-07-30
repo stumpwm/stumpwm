@@ -3,28 +3,22 @@ FROM ubuntu:20.04
 USER root
 WORKDIR /root
 
-RUN DEBIAN_FRONTEND=noninteractive apt-get -qy update \
-    && DEBIAN_FRONTEND=noninteractive apt-get -qy install \
-        sbcl curl build-essential autoconf git \
-        farbfeld netpbm procps x11-apps x11-xserver-utils xdotool xvfb \
-        xterm \
-    && rm -rf /var/lib/apt/lists/* \
-    && curl -O https://beta.quicklisp.org/quicklisp.lisp \
-    && sbcl --load quicklisp.lisp --eval "(quicklisp-quickstart:install)" \
-    && sbcl --load "/root/quicklisp/setup.lisp"  --eval "(progn (setf ql-util::*do-not-prompt* t)(ql:add-to-init-file))" \
-    && sbcl --eval "(progn (ql:quickload '(clx cl-ppcre alexandria fiasco)))"
+ENV DISPLAY=":7"
+ARG userUID
+RUN useradd -u $userUID -m -s /bin/bash user
 
-COPY tests/integration-tests/container-scripts/* /usr/local/bin/
+COPY tests/integration-tests/container-scripts/install-deps .
+RUN ./install-deps
+
 COPY . stumpwm
-
 RUN cd stumpwm \
+    && mv tests/integration-tests/container-scripts/* /usr/local/bin/ \
+    && mv tests/integration-tests/stumpwm.d /home/user/.stumpwm.d \
+    && chown -R user:user /home/user/.stumpwm.d \
     && ./autogen.sh \
     && ./configure \
     && make \
     && make install
 
-ENV DISPLAY=":7"
-ARG userUID
-RUN useradd -u $userUID -m -s /bin/bash user
 USER user
 WORKDIR /home/user

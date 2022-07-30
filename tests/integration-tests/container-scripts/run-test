@@ -6,10 +6,13 @@ results="testcases/${testname}.results"
 rm -rf "$results"
 mkdir -p "$results"
 cd "$results"
-if "../${testname}.sh" > stdout.txt 2> stderr.txt; then
+set +e
+"../${testname}.sh" > stdout.txt 2> stderr.txt
+ec="$?"
+set -e
+if [ "$ec" == 0 ] && ! [ -e fail ]; then
     touch success
 else
-    msg="Test $testname exited with error code $?"
-    echo "$msg" > fail
+    echo "Test $testname exited with error code $ec" >> fail
     exit 1
 fi

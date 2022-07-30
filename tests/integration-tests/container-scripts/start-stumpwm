@@ -1,5 +1,13 @@
 #!/bin/bash
 set -e
 
-stumpwm &
+(
+    set +e
+    stumpwm > stumpwm.stdout.txt 2> stumpwm.stderr.txt
+    ec="$?"
+    set -e
+    if [ "$ec" != 0 ]; then
+        echo "stumpwm exited with code $ec" >> "fail"
+    fi
+) &
 sleep 1 # Wait for stumpwm to start

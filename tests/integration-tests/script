@@ -1,21 +1,16 @@
 #!/bin/bash
 set -e
 
-echo-green () {
-    if [ -t ]; then
-        echo -e "\\e[32m$@\\e[0m"
+echo-with-color () {
+    color="$1"; shift;
+    if [ -t 1 ]; then
+        echo -e "\\e[${color}m$*\\e[0m"
     else
         echo "$@"
     fi
 }
-
-echo-red () {
-    if [ -t ]; then
-        echo -e "\\e[31m$@\\e[0m"
-    else
-        echo "$@"
-    fi
-}
+echo-red    () { echo-with-color 31 "$@"; }
+echo-green  () { echo-with-color 32 "$@"; }
 
 die() {
     echo-red "$@"
@@ -48,34 +43,34 @@ generate-tests() {
 internal-generate-tests() {
     count="$1"
     [ 1 -le "$count" ] || die COUNT must be a positive integer.
-    docker-wrapper "Generating $count tests" run --rm -v "`pwd`/testcases":/home/user/testcases --init `cat test-runner.iid` generate-tests "$count"
+    docker-wrapper "Generating $count tests" run --rm -v "$(pwd)/testcases":/home/user/testcases --init "$(cat test-runner.iid)" generate-tests "$count"
 }
 
 generate-tests-locally() {
     count="$1"
     [ 1 -le "$count" ] || die COUNT must be a positive integer.
     which sbcl || die Requires sbcl installed.
-    PATH="`pwd`/container-scripts:$PATH" container-scripts/generate-tests "$count"
+    PATH="$(pwd)/container-scripts:$PATH" container-scripts/generate-tests "$count"
 }
 
+number_of_processors="$(nproc)"
+
 run-tests() {
-    number_of_processors=`grep -cE '^$' /proc/cpuinfo`
-    let acceptable_load=$number_of_processors*2
-    make -j -k -l $acceptable_load -s run-tests
+    make -j "$number_of_processors" -k -l "$number_of_processors" -s run-tests
 }
 
 run-one-test() {
     testname="$1"
     [ -n "$testname" ] || die NAME must be given.
-    [ -e "testcases/$testname.sh" ] || die testcases/$testname.sh does not exist.
+    [ -e "testcases/$testname.sh" ] || die "testcases/$testname.sh" does not exist.
     make "testcases/${testname}.results/success"
 }
 
 internal-run-one-test() {
     testname="$1"
     [ -n "$testname" ] || die NAME must be given.
-    [ -e "testcases/$testname.sh" ] || die testcases/$testname.sh does not exist.
-    docker-wrapper "Test $testname" run --rm -v "`pwd`/testcases":/home/user/testcases --init `cat test-runner.iid` run-test "$testname"
+    [ -e "testcases/$testname.sh" ] || die "testcases/$testname.sh" does not exist.
+    docker-wrapper "Test $testname" run --rm -v "$(pwd)/testcases":/home/user/testcases --init "$(cat test-runner.iid)" run-test "$testname"
 }
 
 clean-results() {
