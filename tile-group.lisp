@@ -200,6 +200,7 @@
     (setf (tile-group-frame-tree group) (delete frames-to-delete group-frame-tree))
     ;; Just set current frame to whatever.
     (let ((frame (first (group-frames group))))
+      (unless (frame-p frame) (error "Couldn't locate a frame in group ~A" group))
       (setf (tile-group-current-frame group) frame
             (tile-group-last-frame group) nil)
       ;; Hide its windows.
