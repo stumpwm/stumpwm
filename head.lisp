@@ -169,10 +169,10 @@
           (when (= (head-number oh) (head-number nh))
             ;; Same frame number, probably the same head
             (setf (head-number nh) (head-number oh))))))
-    (dolist (h (set-difference oheads heads :test '= :key 'head-number))
-      (remove-head screen h))
     (dolist (h (set-difference heads oheads :test '= :key 'head-number))
       (add-head screen h))
+    (dolist (h (set-difference oheads heads :test '= :key 'head-number))
+      (remove-head screen h))
     (dolist (h (intersection heads oheads :test '= :key 'head-number))
       (let ((nh (find (head-number h) heads  :test '= :key 'head-number))
             (oh (find (head-number h) oheads :test '= :key 'head-number)))

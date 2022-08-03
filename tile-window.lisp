@@ -9,7 +9,7 @@
 like xterm and emacs.")
 
 (define-swm-class tile-window (window)
-  ((frame   :initarg :frame   :accessor window-frame)
+  ((frame   :initarg :frame   :accessor window-frame :type frame)
    (normal-size :initform nil :accessor window-normal-size)))
 
 (defmethod print-swm-object ((object tile-window) stream)
