@@ -104,6 +104,10 @@ called. When the modeline size changes, this is called."))
 (defgeneric group-repack-frame-numbers (group)
   (:documentation "Repack frame numbers to range from zero to the number of 
 frames such that there are no numerical gaps."))
+(defgeneric group-adopt-orphaned-windows (group &optional screen)
+  (:documentation "Adopts window that have been orphaned (such as being in a frame
+that no longer belongs to any group) into the given group, defaults to searching
+the current screen"))
 
 (define-swm-class group ()
   ((screen :initarg :screen :accessor group-screen)
