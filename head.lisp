@@ -150,6 +150,18 @@
   ;; Remove it from SCREEN's head list.
   (setf (screen-heads screen) (delete head (screen-heads screen))))
 
+(defun replace-head (screen old-head new-head)
+  "Replaces one head with another, while preserving its frame-tree"
+  (dformat 1 "Replacing head ~A with head ~A" old-head new-head)
+  (dolist (group (screen-groups screen))
+    (group-replace-head screen group old-head new-head))
+  (setf (screen-heads screen)
+        (sort (append (list new-head)
+                      (remove old-head (screen-heads screen)))
+              #'<
+              :key 'head-number))
+  (scale-head screen new-head old-head)) ; opposite of its calling convention
+
 (defun scale-head (screen oh nh)
   "Scales head OH to match the dimensions of NH."
   (dolist (group (screen-groups screen))
@@ -161,22 +173,25 @@
 
 (defun scale-screen (screen heads)
   "Scale all frames of all groups of SCREEN to match the dimensions of HEADS."
-  (let ((oheads (screen-heads screen)))
-    (when (< (length heads) (length oheads))
-      ;; Some heads were removed (or cloned), try to guess which.
-      (dolist (oh oheads)
-        (dolist (nh heads)
-          (when (= (head-number oh) (head-number nh))
-            ;; Same frame number, probably the same head
-            (setf (head-number nh) (head-number oh))))))
-    (dolist (h (set-difference heads oheads :test '= :key 'head-number))
-      (add-head screen h))
-    (dolist (h (set-difference oheads heads :test '= :key 'head-number))
-      (remove-head screen h))
-    (dolist (h (intersection heads oheads :test '= :key 'head-number))
-      (let ((nh (find (head-number h) heads  :test '= :key 'head-number))
-            (oh (find (head-number h) oheads :test '= :key 'head-number)))
-        (scale-head screen oh nh)))))
+  (let ((old-heads (screen-heads screen)))
+    (let* ((added-heads (set-difference heads old-heads :test '= :key 'head-number))
+           (removed-heads (set-difference old-heads heads :test '= :key 'head-number))
+           (max-change (max (length added-heads) (length removed-heads))))
+      (loop repeat max-change ; This is, unfortunately, the loop syntax for stopping at the max of two lists
+            for added-head-list = added-heads then (cdr added-head-list)
+            for added-head = (car added-head-list)
+            for removed-head-list = removed-heads then (cdr removed-head-list)
+            for removed-head = (car removed-head-list)
+            do (if added-head
+                   (if removed-head
+                       (replace-head screen removed-head added-head)
+                       (add-head screen added-head))
+                   (remove-head screen removed-head)))
+      ;; This rescales altered, but existing screens eg a screen resolution change
+      (dolist (head (intersection heads old-heads :test '= :key 'head-number))
+              (let ((new-head (find (head-number head) heads  :test '= :key 'head-number))
+                    (old-head (find (head-number head) old-heads :test '= :key 'head-number)))
+                (scale-head screen old-head new-head))))))
 
 (defun head-force-refresh (screen new-heads)
   (scale-screen screen new-heads)
