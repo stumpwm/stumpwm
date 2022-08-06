@@ -274,30 +274,35 @@
                        (with-channel-restarts (channel)
                          (io-channel-handle channel :loop)))
                      (setf timeouts (sort timeouts '< :key 'car))
-                     (multiple-value-bind (to-sec to-usec)
-                         (if timeouts
-                             (let ((left (max (round (* (/ (- (car (first timeouts)) (get-internal-real-time))
-                                                           internal-time-units-per-second)
-                                                        1000000))
-                                              10)))
-                               (floor left 1000000))
-                             (values nil nil))
+                     (flet ((compute-timeout ()
+                              (if timeouts
+                                  (let* ((internal-time-of-timeout (car (first timeouts)))
+                                         (remaining-internal-time (- internal-time-of-timeout
+                                                                     (get-internal-real-time)))
+                                         (remaining-seconds (/ remaining-internal-time
+                                                               internal-time-units-per-second))
+                                         (s-to-ms 1000000)
+                                         (remaining-ms (max
+                                                        (round (* remaining-seconds
+                                                                  s-to-ms))
+                                                        0)))
+                                    (floor remaining-ms 1000000))
+                                  (values nil nil))))
                        ;; Actually block for events
-                       (let ((rval (sb-unix:unix-fast-select (1+ maxfd)
-                                                             (sb-alien:addr rfds)
-                                                             (sb-alien:addr wfds)
-                                                             (sb-alien:addr efds)
-                                                             ;; rfds
-                                                             ;; wfds
-                                                             ;; efds
-                                                             to-sec
-                                                             to-usec)))
+                       (let ((rval (multiple-value-call
+                                       #'sb-unix:unix-fast-select (1+ maxfd)
+                                     (sb-alien:addr rfds)
+                                     (sb-alien:addr wfds)
+                                     (sb-alien:addr efds)
+                                     (compute-timeout))))
                          (cond ((= rval -1)
                                 ;; ???
                                 (let ((errno rval))
                                   (cond ((eql errno sb-unix:eintr)
                                          nil)
-                                        (t (error "Unexpected ~S error: ~A" 'sb-unix:unix-fast-select (sb-int:strerror errno))))))
+                                        (t (error "Unexpected ~S error: ~A"
+                                                  'sb-unix:unix-fast-select
+                                                  (sb-int:strerror errno))))))
                                (t
                                 ;; Notify channels for transpired events
                                 (maphash (lambda (fd evs)
