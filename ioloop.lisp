@@ -200,91 +200,115 @@
                                            (format nil " (~A)" description)
                                            ""))
       (block io-loop
-        (loop
-           (with-simple-restart (:restart-ioloop "Restart at I/O loop~A"
-                                                 (if description
-                                                     (format nil " (~A)" description)
-                                                     ""))
-             (macrolet ((with-channel-restarts ((channel &optional remove-code) &body body)
-                          (let ((ch (gensym "CHANNEL")))
-                            `(let* ((,ch ,channel)
-                                    (*current-io-channel* ,ch))
-                               (restart-case
-                                   (progn ,@body)
-                                 (:skip-channel ()
-                                  :report (lambda (s)
-                                            (format s "Continue as if without channel ~S" ,ch))
-                                   nil)
-                                 (:remove-channel ()
-                                  :report (lambda (s)
-                                            (format s "Unregister channel ~S and continue" ,ch))
-                                   ,(or remove-code `(io-loop-remove info ,ch))
-                                   nil))))))
-               (let ((ch-map (make-hash-table :test 'eql)) (rfds 0) (wfds 0) (maxfd 0)
-                     (timeouts '())
-                     (loop-ch '()))
-                 ;; Since it is select(2)-based, this implementation
-                 ;; updates the entire set of interesting events once
-                 ;; every iteration.
-                 (let ((remove '()))
-                   (dolist (channel (slot-value info 'channels))
-                     (with-channel-restarts (channel (push channel remove))
-                       (let ((fd (io-channel-ioport info channel)))
-                         (let ((events (io-channel-events channel)))
-                           (if events
-                               (dolist (event events)
-                                 (multiple-value-bind (event data)
-                                     (if (consp event) (values (car event) (cdr event)) (values event nil))
-                                   (case event
-                                     (:read
-                                      (setf maxfd (max maxfd fd)
-                                            rfds (logior rfds (ash 1 fd)))
-                                      (push (cons :read channel) (gethash fd ch-map '())))
-                                     (:write
-                                      (setf maxfd (max maxfd fd)
-                                            wfds (logior wfds (ash 1 fd)))
-                                      (push (cons :write channel) (gethash fd ch-map '())))
-                                     (:timeout
-                                      (let ((timeout (car data)))
-                                        (check-type timeout real)
-                                        (push (cons timeout channel) timeouts)))
-                                     (:loop
-                                        (push channel loop-ch)))))
-                               (push channel remove))))))
-                   (dolist (channel remove)
-                     (io-loop-remove info channel))
-                   (unless (slot-value info 'channels)
-                     (return-from io-loop)))
-                 ;; Call any :LOOP channels
-                 (dolist (channel loop-ch)
-                   (with-channel-restarts (channel)
-                     (io-channel-handle channel :loop)))
-                 (setf timeouts (sort timeouts '< :key 'car))
-                 (multiple-value-bind (to-sec to-usec)
-                     (if timeouts
-                         (let ((left (max (round (* (/ (- (car (first timeouts)) (get-internal-real-time))
-                                                       internal-time-units-per-second)
-                                                    1000000))
-                                          0)))
-                           (floor left 1000000))
-                         (values nil nil))
-                   ;; Actually block for events
-                   (multiple-value-bind (result rfds wfds efds)
-                       (sb-unix:unix-select (1+ maxfd)
-                                            rfds wfds rfds to-sec to-usec)
-                     (cond ((null result)
-                            (let ((errno rfds))
-                              (cond ((eql errno sb-unix:eintr)
-                                     nil)
-                                    (t (error "Unexpected ~S error: ~A" 'sb-unix:unix-select (sb-int:strerror errno))))))
-                           ((> result 0)
-                            ;; Notify channels for transpired events
-                            (let ((afds (logior rfds wfds efds)))
-                              (maphash (lambda (fd evs)
-                                         (when (not (= (logand afds (ash 1 fd)) 0))
-                                           (let ((r (not (= (logand rfds (ash 1 fd)) 0)))
-                                                 (w (not (= (logand wfds (ash 1 fd)) 0)))
-                                                 (e (not (= (logand efds (ash 1 fd)) 0))))
+        (sb-alien:with-alien ((rfds (sb-alien:struct sb-unix:fd-set))
+                              (wfds (sb-alien:struct sb-unix:fd-set))
+                              (efds (sb-alien:struct sb-unix:fd-set)))
+          (loop
+            :do
+               (with-simple-restart (:restart-ioloop "Restart at I/O loop~A"
+                                                     (if description
+                                                         (format nil " (~A)" description)
+                                                         ""))
+                 (macrolet ((with-channel-restarts ((channel &optional remove-code) &body body)
+                              (let ((ch (gensym "CHANNEL")))
+                                `(let* ((,ch ,channel)
+                                        (*current-io-channel* ,ch))
+                                   (restart-case
+                                       (progn ,@body)
+                                     (:skip-channel ()
+                                      :report (lambda (s)
+                                                (format s "Continue as if without channel ~S" ,ch))
+                                       nil)
+                                     (:remove-channel ()
+                                      :report (lambda (s)
+                                                (format s "Unregister channel ~S and continue" ,ch))
+                                       ,(or remove-code `(io-loop-remove info ,ch))
+                                       nil))))))
+                   (let ((ch-map (make-hash-table :test 'eql))
+                         (timeouts '())
+                         (loop-ch '())
+                         (maxfd 0))
+                     ;; Since it is select(2)-based, this implementation
+                     ;; updates the entire set of interesting events once
+                     ;; every iteration.
+                     (let ((remove '()))
+
+                       (sb-unix:fd-zero rfds)
+                       (sb-unix:fd-zero wfds)
+                       (sb-unix:fd-zero efds)
+
+                       (dolist (channel (slot-value info 'channels))
+                         (with-channel-restarts (channel (push channel remove))
+                           (let ((fd (io-channel-ioport info channel)))
+                             (let ((events (io-channel-events channel)))
+                               (if events
+                                   (dolist (event events)
+                                     (multiple-value-bind (event data)
+                                         (if (consp event)
+                                             (values (car event) (cdr event))
+                                             (values event nil))
+                                       (case event
+                                         (:read
+                                          (setf maxfd (max maxfd fd))
+                                          (sb-unix:fd-set fd rfds)
+                                          (push (cons :read channel)
+                                                (gethash fd ch-map '())))
+                                         (:write
+                                          (setf maxfd (max maxfd fd))
+                                          (sb-unix:fd-set fd wfds)
+                                          (push (cons :write channel)
+                                                (gethash fd ch-map '())))
+                                         (:timeout
+                                          (let ((timeout (car data)))
+                                            (check-type timeout real)
+                                            (push (cons timeout channel) timeouts)))
+                                         (:loop
+                                           (push channel loop-ch)))))
+                                   (push channel remove))))))
+                       (dolist (channel remove)
+                         (io-loop-remove info channel))
+                       (unless (slot-value info 'channels)
+                         (return-from io-loop)))
+                     ;; Call any :LOOP channels
+                     (dolist (channel loop-ch)
+                       (with-channel-restarts (channel)
+                         (io-channel-handle channel :loop)))
+                     (setf timeouts (sort timeouts '< :key 'car))
+                     (flet ((compute-timeout ()
+                              (if timeouts
+                                  (let* ((internal-time-of-timeout (car (first timeouts)))
+                                         (remaining-internal-time (- internal-time-of-timeout
+                                                                     (get-internal-real-time)))
+                                         (remaining-seconds (/ remaining-internal-time
+                                                               internal-time-units-per-second))
+                                         (s-to-ms 1000000)
+                                         (remaining-ms (max
+                                                        (round (* remaining-seconds
+                                                                  s-to-ms))
+                                                        0)))
+                                    (floor remaining-ms 1000000))
+                                  (values nil nil))))
+                       ;; Actually block for events
+                       (let ((rval (multiple-value-call
+                                       #'sb-unix:unix-fast-select (1+ maxfd)
+                                     (sb-alien:addr rfds)
+                                     (sb-alien:addr wfds)
+                                     (sb-alien:addr efds)
+                                     (compute-timeout))))
+                         (cond ((= rval -1)
+                                ;; ???
+                                (let ((errno rval))
+                                  (cond ((eql errno sb-unix:eintr)
+                                         nil)
+                                        (t (error "Unexpected ~S error: ~A"
+                                                  'sb-unix:unix-fast-select
+                                                  (sb-int:strerror errno))))))
+                               (t
+                                ;; Notify channels for transpired events
+                                (maphash (lambda (fd evs)
+                                           (let ((r (sb-unix:fd-isset fd rfds))
+                                                 (w (sb-unix:fd-isset fd wfds))
+                                                 (e (sb-unix:fd-isset fd efds)))
                                              (dolist (ev evs)
                                                (with-channel-restarts ((cdr ev))
                                                  (cond ((and (eq (car ev) :read)
@@ -292,17 +316,17 @@
                                                         (io-channel-handle (cdr ev) :read))
                                                        ((and (eq (car ev) :write)
                                                              w)
-                                                        (io-channel-handle (cdr ev) :write))))))))
-                                       ch-map))))))
-                 ;; Check for timeouts
-                 (when timeouts
-                   (block timeouts
-                     (let ((now (get-internal-real-time)))
-                       (dolist (to timeouts)
-                         (if (<= (car to) now)
-                             (with-channel-restarts ((cdr to))
-                               (io-channel-handle (cdr to) :timeout))
-                             (return-from timeouts))))))))))))))
+                                                        (io-channel-handle (cdr ev) :write)))))))
+                                         ch-map)))))
+                     ;; Check for timeouts
+                     (when timeouts
+                       (block timeouts
+                         (let ((now (get-internal-real-time)))
+                           (dolist (to timeouts)
+                             (if (<= (car to) now)
+                                 (with-channel-restarts ((cdr to))
+                                   (io-channel-handle (cdr to) :timeout))
+                                 (return-from timeouts)))))))))))))))
 
   ;;; IO-CHANNEL-IOPORT methods for support facilities
 (defmethod io-channel-ioport (io-loop (channel sb-sys:fd-stream))
