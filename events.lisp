@@ -631,8 +631,19 @@ the window in it's frame."
   (let ((button (decode-button-code code))
         (screen (find-screen window))
         (mode-line (find-mode-line-by-window window))
-        (win (find-window-by-parent window (top-windows))))
+        (win))
     (run-hook-with-args *click-hook* screen code x y)
+    (cond
+      ((setf win (find-window window))
+       ;; We received the event at the parent window, but it occurred in
+       ;; the window itself. We need to adjust the coordinates to make them
+       ;; relative to the parent window.
+       (setf x (+ x (xlib:drawable-x window))
+             y (+ y (xlib:drawable-y window))))
+      ((setf win (find-window-by-parent window (top-windows)))
+       ;; The click happened on the parent window, so the coordinates are
+       ;; correct.
+       ))
     (cond
       ((and screen (not child))
        (group-button-press (screen-current-group screen) button x y :root)
