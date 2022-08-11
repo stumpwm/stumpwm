@@ -289,20 +289,19 @@
                                     (floor remaining-ms 1000000))
                                   (values nil nil))))
                        ;; Actually block for events
-                       (let ((rval (multiple-value-call
-                                       #'sb-unix:unix-fast-select (1+ maxfd)
-                                     (sb-alien:addr rfds)
-                                     (sb-alien:addr wfds)
-                                     (sb-alien:addr efds)
-                                     (compute-timeout))))
-                         (cond ((= rval -1)
-                                ;; ???
-                                (let ((errno rval))
-                                  (cond ((eql errno sb-unix:eintr)
-                                         nil)
-                                        (t (error "Unexpected ~S error: ~A"
-                                                  'sb-unix:unix-fast-select
-                                                  (sb-int:strerror errno))))))
+                       (multiple-value-bind (rval errno)
+                           (sb-unix:unix-fast-select (1+ maxfd)
+                                                     (sb-alien:addr rfds)
+                                                     (sb-alien:addr wfds)
+                                                     (sb-alien:addr efds)
+                                                     (compute-timeout)
+                                                     nil)
+                         (cond ((and errno (plusp errno))
+                                (unless (eql errno sb-unix:eintr)
+                                  (dformat 5
+                                           "Unexpected ~S error: ~A~%"
+                                           'sb-unix:unix-fast-select
+                                           (sb-int:strerror errno))))
                                (t
                                 ;; Notify channels for transpired events
                                 (maphash (lambda (fd evs)
