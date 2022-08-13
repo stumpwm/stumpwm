@@ -210,6 +210,17 @@
   ;; Try to do something with the orphaned windows
   (populate-frames group))
 
+(defmethod group-replace-head (screen (group tile-group) old-head new-head)
+  (let ((head-frame-tree (tile-group-frame-head group old-head)))
+    ;; we remove and then re-add it to make sure it winds up in the correct position:
+    ;; the top level of a group's frame-tree must be in the same order as the screen's head's slot
+    (let ((new-frame-tree (remove head-frame-tree
+                                  (tile-group-frame-tree group))))
+      (setf (tile-group-frame-tree group)
+            (insert-before new-frame-tree
+                           head-frame-tree
+                           (head-number new-head))))))
+
 (defmethod group-resize-head ((group tile-group) oh nh)
   (resize-tree (tile-group-frame-head group oh) (head-width nh) (head-height nh) (head-x nh) (head-y nh))
   (redraw-frame-indicator group)
