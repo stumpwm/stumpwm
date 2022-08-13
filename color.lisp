@@ -106,9 +106,10 @@ then call (update-color-map).")
                           color))))
 
 (defun alloc-color (screen color)
-  (xlib:alloc-color 
-   (xlib:screen-default-colormap (screen-number screen))
-   (lookup-color screen color)))
+  ;; We add an alpha channel to the color returned by xlib:alloc-color
+  (logior (xlib:alloc-color (xlib:screen-default-colormap (screen-number screen))
+                            (lookup-color screen color))
+          (ash #xff 24)))
 
 ;; Normal colors are dimmed and bright colors are intensified in order
 ;; to more closely resemble the VGA pallet.
