@@ -11,3 +11,5 @@ jobs:
         run: docker build . --file Dockerfile -t stumpwm
       - name: Test
         run: docker run stumpwm make test
+      - name: Integration_Testing
+        run: cd tests/integration-tests; ./script ci

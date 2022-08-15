@@ -10,7 +10,6 @@ echo-with-color () {
     fi
 }
 echo-red    () { echo-with-color 31 "$@"; }
-echo-green  () { echo-with-color 32 "$@"; }
 
 die() {
     echo-red "$@"
@@ -29,9 +28,9 @@ docker-wrapper() {
     trap docker-interrupt INT
     docker "$@" &
     dockerprocess=$!
-    echo-green "=== $greeting: Begin in docker process $dockerprocess"
-    wait "$dockerprocess" || die "=== $greeting: FAIL"
-    echo-green "=== $greeting: Done"
+    echo "$greeting: Docker process $dockerprocess started"
+    if ! wait "$dockerprocess"; then echo "$greeting: Docker process $dockerprocess failed"; die; fi
+    echo "$greeting: Docker process $dockerprocess done"
 }
 
 generate-tests() {
@@ -44,6 +43,21 @@ internal-generate-tests() {
     count="$1"
     [ 1 -le "$count" ] || die COUNT must be a positive integer.
     docker-wrapper "Generating $count tests" run --rm -v "$(pwd)/testcases":/home/user/testcases --init "$(cat test-runner.iid)" generate-tests "$count"
+}
+
+internal-get-run-tests-deps() {
+    find testcases/ -maxdepth 1 -name '*.sh' |
+        sed -r 's/\.sh/.results\/success/'
+}
+
+internal-get-ci-deps() {
+    cases=$(mktemp)
+    find testcases/ -maxdepth 1 -name '*.sh' > "$cases"
+    failcases=$(mktemp)
+    sed -r '/^(#|$)/d;s/^/testcases\//;s/$/.sh/' < tests-expected-to-fail > "$failcases"
+    grep -vFf "$failcases" "$cases" | sed -r 's/\.sh/.results\/success/'
+    grep -Ff  "$failcases" "$cases" | sed -r 's/\.sh/.results\/fail/'
+    rm "$cases" "$failcases"
 }
 
 generate-tests-locally() {
@@ -59,18 +73,29 @@ run-tests() {
     make -j "$number_of_processors" -k -l "$number_of_processors" -s run-tests
 }
 
+ci() {
+    make -j "$number_of_processors" -k -l "$number_of_processors" -s ci
+}
+
 run-one-test() {
     testname="$1"
     [ -n "$testname" ] || die NAME must be given.
     [ -e "testcases/$testname.sh" ] || die "testcases/$testname.sh" does not exist.
-    make "testcases/${testname}.results/success"
+    if grep -E "^${testname}\$" tests-expected-to-fail >/dev/null; then
+        make "testcases/${testname}.results/fail"
+    else
+        make "testcases/${testname}.results/success"
+    fi
 }
 
+IS_TTY=no
+if [ -t 1 ]; then IS_TTY=yes; fi
 internal-run-one-test() {
     testname="$1"
+    expectation="$2"
     [ -n "$testname" ] || die NAME must be given.
     [ -e "testcases/$testname.sh" ] || die "testcases/$testname.sh" does not exist.
-    docker-wrapper "Test $testname" run --rm -v "$(pwd)/testcases":/home/user/testcases --init "$(cat test-runner.iid)" run-test "$testname"
+    docker-wrapper "Test $testname" run --rm -v "$(pwd)/testcases":/home/user/testcases --init "$(cat test-runner.iid)" run-test "$testname" "$expectation" "$IS_TTY"
 }
 
 clean-results() {
@@ -86,6 +111,11 @@ show-help() {
 Usage:
 
   ./script run-tests                    # Run test suite.
+
+  ./script ci                           # Run test suite for CI.
+                                        # This checks that the tests mentioned
+                                        # in ./tests-expected-to-fail fails and
+                                        # that the rest succeeds.
 
   ./script run-one-test NAME            # Run one test.
                                         # NAME can for example be "001".
