@@ -1,0 +1,6 @@
+#!/bin/bash
+set -e
+
+file=$(mktemp)
+xterm -e bash -c "sleep .5; rm $file; bash" &
+while [ -e "$file" ]; do sleep .2; done
