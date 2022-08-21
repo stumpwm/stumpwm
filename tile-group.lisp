@@ -222,7 +222,9 @@
                            (head-number new-head))))))
 
 (defmethod group-resize-head ((group tile-group) oh nh)
-  (resize-tree (tile-group-frame-head group oh) (head-width nh) (head-height nh) (head-x nh) (head-y nh))
+  (resize-tree group (tile-group-frame-head group oh)
+               (head-width nh) (head-height nh)
+               (head-x nh) (head-y nh))
   (redraw-frame-indicator group)
   (redraw-frame-outline group))
 
@@ -719,21 +721,60 @@ LEAF. Return tree with leaf removed."
     (expand-tree newtree amt dir)
     newtree))
 
-(defun resize-tree (tree w h &optional (x (tree-x tree)) (y (tree-y tree)))
+(defun resize-tree (group tree w h &optional (x (tree-x tree)) (y (tree-y tree)))
   "Scale TREE to width W and height H, ignoring aspect. If X and Y are
-  provided, reposition the TREE as well."
-  (let* ((tw (tree-width tree))
-         (th (tree-height tree))
-         (tx (tree-x tree))
-         (ty (tree-y tree))
-         (wf (/ w tw))
-         (hf (/ h th)))
-    (tree-iterate tree (lambda (f)
-                         (setf (frame-height f) (round (* (frame-height f) hf))
-                               (frame-y f) (+ (round (* (- (frame-y f) ty) hf)) y)
-                               (frame-width f) (round (* (frame-width f) wf))
-                               (frame-x f) (+ (round (* (- (frame-x f) tx) wf)) x))))
-    (dformat 4 "resize-tree ~Dx~D -> ~Dx~D~%" tw th (tree-width tree) (tree-height tree))))
+provided, reposition the TREE as well. Remove frames as necessary and possible,
+to respect the minimum frame size."
+  (cond
+    ((atom tree)
+     ;; We don't check here whether we respect minimum frame size. That
+     ;; should've been done earlier, unless it's impossible anyway e.g. due to
+     ;; the minimum frame size being larger than the head.
+     (let ((frame tree))
+       (setf (frame-height frame) h
+             (frame-y frame) y
+             (frame-width frame) w
+             (frame-x frame) x)
+       (if-let (win (frame-window frame))
+           (update-decoration win))))
+    ((or (< w (tree-min-width tree))
+         (< h (tree-min-height tree)))
+     ;; We can't fit this tree in the assigned area, so we remove all frames
+     ;; beyond the split and try again
+     (let ((tree-to-resize (car tree))
+           (tree-to-discard (cdr tree))
+           (target-frame (tree-leaf tree))
+           (parent (tree-parent (tile-group-frame-tree group) tree)))
+       ;; Hoist the frames before the split
+       (setf (elt parent (position tree parent)) tree-to-resize)
+       ;; Move windows in removed frames
+       (tree-iterate tree-to-discard
+                     (lambda (f)
+                       (if-let (win (frame-window f))
+                           (hide-window win))
+                       (migrate-frame-windows group f target-frame)))
+       (resize-tree group tree-to-resize w h x y)))
+    (t
+     ;; We should have a tree that is possible to resize while respecting
+     ;; minimum frame size
+     (let ((child1 (first tree)) (child2 (second tree)))
+       (ecase (tree-split-type tree)
+         (:column
+          (let* ((child1-new-size (min (max (tree-min-width child1)
+                                            (round (* w (/ (tree-width child1) (tree-width tree)))))
+                                       (- w (tree-min-width child2)))))
+            (resize-tree group child1
+                         child1-new-size h x y)
+            (resize-tree group child2
+                         (- w child1-new-size) h (+ x child1-new-size) y)))
+         (:row
+          (let* ((child1-new-size (min (max (tree-min-height child1)
+                                            (round (* h (/ (tree-height child1) (tree-height tree)))))
+                                       (- h (tree-min-height child2)))))
+            (resize-tree group child1
+                         w child1-new-size x y)
+            (resize-tree group child2
+                         w (- h child1-new-size) x (+ y child1-new-size)))))))))
 
 (defun remove-frame (tree leaf)
   "Return a new tree with LEAF and it's sibling merged into
@@ -773,7 +814,7 @@ one."
                          (incf (frame-x frame) x)
                          (incf (frame-y frame) y)))))
 
-(defun move-split-in-tree (tree amount)
+(defun move-split-in-tree (group tree amount)
   "Move the split in tree by amount if possible, otherwise as much as posible."
   (assert (and (listp tree) (= (length tree) 2)))
   (let* ((split-type (tree-split-type tree))
@@ -790,12 +831,12 @@ one."
          (effective-amount (max (min amount max-amount) min-amount)))
     (ecase split-type
       (:column
-       (resize-tree child1 (+ child1-wh effective-amount) (tree-height child1))
-       (resize-tree child2 (- child2-wh effective-amount) (tree-height child2)
+       (resize-tree group child1 (+ child1-wh effective-amount) (tree-height child1))
+       (resize-tree group child2 (- child2-wh effective-amount) (tree-height child2)
                     (+ (tree-x child2) effective-amount) (tree-y child2)))
       (:row
-       (resize-tree child1 (tree-width child1) (+ child1-wh effective-amount))
-       (resize-tree child2 (tree-width child2) (- child2-wh effective-amount)
+       (resize-tree group child1 (tree-width child1) (+ child1-wh effective-amount))
+       (resize-tree group child2 (tree-width child2) (- child2-wh effective-amount)
                     (tree-x child2) (+ (tree-y child2) effective-amount))))))
 
 (defun resize-frame (group frame amount dim)
@@ -832,7 +873,7 @@ respectively."
            (effective-amount (if invert-amount (- amount) amount)))
       (when (and frame-to-alter (not (= effective-amount 0)))
         (dformat 10 "Resizing frame ~s ~s~%" dim effective-amount)
-        (move-split-in-tree frame-to-alter effective-amount)
+        (move-split-in-tree group frame-to-alter effective-amount)
         (unless (and *resize-hides-windows* (eq *top-map* *resize-map*))
           (tree-iterate frame-to-alter
                         (lambda (leaf)
