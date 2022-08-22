@@ -95,13 +95,13 @@
                (<= y (+ (head-y head) (head-height head))))
       (return head))))
 
-;; Determining a frame's head based on position probably won't
-;; work with overlapping heads. Would it be better to walk
-;; up the frame tree?
-(defun frame-head (group frame)
-  (let ((center-x (+ (frame-x frame) (ash (frame-width frame) -1)))
-        (center-y (+ (frame-y frame) (ash (frame-height frame) -1))))
-    (find-head-by-position (group-screen group) center-x center-y)))
+;; Determining a frame's head based on position probably won't work with
+;; overlapping heads. It also doesn't work in the middle of rescaling a head.
+(defgeneric frame-head (group frame)
+  (:method (group frame)
+    (let ((center-x (+ (frame-x frame) (ash (frame-width frame) -1)))
+          (center-y (+ (frame-y frame) (ash (frame-height frame) -1))))
+      (find-head-by-position (group-screen group) center-x center-y))))
 
 (defun group-heads (group)
   (screen-heads (group-screen group)))

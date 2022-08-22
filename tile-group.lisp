@@ -326,6 +326,10 @@
   (:method (frame)
     (+ (frame-y frame) (frame-height frame))))
 
+(defmethod frame-head ((group tile-group) frame)
+  (find-if (lambda (head) (find frame (flatten (tile-group-frame-head group head))))
+           (group-heads group)))
+
 (defgeneric frame-display-y (group frame)
   (:documentation "Return a Y for frame that doesn't overlap the mode-line.")
   (:method (group frame)
