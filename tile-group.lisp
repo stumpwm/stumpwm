@@ -332,31 +332,50 @@
   (find-if (lambda (head) (find frame (flatten (tile-group-frame-head group head))))
            (group-heads group)))
 
-(defgeneric frame-display-y (group frame)
-  (:documentation "Return a Y for frame that doesn't overlap the mode-line.")
+(defun project-x (head x)
+  (declare (ignore head))
+  "Return an integer X coordinate."
+  (round x))
+
+(defun project-y (head y)
+  "Return an integer Y coordinate that takes the mode-line into account."
+  (round (let* ((ml (head-mode-line head)))
+           (if (and ml (not (eq (mode-line-mode ml) :hidden)))
+               (let* ((head-y (frame-y head))
+                      (rel-y (- y head-y)))
+                 (+ (* rel-y (mode-line-factor ml))
+                    (case (mode-line-position ml)
+                      (:top (mode-line-height ml))
+                      (:bottom 0))))
+               y))))
+
+(defgeneric frame-display-x (group frame)
+  (:documentation "Return an integer X for frame.")
   (:method (group frame)
-    (let* ((head (frame-head group frame))
-           (ml (head-mode-line head))
-           (head-y (frame-y head))
-           (rel-frame-y (- (frame-y frame) head-y)))
-      (if (and ml (not (eq (mode-line-mode ml) :hidden)))
-          (case (mode-line-position ml)
-            (:top
-             (+ head-y
-                (+ (mode-line-height ml) (round (* rel-frame-y (mode-line-factor ml))))))
-            (:bottom
-             (+ head-y
-                (round (* rel-frame-y (mode-line-factor ml))))))
-          (frame-y frame)))))
+    (project-x (frame-head group frame) (frame-x frame))))
+
+(defgeneric frame-display-y (group frame)
+  (:documentation "Return an integer Y for frame that takes the mode-line into account.")
+  (:method (group frame)
+    (project-y (frame-head group frame) (frame-y frame))))
 
 (defgeneric frame-display-height (group frame)
-  (:documentation "Return a HEIGHT for frame that doesn't overlap the mode-line.")
+  (:documentation "Return an integer HEIGHT for frame that doesn't overlap the mode-line.")
   (:method (group frame)
     (let* ((head (frame-head group frame))
-           (ml (head-mode-line head)))
-      (if (and ml (not (eq (mode-line-mode ml) :hidden)))
-          (round (* (frame-height frame) (mode-line-factor ml)))
-          (frame-height frame)))))
+           (y (frame-y frame))
+           (height (frame-height frame)))
+      (- (project-y head (+ y height))
+         (project-y head y)))))
+
+(defgeneric frame-display-width (group frame)
+  (:documentation "Return an integer WIDTH for frame.")
+  (:method (group frame)
+    (let* ((head (frame-head group frame))
+           (x (frame-x frame))
+           (width (frame-width frame)))
+      (- (project-x head (+ x width))
+         (project-x head x)))))
 
 (defun frame-intersect (f1 f2)
   "Return a new frame representing (only) the intersection of F1 and F2. WIDTH and HEIGHT will be <= 0 if there is no overlap"
@@ -492,7 +511,7 @@ T (default) then also focus the frame."
 If ratio is an integer return the number of pixel desired."
   (if (integerp ratio)
       ratio
-      (truncate (* length ratio))))
+      (* length ratio)))
 
 (defun funcall-on-leaf (tree leaf fn)
   "Return a new tree with LEAF replaced with the result of calling FN on LEAF."
@@ -683,16 +702,8 @@ you don't care which one."
                   (total (funcall sz-fn tree))
                   (amt-list (loop for i in children
                                   for old-sz = (funcall sz-fn i)
-                                  collect (floor (* amount old-sz) total)))
-                  (remainder (- amount (apply '+ amt-list)))
+                                  collect (/ (* amount old-sz) total)))
                   (ofs 0))
-             ;; spread the remainder out as evenly as possible
-             (assert (< remainder (length amt-list)))
-             (loop for i upfrom 0
-                   while (> remainder 0)
-                   do
-                   (incf (nth i amt-list))
-                   (decf remainder))
              ;; resize proportionally
              (loop for i in children
                    for amt in amt-list
@@ -761,7 +772,7 @@ to respect the minimum frame size."
        (ecase (tree-split-type tree)
          (:column
           (let* ((child1-new-size (min (max (tree-min-width child1)
-                                            (round (* w (/ (tree-width child1) (tree-width tree)))))
+                                            (* w (/ (tree-width child1) (tree-width tree))))
                                        (- w (tree-min-width child2)))))
             (resize-tree group child1
                          child1-new-size h x y)
@@ -769,7 +780,7 @@ to respect the minimum frame size."
                          (- w child1-new-size) h (+ x child1-new-size) y)))
          (:row
           (let* ((child1-new-size (min (max (tree-min-height child1)
-                                            (round (* h (/ (tree-height child1) (tree-height tree)))))
+                                            (* h (/ (tree-height child1) (tree-height tree))))
                                        (- h (tree-min-height child2)))))
             (resize-tree group child1
                          w child1-new-size x y)
@@ -911,15 +922,8 @@ respectively."
 
          "
          ;; First divide the two groups as evenly as possible.
-         (multiple-value-bind (base remainder)
-             (truncate value (+ first-splits second-splits))
-           ;; We may have up to TOTAL-1 pixels left.  Divide those evenly
-           ;; between the two sides.  If there's 1 odd pixel left just give it
-           ;; to the first side.
-           (multiple-value-bind (extra maybe-one-extra)
-               (truncate remainder 2)
-             (values (+ (* base first-splits) extra maybe-one-extra)
-                     (+ (* base second-splits) extra)))))
+         (let ((base (/ value (+ first-splits second-splits))))
+           (values (* base first-splits) (* base second-splits))))
        (balance-tree (tree x y width height)
          "Balance the binary tree to fit the given dimensions."
          (let* ((split-type (tree-split-type tree))
@@ -994,9 +998,9 @@ desktop when starting."
          (gc (screen-frame-outline-gc screen))
          (halfwidth (/ width 2)))
     (when (> width 0)
-      (let ((x (frame-x f))
+      (let ((x (frame-display-x group f))
             (y (frame-display-y group f))
-            (w (frame-width f))
+            (w (frame-display-width group f))
             (h (frame-display-height group f)))
         (when tl
           (xlib:draw-line win gc
@@ -1028,7 +1032,7 @@ windows used to draw the numbers in. The caller must destroy them."
     (mapcar (lambda (f)
               (let ((w (xlib:create-window
                         :parent (screen-root screen)
-                        :x (frame-x f) :y (frame-display-y group f) :width 1 :height 1
+                        :x (frame-display-x group f) :y (frame-display-y group f) :width 1 :height 1
                         :background (screen-fg-color screen)
                         :border (screen-border-color screen)
                         :border-width 1

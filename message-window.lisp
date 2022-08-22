@@ -177,7 +177,7 @@ function expects to be wrapped in a with-state for win."
         ;; place, so unmap it first.
         (xlib:unmap-window w)
         (xlib:with-state (w)
-          (setf (xlib:drawable-x w) (+ (frame-x frame)
+          (setf (xlib:drawable-x w) (+ (frame-display-x group frame)
                                        (truncate (- (frame-width frame) (text-line-width font string)) 2))
                 (xlib:drawable-y w) (+ (frame-display-y group frame)
                                        (truncate (- (frame-height frame) (font-height font)) 2))
@@ -197,7 +197,7 @@ function expects to be wrapped in a with-state for win."
                     (prin1-to-string *frame-indicator-text*)))
           (font (screen-font (current-screen))))
       (xlib:with-state (w)
-                       (setf (xlib:drawable-x w) (+ (frame-x frame)
+                       (setf (xlib:drawable-x w) (+ (frame-display-x group frame)
                                                     (truncate (- (frame-width frame) (text-line-width font string)) 2))
                              (xlib:drawable-y w) (+ (frame-display-y group frame)
                                                     (truncate (- (frame-height frame) (font-height font)) 2))

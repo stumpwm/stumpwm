@@ -68,7 +68,7 @@ menu, the error is re-signalled."
          (head (current-head))
          (frame (tile-group-current-frame group))
          (window (frame-window frame))
-         (x (1- (+ (frame-x frame) (frame-width frame))))
+         (x (1- (+ (frame-display-x group frame) (frame-display-width group frame))))
          (y (1- (+ (frame-display-y group frame) (frame-display-height group frame)))))
     (ecase where
       (:screen
