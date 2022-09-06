@@ -112,10 +112,14 @@ the time these just gets in the way."
     (apply 'xlib:make-state-mask mods)))
 
 (defun report-kbd-parse-error (c stream)
-  (format stream "Failed to parse key string: ~s" (slot-value c 'string)))
+  (format stream "Failed to parse key string: ~s" (slot-value c 'string))
+  (when-let ((reason (kbd-parse-error-reason c)))
+    (format stream "~%Reason: ~A" reason)))
 
 (define-condition kbd-parse-error (stumpwm-error)
-  ((string :initarg :string))
+  ((string :initarg :string)
+   (reason :initarg :reason :reader kbd-parse-error-reason
+	   :initform nil))
   (:report report-kbd-parse-error)
   (:documentation "Raised when a kbd string failed to parse."))
 
@@ -123,7 +127,8 @@ the time these just gets in the way."
   "MODS is a sequence of <MOD CHAR> #\- pairs. Return a list suitable
 for passing as the last argument to (apply #'make-key ...)"
   (unless (evenp end)
-    (error 'kbd-parse-error :string mods))
+    (error 'kbd-parse-error :string mods
+           :reason "Did you forget to separate modifier characters with '-'?"))
   (loop for i from 0 below end by 2
         when (char/= (char mods (1+ i)) #\-)
           do (error 'kbd-parse-error :string mods)
@@ -134,7 +139,8 @@ for passing as the last argument to (apply #'make-key ...)"
                 (#\H (list :hyper t))
                 (#\s (list :super t))
                 (#\S (list :shift t))
-                (t (error 'kbd-parse-error :string mods)))))
+                (t (error 'kbd-parse-error :string mods
+                          :reason (format nil "Unknown modifer character ~A" (char mods i)))))))
 
 (defvar *altgr-offset* 2
   "The offset of altgr keysyms. Often 2 or 4, but always an even number.")
