@@ -627,11 +627,15 @@ the window in it's frame."
   (or (eq button :wheel-down) (eq button :wheel-up)
       (eq button :wheel-left) (eq button :wheel-right)))
 
-(define-stump-event-handler :button-press (window code x y child time)
+(defvar *button-state* nil
+  "Modifier state keys for button presses.")
+
+(define-stump-event-handler :button-press (window state code x y child time)
   (let ((button (decode-button-code code))
         (screen (find-screen window))
         (mode-line (find-mode-line-by-window window))
-        (win (find-window-by-parent window (top-windows))))
+        (win (find-window-by-parent window (top-windows)))
+        (*button-state* (xlib:make-state-keys state)))
     (run-hook-with-args *click-hook* screen code x y)
     (cond
       ((and screen (not child))
