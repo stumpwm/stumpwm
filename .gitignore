@@ -12,7 +12,7 @@ configure
 config.log
 config.status
 autom4te.cache
-Makefile
+/Makefile
 stumpwm
 stumpwm.info
 TAGS
@@ -33,3 +33,6 @@ stumpwm.pdf
 stumpwm.toc
 stumpwm.vr
 stumpwm.vrs
+/tests/integration-tests/test-runner.iid
+/tests/integration-tests/testcases/*.results/
+/tests/integration-tests/testcases/generated-*.sh

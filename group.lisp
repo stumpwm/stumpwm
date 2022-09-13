@@ -92,6 +92,8 @@ needs to redraw anything on it, this is where it should do it."))
   (:documentation "A head is being added to this group's screen."))
 (defgeneric group-remove-head (group head)
   (:documentation "A head is being removed from this group's screen."))
+(defgeneric group-replace-head (screen group old-head new-head)
+  (:documentation "A head is being replaced by another on this group's screen."))
 (defgeneric group-resize-head (group oh nh)
   (:documentation "A head is being resized on this group's screen."))
 (defgeneric group-sync-all-heads (group)
@@ -409,7 +411,7 @@ current window of the current group to the new one."
   (when-let ((next (group-forward current list))
              (win (group-current-window current)))
     (move-window-to-group win next)
-    (really-raise-window win)))
+    (focus-all win)))
 
 (defcommand gnew (name) ((:string "Group name: "))
   "Create a new group with the specified name. The new group becomes the

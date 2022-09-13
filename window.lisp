@@ -672,7 +672,7 @@ and bottom_end_x."
     (unless (eq (xlib:window-map-state (window-xwin window)) :unmapped)
       (incf (window-unmap-ignores window)))
     (xlib:reparent-window (window-xwin window) master-window 0 0)
-    (xwin-grab-buttons master-window)
+    (xwin-grab-buttons xwin)
     ;;     ;; we need to update these values since they get set to 0,0 on reparent
     ;;     (setf (window-x window) 0
     ;;          (window-y window) 0)

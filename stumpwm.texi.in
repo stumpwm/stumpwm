@@ -2820,7 +2820,10 @@ Abort the menu.
 
 In addition, you can customize the number of items shown at a time (a
 page) with the @var{*menu-maximum-height*} variable. The default
-value, @code{nil}, means that there is no limit to the page size.
+value, @code{50}, limits the menu size to 50 items. Setting it to
+@code{nil} will remove the limit on how many menu entries are shown
+(be careful, this can crash X11 when attempting to display a large
+amount of items).
 
 ### *menu-map*
 @@@ menu-page-up

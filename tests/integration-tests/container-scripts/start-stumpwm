@@ -1,0 +1,5 @@
+#!/bin/bash
+set -e
+
+stumpwm &
+sleep 1 # Wait for stumpwm to start

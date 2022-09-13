@@ -156,6 +156,9 @@ function expects to be wrapped in a with-state for win."
           (unless (frame-window frame)
             (draw-frame-outline group frame t t)))))))
 
+(defun redraw-frame-outline (group)
+  (show-frame-outline group t))
+
 (defun show-frame-indicator (group &optional force)
   (show-frame-outline group)
   ;; FIXME: Arg, these tests are already done in show-frame-outline
@@ -182,6 +185,25 @@ function expects to be wrapped in a with-state for win."
         (xlib:map-window w)
         (echo-in-window w font (screen-fg-color (current-screen)) (screen-bg-color (current-screen)) string)
         (reset-frame-indicator-timer)))))
+
+
+(defun redraw-frame-indicator (group)
+  (when (and (timer-p *frame-indicator-timer*)
+             (find group (mapcar 'screen-current-group *screen-list*)))
+    (let ((frame (tile-group-current-frame group))
+          (w (screen-frame-window (current-screen)))
+          (string (if (stringp *frame-indicator-text*)
+                      *frame-indicator-text*
+                    (prin1-to-string *frame-indicator-text*)))
+          (font (screen-font (current-screen))))
+      (xlib:with-state (w)
+                       (setf (xlib:drawable-x w) (+ (frame-x frame)
+                                                    (truncate (- (frame-width frame) (text-line-width font string)) 2))
+                             (xlib:drawable-y w) (+ (frame-display-y group frame)
+                                                    (truncate (- (frame-height frame) (font-height font)) 2))
+                             (xlib:window-priority w) :above))
+      (xlib:map-window w)
+      (echo-in-window w font (screen-fg-color (current-screen)) (screen-bg-color (current-screen)) string))))
 
 (defun echo-in-window (win font fg bg string)
   (let* ((height (font-height font))

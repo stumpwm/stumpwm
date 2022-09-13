@@ -1,0 +1,27 @@
+#!/bin/bash
+set -e
+generate-one-test () {
+    temp_file=$(mktemp --suffix=.sh)
+    if generate-test-code > "${temp_file}"; then
+        true # Good
+    else
+        cat "${temp_file}" > /dev/stderr
+        false
+    fi
+    test_id=$(sha256sum "${temp_file}" | sed -r 's/^(.{8}).*$/\1/')
+    to_file="testcases/generated-${test_id}.sh"
+    if [ -e "${to_file}" ]; then
+        echo "${to_file}" already generated.
+    else
+        mv "${temp_file}" "${to_file}"
+        chmod a+x "${to_file}"
+        echo Generated "${to_file}"
+        count=$((count+1))
+    fi
+}
+
+[ 0 -lt "$1" ]
+count=0
+while [ $count -lt "$1" ]; do
+    generate-one-test
+done

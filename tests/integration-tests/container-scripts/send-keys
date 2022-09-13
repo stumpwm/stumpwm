@@ -1,0 +1,17 @@
+#!/bin/bash
+set -e
+
+convert-from-stumpwm-to-xdotool() {
+    sed -rf <(cat <<EOF
+s/A-/Alt_L+/g;
+s/C-/Control_L+/g;
+s/H-/Hyper_L+/g;
+s/M-/Meta_L+/g;
+s/S-/Shift_L+/g;
+s/s-/Super_L+/g;
+EOF
+             )
+}
+
+# shellcheck disable=SC2046
+xdotool key --delay 100 $(echo "$@"|convert-from-stumpwm-to-xdotool)

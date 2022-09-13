@@ -1,0 +1,5 @@
+#!/bin/bash
+set -e
+
+xprop -root -format STUMPWM_COMMAND 8u -set STUMPWM_COMMAND "$*"
+sleep .3

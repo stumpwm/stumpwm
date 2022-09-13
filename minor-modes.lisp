@@ -51,6 +51,8 @@
           minor-mode-global-p
           enable-minor-mode
           disable-minor-mode
+          autoenable-minor-mode
+          autodisable-minor-mode
           minor-mode-keymap
           minor-mode-lighter
 
@@ -175,6 +177,10 @@ object.")
 (defgeneric minor-mode-lighter (mode)
   (:method (minor-mode) nil)
   (:documentation "Return a string of minor mode lighters."))
+
+(defgeneric lighter-on-click (minor-mode-symbol)
+  (:method (minor-mode) nil)
+  (:documentation "Return the on-click function defined for MINOR-MODE-SYMBOL"))
 
 (defgeneric minor-mode-enable-hook (minor-mode-symbol)
   (:documentation
@@ -446,6 +452,22 @@ modes."
          (mapcar #'minor-mode-keymap
                  (list-current-mode-objects :screen (group-screen group)))))
 
+;;; Lighter on click
+
+(flet ((ml-on-click-minor-mode (code minor-mode &rest rest)
+         (declare (ignore rest))
+         (let ((fn (lighter-on-click minor-mode)))
+           (if fn
+               (funcall fn code)
+               (let ((svar
+                       (read-one-line (current-screen)
+                                      (format nil
+                                              "Disable minor mode ~A? [Yes/no] "
+                                              minor-mode))))
+                 (when (string-equal "yes" svar)
+                   (disable-minor-mode minor-mode)))))))
+  (register-ml-on-click-id :ml-on-click-minor-mode #'ml-on-click-minor-mode))
+
 ;;; Helper Functions
 
 (defun generate-keymap (keymap-spec &optional
@@ -570,6 +592,7 @@ ROOT-MAP-SPEC."
               (:global                 . 1)
               (:lighter-make-clickable . 1)
               (:lighter                . 1)
+              (:lighter-on-click       . 1)
               (:expose-keymaps         . 1)
               (:rebind                 . 1)
               (:root-map               . 1)
@@ -607,9 +630,9 @@ ROOT-MAP-SPEC."
   (defun define-enable-methods (mode scope)
     (let ((optarg (get-scope scope)))
       `((defmethod autoenable-minor-mode ((mode (eql ',mode)) (obj ,mode))
-          (signal 'minor-mode-enable-error :mode ',mode
-                                           :object obj
-                                           :reason 'already-enabled))
+          (signal 'minor-mode-autoenable-error :mode ',mode
+                                               :object obj
+                                               :reason 'already-enabled))
         (defmethod autoenable-minor-mode ((mode (eql ',mode)) (obj ,(car optarg)))
           (when (and ,@(unless (eql (third optarg) (first optarg))
                          ;; Check if the filter type is the same as the class
@@ -951,7 +974,14 @@ it is called with the mode object as its only argument.
 (:LIGHTER-MAKE-CLICKABLE (OR T NIL))@*
 When :LIGHTER-MAKE-CLICKABLE is T then the :LIGHTER is wrapped in a call to
 FORMAT-WITH-ON-CLICK-ID, called with the id :ML-ON-CLICK-MINOR-MODE and the mode
-as a quoted symbol. 
+as a quoted symbol.
+
+@item
+(:LIGHTER-ON-CLICK FUNCTION)@*
+When :LIGHTER-ON-CLICK is provided it must be a function of arity one, which
+will be called whenever the minor modes lighter is clicked, with the button code
+of the click as its only argument. If this is provided then
+:LIGHTER-MAKE-CLICKABLE is implied to be T.
 
 @item
 (:INTERACTIVE (OR SYMBOL T NIL))@*
@@ -1009,12 +1039,14 @@ Example:
   (multiple-value-bind (mm-opts other-opts)
       (parse-minor-mode-options options)
     (destructuring-bind (&key top-map root-map (expose-keymaps t) rebind
-                           lighter lighter-make-clickable
+                           lighter lighter-make-clickable lighter-on-click
                            (scope :unscoped) interactive global
                            (enable-when nil ewpp) 
                            (make-hooks t) (define-command-definer t)
                            default-initargs)
         mm-opts
+      (when lighter-on-click
+        (setf lighter-make-clickable t))
       (with-gensyms (gmode gkeymap)
         `(progn
            ;; Ensure that the superclasses are valid for a minor mode. 
@@ -1060,6 +1092,11 @@ Example:
                                              nil '((eql ,mode))))))
                    (when method
                      (remove-method #'minor-mode-global-p method))))
+
+           (let ((fn ,(when lighter-on-click
+                        lighter-on-click)))
+             (defmethod lighter-on-click ((,gmode (eql ',mode)))
+               fn))
 
            (defmethod minor-mode-lighter ((,gmode ,mode))
              (cons

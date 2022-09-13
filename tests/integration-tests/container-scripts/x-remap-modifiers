@@ -1,0 +1,49 @@
+#!/bin/bash
+set -e
+
+mm() { xmodmap -e "$1"; }
+
+clear-mod() {
+    mm "clear mod$1"                    # Clear modifier mapping
+    if [ -n "$2" ]; then
+        for ks in "${2}_L" "${2}_R";do
+            mm "keycode any = $ks";     # Dummy mapping suppressing error on next line
+            mm "keysym $ks =";          # Remove all mappings for this keysym
+        done
+    fi
+}
+
+map-mod() {
+    if [ -n "$2" ]; then
+        for ks in "${2}_L" "${2}_R";do
+            mm "keycode any = $ks $ks"; # Add one clean mapping for this keysym
+        done
+    mm "add mod$1 = ${2}_L ${2}_R";     # Add modifier mapping
+    fi
+}
+
+loop2args() {
+    cmd="$1"
+    shift
+    while [ -n "$1" ]; do
+        $cmd "$1" "$2"
+        shift; shift
+    done
+}
+
+tf=$(mktemp)
+xmodmap -pk -pm > "$tf"
+
+# Modifiers
+
+loop2args clear-mod "$@"
+loop2args map-mod "$@"
+
+echo Remapped modifiers, resulting in the following change:
+if diff "$tf" <(xmodmap -pk -pm); then
+    echo Error: Ineffective modifier remap
+    exit 1
+else
+    true
+fi
+rm "$tf"

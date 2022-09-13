@@ -56,6 +56,9 @@
 (defvar *batch-menu-map* nil
   "The keymap used by batch-menu menus in addition to *menu-map*")
 
+(defvar *menu-maximum-height* 50
+  "The default maximum amount of entries displayed in a menu.")
+
 (defclass menu-entry ()
   ((label :initarg :label
           :reader menu-entry-label)

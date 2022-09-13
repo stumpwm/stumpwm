@@ -1,0 +1,15 @@
+#!/bin/bash
+set -e
+
+testname="$1"
+results="testcases/${testname}.results"
+rm -rf "$results"
+mkdir -p "$results"
+cd "$results"
+if "../${testname}.sh" > stdout.txt 2> stderr.txt; then
+    touch success
+else
+    msg="Test $testname exited with error code $?"
+    echo "$msg" > fail
+    exit 1
+fi

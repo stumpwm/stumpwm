@@ -1,0 +1,6 @@
+#!/bin/bash
+set -e
+
+file=$(mktemp)
+xterm -fa Monospace -fs "$1" -T "Fontsize $1 xterm window" -e bash -c "sleep .5; rm $file; sleep 3600" &
+while [ -e "$file" ]; do sleep .2; done
