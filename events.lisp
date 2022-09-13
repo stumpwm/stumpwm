@@ -24,7 +24,7 @@
 
 (in-package #:stumpwm)
 
-(export '(#:*button-state*))
+(export '(*button-state*))
 
 ;;; Event handler functions
 
