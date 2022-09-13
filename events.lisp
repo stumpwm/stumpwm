@@ -24,6 +24,8 @@
 
 (in-package #:stumpwm)
 
+(export '(#:*button-state*))
+
 ;;; Event handler functions
 
 (defparameter *event-fn-table* (make-hash-table)
