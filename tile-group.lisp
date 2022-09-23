@@ -185,9 +185,12 @@
     ;; Try to put something in the new frame and give it an unused number
     (let ((frame (tile-group-frame-head group head)))
       (setf (frame-number frame) new-frame-num)
-        (choose-new-frame-window frame group)
-        (when (frame-window frame)
-          (unhide-window (frame-window frame))))))
+      (choose-new-frame-window frame group)
+      (when (frame-window frame)
+        (unhide-window (frame-window frame)))
+      ;; try to fix the current-frame nil issue
+      (unless (tile-group-current-frame group)
+        (setf (tile-group-current-frame group) frame)))))
 
 ;; TODO: This method has not been updated for floating windows
 (defmethod group-remove-head ((group tile-group) head)
