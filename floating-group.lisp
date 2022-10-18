@@ -240,6 +240,9 @@
 (defmethod group-remove-head ((group float-group) head)
   (declare (ignore head)))
 
+(defmethod group-replace-head (screen (group float-group) old-head new-head)
+  (declare (ignore screen old-head new-head)))
+
 (defmethod group-resize-head ((group float-group) oh nh)
   (declare (ignore oh nh)))
 
