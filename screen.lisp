@@ -387,7 +387,11 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
   (xlib:display-finish-output *display*)
   ;; Initialize the screen structure
   (labels ((ac (color)
-             (xlib:alloc-color (xlib:screen-default-colormap screen-number) color)))
+             ;; We add an alpha channel to the color returned by
+             ;; xlib:alloc-color. This is normally done by stumpwm:alloc-color,
+             ;; but that requires a screen instance.
+             (logior (xlib:alloc-color (xlib:screen-default-colormap screen-number) color)
+                     (ash #xff 24))))
     (let* ((default-colormap (xlib:screen-default-colormap screen-number))
            (screen-root (xlib:screen-root screen-number))
            (fg-color (ac +default-foreground-color+))

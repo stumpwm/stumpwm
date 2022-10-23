@@ -24,7 +24,7 @@
 
 (in-package #:stumpwm)
 
-(export '(save-frame-excursion))
+(export '(save-frame-excursion only-one-frame-p))
 
 (define-swm-class tile-group (group)
   ((frame-tree :accessor tile-group-frame-tree)
@@ -200,6 +200,7 @@
     (setf (tile-group-frame-tree group) (delete frames-to-delete group-frame-tree))
     ;; Just set current frame to whatever.
     (let ((frame (first (group-frames group))))
+      (unless (frame-p frame) (error "Couldn't locate a frame in group ~A" group))
       (setf (tile-group-current-frame group) frame
             (tile-group-last-frame group) nil)
       ;; Hide its windows.
@@ -209,8 +210,21 @@
   ;; Try to do something with the orphaned windows
   (populate-frames group))
 
+(defmethod group-replace-head (screen (group tile-group) old-head new-head)
+  (let ((head-frame-tree (tile-group-frame-head group old-head)))
+    ;; we remove and then re-add it to make sure it winds up in the correct position:
+    ;; the top level of a group's frame-tree must be in the same order as the screen's head's slot
+    (let ((new-frame-tree (remove head-frame-tree
+                                  (tile-group-frame-tree group))))
+      (setf (tile-group-frame-tree group)
+            (insert-before new-frame-tree
+                           head-frame-tree
+                           (head-number new-head))))))
+
 (defmethod group-resize-head ((group tile-group) oh nh)
-  (resize-tree (tile-group-frame-head group oh) (head-width nh) (head-height nh) (head-x nh) (head-y nh)))
+  (resize-tree (tile-group-frame-head group oh) (head-width nh) (head-height nh) (head-x nh) (head-y nh))
+  (redraw-frame-indicator group)
+  (redraw-frame-outline group))
 
 (defmethod group-sync-all-heads ((group tile-group))
   (sync-all-frame-windows group))
@@ -713,13 +727,14 @@ one."
                      (remove-frame sib leaf))
                    tree))))
 
-(defun sync-frame-windows (group frame)
-  "synchronize windows attached to FRAME."
-  (mapc (lambda (w)
-          (when (eq (window-frame w) frame)
-            (dformat 3 "maximizing ~S~%" w)
-            (maximize-window w)))
-        (group-tile-windows group)))
+(defgeneric sync-frame-windows (group frame)
+  (:documentation "synchronize windows attached to FRAME.")
+  (:method (group frame)
+    (mapc (lambda (w)
+            (when (eq (window-frame w) frame)
+              (dformat 3 "maximizing ~S~%" w)
+              (maximize-window w)))
+          (group-tile-windows group))))
 
 (defun sync-all-frame-windows (group)
   "synchronize all frames in GROUP."
@@ -1099,8 +1114,10 @@ space."
           (frame-raise-window group l (frame-window l) nil)
           (when (frame-window l)
             (update-decoration (frame-window l)))
-          (when (eq frame current)
-            (show-frame-indicator group))
+          (if (and (eq frame current)
+                   (not (only-one-frame-p)))
+              (show-frame-indicator group)
+              (unmap-all-frame-indicator-windows))
           (run-hook-with-args *remove-split-hook* l frame)))))
 
 (defcommand-alias remove remove-split)
@@ -1137,7 +1154,8 @@ This can be used around a the \"only\" command to avoid the warning message."
           (if (frame-window frame)
               (update-decoration (frame-window frame))
               (show-frame-indicator group))
-          (sync-frame-windows group (tile-group-current-frame group))))))
+          (sync-frame-windows group (tile-group-current-frame group))
+          (unmap-all-frame-indicator-windows)))))
 
 (defcommand (curframe tile-group) () ()
 "Display a window indicating which frame is focused."

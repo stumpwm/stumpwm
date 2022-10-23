@@ -673,13 +673,13 @@ upon the class and replaces it. If SUPERCLASSES is NIL then (SWM-CLASS) is used.
 (macrolet ((define-head-accessor (name)
              (let ((pkg (find-package :stumpwm)))
                `(progn
-                  (defgeneric ,(intern (format nil "HEAD-~A" name) pkg) (head)
+                  (defgeneric ,(intern (format nil "HEAD-~A" (symbol-name name)) pkg) (head)
                     (:method ((head head))
-                      (,(intern (format nil "FRAME-~A" name) pkg) head)))
+                      (,(intern (format nil "FRAME-~A" (symbol-name name)) pkg) head)))
                   
-                  (defmethod (setf ,(intern (format nil "HEAD-~A" name) pkg))
+                  (defmethod (setf ,(intern (format nil "HEAD-~A" (symbol-name name)) pkg))
                       (new (head head))
-                    (setf (,(intern (format nil "FRAME-~A" name) pkg) head)
+                    (setf (,(intern (format nil "FRAME-~A" (symbol-name name)) pkg) head)
                           new))))))
   (define-head-accessor number)
   (define-head-accessor x)
