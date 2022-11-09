@@ -358,7 +358,7 @@
     (+ (frame-y frame) (frame-height frame))))
 
 (defmethod frame-head ((group tile-group) frame)
-  (find-if (lambda (head) (find frame (flatten (tile-group-frame-head group head))))
+  (find-if (lambda (head) (or (eq head frame) (find frame (flatten (tile-group-frame-head group head)))))
            (group-heads group)))
 
 (defun project-x (head x)
