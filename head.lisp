@@ -155,6 +155,8 @@
 (defun replace-head (screen old-head new-head)
   "Replaces one head with another, while preserving its frame-tree"
   (dformat 1 "Replacing head ~A with head ~A" old-head new-head)
+  (when-let (mode-line (head-mode-line old-head))
+    (move-mode-line-to-head mode-line new-head))
   (dolist (group (screen-groups screen))
     (group-replace-head screen group old-head new-head))
   (setf (screen-heads screen)
