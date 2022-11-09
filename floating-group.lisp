@@ -251,6 +251,12 @@
 (defmethod group-sync-head ((group float-group) head)
   (declare (ignore head)))
 
+(defmethod group-adopt-orphaned-windows ((group float-group) &optional (screen (current-screen)))
+  (let ((orphaned-frames (orphaned-frames screen)))
+    (loop for window in (list-windows screen)
+          when (member (window-frame window) orphaned-frames)
+          do (group-add-window group window))))
+
 (defvar *last-click-time* 0
   "Time since the last click occurred")
 

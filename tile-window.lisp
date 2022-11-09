@@ -94,7 +94,7 @@ than the root window's width and height.")
                            (= (length (group-frames (window-group win))) 1))
                        0
                        (default-border-width-for-type win)))
-           (fwidth (- (frame-width f) (* 2 border)))
+           (fwidth (- (frame-display-width (window-group win) f) (* 2 border)))
            (fheight (- (frame-display-height (window-group win) f)
                        (* 2 border)))
            (width fwidth)
