@@ -3087,6 +3087,17 @@ following:
 
 Of course, you can change all the colors if you like.
 
+Additionally, both the normal and bright versions of a color can be
+specified by using a list of the form @code{(normal-color bright-color)},
+for instance:
+
+@example
+(setf *colors* (append *colors*
+                       (list (list "PeachPuff" "PapayaWhip")
+                             (list "DarkGoldenRod3" "PaleGoldenrod"))))
+(update-color-map (current-screen))
+@end example
+
 @@@ parse-color-string
 @@@ uncolorify
 ### *colors*
