@@ -2,14 +2,46 @@
 set -e
 
 testname="$1"
+expectation="$2"
+is_tty="$3"
 results="testcases/${testname}.results"
 rm -rf "$results"
 mkdir -p "$results"
 cd "$results"
-if "../${testname}.sh" > stdout.txt 2> stderr.txt; then
+set +e
+"../${testname}.sh" > stdout.txt 2> stderr.txt
+ec="$?"
+set -e
+if [ "$ec" == 0 ] && ! [ -e fail ]; then
     touch success
+    result=success
 else
-    msg="Test $testname exited with error code $?"
-    echo "$msg" > fail
-    exit 1
+    echo "Test $testname exited with error code $ec" >> fail
+    result=failure
 fi
+
+echo-with-color () {
+    color="$1"; shift;
+    if [ "$is_tty" == yes ]; then
+        echo -e "\\e[${color}m$*\\e[0m"
+    else
+        echo "$@"
+    fi
+}
+echo-red    () { echo-with-color 31 "$@"; }
+echo-green  () { echo-with-color 32 "$@"; }
+echo-yellow () { echo-with-color 33 "$@"; }
+
+case "$expectation->$result" in
+    "expect-failure->failure")
+        echo-yellow "Test $testname FAILED as expected";;
+    "expect-failure->success")
+        echo-red "Test $testname SUCCEEDED when expected to fail.";
+        echo-red "Perhaps remove it from tests/integration-tests/tests-expected-to-fail";
+        exit 1;;
+    "expect-success->failure")
+        echo-red "Test $testname FAILED";
+        exit 1;;
+    "expect-success->success")
+        echo-green "Test $testname SUCCEEDED";;
+esac

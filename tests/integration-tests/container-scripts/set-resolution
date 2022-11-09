@@ -11,3 +11,4 @@ else
 fi
 xrandr --addmode screen "$mode" 2>/dev/null
 xrandr --output screen --mode "$mode" "$@" 2>/dev/null
+sleep 1

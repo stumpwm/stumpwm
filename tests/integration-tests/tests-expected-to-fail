@@ -1,0 +1,10 @@
+# This is a list of test case names, one per line, that are to be excluded from CI.
+# This is necessary in order to allow merging test cases that reproduce unfixed issues.
+
+issue-0928
+issue-0993
+issue-1004
+issue-1005
+issue-1006
+issue-1015
+issue-1016

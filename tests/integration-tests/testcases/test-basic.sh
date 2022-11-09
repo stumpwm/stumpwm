@@ -3,8 +3,7 @@ set -ex
 
 #Initialize and configure
 start-xvfb-with-max-resolution 2000 2000
-start-stumpwm
-stumpwm-load <<EOF
+cat >> ~/.stumpwm.d/init.lisp <<EOF
 (in-package :stumpwm)
 (set-fg-color "#ffffbb")
 (set-bg-color "#004000")
@@ -32,6 +31,7 @@ stumpwm-load <<EOF
       *window-border-style* :tight
       )
 EOF
+start-stumpwm
 set-resolution 640 480
 screenshot 1
 

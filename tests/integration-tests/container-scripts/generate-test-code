@@ -21,7 +21,7 @@
          *list-of-generators*))
 (defun set-state (&rest args)
   (when args
-    (setf (get '*state* (car args)) (cadr args))
+    (setf (getf *state* (car args)) (cadr args))
     (apply #'set-state (cddr args))))
 (defun filter (fun list) (mapcan (lambda (x) (when (funcall fun x) (list x))) list))
 (defun random-from-list (list) (nth (random (list-length list)) list))
@@ -43,10 +43,12 @@
       (line))
     (when (not (or can-stop can-continue))
       (error "Dead end: We can neither continue nor stop."))
+    (when (< 1000 *line-count*)
+      (error (format nil "We seem to be stuck in state ~A" *state*)))
     (when (if want-to-stop (not can-stop) can-continue)
       (let ((generator (cdr (random-from-list valid-generators))))
         (funcall generator)))))
-(defun state (key) (get '*state* key))
+(defun state (key) (getf *state* key))
 (defun next (&rest args)
   (apply #'set-state args)
   (generate))
@@ -110,7 +112,9 @@
      :frame-indicator t
      :prefix-key "C-t"
      :x-resolution rx
-     :y-resolution ry)))
+     :y-resolution ry
+     :frame-width-lower-bound rx
+     :frame-height-lower-bound ry)))
 
 ;;; Fragments to go from :config-phase to :normal-phase
 
@@ -256,8 +260,8 @@
 
 ;; One frame only
 (defun one-frame ()
-  (and (eq (state :number-of-hsplits) 0)
-       (eq (state :number-of-vsplits) 0)))
+  (and (eq (state :x-resolution) (state :frame-width-lower-bound))
+       (eq (state :y-resolution) (state :frame-height-lower-bound))))
 (defun cmd-or-key (cmd key)
   (if (random-boolean)
       (apply #'line "stumpwm-cmd " (if (consp cmd) cmd (list cmd)))
@@ -267,30 +271,46 @@
   (cmd-or-key "only" "Q")
   (next
    :can-stop nil
-   :number-of-hsplits 0
-   :number-of-vsplits 0))
+   :frame-width-lower-bound (state :x-resolution)
+   :frame-height-lower-bound (state :y-resolution)))
+
+;; Toggle frame indicator
+(define-generator (and (state :normal-phase) (one-frame))
+    (let ((fi (not (state :frame-indicator))))
+      (stumpwm-eval `(setf *suppress-frame-indicator* ,fi))
+      (next
+       :frame-indicator fi)))
 
 ;; Split frame
-(defun can-hsplit ()
-  (and (state :normal-phase)
-       (<= (* *min-frame-width* (expt 2 (state :number-of-hsplits)) 3)
-           (state :x-resolution))))
-(defun can-vsplit ()
-  (and (state :normal-phase)
-       (<= (* *min-frame-height* (expt 2 (state :number-of-vsplits)) 3)
-           (state :y-resolution))))
-(define-generator (or (can-hsplit) (can-vsplit))
-  (let* ((horizontal (if (and (can-hsplit) (can-vsplit))
-                         (random-boolean)
-                       (can-hsplit)))
-         (state-keyword (if horizontal :number-of-hsplits :number-of-vsplits)))
+(define-generator (state :normal-phase)
+  (let* ((horizontal (random-boolean))
+         (state-keyword (if horizontal :frame-width-lower-bound :frame-height-lower-bound)))
     (line "# Split frame")
     (if horizontal
         (cmd-or-key "hsplit" "S")
-      (cmd-or-key "vsplit" "s"))
+        (cmd-or-key "vsplit" "s"))
     (next
      :can-stop nil
-     state-keyword (+ (state state-keyword) 1))))
+     state-keyword (/ (state state-keyword) 2))))
+
+;; Move focus
+(defun move-focus (direction)
+  (cmd-or-key (list "move-focus" direction) direction))
+(define-generator (state :normal-phase)
+  (let ((s1 nil) (s2 nil))
+    (line "# Move focus")
+    (move-focus (random-from-list '("Down" "Left" "Right" "Up")))
+    (next
+     :can-stop nil)))
+
+;; Resize frame
+(define-generator (state :normal-phase)
+  (line "# Resize frame")
+  (let ((direction (random-from-list '("up" "down" "left" "right"))))
+    (cmd-or-key (list "resize-direction " direction)
+                (list "r " direction " Return")))
+  (next
+   :can-stop nil))
 
 ;;; Fragments used in :normal-phase to perform no-op tests. These are operations that, under the stated circumstances, should have no effect.
 
@@ -300,8 +320,6 @@
        (or (not (state :frame-indicator))
            (and (state :timeout-frame-indicator-wait)
                 (<= 30 (state :timeout-frame-indicator-wait))))))
-(defun move-focus (direction)
-  (cmd-or-key (format nil "move-focus ~a" direction) direction))
 (define-generator (and (normal-stable) (one-frame))
   (let ((s1 nil) (s2 nil))
     (line "# No-op test: Move focus when only 1 frame")
@@ -313,11 +331,14 @@
      :can-stop t)))
 
 ;; No-op test: Move focus somewhere and back
-(define-generator (or (can-hsplit) (can-vsplit))
+(defun can-hsplit () (<= *min-frame-width* (* (state :frame-width-lower-bound) 2)))
+(defun can-vsplit () (<= *min-frame-height* (* (state :frame-height-lower-bound) 2)))
+(define-generator (and (state :normal-phase)
+                       (or (can-hsplit) (can-vsplit)))
   (let* ((horizontal (if (and (can-hsplit) (can-vsplit))
                          (random-boolean)
                        (can-hsplit)))
-         (state-keyword (if horizontal :number-of-hsplits :number-of-vsplits))
+         (state-keyword (if horizontal :frame-width-lower-bound :frame-height-lower-bound))
          (s1 nil) (s2 nil) (s3 nil))
     (line "# No-op test: Move focus somewhere and back")
     (cmd-or-key (if horizontal "hsplit" "vsplit") (if horizontal "S" "s"))
@@ -329,7 +350,7 @@
     (setq s3 (screenshot))
     (screenshots-match s1 s3)
     (next
-     state-keyword (+ (state state-keyword) 1)
+     state-keyword (/ (state state-keyword) 2)
      :can-stop t)))
 
 ;; No-op test: Split then undo
@@ -384,6 +405,25 @@
     (screenshots-match s1 s3)
     (next
      :can-stop t)))
+
+;; No-op test: Toggle mode-line twice
+(define-generator (normal-stable)
+  (let* ((s1 nil) (s2 nil))
+    (line "# No-op test: Toggle mode-line twice")
+    (setq s1 (screenshot))
+    (line "stumpwm-cmd mode-line")
+    (line "stumpwm-cmd mode-line")
+    (setq s2 (screenshot))
+    (screenshots-match s1 s2)
+    (next
+     :can-stop t)))
+
+;; No-op test: check-invariants
+(define-generator (normal-stable)
+  (line "# No-op test: Check invariants")
+  (line "check-invariants " (incf *screenshot-index*))
+  (next
+   :can-stop t))
 
 ;;; Generate one test script to stdout
 

@@ -1,0 +1,19 @@
+#!/bin/bash
+set -e
+
+sbcl_version=2.2.7
+
+export DEBIAN_FRONTEND=noninteractive
+apt-get -qy update
+apt-get -qy install curl build-essential autoconf git bzip2 make farbfeld netpbm procps x11-apps x11-xserver-utils xdotool xvfb xterm
+rm -rf /var/lib/apt/lists/*
+
+curl -L https://downloads.sourceforge.net/project/sbcl/sbcl/${sbcl_version}/sbcl-${sbcl_version}-x86-64-linux-binary.tar.bz2 | tar xjf -
+cd sbcl-${sbcl_version}-x86-64-linux
+./install.sh
+cd ..
+
+curl -O https://beta.quicklisp.org/quicklisp.lisp
+sbcl --load quicklisp.lisp --eval "(quicklisp-quickstart:install)"
+sbcl --load "/root/quicklisp/setup.lisp"  --eval "(progn (setf ql-util::*do-not-prompt* t)(ql:add-to-init-file))"
+sbcl --eval "(progn (ql:quickload '(clx cl-ppcre alexandria fiasco)))"

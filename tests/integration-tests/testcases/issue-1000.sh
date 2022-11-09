@@ -1,7 +1,7 @@
 #!/bin/bash
 set -ex
 
-# Test that frame indicator and frame outlines are updated correctly after resolution change
+# Test that frame indicator and frame outlines are updated correctly after resolution change (see issue #1000)
 
 start-xvfb-with-max-resolution 2000 2000
 start-stumpwm
