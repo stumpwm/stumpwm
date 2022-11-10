@@ -290,15 +290,16 @@
                                   (values nil nil))))
                        ;; Actually block for events
                        (multiple-value-bind (rval errno)
-                           (sb-unix:unix-fast-select (1+ maxfd)
-                                                     (sb-alien:addr rfds)
-                                                     (sb-alien:addr wfds)
-                                                     (sb-alien:addr efds)
-                                                     (compute-timeout)
-                                                     nil)
+                           (multiple-value-call #'sb-unix:unix-fast-select
+                                                (1+ maxfd)
+                                                (sb-alien:addr rfds)
+                                                (sb-alien:addr wfds)
+                                                (sb-alien:addr efds)
+                                                (compute-timeout))
+                         (declare (ignore rval))
                          (cond ((and errno (plusp errno))
                                 (unless (eql errno sb-unix:eintr)
-                                  (dformat 5
+                                  (dformat 1
                                            "Unexpected ~S error: ~A~%"
                                            'sb-unix:unix-fast-select
                                            (sb-int:strerror errno))))

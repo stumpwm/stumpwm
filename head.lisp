@@ -95,10 +95,13 @@
                (<= y (+ (head-y head) (head-height head))))
       (return head))))
 
-;; Determining a frame's head based on position probably won't work with
-;; overlapping heads. It also doesn't work in the middle of rescaling a head.
 (defgeneric frame-head (group frame)
+  (:documentation "Return the head frame is on")
   (:method (group frame)
+    "As a fallback, use the frame's position on the screen to return a head
+ in the same position. This can be out of sync with stump's state if was
+ moved by something else, such as X11 during an external monitor change. It
+ also doesn't work in the middle of rescaling a head."
     (let ((center-x (+ (frame-x frame) (ash (frame-width frame) -1)))
           (center-y (+ (frame-y frame) (ash (frame-height frame) -1))))
       (find-head-by-position (group-screen group) center-x center-y))))
@@ -153,6 +156,8 @@
 (defun replace-head (screen old-head new-head)
   "Replaces one head with another, while preserving its frame-tree"
   (dformat 1 "Replacing head ~A with head ~A" old-head new-head)
+  (when-let (mode-line (head-mode-line old-head))
+    (move-mode-line-to-head mode-line new-head))
   (dolist (group (screen-groups screen))
     (group-replace-head screen group old-head new-head))
   (setf (screen-heads screen)
@@ -199,7 +204,12 @@
       (dolist (head (intersection heads old-heads :test '= :key 'head-number))
               (let ((new-head (find (head-number head) heads  :test '= :key 'head-number))
                     (old-head (find (head-number head) old-heads :test '= :key 'head-number)))
-                (scale-head screen old-head new-head))))))
+                (scale-head screen old-head new-head))))
+    (when-let ((orphaned-frames (orphaned-frames screen)))
+      (let ((group (current-group)))
+        (dformat 1 "Orphaned frames ~A found on screen ~A! Adopting into group ~A"
+                 orphaned-frames screen group)
+        (group-adopt-orphaned-windows group screen)))))
 
 (defun head-force-refresh (screen new-heads)
   (scale-screen screen new-heads)
@@ -211,3 +221,10 @@
   "Refresh screens in case a monitor was connected, but a
   ConfigureNotify event was snarfed by another program."
   (head-force-refresh screen (make-screen-heads screen (screen-root screen))))
+
+(defun orphaned-frames (screen)
+  "Returns a list of frames on a screen not associated with any group.
+  These shouldn't exist."
+  (let ((adopted-frames (loop for group in (screen-groups screen)
+                              append (group-frames group))))
+    (set-difference (screen-frames screen) adopted-frames)))

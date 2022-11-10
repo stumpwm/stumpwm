@@ -73,7 +73,13 @@
 
 (defmethod replace-class :around (object new &rest rest)
   (restart-case (progn
-                  (call-next-method)
+                  (handler-bind ((error
+                                   (lambda (c)
+                                     (let ((r1 (find-restart 'continue c))
+                                           (r2 (find-restart 'stumpwm::continue c)))
+                                       (cond (r1 (invoke-restart r1))
+                                             (r2 (invoke-restart r2)))))))
+                    (call-next-method))
                   (unless (typep object new)
                     (error "Failed to change class ~A ~A" object new)))
     (force-change ()

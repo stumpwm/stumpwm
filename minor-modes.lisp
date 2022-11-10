@@ -345,7 +345,8 @@ current objects if MINOR-MODE is global"
 (defun sync-minor-modes (object)
   "Sync the globally active minor modes in the object"
   (loop for class in *active-global-minor-modes*
-        when (typep object (scope-type (minor-mode-scope class)))
+        when (and (not (typep object class)) ; Dont autoenable if already enabled
+                  (typep object (scope-type (minor-mode-scope class))))
           do (autoenable-minor-mode class object)))
 
 (defun sync-all-minor-modes ()
@@ -630,9 +631,10 @@ ROOT-MAP-SPEC."
   (defun define-enable-methods (mode scope)
     (let ((optarg (get-scope scope)))
       `((defmethod autoenable-minor-mode ((mode (eql ',mode)) (obj ,mode))
-          (signal 'minor-mode-autoenable-error :mode ',mode
-                                               :object obj
-                                               :reason 'already-enabled))
+          (with-simple-restart (continue "Ignore enable error for ~A" ',mode)
+            (signal 'minor-mode-enable-error :mode ',mode
+                                             :object obj
+                                             :reason 'already-enabled)))
         (defmethod autoenable-minor-mode ((mode (eql ',mode)) (obj ,(car optarg)))
           (when (and ,@(unless (eql (third optarg) (first optarg))
                          ;; Check if the filter type is the same as the class

@@ -185,9 +185,12 @@
     ;; Try to put something in the new frame and give it an unused number
     (let ((frame (tile-group-frame-head group head)))
       (setf (frame-number frame) new-frame-num)
-        (choose-new-frame-window frame group)
-        (when (frame-window frame)
-          (unhide-window (frame-window frame))))))
+      ;; try to fix the current-frame nil issue
+      (unless (tile-group-current-frame group)
+        (setf (tile-group-current-frame group) frame))
+      (choose-new-frame-window frame group)
+      (when (frame-window frame)
+        (unhide-window (frame-window frame))))))
 
 ;; TODO: This method has not been updated for floating windows
 (defmethod group-remove-head ((group tile-group) head)
@@ -268,6 +271,28 @@
 
 (defun (setf tile-group-frame-head) (frame group head)
   (setf (elt (tile-group-frame-tree group) (position head (group-heads group))) frame))
+
+(defun current-frame ()
+  (window-frame (current-window)))
+
+(defmethod frame-head ((group tile-group) frame)
+  "Walks the group's frame tree to determine the \"head-frame\" that is this
+  group's parent, and then looks up the corresponding head from its position
+  in the group's head-list"
+  (labels ((frame-head-helper (group frame group-frame-tree)
+                     (if frame
+                         (let ((parent-tree (tree-parent group-frame-tree frame)))
+                           (if (eq group-frame-tree parent-tree)
+                               (elt (group-heads group)
+                                    (position frame parent-tree))
+                               (frame-head-helper group parent-tree group-frame-tree)))
+                         (error "Could not find a head for frame ~A !" frame))))
+    (let ((group-frame-tree (tile-group-frame-tree group)))
+      (if (member frame (group-heads group))
+          frame
+          (if-let ((head-position (position frame group-frame-tree)))
+            (elt (group-heads group) head-position)
+            (frame-head-helper group frame group-frame-tree))))))
 
 (defgeneric populate-frames (group)
   (:documentation "Try to fill empty frames in GROUP with hidden windows")
@@ -357,25 +382,35 @@
 (defgeneric frame-display-y (group frame)
   (:documentation "Return an integer Y for frame that takes the mode-line into account.")
   (:method (group frame)
-    (project-y (frame-head group frame) (frame-y frame))))
+    (let ((head (frame-head group frame))
+          (y (frame-y frame)))
+      (when (> y (+ (frame-y head) (frame-height head)))
+        (error "Frame ~A is below head ~A" frame head))
+      (project-y head y))))
 
 (defgeneric frame-display-height (group frame)
-  (:documentation "Return an integer HEIGHT for frame that doesn't overlap the mode-line.")
+  (:documentation "Return an integer HEIGHT for frame that fits within its head and doesn't overlap the mode-line.")
   (:method (group frame)
-    (let* ((head (frame-head group frame))
-           (y (frame-y frame))
-           (height (frame-height frame)))
-      (- (project-y head (+ y height))
-         (project-y head y)))))
+    (let ((head (frame-head group frame)))
+      (flet ((projected-height (frame)
+               (let ((y (frame-y frame))
+                     (height (frame-height frame)))
+                 (- (project-y head (+ y height))
+                    (project-y head y)))))
+        (min (projected-height frame)
+             (projected-height head))))))
 
 (defgeneric frame-display-width (group frame)
-  (:documentation "Return an integer WIDTH for frame.")
+  (:documentation "Return an integer WIDTH for frame that fits within its head.")
   (:method (group frame)
-    (let* ((head (frame-head group frame))
-           (x (frame-x frame))
-           (width (frame-width frame)))
-      (- (project-x head (+ x width))
-         (project-x head x)))))
+    (let* ((head (frame-head group frame)))
+      (flet ((projected-width (frame)
+               (let ((x (frame-x frame))
+                     (width (frame-width frame)))
+                 (- (project-x head (+ x width))
+                    (project-x head x)))))
+        (min (projected-width frame)
+             (projected-width head))))))
 
 (defun frame-intersect (f1 f2)
   "Return a new frame representing (only) the intersection of F1 and F2. WIDTH and HEIGHT will be <= 0 if there is no overlap"
@@ -459,6 +494,31 @@ T (default) then also focus the frame."
 
 (defun head-frames (group head)
   (tree-accum-fn (tile-group-frame-head group head) 'nconc 'list))
+
+(defun screen-frames (screen)
+  "Returns a list of all frames associated with any window in a screen"
+  (remove-duplicates (mapcar #'(lambda (window) (window-frame window))
+                             (list-windows screen))))
+
+(defun orphaned-frames (screen)
+  "Returns a list of frames on a screen not associated with any group.
+  These shouldn't exist."
+  (let ((adopted-frames (loop for group in (screen-groups screen)
+                              append (group-frames group))))
+    (set-difference (screen-frames screen) adopted-frames)))
+
+(defmethod group-adopt-orphaned-windows ((group tile-group) &optional (screen (current-screen)))
+  "Picks an arbitray frame in the given group and moves
+  any windows in frames without a group thereinto"
+  (let ((orphaned-frames (orphaned-frames screen))
+        (foster-frame (tree-leaf (tile-group-frame-tree group))))
+    (unless foster-frame
+      (error "Could not find a valid frame in group ~A to adopt windows
+  with group-less frames ~A on screen ~A"
+             group orphaned-frames screen))
+    (loop for window in (list-windows screen)
+          when (member (window-frame window) orphaned-frames)
+          do (setf (window-frame window) foster-frame))))
 
 (defun find-free-frame-number (group)
   (find-free-number (mapcar 'frame-number (group-frames group))))

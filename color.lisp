@@ -77,7 +77,8 @@ then call (update-color-map).")
   (labels ((max-min (x y) (max 0 (min 1 (+ x y)))))
     (setf (xlib:color-red color) (max-min (xlib:color-red color) amt)
           (xlib:color-green color) (max-min (xlib:color-green color) amt)
-          (xlib:color-blue color) (max-min (xlib:color-blue color) amt))))
+          (xlib:color-blue color) (max-min (xlib:color-blue color) amt))
+    color))
 
 (defun hex-to-xlib-color (color)
   (cond
@@ -115,13 +116,34 @@ then call (update-color-map).")
 ;; to more closely resemble the VGA pallet.
 (defun update-color-map (screen)
   "Read *colors* and cache their pixel colors for use when rendering colored text."
-  (labels ((map-colors (amt)
+  (labels ((map-colors (adj)
              (loop for c in *colors*
-                   as color = (lookup-color screen c)
-                   do (adjust-color color amt)
+                   as color = (typecase c
+                                ;; If the color element is a list, use
+                                ;; the first or second color in the
+                                ;; list appropriately
+                                (cons
+                                 (lookup-color
+                                  screen
+                                  (case adj
+                                    (:normal
+                                     (first c))
+                                    (:bright
+                                     (second c)))))
+                                ;; If the color element is not a list,
+                                ;; look up the color and adjust it
+                                ;; automatically
+                                (t
+                                 (adjust-color
+                                  (lookup-color screen c)
+                                  (case adj
+                                    (:normal
+                                     -0.25)
+                                    (:bright
+                                     0.25)))))
                    collect (alloc-color screen color))))
-    (setf (screen-color-map-normal screen) (apply #'vector (map-colors -0.25))
-          (screen-color-map-bright screen) (apply #'vector (map-colors 0.25)))))
+    (setf (screen-color-map-normal screen) (apply #'vector (map-colors :normal))
+          (screen-color-map-bright screen) (apply #'vector (map-colors :bright)))))
 
 (defun update-screen-color-context (screen)
   (let* ((cc (screen-message-cc screen))

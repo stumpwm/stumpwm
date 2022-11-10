@@ -240,6 +240,9 @@
 (defmethod group-remove-head ((group float-group) head)
   (declare (ignore head)))
 
+(defmethod group-replace-head (screen (group float-group) old-head new-head)
+  (declare (ignore screen old-head new-head)))
+
 (defmethod group-resize-head ((group float-group) oh nh)
   (declare (ignore oh nh)))
 
@@ -247,6 +250,12 @@
 
 (defmethod group-sync-head ((group float-group) head)
   (declare (ignore head)))
+
+(defmethod group-adopt-orphaned-windows ((group float-group) &optional (screen (current-screen)))
+  (let ((orphaned-frames (orphaned-frames screen)))
+    (loop for window in (list-windows screen)
+          when (member (window-frame window) orphaned-frames)
+          do (group-add-window group window))))
 
 (defvar *last-click-time* 0
   "Time since the last click occurred")
