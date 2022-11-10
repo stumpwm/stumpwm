@@ -224,10 +224,14 @@
                            head-frame-tree
                            (head-number new-head))))))
 
-(defmethod group-resize-head ((group tile-group) oh nh)
+(defmethod group-before-resize-head ((group tile-group) oh nh)
+  (clear-frame-outlines group)
   (resize-tree group (tile-group-frame-head group oh)
                (head-width nh) (head-height nh)
-               (head-x nh) (head-y nh))
+               (head-x nh) (head-y nh)))
+
+(defmethod group-after-resize-head ((group tile-group) head)
+  (declare (ignore head))
   (redraw-frame-indicator group)
   (redraw-frame-outline group))
 

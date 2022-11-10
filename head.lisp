@@ -178,11 +178,13 @@
                  (= (head-width oh) nhw)
                  (= (head-height oh) nhh))
       (dolist (group (screen-groups screen))
-        (group-resize-head group oh nh))
+        (group-before-resize-head group oh nh))
       (setf (head-x oh) nhx
             (head-y oh) nhy
             (head-width oh) nhw
-            (head-height oh) nhh))))
+            (head-height oh) nhh)
+      (dolist (group (screen-groups screen))
+        (group-after-resize-head group oh)))))
 
 (defun scale-screen (screen heads)
   "Scale all frames of all groups of SCREEN to match the dimensions of HEADS."
