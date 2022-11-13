@@ -358,7 +358,9 @@
     (+ (frame-y frame) (frame-height frame))))
 
 (defmethod frame-head ((group tile-group) frame)
-  (find-if (lambda (head) (or (eq head frame) (find frame (flatten (tile-group-frame-head group head)))))
+  (find-if (lambda (head)
+             (or (eq head frame)
+                 (find frame (flatten (tile-group-frame-head group head)))))
            (group-heads group)))
 
 (defun project-x (head x)
@@ -384,7 +386,8 @@
     (project-x (frame-head group frame) (frame-x frame))))
 
 (defgeneric frame-display-y (group frame)
-  (:documentation "Return an integer Y for frame that takes the mode-line into account.")
+  (:documentation
+   "Return an integer Y for frame that takes the mode-line into account.")
   (:method (group frame)
     (let ((head (frame-head group frame))
           (y (frame-y frame)))
@@ -393,7 +396,8 @@
       (project-y head y))))
 
 (defgeneric frame-display-height (group frame)
-  (:documentation "Return an integer HEIGHT for frame that fits within its head and doesn't overlap the mode-line.")
+  (:documentation
+   "Return an integer HEIGHT for frame that fits within its head and doesn't overlap the mode-line.")
   (:method (group frame)
     (let ((head (frame-head group frame)))
       (flet ((projected-height (frame)
@@ -405,7 +409,8 @@
              (projected-height head))))))
 
 (defgeneric frame-display-width (group frame)
-  (:documentation "Return an integer WIDTH for frame that fits within its head.")
+  (:documentation
+   "Return an integer WIDTH for frame that fits within its head.")
   (:method (group frame)
     (let* ((head (frame-head group frame)))
       (flet ((projected-width (frame)
@@ -796,7 +801,8 @@ LEAF. Return tree with leaf removed."
     (expand-tree newtree amt dir)
     newtree))
 
-(defun resize-tree (group tree w h &optional (x (tree-x tree)) (y (tree-y tree)))
+(defun resize-tree
+    (group tree w h &optional (x (tree-x tree)) (y (tree-y tree)))
   "Scale TREE to width W and height H, ignoring aspect. If X and Y are
 provided, reposition the TREE as well. Remove frames as necessary and possible,
 to respect the minimum frame size."
@@ -836,7 +842,8 @@ to respect the minimum frame size."
        (ecase (tree-split-type tree)
          (:column
           (let* ((child1-new-size (min (max (tree-min-width child1)
-                                            (* w (/ (tree-width child1) (tree-width tree))))
+                                            (* w (/ (tree-width child1)
+                                                    (tree-width tree))))
                                        (- w (tree-min-width child2)))))
             (resize-tree group child1
                          child1-new-size h x y)
@@ -844,7 +851,8 @@ to respect the minimum frame size."
                          (- w child1-new-size) h (+ x child1-new-size) y)))
          (:row
           (let* ((child1-new-size (min (max (tree-min-height child1)
-                                            (* h (/ (tree-height child1) (tree-height tree))))
+                                            (* h (/ (tree-height child1)
+                                                    (tree-height tree))))
                                        (- h (tree-min-height child2)))))
             (resize-tree group child1
                          w child1-new-size x y)
@@ -898,7 +906,9 @@ one."
          (child2 (second tree))
          (child1-wh (funcall tree-wh (first tree)))
          (child2-wh (funcall tree-wh (second tree)))
-         (tree-min-wh (ecase split-type (:column 'tree-min-width) (:row 'tree-min-height)))
+         (tree-min-wh (ecase split-type
+                        (:column 'tree-min-width)
+                        (:row 'tree-min-height)))
          (min-child1-wh (funcall tree-min-wh (first tree)))
          (min-child2-wh (funcall tree-min-wh (second tree)))
          (min-amount (- min-child1-wh child1-wh)) ;; <=0
@@ -906,13 +916,27 @@ one."
          (effective-amount (max (min amount max-amount) min-amount)))
     (ecase split-type
       (:column
-       (resize-tree group child1 (+ child1-wh effective-amount) (tree-height child1))
-       (resize-tree group child2 (- child2-wh effective-amount) (tree-height child2)
-                    (+ (tree-x child2) effective-amount) (tree-y child2)))
+       (resize-tree group
+                    child1
+                    (+ child1-wh effective-amount)
+                    (tree-height child1))
+       (resize-tree group
+                    child2
+                    (- child2-wh effective-amount)
+                    (tree-height child2)
+                    (+ (tree-x child2) effective-amount)
+                    (tree-y child2)))
       (:row
-       (resize-tree group child1 (tree-width child1) (+ child1-wh effective-amount))
-       (resize-tree group child2 (tree-width child2) (- child2-wh effective-amount)
-                    (tree-x child2) (+ (tree-y child2) effective-amount))))))
+       (resize-tree group
+                    child1
+                    (tree-width child1)
+                    (+ child1-wh effective-amount))
+       (resize-tree group
+                    child2
+                    (tree-width child2)
+                    (- child2-wh effective-amount)
+                    (tree-x child2)
+                    (+ (tree-y child2) effective-amount))))))
 
 (defun resize-frame (group frame amount dim)
   "Move the frame split directly below (if DIM is :height) or to the right (if
@@ -943,7 +967,8 @@ respectively."
            (candidate-frames-to-alter
             (list (first-ancestor-that :expands-dim-positive frame frame-head)
                   (first-ancestor-that :expands-dim-negative frame frame-head)))
-           (frame-to-alter (or (first candidate-frames-to-alter) (second candidate-frames-to-alter)))
+           (frame-to-alter (or (first candidate-frames-to-alter)
+                               (second candidate-frames-to-alter)))
            (invert-amount (not (first candidate-frames-to-alter)))
            (effective-amount (if invert-amount (- amount) amount)))
       (when (and frame-to-alter (not (= effective-amount 0)))
@@ -1096,7 +1121,9 @@ windows used to draw the numbers in. The caller must destroy them."
     (mapcar (lambda (f)
               (let ((w (xlib:create-window
                         :parent (screen-root screen)
-                        :x (frame-display-x group f) :y (frame-display-y group f) :width 1 :height 1
+                        :x (frame-display-x group f)
+                        :y (frame-display-y group f)
+                        :width 1 :height 1
                         :background (screen-fg-color screen)
                         :border (screen-border-color screen)
                         :border-width 1
