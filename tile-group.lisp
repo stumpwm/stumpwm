@@ -490,13 +490,6 @@ T (default) then also focus the frame."
   (remove-duplicates (mapcar #'(lambda (window) (window-frame window))
                              (list-windows screen))))
 
-(defun orphaned-frames (screen)
-  "Returns a list of frames on a screen not associated with any group.
-  These shouldn't exist."
-  (let ((adopted-frames (loop for group in (screen-groups screen)
-                              append (group-frames group))))
-    (set-difference (screen-frames screen) adopted-frames)))
-
 (defmethod group-adopt-orphaned-windows ((group tile-group) &optional (screen (current-screen)))
   "Picks an arbitray frame in the given group and moves
   any windows in frames without a group thereinto"
