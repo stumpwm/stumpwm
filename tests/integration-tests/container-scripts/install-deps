@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-sbcl_version=2.2.7 # Synchronize with variable expected-sbcl-version-in-ci in ../../../make-image.lisp.in
+sbcl_version=2.2.10 # Synchronize with variable expected-sbcl-version-in-ci in ../../../make-image.lisp.in
 
 export DEBIAN_FRONTEND=noninteractive
 apt-get -qy update
@@ -11,7 +11,7 @@ rm -rf /var/lib/apt/lists/*
 curl -LO https://downloads.sourceforge.net/project/sbcl/sbcl/${sbcl_version}/sbcl-${sbcl_version}-x86-64-linux-binary.tar.bz2
 curl -LO https://beta.quicklisp.org/quicklisp.lisp
 sha256sum -c - <<EOF
-4b176dd651437af851f6eb8332b51457f983079d27d347c30c73b3481959be78  sbcl-2.2.7-x86-64-linux-binary.tar.bz2
+7dde88ec2db3ca1012aa158366c3794a6170cf012e321a19339d422aa9309af6  sbcl-2.2.10-x86-64-linux-binary.tar.bz2
 4a7a5c2aebe0716417047854267397e24a44d0cce096127411e9ce9ccfeb2c17  quicklisp.lisp
 EOF
 

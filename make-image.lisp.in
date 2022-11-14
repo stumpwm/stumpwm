@@ -13,7 +13,7 @@
        (in-ci (< 0 (length (sb-ext:posix-getenv "STUMPWM_CI"))))
        ;; Synchronize with variable sbcl_version in
        ;; tests/integration-tests/container-scripts/install-deps
-       (expected-sbcl-version-in-ci "2.2.7")
+       (expected-sbcl-version-in-ci "2.2.10")
        (on-ci-version
         (equal expected-sbcl-version-in-ci (lisp-implementation-version)))
        (handler (lambda (condition)
