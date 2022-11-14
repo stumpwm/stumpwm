@@ -133,9 +133,6 @@ stack windows, and SEVENTH is the major split ratio."))
   (:documentation "A group type that implements dynamic tiling à la DWM with a
 single master window and a window stack."))
 
-(defmethod print-swm-object ((object dynamic-window) stream)
-  (format stream "DYNAMIC-WINDOW ~s #x~x" (window-name object) (window-id object)))
-
 (defun dynamic-group-p (thing)
   (typep thing 'dynamic-group))
 
