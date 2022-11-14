@@ -74,40 +74,6 @@ further up. "
      (t
       (apply 'error error-key :display display :error-key error-key key-vals))))
 
-
-(defgeneric handle-top-level-condition (c))
-
-(defmethod handle-top-level-condition (c)
-  ;; Do nothing by default; there's nothing wrong with signalling
-  ;; arbitrary conditions
-  )
-
-(defmethod handle-top-level-condition ((c warning))
-  (muffle-warning))
-
-(defmethod handle-top-level-condition ((c serious-condition))
-  (when (and (find-restart :remove-channel)
-             (not (typep *current-io-channel*
-                         '(or stumpwm-timer-channel
-                           display-channel
-                           request-channel))))
-    (message "Removed channel ~S due to uncaught error '~A'." *current-io-channel* c)
-    (invoke-restart :remove-channel))
-  (ecase *top-level-error-action*
-    (:message
-     (let ((s (format nil "~&Caught '~a' at the top level. Please report this." c)))
-       (write-line s)
-       (print-backtrace)
-       (message "^1*^B~a" s)))
-    (:break (restart-case
-                (invoke-debugger c)
-              (:abort-debugging ()
-                :report (lambda (stream) (format stream "abort debugging"))
-                (throw :top-level (list c (backtrace-string))))))
-    (:abort
-     (throw :top-level (list c (backtrace-string))))))
-
-
 (defclass request-channel ()
   ((in    :initarg :in
           :reader request-channel-in)
@@ -184,6 +150,38 @@ further up. "
     (dispatch-all (slot-value channel 'display)))
   (defmethod io-channel-handle ((channel display-channel) (event (eql :loop)) &key)
     (dispatch-all (slot-value channel 'display))))
+
+(defgeneric handle-top-level-condition (c))
+
+(defmethod handle-top-level-condition (c)
+  ;; Do nothing by default; there's nothing wrong with signalling
+  ;; arbitrary conditions
+  )
+
+(defmethod handle-top-level-condition ((c warning))
+  (muffle-warning))
+
+(defmethod handle-top-level-condition ((c serious-condition))
+  (when (and (find-restart :remove-channel)
+             (not (typep *current-io-channel*
+                         '(or stumpwm-timer-channel
+                           display-channel
+                           request-channel))))
+    (message "Removed channel ~S due to uncaught error '~A'." *current-io-channel* c)
+    (invoke-restart :remove-channel))
+  (ecase *top-level-error-action*
+    (:message
+     (let ((s (format nil "~&Caught '~a' at the top level. Please report this." c)))
+       (write-line s)
+       (print-backtrace)
+       (message "^1*^B~a" s)))
+    (:break (restart-case
+                (invoke-debugger c)
+              (:abort-debugging ()
+                :report (lambda (stream) (format stream "abort debugging"))
+                (throw :top-level (list c (backtrace-string))))))
+    (:abort
+     (throw :top-level (list c (backtrace-string))))))
 
 (defun stumpwm-internal-loop ()
   (loop
