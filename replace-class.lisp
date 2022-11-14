@@ -69,7 +69,7 @@
                          (ensure-mix object new-class))))))
              (apply #'change-class object new-class initargs)))))
 
-(defgeneric replace-class (object new-class &rest initargs))
+;; (defgeneric replace-class ...) is in primitives.lisp
 
 (defmethod replace-class :around (object new &rest rest)
   (restart-case (progn

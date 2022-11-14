@@ -1,8 +1,7 @@
 (in-package #:cl-user)
 
 (let* ((expected-warnings
-        '((sb-kernel:redefinition-with-defgeneric . 1)
-          (sb-kernel:redefinition-with-defun . 14)
+        '((sb-kernel:redefinition-with-defun . 14)
           (sb-kernel:redefinition-with-defmethod . 1)
           (uiop/lisp-build:compile-warned-warning . 1)
           (sb-int:type-style-warning . 1)

@@ -604,6 +604,10 @@ make-instance."
       (setf (swm-class-new-objects object)
             (remove object (swm-class-new-objects object) :test #'eq)))))
 
+;; This would perhaps fit better in replace-class.lisp, but is needed earlier to
+;; avoid compiler warnings.
+(defgeneric dynamic-mixins:replace-class (object new-class &rest initargs))
+
 (defmacro define-swm-class (class-name superclasses slots &rest options)
   "Define a class and a method for DYNAMIC-MIXINS:REPLACE-CLASS which specializes
 upon the class and replaces it. If SUPERCLASSES is NIL then (SWM-CLASS) is used."
