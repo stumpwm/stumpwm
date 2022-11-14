@@ -279,25 +279,6 @@
 (defun current-frame ()
   (window-frame (current-window)))
 
-(defmethod frame-head ((group tile-group) frame)
-  "Walks the group's frame tree to determine the \"head-frame\" that is this
-  group's parent, and then looks up the corresponding head from its position
-  in the group's head-list"
-  (labels ((frame-head-helper (group frame group-frame-tree)
-                     (if frame
-                         (let ((parent-tree (tree-parent group-frame-tree frame)))
-                           (if (eq group-frame-tree parent-tree)
-                               (elt (group-heads group)
-                                    (position frame parent-tree))
-                               (frame-head-helper group parent-tree group-frame-tree)))
-                         (error "Could not find a head for frame ~A !" frame))))
-    (let ((group-frame-tree (tile-group-frame-tree group)))
-      (if (member frame (group-heads group))
-          frame
-          (if-let ((head-position (position frame group-frame-tree)))
-            (elt (group-heads group) head-position)
-            (frame-head-helper group frame group-frame-tree))))))
-
 (defgeneric populate-frames (group)
   (:documentation "Try to fill empty frames in GROUP with hidden windows")
   (:method (group)
