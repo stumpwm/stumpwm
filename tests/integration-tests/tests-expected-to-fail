@@ -2,6 +2,7 @@
 # This is necessary in order to allow merging test cases that reproduce unfixed issues.
 
 issue-0928
+issue-0972
 issue-0993
 issue-0997
 issue-1004
