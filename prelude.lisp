@@ -3,6 +3,10 @@
 
 (in-package :stumpwm)
 
+(define-swm-class tile-window (window)
+  ((frame   :initarg :frame   :accessor window-frame :type frame)
+   (normal-size :initform nil :accessor window-normal-size)))
+
 (define-swm-class dynamic-group (tile-group)
   (;; Class allocated slots
    (head-placement-policy

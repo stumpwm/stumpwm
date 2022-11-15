@@ -8,9 +8,8 @@
   "Set this to T if you never want windows to resize based on incremental WM_HINTs,
 like xterm and emacs.")
 
-(define-swm-class tile-window (window)
-  ((frame   :initarg :frame   :accessor window-frame :type frame)
-   (normal-size :initform nil :accessor window-normal-size)))
+;; (define-swm-class tile-window ...) is in prelude.lisp since it is referenced
+;; before this file is loaded.
 
 (defmethod print-swm-object ((object tile-window) stream)
   (write-string "TILE-" stream)
