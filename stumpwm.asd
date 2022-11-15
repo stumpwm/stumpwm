@@ -21,6 +21,7 @@
   :components ((:file "package")
                (:file "debug")
                (:file "primitives")
+               (:file "prelude")
                (:file "wrappers")
                (:file "pathnames")
                (:file "font-rendering")
