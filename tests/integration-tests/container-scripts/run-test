@@ -41,6 +41,12 @@ case "$expectation->$result" in
         exit 1;;
     "expect-success->failure")
         echo-red "Test $testname FAILED";
+        for file in stdout.txt stderr.txt stumpwm.stdout.txt stumpwm.stderr.txt; do
+            if [ -f "$file" ]; then
+                echo-red "Printing $file:"
+                sed -r 's/^/> /;' < "$file"
+            fi
+        done
         exit 1;;
     "expect-success->success")
         echo-green "Test $testname SUCCEEDED";;
