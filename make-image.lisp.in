@@ -1,7 +1,8 @@
 (in-package #:cl-user)
 
 (let* ((expected-warnings
-        '((uiop/lisp-build:compile-warned-warning . 1)
+        '((sb-kernel:redefinition-with-defun . 13)
+          (uiop/lisp-build:compile-warned-warning . 1)
           (sb-int:type-style-warning . 1)
           (sb-kernel:redefinition-with-defmacro . 32)))
        (actual-warnings

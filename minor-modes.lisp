@@ -582,192 +582,194 @@ ROOT-MAP-SPEC."
     (generate-keymap top-map-spec top-map)))
 
 
-(defun make-special-variable-name (mode name)
-  (intern (format nil "*~A-~A*" mode name)))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun make-special-variable-name (mode name)
+    (intern (format nil "*~A-~A*" mode name)))
   
-(defun parse-minor-mode-options (options)
-  (let ((valid-options
-         '((:interactive            . 1)
-           (:scope                  . 1)
-           (:global                 . 1)
-           (:lighter-make-clickable . 1)
-           (:lighter                . 1)
-           (:lighter-on-click       . 1)
-           (:expose-keymaps         . 1)
-           (:rebind                 . 1)
-           (:root-map               . 1)
-           (:top-map                . 1)
-           (:enable-when            . t)
-           (:make-hooks             . 1)
-           (:default-initargs       . t)
-           (:define-command-definer . 1)))
-        (all-vals '())
-        (other-opts '()))
-    (flet ((collect-values (option)
-             (destructuring-bind (optname . option-arguments) option
-               (alexandria:if-let (argcount (cdr (assoc optname valid-options)))
+  (defun parse-minor-mode-options (options)
+    (let ((valid-options
+            '((:interactive            . 1)
+              (:scope                  . 1)
+              (:global                 . 1)
+              (:lighter-make-clickable . 1)
+              (:lighter                . 1)
+              (:lighter-on-click       . 1)
+              (:expose-keymaps         . 1)
+              (:rebind                 . 1)
+              (:root-map               . 1)
+              (:top-map                . 1)
+              (:enable-when            . t)
+              (:make-hooks             . 1)
+              (:default-initargs       . t)
+              (:define-command-definer . 1)))
+          (all-vals '())
+          (other-opts '()))
+      (flet ((collect-values (option)
+               (destructuring-bind (optname . option-arguments) option
+                 (alexandria:if-let (argcount (cdr (assoc optname valid-options)))
                    (progn (if (and (numberp argcount)
                                    (= argcount 1))
                               (push (car option-arguments) all-vals)
                               (push option-arguments all-vals))
                           (push optname all-vals))
-                 (push option other-opts)))))
-      (mapc #'collect-values options)
-      (values all-vals other-opts))))
+                   (push option other-opts)))))
+        (mapc #'collect-values options)
+        (values all-vals other-opts))))
 
-(defun define-command-macro (mode)
-  `(defmacro ,(intern (format nil "~:@(define-~A-command~)" mode))
-       (name (&rest args) (&rest interactive-args) &body body)
-     (multiple-value-bind (body decls docstring)
-         (parse-body body :documentation t)
-       `(defcommand (,name ,',mode) ,args ,interactive-args
-                    ,@(when docstring
-                        (list docstring))
-                    ,@decls 
-                    (let ((*minor-mode* (find-minor-mode ',',mode (current-screen))))
-                      ,@body)))))
+  (defun define-command-macro (mode)
+    `(defmacro ,(intern (format nil "~:@(define-~A-command~)" mode))
+         (name (&rest args) (&rest interactive-args) &body body)
+       (multiple-value-bind (body decls docstring)
+           (parse-body body :documentation t)
+         `(defcommand (,name ,',mode) ,args ,interactive-args
+            ,@(when docstring
+                (list docstring))
+            ,@decls 
+            (let ((*minor-mode* (find-minor-mode ',',mode (current-screen))))
+              ,@body)))))
   
-(defun define-enable-methods (mode scope)
-  (let ((optarg (get-scope scope)))
-    `((defmethod autoenable-minor-mode ((mode (eql ',mode)) (obj ,mode))
-        (with-simple-restart (continue "Ignore enable error for ~A" ',mode)
-          (signal 'minor-mode-enable-error :mode ',mode
-                  :object obj
-                  :reason 'already-enabled)))
-      (defmethod autoenable-minor-mode ((mode (eql ',mode)) (obj ,(car optarg)))
-        (when (and ,@(unless (eql (third optarg) (first optarg))
-                       ;; Check if the filter type is the same as the class
-                       ;; type, and if not then explicitly check if the object
-                       ;; conforms to that type.
-                       `((typep obj ',(third optarg))))
-                   (enable-when mode obj))
-          (prog1 (dynamic-mixins:ensure-mix obj ',mode)
-            (handler-bind ((minor-mode-hook-error
-                            (lambda (c)
-                              (let ((r (find-restart 'continue c)))
-                                (when r
-                                  (invoke-restart r))))))
-              (run-hook-for-minor-mode #'minor-mode-enable-hook
-                                       ',mode
-                                       obj)))))
-      (defmethod autodisable-minor-mode ((mode (eql ',mode)) (obj ,mode))
-        (handler-bind ((minor-mode-hook-error
-                        (lambda (c)
-                          (let ((r (find-restart 'continue c)))
-                            (when r
-                              (invoke-restart r))))))
-          (run-hook-for-minor-mode #'minor-mode-disable-hook ',mode obj t))
-        (dynamic-mixins:delete-from-mix obj ',mode)))))
+  (defun define-enable-methods (mode scope)
+    (let ((optarg (get-scope scope)))
+      `((defmethod autoenable-minor-mode ((mode (eql ',mode)) (obj ,mode))
+          (with-simple-restart (continue "Ignore enable error for ~A" ',mode)
+            (signal 'minor-mode-enable-error :mode ',mode
+                                             :object obj
+                                             :reason 'already-enabled)))
+        (defmethod autoenable-minor-mode ((mode (eql ',mode)) (obj ,(car optarg)))
+          (when (and ,@(unless (eql (third optarg) (first optarg))
+                         ;; Check if the filter type is the same as the class
+                         ;; type, and if not then explicitly check if the object
+                         ;; conforms to that type.
+                         `((typep obj ',(third optarg))))
+                     (enable-when mode obj))
+            (prog1 (dynamic-mixins:ensure-mix obj ',mode)
+              (handler-bind ((minor-mode-hook-error
+                               (lambda (c)
+                                 (let ((r (find-restart 'continue c)))
+                                   (when r
+                                     (invoke-restart r))))))
+                (run-hook-for-minor-mode #'minor-mode-enable-hook
+                                         ',mode
+                                         obj)))))
+        (defmethod autodisable-minor-mode ((mode (eql ',mode)) (obj ,mode))
+          (handler-bind ((minor-mode-hook-error
+                           (lambda (c)
+                             (let ((r (find-restart 'continue c)))
+                               (when r
+                                 (invoke-restart r))))))
+            (run-hook-for-minor-mode #'minor-mode-disable-hook ',mode obj t))
+          (dynamic-mixins:delete-from-mix obj ',mode)))))
 
-(defun genlighter (mode lighter)
-  (cond ((null lighter)
-         (flet ((nullgen (s l)
-                  (mapcar (lambda (e)
-                            (if (or (string-equal e "mode") (< (length e) l))
-                                e
-                                (subseq e 0 l)))
-                          s)))
+  (defun genlighter (mode lighter)
+    (cond ((null lighter)
+           (flet ((nullgen (s l)
+                    (mapcar (lambda (e)
+                              (if (or (string-equal e "mode") (< (length e) l))
+                                  e
+                                  (subseq e 0 l)))
+                            s)))
+             `(lambda (mode)
+                (declare (ignore mode))
+                ,(let ((split (remove-if (lambda (s) (string= s ""))
+                                         (cl-ppcre:split "-" (symbol-name mode)))))
+                   (format nil "~{~A~^-~}" (case (length split)
+                                             ((1) split)
+                                             ((2) (nullgen split 3))
+                                             ((3) (nullgen split 2))
+                                             (otherwise (nullgen split 1))))))))
+          ((stringp lighter)
            `(lambda (mode)
               (declare (ignore mode))
-              ,(let ((split (remove-if (lambda (s) (string= s ""))
-                                       (cl-ppcre:split "-" (symbol-name mode)))))
-                 (format nil "~{~A~^-~}" (case (length split)
-                                           ((1) split)
-                                           ((2) (nullgen split 3))
-                                           ((3) (nullgen split 2))
-                                           (otherwise (nullgen split 1))))))))
-        ((stringp lighter)
-         `(lambda (mode)
-            (declare (ignore mode))
-            ,lighter))
-        (t
-         (when (or (symbolp lighter)
-                   (and (listp lighter)
-                        (not (or (eql (car lighter) 'lambda)
-                                 (eql (car lighter) 'function)))))
-           (warn "Assuming ~A is funcallable" lighter))
-         lighter)))
+              ,lighter))
+          (t
+           (when (or (symbolp lighter)
+                     (and (listp lighter)
+                          (not (or (eql (car lighter) 'lambda)
+                                   (eql (car lighter) 'function)))))
+             (warn "Assuming ~A is funcallable" lighter))
+           lighter)))
 
-(defun define-hooks (mode)
-  `((defvar ,(make-special-variable-name mode 'enable-hook) nil
-      ,(format nil
-               "A hook run when enabling ~A, called with the mode symbol and the scope object."
-               mode))
-    (defvar ,(make-special-variable-name mode 'disable-hook) nil
-      ,(format nil
-               "A hook run when disabling ~A, called with the mode symbol and the scope
+  (defun define-hooks (mode)
+    `((defvar ,(make-special-variable-name mode 'enable-hook) nil
+        ,(format nil
+"A hook run when enabling ~A, called with the mode symbol and the scope object."
+                 mode))
+      (defvar ,(make-special-variable-name mode 'disable-hook) nil
+        ,(format nil
+"A hook run when disabling ~A, called with the mode symbol and the scope
 object. This hook is run when ~A is disabled in an object, however if an object
 goes out of scope before a minor mode is disabled then this hook will not be run
 for that object."
-               mode mode))
-    (defvar ,(make-special-variable-name mode 'hook) nil
-      ,(format nil
-               "A hook run when explicitly enabling ~A, called with the mode symbol and the
+                 mode mode))
+      (defvar ,(make-special-variable-name mode 'hook) nil
+        ,(format nil
+"A hook run when explicitly enabling ~A, called with the mode symbol and the
 scope object."
-               mode))
-    (defvar ,(make-special-variable-name mode 'destroy-hook) nil
-      ,(format nil
-               "A hook run when explicitly disabling ~A, called with the mode symbol and the
+                 mode))
+      (defvar ,(make-special-variable-name mode 'destroy-hook) nil
+        ,(format nil
+"A hook run when explicitly disabling ~A, called with the mode symbol and the
 scope object."
-               mode))
-    (defmethod minor-mode-enable-hook ((mode (eql ',mode)))
-      (declare (ignore mode))
-      ,(make-special-variable-name mode 'enable-hook))
-    (defmethod (setf minor-mode-enable-hook) (new (mode (eql ',mode)))
-      (declare (ignore mode))
-      (setf ,(make-special-variable-name mode 'enable-hook) new))
-    (defmethod minor-mode-disable-hook ((mode (eql ',mode)))
-      (declare (ignore mode))
-      ,(make-special-variable-name mode 'disable-hook))
-    (defmethod (setf minor-mode-disable-hook) (new (mode (eql ',mode)))
-      (declare (ignore mode))
-      (setf ,(make-special-variable-name mode 'disable-hook) new))
-    (defmethod minor-mode-hook ((mode (eql ',mode)))
-      (declare (ignore mode))
-      ,(make-special-variable-name mode 'hook))
-    (defmethod (setf minor-mode-hook) (new (mode (eql ',mode)))
-      (declare (ignore mode))
-      (setf ,(make-special-variable-name mode 'hook) new))
-    (defmethod minor-mode-destroy-hook ((mode (eql ',mode)))
-      (declare (ignore mode))
-      ,(make-special-variable-name mode 'destroy-hook))
-    (defmethod (setf minor-mode-destroy-hook) (new (mode (eql ',mode)))
-      (declare (ignore mode))
-      (setf ,(make-special-variable-name mode 'destroy-hook) new))))
+                 mode))
+      (defmethod minor-mode-enable-hook ((mode (eql ',mode)))
+        (declare (ignore mode))
+        ,(make-special-variable-name mode 'enable-hook))
+      (defmethod (setf minor-mode-enable-hook) (new (mode (eql ',mode)))
+        (declare (ignore mode))
+        (setf ,(make-special-variable-name mode 'enable-hook) new))
+      (defmethod minor-mode-disable-hook ((mode (eql ',mode)))
+        (declare (ignore mode))
+        ,(make-special-variable-name mode 'disable-hook))
+      (defmethod (setf minor-mode-disable-hook) (new (mode (eql ',mode)))
+        (declare (ignore mode))
+        (setf ,(make-special-variable-name mode 'disable-hook) new))
+      (defmethod minor-mode-hook ((mode (eql ',mode)))
+        (declare (ignore mode))
+        ,(make-special-variable-name mode 'hook))
+      (defmethod (setf minor-mode-hook) (new (mode (eql ',mode)))
+        (declare (ignore mode))
+        (setf ,(make-special-variable-name mode 'hook) new))
+      (defmethod minor-mode-destroy-hook ((mode (eql ',mode)))
+        (declare (ignore mode))
+        ,(make-special-variable-name mode 'destroy-hook))
+      (defmethod (setf minor-mode-destroy-hook) (new (mode (eql ',mode)))
+        (declare (ignore mode))
+        (setf ,(make-special-variable-name mode 'destroy-hook) new)))))
 
 
 ;;; Minor Mode Scopes
 
-(defvar *minor-mode-scopes* (make-hash-table)
-  "Store the scope supertypes and object retrieval functions for a scope")
-(defun add-minor-mode-scope
-    (designator type current-object-thunk &optional filter-type)
-  "Add a list of the TYPE, CURRENT-OBJECT-THUNK, and ALL-OBJECTS-THUNK, under
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defvar *minor-mode-scopes* (make-hash-table)
+    "Store the scope supertypes and object retrieval functions for a scope")
+  (defun add-minor-mode-scope
+      (designator type current-object-thunk &optional filter-type)
+    "Add a list of the TYPE, CURRENT-OBJECT-THUNK, and ALL-OBJECTS-THUNK, under
 DESIGNATOR in the minor mode scope hash table."
-  (setf (gethash designator *minor-mode-scopes*)
-        (list type current-object-thunk (or filter-type type))))
-(defun get-scope (designator)
-  (multiple-value-bind (value foundp)
-      (gethash designator *minor-mode-scopes*)
-    (if foundp
-        value
-        (error "Invalid scope designator ~A" designator))))
-(defun scope-type (designator)
-  (first (get-scope designator)))
-(defun scope-filter-type (designator)
-  (third (get-scope designator)))
-(defun scope-current-object-function (designator)
-  (cadr (get-scope designator)))
-(defun scope-all-objects-function (designator)
-  (let ((type (first (get-scope designator))))
-    (lambda ()
-      (loop for object in (list-mode-objects nil)
-            when (typep object type)
-            collect object))))
-(defun find-active-global-minor-modes-for-scope (scope)
-  (loop for mode in *active-global-minor-modes*
-        when (eql scope (minor-mode-scope mode))
-        collect mode))
+    (setf (gethash designator *minor-mode-scopes*)
+          (list type current-object-thunk (or filter-type type))))
+  (defun get-scope (designator)
+    (multiple-value-bind (value foundp)
+        (gethash designator *minor-mode-scopes*)
+      (if foundp
+          value
+          (error "Invalid scope designator ~A" designator))))
+  (defun scope-type (designator)
+    (first (get-scope designator)))
+  (defun scope-filter-type (designator)
+    (third (get-scope designator)))
+  (defun scope-current-object-function (designator)
+    (cadr (get-scope designator)))
+  (defun scope-all-objects-function (designator)
+    (let ((type (first (get-scope designator))))
+      (lambda ()
+        (loop for object in (list-mode-objects nil)
+              when (typep object type)
+                collect object))))
+  (defun find-active-global-minor-modes-for-scope (scope)
+    (loop for mode in *active-global-minor-modes*
+          when (eql scope (minor-mode-scope mode))
+            collect mode)))
 
 (defgeneric validate-superscope (scope superscope)
   (:documentation
@@ -834,27 +836,29 @@ call to ADD-MINOR-MODE-SCOPE which is evaluated when compiled, loaded, or
 executed. DESIGNATOR should be a keyword and TYPE should denote a class, while
 FILTER-TYPE should denote a general type. RETRIEVE-CURRENT-OBJECT should be a
 thunk body which returns the current object for this scope."
-  `(add-minor-mode-scope ,designator
-                         ',class
-                         (lambda () ,@retrieve-current-object)
-                         ,@(when filter-type
-                             `(',filter-type))))
+  `(eval-when (:compile-toplevel :load-toplevel :execute)
+     (add-minor-mode-scope ,designator
+                           ',class
+                           (lambda () ,@retrieve-current-object)
+                           ,@(when filter-type
+                               `(',filter-type)))))
 
 (defmacro define-descended-minor-mode-scope (designator parent
                                              &key class filter-type
                                                retrieve-current-object)
   "Define a descended scope which inherits the parents type and functions unless
 provided."
-  `(add-minor-mode-scope ,designator
-                         ,@(if class
-                               `(',class)
-                               `((scope-type ,parent)))
-                         ,(if retrieve-current-object
-                              `(lambda ()
-                                 ,retrieve-current-object)
-                              `(scope-current-object-function ,parent))
-                         ,@(when filter-type
-                             `(',filter-type))))
+  `(eval-when (:compile-toplevel :load-toplevel :execute)
+     (add-minor-mode-scope ,designator
+                           ,@(if class
+                                 `(',class)
+                                 `((scope-type ,parent)))
+                           ,(if retrieve-current-object
+                                `(lambda ()
+                                   ,retrieve-current-object)
+                                `(scope-current-object-function ,parent))
+                           ,@(when filter-type
+                               `(',filter-type)))))
 
 (define-minor-mode-scope (:unscoped unscoped-modes)
   *unscoped-minor-modes*)
