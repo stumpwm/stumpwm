@@ -2216,7 +2216,8 @@ Groups in StumpWM are more commonly known as @dfn{virtual desktops} or
 @@@ group-move-request
 @@@ group-raise-request
 @@@ group-remove-head
-@@@ group-resize-head
+@@@ group-before-resize-head
+@@@ group-after-resize-head
 @@@ group-resize-request
 @@@ group-root-exposure
 @@@ group-startup

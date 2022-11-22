@@ -33,8 +33,8 @@
           group-resize-request group-move-request group-raise-request
           group-lost-focus group-indicate-focus group-focus-window
           group-button-press group-root-exposure group-add-head
-          group-remove-head group-resize-head group-sync-all-heads
-          group-sync-head))
+          group-remove-head group-before-resize-head group-after-resize-head
+          group-sync-all-heads group-sync-head))
 
 (defvar *default-group-type* 'tile-group
   "The type of group that should be created by default.")
@@ -94,8 +94,10 @@ needs to redraw anything on it, this is where it should do it."))
   (:documentation "A head is being removed from this group's screen."))
 (defgeneric group-replace-head (screen group old-head new-head)
   (:documentation "A head is being replaced by another on this group's screen."))
-(defgeneric group-resize-head (group oh nh)
-  (:documentation "A head is being resized on this group's screen."))
+(defgeneric group-before-resize-head (group oh nh)
+  (:documentation "A head is about to be resized on this group's screen."))
+(defgeneric group-after-resize-head (group head)
+  (:documentation "A head has been resized on this group's screen."))
 (defgeneric group-sync-all-heads (group)
   (:documentation "Called when the head configuration for the group changes."))
 (defgeneric group-sync-head (group head)

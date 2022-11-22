@@ -88,7 +88,7 @@ hints have been modified to always be defined and never be greater
 than the root window's width and height.")
   (:method (win)
     (let* ((f (window-frame win))
-           (x (frame-x f))
+           (x (frame-display-x (window-group win) f))
            (y (frame-display-y (window-group win) f))
            (border (if (or (eq *window-border-style* :none)
                            (= (length (group-frames (window-group win))) 1))
@@ -123,12 +123,12 @@ than the root window's width and height.")
                 (head (frame-head win-group f))
                 (frame-to-fill (if fs-in-frame f head)))
            ;; Determine if the window should be fullscreened in the frame or the
-           ;; head. If fullscreening a frame, use the frame-display functions on
-           ;; y axis to account for the modeline.
+           ;; head. If fullscreening a frame, use the frame-display functions to
+           ;; account for the modeline and non-integer splits.
            (if fs-in-frame
-               (setf x (frame-x frame-to-fill)
+               (setf x (frame-display-x win-group frame-to-fill)
                      y (frame-display-y win-group frame-to-fill)
-                     width (frame-width frame-to-fill)
+                     width (frame-display-width win-group frame-to-fill)
                      height (frame-display-height win-group frame-to-fill))
                (setf x (frame-x frame-to-fill)
                      y (frame-y frame-to-fill)
@@ -187,7 +187,7 @@ than the root window's width and height.")
                                                    fwidth fheight)
         (when (or center
                   (find *window-border-style* '(:tight :none)))
-          (setf x (+ wx (frame-x f))
+          (setf x (+ wx (frame-display-x (window-group win) f))
                 y (+ wy (frame-display-y (window-group win) f))
                 wx 0 wy 0))
         ;; Now return our findings
@@ -215,7 +215,7 @@ than the root window's width and height.")
           (setf (xlib:drawable-width (window-parent win)) (window-width win)
                 (xlib:drawable-height (window-parent win)) (window-height win))
           (let ((frame (window-frame win)))
-            (setf (xlib:drawable-width (window-parent win)) (- (frame-width frame)
+            (setf (xlib:drawable-width (window-parent win)) (- (frame-display-width (window-group win) frame)
                                                                (* 2 (xlib:drawable-border-width (window-parent win))))
                   (xlib:drawable-height (window-parent win)) (- (frame-display-height (window-group win) frame)
                                                                 (* 2 (xlib:drawable-border-width (window-parent win)))))))

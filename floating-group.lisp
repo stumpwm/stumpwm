@@ -243,8 +243,11 @@
 (defmethod group-replace-head (screen (group float-group) old-head new-head)
   (declare (ignore screen old-head new-head)))
 
-(defmethod group-resize-head ((group float-group) oh nh)
+(defmethod group-before-resize-head ((group float-group) oh nh)
   (declare (ignore oh nh)))
+
+(defmethod group-after-resize-head ((group float-group) head)
+  (declare (ignore head)))
 
 (defmethod group-sync-all-heads ((group float-group)))
 

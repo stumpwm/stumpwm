@@ -224,8 +224,14 @@
                            head-frame-tree
                            (head-number new-head))))))
 
-(defmethod group-resize-head ((group tile-group) oh nh)
-  (resize-tree (tile-group-frame-head group oh) (head-width nh) (head-height nh) (head-x nh) (head-y nh))
+(defmethod group-before-resize-head ((group tile-group) oh nh)
+  (clear-frame-outlines group)
+  (resize-tree group (tile-group-frame-head group oh)
+               (head-width nh) (head-height nh)
+               (head-x nh) (head-y nh)))
+
+(defmethod group-after-resize-head ((group tile-group) head)
+  (declare (ignore head))
   (redraw-frame-indicator group)
   (redraw-frame-outline group))
 
@@ -272,25 +278,6 @@
 
 (defun current-frame ()
   (window-frame (current-window)))
-
-(defmethod frame-head ((group tile-group) frame)
-  "Walks the group's frame tree to determine the \"head-frame\" that is this
-  group's parent, and then looks up the corresponding head from its position
-  in the group's head-list"
-  (labels ((frame-head-helper (group frame group-frame-tree)
-                     (if frame
-                         (let ((parent-tree (tree-parent group-frame-tree frame)))
-                           (if (eq group-frame-tree parent-tree)
-                               (elt (group-heads group)
-                                    (position frame parent-tree))
-                               (frame-head-helper group parent-tree group-frame-tree)))
-                         (error "Could not find a head for frame ~A !" frame))))
-    (let ((group-frame-tree (tile-group-frame-tree group)))
-      (if (member frame (group-heads group))
-          frame
-          (if-let ((head-position (position frame group-frame-tree)))
-            (elt (group-heads group) head-position)
-            (frame-head-helper group frame group-frame-tree))))))
 
 (defgeneric populate-frames (group)
   (:documentation "Try to fill empty frames in GROUP with hidden windows")
@@ -351,41 +338,69 @@
   (:method (frame)
     (+ (frame-y frame) (frame-height frame))))
 
-(defgeneric frame-display-y (group frame)
-  (:documentation "Return a Y for frame that doesn't overlap the mode-line.")
+(defmethod frame-head ((group tile-group) frame)
+  (find-if (lambda (head)
+             (or (eq head frame)
+                 (find frame (flatten (tile-group-frame-head group head)))))
+           (group-heads group)))
+
+(defun project-x (head x)
+  (declare (ignore head))
+  "Return an integer X coordinate."
+  (round x))
+
+(defun project-y (head y)
+  "Return an integer Y coordinate that takes the mode-line into account."
+  (round (let* ((ml (head-mode-line head)))
+           (if (and ml (not (eq (mode-line-mode ml) :hidden)))
+               (let* ((head-y (frame-y head))
+                      (rel-y (- y head-y)))
+                 (+ (* rel-y (mode-line-factor ml))
+                    (case (mode-line-position ml)
+                      (:top (mode-line-height ml))
+                      (:bottom 0))))
+               y))))
+
+(defgeneric frame-display-x (group frame)
+  (:documentation "Return an integer X for frame.")
   (:method (group frame)
-    (let* ((head (frame-head group frame))
-           (ml (head-mode-line head))
-           (head-y (frame-y head))
-           (rel-frame-y (- (frame-y frame) head-y)))
-      (when (> (frame-y frame) (frame-height head))
+    (project-x (frame-head group frame) (frame-x frame))))
+
+(defgeneric frame-display-y (group frame)
+  (:documentation
+   "Return an integer Y for frame that takes the mode-line into account.")
+  (:method (group frame)
+    (let ((head (frame-head group frame))
+          (y (frame-y frame)))
+      (when (> y (+ (frame-y head) (frame-height head)))
         (error "Frame ~A is below head ~A" frame head))
-      (if (and ml (not (eq (mode-line-mode ml) :hidden)))
-          (case (mode-line-position ml)
-            (:top
-             (+ head-y
-                (+ (mode-line-height ml) (round (* rel-frame-y (mode-line-factor ml))))))
-            (:bottom
-             (+ head-y
-                (round (* rel-frame-y (mode-line-factor ml))))))
-          (frame-y frame)))))
+      (project-y head y))))
 
 (defgeneric frame-display-height (group frame)
-  (:documentation "Return a HEIGHT for frame that fits within its head and doesn't overlap the mode-line.")
+  (:documentation
+   "Return an integer HEIGHT for frame that fits within its head and doesn't overlap the mode-line.")
   (:method (group frame)
-    (let* ((head (frame-head group frame))
-           (ml (head-mode-line head))
-           (valid-frame-height (min (frame-height frame)
-                                    (frame-height head))))
-      (if (and ml (not (eq (mode-line-mode ml) :hidden)))
-          (round (* valid-frame-height (mode-line-factor ml)))
-          valid-frame-height))))
+    (let ((head (frame-head group frame)))
+      (flet ((projected-height (frame)
+               (let ((y (frame-y frame))
+                     (height (frame-height frame)))
+                 (- (project-y head (+ y height))
+                    (project-y head y)))))
+        (min (projected-height frame)
+             (projected-height head))))))
 
 (defgeneric frame-display-width (group frame)
-  (:documentation "Return a WIDTH for frame that fits within its head")
+  (:documentation
+   "Return an integer WIDTH for frame that fits within its head.")
   (:method (group frame)
-    (min (frame-width frame)
-         (frame-width (frame-head group frame)))))
+    (let* ((head (frame-head group frame)))
+      (flet ((projected-width (frame)
+               (let ((x (frame-x frame))
+                     (width (frame-width frame)))
+                 (- (project-x head (+ x width))
+                    (project-x head x)))))
+        (min (projected-width frame)
+             (projected-width head))))))
 
 (defun frame-intersect (f1 f2)
   "Return a new frame representing (only) the intersection of F1 and F2. WIDTH and HEIGHT will be <= 0 if there is no overlap"
@@ -546,7 +561,7 @@ T (default) then also focus the frame."
 If ratio is an integer return the number of pixel desired."
   (if (integerp ratio)
       ratio
-      (truncate (* length ratio))))
+      (* length ratio)))
 
 (defun funcall-on-leaf (tree leaf fn)
   "Return a new tree with LEAF replaced with the result of calling FN on LEAF."
@@ -641,12 +656,26 @@ leaf is the most right/below of its siblings."
 (defun tree-height (tree)
   (cond ((atom tree) (frame-height tree))
         ((tree-column-split tree)
-         ;; in row splits, all children have the same width, so use the
+         ;; in column splits, all children have the same height, so use the
          ;; first one.
          (tree-height (first tree)))
         (t
-         ;; for column splits we add the width of each child
+         ;; for row splits we add the height of each child
          (reduce '+ tree :key 'tree-height))))
+
+(defun tree-min-width (tree)
+  (cond ((atom tree) *min-frame-width*)
+        ((tree-row-split tree)
+         (reduce 'max tree :key 'tree-min-width))
+        (t
+         (reduce '+ tree :key 'tree-min-width))))
+
+(defun tree-min-height (tree)
+  (cond ((atom tree) *min-frame-height*)
+        ((tree-column-split tree)
+         (reduce 'max tree :key 'tree-min-height))
+        (t
+         (reduce '+ tree :key 'tree-min-height))))
 
 (defun tree-parent (top node)
   "Return the list in TOP that contains NODE."
@@ -723,16 +752,8 @@ you don't care which one."
                   (total (funcall sz-fn tree))
                   (amt-list (loop for i in children
                                   for old-sz = (funcall sz-fn i)
-                                  collect (floor (* amount old-sz) total)))
-                  (remainder (- amount (apply '+ amt-list)))
+                                  collect (/ (* amount old-sz) total)))
                   (ofs 0))
-             ;; spread the remainder out as evenly as possible
-             (assert (< remainder (length amt-list)))
-             (loop for i upfrom 0
-                   while (> remainder 0)
-                   do
-                   (incf (nth i amt-list))
-                   (decf remainder))
              ;; resize proportionally
              (loop for i in children
                    for amt in amt-list
@@ -761,21 +782,63 @@ LEAF. Return tree with leaf removed."
     (expand-tree newtree amt dir)
     newtree))
 
-(defun resize-tree (tree w h &optional (x (tree-x tree)) (y (tree-y tree)))
+(defun resize-tree
+    (group tree w h &optional (x (tree-x tree)) (y (tree-y tree)))
   "Scale TREE to width W and height H, ignoring aspect. If X and Y are
-  provided, reposition the TREE as well."
-  (let* ((tw (tree-width tree))
-         (th (tree-height tree))
-         (tx (tree-x tree))
-         (ty (tree-y tree))
-         (wf (/ w tw))
-         (hf (/ h th)))
-    (tree-iterate tree (lambda (f)
-                         (setf (frame-height f) (round (* (frame-height f) hf))
-                               (frame-y f) (+ (round (* (- (frame-y f) ty) hf)) y)
-                               (frame-width f) (round (* (frame-width f) wf))
-                               (frame-x f) (+ (round (* (- (frame-x f) tx) wf)) x))))
-    (dformat 4 "resize-tree ~Dx~D -> ~Dx~D~%" tw th (tree-width tree) (tree-height tree))))
+provided, reposition the TREE as well. Remove frames as necessary and possible,
+to respect the minimum frame size."
+  (cond
+    ((atom tree)
+     ;; We don't check here whether we respect minimum frame size. That
+     ;; should've been done earlier, unless it's impossible anyway e.g. due to
+     ;; the minimum frame size being larger than the head.
+     (let ((frame tree))
+       (setf (frame-height frame) h
+             (frame-y frame) y
+             (frame-width frame) w
+             (frame-x frame) x)
+       (if-let (win (frame-window frame))
+           (update-decoration win))))
+    ((or (< w (tree-min-width tree))
+         (< h (tree-min-height tree)))
+     ;; We can't fit this tree in the assigned area, so we remove all frames
+     ;; beyond the split and try again
+     (let ((tree-to-resize (car tree))
+           (tree-to-discard (cdr tree))
+           (target-frame (tree-leaf tree))
+           (parent (tree-parent (tile-group-frame-tree group) tree)))
+       ;; Hoist the frames before the split
+       (setf (elt parent (position tree parent)) tree-to-resize)
+       ;; Move windows in removed frames
+       (tree-iterate tree-to-discard
+                     (lambda (f)
+                       (if-let (win (frame-window f))
+                           (hide-window win))
+                       (migrate-frame-windows group f target-frame)))
+       (resize-tree group tree-to-resize w h x y)))
+    (t
+     ;; We should have a tree that is possible to resize while respecting
+     ;; minimum frame size
+     (let ((child1 (first tree)) (child2 (second tree)))
+       (ecase (tree-split-type tree)
+         (:column
+          (let* ((child1-new-size (min (max (tree-min-width child1)
+                                            (* w (/ (tree-width child1)
+                                                    (tree-width tree))))
+                                       (- w (tree-min-width child2)))))
+            (resize-tree group child1
+                         child1-new-size h x y)
+            (resize-tree group child2
+                         (- w child1-new-size) h (+ x child1-new-size) y)))
+         (:row
+          (let* ((child1-new-size (min (max (tree-min-height child1)
+                                            (* h (/ (tree-height child1)
+                                                    (tree-height tree))))
+                                       (- h (tree-min-height child2)))))
+            (resize-tree group child1
+                         w child1-new-size x y)
+            (resize-tree group child2
+                         w (- h child1-new-size) x (+ y child1-new-size)))))))))
 
 (defun remove-frame (tree leaf)
   "Return a new tree with LEAF and it's sibling merged into
@@ -815,87 +878,87 @@ one."
                          (incf (frame-x frame) x)
                          (incf (frame-y frame) y)))))
 
+(defun move-split-in-tree (group tree amount)
+  "Move the split in tree by amount if possible, otherwise as much as posible."
+  (assert (and (listp tree) (= (length tree) 2)))
+  (let* ((split-type (tree-split-type tree))
+         (tree-wh (ecase split-type (:column 'tree-width) (:row 'tree-height)))
+         (child1 (first tree))
+         (child2 (second tree))
+         (child1-wh (funcall tree-wh (first tree)))
+         (child2-wh (funcall tree-wh (second tree)))
+         (tree-min-wh (ecase split-type
+                        (:column 'tree-min-width)
+                        (:row 'tree-min-height)))
+         (min-child1-wh (funcall tree-min-wh (first tree)))
+         (min-child2-wh (funcall tree-min-wh (second tree)))
+         (min-amount (- min-child1-wh child1-wh)) ;; <=0
+         (max-amount (- child2-wh min-child2-wh)) ;; >=0
+         (effective-amount (max (min amount max-amount) min-amount)))
+    (ecase split-type
+      (:column
+       (resize-tree group
+                    child1
+                    (+ child1-wh effective-amount)
+                    (tree-height child1))
+       (resize-tree group
+                    child2
+                    (- child2-wh effective-amount)
+                    (tree-height child2)
+                    (+ (tree-x child2) effective-amount)
+                    (tree-y child2)))
+      (:row
+       (resize-tree group
+                    child1
+                    (tree-width child1)
+                    (+ child1-wh effective-amount))
+       (resize-tree group
+                    child2
+                    (tree-width child2)
+                    (- child2-wh effective-amount)
+                    (tree-x child2)
+                    (+ (tree-y child2) effective-amount))))))
+
 (defun resize-frame (group frame amount dim)
-  "Resize FRAME by AMOUNT in DIM dimension, DIM can be
-either :width or :height"
+  "Move the frame split directly below (if DIM is :height) or to the right (if
+DIM is :width) of FRAME as much as possible up to AMOUNT. If moving it isn't
+possible at all, try instead with the split directly above or to the left,
+respectively."
   (check-type group group)
   (check-type frame frame)
   (check-type amount integer)
-  ;; (check-type dim (member :width :height))
-  (labels ((max-amount (parent node min dim-fn)
-             (let ((right-sibling (cadr (member node parent)))
-                   (left-sibling (cadr (member node (reverse parent)))))
-
-               (dformat 10 "max ~@{~a~^ ~}~%" parent node min dim-fn right-sibling left-sibling)
-               (if parent
-                   (cond (right-sibling
-                          (max 0 (- (funcall dim-fn right-sibling) min)))
-                         (left-sibling
-                          (max 0 (- (funcall dim-fn left-sibling) min)))
-                         (t 0))
-                   ;; no parent means the frame can't get any bigger.
-                   0))))
-    (let* ((tree (tile-group-frame-tree group))
-           (parent (tree-parent tree frame))
-           (gparent (tree-parent tree parent))
-           (split-type (tree-split-type parent)))
-      (dformat 10 "~s ~s parent: ~s ~s width: ~s h: ~s~%" dim amount split-type parent (tree-width parent) (tree-height parent))
-      ;; normalize amount
-      (let* ((max (ecase dim
-                    (:width
-                     (if (>= (frame-width frame) (frame-width (frame-head group frame)))
-                         0
-                         (if (eq split-type :column)
-                             (max-amount parent frame *min-frame-width* 'tree-width)
-                             (max-amount gparent parent *min-frame-width* 'tree-width))))
-                    (:height
-                     (if (>= (frame-height frame) (frame-height (frame-head group frame)))
-                         0
-                         (if (eq split-type :row)
-                             (max-amount parent frame *min-frame-height* 'tree-height)
-                             (max-amount gparent parent *min-frame-height* 'tree-height))))))
-             (min (ecase dim
-                    ;; Frames taking up the entire HEAD in one
-                    ;; dimension can't be resized in that dimension.
-                    (:width
-                     (if (and (eq split-type :row)
-                              (or (null gparent)
-                                  (>= (frame-width frame) (frame-width (frame-head group frame)))))
-                         0
-                         (- *min-frame-width* (frame-width frame))))
-                    (:height
-                     (if (and (eq split-type :column)
-                              (or (null gparent)
-                                  (>= (frame-height frame) (frame-height (frame-head group frame)))))
-                         0
-                         (- *min-frame-height* (frame-height frame)))))))
-        (setf amount (max (min amount max) min))
-        (dformat 10 "bounds ~d ~d ~d~%" amount max min))
-      ;; if FRAME is taking up the whole DIM or if AMOUNT = 0, do nothing
-      (unless (zerop amount)
-        (let* ((resize-parent (or (and (eq split-type :column)
-                                       (eq dim :height))
-                                  (and (eq split-type :row)
-                                       (eq dim :width))))
-               (to-resize (if resize-parent parent frame))
-               (to-resize-parent (if resize-parent gparent parent))
-               (lastp (= (position to-resize to-resize-parent) (1- (length to-resize-parent))))
-               (to-shrink (if lastp
-                              (prev-sibling to-resize-parent to-resize)
-                              (next-sibling to-resize-parent to-resize))))
-          (expand-tree to-resize amount (ecase dim
-                                          (:width (if lastp :left :right))
-                                          (:height (if lastp :top :bottom))))
-          (expand-tree to-shrink (- amount) (ecase dim
-                                              (:width (if lastp :right :left))
-                                              (:height (if lastp :bottom :top))))
-          (unless (and *resize-hides-windows* (eq *top-map* *resize-map*))
-            (tree-iterate to-resize
-                          (lambda (leaf)
-                            (sync-frame-windows group leaf)))
-            (tree-iterate to-shrink
-                          (lambda (leaf)
-                            (sync-frame-windows group leaf)))))))))
+  (check-type dim (member :width :height))
+  (labels
+      ((is-frame-in-dim (frame)
+         (ecase dim
+           (:width (tree-column-split frame))
+           (:height (tree-row-split frame))))
+       (first-ancestor-that (direction frame top)
+         (let* ((parent (tree-parent top frame)))
+           (cond
+             ((and (is-frame-in-dim parent)
+                   (eq frame (ecase direction
+                               (:expands-dim-positive (first parent))
+                               (:expands-dim-negative (second parent)))))
+              parent)
+             (parent (first-ancestor-that direction parent top))
+             (t nil)))))
+    (let* ((head (frame-head group frame))
+           (frame-head (tile-group-frame-head group head))
+           (candidate-frames-to-alter
+            (list (first-ancestor-that :expands-dim-positive frame frame-head)
+                  (first-ancestor-that :expands-dim-negative frame frame-head)))
+           (frame-to-alter (or (first candidate-frames-to-alter)
+                               (second candidate-frames-to-alter)))
+           (invert-amount (not (first candidate-frames-to-alter)))
+           (effective-amount (if invert-amount (- amount) amount)))
+      (when (and frame-to-alter (not (= effective-amount 0)))
+        (dformat 10 "Resizing frame ~s ~s~%" dim effective-amount)
+        (move-split-in-tree group frame-to-alter effective-amount)
+        (unless (and *resize-hides-windows* (eq *top-map* *resize-map*))
+          (tree-iterate frame-to-alter
+                        (lambda (leaf)
+                          (sync-frame-windows group leaf))))))))
 
 (defun balance-frames-internal (group tree &optional (sync t))
   "Fully balance all the frames contained in tree."
@@ -929,15 +992,8 @@ either :width or :height"
 
          "
          ;; First divide the two groups as evenly as possible.
-         (multiple-value-bind (base remainder)
-             (truncate value (+ first-splits second-splits))
-           ;; We may have up to TOTAL-1 pixels left.  Divide those evenly
-           ;; between the two sides.  If there's 1 odd pixel left just give it
-           ;; to the first side.
-           (multiple-value-bind (extra maybe-one-extra)
-               (truncate remainder 2)
-             (values (+ (* base first-splits) extra maybe-one-extra)
-                     (+ (* base second-splits) extra)))))
+         (let ((base (/ value (+ first-splits second-splits))))
+           (values (* base first-splits) (* base second-splits))))
        (balance-tree (tree x y width height)
          "Balance the binary tree to fit the given dimensions."
          (let* ((split-type (tree-split-type tree))
@@ -1012,9 +1068,9 @@ desktop when starting."
          (gc (screen-frame-outline-gc screen))
          (halfwidth (/ width 2)))
     (when (> width 0)
-      (let ((x (frame-x f))
+      (let ((x (frame-display-x group f))
             (y (frame-display-y group f))
-            (w (frame-width f))
+            (w (frame-display-width group f))
             (h (frame-display-height group f)))
         (when tl
           (xlib:draw-line win gc
@@ -1046,7 +1102,9 @@ windows used to draw the numbers in. The caller must destroy them."
     (mapcar (lambda (f)
               (let ((w (xlib:create-window
                         :parent (screen-root screen)
-                        :x (frame-x f) :y (frame-display-y group f) :width 1 :height 1
+                        :x (frame-display-x group f)
+                        :y (frame-display-y group f)
+                        :width 1 :height 1
                         :background (screen-fg-color screen)
                         :border (screen-border-color screen)
                         :border-width 1
@@ -1315,7 +1373,11 @@ just jump to that frame."
 
 (defcommand (resize tile-group) (width height) ((:number "+ Width: ")
                                                 (:number "+ Height: "))
-  "Resize the current frame by @var{width} and @var{height} pixels"
+  "Move the frame split directly to the right of the current frame as much as
+possible up to @var{width} pixels, or if impossible try the split directly to
+the left instead. Similarly, also move the frame split directly below the
+current frame as much as possible up to @var{height} pixels, or if impossible
+try the split directly above instead."
   (let* ((group (current-group))
          (f (tile-group-current-frame group)))
     (if (atom (tile-group-frame-tree group))

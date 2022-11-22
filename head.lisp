@@ -100,7 +100,8 @@
   (:method (group frame)
     "As a fallback, use the frame's position on the screen to return a head
  in the same position. This can be out of sync with stump's state if was
- moved by something else, such as X11 during an external monitor change"
+ moved by something else, such as X11 during an external monitor change. It
+ also doesn't work in the middle of rescaling a head."
     (let ((center-x (+ (frame-x frame) (ash (frame-width frame) -1)))
           (center-y (+ (frame-y frame) (ash (frame-height frame) -1))))
       (find-head-by-position (group-screen group) center-x center-y))))
@@ -168,12 +169,22 @@
 
 (defun scale-head (screen oh nh)
   "Scales head OH to match the dimensions of NH."
-  (dolist (group (screen-groups screen))
-    (group-resize-head group oh nh))
-  (setf (head-x oh) (head-x nh)
-        (head-y oh) (head-y nh)
-        (head-width oh) (head-width nh)
-        (head-height oh) (head-height nh)))
+  (let ((nhx (head-x nh))
+        (nhy (head-y nh))
+        (nhw (head-width nh))
+        (nhh (head-height nh)))
+    (unless (and (= (head-x oh) nhx)
+                 (= (head-y oh) nhy)
+                 (= (head-width oh) nhw)
+                 (= (head-height oh) nhh))
+      (dolist (group (screen-groups screen))
+        (group-before-resize-head group oh nh))
+      (setf (head-x oh) nhx
+            (head-y oh) nhy
+            (head-width oh) nhw
+            (head-height oh) nhh)
+      (dolist (group (screen-groups screen))
+        (group-after-resize-head group oh)))))
 
 (defun scale-screen (screen heads)
   "Scale all frames of all groups of SCREEN to match the dimensions of HEADS."
