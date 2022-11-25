@@ -722,7 +722,7 @@ floating windows onto the stack."
                    (push window previous-floats)
                    (dynamic-mixins:replace-class window 'dynamic-window))
                  (dynamic-group-place-window group head window)
-              finally (map nil #'sync-minor-modes window))
+              finally (sync-minor-modes window))
         (focus-frame group (window-frame master-window))))))
 
 ;;; Handle overflow of both heads and groups
