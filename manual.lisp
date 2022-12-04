@@ -26,6 +26,98 @@
 
 (require :sb-introspect)
 
+(defun format-lambda-list (texinfo-output list)
+  "Print the lambda list LIST to the stream TEXINFO-OUTPUT.  The lambda list is
+printed with only the argument names and types, followed by a list of default
+arguments when applicable.  This function assumes that it is printing within the
+context of a @defun, @deffn, @defmac, or similar.  It is also assumed that 80 is
+the maximum line width."
+  (let ((*print-pretty* nil)
+        (format-string " ~A")
+        (stream texinfo-output)
+        optionals rest keys aux)
+    (declare (ignorable optionals rest keys aux))
+    (macrolet ((with-bind-check
+                   ((var list &optional (argtypes '(&optional &rest &key &aux))
+                         (dispatcher 'dispatch-format))
+                    &body body)
+                 (let ((l (gensym)))
+                   `(let* ((,l ,list)
+                           (,var (car ,l)))
+                      (cond ((member ,var ',argtypes)
+                             (,dispatcher ,var (cdr ,l)))
+                            ((null ,var)
+                             nil)
+                            (t ,@body))))))
+      (labels ((dispatch-format (type list)
+                 (when type
+                   (format stream format-string type)
+                   (case type
+                     ((&optional) (format-optional list))
+                     ((&rest)     (format-rest list))
+                     ((&key)      (format-key list))
+                     ((&aux)      nil)
+                     (otherwise   (format-unknown list)))))
+               (format-key-optional (arg)
+                 (destructuring-bind (name &optional default provided)
+                     (if (atom arg) (list arg) arg)
+                   (format stream format-string name)
+                   (list name default provided)))
+               (format-normal (list &optional in-list)
+                 (with-bind-check (arg list)
+                   (if (listp arg)
+                       (progn
+                         (format stream "(")
+                         (format-normal arg t)
+                         (format stream ")")
+                         (format-normal (cdr list)))
+                       (progn
+                         (format stream
+                                 (if in-list
+                                     "~A"
+                                     format-string)
+                                 arg)
+                         (format-normal (cdr list))))))
+               (format-optional (list)
+                 (with-bind-check (arg list '(&rest &key &aux))
+                   (push (format-key-optional arg) optionals)
+                   (format-optional (cdr list))))
+               (format-rest (list)
+                 (with-bind-check (arg list '(&key &aux))
+                   (format stream format-string arg)
+                   (format-rest (cdr list))))
+               (format-key (list)
+                 (with-bind-check (arg list '(&aux))
+                   (push (format-key-optional arg) keys)
+                   (format-key (cdr list))))
+               (format-unknown (list)
+                 (format stream format-string (car list))
+                 (dispatch-format (cadr list) (cddr list))))
+        (format-normal list)
+        (let* ((opts-keys (append (reverse optionals) (reverse keys)))
+               (len (length (string (caar (sort (copy-seq opts-keys)
+                                                (lambda (a b)
+                                                  (> (length (string (car a)))
+                                                     (length (string (car b))))))))))
+               (argstr (concatenate 'string
+                                    "  ~A~"
+                                    (format nil "~D" (+ 4 len))
+                                    "T"))
+               (valstr (if (> len 46)
+                           "~%      ~S~%"
+                           "~S~%")))
+          (terpri stream)
+          (when opts-keys
+            (format stream "Default Values:~%@verbatim~%")
+            (let ((*print-right-margin* (- 80 (+ 4 len))))
+              (dolist (var opts-keys)
+                (destructuring-bind (name default provided) var
+                  (declare (ignore provided))
+                  (format stream argstr name)
+                  (let ((*print-pretty* t))
+                    (format stream valstr default)))))
+            (format stream "@end verbatim~%")))))))
+
 (defun generate-function-doc (s line)
   (ppcre:register-groups-bind (name) ("^@@@ (.*)" line)
     (let ((fn-name (with-standard-io-syntax
@@ -34,22 +126,21 @@
       (if (fboundp fn-name)
           (let ((fn (fdefinition fn-name))
                 (*print-pretty* nil))
-            (format s "@defun {~A} ~{~A~^ ~}~%~A~&@end defun~%~%"
-                    name
-                    (sb-introspect:function-lambda-list fn)
-                    (documentation fn 'function))
+            (format s "@defun {~A} " name)
+            (format-lambda-list s (sb-introspect:function-lambda-list fn))
+            (format s "~A~&@end defun~%~%" (documentation fn 'function))
             t)
           (warn "Function ~A not found." fn-name)))))
 
 (defun generate-macro-doc (s line)
   (ppcre:register-groups-bind (name) ("^%%% (.*)" line)
-                              (let* ((symbol (find-symbol (string-upcase name) :stumpwm))
-                                     (*print-pretty* nil))
-                                (format s "@defmac {~a} ~{~a~^ ~}~%~a~&@end defmac~%~%"
-                                        name
-                                        (sb-introspect:function-lambda-list (macro-function symbol))
-                                        (documentation symbol 'function))
-                                t)))
+    (let* ((symbol (find-symbol (string-upcase name) :stumpwm))
+           (*print-pretty* nil))
+      (format s "@defmac {~A} " name)
+      (format-lambda-list s (sb-introspect:function-lambda-list
+                             (macro-function symbol)))
+      (format s "~A~&@end defmac~%~%" (documentation symbol 'function))
+      t)))
 
 (defun generate-variable-doc (s line)
   (ppcre:register-groups-bind (name) ("^### (.*)" line)
@@ -70,10 +161,9 @@
     (if-let (symbol (find-symbol (string-upcase name) :stumpwm))
       (let ((cmd (symbol-function symbol))
             (*print-pretty* nil))
-        (format s "@deffn {Command} ~a ~{~a~^ ~}~%~a~&@end deffn~%~%"
-                name
-                (sb-introspect:function-lambda-list cmd)
-                (documentation cmd 'function))
+        (format s "@deffn {Command} ~A " name)
+        (format-lambda-list s (sb-introspect:function-lambda-list cmd))
+        (format s "~A~&@end deffn~%~%" (documentation cmd 'function))
         t)
       (warn "Symbol ~A not found in package STUMPWM" name))))
 
