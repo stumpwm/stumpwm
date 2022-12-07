@@ -494,6 +494,7 @@ T (default) then also focus the frame."
   "Returns a list of frames on a screen not associated with any group.
   These shouldn't exist."
   (let ((adopted-frames (loop for group in (screen-groups screen)
+                              unless (typep group 'float-group)
                               append (group-frames group))))
     (set-difference (screen-frames screen) adopted-frames)))
 
