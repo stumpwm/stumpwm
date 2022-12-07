@@ -63,9 +63,8 @@ area."
                (let ((factors (loop for i from 1 to (1+ wincount)
                                     when (= (mod wincount i) 0)
                                       collect i)))
-                 (cond ((= (length factors) 1) ; prime number
-                        (collect-x-y (1+ wincount)))
-                       ((= (length factors) 2)
+                 (cond ((or (= (length factors) 1) ; prime number
+                            (= (length factors) 2)) 
                         (collect-x-y (1+ wincount)))
                        (t (nthcdr (floor (length factors) 2) factors))))))
       (unless (= wincount 1)
