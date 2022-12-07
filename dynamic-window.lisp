@@ -44,10 +44,6 @@ area."
 
 (defgeneric invoke-expose (group))
 
-(defmethod invoke-expose ((group dynamic-group))
-  (declare (ignore group))
-  (message "Expose is not supported for dynamic groups"))
-
 (defmethod invoke-expose ((group tile-group))
   (funcall *expose-auto-tile-fn* nil
            (current-group (current-screen)))

@@ -1045,6 +1045,9 @@ window. "
           (dynamic-group-add-window group head window)
           (sync-minor-modes window)))))
 
+(defmethod invoke-expose ((group dynamic-group))
+  (declare (ignore group))
+  (message "Expose is not supported for dynamic groups"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Dynamic Group Commands ;;;
