@@ -487,7 +487,9 @@ T (default) then also focus the frame."
 
 (defun screen-frames (screen)
   "Returns a list of all frames associated with any window in a screen"
-  (remove-duplicates (mapcar #'(lambda (window) (window-frame window))
+  (remove-duplicates (mapcan #'(lambda (window)
+                                 (unless (float-window-p window)
+                                   (list window)))
                              (list-windows screen))))
 
 (defmethod group-adopt-orphaned-windows ((group tile-group) &optional (screen (current-screen)))
@@ -500,7 +502,8 @@ T (default) then also focus the frame."
   with group-less frames ~A on screen ~A"
              group orphaned-frames screen))
     (loop for window in (list-windows screen)
-          when (member (window-frame window) orphaned-frames)
+          when (and (not (float-window-p window))
+                    (member (window-frame window) orphaned-frames))
           do (setf (window-frame window) foster-frame))))
 
 (defun find-free-frame-number (group)
