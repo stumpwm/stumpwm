@@ -576,7 +576,9 @@ user aborted."
                                                             (backtrace-string) ""))))))
               (parse-and-run-command cmd))
           (eval-command-error (err-text)
-            :interactive (lambda () nil)
+            :interactive (lambda ()
+                           (format nil "^B^1*Error In Command '^b~a^B'"
+                                   cmd))
             (values err-text t)))
       ;; interactive commands update the modeline
       (update-all-mode-lines)
