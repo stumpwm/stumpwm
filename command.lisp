@@ -579,6 +579,8 @@ user aborted."
             :interactive (lambda ()
                            (list (format nil "^B^1*Error In Command '^b~a^B'"
                                          cmd)))
+            :report (lambda (s)
+                      (format s "Exit command ~S" cmd))
             (values err-text t)))
       ;; interactive commands update the modeline
       (update-all-mode-lines)
