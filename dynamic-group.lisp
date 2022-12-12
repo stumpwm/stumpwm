@@ -60,6 +60,18 @@
 
 (in-package :stumpwm)
 
+(export '(set-dynamic-group-initial-values
+          dynamic-group-p
+          dynamic-group-master-layout
+          dynamic-group-default-split-ratio
+          dynamic-group-head-layout
+          dynamic-group-head-split-ratio
+          dynamic-group-overflow-policy
+          dynamic-group-head-placement-policy
+          *rotation-focus-policy*
+          dyn-blacklist-command
+          dyn-unblacklist-command))
+
 (defmacro swap (a b)
   "Swap the values of A and B using PSETF."
   `(psetf ,a ,b
@@ -1173,6 +1185,7 @@ backward (counterclockwise)"
       ((:b) (rotate-stack-backward g h)))))
 
 (defcommand (swap-windows tile-group) () ()
+  "Exchange two windows"
   (let* ((f1 (progn (message "Select Window One")
                     (choose-frame-by-number (current-group))))
          (f2 (progn (message "Select Window Two")
@@ -1251,6 +1264,7 @@ backward (counterclockwise)"
           (focus-frame group next-head)))))
 
 (defcommand (hprev dynamic-group) () ()
+  "Move focus to the previous head in a dynamic group"
   (let* ((group (current-group))
          (head (current-head))
          (info-alist (reverse (dynamic-group-head-info-alist group)))
@@ -1266,10 +1280,12 @@ backward (counterclockwise)"
           (focus-frame group next-head)))))
 
 (defcommand (fnext-in-head dynamic-group) () ()
+  "Focus the next frame in the current head"
   (let ((group (current-group)))
     (focus-frame-after group (head-frames group (current-head)))))
 
 (defcommand (fprev-in-head dynamic-group) () ()
+  "Focus the previous frame in the current head"
   (let ((group (current-group)))
     (focus-frame-after group (reverse (head-frames group (current-head))))))
 
