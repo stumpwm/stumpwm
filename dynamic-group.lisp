@@ -81,23 +81,59 @@
 (defmethod superfluous-window-p ((window window))
   nil)
 
-;; Class definition is greatly changed. We track more things at the class level
-;; instead of at the object level, and consolidate our layout information and
-;; whatnot into an alist with heads as the keys. We also expand our overflow
-;; policy to live at the class level and add a head placement policy to
-;; determine where new windows should be placed. 
+(defgeneric dynamic-group-validate-slot (value slot))
+
+(defmethod dynamic-group-validate-slot (value (slot (eql 'head-placement-policy)))
+  (typep value '(member :current-frame :first :second :third :fourth :fifth)))
+
+(defmethod dynamic-group-validate-slot (value (slot (eql 'overflow-policy)))
+  (and (listp value)
+       (member (car value) '(:stack-end :stack-beg :new-window :master-window))
+       (member (cadr value) '(:any :ordered :first :second :third :fourth :fifth))
+       (stringp (caddr value))))
+
+(defmethod dynamic-group-validate-slot (value (slot (eql 'master-layout)))
+  (typep value '(member :left :right :top :bottom)))
+
+(defmethod dynamic-group-validate-slot (value (slot (eql 'split-ratio)))
+  (and (numberp value)
+       (> 1 value 0)))
+
+(defmethod dynamic-group-validate-slot (value (slot (eql 'default-split-ratio)))
+  ;; duplicate of split-ratio method, for convenience
+  (and (numberp value)
+       (> 1 value 0)))
+
+(defun set-dynamic-group-initial-values (&key head-placement-policy overflow-policy
+                                           master-layout default-split-ratio)
+  "Set the default initial values for the class allocated slots of dynamic groups.
+These values are used only upon the first instantiation of a dynamic group."
+  (symbol-macrolet ((initial (get 'dynamic-group 'initial-values)))
+    (macrolet ((setwhen (var)
+                 `(when ,var
+                    (if (dynamic-group-validate-slot ,var ',var)
+                        (setf (getf initial ',var) ,var)
+                        (error "Value ~S is not valid for ~A" ,var ',var)))))
+      (setwhen head-placement-policy)
+      (setwhen overflow-policy)
+      (setwhen master-layout)
+      (setwhen default-split-ratio))))
+
+(set-dynamic-group-initial-values
+ :head-placement-policy :current-frame
+ :overflow-policy (list :stack-end :ordered ".Overflow")
+ :master-layout :left
+ :default-split-ratio (/ 2 3))
 
 (define-swm-class dynamic-group (tile-group)
   (;; Class allocated slots
    (head-placement-policy
     :reader dynamic-group-head-placement-policy
-    :initform :current-frame
     :allocation :class
     :documentation "Control which head new windows are placed upon. Valid values
 are :current-frame :first :second :third :fourth and :fifth")
    (overflow-policy
     :reader dynamic-group-overflow-policy
-    :initform (list :stack-end :ordered ".Overflow")
     :allocation :class
     :documentation "Control which window goes where when a head/group cannot
 hold more windows. 
@@ -112,13 +148,11 @@ The CADDR is what group to move the window being removed to in the event that it
 cannot be placed on a head in the group. Possible values are any and all strings.")
    (master-layout
     :reader dynamic-group-master-layout
-    :initform :left
     :allocation :class
     :documentation "The default layout of the master window and window
 stack. Valid values are :left :right :top and :bottom")
    (split-ratio
     :reader dynamic-group-default-split-ratio
-    :initform 2/3
     :allocation :class
     :documentation "The default ratio for the split between the master window
 and the window stack. Valid values are any number between zero and one exclusive.")
@@ -142,9 +176,22 @@ single master window and a window stack."))
 ;; We need an method after initialization in order to set up our head alist with
 ;; the heads present when the group is created.
 
+(defun dynamic-group-initialize-class-allocated (group)
+  "Set dynamic group class allocated slots when unbound"
+  (flet ((setslot (slot &optional (name slot))
+           (unless (slot-boundp group slot)
+             (setf (slot-value group slot)
+                   (getf (get 'dynamic-group 'initial-values)
+                         name)))))
+    (setslot 'head-placement-policy)
+    (setslot 'overflow-policy)
+    (setslot 'master-layout)
+    (setslot 'split-ratio 'default-split-ratio)))
+
 (defmethod initialize-instance :after ((group dynamic-group)
                                        &key &allow-other-keys)
   "Initialize information for all present heads for dynamic groups."
+  (dynamic-group-initialize-class-allocated group)
   (let ((heads (group-heads group)))
     (setf (dynamic-group-head-info-alist group)
           (loop for head in heads
@@ -203,7 +250,7 @@ the layout, master frame, the master window, and the window stack."
 (defmethod (setf dynamic-group-master-layout)
     (new (group dynamic-group) &optional (update-heads :unset))
   ;; Possible values for update-heads are :unset, :all, or :none
-  (if (typep new 'keyword)
+  (if (dynamic-group-validate-slot new 'master-layout)
       (let ((old (slot-value group 'master-layout)))
         (setf (slot-value group 'master-layout) new)
         (unless (eql update-heads :none)
@@ -223,7 +270,7 @@ the layout, master frame, the master window, and the window stack."
 
 (defmethod (setf dynamic-group-default-split-ratio)
     (new (group dynamic-group) &optional (update-heads :unset))
-  (if (> 1 new 0)
+  (if (dynamic-group-validate-slot new 'split-ratio)
       (let ((old (dynamic-group-default-split-ratio group)))
         (setf (slot-value group 'split-ratio) new)
         (unless (eql update-heads :none)
@@ -256,15 +303,12 @@ the layout, master frame, the master window, and the window stack."
       (error "Expected a ratio between zero and one exclusive, but got ~A" new)))
 
 (defmethod (setf dynamic-group-overflow-policy) (new (group dynamic-group))
-  (if (and
-       (member (car new) '(:stack-end :stack-beg :new-window :master-window))
-       (member (cadr new) '(:any :ordered :first :second :third :fourth :fifth))
-       (stringp (caddr new)))
+  (if (dynamic-group-validate-slot new 'overflow-policy)
       (setf (slot-value group 'overflow-policy) new)
       (error "The list ~A is not a valid overflow policy." new)))
 
 (defmethod (setf dynamic-group-head-placement-policy) (new (group dynamic-group))
-  (if (member new '(:current-frame :first :second :third :fourth :fifth))
+  (if (dynamic-group-validate-slot new 'head-placement-policy)
       (setf (slot-value group 'head-placement-policy) new)
       (error "The value ~A is not a valid head placement policy." new)))
 
