@@ -649,6 +649,31 @@ and bottom_end_x."
   "Return a free window number for GROUP."
   (find-free-number (mapcar 'window-number (group-windows group))))
 
+(defun draw-window-numbers (group)
+  "Draw window numbers over every window at the coordinates (0 . 0)."
+  (let ((screen (group-screen group)))
+    (mapcar (lambda (f)
+              (let ((w (xlib:create-window
+                        :parent (screen-root screen)
+                        :x (window-x f)
+                        :y (window-y  f)
+                        :width 1
+                        :height 1
+                        :background (screen-fg-color screen)
+                        :border (screen-border-color screen)
+                        :border-width 1
+                        :event-mask '())))
+                (xlib:map-window w)
+                (setf (xlib:window-priority w) :above)
+                (echo-in-window w (screen-font screen)
+                                (screen-fg-color screen)
+                                (screen-bg-color screen)
+                                (string (format nil "~A" (window-number f))))
+                (xlib:display-finish-output *display*)
+                (dformat 3 "mapped ~S~%" (window-number f))
+                w))
+            (group-windows group))))
+
 (defun reparent-window (screen window)
   ;; apparently we need to grab the server so the client doesn't get
   ;; the mapnotify event before the reparent event. that's what fvwm
