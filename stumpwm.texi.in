@@ -410,8 +410,77 @@ When defining commands, anything restricted to tiling groups will also be
 active in dynamic groups. To fully restrict it to tiling groups, call the
 function dyn-blacklist-command on the command in question.
 
+The head placement policy, overflow policy, master layout, and default
+split ratio of dynamic groups are special in that they can only be
+modified once a dynamic group object has been instantiated. To change
+their initial values the function @code{set-dynamic-group-initial-values}
+can be used to modify these values before instantiating a dynamic group,
+but not after. 
 
-@node Frame Basics, Window Basics, Floating Group Basics, Basic Concepts
+@menu
+* Dynamic Group Index::
+@end menu
+
+@node Dynamic Group Index, Frame Basics, Dynamic Group Basics, Dynamic Group Basics
+@subsection Dynamic Group Index
+Index of exported variables, commands, and functions defined in the
+dynamic group file.
+
+### *rotation-focus-policy*
+
+@@@ set-dynamic-group-initial-values
+
+@@@ dynamic-group-p
+
+@@@ dynamic-group-master-layout
+
+@@@ dynamic-group-head-layout
+
+@@@ dynamic-group-default-split-ratio
+
+@@@ dynamic-group-head-split-ratio
+
+@@@ dynamic-group-overflow-policy
+
+@@@ dynamic-group-head-placement-policy
+
+@@@ dyn-blacklist-command
+
+@@@ dyn-unblacklist-command
+
+!!! gnew-dynamic
+
+!!! gnewbg-dynamic
+
+!!! rotate-windows
+
+!!! rotate-stack
+
+!!! swap-windows
+
+!!! change-layout
+
+!!! change-default-layout
+
+!!! change-split-ratio
+
+!!! change-default-split-ratio
+
+!!! retile
+
+!!! select-floating-window
+
+!!! exchange-window-with-master
+
+!!! hnext
+
+!!! hprev
+
+!!! fnext-in-head
+
+!!! fprev-in-head
+
+@node Frame Basics, Window Basics, Dynamic Group Basics, Basic Concepts
 @subsection Frame Basics
 Frames are the boxes within which windows are displayed. StumpWM
 starts with a single frame per head, meaning that each monitor shows a
