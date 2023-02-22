@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.71])
-AC_INIT([Stump Window Manager],[esyscmd(grep :version stumpwm.asd | cut -d\" -f2 | tr -d \\n)],[dbjergaard@gmail.com])
+AC_INIT([Stump Window Manager],esyscmd(grep :version stumpwm.asd | cut -d\" -f2 | tr -d \\n),[dbjergaard@gmail.com])
 
 AC_SUBST(MODULE_DIR)
 AC_SUBST(LISP_PROGRAM)
