@@ -53,7 +53,7 @@ other color formatters."
 
 (add-screen-mode-line-formatter #\u 'fmt-urgent-window-list)
 (defun fmt-urgent-window-list (ml)
-  "Using `*window-format*', return a 1 line list of the urgent windows, space seperated."
+  "Using `*window-format*', return a 1 line list of the urgent windows, space separated."
   (format nil "~{~a~^ ~}"
           (mapcar (lambda (w)
                     (format-with-on-click-id
@@ -69,7 +69,7 @@ other color formatters."
 
 (add-screen-mode-line-formatter #\w 'fmt-window-list)
 (defun fmt-window-list (ml)
-  "Using *window-format*, return a 1 line list of the windows, space seperated."
+  "Using *window-format*, return a 1 line list of the windows, space separated."
   (format nil "~{~a~^ ~}"
           (mapcar (lambda (w)
                     (format-with-on-click-id 
@@ -185,7 +185,7 @@ fmt-highlight. Any non-visible windows are colored the
 the limits for the levels aren't specified, they default to sensible
 values for a percentage. With reverse, lower numbers are more
 critical."
-  (labels ((past (n) (funcall (if reverse #'<= #'>=) amount n)))
+  (flet ((past (n) (funcall (if reverse #'<= #'>=) amount n)))
     (cond ((past crit) *bar-crit-color*)
           ((past hi) *bar-hi-color*)
           ((past med) *bar-med-color*)
@@ -197,43 +197,68 @@ critical."
 (defun bar (percent width full empty)
   "Return a progress bar string of WIDTH characters composed of characters FULL
   and EMPTY at PERCENT complete."
-  (let ((chars (truncate (* (/ width 100) percent))))
-    (format nil "^[~A~A^]~A" (bar-zone-color percent)
-            (repeat chars full)
-            (repeat (- width chars) empty))))
+  (let ((chars (truncate (* width percent) 100))
+        (color (bar-zone-color percent)))
+    (let ((bar (make-string (+ width (length color)) :initial-element full)))
+      (replace bar color)
+      (fill bar empty :start chars))))
 
-(defvar *alt-prev-index* 0)
-(defvar *alt-prev-time* 0)
+(defun make-string-alternator ()
+  "Returns a function that takes two arguments, `STRINGS' and `PERIOD'.
+Show each of `STRINGS', alternating at most once every `PERIOD' seconds.
+`STRINGS' can either be a string or a callable returning a string."
+  (let ((prev-time 0)
+        (prev-index 0)
+        (prev-string ""))
+    (flet ((alternate (strings period)
+             (let ((now (/ (get-internal-real-time) internal-time-units-per-second)))
+               (when (>= (- now prev-time) period)
+                 (setf prev-time now)
+                 (let ((new-string (elt strings prev-index)))
+                   (setf prev-string
+                         (etypecase new-string
+                           (string new-string)
+                           (function (funcall new-string)))))
+                 (if (< prev-index (1- (length strings)))
+                     (incf prev-index)
+                     (setf prev-index 0)))
+               prev-string)))
+      ;; It'll capture its own lexical bindings of prev-time, prev-index, and prev-string
+      ;; to call alternate with
+      #'alternate)))
 
-;; TODO: Figure out a way to objectify fmt-alternate and fmt-scroll so that
-;; multiple instances can coexist.
-
-(defun alternate (strings period)
+(defmacro alternate (strings period)
   "Show each of STRINGS, alternating at most once every PERIOD seconds."
-  (let ((now (/ (get-internal-real-time) internal-time-units-per-second)))
-    (when (>= (- now *alt-prev-time*) period)
-      (setf *alt-prev-time* now)
-      (if (< *alt-prev-index* (1- (length strings)))
-          (incf *alt-prev-index*)
-          (setf *alt-prev-index* 0))))
-  (elt strings *alt-prev-index*))
+  (let ((alternate (make-string-alternator)))
+    (declare (type function alternate))
+    `(funcall ,alternate ,strings ,period)))
 
-(defvar *scroll-prev-index* 0)
-(defvar *scroll-prev-time* 0)
-(defvar *scroll-prev-dir* :forward)
+(defun make-string-scroller ()
+  "Return a function that takes three arguments, `STRING', `WIDTH', and `DELAY'.
+Scroll `STRING' within the space of `WIDTH' characters, with a step of `DELAY'."
+  (let ((prev-time 0)
+        (prev-index 0)
+        (prev-dir :forward)
+        (prev-string ""))
+    (flet ((scroll (string width delay)
+             (let ((now (/ (get-internal-real-time) internal-time-units-per-second)))
+               (when (>= (- now prev-time) delay)
+                 (setf prev-time now)
+                 (setf prev-string (subseq string prev-index (+ prev-index width)))
+                 (case prev-dir
+                   (:forward
+                    (if (< prev-index (- (length string) width))
+                        (incf prev-index)
+                        (setf prev-dir :backward)))
+                   (:backward
+                    (if (> prev-index 0)
+                        (decf prev-index)
+                        (setf prev-dir :forward)))))
+               prev-string)))
+      #'scroll)))
 
-(defun scroll (string width delay)
+(defmacro scroll (string width delay)
   "Scroll STRING within the space of WIDTH characters, with a step of DELAY"
-  (let ((now (/ (get-internal-real-time) internal-time-units-per-second)))
-    (when (>= (- now *scroll-prev-time*) delay)
-      (setf *scroll-prev-time* now)
-      (case *scroll-prev-dir*
-        (:forward
-         (if (< *scroll-prev-index* (- (length string) width))
-             (incf *scroll-prev-index*)
-             (setf *scroll-prev-dir* :backward)))
-        (:backward
-         (if (> *scroll-prev-index* 0)
-             (decf *scroll-prev-index*)
-             (setf *scroll-prev-dir* :forward))))))
-  (subseq string *scroll-prev-index* (+ *scroll-prev-index* width)))
+  (let ((scroll (make-string-scroller)))
+    (declare (type function scroll))
+    `(funcall ,scroll ,string ,width ,delay)))
