@@ -1,8 +1,8 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.59)
-AC_INIT(Stump Window Manager, esyscmd(grep :version stumpwm.asd | cut -d\" -f2 | tr -d \\n), dbjergaard@gmail.com)
+AC_PREREQ([2.71])
+AC_INIT([Stump Window Manager],esyscmd(grep :version stumpwm.asd | cut -d\" -f2 | tr -d \\n),[dbjergaard@gmail.com])
 
 AC_SUBST(MODULE_DIR)
 AC_SUBST(LISP_PROGRAM)
@@ -57,6 +57,9 @@ to build the manuals. Please install makeinfo for the manual.])
 fi
 
 AC_SUBST([MAKEINFO])
-AC_OUTPUT(Makefile)
-AC_OUTPUT(make-image.lisp)
-AC_OUTPUT(load-stumpwm.lisp)
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
+AC_CONFIG_FILES([make-image.lisp])
+AC_OUTPUT
+AC_CONFIG_FILES([load-stumpwm.lisp])
+AC_OUTPUT
