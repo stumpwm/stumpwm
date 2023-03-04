@@ -64,9 +64,9 @@
     (#\B time-month-name)
     (#\c time-date-and-time)
     (#\C time-century)
-    (#\d time-day-of-month)
+    (#\d time-day-of-month-zero)
     (#\D time-date)
-    (#\e time-day-of-month-zero)
+    (#\e time-day-of-month)
     (#\F time-date-full)
     ;; (#\g)   last two digits of year of ISO week number (see %G)
     ;; (#\G)   year of ISO week  number (see %V); normally useful only with %V
