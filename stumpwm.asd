@@ -76,6 +76,5 @@
   :entry-point "stumpwm:main"
   :components ((:file "main")))
 
-;;; Explicitly load the vendored dynamic mixins asd file
-(asdf:load-asd
- (asdf:system-relative-pathname "stumpwm" "dynamic-mixins/dynamic-mixins.asd"))
+;; Quicklisp prefers systems in the central registry over its own systems
+(push (asdf:system-relative-pathname "stumpwm" "dynamic-mixins/") asdf:*central-registry*)
