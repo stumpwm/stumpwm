@@ -649,7 +649,13 @@ the window in it's frame."
       ((setf win (find-window-by-parent window (top-windows)))
        ;; The click happened on the parent window, so the coordinates are
        ;; correct.
-       ))
+       )
+      ((and child (setf win (find-window-by-parent child (top-windows))))
+       ;; The click happened on the parent window but was received by
+       ;; the root window, since the parent window does not grab
+       ;; buttons (see commit d5230923 for details).
+       (setf x (- x (xlib:drawable-x child))
+             y (- y (xlib:drawable-y child)))))
     (cond
       ((and screen (not child))
        (group-button-press (screen-current-group screen) button x y :root)
