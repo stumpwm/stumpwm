@@ -211,7 +211,7 @@ run this command to make StumpWM notice the change."
         (dlsave (if (getf (time-plist) :dlsavings-p) 1 0)))
     (multiple-value-bind (hour-local decimal-local)
       (truncate (+ (* (float tz) -1)
-                   (if dlsave 1 0)))
+                   dlsave))
       (format nil "~A~2,'0D~2,'0D"
               (if (> hour-local 0) '+ '-)
               (abs hour-local)
