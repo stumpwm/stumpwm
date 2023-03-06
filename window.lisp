@@ -805,12 +805,11 @@ and bottom_end_x."
   "Any time *top-map* is modified this must be called."
   (loop for i in *screen-list*
         do (xwin-ungrab-keys (screen-focus-window i))
-        do (loop for j in (screen-mapped-windows i)
+           (loop for j in (screen-mapped-windows i)
                  do (xwin-ungrab-keys j))
-        do (xlib:display-finish-output *display*)
-        do (loop for j in (screen-mapped-windows i)
+           (loop for j in (screen-mapped-windows i)
                  do (xwin-grab-keys j (window-group (find-window j))))
-        do (xwin-grab-keys (screen-focus-window i) (screen-current-group i)))
+           (xwin-grab-keys (screen-focus-window i) (screen-current-group i)))
   (when (current-window)
     (remap-keys-grab-keys (current-window)))
   (xlib:display-finish-output *display*))
