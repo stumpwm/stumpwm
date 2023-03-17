@@ -181,7 +181,7 @@
     (setf (tile-group-frame-tree group)
           (insert-before (tile-group-frame-tree group)
                          (copy-frame head)
-                         (head-number head)))
+                         (position head (group-heads group))))
     ;; Try to put something in the new frame and give it an unused number
     (let ((frame (tile-group-frame-head group head)))
       (setf (frame-number frame) new-frame-num)
