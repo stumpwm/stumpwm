@@ -1075,7 +1075,7 @@ Does not trim if `TRIM-COUNT' is nil, and returns the empty string if it is zero
                     ;; If that fails, /then/ you have an error.
                     (etypecase result
                       (string result)
-                      (atom (string result))
+                      (atom (write-to-string result :escape nil))
                       (list (apply #'uiop:strcat result))))
                   trim-count trim-end-p)))
              ;; Separated so it can be run in the initially clause.
