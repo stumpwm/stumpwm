@@ -494,14 +494,14 @@ return NIL. RATIO is a fraction to split by."
   (cond ((typep window 'float-window)
          (call-next-method)) 
         ((eq frame :float)
-         (dynamic-mixins:replace-class window 'float-window)
+         (dynamic-mixins-swm:replace-class window 'float-window)
          (float-window-align window)
          (sync-minor-modes window)
          (when raise (group-focus-window group window)))
         (t ; if were not dealing with a floating window
          (let ((head (choose-head-from-placement-policy group)))
            ;; keep all calls to change-class in the same place.x
-           (dynamic-mixins:replace-class window 'dynamic-window) 
+           (dynamic-mixins-swm:replace-class window 'dynamic-window) 
            ;; (change-class window 'dynamic-window) 
            (dynamic-group-add-window group head window)
            (sync-minor-modes window)))))
@@ -776,7 +776,7 @@ floating windows onto the stack."
               for window in windows
               do (when (float-window-p window)
                    (push window previous-floats)
-                   (dynamic-mixins:replace-class window 'dynamic-window))
+                   (dynamic-mixins-swm:replace-class window 'dynamic-window))
                  (dynamic-group-place-window group head window))
         (map nil 'sync-minor-modes windows)
         (focus-frame group (window-frame master-window))))))
@@ -1084,7 +1084,7 @@ window. "
       (message "Window ~A is already a floating window." window)
       (progn
         (group-delete-window group window)
-        (dynamic-mixins:replace-class window 'float-window)
+        (dynamic-mixins-swm:replace-class window 'float-window)
         ;; (change-class window 'float-window)
         (float-window-align window)
         (sync-minor-modes window)
@@ -1096,7 +1096,7 @@ window. "
       (message "Window ~A is already a dynamic window." window)
       (progn
         (let ((head (window-head window)))
-          (dynamic-mixins:replace-class window 'dynamic-window)
+          (dynamic-mixins-swm:replace-class window 'dynamic-window)
           ;; (change-class window 'dynamic-window)
           (dynamic-group-add-window group head window)
           (sync-minor-modes window)))))

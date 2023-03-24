@@ -1,4 +1,4 @@
-(in-package :dynamic-mixins)
+(in-package :dynamic-mixins-swm)
 
 (defvar *dynamic-mix-classes* (make-hash-table :test 'equal))
 

@@ -17,7 +17,7 @@
                #:clx
                #:sb-posix
                #:sb-introspect
-               #:dynamic-mixins)
+               #:dynamic-mixins-swm)
   :components ((:file "package")
                (:file "debug")
                (:file "primitives")

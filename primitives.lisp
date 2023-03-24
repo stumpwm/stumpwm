@@ -610,8 +610,8 @@ upon the class and replaces it. If SUPERCLASSES is NIL then (SWM-CLASS) is used.
   (unless superclasses (setq superclasses '(swm-class)))
   `(progn
      (defclass ,class-name ,superclasses ,slots ,@options)
-     (defmethod dynamic-mixins:replace-class ((object ,class-name) new &rest r)
-       (apply #'dynamic-mixins:replace-class-in-mixin
+     (defmethod dynamic-mixins-swm:replace-class ((object ,class-name) new &rest r)
+       (apply #'dynamic-mixins-swm:replace-class-in-mixin
               object new ',class-name r))))
 
 (define-swm-class frame ()
