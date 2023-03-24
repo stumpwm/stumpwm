@@ -173,7 +173,6 @@ StumpWM universe (in no particular order):
     implement the above features, then export the data back to stumpwm
     and let stumpwm perform the appropriate actions 
 * Emacs' completing-read-multiple function
-* Dynamic tiling
 * Lock Screen (with support for leaving notes, bonus points if emacs
   is involved)
 * Wallpapers! (support pulling from remote sources, changing based on

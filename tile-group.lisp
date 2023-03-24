@@ -181,7 +181,7 @@
     (setf (tile-group-frame-tree group)
           (insert-before (tile-group-frame-tree group)
                          (copy-frame head)
-                         (head-number head)))
+                         (position head (group-heads group))))
     ;; Try to put something in the new frame and give it an unused number
     (let ((frame (tile-group-frame-head group head)))
       (setf (frame-number frame) new-frame-num)
@@ -1095,26 +1095,27 @@ desktop when starting."
   "Draw the number of each frame in its corner. Return the list of
 windows used to draw the numbers in. The caller must destroy them."
   (let ((screen (group-screen group)))
-    (mapcar (lambda (f)
-              (let ((w (xlib:create-window
-                        :parent (screen-root screen)
-                        :x (frame-display-x group f)
-                        :y (frame-display-y group f)
-                        :width 1 :height 1
-                        :background (screen-fg-color screen)
-                        :border (screen-border-color screen)
-                        :border-width 1
-                        :event-mask '())))
-                (xlib:map-window w)
-                (setf (xlib:window-priority w) :above)
-                (echo-in-window w (screen-font screen)
-                                (screen-fg-color screen)
-                                (screen-bg-color screen)
-                                (string (get-frame-number-translation f)))
-                (xlib:display-finish-output *display*)
-                (dformat 3 "mapped ~S~%" (frame-number f))
-                w))
-            (group-frames group))))
+    (prog1
+        (mapcar (lambda (f)
+                  (let ((w (xlib:create-window
+                            :parent (screen-root screen)
+                            :x (frame-display-x group f)
+                            :y (frame-display-y group f)
+                            :width 1 :height 1
+                            :background (screen-fg-color screen)
+                            :border (screen-border-color screen)
+                            :border-width 1
+                            :event-mask '())))
+                    (xlib:map-window w)
+                    (setf (xlib:window-priority w) :above)
+                    (echo-in-window w (screen-font screen)
+                                    (screen-fg-color screen)
+                                    (screen-bg-color screen)
+                                    (string (get-frame-number-translation f)))
+                    (dformat 3 "mapped ~S~%" (frame-number f))
+                    w))
+                (group-frames group))
+      (xlib:display-finish-output *display*))))
 
 (defmacro save-frame-excursion (&body body)
   "Execute body and then restore the current frame."
