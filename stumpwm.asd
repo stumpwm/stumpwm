@@ -4,9 +4,6 @@
   (:use :cl :asdf))
 (in-package :stumpwm-system)
 
-;; Quicklisp prefers systems in the central registry over its own systems
-(push (asdf:system-relative-pathname "stumpwm" "dynamic-mixins/") asdf:*central-registry*)
-
 (defsystem :stumpwm
   :name "StumpWM"
   :author "Shawn Betts <sabetts@vcn.bc.ca>"
@@ -78,3 +75,6 @@
   :build-pathname "stumpwm"
   :entry-point "stumpwm:main"
   :components ((:file "main")))
+
+;; Quicklisp prefers systems in the central registry over its own systems
+(push (asdf:system-relative-pathname "stumpwm" "dynamic-mixins/") asdf:*central-registry*)
