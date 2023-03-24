@@ -363,14 +363,14 @@ modes are enabled in them, then nullify the list of objects."
 (defun replace-class-and-sync (object new-class &rest initargs)
   "Replaces the main class in OBJECT with the new class, and then syncs all minor
 modes."
-  (apply #'dynamic-mixins:replace-class object new-class initargs)
+  (apply #'dynamic-mixins-swm:replace-class object new-class initargs)
   (sync-minor-modes object))
 
 (defun list-modes (object)
   "List all minor modes followed by the major mode for OBJECT."
   (sync-all-minor-modes)
-  (when (typep object 'dynamic-mixins:mixin-object)
-    (mapcar #'class-name (dynamic-mixins:mixin-classes (class-of object)))))
+  (when (typep object 'dynamic-mixins-swm:mixin-object)
+    (mapcar #'class-name (dynamic-mixins-swm:mixin-classes (class-of object)))))
 
 (defun list-minor-modes (object)
   "List all minor modes active in OBJECT"
@@ -642,7 +642,7 @@ ROOT-MAP-SPEC."
                          ;; conforms to that type.
                          `((typep obj ',(third optarg))))
                      (enable-when mode obj))
-            (prog1 (dynamic-mixins:ensure-mix obj ',mode)
+            (prog1 (dynamic-mixins-swm:ensure-mix obj ',mode)
               (handler-bind ((minor-mode-hook-error
                                (lambda (c)
                                  (let ((r (find-restart 'continue c)))
@@ -658,7 +658,7 @@ ROOT-MAP-SPEC."
                                (when r
                                  (invoke-restart r))))))
             (run-hook-for-minor-mode #'minor-mode-disable-hook ',mode obj t))
-          (dynamic-mixins:delete-from-mix obj ',mode)))))
+          (dynamic-mixins-swm:delete-from-mix obj ',mode)))))
 
   (defun genlighter (mode lighter)
     (cond ((null lighter)

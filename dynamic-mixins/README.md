@@ -1,3 +1,7 @@
+# StumpWM
+
+This is a vendored version of Dynamic Mixins, vendored for StumpWM.
+
 # dynamic-mixins
 
 Dynamic-mixins is for simple, dynamic class combination:
