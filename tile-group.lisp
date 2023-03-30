@@ -73,14 +73,14 @@
   (cond ((typep window 'float-window)
          (call-next-method))
         ((eq frame :float)
-         (dynamic-mixins:replace-class window 'float-window)
+         (dynamic-mixins-swm:replace-class window 'float-window)
          ;; (change-class-preserving-minor-modes window 'float-window)
          (float-window-align window)
          (sync-minor-modes window)
          (when raise
            (group-focus-window group window)))
         (t
-         (dynamic-mixins:replace-class window 'tile-window)
+         (dynamic-mixins-swm:replace-class window 'tile-window)
          ;; (change-class-preserving-minor-modes window 'tile-window)
          ;; (change-class window 'tile-window)
          ;; Try to put the window in the appropriate frame for the group.
@@ -1534,7 +1534,7 @@ direction. The following are valid directions:
 
 (defun tile-group-unfloat-window (window group)
   (let ((frame (closest-frame window group)))
-    (dynamic-mixins:replace-class window 'tile-window :frame frame)
+    (dynamic-mixins-swm:replace-class window 'tile-window :frame frame)
     ;; (change-class window 'tile-window :frame frame)
     (setf (window-frame window) frame
           (frame-window frame) window
@@ -1550,7 +1550,7 @@ direction. The following are valid directions:
 
 (defun tile-group-float-window (window group)
   (let ((frame (tile-group-current-frame group)))
-    (dynamic-mixins:replace-class window 'float-window)
+    (dynamic-mixins-swm:replace-class window 'float-window)
     ;; (change-class window 'float-window)
     (float-window-align window)
     (update-decoration window)

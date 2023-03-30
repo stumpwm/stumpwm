@@ -1,9 +1,9 @@
-(defpackage :dynamic-mixins.asdf
+(defpackage :dynamic-mixins-swm.asdf
   (:use #:cl #:asdf))
 
-(in-package :dynamic-mixins.asdf)
+(in-package :dynamic-mixins-swm.asdf)
 
-(defsystem :dynamic-mixins
+(defsystem :dynamic-mixins-swm
   :description "Simple dynamic class mixing without manual permutations"
   :author "Ryan Pavlik"
   :license "BSD-2-Clause"

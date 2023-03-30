@@ -1,4 +1,4 @@
-(in-package :dynamic-mixins)
+(in-package :dynamic-mixins-swm)
 
 (defgeneric replace-class-in-mixin (object new-class old-class &rest initargs)
   (:method ((object standard-object) n o &rest rest)
