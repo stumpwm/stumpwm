@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -e
+pushd tests/integration-tests
+./script ci
+popd
+docker run -u root -w /root/stumpwm "$(cat tests/integration-tests/test-runner.iid)" make test

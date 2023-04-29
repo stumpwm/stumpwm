@@ -1,6 +1,42 @@
 (in-package #:cl-user)
 
-(load "load-stumpwm.lisp")
+(let* ((expected-warnings
+        '((sb-kernel:redefinition-with-defgeneric . 1)
+          (sb-kernel:redefinition-with-defun . 14)
+          (sb-kernel:redefinition-with-defmethod . 1)
+          (uiop/lisp-build:compile-warned-warning . 1)
+          (sb-int:type-style-warning . 1)
+          (sb-kernel:redefinition-with-defmacro . 32)
+          (sb-c::unknown-typep-note . 7)))
+       (actual-warnings
+        (mapcar (lambda (x) (cons (car x) 0)) expected-warnings))
+       (in-ci (< 0 (length (sb-ext:posix-getenv "STUMPWM_CI"))))
+       ;; Synchronize with variable sbcl_version in
+       ;; tests/integration-tests/container-scripts/install-deps
+       (expected-sbcl-version-in-ci "2.2.10")
+       (on-ci-version
+        (equal expected-sbcl-version-in-ci (lisp-implementation-version)))
+       (handler (lambda (condition)
+                  (let ((condition-type (type-of condition)))
+                    (or (assoc condition-type actual-warnings)
+                        (push (cons condition-type 0) actual-warnings))
+                    (incf (cdr (assoc condition-type actual-warnings)))
+                    (format t "~A: ~A~%" condition-type condition)))))
+  (handler-bind
+      ((warning handler)
+       (sb-ext:code-deletion-note handler)
+       (sb-ext:compiler-note handler))
+    (load "load-stumpwm.lisp"))
+  (when in-ci
+    (when (not on-ci-version)
+      (error "Unexpected SBCL version when running in CI"))
+    (let ((warning-types (mapcar #'car actual-warnings)))
+      (dolist (warning-type warning-types)
+        (let ((expected (or (cdr (assoc warning-type expected-warnings)) 0))
+              (actual (cdr (assoc warning-type actual-warnings))))
+          (when (/= expected actual)
+            (error "Expected ~S warnings of type ~S but actual number was ~S."
+                   expected warning-type actual)))))))
 
 (stumpwm:set-module-dir "@MODULE_DIR@")
 

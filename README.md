@@ -140,6 +140,8 @@ that your contribution gets merged in a timely manner:
     informed on stumpwm-devel! Also, it will probably help if the
     changes are made and then incrementally applied to the codebase in
     order to avoid introducing show-stopping bugs.
+  * Run `./ci` before making a pull request to confirm that the GitHub
+    workflow will succeed.
 * Do not's
   * Include Emacs local variables
   * Change whitespace 

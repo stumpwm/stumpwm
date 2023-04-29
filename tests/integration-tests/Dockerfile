@@ -1,5 +1,7 @@
 FROM ubuntu:20.04
 
+ARG STUMPWM_CI=yes
+
 USER root
 WORKDIR /root
 

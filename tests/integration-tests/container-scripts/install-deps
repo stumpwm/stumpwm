@@ -1,19 +1,25 @@
 #!/bin/bash
 set -e
 
-sbcl_version=2.2.7
+sbcl_version=2.2.10 # Synchronize with variable expected-sbcl-version-in-ci in ../../../make-image.lisp.in
 
 export DEBIAN_FRONTEND=noninteractive
 apt-get -qy update
 apt-get -qy install curl build-essential autoconf git bzip2 make farbfeld netpbm procps x11-apps x11-xserver-utils xdotool xvfb xterm
 rm -rf /var/lib/apt/lists/*
 
-curl -L https://downloads.sourceforge.net/project/sbcl/sbcl/${sbcl_version}/sbcl-${sbcl_version}-x86-64-linux-binary.tar.bz2 | tar xjf -
+curl -LO https://downloads.sourceforge.net/project/sbcl/sbcl/${sbcl_version}/sbcl-${sbcl_version}-x86-64-linux-binary.tar.bz2
+curl -LO https://beta.quicklisp.org/quicklisp.lisp
+sha256sum -c - <<EOF
+7dde88ec2db3ca1012aa158366c3794a6170cf012e321a19339d422aa9309af6  sbcl-2.2.10-x86-64-linux-binary.tar.bz2
+4a7a5c2aebe0716417047854267397e24a44d0cce096127411e9ce9ccfeb2c17  quicklisp.lisp
+EOF
+
+tar xjf sbcl-${sbcl_version}-x86-64-linux-binary.tar.bz2
 cd sbcl-${sbcl_version}-x86-64-linux
 ./install.sh
 cd ..
 
-curl -O https://beta.quicklisp.org/quicklisp.lisp
 sbcl --load quicklisp.lisp --eval "(quicklisp-quickstart:install)"
 sbcl --load "/root/quicklisp/setup.lisp"  --eval "(progn (setf ql-util::*do-not-prompt* t)(ql:add-to-init-file))"
 sbcl --eval "(progn (ql:quickload '(clx cl-ppcre alexandria fiasco)))"
