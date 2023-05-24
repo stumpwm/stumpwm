@@ -92,7 +92,10 @@ other color formatters."
                            str))
                      :ml-on-click-switch-to-group
                      (group-name g)))
-                  (sort-groups (group-screen (mode-line-current-group ml))))))
+                  (let ((groups (sort-groups (group-screen (mode-line-current-group ml)))))
+                    (if *list-hidden-groups*
+                        groups
+                        (non-hidden-groups groups))))))
 
 (add-screen-mode-line-formatter #\h 'fmt-head)
 (defun fmt-head (ml)
