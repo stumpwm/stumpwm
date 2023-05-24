@@ -277,6 +277,7 @@ When NEW-ON-BOTTOM-P is non-nil, new messages are queued at the bottom."
 (defun echo-string-list (screen strings &rest highlights)
   "Draw each string in l in the screen's message window. HIGHLIGHT is
   the nth entry to highlight."
+  (setf highlights (delete nil highlights))
   (when strings
     (when *queue-messages-p*
       (multiple-value-bind (combined-strings combined-highlights)
