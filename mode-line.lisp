@@ -354,11 +354,14 @@ timer.")
 (defun refresh-colors-for-modeline (screen head)
   "Set the colors for the modeline to the currently set values then redraw"
   (let* ((ml (head-mode-line head))
-         (cc (mode-line-cc ml)))
+         (cc (mode-line-cc ml))
+         (win (mode-line-window ml)))
     (setf (ccontext-default-bg cc)
           (alloc-color screen *mode-line-background-color*))
     (setf (ccontext-default-fg cc)
           (alloc-color screen *mode-line-foreground-color*))
+    (setf (xlib:window-background win)
+          (alloc-color screen *mode-line-background-color*))
     (redraw-mode-line ml t)))
 
 ;;; Registering mode line clickable areas
