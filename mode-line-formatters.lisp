@@ -204,7 +204,7 @@ critical."
         (color (bar-zone-color percent)))
     (let ((bar (make-string (+ width (length color)) :initial-element full)))
       (replace bar color)
-      (fill bar empty :start chars))))
+      (fill bar empty :start (+ chars (length color))))))
 
 (defun make-string-alternator ()
   "Returns a function that takes two arguments, `STRINGS' and `PERIOD'.
