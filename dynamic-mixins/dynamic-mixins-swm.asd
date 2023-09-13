@@ -15,4 +15,5 @@
 
   :components
   ((:file "package")
+   (:file "sorting")
    (:file "dynamic-mixins")))

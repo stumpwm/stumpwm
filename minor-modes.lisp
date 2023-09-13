@@ -601,7 +601,9 @@ ROOT-MAP-SPEC."
               (:enable-when            . t)
               (:make-hooks             . 1)
               (:default-initargs       . t)
-              (:define-command-definer . 1)))
+              (:define-command-definer . 1)
+              (:mix-before             . t)
+              (:mix-after              . t)))
           (all-vals '())
           (other-opts '()))
       (flet ((collect-values (option)
@@ -1017,6 +1019,24 @@ are active only when the minor mode is active. Commands defined with this macro
 have the special variable *MINOR-MODE* bound to the minor mode object in their
 body. The generated macro is called DEFINE-MODE-COMMAND. This option defaults to
 T.
+
+@item
+(:MIX-BEFORE &REST RULES)@*
+The :MIX-BEFORE option defines rules on the order this class should be mixed in
+relative to other minor modes. This allows the implementer of a minor mode to
+make the mixing process aware of dependencies that dont otherwise make sense as
+a class hierarchy; If minor modes FOO and BAR both define around methods for the
+same method, but FOO's method must be called first, FOO can add a rule stating
+that it must come before BAR in the mixin list. RULES must be a set of conses
+which have the form (SYMBOL-DESIGNATOR . PACKAGE-DESIGNATOR). SYMBOL-DESIGNATOR
+must be a valid argument to #'STRING, and PACKAGE-DESIGNATOR must be a valid
+argument to #'FIND-PACKAGE. Together these shall form a single symbol which
+should be the class name of the minor mode being referred to by the rule.
+
+@item
+(:MIX-AFTER &REST RULES)@*
+The :MIX-AFTER option is similar to the :MIX-BEFORE option, except it specifies
+classes that this minor mode should occur after in the mixin list.
 @end itemize
 
 Example:
@@ -1043,7 +1063,7 @@ Example:
     (destructuring-bind (&key top-map root-map (expose-keymaps t) rebind
                            lighter lighter-make-clickable lighter-on-click
                            (scope :unscoped) interactive global
-                           (enable-when nil ewpp) 
+                           (enable-when nil ewpp) mix-before mix-after
                            (make-hooks t) (define-command-definer t)
                            default-initargs)
         mm-opts
@@ -1087,6 +1107,18 @@ Example:
               ,@slots)
              (:default-initargs ,@default-initargs)
              ,@other-opts)
+
+           ,@(when (or mix-after mix-before)
+               (flet ((mkc (s)
+                        (list 'cons (car s) (cdr s))))
+                 (let ((mix-a (mapcar #'mkc mix-after))
+                       (mix-b (mapcar #'mkc mix-before)))
+                   ;; Convert to explicit #'CONS calls to allow destructive
+                   ;; modification of data at runtime.
+                   `((dynamic-mixins-swm::set-rule ',mode
+                                                   (list ,@mix-b)
+                                                   (list ,@mix-a))))))
+           
            ,(if global 
                 `(defmethod minor-mode-global-p ((mode (eql ',mode))) t)
                 `(let ((method (ignore-errors
