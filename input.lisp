@@ -173,6 +173,7 @@ and complete the input by mutating it."))
     (define-key map (kbd "C-Y") 'input-yank-clipboard)
     (define-key map (kbd "C-v") 'input-yank-clipboard)
     (define-key map (kbd "TAB") 'input-complete-forward)
+    (define-key map (kbd "C-i") 'input-complete-forward)
     (define-key map (kbd "ISO_Left_Tab") 'input-complete-backward)
     (define-key map t 'input-self-insert)
     map)
@@ -348,7 +349,6 @@ passed the substring to complete on and is expected to return a list
 of matches. If require-match argument is non-nil then the input must
 match with an element of the completions."
   (check-type completions (or list function symbol))
-  
   (let ((line (read-one-line screen prompt
                              :completions completions
                              :initial-input initial-input
