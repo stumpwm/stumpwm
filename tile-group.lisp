@@ -356,6 +356,7 @@
                (let* ((head-y (frame-y head))
                       (rel-y (- y head-y)))
                  (+ (* rel-y (mode-line-factor ml))
+                    head-y
                     (case (mode-line-position ml)
                       (:top (mode-line-height ml))
                       (:bottom 0))))
