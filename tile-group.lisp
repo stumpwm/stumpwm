@@ -169,8 +169,8 @@
   (when (typep where 'float-window)
     (call-next-method))
   (when (member *mouse-focus-policy* '(:click :sloppy))
-    (focus-all where)
     (unless (scroll-button-keyword-p button)
+      (focus-all where)
       (update-all-mode-lines))))
 
 (defmethod group-root-exposure ((group tile-group))
