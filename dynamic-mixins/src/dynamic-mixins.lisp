@@ -33,12 +33,16 @@ instance; further elements must be class names or classes."
                    (slot-value (class-of object-or-class) 'classes))
                   (t (list (class-of object-or-class))))))
     (make-mix-list
-     :list (remove-duplicates
-            (append (mapcar #'%find-class class-list)
-                    class0)))))
+     :list (sort (remove-duplicates
+                  (append (mapcar #'%find-class class-list)
+                          class0))
+                 'symbol-before-p
+                 :key 'class-name))))
 
 (defun mix (&rest classes)
-  (make-mix-list :list (remove-duplicates (mapcar #'%find-class classes))))
+  (make-mix-list :list (sort (remove-duplicates (mapcar #'%find-class classes))
+                             'symbol-before-p
+                             :key 'class-name)))
 
 (defun set-superclasses (class list)
   (reinitialize-instance class :direct-superclasses list))
