@@ -168,15 +168,16 @@
   (declare (ignore x y))
   (when (typep where 'float-window)
     (call-next-method))
-  (case *mouse-focus-policy*
-    (:sloppy
-      (focus-all where)
-      (unless (scroll-button-keyword-p button)
-        (update-all-mode-lines)))
-    (:click
-      (unless (scroll-button-keyword-p button)
-        (focus-all where)
-        (update-all-mode-lines)))))
+  (let ((last-focused (current-window)))
+    (case *mouse-focus-policy*
+      (:sloppy
+        (focus-all where))
+      (:click
+        (unless (scroll-button-keyword-p button)
+          (focus-all where))))
+    (unless (or (scroll-button-keyword-p button)
+                (eq last-focused (current-window)))
+      (update-all-mode-lines))))
 
 (defmethod group-root-exposure ((group tile-group))
   (show-frame-outline group nil))
