@@ -988,7 +988,11 @@ needed."
                             ;; entirely clear that this is the correct
                             ;; value for time that we send here.
                             (or *current-event-time* 0))
-       (update-mode-lines (window-screen window))
+       (when (or (member "%W" *screen-mode-line-format* :test #'search)
+                 (member "%w" *screen-mode-line-format* :test #'search)
+                 (member "%v" *screen-mode-line-format* :test #'search)
+                 (member "%u" *screen-mode-line-format* :test #'search))
+         (update-mode-lines (window-screen window)))
        (run-hook-with-args *focus-window-hook* window cw))
       (t
        (screen-set-focus screen window)
@@ -998,7 +1002,11 @@ needed."
          (update-decoration cw))
        ;; Move the window to the head of the mapped-windows list
        (move-window-to-head group window)
-       (update-mode-lines (window-screen window))
+       (when (or (member "%W" *screen-mode-line-format* :test #'search)
+                 (member "%w" *screen-mode-line-format* :test #'search)
+                 (member "%v" *screen-mode-line-format* :test #'search)
+                 (member "%u" *screen-mode-line-format* :test #'search))
+         (update-mode-lines (window-screen window)))
        (run-hook-with-args *focus-window-hook* window cw)))))
 
 (defun xwin-kill (window)
