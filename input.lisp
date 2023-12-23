@@ -25,6 +25,7 @@
 
 (export '(*input-history-ignore-duplicates*
           *input-candidate-selected-hook*
+          *input-refine-candidates-fn*
           *input-completion-style*
           *input-map*
           *numpad-map*
