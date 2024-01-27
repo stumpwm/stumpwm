@@ -475,7 +475,7 @@ T (default) then also focus the frame."
   "Return a copy of the frame tree."
   (cond ((null tree) tree)
         ((typep tree 'frame)
-         (copy-structure tree))
+         (copy-frame tree))
         (t
          (mapcar #'copy-frame-tree tree))))
 
