@@ -1323,7 +1323,8 @@ add rules")
 
 (defmacro define-frame-preference (target-group &body frame-rules)
   "Create a rule that matches windows and automatically places them in
-a specified group and frame. Each frame rule is a lambda list:
+a specified group and frame or converts them to floating windows. Each
+frame rule is a lambda list:
 @example
 \(frame-number raise lock &key from-group create restore dump-name class class-not
 instance instance-not type type-not role role-not title title-not
@@ -1336,7 +1337,9 @@ When nil, rule applies in the current group. When non nil, @var{lock} determines
 applicability of rule
 
 @item frame-number
-The frame number to send matching windows to
+The frame number to send matching windows to. If set to :float instead of a
+frame number, the window will be converted to a floating window. This is
+convenient for applications that should be launched as pop-ups.
 
 @item raise
 When non-nil, raise and focus the window in its frame
