@@ -564,7 +564,7 @@ T (default) then also focus the frame."
 If ratio is an integer return the number of pixel desired."
   (if (integerp ratio)
       ratio
-      (* length ratio)))
+      (round (* length ratio))))
 
 (defun funcall-on-leaf (tree leaf fn)
   "Return a new tree with LEAF replaced with the result of calling FN on LEAF."
