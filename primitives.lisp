@@ -771,7 +771,7 @@ exist, in which case they go into the current group.")
 (defvar *window-number-map* "0123456789"
   "Set this to a string to remap the window numbers to something more convenient.")
 
-(defvar *group-number-map* "1234567890"
+(defvar *group-number-map* "123456789"
   "Set this to a string to remap the group numbers to something more convenient.")
 
 (defvar *frame-number-map* "0123456789abcdefghijklmnopqrstuvwxyz"
