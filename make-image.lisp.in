@@ -1,3 +1,5 @@
+(require :uiop)
+
 (in-package #:cl-user)
 
 (let* ((expected-warnings
