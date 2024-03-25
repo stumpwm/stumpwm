@@ -1253,14 +1253,18 @@ formatting. This is a simple wrapper around the command @command{windowlist}."
 
 (defcommand-alias insert window-send-string)
 
-(defcommand mark () ()
-"Toggle the current window's mark."
-  (let ((win (current-window)))
-    (when win
-      (setf (window-marked win) (not (window-marked win)))
+(defcommand mark (&optional (win (current-window)) (message t)) ()
+"Toggle a window's mark. The optional argument WIN controls which window is
+marked and defaults to the current window. The optional argument MESSAGE
+controls whether or not to display a message to the user indicating that WIN has
+been marked, and defaults to T."
+  (when win
+    (setf (window-marked win) (not (window-marked win)))
+    (when message
       (message (if (window-marked win)
-                   "Marked!"
-                   "Unmarked!")))))
+                   "^3~A^n Marked!"
+                   "^3~A^n Unmarked!")
+               (format-expand *window-formatters* *window-format* win)))))
 
 (defcommand clear-window-marks (&optional (group (current-group)) (windows (group-windows group))) ()
 "Clear all marks in the current group."
