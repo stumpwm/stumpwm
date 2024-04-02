@@ -2542,7 +2542,7 @@ minor mode scoped to @code{:GROUP} cant be a subclass of a minor mode
 scoped to @code{:WINDOW}, for example. However there is a way to
 override this by explicitly stating that two otherwise incompatible
 scopes are compatible. This is done by defining methods for the generic
-function @code{VALIDATE-SUPERSCOPE} which dispatch upon the scope
+function @code{VALIDATE-SUPERSCOPE} which specialize upon the scope
 designators. Such methods should return at least one value, indicating
 if the superscope is a valid parent of the scope. If multiple values are
 returned, the second value must indicate whether the superscope is an
@@ -2563,6 +2563,20 @@ used to determine what minor modes should be mixed into an object when
 it is created. For this reason it is important when defining a minor
 mode or minor mode scope to understand the type hierarchy. It may also
 be in the programmers best interests to define an accompanying type.
+
+Below is an example of a minor mode scope definition that descends from
+the @code{:WINDOW} scope, and is restricted to only firefox
+windows. This would be used to implement a minor mode that only gets
+mixed in to firefox windows, for example to implement key rebinding.
+
+@verbatim
+(defun %firefox-window-p (w)
+  (and (typep w 'window)
+       (string-equal (window-class window) "Firefox")))
+
+(define-descended-minor-mode-scope :firefox-window :window
+  :filter-type (satisfies %firefox-window-p))
+@end verbatim
 
 The following scopes are predefined:
 @itemize
