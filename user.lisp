@@ -118,7 +118,8 @@ seperated by a colon."
            nconc (loop for file in (directory (merge-pathnames (make-pathname :name :wild :type :wild) dir)
                                               :resolve-symlinks nil)
                        for namestring = (file-namestring file)
-                       when (pathname-is-executable-p file)
+                       when (and (pathname-is-executable-p file)
+                                 (not (uiop:string-prefix-p #\. namestring)))
                          collect (if full-path
                                      (namestring file)
                                      namestring))))
