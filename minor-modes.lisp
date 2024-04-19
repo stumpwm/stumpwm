@@ -763,10 +763,13 @@ DESIGNATOR in the minor mode scope hash table."
   (defun scope-current-object-function (designator)
     (cadr (get-scope designator)))
   (defun scope-all-objects-function (designator)
-    (let ((type (first (get-scope designator))))
+    (let* ((scope (get-scope designator))
+           (type (first scope))
+           (filter (third scope)))
       (lambda ()
         (loop for object in (list-mode-objects nil)
-              when (typep object type)
+              when (and (typep object type)
+                        (typep object filter))
                 collect object))))
   (defun find-active-global-minor-modes-for-scope (scope)
     (loop for mode in *active-global-minor-modes*
@@ -880,12 +883,9 @@ provided."
 (define-minor-mode-scope (:dynamic-group dynamic-group)
   (current-group))
 
-(defun %manual-tiling-group-p (g)
-  (and (typep g 'tile-group)
-       (not (typep g 'dynamic-group))))
-
-(define-minor-mode-scope (:manual-tiling-group tile-group
-                                               (satisfies %manual-tiling-group-p))
+(define-minor-mode-scope (:manual-tiling-group
+                          tile-group
+                          (and tile-group (not dynamic-group)))
   (current-group))
 
 (define-minor-mode-scope (:frame frame)
@@ -896,12 +896,8 @@ provided."
 (define-minor-mode-scope (:head head)
   (current-head))
 
-(defun %frame-but-not-head (o)
-  (and (typep o 'frame)
-       (not (typep o 'head))))
-
 (define-descended-minor-mode-scope :frame-excluding-head :frame
-  :filter-type (satisfies %frame-but-not-head))
+  :filter-type (and frame (not head)))
 
 (define-minor-mode-scope (:window window)
   (current-window))
