@@ -5,9 +5,5 @@
 
 (require 'asdf)
 
-(asdf:initialize-source-registry
- '(:source-registry
-   (:directory "@STUMPWM_ASDF_DIR@")
-   :inherit-configuration))
-
-(asdf:oos 'asdf:load-op 'stumpwm)
+(asdf:load-asd #p"@STUMPWM_ASDF_DIR@/stumpwm.asd")
+(asdf:load-system "stumpwm")
