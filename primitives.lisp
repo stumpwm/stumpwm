@@ -75,6 +75,8 @@
           *window-parent-events*
           *message-window-padding*
           *message-window-y-padding*
+          *message-window-margin*
+          *message-window-y-margin*
           *message-window-gravity*
           *message-window-real-gravity*
           *message-window-input-gravity*
@@ -469,6 +471,16 @@ Include only those we are ready to support.")
 
 (defvar *message-window-y-padding* 0
   "The number of pixels that pad the text in the message window vertically.")
+
+(defvar *message-window-margin* 0
+  "The number of pixels (i.e. the gap) between the message window and the
+   horizontal edges of the head. The margin is disregarded if it takes more
+   space than is available.")
+
+(defvar *message-window-y-margin* 0
+  "The number of pixels (i.e. the gap) between the message window and the
+   vertical edges of the head. The margin is disregarded if it takes more
+   space than is available.")
 
 (defvar *message-window-gravity* :top-right
   "This variable controls where the message window appears. The following
