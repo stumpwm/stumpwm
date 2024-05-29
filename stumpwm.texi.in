@@ -1655,6 +1655,8 @@ set these color variables.
 
 ### *message-window-padding*
 ### *message-window-y-padding*
+### *message-window-margin*
+### *message-window-y-margin*
 ### *message-window-gravity*
 ### *message-window-input-gravity*
 ### *message-window-timer*
