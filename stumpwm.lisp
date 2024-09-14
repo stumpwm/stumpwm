@@ -45,7 +45,7 @@ further up. "
          (dir-rc
            (probe-file (merge-pathnames #p".stumpwm.d/init.lisp" (user-homedir-pathname))))
          (conf-rc
-           (probe-file (uiop:xdg-config-home #p"stumpwm/config/")))
+           (probe-file (uiop:xdg-config-home #p"stumpwm/config")))
          (etc-rc (probe-file #p"/etc/stumpwmrc"))
          (rc (or user-rc dir-rc conf-rc etc-rc)))
     (if rc
@@ -245,7 +245,7 @@ further up. "
              (let ((*initializing* t))
                (ensure-data-dir)
                (open-log)
-               
+
                ;; we need to do this first because init-screen grabs
                ;; keys
                (update-modifier-map)
