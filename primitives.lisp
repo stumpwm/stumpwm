@@ -247,16 +247,15 @@ appear for. This must be an integer. If falsy, default to *timeout-wait*.")
   "The background color of the grabbed pointer.")
 
 ;;; Hooks
-
 (defvar *command-mode-start-hook* '(command-mode-start-message)
-  "A hook called whenever command mode is started")
+  "A hook called whenever command mode is started.")
 
 (defvar *command-mode-end-hook* '(command-mode-end-message)
-  "A hook called whenever command mode is ended")
+  "A hook called whenever command mode is ended.")
 
 (defvar *urgent-window-hook* '()
   "A hook called whenever a window sets the property indicating that
-  it demands the user's attention")
+  it demands the user's attention. Called with the window as an argument.")
 
 (defvar *map-window-hook* '()
   "A hook called whenever a window is mapped.")
@@ -267,10 +266,11 @@ appear for. This must be an integer. If falsy, default to *timeout-wait*.")
 (defvar *new-window-hook* '()
   "A hook called whenever a window is added to the window list. This
 includes a genuinely new window as well as bringing a withdrawn window
-back into the window list.")
+back into the window list. Called with the window as an argument.")
 
 (defvar *destroy-window-hook* '()
-  "A hook called whenever a window is destroyed or withdrawn.")
+  "A hook called whenever a window is destroyed or withdrawn.
+Called with the window as an argument.")
 
 (defvar *focus-window-hook* '()
   "A hook called when a window is given focus. It is called with 2
@@ -278,7 +278,7 @@ arguments: the current window and the last window (could be nil).")
 
 (defvar *place-window-hook* '()
   "A hook called whenever a window is placed by rule. Arguments are
-window group and frame")
+window, group and frame.")
 
 (defvar *pre-thread-hook* '()
   "A hook called before any threads are started. Useful if you need to fork.")
@@ -375,7 +375,6 @@ with 1 argument: the menu.")
 (defvar *new-head-hook* '()
   "A hook called whenever a head is added. It is called with 2 arguments: the
  new head and the current screen.")
-
 ;; Data types and globals used by stumpwm
 
 (defvar *display* nil
