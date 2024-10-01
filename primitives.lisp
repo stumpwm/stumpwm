@@ -1539,9 +1539,22 @@ sync-all-frame-windows to see the change.")
 (defvar *data-dir* nil
   "The directory used by stumpwm to store data between sessions.")
 
+(defun ensure-data-dir ()
+  (ensure-directories-exist *data-dir* :mode #o700))
+
+(defun default-data-dir ()
+  "Return the default data dir pathname based on the loaded StumpWM configuration file."
+  (let ((rc-file (or
+                  (probe-file (merge-pathnames #p".stumpwmrc" (user-homedir-pathname)))
+                  (probe-file (merge-pathnames #p".stumpwm.d/init.lisp" (user-homedir-pathname)))
+                  (probe-file (uiop:xdg-config-home #p"stumpwm/config")))))
+    (if rc-file
+        (make-pathname :name nil :type nil :defaults rc-file)
+        (merge-pathnames ".stumpwm.d/" (user-homedir-pathname)))))
+
 (defun data-dir-file (name &optional type)
   "Return a pathname inside stumpwm's data dir with the specified name and type"
-  (ensure-directories-exist *data-dir*)
+  (ensure-data-dir)
   (make-pathname :name name :type type :defaults *data-dir*))
 
 (defmacro with-data-file ((s file &rest keys &key (if-exists :supersede) &allow-other-keys) &body body)
@@ -1550,7 +1563,7 @@ directly to OPEN. Note that IF-EXISTS defaults to :supersede, instead
 of :error."
   (declare (ignorable if-exists))
   `(progn
-     (ensure-directories-exist *data-dir*)
+     (ensure-data-dir)
      (with-open-file (,s ,(merge-pathnames file *data-dir*)
                          ,@keys)
        ,@body)))
