@@ -223,12 +223,6 @@ further up. "
             :local)
            (t :internet)))))
 
-(defun ensure-data-dir ()
-  (ensure-directories-exist (data-dir) :mode #o700))
-
-(defun data-dir ()
-  (merge-pathnames ".stumpwm.d/" (user-homedir-pathname)))
-
 (defun close-resources ()
   (xlib:close-display *display*)
   (close-log))
@@ -322,9 +316,7 @@ further up. "
     (dformat 0 "SIGHUP received: forcing immediate restart of stumpwm~%") ;; debug level 0 to "force" logging
     (force-stumpwm-restart))
   (let ((*in-main-thread* t))
-    (setf *data-dir*
-          (make-pathname :directory (append (pathname-directory (user-homedir-pathname))
-                                            (list ".stumpwm.d"))))
+    (setf *data-dir* (default-data-dir))
     (init-load-path *module-dir*)
     (loop
       (let ((ret (catch :top-level
