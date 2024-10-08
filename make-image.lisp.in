@@ -50,6 +50,16 @@
     (uiop:symbol-call '#:asdf '#:register-immutable-system system-name)))
 
 (sb-ext:save-lisp-and-die "stumpwm" :toplevel (lambda ()
+                                                ;; stumpwm migth be build in fake enviroment, so use uiop:restore-image
+                                                ;; to compute real uiop:*user-cache* on that user
+                                                (uiop:restore-image)
+                                                ;; and clean asdf configuration to avoid some cached paths as well
+                                                (asdf:clear-configuration)
+                                                (asdf:clear-output-translations)
+                                                (asdf:initialize-output-translations
+                                                 '(:output-translations
+                                                   :enable-user-cache
+                                                   :ignore-inherited-configuration))
                                                 ;; asdf requires sbcl_home to be set, so set it to the value when the image was built
                                                 (alexandria:when-let ((home #.(sb-ext:posix-getenv "SBCL_HOME")))
                                                   (sb-posix:putenv (format nil "SBCL_HOME=~A" home)))
