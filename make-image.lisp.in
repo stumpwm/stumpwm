@@ -42,6 +42,18 @@
 
 (stumpwm:set-module-dir "@MODULE_DIR@")
 
+;; To support reproducible (compiled) builds we modify the version string
+;; to exclude the timestamp. This could be done in version.lisp as well but
+;; it hinders StumpWM users who do not compile the manager.
+
+(when @REPRODUCIBLE@
+  (let* ((ver stumpwm:*version*)
+         (idx (search "compiled on" ver :test #'char-equal)))
+    (setf stumpwm:*version* (concatenate
+                              'string
+                              (subseq ver 0 idx)
+                              "Reproducible Build"))))
+
 (when (uiop:version<= "3.1.5" (asdf:asdf-version))
   ;; We register StumpWM and its dependencies as immutable, to stop ASDF from
   ;; looking for their source code when loading modules.
