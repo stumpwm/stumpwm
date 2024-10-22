@@ -1566,7 +1566,24 @@ of :error."
      (ensure-data-dir)
      (with-open-file (,s ,(merge-pathnames file *data-dir*)
                          ,@keys)
-       ,@body)))
+                     ,@body)))
+
+(defun rotate-log ()
+  (let ((log-filename (merge-pathnames "stumpwm.log" *data-dir*))
+        (bkp-log-filename (merge-pathnames "stumpwm.log.1" *data-dir*)))
+    (when (probe-file log-filename)
+      (rename-file log-filename bkp-log-filename))))
+
+(defun open-log ()
+  (rotate-log)
+  (let ((log-filename (merge-pathnames "stumpwm.log" *data-dir*)))
+    (setf *debug-stream* (open log-filename :direction :output
+                                            :if-exists :supersede
+                                            :if-does-not-exist :create))))
+(defun close-log ()
+  (when (boundp '*debug-stream*)
+    (close *debug-stream*)
+    (makunbound '*debug-stream*)))
 
 (defmacro move-to-head (list elt)
    "Move the specified element in in LIST to the head of the list."
