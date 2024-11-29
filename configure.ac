@@ -8,6 +8,7 @@ AC_SUBST(MODULE_DIR)
 AC_SUBST(LISP_PROGRAM)
 AC_SUBST(LISP)
 AC_SUBST(COMPRESSION)
+AC_SUBST(REPRODUCIBLE)
 AC_SUBST(STUMPWM_ASDF_DIR)
 
 # Checks for programs.
@@ -21,6 +22,11 @@ AC_ARG_ENABLE(compression,
               [  --enable-compression    use SBCL's core compression feature if available],
               COMPRESSION="t",
               COMPRESSION="nil")
+
+AC_ARG_ENABLE(reproducible,
+              [  --enable-reproducible   create a reproducible build (doesn't include compilation date and time)],
+              REPRODUCIBLE="t",
+              REPRODUCIBLE="nil")
 
 STUMPWM_ASDF_DIR="`pwd`"
 
