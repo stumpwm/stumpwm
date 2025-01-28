@@ -66,9 +66,8 @@
 ;;;; multiplexer to actually run it.
 
 (export '(io-channel-ioport io-channel-events io-channel-handle
-          *default-io-loop* *current-io-loop* *current-io-channel*
           io-loop io-loop-add io-loop-remove io-loop-update
-          callback-channel callback-channel-stream callback-channel-events))
+          *default-io-loop* *current-io-loop*))
 
 ;;; General interface
 (defgeneric io-channel-ioport (io-loop channel)
@@ -84,6 +83,7 @@
 
   An I/O channel may also return NIL to indicate that it is only
   interested in purely virtual events, such as :TIMEOUT or :LOOP."))
+
 (defgeneric io-channel-events (channel)
   (:documentation
    "Returns a list of events that CHANNEL is interested in. An event
@@ -118,6 +118,7 @@
   other point in time, it should use the IO-LOOP-UPDATE function to
   notify the I/O loop of such changes. The I/O loop may also update
   spuriously at any time, but such updates are not guaranteed."))
+
 (defgeneric io-channel-handle (channel event &key &allow-other-keys)
   (:documentation
    "Called by the I/O loop to notify a channel that an event has
@@ -129,12 +130,15 @@
 
 (defgeneric io-loop-add (io-loop channel)
   (:documentation "Add a channel to the given I/O multiplexer to be monitored."))
+
 (defgeneric io-loop-remove (io-loop channel)
   (:documentation "Unregister a channel from the I/O multiplexer."))
+
 (defgeneric io-loop-update (io-loop channel)
   (:documentation "Make the I/O loop update its knowledge of what
   events CHANNEL is interested in. See the documentation for
   IO-CHANNEL-EVENTS for more information."))
+
 (defgeneric io-loop (io-loop &key &allow-other-keys)
   (:documentation "Run the given I/O multiplexer, watching for events
   on any channels registered with it. IO-LOOP will return when it has
@@ -147,11 +151,6 @@
 (defvar *current-io-loop* nil
   "Dynamically bound to the I/O loop currently running, providing an
   easy way for event callbacks to register new channels.")
-
-(defvar *current-io-channel* nil
-  "While processing an I/O channel, this variable is dynamically bound
-  to the channel in question. This is provided primarily for
-  error-handling code.")
 
 ;; Default methods for the above
 (defmethod io-channel-handle (channel event &key &allow-other-keys)
@@ -193,197 +192,105 @@
 (defmethod io-loop-update ((info sbcl-io-loop) channel)
   (declare (ignore info channel)))
 
-(defmethod io-loop ((info sbcl-io-loop) &key description)
+;;; Calculates the maximum blocking time that can be spend  waiting for
+;;; IO activity before channels interested in timeout events (i.e. timers)
+;;; need to be notified.
+(defun get-max-blocking-time (lowest-timeout)
+  (declare (type (or null (integer 0)) lowest-timeout))
+  (if lowest-timeout
+    (let ((remaining (- lowest-timeout (get-internal-real-time))))
+      (if (> remaining 0)
+        (multiple-value-bind (whole-secs sub-sec)
+                             (truncate (/ remaining internal-time-units-per-second))
+          (values whole-secs (nth-value 0 (truncate (* sub-sec 1000000)))))
+        (values 0 0)))
+    (values nil nil)))
+
+(defmethod io-loop ((info sbcl-io-loop) &key &allow-other-keys)
   (let ((*current-io-loop* info))
-    (with-simple-restart (:quit-ioloop "Quit I/O loop~A"
-                                       (if description
-                                           (format nil " (~A)" description)
-                                           ""))
-      (block io-loop
-        (sb-alien:with-alien ((rfds (sb-alien:struct sb-unix:fd-set))
-                              (wfds (sb-alien:struct sb-unix:fd-set))
-                              (efds (sb-alien:struct sb-unix:fd-set)))
-          (loop
-            :do
-               (with-simple-restart (:restart-ioloop "Restart at I/O loop~A"
-                                                     (if description
-                                                         (format nil " (~A)" description)
-                                                         ""))
-                 (macrolet ((with-channel-restarts ((channel &optional remove-code) &body body)
-                              (let ((ch (gensym "CHANNEL")))
-                                `(let* ((,ch ,channel)
-                                        (*current-io-channel* ,ch))
-                                   (restart-case
-                                       (progn ,@body)
-                                     (:skip-channel ()
-                                      :report (lambda (s)
-                                                (format s "Continue as if without channel ~S" ,ch))
-                                       nil)
-                                     (:remove-channel ()
-                                      :report (lambda (s)
-                                                (format s "Unregister channel ~S and continue" ,ch))
-                                       ,(or remove-code `(io-loop-remove info ,ch))
-                                       nil))))))
-                   (let ((ch-map (make-hash-table :test 'eql))
-                         (timeouts '())
-                         (loop-ch '())
-                         (maxfd 0))
-                     ;; Since it is select(2)-based, this implementation
-                     ;; updates the entire set of interesting events once
-                     ;; every iteration.
-                     (let ((remove '()))
+    (sb-alien:with-alien ((rfds (sb-alien:struct sb-unix:fd-set))
+                          (wfds (sb-alien:struct sb-unix:fd-set))
+                          (efds (sb-alien:struct sb-unix:fd-set)))
+      (loop
+        (let ((loop-channels nil)
+              (read-channels nil)
+              (write-channels nil)
+              (timeout-channels nil)
+              (inactive-channels nil)
+              (highest-fd 0)
+              (earliest-timeout nil))
+          (sb-unix:fd-zero rfds)
+          (sb-unix:fd-zero wfds)
+          (sb-unix:fd-zero efds)
 
-                       (sb-unix:fd-zero rfds)
-                       (sb-unix:fd-zero wfds)
-                       (sb-unix:fd-zero efds)
+          ;; Collect the file descriptors we need to wait on in
+          ;; the next step and the channels without any events
+          ;; so we can remove them. Also group the active events
+          ;; in categories.
+          (dolist (ch (slot-value info 'channels))
+            (if-let ((evs (io-channel-events ch)))
+              (dolist (ev evs)
+                (let ((ev-type (if (consp ev) (car ev) ev))
+                      (ev-data (if (consp ev) (car (cdr ev)) nil))
+                      (ev-fd (io-channel-ioport info ch)))
+                  (case ev-type
+                    (:loop
+                     (push ch loop-channels))
+                    (:read
+                     (setf highest-fd (max highest-fd ev-fd))
+                     (sb-unix:fd-set ev-fd rfds)
+                     (push (cons ch ev-fd) read-channels))
+                    (:write
+                     (setf highest-fd (max highest-fd ev-fd))
+                     (sb-unix:fd-set ev-fd wfds)
+                     (push (cons ch ev-fd) write-channels))
+                    (:timeout
+                     (setf earliest-timeout (min (or earliest-timeout ev-data) ev-data))
+                     (push (cons ch ev-data) timeout-channels)))))
+                (push ch inactive-channels)))
 
-                       (dolist (channel (slot-value info 'channels))
-                         (with-channel-restarts (channel (push channel remove))
-                           (let ((fd (io-channel-ioport info channel)))
-                             (let ((events (io-channel-events channel)))
-                               (if events
-                                   (dolist (event events)
-                                     (multiple-value-bind (event data)
-                                         (if (consp event)
-                                             (values (car event) (cdr event))
-                                             (values event nil))
-                                       (case event
-                                         (:read
-                                          (setf maxfd (max maxfd fd))
-                                          (sb-unix:fd-set fd rfds)
-                                          (push (cons :read channel)
-                                                (gethash fd ch-map '())))
-                                         (:write
-                                          (setf maxfd (max maxfd fd))
-                                          (sb-unix:fd-set fd wfds)
-                                          (push (cons :write channel)
-                                                (gethash fd ch-map '())))
-                                         (:timeout
-                                          (let ((timeout (car data)))
-                                            (check-type timeout real)
-                                            (push (cons timeout channel) timeouts)))
-                                         (:loop
-                                           (push channel loop-ch)))))
-                                   (push channel remove))))))
-                       (dolist (channel remove)
-                         (io-loop-remove info channel))
-                       (unless (slot-value info 'channels)
-                         (return-from io-loop)))
-                     ;; Call any :LOOP channels
-                     (dolist (channel loop-ch)
-                       (with-channel-restarts (channel)
-                         (io-channel-handle channel :loop)))
-                     (setf timeouts (sort timeouts '< :key 'car))
-                     (flet ((compute-timeout ()
-                              (if timeouts
-                                  (let* ((internal-time-of-timeout (car (first timeouts)))
-                                         (remaining-internal-time (- internal-time-of-timeout
-                                                                     (get-internal-real-time)))
-                                         (remaining-seconds (/ remaining-internal-time
-                                                               internal-time-units-per-second))
-                                         (s-to-ms 1000000)
-                                         (remaining-ms (max
-                                                        (round (* remaining-seconds
-                                                                  s-to-ms))
-                                                        0)))
-                                    (floor remaining-ms 1000000))
-                                  (values nil nil))))
-                       ;; Actually block for events
-                       (multiple-value-bind (rval errno)
-                           (multiple-value-call #'sb-unix:unix-fast-select
-                                                (1+ maxfd)
-                                                (sb-alien:addr rfds)
-                                                (sb-alien:addr wfds)
-                                                (sb-alien:addr efds)
-                                                (compute-timeout))
-                         (declare (ignore rval))
-                         (cond ((and errno (plusp errno))
-                                (unless (eql errno sb-unix:eintr)
-                                  (dformat 1
-                                           "Unexpected ~S error: ~A~%"
-                                           'sb-unix:unix-fast-select
-                                           (sb-int:strerror errno))))
-                               (t
-                                ;; Notify channels for transpired events
-                                (maphash (lambda (fd evs)
-                                           (let ((r (sb-unix:fd-isset fd rfds))
-                                                 (w (sb-unix:fd-isset fd wfds))
-                                                 (e (sb-unix:fd-isset fd efds)))
-                                             (dolist (ev evs)
-                                               (with-channel-restarts ((cdr ev))
-                                                 (cond ((and (eq (car ev) :read)
-                                                             (or r e))
-                                                        (io-channel-handle (cdr ev) :read))
-                                                       ((and (eq (car ev) :write)
-                                                             w)
-                                                        (io-channel-handle (cdr ev) :write)))))))
-                                         ch-map)))))
-                     ;; Check for timeouts
-                     (when timeouts
-                       (block timeouts
-                         (let ((now (get-internal-real-time)))
-                           (dolist (to timeouts)
-                             (if (<= (car to) now)
-                                 (with-channel-restarts ((cdr to))
-                                   (io-channel-handle (cdr to) :timeout))
-                                 (return-from timeouts)))))))))))))))
+          (dolist (ch inactive-channels)
+            (io-loop-remove info ch))
 
-  ;;; IO-CHANNEL-IOPORT methods for support facilities
-(defmethod io-channel-ioport (io-loop (channel sb-sys:fd-stream))
-  (declare (ignore io-loop))
-  (sb-sys:fd-stream-fd channel))
-(defmethod io-channel-ioport ((io-loop sbcl-io-loop) (channel xlib:display))
-  (io-channel-ioport io-loop (xlib::display-input-stream channel)))
+          (unless (slot-value info 'channels)
+            (return))
 
-;;; Default methods for widely supported objects
-(defmethod io-channel-ioport (io-loop (channel synonym-stream))
-  (io-channel-ioport io-loop (symbol-value (synonym-stream-symbol channel))))
+          ;; Notify the :LOOP channels before blocking.
+          (dolist (ch loop-channels)
+            (io-channel-handle ch :loop))
 
-;;; Callback channel implementation
-(defclass callback-channel ()
-  ((current :initform nil)
-   (stream :initarg :stream :reader callback-channel-stream)
-   (read-function :initform nil :initarg :read)
-   (write-function :initform nil :initarg :write)
-   (events :initform :auto :initarg :events :accessor callback-channel-events))
-  (:documentation
-   "Implements a convenience I/O channel which takes an underlying I/O
-   facility and calls the given callback functions when an event
-   occurs on the channel. The :STREAM init-argument specifies the I/O
-   facility to monitor, :READ specifies a function to be called back
-   when a read event occurs, and :WRITE a corresponding function for
-   write events. Timeouts are not supported.
+          ;; Block while waiting for something to happen on the
+          ;; monitored file descriptors. This is implemented with
+          ;; select(2). After that, notify the interested :READ
+          ;; and :WRITE handlers.
+          (multiple-value-bind (secs usecs)
+                               (get-max-blocking-time earliest-timeout)
+            (multiple-value-bind (count errno)
+                                 (sb-unix:unix-fast-select
+                                   (1+ highest-fd)
+                                   (sb-alien:addr rfds)
+                                   (sb-alien:addr wfds)
+                                   (sb-alien:addr efds)
+                                   secs
+                                   usecs)
+              (declare (ignore count))
+              (if (and errno (plusp errno))
+                (unless (eql errno sb-unix:eintr)
+                  (dformat 1
+                           "Unexpected ~S error: ~A~%"
+                           'sb-unix:unix-fast-select
+                           (sb-int:strerror errno)))
+                (progn
+                  (loop :for (ch . fd) :in read-channels
+                        :do (when (or (sb-unix:fd-isset fd rfds)
+                                      (sb-unix:fd-isset fd efds))
+                              (io-channel-handle ch :read)))
+                  (loop :for (ch . fd) :in write-channels
+                        :do (when (sb-unix:fd-isset fd wfds)
+                              (io-channel-handle ch :write)))))))
 
-   By default, the channel will listen for read events iff a read
-   callback function is given and correspondingly for write events,
-   but CALLBACK-CHANNEL-EVENTS can be SETF'd to specify events
-   explicitly in case certain events are only interesting
-   sporadically. To restore default behavior, set it to :AUTO."))
-
-(defmethod io-loop-add :before (info (channel callback-channel))
-  (when (slot-value channel 'current)
-    (error "Callback channel is already registered with an I/O loop")))
-(defmethod io-loop-add :after (info (channel callback-channel))
-  (setf (slot-value channel 'current) info))
-(defmethod io-loop-remove :after (info (channel callback-channel))
-  (setf (slot-value channel 'current) nil))
-
-(defmethod io-channel-ioport (io-loop (channel callback-channel))
-  (io-channel-ioport io-loop (slot-value channel 'stream)))
-(defmethod io-channel-events ((channel callback-channel))
-  (with-slots (events) channel
-    (if (eq events :auto)
-        (let ((ret '()))
-          (when (slot-value channel 'read-function)
-            (push :read ret))
-          (when (slot-value channel 'write-function)
-            (push :write ret))
-          ret)
-        events)))
-(defmethod io-channel-handle ((channel callback-channel) (event (eql :read)) &key)
-  (funcall (slot-value channel 'read-function) channel))
-
-(defmethod (setf callback-channel-events) (events channel)
-  (setf (slot-value channel 'events) events)
-  (with-slots (current) channel
-    (when current (io-loop-update current channel))))
+          ;; Notify all channels with now expired timeouts.
+          (loop :with now = (get-internal-real-time)
+                :for (ch . timeout) :in timeout-channels
+                :do (when (<= timeout now)
+                      (io-channel-handle ch :timeout))))))))
