@@ -121,12 +121,15 @@ The action is to call FUNCTION with arguments ARGS."
 (defmethod io-channel-ioport (io-loop (channel stumpwm-timer-channel))
   (declare (ignore io-loop))
   nil)
+
 (defmethod io-channel-events ((channel stumpwm-timer-channel))
   (sb-thread:with-mutex (*timer-list-lock*)
     (if *timer-list*
         `((:timeout ,(timer-time (car *timer-list*))))
         '(:loop))))
+
 (defmethod io-channel-handle ((channel stumpwm-timer-channel) (event (eql :timeout)) &key)
   (run-expired-timers))
+
 (defmethod io-channel-handle ((channel stumpwm-timer-channel) (event (eql :loop)) &key)
   (run-expired-timers))

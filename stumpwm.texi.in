@@ -2788,7 +2788,6 @@ IO-LOOP-UPDATE (as described above). Call IO-LOOP on the
 multiplexer to actually run it.
 ### *default-io-loop*
 ### *current-io-loop*
-### *current-io-channel*
 @@@ io-channel-ioport
 @@@ io-channel-events
 @@@ io-channel-handle

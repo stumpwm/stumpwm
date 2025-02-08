@@ -9,7 +9,7 @@
           (uiop/lisp-build:compile-warned-warning . 1)
           (sb-int:type-style-warning . 1)
           (sb-kernel:redefinition-with-defmacro . 34)
-          (sb-c::unknown-typep-note . 8)))
+          (sb-c::unknown-typep-note . 6)))
        (actual-warnings
         (mapcar (lambda (x) (cons (car x) 0)) expected-warnings))
        (in-ci (< 0 (length (sb-ext:posix-getenv "STUMPWM_CI"))))
