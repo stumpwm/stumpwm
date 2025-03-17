@@ -39,7 +39,7 @@
     window-gravity window-group window-number window-parent window-title
     window-user-title window-class window-type window-res window-role
     window-unmap-ignores window-state window-normal-hints window-marked
-    window-plist window-fullscreen window-screen
+    window-plist window-fullscreen window-screen window-property
     ;; Window utilities
     update-configuration no-focus
     ;; Window management API
@@ -499,6 +499,15 @@ _NET_WM_STATE_DEMANDS_ATTENTION set"
 
 (defun window-property (window prop)
   (xlib:get-property (window-xwin window) prop))
+
+(defun (setf window-property) (value window property)
+  "Set the PROPERTY of WINDOW to VALUE. VALUE may be an INTEGER, a STRING or a SYMBOL."
+  (multiple-value-bind (value type format)
+      (etypecase value
+        (integer (values (list value) :integer 32))
+        (string (values (map 'vector #'char-code value) :string 8))
+        (symbol (values (map 'vector #'char-code (symbol-name value)) :string 8)))
+    (xlib:change-property (window-xwin window) property value type format)))
 
 (defun find-wm-state (xwin state)
   (find (xlib:find-atom *display* state) (xlib:get-property xwin :_NET_WM_STATE) :test #'=))
