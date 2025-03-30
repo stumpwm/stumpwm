@@ -1544,9 +1544,12 @@ sync-all-frame-windows to see the change.")
 (defun default-data-dir ()
   "Return the default data dir pathname based on the loaded StumpWM configuration file."
   (let ((rc-file (or
-                  (probe-file (merge-pathnames #p".stumpwmrc" (user-homedir-pathname)))
-                  (probe-file (merge-pathnames #p".stumpwm.d/init.lisp" (user-homedir-pathname)))
-                  (probe-file (uiop:xdg-config-home #p"stumpwm/config")))))
+                  (let ((pathspec (merge-pathnames #p".stumpwmrc" (user-homedir-pathname))))
+                    (and (probe-file pathspec) pathspec))
+                  (let ((pathspec (merge-pathnames #p".stumpwm.d/init.lisp" (user-homedir-pathname))))
+                    (and (probe-file pathspec) pathspec))
+                  (let ((pathspec (uiop:xdg-config-home #p"stumpwm/config")))
+                    (and (probe-file pathspec) pathspec)))))
     (if rc-file
         (make-pathname :name nil :type nil :defaults rc-file)
         (merge-pathnames ".stumpwm.d/" (user-homedir-pathname)))))
