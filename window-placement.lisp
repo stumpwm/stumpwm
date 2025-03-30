@@ -106,7 +106,7 @@
                            (message "^B^1*Can't restore group \"^b~a^B\" with \"^b~a^B\"."
                                     group-name restore-file))))
                    (values group
-                           (if (eq frame :float)
+                           (if (or (eq frame :float) (typep group 'float-group))
                                frame
                                (frame-by-number group frame))
                            raise))
@@ -123,13 +123,13 @@
                            (message "^B^1*Can't restore group \"^b~a^B\" with \"^b~a^B\"."
                                     group-name restore-file)))
                      (values new-group
-                             (if (eq frame :float)
+                             (if (or (eq frame :float) (typep new-group 'float-group))
                                  frame
                                  (frame-by-number new-group frame))
                              raise)))
                   ((not group-name)
                    (values (current-group)
-                           (if (eq frame :float)
+                           (if (or (eq frame :float) (typep (current-group) 'float-group))
                                frame
                                (frame-by-number (current-group) frame))
                            raise))
