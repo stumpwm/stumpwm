@@ -78,6 +78,8 @@ except that this permission notice may be stated in a
 translation approved by the Free Software Foundation.
 @end titlepage
 
+@contents
+
 @node Top, Introduction, (dir), (dir)
 
 @ifinfo
