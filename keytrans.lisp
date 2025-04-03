@@ -102,8 +102,6 @@ calling KEYSYM->KEYSYM-NAME."
 (define-keysym-name "|" "bar")
 (define-keysym-name "}" "braceright")
 (define-keysym-name "~" "asciitilde")
-(define-keysym-name "<" "quoteleft")
-(define-keysym-name ">" "quoteright")
 (define-keysym-name "«" "guillemotleft")
 (define-keysym-name "»" "guillemotright")
 (define-keysym-name "À" "Agrave")
