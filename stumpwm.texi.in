@@ -1564,35 +1564,39 @@ return a ``nil'' value in those cases, and let the command handle that.
 @example
 (define-stumpwm-type :smart-direction (input prompt)
   (let ((valid-dirs
-         (loop  ; gather all the directions in which there's a neighbouring frame
+          (loop  ; gather all the directions in which there's a neighbouring frame
             with values = '(("up" :up)
                             ("down" :down)
                             ("left" :left)
                             ("right" :right))
-            with frame-set =
-              (group-frames (window-group (current-window)))
+            with frame-set = (stumpwm::group-frames
+                               (window-group (current-window)))
             for dir in values
-            for neighbour = (neighbour
-                             (second dir)
-                             (window-frame (current-window)) frame-set)
-            if (and neighbour (frame-window neighbour))
+            for neighbour = (stumpwm::neighbour
+                              (second dir)
+                              (stumpwm::window-frame (current-window))
+                              frame-set)
+            if (and neighbour (stumpwm::frame-window neighbour))
             collect dir))
         (arg (argument-pop input)))  ; store a possible argument
     (cond ((null valid-dirs)  ; no directions, bail out
            (throw 'error "No valid directions"))
           (arg  ; an arg was bound, but is it valid?
-           (or (second (assoc arg valid-dirs :test #'string=))
-               (throw 'error "Not a valid direction")))
+               (or (second (assoc arg valid-dirs :test #'string=))
+                   (throw 'error "Not a valid direction")))
           ((= 1 (length valid-dirs))  ; only one valid direction
            (second (car valid-dirs)))
           (t  ; multiple possibilities, prompt for direction
-           (second (assoc (completing-read input prompt valid-dirs
-                                           :require-match t)
-                          valid-dirs :test #'string=))))))
+             (second (assoc (car (select-from-menu (current-screen)
+                                                    valid-dirs
+                                                    prompt))
+                            valid-dirs :test #'string=))))))
 
 (defcommand smarty (dir) ((:smart-direction "Pick a direction: "))
   ;; `dir' is a keyword here
-  (message "You're going ~a" (string-downcase dir)))
+  (if dir
+    (message "You're going ~a." (string-downcase dir))
+    (message "You're not going anywhere.")))
 
 (define-key *root-map* (kbd "R") "smarty right")
 @end example
