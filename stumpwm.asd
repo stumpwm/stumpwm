@@ -66,7 +66,8 @@
                (:file "replace-class")
                ;; keep this last so it always gets recompiled if
                ;; anything changes
-               (:file "version"))
+               (:file "version")
+               (:file "poweroff"))
   :in-order-to ((test-op (test-op "stumpwm/tests"))))
 
 (defsystem "stumpwm/build"

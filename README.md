@@ -179,8 +179,6 @@ StumpWM universe (in no particular order):
   is involved)
 * Wallpapers! (support pulling from remote sources, changing based on
   timers, and other hacky features)
-* Shutdown, restart, suspend, and hibernate functions that don't
-  require root access
 * Revamped, mouse-friendly mode-line. 
   * Support fixed number of chars for window titles
   * Dynamically trim window titles to fit them all on the mode-line
