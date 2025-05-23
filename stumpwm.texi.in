@@ -2857,6 +2857,11 @@ The following is a list of commands that don't really fit in any other
 @@@ no-focus
 ### *record-last-msg-override*
 ### *toplevel-io*
+@@@ shutdown
+@@@ reboot
+@@@ halt
+@@@ suspend
+@@@ hibernate
 
 @menu
 * Menus::
