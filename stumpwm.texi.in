@@ -2860,6 +2860,8 @@ The following is a list of commands that don't really fit in any other
 @@@ shutdown
 @@@ reboot
 @@@ halt
+### *alternative-suspend*
+### *alternative-hibernate*
 @@@ suspend
 @@@ hibernate
 
