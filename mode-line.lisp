@@ -23,6 +23,7 @@
           *mode-line-border-color*
           *mode-line-border-width*
           *mode-line-foreground-color*
+          *mode-line-window-class*
           *mode-line-pad-x*
           *mode-line-pad-y*
           *mode-line-position*
@@ -47,6 +48,9 @@
 
 (defvar *mode-line-pad-y* 1
   "The number of padding pixels between the modeline text and the top/bottom of the modeline. Integer value.")
+
+(defvar *mode-line-window-class* "stumpwm-mode-line"
+  "The WM class of a mode-line window.")
 
 (defvar *mode-line-background-color* "Gray20"
   "The mode line background color.")
@@ -203,16 +207,19 @@ timer.")
 
 (defun make-mode-line-window (screen)
   "Create a window suitable for a modeline."
-  (xlib:create-window
-   :parent (screen-root screen)
-   :x 0 :y 0 :width 1 :height 1
-   :background (alloc-color screen *mode-line-background-color*)
-   :border (alloc-color screen *mode-line-border-color*)
-   :border-width *mode-line-border-width*
-   ;; You can click the modeline
-   :event-mask (xlib:make-event-mask :button-press :exposure)
-   ;; these windows are not controlled by the window manager
-   :override-redirect :on))
+  (let ((window
+          (xlib:create-window
+           :parent (screen-root screen)
+           :x 0 :y 0 :width 1 :height 1
+           :background (alloc-color screen *mode-line-background-color*)
+           :border (alloc-color screen *mode-line-border-color*)
+           :border-width *mode-line-border-width*
+           ;; You can click the modeline
+           :event-mask (xlib:make-event-mask :button-press :exposure)
+           ;; these windows are not controlled by the window manager
+           :override-redirect :on)))
+    (xlib:set-wm-class window *mode-line-window-class* *mode-line-window-class*)
+    window))
 
 (defun make-mode-line-gc (window screen)
   (xlib:create-gcontext
