@@ -2126,6 +2126,7 @@ might do the following:
 
 ### *screen-mode-line-format*
 ### *time-format-string-default*
+### *mode-line-fixed-title-width*
 ### *time-modeline-string*
 $$$ *new-mode-line-hook*
 ### *screen-mode-line-formatters*
