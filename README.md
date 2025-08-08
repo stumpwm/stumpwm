@@ -187,7 +187,6 @@ StumpWM universe (in no particular order):
   * Split the mode-line into multiple cells for containing different information
   * Implement widget icons to indicate system status (new mail, low
     battery, network etc)
-  * Support raising windows when left-clicked, closing/killing when right-clicked  
 
 # Help
 
