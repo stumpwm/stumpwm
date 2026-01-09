@@ -23,7 +23,8 @@
 
 (defcommand cancel-shutdown () ()
   "Cancels any shutdown process."
-  #+(or bsd linux) (run-shell-command (format nil "shutdown -c")))
+  #+(or bsd linux)
+  (run-shell-command (format nil "shutdown -c")))
 
 (defcommand reboot (&optional (now nil) (time 30)) ((:y-or-n "Now? "))
   "Reboot the system. If NOW is not NIL reboot immediately, otherwise asks for a date."
@@ -52,17 +53,22 @@
   "Alternative shell command or function used for the hibernate function.")
 
 (flet ((call-alternative (alt)
-         (cond
-           ((stringp alt) (run-shell-command alt))
-           ((functionp alt) (funcall alt)))))
-
+         (typecase alt
+           (string (run-shell-command alt))
+           (function (funcall alt)))))
   (defcommand suspend () ()
     "Suspends the system. For unsupported systems set *ALTERNATIVE-SUSPEND* to a shell command or function of your choice."
     #+linux (cond
               (*alternative-suspend* (call-alternative *alternative-suspend*))
               ((file-in-path-p "systemctl")
                (run-shell-command "systemctl suspend"))
-              (t (error "Suspend is not implemented for this system.")))
+              (t
+               (if (= 0 (sb-posix:geteuid))
+                   (with-open-file (state #P"/sys/power/state" :direction :io :if-exists :supersede)
+                     (if (search "mem" (read-line state) :test #'string=)
+                         (write-string "mem" state)
+                         (error "Suspend is not implemented for this system.")))
+                   (error "Suspend is not implemented for this system."))))
     #+bsd (if *alternative-suspend*
               (call-alternative *alternative-suspend*)
               (error "Suspend is not implemented for this system.")))
@@ -73,7 +79,15 @@
               (*alternative-hibernate* (call-alternative *alternative-hibernate*))
               ((file-in-path-p "systemctl")
                (run-shell-command "systemctl hibernate"))
-              (t (error "Hibernate is not implemented for this system.")))
+              (t
+               (if (= 0 (sb-posix:geteuid))
+                   (with-open-file (state #P"/sys/power/state" :direction :io :if-exists :supersede)
+                     (if (search "disk" (read-line state) :test #'string=)
+                         (with-open-file (disk #P"/sys/power/disk" :direction :output :if-exists :supersede)
+                           (write-string "platform" disk)
+                           (write-string "disk" state))
+                         (error "Hibernate is not implemented for this system.")))
+                   (error "Hibernate is not implemented for this system."))))
     #+bsd (if *alternative-hibernate*
               (call-alternative *alternative-hibernate*)
               (error "Hibernate is not implemented for this system."))))
