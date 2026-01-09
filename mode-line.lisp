@@ -143,7 +143,10 @@ timer.")
   (find head *mode-lines* :key #'mode-line-head))
 
 (defun find-mode-line-by-window (xwin)
-  (find xwin *mode-lines* :key #'mode-line-window))
+  (find (xlib:window-id xwin) *mode-lines*
+        :key (lambda (ml)
+               (when-let ((win (mode-line-window ml)))
+                 (xlib:window-id win)))))
 
 (defun mode-line-gc (ml)
   (ccontext-gc (mode-line-cc ml)))
