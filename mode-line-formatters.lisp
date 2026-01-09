@@ -34,6 +34,10 @@ hidden windows, set this to an empty string.")
 (defvar *mode-line-highlight-template* "^R~A^r"
   "The string passed to FORMAT to highlight things in the mode line.")
 
+(defvar *mode-line-fixed-title-width* nil
+  "The maximum number of characters a window title can be displayed as.
+Set to nil to disable.")
+
 ;;; Clickable Text
 
 (defun format-with-on-click-id (string id &rest arguments)
@@ -51,32 +55,39 @@ other color formatters."
 
 ;;; Formatters
 
+(defun trim-title (title)
+  (cond ((and *mode-line-fixed-title-width*
+              (> (length title) *mode-line-fixed-title-width*))
+         (concatenate 'string (subseq title 0 *mode-line-fixed-title-width*) "…"))
+        (t title)))
+
 (add-screen-mode-line-formatter #\u 'fmt-urgent-window-list)
-(defun fmt-urgent-window-list (ml)
-  "Using `*window-format*', return a 1 line list of the urgent windows, space separated."
-  (format nil "~{~a~^ ~}"
-          (mapcar (lambda (w)
-                    (format-with-on-click-id
-                     (let ((str (format-expand *window-formatters*
-                                               *window-format*
-                                               w)))
-                       (if (eq w (current-window))
-                           (fmt-highlight str)
-                           str))
-                     :ml-on-click-focus-window
-                     (window-id w)))
-                  (screen-urgent-windows (mode-line-screen ml)))))
+(flet ((format-window (w)
+         (format-with-on-click-id
+          (let ((str (trim-title
+                      (format-expand *window-formatters*
+                                     *window-format*
+                                     w))))
+            (if (eq w (current-window))
+                (fmt-highlight str)
+                str))
+          :ml-on-click-focus-window
+          (window-id w))))
+  (defun fmt-urgent-window-list (ml)
+    "Using `*window-format*', return a 1 line list of the urgent windows, space separated."
+    (let ((windows (mapcar #'format-window (screen-urgent-windows (mode-line-screen ml)))))
+      (format nil "~{~a~^ ~}" windows))))
 
 (add-screen-mode-line-formatter #\w 'fmt-window-list)
-(defun fmt-window-list (ml)
-  "Using *window-format*, return a 1 line list of the windows, space separated."
-  (format nil "~{~a~^ ~}"
-          (mapcar (lambda (w)
-                    (format-with-on-click-id 
-                     (format-expand *window-formatters* *window-format* w)
-                     :ml-on-click-focus-window
-                     (window-id w)))
-                  (sort-windows (mode-line-current-group ml)))))
+(flet ((format-window (w)
+         (format-with-on-click-id
+          (trim-title (format-expand *window-formatters* *window-format* w))
+          :ml-on-click-focus-window
+          (window-id w))))
+  (defun fmt-window-list (ml)
+    "Using *window-format*, return a 1 line list of the windows, space separated."
+    (let ((windows (mapcar #'format-window (sort-windows (mode-line-current-group ml)))))
+      (format nil "~{~a~^ ~}" windows))))
 
 (add-screen-mode-line-formatter #\g 'fmt-group-list)
 (defun fmt-group-list (ml)
@@ -109,21 +120,23 @@ other color formatters."
   (format nil *mode-line-highlight-template* s))
 
 (add-screen-mode-line-formatter #\W 'fmt-head-window-list)
-(defun fmt-head-window-list (ml)
-  "Using *window-format*, return a 1 line list of the windows, space seperated."
-  (format nil "~{~a~^ ~}"
-          (mapcar (lambda (w)
-                    (format-with-on-click-id 
-                     (let ((str (format-expand *window-formatters*
-                                               *window-format*
-                                               w)))
-                       (if (eq w (current-window))
-                           (fmt-highlight str)
-                           str))
-                     :ml-on-click-focus-window
-                     (window-id w)))
-                  (sort1 (head-windows (mode-line-current-group ml) (mode-line-head ml))
-                         #'< :key #'window-number))))
+(flet ((format-window (w)
+         (format-with-on-click-id
+          (let ((str (trim-title
+                      (format-expand *window-formatters*
+                                     *window-format*
+                                     w))))
+            (if (eq w (current-window))
+                (fmt-highlight str)
+                str))
+          :ml-on-click-focus-window
+          (window-id w))))
+  (defun fmt-head-window-list (ml)
+    "Using *window-format*, return a 1 line list of the windows, space seperated."
+    (let* ((windows (sort1 (head-windows (mode-line-current-group ml) (mode-line-head ml))
+                           #'< :key #'window-number))
+           (windows (mapcar #'format-window windows)))
+      (format nil "~{~a~^ ~}" windows))))
 
 (defun fmt-hidden (s)
   (format nil (concat "^[" *hidden-window-color* "~A^]") s))
@@ -136,17 +149,18 @@ fmt-highlight. Any non-visible windows are colored the
 *hidden-window-color*."
   (let* ((all (head-windows (mode-line-current-group ml) (mode-line-head ml)))
          (non-top (set-difference all (top-windows))))
-    (format nil "~{~a~^ ~}"
-            (mapcar (lambda (w)
-                      (format-with-on-click-id 
-                       (let ((str (format-expand *window-formatters*
-                                                 *window-format* w)))
-                         (cond ((eq w (current-window)) (fmt-highlight str))
-                               ((find w non-top) (fmt-hidden str))
-                               (t str)))
-                       :ml-on-click-focus-window
-                       (window-id w)))
-                    (sort1 all #'< :key #'window-number)))))
+    (flet ((format-window (w)
+             (format-with-on-click-id
+              (let ((str (trim-title
+                          (format-expand *window-formatters*
+                                         *window-format* w))))
+                (cond ((eq w (current-window)) (fmt-highlight str))
+                      ((find w non-top) (fmt-hidden str))
+                      (t str)))
+              :ml-on-click-focus-window
+              (window-id w))))
+      (let ((windows (mapcar #'format-window (sort1 all #'< :key #'window-number))))
+        (format nil "~{~a~^ ~}" windows)))))
 
 (add-screen-mode-line-formatter #\d 'fmt-modeline-time)
 (defun fmt-modeline-time (ml)

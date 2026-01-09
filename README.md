@@ -182,12 +182,10 @@ StumpWM universe (in no particular order):
 * Shutdown, restart, suspend, and hibernate functions that don't
   require root access
 * Revamped, mouse-friendly mode-line. 
-  * Support fixed number of chars for window titles
   * Dynamically trim window titles to fit them all on the mode-line
   * Split the mode-line into multiple cells for containing different information
   * Implement widget icons to indicate system status (new mail, low
     battery, network etc)
-  * Support raising windows when left-clicked, closing/killing when right-clicked  
 
 # Help
 
