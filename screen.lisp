@@ -25,6 +25,8 @@
 (in-package #:stumpwm)
 
 (export '(*default-bg-color*
+          *message-window-class*
+          *input-window-class*
           current-screen
           current-window
           screen-current-window
@@ -47,6 +49,12 @@
 
 (defvar *default-bg-color* #x333333
   "Default color for the desktop background.")
+
+(defvar *message-window-class* "stumpwm-message"
+  "The WM class of a message window.")
+
+(defvar *input-window-class* "stumpwm-input"
+  "The WM class of an input window.")
 
 ;; Screen helper functions
 
@@ -482,6 +490,8 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
             (tile-group-frame-tree group) (copy-heads screen)
             (tile-group-current-frame group) (first (tile-group-frame-tree group))
             (xlib:window-background screen-root) *default-bg-color*)
+      (xlib:set-wm-class message-window *message-window-class* *message-window-class*)
+      (xlib:set-wm-class (screen-input-window screen) *input-window-class* *input-window-class*)
       ;; The focus window is mapped at all times
       (xlib:map-window (screen-focus-window screen))
       (xlib:map-window (screen-key-window screen))
