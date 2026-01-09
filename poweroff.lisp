@@ -68,7 +68,7 @@
                      (if (search "mem" (read-line state) :test #'string=)
                          (write-string "mem" state)
                          (error "Suspend is not implemented for this system.")))
-                   (error "Suspend is not implemented for this system."))))
+                   (message "^1Your StumpWM process does not have Root privileges to run suspend.^*~%Effective user id: ~A" (sb-posix:geteuid)))))
     #+bsd (if *alternative-suspend*
               (call-alternative *alternative-suspend*)
               (error "Suspend is not implemented for this system.")))
@@ -87,7 +87,7 @@
                            (write-string "platform" disk)
                            (write-string "disk" state))
                          (error "Hibernate is not implemented for this system.")))
-                   (error "Hibernate is not implemented for this system."))))
+                   (message "^1Your StumpWM process does not have Root privileges to run hibernate.^*~%Effective user id: ~A" (sb-posix:geteuid)))))
     #+bsd (if *alternative-hibernate*
               (call-alternative *alternative-hibernate*)
               (error "Hibernate is not implemented for this system."))))
