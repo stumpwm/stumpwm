@@ -2,8 +2,6 @@
 
 (export '(shutdown cancel-shutdown reboot halt suspend hibernate))
 
-(import '(dbus:list-names dbus:with-introspected-object dbus:with-open-bus dbus:system-server-addresses))
-
 (defcommand shutdown (&optional (now nil) (time 30)) ((:y-or-n "Now? "))
   "Poweroff the system. If NOW is not NIL poweroff immediately, otherwise asks for a date."
   #+(or bsd linux)
@@ -39,10 +37,10 @@
 (defcommand suspend () ()
   "Suspends the system."
   #+linux
-  (with-open-bus (bus (system-server-addresses))
+  (dbus:with-open-bus (bus (dbus:system-server-addresses))
     (cond
-      ((find "org.freedesktop.login1" (list-names bus) :test #'string=)
-       (with-introspected-object (login bus "/org/freedesktop/login1" "org.freedesktop.login1")
+      ((find "org.freedesktop.login1" (dbus:list-names bus) :test #'string=)
+       (dbus:with-introspected-object (login bus "/org/freedesktop/login1" "org.freedesktop.login1")
          (if (string= "yes" (login "org.freedesktop.login1.Manager" "CanSuspend"))
              (login "org.freedesktop.login1.Manager" "Suspend" nil)
              (message "^1ERROR:~%Suspend is not available on your system.^*"))))
@@ -54,9 +52,9 @@
       (t
        (message "^1ERROR:~%Suspend is not available on your system.^*"))))
   #+bsd
-  (with-open-bus (bus (system-server-addresses))
+  (dbus:with-open-bus (bus (dbus:system-server-addresses))
     (if (find "org.freedesktop.ConsoleKit" (list-names bus) :test #'string=)
-        (with-introspected-object (login bus "/org/freedesktop/ConsoleKit" "org.freedesktop.ConsoleKit")
+        (dbus:with-introspected-object (login bus "/org/freedesktop/ConsoleKit" "org.freedesktop.ConsoleKit")
           (if (string= "yes" (login "org.freedesktop.login1.Manager" "CanSuspend"))
               (login "org.freedesktop.ConsoleKit.Manager" "Suspend" nil)
               (message "^1ERROR:~%Suspend is not available on your system.^*")))
@@ -65,10 +63,10 @@
 (defcommand hibernate () ()
   "Hibernates the system."
   #+linux
-  (with-open-bus (bus (system-server-addresses))
+  (dbus:with-open-bus (bus (dbus:system-server-addresses))
     (cond
-      ((find "org.freedesktop.login1" (list-names bus) :test #'string=)
-       (with-introspected-object (login bus "/org/freedesktop/login1" "org.freedesktop.login1")
+      ((find "org.freedesktop.login1" (dbus:list-names bus) :test #'string=)
+       (dbus:with-introspected-object (login bus "/org/freedesktop/login1" "org.freedesktop.login1")
          (if (string= "yes" (login "org.freedesktop.login1.Manager" "CanHibernate"))
              (login "org.freedesktop.login1.Manager" "Hibernate" nil)
              (message "^1ERROR:~%Hibernate is not available on your system.^*"))))
@@ -82,9 +80,9 @@
       (t
        (message "^1ERROR:~%Hibernate is not available on your system.^*"))))
   #+bsd
-  (with-open-bus (bus (system-server-addresses))
+  (dbus:with-open-bus (bus (dbus:system-server-addresses))
     (if (find "org.freedesktop.ConsoleKit" (list-names bus) :test #'string=)
-        (with-introspected-object (login bus "/org/freedesktop/ConsoleKit" "org.freedesktop.ConsoleKit")
+        (dbus:with-introspected-object (login bus "/org/freedesktop/ConsoleKit" "org.freedesktop.ConsoleKit")
           (if (string= "yes" (login "org.freedesktop.login1.Manager" "CanHibernate"))
               (login "org.freedesktop.ConsoleKit.Manager" "Hibernate" nil)
               (message "^1ERROR:~%Hibernate is not available on your system.^*")))

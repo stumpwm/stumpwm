@@ -5,7 +5,7 @@ sbcl_version=2.2.10 # Synchronize with variable expected-sbcl-version-in-ci in .
 
 export DEBIAN_FRONTEND=noninteractive
 apt-get -qy update
-apt-get -qy install curl build-essential autoconf git bzip2 make farbfeld netpbm procps x11-apps x11-xserver-utils xdotool xvfb xterm
+apt-get -qy install curl build-essential autoconf git bzip2 make farbfeld netpbm procps x11-apps x11-xserver-utils xdotool xvfb xterm libfixposix3 libfixposix-dev
 rm -rf /var/lib/apt/lists/*
 
 curl -LO https://downloads.sourceforge.net/project/sbcl/sbcl/${sbcl_version}/sbcl-${sbcl_version}-x86-64-linux-binary.tar.bz2
@@ -22,4 +22,4 @@ cd ..
 
 sbcl --load quicklisp.lisp --eval "(quicklisp-quickstart:install)"
 sbcl --load "/root/quicklisp/setup.lisp"  --eval "(progn (setf ql-util::*do-not-prompt* t)(ql:add-to-init-file))"
-sbcl --eval "(progn (ql:quickload '(clx cl-ppcre alexandria fiasco)))"
+sbcl --eval "(progn (ql:quickload '(clx cl-ppcre alexandria fiasco dbus)))"
