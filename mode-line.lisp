@@ -400,12 +400,6 @@ appropriate mode line click function."
 
 (add-hook *mode-line-click-hook* 'mode-line-click-dispatcher)
 
-(defun renumber-window (window number)
-  (let ((old-window (group-current-window (window-group window))))
-    (setf (group-current-window (window-group window)) window)
-    (renumber number)
-    (setf (group-current-window (window-group window)) old-window)))
-
 (flet ((ml-on-click-focus-window (code id &rest rest)
            (declare (ignore rest))
            (when-let ((window (window-by-id id)))
