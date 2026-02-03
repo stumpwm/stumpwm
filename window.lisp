@@ -1304,15 +1304,14 @@ be used to override the default window formatting."
                          :width w
                          :height h)))
 
-(defcommand toggle-always-on-top () ()
-  "Toggle whether the current window always appears over other windows.
+(defcommand toggle-always-on-top (&optional (window (current-window))) ()
+  "Toggle whether a window (by default the current window) always appears over other windows.
 The order windows are added to this list determines priority."
-  (let ((w (current-window))
-        (windows (group-on-top-windows (current-group))))
-    (when w
-      (if (find w windows)
-          (setf (group-on-top-windows (current-group)) (remove w windows))
-          (push (current-window) (group-on-top-windows (current-group)))))))
+  (with-accessors ((windows group-on-top-windows)) (window-group window)
+    (when window
+      (if (find window windows)
+          (setf windows (remove window windows))
+          (push window windows)))))
 
 (defcommand fullscreen () ()
   "Toggle the fullscreen mode of the current widnow. Use this for clients
