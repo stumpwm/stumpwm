@@ -1174,21 +1174,19 @@ window. Default to the current window. if
         (focus-prev-window group)
         (other-window group))))
 
-(defcommand renumber (nt &optional (group (current-group))) ((:number "Number: "))
+(defun renumber-window (window number)
+  (let ((previous-number (window-number window))
+        (win (find number (group-windows (window-group window))
+                   :key #'window-number
+                   :test #'=)))
+    (when win
+      (setf (window-number win) previous-number))
+    (setf (window-number window) number)))
+
+(defcommand renumber (number &optional (group (current-group))) ((:number "Number: "))
   "Change the current window's number to the specified number. If another window
 is using the number, then the windows swap numbers. Defaults to current group."
-  (let ((nf (window-number (group-current-window group)))
-        (win (find-if #'(lambda (win)
-                          (= (window-number win) nt))
-                      (group-windows group))))
-    ;; Is it already taken?
-    (if win
-        (progn
-          ;; swap the window numbers
-          (setf (window-number win) nf)
-          (setf (window-number (group-current-window group)) nt))
-        ;; Just give the window the number
-        (setf (window-number (group-current-window group)) nt))))
+  (renumber-window (group-current-window group) number))
 
 (defcommand-alias number renumber)
 
@@ -1306,15 +1304,14 @@ be used to override the default window formatting."
                          :width w
                          :height h)))
 
-(defcommand toggle-always-on-top () ()
-  "Toggle whether the current window always appears over other windows.
+(defcommand toggle-always-on-top (&optional (window (current-window))) ()
+  "Toggle whether a window (by default the current window) always appears over other windows.
 The order windows are added to this list determines priority."
-  (let ((w (current-window))
-        (windows (group-on-top-windows (current-group))))
-    (when w
-      (if (find w windows)
-          (setf (group-on-top-windows (current-group)) (remove w windows))
-          (push (current-window) (group-on-top-windows (current-group)))))))
+  (with-accessors ((windows group-on-top-windows)) (window-group window)
+    (when window
+      (if (find window windows)
+          (setf windows (remove window windows))
+          (push window windows)))))
 
 (defcommand fullscreen () ()
   "Toggle the fullscreen mode of the current widnow. Use this for clients
