@@ -1660,6 +1660,7 @@ set these color variables.
 @@@ set-msg-border-width
 @@@ set-font
 
+### *message-window-class*
 ### *message-window-padding*
 ### *message-window-y-padding*
 ### *message-window-margin*
@@ -1669,6 +1670,7 @@ set these color variables.
 ### *message-window-timer*
 ### *timeout-wait*
 ### *timeout-wait-multiline*
+### *input-window-class*
 ### *input-window-gravity*
 
 @node Using The Input Bar, Programming The Message Bar, Customizing The Bar, Message and Input Bar
@@ -2128,6 +2130,7 @@ might do the following:
 ### *time-format-string-default*
 ### *mode-line-fixed-title-width*
 ### *time-modeline-string*
+### *mode-line-window-class*
 $$$ *new-mode-line-hook*
 ### *screen-mode-line-formatters*
 ### *window-formatters*
