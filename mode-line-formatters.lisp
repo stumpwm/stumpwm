@@ -214,11 +214,15 @@ critical."
 (defun bar (percent width full empty)
   "Return a progress bar string of WIDTH characters composed of characters FULL
   and EMPTY at PERCENT complete."
-  (let ((chars (truncate (* width percent) 100))
-        (color (bar-zone-color percent)))
-    (let ((bar (make-string (+ width (length color)) :initial-element full)))
-      (replace bar color)
-      (fill bar empty :start (+ chars (length color))))))
+  (let ((chars      (truncate (* width percent) 100))
+        (color      (bar-zone-color percent))
+        (push-color "^[")
+        (pop-color  "^]"))
+    (let ((bar (make-string (+ width (length push-color) (length color)) :initial-element full)))
+      (replace bar push-color)
+      (replace bar color :start1 (length push-color))
+      (fill bar empty :start (+ chars (length push-color) (length color)))
+      (concat bar pop-color))))
 
 (defun make-string-alternator ()
   "Returns a function that takes two arguments, `STRINGS' and `PERIOD'.
