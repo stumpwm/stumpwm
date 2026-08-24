@@ -220,12 +220,10 @@ identity with a range check."
                    (screen-frame-window screen)))
     (setf (xlib:window-border i) (screen-border-color screen)
           (xlib:window-background i) (screen-bg-color screen)))
-  ;; update the backgrounds of all the managed windows
+  ;; update the decorations of all the managed windows
   (dolist (g (screen-groups screen))
     (dolist (w (group-windows g))
-      (unless (eq w (group-current-window g))
-        (setf (xlib:window-background (window-parent w)) (screen-win-bg-color screen))
-        (xlib:clear-area (window-parent w)))))
+      (update-decoration w)))
   (dolist (i (screen-withdrawn-windows screen))
     (setf (xlib:window-background (window-parent i)) (screen-win-bg-color screen))
     (xlib:clear-area (window-parent i)))
