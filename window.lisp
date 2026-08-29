@@ -902,8 +902,16 @@ needed."
           (xwin-state (window-xwin window)) +withdrawn-state+)
     (xlib:unmap-window (window-parent window))
     ;; Clean up the window's entry in the screen and group
-    (setf (group-windows group)
-          (delete window (group-windows group)))
+    (if (find window *always-show-windows*)
+        (progn
+          (mapc (lambda (group)
+                  (setf (group-windows group)
+                        (delete window (group-windows group))))
+                (screen-groups screen))
+          (setf *always-show-windows*
+                (remove window *always-show-windows*)))
+        (setf (group-windows group)
+          (delete window (group-windows group))))
     (screen-remove-mapped-window screen (window-xwin window))
     (when (window-in-current-group-p window)
       ;; since the window doesn't exist, it doesn't have focus.
