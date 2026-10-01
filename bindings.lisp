@@ -253,7 +253,9 @@ is a tile group.")
 (defcommand command-mode () ()
 "Command mode allows you to type StumpWM commands without needing the
 @key{C-t} prefix. Keys not bound in StumpWM will still get sent to the
-current window. To exit command mode, type @key{C-g}."
+current window. Note that command-mode will only affect commands explicitly
+bound to *root-map*, which excludes commands like @code{fnext} by default.
+To exit command mode, type @key{C-g}."
   (run-hook *command-mode-start-hook*)
   (push-top-map *root-map*))
 

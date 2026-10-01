@@ -234,14 +234,13 @@ at 0. Return a netwm compliant group id."
                           (list (netwm-group-id g))
                           :cardinal 32)))
 
-(defcommand toggle-always-show () ()
-  "Toggle whether the current window is shown in all groups."
-  (let ((w (current-window))
-        (screen (current-screen)))
-    (when w
-      (if (find w *always-show-windows*)
-          (disable-always-show-window w screen)
-          (always-show-window w screen)))))
+(defcommand toggle-always-show (&optional (window (current-window))) ()
+  "Toggle whether a window (by default the current window) is shown in all groups."
+  (let ((screen (window-screen window)))
+    (when window
+      (if (find window *always-show-windows*)
+          (disable-always-show-window window screen)
+          (always-show-window window screen)))))
 
 (defun move-window-to-group (window to-group)
   (if (equalp to-group (window-group window))

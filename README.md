@@ -150,7 +150,8 @@ that your contribution gets merged in a timely manner:
   * Export symbols from packages that aren't widely useful (many times
     a little more thought will reveal how to implement your internal
     change without having to export/break encapsulation)
-  * Make stylistic changes that suit your coding style/way of thinking 
+  * Make stylistic changes that suit your coding style/way of thinking
+  * Include OS or system-specific code (See [#1251](https://github.com/stumpwm/stumpwm/issues/1252)).
 
 If you aren't a lisp hacker, you can contribute in the form of
 documenting and organizing the wiki. There's a lot of information
@@ -179,13 +180,13 @@ StumpWM universe (in no particular order):
   is involved)
 * Wallpapers! (support pulling from remote sources, changing based on
   timers, and other hacky features)
+* Shutdown, restart, suspend, and hibernate functions that don't
+  require root access. See [#1252](https://github.com/stumpwm/stumpwm/issues/1252), [#1251](https://github.com/stumpwm/stumpwm/issues/1251)
 * Revamped, mouse-friendly mode-line. 
-  * Support fixed number of chars for window titles
   * Dynamically trim window titles to fit them all on the mode-line
   * Split the mode-line into multiple cells for containing different information
   * Implement widget icons to indicate system status (new mail, low
     battery, network etc)
-  * Support raising windows when left-clicked, closing/killing when right-clicked  
 
 # Help
 
