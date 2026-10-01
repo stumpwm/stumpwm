@@ -200,9 +200,8 @@ at 0. Return a netwm compliant group id."
       (xlib:change-property (screen-root screen) :_NET_CURRENT_DESKTOP
                             (list (netwm-group-id new-group))
                             :cardinal 32)
-      (mapc (lambda (w)
-              (xwin-unhide (window-xwin w) (window-parent w)))
-            *always-show-windows*)
+      (dolist (w *always-show-windows*)
+        (xwin-unhide (window-xwin w) (window-parent w)))
       (update-all-mode-lines)
       (run-hook-with-args *focus-group-hook* new-group old-group))))
 
@@ -212,26 +211,24 @@ at 0. Return a netwm compliant group id."
   (group-add-window group window))
 
 (defun always-show-window (window screen)
-  (let ((groups-to-add-w-to (remove (current-group) (screen-groups screen))))
-    (mapc (lambda (group) (copy-window-to-group group window))
-          groups-to-add-w-to))
+  (let ((groups (remove (current-group) (screen-groups screen))))
+    (dolist (group groups)
+      (copy-window-to-group group window)))
   (xlib:change-property (window-xwin window) :_NET_WM_DESKTOP
                         (list #xFFFFFFFF)
                         :cardinal 32)
   (push window *always-show-windows*))
 
 (defun disable-always-show-window (window screen)
-  (let* ((g (current-group))
-         (groups-to-remove-w-from (remove g (screen-groups screen))))
-    (mapc (lambda (group)
-            (setf (group-windows group)
-                  (remove window (group-windows group))))
-          groups-to-remove-w-from)
-    (setf (window-group window) g
-          (window-number window) (find-free-window-number g)
+  (let* ((group (current-group))
+         (groups (remove group (screen-groups screen))))
+    (dolist (group groups)
+      (setf (group-windows group) (remove window (group-windows group))))
+    (setf (window-group window) group
+          (window-number window) (find-free-window-number group)
           *always-show-windows* (remove window *always-show-windows*))
     (xlib:change-property (window-xwin window) :_NET_WM_DESKTOP
-                          (list (netwm-group-id g))
+                          (list (netwm-group-id group))
                           :cardinal 32)))
 
 (defcommand toggle-always-show (&optional (window (current-window))) ()
@@ -386,10 +383,10 @@ numbers."
   (check-type name string)
   (assert (not (member name '("" ".") :test #'string=)) (name) "Groups must have a name.")
   (let ((group (%ensure-group name type screen)))
+    (dolist (window *always-show-windows*)
+      (copy-window-to-group group window))
     (unless background
       (switch-to-group group))
-    (mapc (lambda (window) (copy-window-to-group group window))
-          *always-show-windows*)
     group))
 
 (defun find-group (screen name)
