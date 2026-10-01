@@ -431,6 +431,12 @@ converted to an atom is removed."
     (when (xlib:window-equal (screen-message-window screen) win)
       (return screen))))
 
+(defun find-frame-indicator-window-screen (win)
+  "Return the screen, if any, that frame indicator window WIN belongs."
+  (dolist (screen *screen-list*)
+    (when (xlib:window-equal (screen-frame-window screen) win)
+      (return screen))))
+
 (defun draw-cross (screen window x y width height)
   (xlib:draw-line window
                   (screen-frame-outline-gc screen)
@@ -454,6 +460,9 @@ converted to an atom is removed."
          (if (plusp (screen-ignore-msg-expose screen))
              (decf (screen-ignore-msg-expose screen))
              (redraw-current-message screen)))
+        ((setf screen (find-frame-indicator-window-screen window))
+         ;; frame indicator window exposed
+         (redraw-frame-indicator (screen-current-group screen)))
         ((setf ml (find-mode-line-by-window window))
          (setf screen (mode-line-screen ml))
          (redraw-mode-line ml t)))
