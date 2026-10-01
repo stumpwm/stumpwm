@@ -449,10 +449,10 @@ FOCUS-WINDOW is an extra window used for _NET_SUPPORTING_WM_CHECK."
                                    :event-mask '(:key-press :key-release))
                     :focus-window (xlib:create-window
                                    :parent screen-root
-                                   :x 0 :y 0 :width 1 :height 1)
+                                   :x -1 :y -1 :width 1 :height 1)
                     :key-window (xlib:create-window
                                  :parent screen-root
-                                 :x 0 :y 0 :width 1 :height 1
+                                 :x -1 :y -1 :width 1 :height 1
                                  :event-mask '(:key-press :key-release))
                     :frame-window (xlib:create-window
                                    :parent screen-root
