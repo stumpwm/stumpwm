@@ -17,7 +17,8 @@
                #:clx
                #:sb-posix
                #:sb-introspect
-               #:dynamic-mixins-swm)
+               #:dynamic-mixins-swm
+               #:dbus)
   :components ((:file "package")
                (:file "debug")
                (:file "primitives")
@@ -66,7 +67,8 @@
                (:file "replace-class")
                ;; keep this last so it always gets recompiled if
                ;; anything changes
-               (:file "version"))
+               (:file "version")
+               (:file "poweroff"))
   :in-order-to ((test-op (test-op "stumpwm/tests"))))
 
 (defsystem "stumpwm/build"
