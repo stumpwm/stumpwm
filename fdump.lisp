@@ -154,7 +154,7 @@ Otherwise, defaults to writing to \"FILE.dump\" in the XDG_DATA_HOME location."
         (read fp)))))
 
 (defun restore-group (group gdump &optional auto-populate (window-dump-fn 'window-id))
-  (let ((windows (group-windows group)))
+  (let ((windows (only-tile-windows (group-windows group))))
     (labels ((give-frame-a-window (f)
                (unless (frame-window f)
                  (setf (frame-window f) (find f windows :key 'window-frame))))
