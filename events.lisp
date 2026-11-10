@@ -587,6 +587,10 @@ converted to an atom is removed."
               (y (elt data 2)))
      (dformat 3 "!!! Data: ~S~%" data)
      (group-move-request (window-group our-window) our-window x y :root)))
+    (:_NET_WM_MOVERESIZE
+     (when-let ((our-window (find-window window)))
+       (when (and (float-window-p our-window) (<= 0 (elt data 2) 8))
+         (float-window-drag our-window (elt data 0) (elt data 1) (elt data 2)))))
   (t
    (dformat 2 "ignored message~%"))))
 
